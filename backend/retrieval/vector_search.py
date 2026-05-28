@@ -3,6 +3,9 @@
 Provides two retrieval modes:
 1. semantic_search(query) — top-k similarity over chunk embeddings
 2. get_by_section_id(section) — exact-match payload filter for cross-reference lookup
+
+Uses raw HTTP API instead of qdrant-client to avoid version compatibility issues
+between the Python client (1.18.x) and Qdrant server (1.9.x).
 """
 
 from __future__ import annotations
@@ -12,8 +15,7 @@ import re
 from functools import lru_cache
 from typing import Any
 
-from qdrant_client import QdrantClient
-from qdrant_client.models import FieldCondition, Filter, MatchValue
+import httpx
 
 from backend.config import get_settings
 from backend.models import CodeChunk
@@ -21,7 +23,6 @@ from backend.models import CodeChunk
 
 log = logging.getLogger(__name__)
 
-# Cap recursive cross-reference resolution to prevent runaway and token blow-up.
 MAX_CROSS_REF_HOPS = 1
 MAX_CROSS_REF_PER_CHUNK = 3
 
@@ -35,10 +36,8 @@ def _model():
     return SentenceTransformer(settings.embedding_model)
 
 
-@lru_cache
-def _client() -> QdrantClient:
-    settings = get_settings()
-    return QdrantClient(url=settings.qdrant_url)
+def _qdrant_url() -> str:
+    return get_settings().qdrant_url
 
 
 def _payload_to_chunk(payload: dict[str, Any], score: float) -> CodeChunk:
@@ -58,29 +57,39 @@ def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) ->
     collection = settings.qdrant_zoning_collection if zoning_only else settings.qdrant_code_collection
     vec = _model().encode(query, normalize_embeddings=True).tolist()
     try:
-        hits = _client().query_points(collection_name=collection, query=vec, limit=top_k).points
+        resp = httpx.post(
+            f"{_qdrant_url()}/collections/{collection}/points/search",
+            json={"vector": vec, "limit": top_k, "with_payload": True},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        hits = resp.json().get("result", [])
     except Exception as exc:
         log.warning("Qdrant query failed against %s: %s", collection, exc)
         return []
-    return [_payload_to_chunk(h.payload or {}, h.score) for h in hits]
+    return [_payload_to_chunk(h.get("payload", {}), h.get("score", 0.0)) for h in hits]
 
 
 def get_by_section_id(section_id: str) -> CodeChunk | None:
     settings = get_settings()
-    flt = Filter(must=[FieldCondition(key="section", match=MatchValue(value=section_id))])
     try:
-        results, _ = _client().scroll(
-            collection_name=settings.qdrant_code_collection,
-            scroll_filter=flt,
-            limit=1,
-            with_payload=True,
+        resp = httpx.post(
+            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+            json={
+                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
+                "limit": 1,
+                "with_payload": True,
+            },
+            timeout=10.0,
         )
+        resp.raise_for_status()
+        points = resp.json().get("result", {}).get("points", [])
     except Exception as exc:
         log.warning("Qdrant scroll failed for %s: %s", section_id, exc)
         return None
-    if not results:
+    if not points:
         return None
-    return _payload_to_chunk(results[0].payload or {}, score=1.0)
+    return _payload_to_chunk(points[0].get("payload", {}), score=1.0)
 
 
 _SECTION_REF_RE = re.compile(r"^\d+-\d+-\d+(?:\.\d+)?$")
