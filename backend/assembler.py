@@ -91,7 +91,7 @@ def _permit_summary(rows: list[dict[str, Any]]) -> PermitSummary | None:
         if desc:
             descs[desc[:120]] += 1
         try:
-            cost_total += float(row.get("estimated_cost") or 0)
+            cost_total += float(row.get("reported_cost") or row.get("estimated_cost") or 0)
         except (TypeError, ValueError):
             pass
     return PermitSummary(

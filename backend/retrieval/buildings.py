@@ -26,7 +26,7 @@ async def permits_by_community_area(
         ),
         "$select": (
             "permit_type,work_description,issue_date,"
-            "street_number,street_direction,street_name,estimated_cost"
+            "street_number,street_direction,street_name,reported_cost"
         ),
         "$order": "issue_date DESC",
         "$limit": 50,

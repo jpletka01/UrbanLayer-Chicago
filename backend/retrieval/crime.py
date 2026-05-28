@@ -20,14 +20,32 @@ async def crime_by_community_area(
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
-    params = {
-        "$where": f"community_area='{community_area}' AND date > '{_cutoff_iso(days)}'",
+    cutoff = _cutoff_iso(days)
+
+    crimes_params = {
+        "$where": f"community_area='{community_area}' AND date > '{cutoff}'",
         "$group": "primary_type",
-        "$select": "primary_type,count(*) as count,sum(case(arrest='true',1,0)) as arrests",
+        "$select": "primary_type,count(*) as count",
         "$order": "count DESC",
         "$limit": 35,
     }
-    return await socrata_get(settings.dataset_crime, params, client=client)
+    arrests_params = {
+        "$where": f"community_area='{community_area}' AND date > '{cutoff}' AND arrest=true",
+        "$group": "primary_type",
+        "$select": "primary_type,count(*) as arrests",
+        "$limit": 35,
+    }
+
+    import asyncio
+    crimes_task = socrata_get(settings.dataset_crime, crimes_params, client=client)
+    arrests_task = socrata_get(settings.dataset_crime, arrests_params, client=client)
+    crimes, arrests = await asyncio.gather(crimes_task, arrests_task)
+
+    arrest_map = {r["primary_type"]: r["arrests"] for r in arrests}
+    for row in crimes:
+        row["arrests"] = arrest_map.get(row["primary_type"], "0")
+
+    return crimes
 
 
 async def crime_recent_by_block(
