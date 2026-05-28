@@ -1,6 +1,17 @@
-import type { ChatChunk, Message } from "./types";
+import type { AddressSuggestion, ChatChunk, Message } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
+
+export async function getAutocomplete(query: string): Promise<AddressSuggestion[]> {
+  if (query.length < 3) return [];
+  try {
+    const resp = await fetch(`${API_BASE}/autocomplete?q=${encodeURIComponent(query)}`);
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch {
+    return [];
+  }
+}
 
 export async function* chatStream(
   message: string,

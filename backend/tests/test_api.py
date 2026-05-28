@@ -35,6 +35,33 @@ class TestHealthEndpoint:
         assert response.json() == {"ok": True}
 
 
+class TestAutocompleteEndpoint:
+    def test_autocomplete_returns_empty_for_short_query(self, client):
+        response = client.get("/autocomplete?q=ab")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_autocomplete_calls_geocode_suggestions(self, client):
+        with patch("backend.main.geocode_address_suggestions", new_callable=AsyncMock) as mock_geo:
+            mock_geo.return_value = [
+                {"address": "2400 N MILWAUKEE AVE, CHICAGO, IL", "lat": 41.92, "lon": -87.70}
+            ]
+            response = client.get("/autocomplete?q=2400+N+Milwaukee")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert "MILWAUKEE" in data[0]["address"]
+
+    def test_autocomplete_returns_empty_on_no_results(self, client):
+        with patch("backend.main.geocode_address_suggestions", new_callable=AsyncMock) as mock_geo:
+            mock_geo.return_value = []
+            response = client.get("/autocomplete?q=xyznonexistent")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+
 class TestChatEndpoint:
     @pytest.fixture
     def mock_plan(self):

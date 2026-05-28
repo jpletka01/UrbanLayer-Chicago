@@ -135,17 +135,31 @@ class TestBuildingsRetrieval:
         assert "reported_cost" in params["$select"]
 
     @pytest.mark.asyncio
-    async def test_violations_by_community_area_query(self, mock_settings):
+    async def test_violations_by_community_area_uses_bbox(self, mock_settings):
         with patch("backend.retrieval.buildings.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
-                await violations_by_community_area(24, days=365)
+            with patch("backend.retrieval.buildings.community_area_bounds") as mock_bounds:
+                mock_bounds.return_value = (41.888, -87.707, 41.916, -87.639)
+                with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock_get:
+                    mock_get.return_value = []
+                    await violations_by_community_area(24, days=365)
 
+        mock_bounds.assert_called_once_with(24)
         call_args = mock_get.call_args
         assert call_args[0][0] == "22u3-xenr"
         params = call_args[0][1]
+        assert "latitude between" in params["$where"]
+        assert "longitude between" in params["$where"]
         assert "violation_status" in params["$select"]
         assert "violation_description" in params["$select"]
+
+    @pytest.mark.asyncio
+    async def test_violations_returns_empty_if_no_bounds(self, mock_settings):
+        with patch("backend.retrieval.buildings.get_settings", return_value=mock_settings):
+            with patch("backend.retrieval.buildings.community_area_bounds") as mock_bounds:
+                mock_bounds.return_value = None
+                result = await violations_by_community_area(999, days=365)
+
+        assert result == []
 
 
 class TestBusinessRetrieval:

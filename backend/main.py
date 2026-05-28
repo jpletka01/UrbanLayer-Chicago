@@ -25,6 +25,7 @@ from backend.config import get_settings
 from backend.conversation import synthesize_query
 from backend.models import ChatChunk, ChatRequest, ContextObject, RetrievalPlan
 from backend.retrieval import buildings, business, crime, three11
+from backend.retrieval.geo import geocode_address_suggestions
 from backend.retrieval.vector_search import expand_cross_references, semantic_search
 from backend.router import route
 from backend.synthesizer import stream_answer
@@ -52,6 +53,14 @@ async def _startup() -> None:
 @app.get("/health")
 async def health() -> dict:
     return {"ok": True}
+
+
+@app.get("/autocomplete")
+async def autocomplete(q: str = "") -> list[dict]:
+    """Return address suggestions for autocomplete."""
+    if len(q.strip()) < 3:
+        return []
+    return await geocode_address_suggestions(q)
 
 
 def _sse(chunk: ChatChunk) -> str:

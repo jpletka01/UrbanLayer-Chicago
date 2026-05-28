@@ -70,15 +70,14 @@ class TestSocrataIntegration:
             assert "work_description" in result[0] or "permit_type" in result[0]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Violations dataset doesn't have community_area field - needs geo query")
     async def test_violations_api_returns_data(self):
         from backend.retrieval.buildings import violations_by_community_area
 
         result = await violations_by_community_area(24, days=365)
 
         assert isinstance(result, list)
-        if result:
-            assert "violation_description" in result[0] or "violation_status" in result[0]
+        assert len(result) > 0, "Expected violations data for West Town"
+        assert "violation_description" in result[0] or "violation_status" in result[0]
 
     @pytest.mark.asyncio
     async def test_business_api_returns_data(self):

@@ -96,8 +96,8 @@ Everything below is in the repo, tested and verified.
 
 ## What's NOT Done
 
-### 1. Violations API retrieval (Medium priority)
-The building violations dataset (`22u3-xenr`) doesn't have a `community_area` field, only lat/lon. Current code queries by community_area and gets no results. Needs geo-based query using lat/lon bounds or point-in-polygon filtering.
+### 1. ~~Violations API retrieval~~ ✅ DONE
+Fixed in this session. The violations dataset now queries by bounding box derived from community area polygons (`geo.community_area_bounds()`), since the dataset has lat/lon but no community_area field.
 
 ### 2. The Municipal Code is gitignored
 - `chicago-il-codes.html` (~100MB) is not in version control (`.gitignore` line 17).
@@ -105,7 +105,7 @@ The building violations dataset (`22u3-xenr`) doesn't have a `community_area` fi
 
 ### 3. Stretch goals (Phase I)
 - **Leaflet map view** showing crime pins, 311 markers, zoning overlay for a queried neighborhood. Right side of the split-screen has space reserved for this. *Not started.*
-- **Address autocomplete** (Census Geocoder debounced) for the chat input. *Not started.*
+- **Address autocomplete** — ✅ **DONE.** Added `/autocomplete` endpoint using Census Geocoder + frontend dropdown in `ChatInput.tsx` with debounced suggestions, keyboard navigation, and click-to-select.
 - **Multi-turn follow-up resolution** — ✅ **DONE.** Added `backend/conversation.py` with a pre-router synthesis layer that merges conversation context into self-contained queries. Uses Haiku for fast/cheap synthesis when needed (heuristic gate avoids unnecessary LLM calls).
 
 ### 4. Deferred but probably worth doing
@@ -150,6 +150,10 @@ Work completed in this session:
 7. **Title 18 investigation** — Confirmed empty-body sections are legitimate placeholders, not a parser bug.
 
 8. **Multi-turn conversation synthesis** — Added `backend/conversation.py` to handle multi-turn context. When a user provides a short answer to a clarification (e.g., "lincoln park" after being asked for a location), the system now synthesizes the full query ("Is it legal to add a balcony to a townhouse in Lincoln Park?") before routing. Uses Haiku for speed/cost, with a heuristic gate to avoid unnecessary LLM calls on single-turn queries.
+
+9. **Violations API fix** — Rewrote `violations_by_community_area()` to query by bounding box (lat/lon) since the dataset lacks a `community_area` field. Added `geo.community_area_bounds()` helper.
+
+10. **Address autocomplete** — Added `/autocomplete` endpoint + `geocode_address_suggestions()` in geo.py. Frontend `ChatInput.tsx` now has a debounced dropdown with keyboard navigation.
 
 ---
 
@@ -223,7 +227,7 @@ chicago/
 │   ├── models.py
 │   ├── config.py
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py
-│   └── tests/                      # 123 tests (unit + integration)
+│   └── tests/                      # 130+ tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag

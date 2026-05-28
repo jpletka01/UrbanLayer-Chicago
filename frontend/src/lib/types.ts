@@ -101,3 +101,9 @@ export interface PhaseTimings {
 }
 
 export type SidebarView = "data" | "sources";
+
+export interface AddressSuggestion {
+  address: string;
+  lat: number;
+  lon: number;
+}

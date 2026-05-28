@@ -109,6 +109,15 @@ def community_area_by_point(lat: float, lon: float) -> int | None:
     return None
 
 
+def community_area_bounds(ca: int) -> tuple[float, float, float, float] | None:
+    """Return bounding box (min_lat, min_lon, max_lat, max_lon) for a community area."""
+    for ca_id, _name, poly in _polygon_index():
+        if ca_id == ca:
+            minx, miny, maxx, maxy = poly.bounds
+            return (miny, minx, maxy, maxx)
+    return None
+
+
 async def geocode_address(
     address: str,
     *,
@@ -147,3 +156,47 @@ async def resolve_address_to_community_area(
     if not coords:
         return None, None
     return community_area_by_point(*coords), coords
+
+
+async def geocode_address_suggestions(
+    partial: str,
+    *,
+    limit: int = 5,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict]:
+    """Return address suggestions from Census Geocoder.
+
+    Returns list of {address, lat, lon} dicts.
+    """
+    if not partial or len(partial.strip()) < 3:
+        return []
+
+    url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+    params = {
+        "address": f"{partial}, Chicago, IL",
+        "benchmark": "Public_AR_Current",
+        "format": "json",
+    }
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    try:
+        resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        matches = data.get("result", {}).get("addressMatches") or []
+        results = []
+        for match in matches[:limit]:
+            coords = match.get("coordinates", {})
+            results.append({
+                "address": match.get("matchedAddress", ""),
+                "lat": float(coords.get("y", 0)),
+                "lon": float(coords.get("x", 0)),
+            })
+        return results
+    except Exception as exc:
+        log.warning("Geocode suggestions failed: %s", exc)
+        return []
+    finally:
+        if owns:
+            await client.aclose()
