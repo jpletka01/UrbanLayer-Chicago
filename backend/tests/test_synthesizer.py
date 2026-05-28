@@ -62,7 +62,7 @@ class TestBuildUserPrompt:
 class TestSystemPrompt:
     def test_includes_citation_rules(self):
         assert "cite your sources" in SYSTEM_PROMPT.lower()
-        assert "CPD crime data" in SYSTEM_PROMPT
+        assert "[1]" in SYSTEM_PROMPT and "[2]" in SYSTEM_PROMPT
 
     def test_includes_disclaimer_instruction(self):
         assert "legal advice" in SYSTEM_PROMPT.lower()

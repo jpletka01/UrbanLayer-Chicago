@@ -1,7 +1,6 @@
 import { motion } from "motion/react";
 import type { ContextObject, PhaseTimings, RetrievalPlan, SidebarView } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
-import { SidebarToggle } from "./SidebarToggle";
 import { DataView } from "./sidebar/DataView";
 import { SourcesView } from "./sidebar/SourcesView";
 
@@ -11,9 +10,10 @@ interface Props {
   loading: boolean;
   timings?: PhaseTimings;
   isOpen: boolean;
-  onToggle: () => void;
   activeView: SidebarView;
   onViewChange: (view: SidebarView) => void;
+  highlightedSourceIndex?: number | null;
+  onSourceClick?: (index: number) => void;
 }
 
 export function SidebarPanel({
@@ -22,9 +22,10 @@ export function SidebarPanel({
   loading,
   timings,
   isOpen,
-  onToggle,
   activeView,
   onViewChange,
+  highlightedSourceIndex,
+  onSourceClick,
 }: Props) {
   const title = context?.community_area_name ?? "Context & Data";
   const subtitle = context?.community_area ? `CA ${context.community_area}` : undefined;
@@ -39,8 +40,6 @@ export function SidebarPanel({
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className="relative hidden md:flex flex-col h-full bg-dark-bg border-l border-dark-border overflow-hidden"
     >
-      <SidebarToggle isOpen={isOpen} onToggle={onToggle} />
-
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -65,7 +64,11 @@ export function SidebarPanel({
                 timings={timings}
               />
             ) : (
-              <SourcesView codeChunks={context?.code_chunks ?? []} />
+              <SourcesView
+                codeChunks={context?.code_chunks ?? []}
+                highlightedIndex={highlightedSourceIndex}
+                onSourceClick={onSourceClick}
+              />
             )}
           </div>
         </motion.div>

@@ -6,6 +6,7 @@ import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
+import { SidebarToggle } from "./components/SidebarToggle";
 import { chatStream } from "./lib/api";
 import {
   clearAllHistory,
@@ -37,7 +38,10 @@ export function App() {
   const [timings, setTimings] = useState<PhaseTimings>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
+  const [highlightedSourceIndex, setHighlightedSourceIndex] = useState<number | null>(null);
+  const [activeSidebarContext, setActiveSidebarContext] = useState<ContextObject | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const pendingContextRef = useRef<ContextObject | null>(null);
 
   // Migrate old history format on first load
   useEffect(() => {
@@ -95,6 +99,8 @@ export function App() {
           }
         } else if (chunk.type === "context") {
           setContext(chunk.context);
+          setActiveSidebarContext(chunk.context);
+          pendingContextRef.current = chunk.context;
           setSidebarOpen(true);
           if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
           if (chunk.t_ms !== undefined) {
@@ -115,6 +121,17 @@ export function App() {
         } else if (chunk.type === "done") {
           if (chunk.t_ms !== undefined) {
             setTimings((t) => ({ ...t, total_ms: chunk.t_ms }));
+          }
+          // Attach context to the assistant message for per-message citation binding
+          if (pendingContextRef.current) {
+            setMessages((m) => {
+              const next = [...m];
+              const last = next[next.length - 1];
+              if (last?.role === "assistant") {
+                next[next.length - 1] = { ...last, context: pendingContextRef.current! };
+              }
+              return next;
+            });
           }
         } else if (chunk.type === "error") {
           setErrorMsg(chunk.error);
@@ -142,6 +159,8 @@ export function App() {
     setErrorMsg(null);
     setSidebarOpen(false);
     setSidebarView("data");
+    setHighlightedSourceIndex(null);
+    setActiveSidebarContext(null);
   }
 
   function loadConversation(conv: Conversation) {
@@ -167,6 +186,15 @@ export function App() {
     clearAllHistory();
     setConversations([]);
     reset();
+  }
+
+  function handleCitationClick(index: number, messageContext?: ContextObject) {
+    setSidebarOpen(true);
+    setSidebarView("sources");
+    setHighlightedSourceIndex(index);
+    if (messageContext) {
+      setActiveSidebarContext(messageContext);
+    }
   }
 
   return (
@@ -304,23 +332,32 @@ export function App() {
               </div>
             )}
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden relative">
               <ChatInterface
                 messages={messages}
                 streaming={streaming}
                 showDisclaimer={showDisclaimer}
                 onSubmit={sendMessage}
                 isSidebarOpen={sidebarOpen}
-              />
+                onCitationClick={handleCitationClick}
+                streamingContext={context}
+              >
+                <SidebarToggle
+                  isOpen={sidebarOpen}
+                  onToggle={() => setSidebarOpen(!sidebarOpen)}
+                  sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
+                />
+              </ChatInterface>
               <SidebarPanel
                 plan={plan}
-                context={context}
+                context={activeSidebarContext}
                 loading={streaming}
                 timings={timings}
                 isOpen={sidebarOpen}
-                onToggle={() => setSidebarOpen(!sidebarOpen)}
                 activeView={sidebarView}
                 onViewChange={setSidebarView}
+                highlightedSourceIndex={highlightedSourceIndex}
+                onSourceClick={setHighlightedSourceIndex}
               />
             </div>
           </motion.div>

@@ -24,51 +24,72 @@ class TestNeedsSynthesis:
             Message(role="user", content="is it legal to add a balcony to my townhouse?"),
             Message(role="assistant", content="What is the address or neighborhood of your townhouse?"),
         ]
+        # Short answer lacking context needs synthesis
         assert needs_synthesis("lincoln park", history) is True
 
-    def test_short_answer_after_generic_question(self):
-        """Synthesis needed when short answer follows any question."""
+    def test_short_followup_question(self):
+        """Synthesis needed for short follow-up questions."""
         history = [
             Message(role="user", content="what's the crime rate?"),
             Message(role="assistant", content="Which neighborhood are you interested in?"),
         ]
         assert needs_synthesis("wicker park", history) is True
 
-    def test_long_standalone_question_no_synthesis(self):
-        """No synthesis for long, self-contained follow-up questions."""
+    def test_context_reference_needs_synthesis(self):
+        """Synthesis needed when message references prior context."""
+        history = [
+            Message(role="user", content="Do I need a permit for window replacement at 525 W Arlington?"),
+            Message(role="assistant", content="Yes, window replacement generally requires a permit..."),
+        ]
+        # "their" refers to prior context
+        assert needs_synthesis("do you have their website?", history) is True
+
+    def test_what_about_followup(self):
+        """Synthesis needed for 'what about' follow-ups."""
         history = [
             Message(role="user", content="what's the crime rate in wicker park?"),
             Message(role="assistant", content="Here are the crime statistics for Wicker Park..."),
         ]
-        # Long, self-contained question
-        long_question = "What about the building permits that have been issued in Logan Square over the past year?"
+        assert needs_synthesis("what about logan square?", history) is True
+
+    def test_long_standalone_with_location_no_synthesis(self):
+        """No synthesis for long questions that include location context."""
+        history = [
+            Message(role="user", content="what's the crime rate in wicker park?"),
+            Message(role="assistant", content="Here are the crime statistics for Wicker Park..."),
+        ]
+        # Long question with explicit location - self-contained
+        long_question = "I'm also curious about what's happening with building permits in the Logan Square neighborhood these days"
         assert needs_synthesis(long_question, history) is False
 
-    def test_short_answer_after_non_question(self):
-        """No synthesis when last assistant message isn't a question."""
+    def test_short_thanks_no_synthesis(self):
+        """No synthesis for short non-question responses like thanks."""
         history = [
             Message(role="user", content="what's the crime rate in wicker park?"),
             Message(role="assistant", content="Here are the crime statistics for Wicker Park. Theft is the most common crime type."),
         ]
-        assert needs_synthesis("thanks", history) is False
+        # "thanks" doesn't have context references or question patterns
+        assert needs_synthesis("thanks!", history) is False
 
-    def test_address_clarification(self):
-        """Synthesis needed for address clarifications."""
+    def test_address_answer(self):
+        """Synthesis needed for address answers."""
         history = [
             Message(role="user", content="can I open a bar here?"),
             Message(role="assistant", content="What address are you asking about?"),
         ]
-        assert needs_synthesis("2400 N Milwaukee Ave", history) is True
+        # Short answer with street name
+        assert needs_synthesis("2400 N Milwaukee", history) is True
 
-    def test_district_clarification(self):
-        """Synthesis needed for zoning district clarifications."""
+    def test_district_answer(self):
+        """Synthesis needed for zoning district answers."""
         history = [
             Message(role="user", content="what uses are allowed in this zone?"),
             Message(role="assistant", content="Which district are you asking about?"),
         ]
+        # Very short answer
         assert needs_synthesis("RS-3", history) is True
 
-    def test_multiple_turns_clarification(self):
+    def test_multiple_turns(self):
         """Synthesis works with longer history."""
         history = [
             Message(role="user", content="hello"),
@@ -78,13 +99,13 @@ class TestNeedsSynthesis:
         ]
         assert needs_synthesis("logan square", history) is True
 
-    def test_where_clarification(self):
-        """Synthesis for 'where' questions."""
+    def test_how_question_followup(self):
+        """Synthesis for follow-up 'how' questions."""
         history = [
-            Message(role="user", content="what's the zoning here?"),
-            Message(role="assistant", content="Where are you located?"),
+            Message(role="user", content="what's the zoning at 123 Main St?"),
+            Message(role="assistant", content="The zoning is RS-3 residential."),
         ]
-        assert needs_synthesis("near wrigley field", history) is True
+        assert needs_synthesis("how do I apply for a variance?", history) is True
 
 
 class TestSynthesizeQuery:
@@ -120,15 +141,16 @@ class TestSynthesizeQuery:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_passthrough_long_standalone(self):
-        """Long self-contained question passes through unchanged."""
+    async def test_website_followup(self):
+        """Follow-up asking for website uses context."""
         from backend.conversation import synthesize_query
 
         history = [
-            Message(role="user", content="what's the crime rate in wicker park?"),
-            Message(role="assistant", content="Here are the crime statistics..."),
+            Message(role="user", content="Do I need a permit for window replacement?"),
+            Message(role="assistant", content="Yes, contact the Department of Buildings."),
         ]
-        question = "What about the building permits that have been issued in the Logan Square neighborhood over the past year or so?"
-        result = await synthesize_query(question, history)
+        result = await synthesize_query("do you have their website?", history)
 
-        assert result == question
+        # Should synthesize to include what "their" refers to
+        assert "website" in result.lower()
+        assert ("building" in result.lower() or "department" in result.lower())

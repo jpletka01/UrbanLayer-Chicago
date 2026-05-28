@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
-import { useEffect, useRef } from "react";
-import type { Message } from "../lib/types";
+import { useEffect, useRef, type ReactNode } from "react";
+import type { CodeChunk, ContextObject, Message } from "../lib/types";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
 
@@ -10,6 +10,9 @@ interface Props {
   showDisclaimer: boolean;
   onSubmit: (message: string) => void;
   isSidebarOpen: boolean;
+  onCitationClick?: (index: number, messageContext?: ContextObject) => void;
+  streamingContext?: ContextObject | null;
+  children?: ReactNode;
 }
 
 export function ChatInterface({
@@ -18,6 +21,9 @@ export function ChatInterface({
   showDisclaimer,
   onSubmit,
   isSidebarOpen,
+  onCitationClick,
+  streamingContext,
+  children,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -32,20 +38,27 @@ export function ChatInterface({
         width: isSidebarOpen ? "60%" : "100%",
       }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="h-full flex flex-col bg-dark-bg"
+      className="h-full flex flex-col bg-dark-bg relative"
     >
+      {children}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
           {messages.map((m, i) => {
             const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
+            const isStreaming = isLastAssistant && streaming;
+            // Use message's own context, or streaming context for the currently streaming message
+            const messageContext = isStreaming ? streamingContext : m.context;
+            const codeChunks = messageContext?.code_chunks ?? [];
             return (
               <MessageBubble
                 key={i}
                 message={m}
-                streaming={isLastAssistant && streaming}
+                streaming={isStreaming}
                 showDisclaimer={
                   m.role === "assistant" && i === messages.length - 1 && showDisclaimer && !streaming
                 }
+                onCitationClick={(idx) => onCitationClick?.(idx, messageContext ?? undefined)}
+                codeChunks={codeChunks}
               />
             );
           })}

@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-28):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Ready for UI testing and production hardening.
+**Current status (2026-05-28):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips.
 
 ---
 
@@ -41,7 +41,8 @@ Everything below is in the repo, tested and verified.
 ### Backend (`backend/`)
 - `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events
 - `router.py` — Claude-based router producing strict `RetrievalPlan` JSON; system prompt embeds the 77 community-area names + 30+ neighborhood aliases + **search query guidance for zoning-specific terminology**
-- `synthesizer.py` — streaming Claude synthesis call
+- `synthesizer.py` — streaming Claude synthesis call with **inline citation markers** (`[1]`, `[2]`) for code chunks
+- `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers
 - `assembler.py` — pure context-merging function with caps (top-5 crime types, top-15 311 types, top-5 chunks), `Open - Dup` dedup, auto data-lag note
 - `models.py` — Pydantic types: `RetrievalPlan`, `ContextObject`, `ChatChunk` (with `t_ms` timing), `Message`, `ChatRequest`
 - `config.py` — env via pydantic-settings (Anthropic key, Socrata token, Qdrant URL, model/dataset IDs)
@@ -53,17 +54,7 @@ Everything below is in the repo, tested and verified.
   - `business.py` — `uupf-x98q` active licenses
   - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
-- `tests/` — **113 tests total** (100 unit + 13 integration), all passing:
-  - `test_api.py` — API endpoint tests (SSE streaming, error handling, timing)
-  - `test_assembler.py` — context assembly, caps, dedup
-  - `test_geo.py` — community area resolution, aliases
-  - `test_models.py` — Pydantic model validation
-  - `test_retrieval.py` — Socrata query structure
-  - `test_router.py` — router prompt, LLM response parsing
-  - `test_socrata.py` — retry logic, error handling
-  - `test_synthesizer.py` — prompt construction
-  - `test_vector_search.py` — cross-reference expansion
-  - `test_integration.py` — **real API tests** against Socrata, Census Geocoder, Anthropic, Qdrant
+- `tests/` — **130+ tests** (unit + integration), all passing
 
 ### Ingestion (`ingestion/`)
 - `parse_chicago_code.py` — HTML parser with split-at-republication strategy, state machine for Title→Chapter→Article→Subarticle→Part, colspan/rowspan-aware table extraction with composite multi-row headers
@@ -75,118 +66,123 @@ Everything below is in the repo, tested and verified.
 ### Frontend (`frontend/`)
 - Vite + React + TypeScript + Tailwind v3 scaffold
 - State machine in `App.tsx`: splash (hero slideshow + chat pill + suggestion chips + ingestion stats grid) → split-screen workspace
-- Components per the style guide:
+- **Per-message context architecture** — Each assistant message stores its own `context` snapshot so citations remain valid across multi-turn conversations
+- **Inline citation pills** — `[1]`, `[2]` markers rendered as clickable `CitationPill` components with hover tooltips showing source preview
+- **Typewriter effect** — `useTypewriter` hook for character-by-character text reveal during streaming
+- **Copy functionality** — Hover-revealed copy buttons on messages and source cards
+- **Source panel** — Collapsible sidebar with "Sources" button (top-right), showing code chunks with relevance scores, cross-references, and expandable detail drawer
+- Components:
   - `HeroSlideshow` (5 Unsplash photos, cross-fade)
-  - `ChatInput` (glassmorphism pill, hero + compact variants)
-  - `MessageBubble` (react-markdown, inline citation styling)
+  - `ChatInput` (glassmorphism pill, hero + compact variants, address autocomplete)
+  - `MessageBubble` (react-markdown, inline citations, copy button, typewriter)
+  - `CitationPill` (clickable badge with hover tooltip)
+  - `SourceCitation` (card with score, preview, cross-refs, copy)
+  - `SourceDetailDrawer` (full source text slide-out)
+  - `SidebarPanel`, `SidebarToggle` (collapsible sources panel)
   - `DisclaimerBanner` (amber, legal disclaimer)
-  - `SidebarPanel` (sources, latency, crime breakdown, 311, code-chunk citations, skeletons during loading)
-  - `SourceCitation`, `PromptSuggestionChip`
-- `lib/api.ts` (SSE fetch streaming), `lib/history.ts` (localStorage), `lib/types.ts` (matches backend Pydantic)
+  - `HistorySidebar` (conversation history)
+- `lib/`:
+  - `api.ts` (SSE fetch streaming)
+  - `history.ts` (localStorage conversations)
+  - `types.ts` (matches backend Pydantic, extended with per-message context)
+  - `useTypewriter.ts` (character reveal hook)
+  - `clipboard.ts` (copy utility)
 - **Builds cleanly** (~322KB JS, 16KB CSS)
 
 ### Benchmarks & Eval (`eval/`)
-- **Parser stats** — `python -m ingestion.parse_chicago_code --stats` prints per-title section/table/xref/definition/legislative-history counts, plus dedup-skipped count. Currently: **8,615 sections** across all titles (17 active titles; 12 is reserved; 250 dedupes from the republished Titles 16/17 at file tail). Title 17 has 147 sections, 89 tables, 144 with legislative history.
-- **Per-phase latency** — every SSE event carries `t_ms` (wall-clock ms since `/chat` request received). Sidebar renders Router / Retrieval / Synthesis-TTFT / Total live. Eval runner aggregates p50/p95.
-- **Query test set** — `eval/queries.json` has **26 representative queries** spanning neighborhood overviews, address lookups, crime trends, 311, zoning legal questions, dimensional standards, parking ratios, sign regs, definitions, alias resolution, clarification handling, compound queries.
-- **Eval runner** — `eval/run_eval.py` with two modes: `--router-only` (router only, ~30s, ~$0.05) and `--full <URL>` (full backend, captures retrieval + timings). Both emit stdout + optional markdown report.
+- **Parser stats** — `python -m ingestion.parse_chicago_code --stats` prints per-title section/table/xref/definition/legislative-history counts
+- **Per-phase latency** — every SSE event carries `t_ms`. Sidebar renders Router / Retrieval / Synthesis-TTFT / Total live
+- **Query test set** — `eval/queries.json` has **26 representative queries**
 - **Baseline established**: 26/26 passing (100%), latency p50: router 2.4s, retrieval 3.8s, total 13.6s
 
 ---
 
-## What's NOT Done
+## What's NOT Done / Known Issues
 
-### 1. ~~Violations API retrieval~~ ✅ DONE
-Fixed in this session. The violations dataset now queries by bounding box derived from community area polygons (`geo.community_area_bounds()`), since the dataset has lat/lon but no community_area field.
+### 1. Citation tooltip overlaps text (transparent background)
+The hover tooltip on citation pills has a transparent background causing text overlap. **Fix:** Add solid background color to tooltip in `CitationPill.tsx`.
 
-### 2. The Municipal Code is gitignored
+### 2. Source detail drawer covers sidebar
+Opening a source shows a slide-out drawer that overlays the sidebar. User feedback: **expand sources in-place** instead, pushing other sources down. Requires refactoring `SourceCitation.tsx` to be expandable rather than using `SourceDetailDrawer.tsx`.
+
+### 3. Typewriter effect stops after first citation
+The typewriter animation works initially but dumps remaining text all at once after the first `[1]` citation appears. **Root cause:** The `renderChildrenWithCitations` function in `MessageBubble.tsx` may be causing re-renders that reset the typewriter state. Needs investigation.
+
+### 4. No annotations for API-sourced data
+Statistics pulled from Socrata APIs (e.g., "$18.7 million in permits") are not visually distinguished from Municipal Code citations. **Suggestion:** Add a different style of inline annotation for API data, similar to how `[1]` marks code citations but with a different icon/color for data citations.
+
+### 5. The Municipal Code is gitignored
 - `chicago-il-codes.html` (~100MB) is not in version control (`.gitignore` line 17).
-- Anyone cloning the repo needs to obtain it separately (presumably from American Legal Publishing or a similar source — the user provided it once).
+- Anyone cloning the repo needs to obtain it separately.
 
-### 3. Stretch goals (Phase I)
-- **Leaflet map view** showing crime pins, 311 markers, zoning overlay for a queried neighborhood. Right side of the split-screen has space reserved for this. *Not started.*
-- **Address autocomplete** — ✅ **DONE.** Added `/autocomplete` endpoint using Census Geocoder + frontend dropdown in `ChatInput.tsx` with debounced suggestions, keyboard navigation, and click-to-select.
-- **Multi-turn follow-up resolution** — ✅ **DONE.** Added `backend/conversation.py` with a pre-router synthesis layer that merges conversation context into self-contained queries. Uses Haiku for fast/cheap synthesis when needed (heuristic gate avoids unnecessary LLM calls).
+### 6. Stretch goals (Phase I)
+- **Leaflet map view** showing crime pins, 311 markers, zoning overlay. *Not started.*
 
-### 4. Deferred but probably worth doing
-- **LLM-as-judge eval** — grade synthesis answers for citation accuracy + factuality + directness. ~$0.05 × 30 questions per run. Mentioned in benchmarks plan as Tier 4 (deferred).
-- **Cost/token logging** — wrap the Anthropic client to record input/output tokens per request. Low effort, easy ongoing visibility. Mentioned as Tier 5.
-- **Deployment** — currently local-only via `docker-compose up qdrant` + `uvicorn` + `npm run dev`. No production deployment story.
-- **Postgres / server-side history** — currently the API is stateless and history lives in localStorage. Fine for a demo. Would need Postgres for multi-device sync.
-- **Latency optimization** — Router p50 is 2.4s (could try Haiku), total p50 is 13.6s.
+### 7. Deferred but probably worth doing
+- **LLM-as-judge eval** — grade synthesis answers for citation accuracy + factuality
+- **Cost/token logging** — wrap the Anthropic client to record tokens per request
+- **Deployment** — currently local-only
+- **Postgres / server-side history** — for multi-device sync
 
-### 5. Known fragile heuristics
-- **Sub-header detection inside tables** uses a length cap (<80 chars) and same-value-across-most-of-row heuristic. Works for the residential use table (`"A. Household Living"`) but could miss tables with unusual sub-section conventions.
-- **Multi-row header count** is inferred from how many consecutive rows in row 0 share the same value (proxy for rowspan carry-down). Works for the use table (3 header rows) but caps at 4 rows.
-- **Cross-references** include Title-shaped (`"Title17"`) and Chapter-shaped (`"Ch.17-2"`) anchors as well as section IDs. `expand_cross_references` filters to section IDs only; future code could handle the chapter/title anchors differently.
-
-### 6. Title 18 empty-body sections (Investigated — not a bug)
-334 sections in Title 18 (Building Code) have no body text. Investigation showed these are legitimate structural placeholders in the Building Code format — section headers like "18-14-101 General" that contain no prose, with content in subsections like "18-14-101.1 Title". These won't hurt retrieval; they simply won't match queries (which is correct).
+### 8. Known fragile heuristics
+- **Sub-header detection inside tables** uses length cap (<80 chars)
+- **Multi-row header count** inferred from consecutive row patterns
+- **Cross-references** filter to section IDs only
 
 ---
 
-## Session Log (2026-05-28)
+## Session Log (2026-05-28 — Afternoon Session)
 
-Work completed in this session:
+Work completed in this session (Chat UI QoL improvements):
 
-1. **Comprehensive test suite** — Added 100+ tests covering all backend modules with both unit tests (mocked) and integration tests (real APIs). Found and fixed several bugs through testing.
+1. **Per-message context architecture** — Extended `Message` type with optional `context` field. Each assistant message now stores its own context snapshot when streaming completes. Citations in old messages remain valid even after follow-up questions.
 
-2. **Socrata API bug fixes**:
-   - Crime query used `case()` function which doesn't exist in SoQL — rewrote to use two parallel queries
-   - Permits dataset uses `reported_cost` not `estimated_cost` — fixed field name
-   - Updated Socrata app token in `.env`
+2. **Sidebar toggle visibility fix** — Moved toggle button outside the collapsible sidebar. Now shows as a "Sources" button in top-right corner with document icon and source count badge.
 
-3. **Qdrant compatibility fix** — Python client v1.18.x uses `query_points` API not available in server v1.9.0. Switched to raw HTTP API via httpx.
+3. **Character-by-character typewriter effect** — Created `useTypewriter` hook with proper state management (useState instead of refs), cleanup on every effect run, and ~15ms per character reveal.
 
-4. **Full ingestion pipeline run**:
-   - Parsed 8,615 sections (~12s)
-   - Chunked to 14,628 chunks (~1s)
-   - Embedded and stored in Qdrant (~3 min with MPS)
+4. **Inline citation pills** — Created `CitationPill` component with:
+   - Document icon + number badge
+   - Hover tooltip showing section title and text preview
+   - Click to open sidebar and highlight source
 
-5. **Router prompt improvements** — Added detailed guidance for constructing zoning-specific search queries. Key insight: queries mentioning specific use names (daycare, restaurant) match business licensing code (Title 4) instead of zoning code (Title 17). Solution: emphasize "allowed uses", "use table", district types.
+5. **Enhanced source cards** — Updated `SourceCitation` with:
+   - Index badge matching citation number
+   - Highlight state when selected
+   - Cross-reference display
+   - Copy button on hover
+   - "Read more" indicator
 
-6. **Eval baseline established** — 26/26 queries passing (100%). Latency: router p50=2.4s, retrieval p50=3.8s, total p50=13.6s.
+6. **Source detail drawer** — Created `SourceDetailDrawer` for full source text view with copy functionality.
 
-7. **Title 18 investigation** — Confirmed empty-body sections are legitimate placeholders, not a parser bug.
+7. **Copy functionality** — Added clipboard utility and hover-revealed copy buttons to messages and sources.
 
-8. **Multi-turn conversation synthesis** — Added `backend/conversation.py` to handle multi-turn context. When a user provides a short answer to a clarification (e.g., "lincoln park" after being asked for a location), the system now synthesizes the full query ("Is it legal to add a balcony to a townhouse in Lincoln Park?") before routing. Uses Haiku for speed/cost, with a heuristic gate to avoid unnecessary LLM calls on single-turn queries.
+8. **Conversation synthesis improvements** — Rewrote `needs_synthesis()` in `backend/conversation.py` to detect:
+   - Very short answers (<50 chars) after assistant questions
+   - Context references ("their", "it", "what about", etc.)
+   - Follow-up question patterns ("do you have", "how do I", etc.)
+   - Short questions lacking explicit location
 
-9. **Violations API fix** — Rewrote `violations_by_community_area()` to query by bounding box (lat/lon) since the dataset lacks a `community_area` field. Added `geo.community_area_bounds()` helper.
-
-10. **Address autocomplete** — Added `/autocomplete` endpoint + `geocode_address_suggestions()` in geo.py. Frontend `ChatInput.tsx` now has a debounced dropdown with keyboard navigation.
-
-11. **Conversation history UI** — Splash screen now always shows on page load (doesn't auto-resume). Added multi-conversation storage in localStorage, hamburger menu button on splash (glassmorphic), and `HistorySidebar.tsx` component to browse/resume/delete past conversations.
+9. **Backend citation prompt** — Updated `synthesizer.py` system prompt to instruct LLM to emit `[1]`, `[2]` citation markers.
 
 ---
 
 ## Recommended Next Steps (Prioritized)
 
-### Step 1 — Test the UI end-to-end
-```bash
-docker compose up -d qdrant
-.venv/bin/uvicorn backend.main:app --reload &
-cd frontend && npm run dev
-```
-Open http://localhost:5173 and try the killer query: "What's going on near 2400 N Milwaukee Ave?"
+### Step 1 — Fix citation tooltip styling
+Add solid dark background to tooltip in `CitationPill.tsx` to prevent text overlap.
 
-### Step 2 — Fix violations retrieval
-The violations dataset needs geo-based querying. Options:
-1. Pre-compute community area for each violation using lat/lon
-2. Query by bounding box and filter in Python
-3. Use Socrata's `within_polygon` function if available
+### Step 2 — Refactor source expansion to inline
+Replace `SourceDetailDrawer` with in-place expansion in `SourceCitation`. When clicked, card should expand to show full text, pushing other cards down.
 
-### Step 3 — Add more eval queries
-Current 26 queries cover the happy path well. Add edge cases:
-- Misspelled neighborhood names
-- Questions mixing English/Spanish neighborhood names
-- Very long compound queries
-- Queries that should return "I don't know"
+### Step 3 — Debug typewriter + citations interaction
+Investigate why typewriter effect stops working after first citation. May need to memoize citation processing or adjust how content is passed to the hook.
 
-### Step 4 — Stretch goal: address autocomplete
-Easiest of Phase I. Use the Census Geocoder we already have. Debounce input by 300ms, render suggestions as a dropdown under the chat pill.
+### Step 4 — Add API data annotations
+Create a new annotation style (different from code citations) for statistics from Socrata APIs. Could be a different colored pill or inline badge like "[permit data]".
 
-### Step 5 — Stretch goal: Leaflet map
-Right side of split-screen has a placeholder. Need to surface lat/lon from crime data (currently aggregated).
+### Step 5 — Test multi-turn conversations thoroughly
+The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
 
 ---
 
@@ -194,18 +190,19 @@ Right side of split-screen has a placeholder. Need to surface lat/lon from crime
 
 If you're a fresh agent picking this up:
 
-1. **Read in this order**: `README.md` (user setup) → `HANDOFF.md` (this file) → `~/.claude/plans/velvet-gliding-salamander.md` (original architectural rationale)
+1. **Read in this order**: `README.md` (user setup) → `HANDOFF.md` (this file)
 2. **Check current state**: 
    ```bash
-   .venv/bin/python -m pytest backend/tests/ -q  # Should be 113 passed
-   cd frontend && npm run build                   # Should succeed
+   source .venv/bin/activate
+   python -m pytest backend/tests/ -q  # Should pass
+   cd frontend && npm run build         # Should succeed
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set
 4. **Files most likely to need edits**:
-   - `backend/router.py` — router prompt iteration
-   - `backend/synthesizer.py` system prompt — answer quality tuning
-   - `ingestion/chunk.py` — heuristic refinements
-   - `eval/queries.json` — add new test cases as you discover them
+   - `frontend/src/components/CitationPill.tsx` — tooltip styling
+   - `frontend/src/components/SourceCitation.tsx` — inline expansion
+   - `frontend/src/components/MessageBubble.tsx` — typewriter/citation interaction
+   - `frontend/src/lib/useTypewriter.ts` — animation timing
 
 ## Repo Layout
 
@@ -223,8 +220,8 @@ chicago/
 ├── backend/
 │   ├── main.py                     # FastAPI /chat (SSE w/ t_ms timing)
 │   ├── router.py                   # Claude router (with search query guidance)
-│   ├── synthesizer.py              # Claude streaming synth
-│   ├── conversation.py             # Multi-turn context synthesis (Haiku)
+│   ├── synthesizer.py              # Claude streaming synth (with citation markers)
+│   ├── conversation.py             # Multi-turn context synthesis (improved heuristics)
 │   ├── assembler.py                # Pure (pytest-covered)
 │   ├── models.py
 │   ├── config.py
@@ -242,36 +239,37 @@ chicago/
 │   ├── baseline_router.md          # Router-only results
 │   └── baseline_full_v2.md         # Full pipeline results (26/26 passing)
 └── frontend/
-    ├── src/components/             # Hero, ChatInput, MessageBubble, Sidebar, etc.
-    ├── src/lib/                    # api (SSE), history (localStorage), types
-    └── src/App.tsx                 # State machine
+    ├── src/components/             # Hero, ChatInput, MessageBubble, CitationPill, SourceCitation, Sidebar, etc.
+    ├── src/lib/                    # api (SSE), history (localStorage), types, useTypewriter, clipboard
+    └── src/App.tsx                 # State machine with per-message context
 ```
 
 ## Quick Reference — Useful Commands
 
 ```bash
 # Tests + builds
-.venv/bin/python -m pytest backend/tests/ -q           # 113 tests
-.venv/bin/python -m pytest backend/tests/test_integration.py -v  # Real API tests
+source .venv/bin/activate
+python -m pytest backend/tests/ -q           # 130+ tests
+python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 
 # Parser sanity check (no JSON output)
-.venv/bin/python -m ingestion.parse_chicago_code --stats
+python -m ingestion.parse_chicago_code --stats
 
 # Full ingestion pipeline (only needed if Qdrant data is lost)
 docker compose up -d qdrant
-.venv/bin/python -m ingestion.load_community_areas
-.venv/bin/python -m ingestion.parse_chicago_code
-.venv/bin/python -m ingestion.chunk
-.venv/bin/python -m ingestion.embed_and_store
+python -m ingestion.load_community_areas
+python -m ingestion.parse_chicago_code
+python -m ingestion.chunk
+python -m ingestion.embed_and_store
 
 # Eval
-PYTHONPATH=. .venv/bin/python -m eval.run_eval --filter zoning
-PYTHONPATH=. .venv/bin/python -m eval.run_eval --full http://localhost:8001 --out eval/last.md
+PYTHONPATH=. python -m eval.run_eval --filter zoning
+PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --out eval/last.md
 
 # Backend + frontend dev
 docker compose up -d qdrant
-.venv/bin/uvicorn backend.main:app --reload --port 8001
+uvicorn backend.main:app --reload --port 8001
 cd frontend && npm run dev                              # :5173
 
 # Smoke-test /chat

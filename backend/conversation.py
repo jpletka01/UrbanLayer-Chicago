@@ -55,10 +55,9 @@ Output: Can I open a restaurant in an RS-3 residential zoning district?
 def needs_synthesis(message: str, history: list[Message]) -> bool:
     """Determine if we need to synthesize conversation context.
 
-    Returns True when:
-    1. There is conversation history, AND
-    2. The current message is short (likely an answer to clarification) OR
-       the last assistant message looks like a clarification question
+    Returns True when there is conversation history and the current message
+    might benefit from context (short messages, follow-up questions, pronouns
+    referring to prior context, etc.)
     """
     if not history:
         return False
@@ -66,42 +65,66 @@ def needs_synthesis(message: str, history: list[Message]) -> bool:
     if len(history) < 2:
         return False
 
+    msg_lower = message.lower().strip()
+    msg_len = len(msg_lower)
+
+    # Very short messages (< 50 chars) almost always need context
+    # These are typically answers to clarification questions
+    is_very_short = msg_len < 50
+
+    # Short messages (< 100 chars) need context if they have indicators
+    is_short_message = msg_len < 100
+
+    # Check if last assistant message was a question (likely clarification)
     last_assistant = None
     for msg in reversed(history):
         if msg.role == "assistant":
             last_assistant = msg.content
             break
 
-    if not last_assistant:
-        return False
+    last_was_question = last_assistant and last_assistant.strip().endswith("?")
 
-    is_short_message = len(message.strip()) < 100
-
-    clarification_indicators = [
-        "what is the address",
-        "what address",
-        "which neighborhood",
-        "what neighborhood",
-        "which district",
-        "what district",
-        "which location",
-        "what location",
-        "where is",
-        "where are",
-        "can you specify",
-        "could you specify",
-        "please provide",
-        "what area",
-        "which area",
-        "what zone",
-        "which zone",
+    # Messages with pronouns/references to prior context
+    context_references = [
+        "their ", "they ", "them ", "it ", "its ",
+        "that ", "this ", "these ", "those ",
+        "the same", "there ", "here ",
+        "what about", "how about", "and ",
+        "also ", "too?", "as well",
     ]
-    last_lower = last_assistant.lower()
-    looks_like_clarification = any(ind in last_lower for ind in clarification_indicators)
+    has_context_reference = any(ref in msg_lower for ref in context_references)
 
-    ends_with_question = last_assistant.strip().endswith("?")
+    # Follow-up question patterns
+    followup_patterns = [
+        "do you have", "can you", "could you",
+        "what is", "what are", "what's",
+        "where is", "where are", "where's",
+        "how do", "how can", "how much", "how many",
+        "is there", "are there",
+        "tell me more", "more about", "explain",
+    ]
+    looks_like_followup = any(msg_lower.startswith(p) for p in followup_patterns)
 
-    return is_short_message and (looks_like_clarification or ends_with_question)
+    # Questions that lack obvious subject/location
+    ends_with_question = msg_lower.endswith("?")
+    lacks_location = not any(word in msg_lower for word in [
+        "chicago", "street", "ave", "avenue", "blvd", "boulevard",
+        "park", "square", "heights", "village", "town"
+    ])
+
+    # Very short answer after a question = almost certainly needs context
+    if is_very_short and last_was_question:
+        return True
+
+    # Short message with context references or follow-up patterns
+    if is_short_message and (has_context_reference or looks_like_followup):
+        return True
+
+    # Short question lacking location context
+    if is_short_message and ends_with_question and lacks_location:
+        return True
+
+    return False
 
 
 async def synthesize_query(message: str, history: list[Message]) -> str:

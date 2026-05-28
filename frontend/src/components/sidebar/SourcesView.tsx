@@ -1,11 +1,28 @@
+import { createRef, useEffect, useMemo, useState } from "react";
 import type { CodeChunk } from "../../lib/types";
 import { SourceCitation } from "../SourceCitation";
+import { SourceDetailDrawer } from "../SourceDetailDrawer";
 
 interface Props {
   codeChunks: CodeChunk[];
+  highlightedIndex?: number | null;
+  onSourceClick?: (index: number) => void;
 }
 
-export function SourcesView({ codeChunks }: Props) {
+export function SourcesView({ codeChunks, highlightedIndex, onSourceClick }: Props) {
+  const [drawerChunk, setDrawerChunk] = useState<CodeChunk | null>(null);
+
+  const refs = useMemo(
+    () => codeChunks.map(() => createRef<HTMLDivElement>()),
+    [codeChunks.length]
+  );
+
+  useEffect(() => {
+    if (highlightedIndex !== null && highlightedIndex !== undefined && refs[highlightedIndex]?.current) {
+      refs[highlightedIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedIndex, refs]);
+
   if (codeChunks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-center">
@@ -33,13 +50,26 @@ export function SourcesView({ codeChunks }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-text-muted mb-4">
-        {codeChunks.length} code section{codeChunks.length !== 1 ? "s" : ""} referenced
-      </p>
-      {codeChunks.map((chunk) => (
-        <SourceCitation key={`${chunk.section}-${chunk.subsection ?? ""}`} chunk={chunk} />
-      ))}
-    </div>
+    <>
+      <div className="space-y-3">
+        <p className="text-xs text-text-muted mb-4">
+          {codeChunks.length} code section{codeChunks.length !== 1 ? "s" : ""} referenced
+        </p>
+        {codeChunks.map((chunk, i) => (
+          <SourceCitation
+            key={`${chunk.section}-${chunk.subsection ?? ""}-${i}`}
+            ref={refs[i]}
+            chunk={chunk}
+            index={i}
+            highlighted={highlightedIndex === i}
+            onClick={() => {
+              onSourceClick?.(i);
+              setDrawerChunk(chunk);
+            }}
+          />
+        ))}
+      </div>
+      <SourceDetailDrawer chunk={drawerChunk} onClose={() => setDrawerChunk(null)} />
+    </>
   );
 }

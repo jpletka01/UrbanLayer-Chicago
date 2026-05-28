@@ -3,6 +3,7 @@ export type Role = "user" | "assistant";
 export interface Message {
   role: Role;
   content: string;
+  context?: ContextObject;
 }
 
 export type SourceTag =
