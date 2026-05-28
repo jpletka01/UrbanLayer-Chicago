@@ -155,6 +155,8 @@ Work completed in this session:
 
 10. **Address autocomplete** — Added `/autocomplete` endpoint + `geocode_address_suggestions()` in geo.py. Frontend `ChatInput.tsx` now has a debounced dropdown with keyboard navigation.
 
+11. **Conversation history UI** — Splash screen now always shows on page load (doesn't auto-resume). Added multi-conversation storage in localStorage, hamburger menu button on splash (glassmorphic), and `HistorySidebar.tsx` component to browse/resume/delete past conversations.
+
 ---
 
 ## Recommended Next Steps (Prioritized)

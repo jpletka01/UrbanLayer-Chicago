@@ -3,11 +3,19 @@ import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { HeroSlideshow } from "./components/HeroSlideshow";
+import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { chatStream } from "./lib/api";
-import { clearHistory, loadHistory, saveHistory } from "./lib/history";
-import type { ContextObject, Message, PhaseTimings, RetrievalPlan, SidebarView } from "./lib/types";
+import {
+  clearAllHistory,
+  deleteConversation,
+  loadConversations,
+  migrateOldHistory,
+  saveConversation,
+  setCurrentConversationId,
+} from "./lib/history";
+import type { Conversation, ContextObject, Message, PhaseTimings, RetrievalPlan, SidebarView } from "./lib/types";
 
 const SUGGESTIONS = [
   "What's going on near 2400 N Milwaukee Ave?",
@@ -17,7 +25,10 @@ const SUGGESTIONS = [
 ];
 
 export function App() {
-  const [messages, setMessages] = useState<Message[]>(() => loadHistory());
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [plan, setPlan] = useState<RetrievalPlan | null>(null);
   const [context, setContext] = useState<ContextObject | null>(null);
   const [streaming, setStreaming] = useState(false);
@@ -28,7 +39,22 @@ export function App() {
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => saveHistory(messages), [messages]);
+  // Migrate old history format on first load
+  useEffect(() => {
+    migrateOldHistory();
+    setConversations(loadConversations());
+  }, []);
+
+  // Save conversation when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const id = saveConversation(messages, conversationId || undefined);
+      if (!conversationId) {
+        setConversationId(id);
+      }
+      setConversations(loadConversations());
+    }
+  }, [messages, conversationId]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -50,6 +76,7 @@ export function App() {
     setContext(null);
     setShowDisclaimer(false);
     setTimings({});
+    setHistoryOpen(false);
 
     const userMessage: Message = { role: "user", content: text };
     const historySnapshot = [...messages];
@@ -107,7 +134,8 @@ export function App() {
   function reset() {
     abortRef.current?.abort();
     setMessages([]);
-    clearHistory();
+    setConversationId(null);
+    setCurrentConversationId(null);
     setPlan(null);
     setContext(null);
     setShowDisclaimer(false);
@@ -116,8 +144,42 @@ export function App() {
     setSidebarView("data");
   }
 
+  function loadConversation(conv: Conversation) {
+    setMessages(conv.messages);
+    setConversationId(conv.id);
+    setCurrentConversationId(conv.id);
+    setHistoryOpen(false);
+    setPlan(null);
+    setContext(null);
+    setShowDisclaimer(false);
+    setErrorMsg(null);
+  }
+
+  function handleDeleteConversation(id: string) {
+    deleteConversation(id);
+    setConversations(loadConversations());
+    if (conversationId === id) {
+      reset();
+    }
+  }
+
+  function handleClearAll() {
+    clearAllHistory();
+    setConversations([]);
+    reset();
+  }
+
   return (
     <main className="w-full min-h-screen text-text-primary">
+      <HistorySidebar
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        conversations={conversations}
+        onSelect={loadConversation}
+        onDelete={handleDeleteConversation}
+        onClearAll={handleClearAll}
+      />
+
       <AnimatePresence mode="wait">
         {!active ? (
           <motion.div
@@ -128,6 +190,22 @@ export function App() {
             transition={{ duration: 0.3 }}
             className="relative w-full min-h-screen flex flex-col"
           >
+            {/* History button */}
+            {conversations.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                onClick={() => setHistoryOpen(true)}
+                className="absolute top-4 left-4 z-20 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
+                title="View history"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </motion.button>
+            )}
+
             <div className="relative flex-1 flex flex-col justify-center items-center px-4 py-20">
               <HeroSlideshow />
               <div className="relative z-10 text-center max-w-2xl space-y-8">
