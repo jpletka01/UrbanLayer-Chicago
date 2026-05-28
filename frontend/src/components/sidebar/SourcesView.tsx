@@ -1,7 +1,6 @@
 import { createRef, useEffect, useMemo, useState } from "react";
 import type { CodeChunk } from "../../lib/types";
 import { SourceCitation } from "../SourceCitation";
-import { SourceDetailDrawer } from "../SourceDetailDrawer";
 
 interface Props {
   codeChunks: CodeChunk[];
@@ -10,7 +9,7 @@ interface Props {
 }
 
 export function SourcesView({ codeChunks, highlightedIndex, onSourceClick }: Props) {
-  const [drawerChunk, setDrawerChunk] = useState<CodeChunk | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const refs = useMemo(
     () => codeChunks.map(() => createRef<HTMLDivElement>()),
@@ -49,27 +48,27 @@ export function SourcesView({ codeChunks, highlightedIndex, onSourceClick }: Pro
     );
   }
 
+  const handleToggleExpand = (index: number) => {
+    onSourceClick?.(index);
+    setExpandedIndex((prev) => (prev === index ? null : index));
+  };
+
   return (
-    <>
-      <div className="space-y-3">
-        <p className="text-xs text-text-muted mb-4">
-          {codeChunks.length} code section{codeChunks.length !== 1 ? "s" : ""} referenced
-        </p>
-        {codeChunks.map((chunk, i) => (
-          <SourceCitation
-            key={`${chunk.section}-${chunk.subsection ?? ""}-${i}`}
-            ref={refs[i]}
-            chunk={chunk}
-            index={i}
-            highlighted={highlightedIndex === i}
-            onClick={() => {
-              onSourceClick?.(i);
-              setDrawerChunk(chunk);
-            }}
-          />
-        ))}
-      </div>
-      <SourceDetailDrawer chunk={drawerChunk} onClose={() => setDrawerChunk(null)} />
-    </>
+    <div className="space-y-3">
+      <p className="text-xs text-text-muted mb-4">
+        {codeChunks.length} code section{codeChunks.length !== 1 ? "s" : ""} referenced
+      </p>
+      {codeChunks.map((chunk, i) => (
+        <SourceCitation
+          key={`${chunk.section}-${chunk.subsection ?? ""}-${i}`}
+          ref={refs[i]}
+          chunk={chunk}
+          index={i}
+          highlighted={highlightedIndex === i}
+          expanded={expandedIndex === i}
+          onToggleExpand={() => handleToggleExpand(i)}
+        />
+      ))}
+    </div>
   );
 }

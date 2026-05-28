@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, type ReactNode } from "react";
-import type { CodeChunk, ContextObject, Message } from "../lib/types";
+import type { ContextObject, DataSource, Message } from "../lib/types";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
 
@@ -11,6 +11,7 @@ interface Props {
   onSubmit: (message: string) => void;
   isSidebarOpen: boolean;
   onCitationClick?: (index: number, messageContext?: ContextObject) => void;
+  onDataClick?: (source: DataSource, messageContext?: ContextObject) => void;
   streamingContext?: ContextObject | null;
   children?: ReactNode;
 }
@@ -22,6 +23,7 @@ export function ChatInterface({
   onSubmit,
   isSidebarOpen,
   onCitationClick,
+  onDataClick,
   streamingContext,
   children,
 }: Props) {
@@ -58,6 +60,7 @@ export function ChatInterface({
                   m.role === "assistant" && i === messages.length - 1 && showDisclaimer && !streaming
                 }
                 onCitationClick={(idx) => onCitationClick?.(idx, messageContext ?? undefined)}
+                onDataClick={(source) => onDataClick?.(source, messageContext ?? undefined)}
                 codeChunks={codeChunks}
               />
             );

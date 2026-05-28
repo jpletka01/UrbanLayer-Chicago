@@ -1,11 +1,13 @@
 import { motion } from "motion/react";
-import type { ContextObject, PhaseTimings, RetrievalPlan } from "../../lib/types";
+import { useEffect, useRef } from "react";
+import type { ContextObject, DataSource, PhaseTimings, RetrievalPlan } from "../../lib/types";
 
 interface Props {
   plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
   timings?: PhaseTimings;
+  highlightedDataSource?: DataSource | null;
 }
 
 function fmtMs(ms?: number): string {
@@ -31,13 +33,23 @@ const SOURCE_CONFIG: Record<string, { label: string; icon: string }> = {
   vector_search: { label: "Municipal Code", icon: "📜" },
 };
 
-function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+interface GlassCardProps {
+  children: React.ReactNode;
+  className?: string;
+  highlighted?: boolean;
+}
+
+const GlassCard = ({ children, className = "", highlighted }: GlassCardProps) => {
   return (
-    <div className={`rounded-xl bg-dark-surface/80 backdrop-blur-sm border border-dark-border p-4 ${className}`}>
+    <div className={`rounded-xl bg-dark-surface/80 backdrop-blur-sm border p-4 transition-all duration-300 ${
+      highlighted
+        ? "border-accent/50 ring-2 ring-accent/30"
+        : "border-dark-border"
+    } ${className}`}>
       {children}
     </div>
   );
-}
+};
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
@@ -47,7 +59,25 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DataView({ plan, context, loading, timings }: Props) {
+export function DataView({ plan, context, loading, timings, highlightedDataSource }: Props) {
+  const crimeRef = useRef<HTMLDivElement>(null);
+  const threeOneOneRef = useRef<HTMLDivElement>(null);
+  const permitsRef = useRef<HTMLDivElement>(null);
+  const violationsRef = useRef<HTMLDivElement>(null);
+  const businessRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!highlightedDataSource) return;
+    const refMap: Record<DataSource, React.RefObject<HTMLDivElement | null>> = {
+      crime: crimeRef,
+      "311": threeOneOneRef,
+      permits: permitsRef,
+      violations: violationsRef,
+      business: businessRef,
+    };
+    const ref = refMap[highlightedDataSource];
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightedDataSource]);
   const retrievalDelta =
     timings?.retrieval_ms !== undefined && timings?.router_ms !== undefined
       ? timings.retrieval_ms - timings.router_ms
@@ -120,7 +150,8 @@ export function DataView({ plan, context, loading, timings }: Props) {
       )}
 
       {context?.crime_last_90d && (
-        <GlassCard>
+        <div ref={crimeRef}>
+        <GlassCard highlighted={highlightedDataSource === "crime"}>
           <SectionHeader>Crime — {plan?.time_range_days ?? 90} days</SectionHeader>
           <div className="space-y-3">
             <div className="flex items-baseline gap-3">
@@ -145,10 +176,12 @@ export function DataView({ plan, context, loading, timings }: Props) {
             </div>
           </div>
         </GlassCard>
+        </div>
       )}
 
       {context?.open_311_requests && (
-        <GlassCard>
+        <div ref={threeOneOneRef}>
+        <GlassCard highlighted={highlightedDataSource === "311"}>
           <SectionHeader>311 — Open Requests</SectionHeader>
           <div className="space-y-3">
             <div className="flex items-baseline gap-3">
@@ -172,10 +205,12 @@ export function DataView({ plan, context, loading, timings }: Props) {
             </div>
           </div>
         </GlassCard>
+        </div>
       )}
 
       {context?.permits && (
-        <GlassCard>
+        <div ref={permitsRef}>
+        <GlassCard highlighted={highlightedDataSource === "permits"}>
           <SectionHeader>Building Permits</SectionHeader>
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-semibold text-text-primary">{context.permits.total}</span>
@@ -185,6 +220,59 @@ export function DataView({ plan, context, loading, timings }: Props) {
             </span>
           </div>
         </GlassCard>
+        </div>
+      )}
+
+      {context?.violations && (
+        <div ref={violationsRef}>
+        <GlassCard highlighted={highlightedDataSource === "violations"}>
+          <SectionHeader>Building Violations</SectionHeader>
+          <div className="space-y-3">
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-semibold text-text-primary">{context.violations.total}</span>
+              <span className="text-sm text-text-muted">total</span>
+              <span className="ml-auto text-sm">
+                <span className="text-text-muted">Open:</span>{" "}
+                <span className="text-text-secondary font-medium">{context.violations.open_count}</span>
+              </span>
+            </div>
+            {context.violations.top_descriptions.length > 0 && (
+              <div className="space-y-1">
+                {context.violations.top_descriptions.slice(0, 3).map((desc) => (
+                  <div key={desc} className="text-sm text-text-secondary flex items-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-text-muted" />
+                    <span className="truncate">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </GlassCard>
+        </div>
+      )}
+
+      {context?.businesses && (
+        <div ref={businessRef}>
+        <GlassCard highlighted={highlightedDataSource === "business"}>
+          <SectionHeader>Business Licenses</SectionHeader>
+          <div className="space-y-3">
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-semibold text-text-primary">{context.businesses.total}</span>
+              <span className="text-sm text-text-muted">active</span>
+            </div>
+            {context.businesses.top_activities.length > 0 && (
+              <div className="space-y-1">
+                {context.businesses.top_activities.slice(0, 3).map((activity) => (
+                  <div key={activity} className="text-sm text-text-secondary flex items-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-text-muted" />
+                    <span className="truncate">{activity}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </GlassCard>
+        </div>
       )}
     </div>
   );

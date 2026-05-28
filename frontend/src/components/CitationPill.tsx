@@ -32,10 +32,12 @@ export function CitationPill({ index, chunk, onClick }: Props) {
         {index + 1}
       </button>
       {showTooltip && chunk && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
-                        w-72 p-3 rounded-lg
-                        bg-dark-surface border border-dark-border shadow-xl
-                        pointer-events-none">
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
+                     w-72 p-3 rounded-lg border border-dark-border shadow-2xl
+                     pointer-events-none"
+          style={{ backgroundColor: "#1f1f1f" }}
+        >
           <div className="text-xs font-medium text-accent mb-1 truncate">
             {sectionLabel}
           </div>

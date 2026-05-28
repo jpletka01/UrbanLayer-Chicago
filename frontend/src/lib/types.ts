@@ -103,6 +103,8 @@ export interface PhaseTimings {
 
 export type SidebarView = "data" | "sources";
 
+export type DataSource = "crime" | "311" | "permits" | "violations" | "business";
+
 export interface AddressSuggestion {
   address: string;
   lat: number;

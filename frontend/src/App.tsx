@@ -16,7 +16,7 @@ import {
   saveConversation,
   setCurrentConversationId,
 } from "./lib/history";
-import type { Conversation, ContextObject, Message, PhaseTimings, RetrievalPlan, SidebarView } from "./lib/types";
+import type { Conversation, ContextObject, DataSource, Message, PhaseTimings, RetrievalPlan, SidebarView } from "./lib/types";
 
 const SUGGESTIONS = [
   "What's going on near 2400 N Milwaukee Ave?",
@@ -39,6 +39,7 @@ export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const [highlightedSourceIndex, setHighlightedSourceIndex] = useState<number | null>(null);
+  const [highlightedDataSource, setHighlightedDataSource] = useState<DataSource | null>(null);
   const [activeSidebarContext, setActiveSidebarContext] = useState<ContextObject | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pendingContextRef = useRef<ContextObject | null>(null);
@@ -160,6 +161,7 @@ export function App() {
     setSidebarOpen(false);
     setSidebarView("data");
     setHighlightedSourceIndex(null);
+    setHighlightedDataSource(null);
     setActiveSidebarContext(null);
   }
 
@@ -192,6 +194,17 @@ export function App() {
     setSidebarOpen(true);
     setSidebarView("sources");
     setHighlightedSourceIndex(index);
+    setHighlightedDataSource(null);
+    if (messageContext) {
+      setActiveSidebarContext(messageContext);
+    }
+  }
+
+  function handleDataClick(source: DataSource, messageContext?: ContextObject) {
+    setSidebarOpen(true);
+    setSidebarView("data");
+    setHighlightedDataSource(source);
+    setHighlightedSourceIndex(null);
     if (messageContext) {
       setActiveSidebarContext(messageContext);
     }
@@ -340,6 +353,7 @@ export function App() {
                 onSubmit={sendMessage}
                 isSidebarOpen={sidebarOpen}
                 onCitationClick={handleCitationClick}
+                onDataClick={handleDataClick}
                 streamingContext={context}
               >
                 <SidebarToggle
@@ -357,6 +371,7 @@ export function App() {
                 activeView={sidebarView}
                 onViewChange={setSidebarView}
                 highlightedSourceIndex={highlightedSourceIndex}
+                highlightedDataSource={highlightedDataSource}
                 onSourceClick={setHighlightedSourceIndex}
               />
             </div>

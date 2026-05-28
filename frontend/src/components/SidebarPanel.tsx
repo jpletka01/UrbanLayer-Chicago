@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import type { ContextObject, PhaseTimings, RetrievalPlan, SidebarView } from "../lib/types";
+import type { ContextObject, DataSource, PhaseTimings, RetrievalPlan, SidebarView } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataView } from "./sidebar/DataView";
 import { SourcesView } from "./sidebar/SourcesView";
@@ -13,6 +13,7 @@ interface Props {
   activeView: SidebarView;
   onViewChange: (view: SidebarView) => void;
   highlightedSourceIndex?: number | null;
+  highlightedDataSource?: DataSource | null;
   onSourceClick?: (index: number) => void;
 }
 
@@ -25,6 +26,7 @@ export function SidebarPanel({
   activeView,
   onViewChange,
   highlightedSourceIndex,
+  highlightedDataSource,
   onSourceClick,
 }: Props) {
   const title = context?.community_area_name ?? "Context & Data";
@@ -62,6 +64,7 @@ export function SidebarPanel({
                 context={context}
                 loading={loading}
                 timings={timings}
+                highlightedDataSource={highlightedDataSource}
               />
             ) : (
               <SourcesView

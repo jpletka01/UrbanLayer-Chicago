@@ -1,9 +1,10 @@
-import { Children, cloneElement, isValidElement, useState, type ReactNode } from "react";
+import { Children, cloneElement, isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { copyToClipboard } from "../lib/clipboard";
-import type { CodeChunk, Message } from "../lib/types";
+import type { CodeChunk, DataSource, Message } from "../lib/types";
 import { useTypewriter } from "../lib/useTypewriter";
 import { CitationPill } from "./CitationPill";
+import { DataPill } from "./DataPill";
 import { DisclaimerBanner } from "./DisclaimerBanner";
 
 interface Props {
@@ -11,10 +12,11 @@ interface Props {
   streaming?: boolean;
   showDisclaimer?: boolean;
   onCitationClick?: (index: number) => void;
+  onDataClick?: (source: DataSource) => void;
   codeChunks?: CodeChunk[];
 }
 
-export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, codeChunks = [] }: Props) {
+export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [] }: Props) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -29,38 +31,84 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
     }
   };
 
-  const processTextWithCitations = (text: string): ReactNode[] => {
-    const parts = text.split(/(\[\d+\])/g);
+  const processTextWithCitations = useCallback((text: string): ReactNode[] => {
+    const parts = text.split(/(\[\d+\]|\[data:(?:crime|311|permits|violations|business)\])/g);
     return parts.map((part, i) => {
-      const match = part.match(/^\[(\d+)\]$/);
-      if (match) {
-        const index = parseInt(match[1], 10) - 1;
+      const numMatch = part.match(/^\[(\d+)\]$/);
+      if (numMatch) {
+        const index = parseInt(numMatch[1], 10) - 1;
         if (index >= 0 && index < codeChunks.length) {
           return (
             <CitationPill
-              key={i}
+              key={`citation-${index}-${i}`}
               index={index}
               chunk={codeChunks[index]}
               onClick={onCitationClick}
             />
           );
         }
+        // No matching chunk - suppress the citation marker entirely
+        return null;
+      }
+      const dataMatch = part.match(/^\[data:(crime|311|permits|violations|business)\]$/);
+      if (dataMatch) {
+        const source = dataMatch[1] as DataSource;
+        return <DataPill key={`data-${source}-${i}`} source={source} onClick={onDataClick} />;
       }
       return part;
     });
-  };
+  }, [codeChunks, onCitationClick, onDataClick]);
 
-  const renderChildrenWithCitations = (children: ReactNode): ReactNode => {
-    return Children.map(children, (child) => {
+  const renderChildrenWithCitations = useCallback((children: ReactNode): ReactNode => {
+    return Children.map(children, (child, childIndex) => {
       if (typeof child === "string") {
         return processTextWithCitations(child);
       }
-      if (isValidElement(child) && child.props.children) {
-        return cloneElement(child, {}, renderChildrenWithCitations(child.props.children));
+      if (isValidElement(child)) {
+        const props = child.props as { children?: ReactNode };
+        if (props.children) {
+          return cloneElement(child, { key: `md-${childIndex}` }, renderChildrenWithCitations(props.children));
+        }
       }
       return child;
     });
-  };
+  }, [processTextWithCitations]);
+
+  const markdownComponents = useMemo(() => ({
+    p: ({ children }: { children?: ReactNode }) => (
+      <p className="text-text-primary text-base leading-[1.7] mb-4 last:mb-0">
+        {renderChildrenWithCitations(children)}
+      </p>
+    ),
+    a: ({ children, href }: { children?: ReactNode; href?: string }) => (
+      <a
+        href={href}
+        className="text-accent hover:text-accent-hover underline decoration-accent/30 hover:decoration-accent font-medium transition-colors"
+      >
+        {children}
+      </a>
+    ),
+    ul: ({ children }: { children?: ReactNode }) => (
+      <ul className="list-disc pl-5 mb-4 space-y-1.5 text-text-primary">{children}</ul>
+    ),
+    ol: ({ children }: { children?: ReactNode }) => (
+      <ol className="list-decimal pl-5 mb-4 space-y-1.5 text-text-primary">{children}</ol>
+    ),
+    li: ({ children }: { children?: ReactNode }) => (
+      <li className="text-base leading-relaxed">
+        {renderChildrenWithCitations(children)}
+      </li>
+    ),
+    strong: ({ children }: { children?: ReactNode }) => <strong className="font-semibold text-text-primary">{children}</strong>,
+    code: ({ children }: { children?: ReactNode }) => (
+      <code className="px-1.5 py-0.5 rounded bg-dark-elevated text-accent text-sm font-mono">
+        {children}
+      </code>
+    ),
+    h1: ({ children }: { children?: ReactNode }) => <h1 className="text-xl font-semibold text-text-primary mt-6 mb-3">{children}</h1>,
+    h2: ({ children }: { children?: ReactNode }) => <h2 className="text-lg font-semibold text-text-primary mt-5 mb-2">{children}</h2>,
+    h3: ({ children }: { children?: ReactNode }) => <h3 className="text-base font-semibold text-text-primary mt-4 mb-2">{children}</h3>,
+  }), [renderChildrenWithCitations]);
 
   if (isUser) {
     return (
@@ -132,43 +180,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
           <div className="flex-1 min-w-0">
             {displayedContent ? (
               <div className="prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => (
-                      <p className="text-text-primary text-base leading-[1.7] mb-4 last:mb-0">
-                        {renderChildrenWithCitations(children)}
-                      </p>
-                    ),
-                    a: ({ children, ...props }) => (
-                      <a
-                        {...props}
-                        className="text-accent hover:text-accent-hover underline decoration-accent/30 hover:decoration-accent font-medium transition-colors"
-                      >
-                        {children}
-                      </a>
-                    ),
-                    ul: ({ children }) => (
-                      <ul className="list-disc pl-5 mb-4 space-y-1.5 text-text-primary">{children}</ul>
-                    ),
-                    ol: ({ children }) => (
-                      <ol className="list-decimal pl-5 mb-4 space-y-1.5 text-text-primary">{children}</ol>
-                    ),
-                    li: ({ children }) => (
-                      <li className="text-base leading-relaxed">
-                        {renderChildrenWithCitations(children)}
-                      </li>
-                    ),
-                    strong: ({ children }) => <strong className="font-semibold text-text-primary">{children}</strong>,
-                    code: ({ children }) => (
-                      <code className="px-1.5 py-0.5 rounded bg-dark-elevated text-accent text-sm font-mono">
-                        {children}
-                      </code>
-                    ),
-                    h1: ({ children }) => <h1 className="text-xl font-semibold text-text-primary mt-6 mb-3">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-lg font-semibold text-text-primary mt-5 mb-2">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-base font-semibold text-text-primary mt-4 mb-2">{children}</h3>,
-                  }}
-                >
+                <ReactMarkdown components={markdownComponents}>
                   {displayedContent}
                 </ReactMarkdown>
                 {streaming && (
