@@ -22,6 +22,7 @@ from fastapi.responses import StreamingResponse
 
 from backend.assembler import assemble_context
 from backend.config import get_settings
+from backend.conversation import synthesize_query
 from backend.models import ChatChunk, ChatRequest, ContextObject, RetrievalPlan
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.vector_search import expand_cross_references, semantic_search
@@ -121,8 +122,10 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
     elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
 
+    query = await synthesize_query(req.message, req.history)
+
     try:
-        plan = await route(req.message)
+        plan = await route(query)
     except Exception as exc:
         log.exception("Router failed")
         yield _sse(ChatChunk(type="error", error=f"Router failed: {exc}", t_ms=elapsed_ms()))

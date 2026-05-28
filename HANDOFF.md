@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-28):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Ready for UI testing and production hardening.
+**Current status (2026-05-28):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Ready for UI testing and production hardening.
 
 ---
 
@@ -103,10 +103,10 @@ The building violations dataset (`22u3-xenr`) doesn't have a `community_area` fi
 - `chicago-il-codes.html` (~100MB) is not in version control (`.gitignore` line 17).
 - Anyone cloning the repo needs to obtain it separately (presumably from American Legal Publishing or a similar source — the user provided it once).
 
-### 3. Stretch goals never started (Phase I)
-- **Leaflet map view** showing crime pins, 311 markers, zoning overlay for a queried neighborhood. Right side of the split-screen has space reserved for this.
-- **Address autocomplete** (Census Geocoder debounced) for the chat input.
-- **Multi-turn follow-up resolution** — the API supports `history` and frontend persists it, but the router prompt doesn't yet handle context-aware location like *"what about the next neighborhood over?"*
+### 3. Stretch goals (Phase I)
+- **Leaflet map view** showing crime pins, 311 markers, zoning overlay for a queried neighborhood. Right side of the split-screen has space reserved for this. *Not started.*
+- **Address autocomplete** (Census Geocoder debounced) for the chat input. *Not started.*
+- **Multi-turn follow-up resolution** — ✅ **DONE.** Added `backend/conversation.py` with a pre-router synthesis layer that merges conversation context into self-contained queries. Uses Haiku for fast/cheap synthesis when needed (heuristic gate avoids unnecessary LLM calls).
 
 ### 4. Deferred but probably worth doing
 - **LLM-as-judge eval** — grade synthesis answers for citation accuracy + factuality + directness. ~$0.05 × 30 questions per run. Mentioned in benchmarks plan as Tier 4 (deferred).
@@ -148,6 +148,8 @@ Work completed in this session:
 6. **Eval baseline established** — 26/26 queries passing (100%). Latency: router p50=2.4s, retrieval p50=3.8s, total p50=13.6s.
 
 7. **Title 18 investigation** — Confirmed empty-body sections are legitimate placeholders, not a parser bug.
+
+8. **Multi-turn conversation synthesis** — Added `backend/conversation.py` to handle multi-turn context. When a user provides a short answer to a clarification (e.g., "lincoln park" after being asked for a location), the system now synthesizes the full query ("Is it legal to add a balcony to a townhouse in Lincoln Park?") before routing. Uses Haiku for speed/cost, with a heuristic gate to avoid unnecessary LLM calls on single-turn queries.
 
 ---
 
@@ -216,11 +218,12 @@ chicago/
 │   ├── main.py                     # FastAPI /chat (SSE w/ t_ms timing)
 │   ├── router.py                   # Claude router (with search query guidance)
 │   ├── synthesizer.py              # Claude streaming synth
+│   ├── conversation.py             # Multi-turn context synthesis (Haiku)
 │   ├── assembler.py                # Pure (pytest-covered)
 │   ├── models.py
 │   ├── config.py
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py
-│   └── tests/                      # 113 tests (unit + integration)
+│   └── tests/                      # 123 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag

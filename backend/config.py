@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     router_model: str = "claude-sonnet-4-6"
     synthesizer_model: str = "claude-sonnet-4-6"
+    conversation_model: str = "claude-haiku-4-5-20251001"
 
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_dim: int = 384
