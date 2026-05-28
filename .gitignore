@@ -1,0 +1,17 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+ingestion/data/
+!ingestion/data/.gitkeep
+
+node_modules/
+dist/
+.vite/
+
+# Large source files (download separately)
+chicago-il-codes.html
