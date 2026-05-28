@@ -121,3 +121,8 @@ class ChatChunk(BaseModel):
     context: ContextObject | None = None
     text: str | None = None
     error: str | None = None
+    # Wall-clock milliseconds since the /chat request was received. Set on
+    # phase-boundary events (plan, context, done, error) and on the first
+    # synthesis token. Lets clients render per-phase latency without holding
+    # their own timer, and lets the eval harness compute p50/p95 offline.
+    t_ms: int | None = None

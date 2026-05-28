@@ -290,19 +290,54 @@ class _State:
             self.part_name = ""
 
 
-def _walk_top_divs(soup: BeautifulSoup) -> Iterator[Tag]:
-    """The HTML structure is <body><div> ... <div> </div></body>. Each top-level
-    div inside body is a self-contained section or hierarchy marker. Yield those."""
-    body = soup.body or soup
-    for child in body.find_all("div", recursive=False):
-        yield child
+# The HTML export contains some malformed markup partway through Title 18 that
+# causes lxml/html.parser to nest the trailing ~8MB (the republication of
+# Titles 16/17 as a standalone Zoning Ordinance + Land Use Ordinance volume)
+# inside an earlier element rather than at body level. We detect the
+# republication boundary by its banner text and parse the two halves
+# independently, then stream sections from both — the dedup logic in emit()
+# already protects against double-counting overlapping anchors.
+_REPUBLICATION_MARKER = "CHICAGO ZONING ORDINANCE<br></br>AND LAND USE ORDINANCE"
 
 
-def parse(html_path: Path, only_title: int | None = None) -> Iterator[Section]:
+def _iter_body_top_divs(html_text: str) -> Iterator[Tag]:
+    """Yield top-level body divs from one or more parsed segments. If the file
+    contains the republication marker, parse pre/post separately so trailing
+    content isn't swallowed by lxml's error recovery."""
+    cut = html_text.find(_REPUBLICATION_MARKER)
+    segments: list[str]
+    if cut == -1:
+        segments = [html_text]
+    else:
+        # Walk backwards to the start of the enclosing top-level <div> for the
+        # republication banner — that way the marker stays on the second half.
+        prefix = html_text[:cut]
+        # Heuristic: the republication banner is wrapped in
+        # `<div><div id="rid-...-48006" class="rbox Title">` — find that opener.
+        marker_start = prefix.rfind("<div><div id=", max(0, cut - 200))
+        if marker_start == -1:
+            marker_start = cut
+        first = html_text[:marker_start]
+        second = "<html><body>" + html_text[marker_start:]
+        segments = [first, second]
+        log.info("Split into %d segments at republication boundary (offset %d)", len(segments), marker_start)
+
+    for i, seg in enumerate(segments):
+        soup = BeautifulSoup(seg, "lxml")
+        body = soup.body or soup
+        log.info("Segment %d: %d top-level body divs", i + 1, len(body.find_all("div", recursive=False)))
+        for div in body.find_all("div", recursive=False):
+            yield div
+
+
+def parse(
+    html_path: Path,
+    only_title: int | None = None,
+    *,
+    stats: dict | None = None,
+) -> Iterator[Section]:
     html = html_path.read_text(encoding="utf-8")
-    log.info("Parsing %s (%.1f MB) with BeautifulSoup", html_path.name, len(html) / 1e6)
-    soup = BeautifulSoup(html, "lxml")
-    log.info("Parse complete; walking document tree")
+    log.info("Parsing %s (%.1f MB)", html_path.name, len(html) / 1e6)
 
     state = _State()
     current: Section | None = None
@@ -317,6 +352,8 @@ def parse(html_path: Path, only_title: int | None = None) -> Iterator[Section]:
     def emit(sec: Section) -> Iterator[Section]:
         nonlocal prev_emitted_id, pending_prev_link
         if sec.section in seen_section_ids:
+            if stats is not None:
+                stats["dedup_skipped"] = stats.get("dedup_skipped", 0) + 1
             return
         seen_section_ids.add(sec.section)
         if pending_prev_link is not None:
@@ -326,7 +363,7 @@ def parse(html_path: Path, only_title: int | None = None) -> Iterator[Section]:
         prev_emitted_id = sec.section
         pending_prev_link = sec
 
-    for outer in _walk_top_divs(soup):
+    for outer in _iter_body_top_divs(html):
         # Each outer div may itself contain many inner divs that represent a unit
         # (title heading + chapter TOC, or a section header + its body). Walk them.
         inner_divs = outer.find_all("div", recursive=False) or [outer]
@@ -465,6 +502,39 @@ def parse(html_path: Path, only_title: int | None = None) -> Iterator[Section]:
         yield pending_prev_link
 
 
+def _print_stats(stats: dict) -> None:
+    by_title: dict[int | None, dict] = stats["by_title"]
+    titles = sorted(by_title.keys(), key=lambda t: (t is None, t or 0))
+    print(f"{'Title':>6} {'Sections':>10} {'Tables':>8} {'XRefs':>8} {'Defs':>6} {'LegHist':>8} {'EmptyBody':>10} {'TinyBody':>9}")
+    print("-" * 78)
+    for t in titles:
+        b = by_title[t]
+        print(
+            f"{str(t) if t is not None else '—':>6} "
+            f"{b['sections']:>10} "
+            f"{b['tables']:>8} "
+            f"{b['sections_with_xrefs']:>8} "
+            f"{b['sections_with_defs']:>6} "
+            f"{b['sections_with_leg']:>8} "
+            f"{b['empty_body']:>10} "
+            f"{b['tiny_body']:>9}"
+        )
+    print("-" * 78)
+    print(
+        f"{'TOTAL':>6} "
+        f"{stats['total_sections']:>10} "
+        f"{stats['total_tables']:>8} "
+        f"{stats['total_xref_sections']:>8} "
+        f"{stats['total_def_sections']:>6} "
+        f"{stats['total_leg_sections']:>8} "
+        f"{stats['total_empty_body']:>10} "
+        f"{stats['total_tiny_body']:>9}"
+    )
+    print()
+    print(f"Non-section entries skipped: {stats['skipped_non_section']}")
+    print(f"Duplicate section IDs skipped (file republishes Titles 16/17): {stats['dedup_skipped']}")
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description=__doc__)
@@ -475,25 +545,87 @@ def main() -> None:
         default=SOURCE_FILE,
         help="Path to the chicago-il-codes.html file",
     )
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Compute and print per-title coverage stats; skip JSON output",
+    )
     args = parser.parse_args()
 
     if not args.source.exists():
         sys.exit(f"Source file not found: {args.source}")
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    if not args.stats:
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    stats = {
+        "total_sections": 0,
+        "total_tables": 0,
+        "total_xref_sections": 0,
+        "total_def_sections": 0,
+        "total_leg_sections": 0,
+        "total_empty_body": 0,
+        "total_tiny_body": 0,
+        "skipped_non_section": 0,
+        "dedup_skipped": 0,
+        "by_title": {},
+    }
+
     count = 0
-    skipped = 0
-    for section in parse(args.source, only_title=args.title):
+    for section in parse(args.source, only_title=args.title, stats=stats):
         if not section.section or not re.fullmatch(r"\d+-\d+-\d+(?:\.\d+)?", section.section):
-            skipped += 1
+            stats["skipped_non_section"] += 1
             continue
-        out_path = OUT_DIR / f"{section.section}.json"
-        out_path.write_text(json.dumps(asdict(section), indent=2))
+
+        body_chars = sum(len(p) for p in section.body_paragraphs)
+        t = section.title_number
+        b = stats["by_title"].setdefault(
+            t,
+            {
+                "sections": 0,
+                "tables": 0,
+                "sections_with_xrefs": 0,
+                "sections_with_defs": 0,
+                "sections_with_leg": 0,
+                "empty_body": 0,
+                "tiny_body": 0,
+            },
+        )
+        b["sections"] += 1
+        b["tables"] += len(section.tables)
+        if section.cross_references:
+            b["sections_with_xrefs"] += 1
+        if section.definitions:
+            b["sections_with_defs"] += 1
+        if section.legislative_history:
+            b["sections_with_leg"] += 1
+        if body_chars == 0 and not section.tables:
+            b["empty_body"] += 1
+        elif body_chars < 100 and not section.tables:
+            b["tiny_body"] += 1
+
+        stats["total_sections"] += 1
+        stats["total_tables"] += len(section.tables)
+        stats["total_xref_sections"] += bool(section.cross_references)
+        stats["total_def_sections"] += bool(section.definitions)
+        stats["total_leg_sections"] += bool(section.legislative_history)
+        stats["total_empty_body"] += (body_chars == 0 and not section.tables)
+        stats["total_tiny_body"] += (0 < body_chars < 100 and not section.tables)
+
+        if not args.stats:
+            out_path = OUT_DIR / f"{section.section}.json"
+            out_path.write_text(json.dumps(asdict(section), indent=2))
         count += 1
-        if count % 1000 == 0:
+        if not args.stats and count % 1000 == 0:
             log.info("Parsed %d sections", count)
 
-    log.info("Done. %d sections written to %s. %d non-section entries skipped.", count, OUT_DIR, skipped)
+    if args.stats:
+        _print_stats(stats)
+    else:
+        log.info(
+            "Done. %d sections written to %s. %d non-section entries skipped.",
+            count, OUT_DIR, stats["skipped_non_section"],
+        )
 
 
 if __name__ == "__main__":

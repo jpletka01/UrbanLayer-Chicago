@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import AsyncIterator
 
 import httpx
@@ -117,41 +118,47 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
 
 
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
+    start = time.monotonic()
+    elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
+
     try:
         plan = await route(req.message)
     except Exception as exc:
         log.exception("Router failed")
-        yield _sse(ChatChunk(type="error", error=f"Router failed: {exc}"))
-        yield _sse(ChatChunk(type="done"))
+        yield _sse(ChatChunk(type="error", error=f"Router failed: {exc}", t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         return
 
-    yield _sse(ChatChunk(type="plan", plan=plan))
+    yield _sse(ChatChunk(type="plan", plan=plan, t_ms=elapsed_ms()))
 
     if plan.intent == "clarification_needed" and plan.clarification:
-        yield _sse(ChatChunk(type="token", text=plan.clarification))
-        yield _sse(ChatChunk(type="done"))
+        yield _sse(ChatChunk(type="token", text=plan.clarification, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         return
 
     try:
         context = await _retrieve(plan)
     except Exception as exc:
         log.exception("Retrieval failed")
-        yield _sse(ChatChunk(type="error", error=f"Retrieval failed: {exc}"))
-        yield _sse(ChatChunk(type="done"))
+        yield _sse(ChatChunk(type="error", error=f"Retrieval failed: {exc}", t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         return
 
-    yield _sse(ChatChunk(type="context", context=context))
+    yield _sse(ChatChunk(type="context", context=context, t_ms=elapsed_ms()))
 
+    first_token = True
     try:
         async for token in stream_answer(
             context=context, user_message=req.message, history=req.history
         ):
-            yield _sse(ChatChunk(type="token", text=token))
+            chunk_t = elapsed_ms() if first_token else None
+            yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
+            first_token = False
     except Exception as exc:
         log.exception("Synthesizer failed")
-        yield _sse(ChatChunk(type="error", error=f"Synthesizer failed: {exc}"))
+        yield _sse(ChatChunk(type="error", error=f"Synthesizer failed: {exc}", t_ms=elapsed_ms()))
 
-    yield _sse(ChatChunk(type="done"))
+    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
 
 
 @app.post("/chat")

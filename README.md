@@ -86,6 +86,30 @@ Open http://localhost:5173.
 .venv/bin/python -m pytest backend/tests/ -v
 ```
 
+## Benchmarks
+
+Three things are captured:
+
+**1. Parser coverage stats** — verifies the HTML → section parse hasn't regressed.
+```bash
+.venv/bin/python -m ingestion.parse_chicago_code --stats
+```
+Reports per-title counts of sections, tables, cross-refs, definitions, legislative history, and sections with empty/tiny bodies (red flags). Also reports dedup-skipped count (should be ~250 — the file republishes Titles 16/17 at the tail).
+
+**2. Per-phase latency in the SSE stream** — every `plan` / `context` / first `token` / `done` event carries `t_ms` (wall-clock ms since the /chat request was received). The frontend sidebar renders Router / Retrieval / Synthesis-TTFT / Total live. The eval runner records p50/p95 across the test set.
+
+**3. Query test set** — `eval/queries.json` contains ~26 queries with expected router/retrieval behaviors (sources, intent, disclaimer trigger, location resolution, expected community area, expected retrieved section).
+```bash
+# Router-only — fast regression check on prompt changes (~$0.05 per run)
+PYTHONPATH=. .venv/bin/python -m eval.run_eval --out eval/last_report.md
+
+# Full — hit a running backend, also checks retrieval + records timings
+PYTHONPATH=. .venv/bin/python -m eval.run_eval --full http://localhost:8000 --out eval/last_full.md
+
+# Filter
+PYTHONPATH=. .venv/bin/python -m eval.run_eval --filter zoning
+```
+
 ## Smoke test the API
 
 ```bash

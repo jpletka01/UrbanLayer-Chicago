@@ -1,0 +1,263 @@
+{
+  "queries": [
+    {
+      "id": "neighborhood_overview_named",
+      "question": "What's going on in Wicker Park?",
+      "category": "neighborhood_overview",
+      "expect": {
+        "sources_any_of": ["crime_api", "311_api"],
+        "intent": "neighborhood_overview",
+        "requires_disclaimer": false,
+        "location_resolved": true,
+        "expected_community_area": 24
+      }
+    },
+    {
+      "id": "neighborhood_overview_address",
+      "question": "What's going on near 2400 N Milwaukee Ave?",
+      "category": "address_lookup",
+      "expect": {
+        "sources_any_of": ["crime_api", "311_api"],
+        "intent": "neighborhood_overview",
+        "location_resolved": true,
+        "location_type_one_of": ["address", "neighborhood", "community_area"]
+      }
+    },
+    {
+      "id": "crime_trend_named",
+      "question": "Crime trends in Logan Square last 90 days",
+      "category": "crime",
+      "expect": {
+        "sources_include": ["crime_api"],
+        "intent_one_of": ["trend_analysis", "neighborhood_overview"],
+        "expected_community_area": 22,
+        "time_range_days_at_most": 90
+      }
+    },
+    {
+      "id": "crime_recent_week",
+      "question": "What crimes happened in West Town this week?",
+      "category": "crime_edge",
+      "expect": {
+        "sources_include": ["crime_api"],
+        "expected_community_area": 24,
+        "time_range_days_at_most": 14,
+        "note": "answer must acknowledge 7-day data lag"
+      }
+    },
+    {
+      "id": "311_complaints",
+      "question": "What are the top open 311 complaints in Englewood?",
+      "category": "311",
+      "expect": {
+        "sources_include": ["311_api"],
+        "expected_community_area": 68,
+        "intent": "neighborhood_overview"
+      }
+    },
+    {
+      "id": "permits_neighborhood",
+      "question": "Has there been a lot of new construction in West Loop?",
+      "category": "permits",
+      "expect": {
+        "sources_include": ["permits_api"],
+        "expected_community_area": 28
+      }
+    },
+    {
+      "id": "business_lookup",
+      "question": "What bars and restaurants are licensed in Bucktown?",
+      "category": "business",
+      "expect": {
+        "sources_include": ["business_api"],
+        "expected_community_area": 22
+      }
+    },
+    {
+      "id": "zoning_legal_residential_bar",
+      "question": "Can I open a bar in a residential district?",
+      "category": "zoning_legal",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true
+      }
+    },
+    {
+      "id": "zoning_use_specific",
+      "question": "Is a daycare allowed in an RT-4 zoning district?",
+      "category": "zoning_use_lookup",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true,
+        "retrieval_section_contains_any": ["17-2-0200", "17-9"]
+      }
+    },
+    {
+      "id": "zoning_dimension_height",
+      "question": "What is the maximum building height in an RM-5 district?",
+      "category": "zoning_dimensions",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true,
+        "retrieval_section_contains_any": ["17-2-0300"]
+      }
+    },
+    {
+      "id": "zoning_coach_house",
+      "question": "Are coach houses allowed in RS-3 zoning?",
+      "category": "zoning_use_lookup",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true,
+        "retrieval_section_contains_any": ["17-2-0200", "17-9-0201"]
+      }
+    },
+    {
+      "id": "definition_lookup",
+      "question": "What is a 'coach house' under the Chicago zoning code?",
+      "category": "definition",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true,
+        "retrieval_section_contains_any": ["17-17", "17-9-0201"]
+      }
+    },
+    {
+      "id": "permit_requirements",
+      "question": "Do I need a permit to install a fence?",
+      "category": "permit_requirements",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true
+      }
+    },
+    {
+      "id": "no_location_crime",
+      "question": "What's the crime rate?",
+      "category": "clarification",
+      "expect": {
+        "intent": "clarification_needed",
+        "clarification_present": true
+      }
+    },
+    {
+      "id": "no_location_311",
+      "question": "How many 311 complaints are there?",
+      "category": "clarification",
+      "expect": {
+        "intent": "clarification_needed",
+        "clarification_present": true
+      }
+    },
+    {
+      "id": "downtown_alias",
+      "question": "What's happening downtown?",
+      "category": "alias_resolution",
+      "expect": {
+        "expected_community_area": 32,
+        "sources_any_of": ["crime_api", "311_api"]
+      }
+    },
+    {
+      "id": "loop_alias",
+      "question": "Crime in the Loop",
+      "category": "alias_resolution",
+      "expect": {
+        "expected_community_area": 32,
+        "sources_include": ["crime_api"]
+      }
+    },
+    {
+      "id": "south_loop",
+      "question": "What's near the South Loop?",
+      "category": "alias_resolution",
+      "expect": {
+        "expected_community_area": 33
+      }
+    },
+    {
+      "id": "ambiguous_lincoln_park",
+      "question": "Tell me about Lincoln Park",
+      "category": "ambiguity",
+      "expect": {
+        "expected_community_area": 7,
+        "note": "Lincoln Park is also a park name — router should default to the community area unless context says otherwise"
+      }
+    },
+    {
+      "id": "trend_violent_crime",
+      "question": "Is violent crime up in Austin?",
+      "category": "trend",
+      "expect": {
+        "sources_include": ["crime_api"],
+        "expected_community_area": 25,
+        "intent_one_of": ["trend_analysis", "neighborhood_overview"]
+      }
+    },
+    {
+      "id": "specific_block",
+      "question": "Any recent incidents on the 1600 block of N Damen Ave?",
+      "category": "incident_lookup",
+      "expect": {
+        "sources_include": ["crime_api"],
+        "intent_one_of": ["incident_lookup", "neighborhood_overview"]
+      }
+    },
+    {
+      "id": "rats",
+      "question": "Are there rat complaints in Logan Square?",
+      "category": "311_specific",
+      "expect": {
+        "sources_include": ["311_api"],
+        "expected_community_area": 22
+      }
+    },
+    {
+      "id": "violation_landlord",
+      "question": "Are there building violations on my landlord's properties in Pilsen?",
+      "category": "violations",
+      "expect": {
+        "sources_include": ["violations_api"],
+        "expected_community_area": 31
+      }
+    },
+    {
+      "id": "parking_requirements",
+      "question": "How many parking spaces are required for a 30-unit apartment building?",
+      "category": "zoning_parking",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true,
+        "retrieval_section_contains_any": ["17-10"]
+      }
+    },
+    {
+      "id": "sign_regs",
+      "question": "What's the maximum sign size for a B3 commercial district?",
+      "category": "zoning_signs",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "intent": "legal_question",
+        "requires_disclaimer": true,
+        "retrieval_section_contains_any": ["17-12"]
+      }
+    },
+    {
+      "id": "mixed_overview_legal",
+      "question": "What's the zoning at 2400 N Milwaukee and what's the recent crime there?",
+      "category": "compound",
+      "expect": {
+        "sources_any_of": ["crime_api", "vector_search"],
+        "location_resolved": true,
+        "requires_disclaimer": true
+      }
+    }
+  ]
+}

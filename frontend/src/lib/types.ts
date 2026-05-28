@@ -87,8 +87,15 @@ export interface ContextObject {
 }
 
 export type ChatChunk =
-  | { type: "plan"; plan: RetrievalPlan }
-  | { type: "context"; context: ContextObject }
-  | { type: "token"; text: string }
-  | { type: "error"; error: string }
-  | { type: "done" };
+  | { type: "plan"; plan: RetrievalPlan; t_ms?: number }
+  | { type: "context"; context: ContextObject; t_ms?: number }
+  | { type: "token"; text: string; t_ms?: number }
+  | { type: "error"; error: string; t_ms?: number }
+  | { type: "done"; t_ms?: number };
+
+export interface PhaseTimings {
+  router_ms?: number;
+  retrieval_ms?: number;
+  first_token_ms?: number;
+  total_ms?: number;
+}

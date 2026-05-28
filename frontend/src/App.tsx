@@ -6,7 +6,7 @@ import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { chatStream } from "./lib/api";
 import { clearHistory, loadHistory, saveHistory } from "./lib/history";
-import type { ContextObject, Message, RetrievalPlan } from "./lib/types";
+import type { ContextObject, Message, PhaseTimings, RetrievalPlan } from "./lib/types";
 
 const SUGGESTIONS = [
   "🌆 What's going on near 2400 N Milwaukee Ave?",
@@ -28,6 +28,7 @@ export function App() {
   const [streaming, setStreaming] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [timings, setTimings] = useState<PhaseTimings>({});
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => saveHistory(messages), [messages]);
@@ -40,6 +41,7 @@ export function App() {
     setPlan(null);
     setContext(null);
     setShowDisclaimer(false);
+    setTimings({});
 
     const userMessage: Message = { role: "user", content: text };
     const historySnapshot = [...messages];
@@ -53,10 +55,19 @@ export function App() {
       for await (const chunk of chatStream(text, historySnapshot, controller.signal)) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);
+          if (chunk.t_ms !== undefined) {
+            setTimings((t) => ({ ...t, router_ms: chunk.t_ms }));
+          }
         } else if (chunk.type === "context") {
           setContext(chunk.context);
           if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
+          if (chunk.t_ms !== undefined) {
+            setTimings((t) => ({ ...t, retrieval_ms: chunk.t_ms }));
+          }
         } else if (chunk.type === "token") {
+          if (chunk.t_ms !== undefined) {
+            setTimings((t) => ({ ...t, first_token_ms: chunk.t_ms }));
+          }
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
@@ -65,6 +76,10 @@ export function App() {
             }
             return next;
           });
+        } else if (chunk.type === "done") {
+          if (chunk.t_ms !== undefined) {
+            setTimings((t) => ({ ...t, total_ms: chunk.t_ms }));
+          }
         } else if (chunk.type === "error") {
           setErrorMsg(chunk.error);
         }
@@ -154,7 +169,7 @@ export function App() {
           showDisclaimer={showDisclaimer}
           onSubmit={sendMessage}
         />
-        <SidebarPanel plan={plan} context={context} loading={streaming} />
+        <SidebarPanel plan={plan} context={context} loading={streaming} timings={timings} />
       </div>
     </main>
   );

@@ -1,10 +1,16 @@
-import type { ContextObject, RetrievalPlan } from "../lib/types";
+import type { ContextObject, PhaseTimings, RetrievalPlan } from "../lib/types";
 import { SourceCitation } from "./SourceCitation";
 
 interface Props {
   plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
+  timings?: PhaseTimings;
+}
+
+function fmtMs(ms?: number): string {
+  if (ms === undefined) return "—";
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms}ms`;
 }
 
 function Skeleton({ height = 24 }: { height?: number }) {
@@ -20,7 +26,15 @@ const SOURCE_LABELS: Record<string, string> = {
   vector_search: "Municipal Code (Qdrant)",
 };
 
-export function SidebarPanel({ plan, context, loading }: Props) {
+export function SidebarPanel({ plan, context, loading, timings }: Props) {
+  const retrievalDelta =
+    timings?.retrieval_ms !== undefined && timings?.router_ms !== undefined
+      ? timings.retrieval_ms - timings.router_ms
+      : undefined;
+  const synthesisDelta =
+    timings?.first_token_ms !== undefined && timings?.retrieval_ms !== undefined
+      ? timings.first_token_ms - timings.retrieval_ms
+      : undefined;
   return (
     <aside className="w-full md:w-2/5 h-full overflow-y-auto bg-slate-100 border-l border-slate-200 p-6 space-y-5">
       <header className="space-y-1">
@@ -37,6 +51,24 @@ export function SidebarPanel({ plan, context, loading }: Props) {
           <p className="text-xs text-amber-700">{context.data_lag_note}</p>
         )}
       </header>
+
+      {timings && (timings.router_ms !== undefined || timings.total_ms !== undefined) && (
+        <section className="p-3 rounded-xl bg-white border border-slate-200 shadow-sm">
+          <h3 className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-2">
+            Latency
+          </h3>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+            <span className="text-slate-500">Router</span>
+            <span className="text-right font-mono text-slate-900">{fmtMs(timings.router_ms)}</span>
+            <span className="text-slate-500">Retrieval</span>
+            <span className="text-right font-mono text-slate-900">{fmtMs(retrievalDelta)}</span>
+            <span className="text-slate-500">Synthesis TTFT</span>
+            <span className="text-right font-mono text-slate-900">{fmtMs(synthesisDelta)}</span>
+            <span className="text-slate-500">Total</span>
+            <span className="text-right font-mono text-slate-900">{fmtMs(timings.total_ms)}</span>
+          </div>
+        </section>
+      )}
 
       <section>
         <h3 className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-2">
