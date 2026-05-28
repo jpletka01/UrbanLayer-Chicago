@@ -1,50 +1,333 @@
-1. Design System Tokens & ConstantsColor PaletteWe use a high-contrast, moody palette for the hero section, transitioning to a clean, highly legible interface for data blocks and chat logs.Token NameHex Code / Tailwind ClassPurposeBrand Primary#0284c7 (sky-600)Main brand accent, primary CTA buttons, active states.Background Dark#090d16 (Custom)Base background color for the immersive hero video/slideshow container.Background Light#f8fafc (slate-50)Main canvas background for the application workspace below the fold.Surface Translucentrgba(255,255,255,0.07)Glassmorphism card backgrounds inside the hero overlay.Text Primary Dark#ffffffTypography overlaid on hero graphics.Text Primary Light#0f172a (slate-900)Standard body text for chat responses and metrics.System Alert#e11d48 (rose-600)Error handling, critical data, missing locations.System Warning#d97706 (amber-600)Disclaimer banners (requires_disclaimer: true).TypographyFont Family: Inter, system-ui, sans-serif (Clean, modern geometric neo-grotesque).Scale & Weights:Hero Display Title: text-5xl font-extrabold tracking-tightSection Headers: text-xl font-semibold tracking-normalBody Text / Answers: text-base font-normal leading-relaxedCitations / Metadata / Small Text: text-xs font-medium uppercase tracking-wider text-slate-5002. Layout States & TransitionsYour React application should switch between two global UI states based on whether a prompt retrieval query is active.State 1: The Splash Dashboard (Landing View)Hero Container: w-full h-screen relative flex flex-col justify-center items-center px-4 overflow-hiddenThe Image Slideshow: A background container running an object-cover w-full h-full absolute inset-0 z-0 brightness-50 contrast-125 configuration, featuring a smooth, cross-fade rotation animation of the Chicago skyline.Content Overlay: A vertical stack centered horizontally (z-10 text-center max-w-3xl space-y-6).Below-the-Fold Grid: Standard grid (grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto py-12 px-4 bg-slate-50) displaying quick glance metrics or static ingestion stats.State 2: Split-Screen Intelligence Workspace (Active Query View)When a user hits submit, the hero collapses into a slim persistent top banner, and the main layout switches to a non-scrolling, viewport-locked split screen:+-----------------------------------------------------------------------+
-|  Slim Top Header Banner (Translucent, Fixed, height: 64px)            |
-+-------------------------------------------------------+---------------+
-|                                                       |               |
-|                                                       |               |
-|  LEFT PANEL: Chat History & Claude Responses          | RIGHT PANEL:  |
-|  - Scrollable timeline                                | Context &     |
-|  - Renders `MessageBubble`                            | Data Insights |
-|  - Renders `DisclaimerBanner` if flagged              | - API Status  |
-|                                                       | - Code Chunks |
-|  (Tailwind: w-full md:w-3/5 overflow-y-auto h-full)   | (w-2/5 map/   |
-|                                                       | source panel) |
-+-------------------------------------------------------+---------------+
-3. Tailwind Component Styling ManualThe Search/Chat Pill InputHTML<!-- Container wrapper with custom drop shadow -->
-<div class="relative w-full max-w-2xl mx-auto shadow-2xl rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all duration-300 focus-within:bg-white/15 focus-within:border-white/30">
-  <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-    <svg class="h-5 w-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  </div>
-  <input 
-    type="text" 
-    placeholder="What do you need help with in Chicago?" 
-    class="w-full bg-transparent pl-12 pr-14 py-4 rounded-full text-white placeholder-white/60 text-lg focus:outline-none focus:ring-0 border-0"
-  />
-  <button class="absolute right-2 top-2 bottom-2 bg-white text-slate-900 rounded-full w-10 h-10 flex items-center justify-center font-bold shadow-md hover:bg-slate-100 transition-colors">
-    →
-  </button>
-</div>
-Prompt Suggestion Chips (Pills)Rendered underneath the main search block to suggest user intents:  HTML<button class="px-4 py-2 text-sm font-medium rounded-full bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 text-white shadow-sm transition-all duration-150">
-  🚇 CTA Status
-</button>
-Claude's Markdown Response ContainerTo prevent long unformatted blocks of text, format Claude's text content with exact spacing rules using Tailwind typography principles or manual classes:Paragraphs: text-slate-800 dark:text-slate-200 text-base leading-relaxed mb-4Inline Citations: Clicking on inline source text formats should interactively cross-reference items in your sidebar context panel. Style as: cursor-pointer text-sky-600 hover:text-sky-700 underline decoration-dotted font-medium.  Disclaimer Banner (requires_disclaimer: true)When the router returns a prompt touching legal topics, append this component instantly below the specific markdown output window:  HTML<div class="flex gap-3 items-start p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-sm leading-relaxed mt-4">
-  <span class="text-base">💡</span>
-  <p>
-    <strong>Notice:</strong> This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department for official guidance.
-  </p>
-</div>
-Source Citation & Freshness Sidebar BlockUsed in the secondary side workspace pane to detail retrieved information transparently:  HTML<div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm space-y-3">
-  <div class="flex items-center justify-between">
-    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">Qdrant Vector Search Match</span>
-    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">91% Match</span>
-  </div>
-  <h4 class="text-sm font-bold text-slate-900">Municipal Code Sec. 17-2-0100: Residential Districts</h4>[cite: 1]
-  <p class="text-xs text-slate-600 font-mono bg-slate-50 p-2 rounded max-h-32 overflow-y-auto">
-    <!-- Truncated block text from context_object_as_json -->
-    ...
-  </p>
-</div>
-4. UI/UX Rules & Invariant ConstraintsStrictly Minimal Comments: As requested in your codebase layout settings, maintain clean styling code inside components without arbitrary block comments interspersed in JSX blocks.No Structural Disruption on Loading: Use skeletal loading boxes (animate-pulse bg-slate-200) inside the Sidebar Panel tracking data layers when parallel Socrata fetches (asyncio.gather) are processing[cite: 1]. This keeps columns properly locked in position.Data Freshness Visibility: Anytime Layer 1 database logs are displayed, include the mandatory 7-day data exclusion note transparently within the sidebar context metadata[cite: 1].
+# Chicago City Intelligence — Style Guide
+
+## 1. Design System Tokens & Constants
+
+### Color Palette
+
+We use a very dark, high-contrast palette throughout the application.
+
+| Token Name | Hex Code | Tailwind Class | Purpose |
+|---|---|---|---|
+| Background | `#0d0d0d` | `bg-dark-bg` | Main application background |
+| Surface | `#171717` | `bg-dark-surface` | Elevated surfaces, cards |
+| Elevated | `#1f1f1f` | `bg-dark-elevated` | Further elevated elements |
+| Border | `#2a2a2a` | `border-dark-border` | Standard borders |
+| User Bubble | `#2a2a2a` | `bg-[#2a2a2a]` | User message background |
+| Assistant Bubble | `#1a1a1a` | `bg-[#1a1a1a]` | Assistant message background |
+| Accent | `#c96442` | `bg-accent` / `text-accent` | Primary accent, CTAs, active states |
+| Accent Hover | `#d97a5a` | `hover:bg-accent-hover` | Hover state for accent elements |
+| Accent Muted | `rgba(201, 100, 66, 0.15)` | `bg-accent-muted` | Subtle accent backgrounds |
+| Text Primary | `#eeeeee` | `text-text-primary` | Main body text |
+| Text Secondary | `#a3a098` | `text-text-secondary` | Supporting text |
+| Text Muted | `#6b6962` | `text-text-muted` | De-emphasized text |
+| System Alert | `#f43f5e` | `text-rose-400` | Error handling |
+| System Warning | `#fbbf24` | `text-amber-400` | Disclaimers and warnings |
+
+### Typography
+
+**Font Family:** Inter, system-ui, sans-serif
+
+**Scale & Weights:**
+- **Hero Display Title:** `text-4xl md:text-5xl font-semibold tracking-tight`
+- **Section Headers:** `text-sm font-semibold`
+- **Body Text / Answers:** `text-base leading-[1.7]`
+- **Small Text / Labels:** `text-xs font-medium uppercase tracking-wider`
+- **Monospace (code/metrics):** `font-mono text-sm`
+
+---
+
+## 2. Layout Architecture
+
+### Two Global UI States
+
+The application switches between two layout modes based on conversation state.
+
+#### State 1: Splash Screen (Landing View)
+
+Full-screen immersive view with:
+- **HeroSlideshow:** Background image carousel with crossfade transitions (8s interval, 2s fade)
+- **Centered Content:** Title, subtitle, search input, suggestion chips
+- **Stats Footer:** Three metrics displayed at bottom with `justify-around` spacing
+
+```
++--------------------------------------------------+
+|                                                  |
+|              [Background Slideshow]              |
+|                                                  |
+|           Chicago City Intelligence              |
+|        Ask about crime, 311, zoning...           |
+|                                                  |
+|            [  Search Input  ]                    |
+|                                                  |
+|      [Chip] [Chip] [Chip] [Chip]                 |
+|                                                  |
+|   14,628          5           77                 |
+|   Code sections   Datasets    Areas              |
++--------------------------------------------------+
+```
+
+#### State 2: Split-Screen Workspace (Active Chat)
+
+Dual-pane layout with collapsible sidebar:
+
+```
++--------------------------------------------------+
+|  Header (bg-dark-bg, h-14)                       |
++-----------------------------+--------------------+
+|                             | [Toggle]           |
+|  Chat Interface (60%)       |  Sidebar (40%)     |
+|  - Message list             |  - Header + Toggle |
+|  - Auto-scroll              |  - Data/Sources    |
+|  - Streaming support        |  - Context cards   |
+|                             |                    |
+|  [Input Bar]                |                    |
++-----------------------------+--------------------+
+```
+
+**Sidebar Behavior:**
+- Starts closed, auto-opens when context data arrives
+- Toggle via button or keyboard shortcut (Cmd/Ctrl+B)
+- Animated width transition (300ms ease-in-out)
+- View toggle: Data / Sources
+
+---
+
+## 3. Component Specifications
+
+### ChatInput
+
+Two variants: `hero` and `compact`
+
+**Hero Variant (Splash Screen):**
+```
+- Transparent background, white/20 border
+- On text input: glassmorphism effect (bg-dark-surface/80 backdrop-blur-md)
+- White text and placeholder
+- Rounded-2xl
+```
+
+**Compact Variant (Workspace):**
+```
+- bg-dark-surface with border-dark-border
+- Flex layout: [Attachment btn] [Input] [Send btn]
+- Accent-colored send button
+- focus-within:border-accent/50
+```
+
+### MessageBubble
+
+**User Messages:**
+```css
+.user-message {
+  justify-content: flex-end;
+  background: #2a2a2a;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  max-width: 85%;
+}
+```
+
+**Assistant Messages:**
+```css
+.assistant-message {
+  justify-content: flex-start;
+  background: #1a1a1a;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  max-width: 85%;
+}
+```
+
+**Assistant Icon:** Sparkle icon in `bg-accent/20` circle
+
+**Streaming State:** Blinking cursor (animate-blink) at text end
+
+**Thinking State:** Three pulsing dots with staggered delays (0ms, 150ms, 300ms)
+
+### SidebarPanel
+
+**Structure:**
+```
+<aside> (motion.aside with animated width)
+├── SidebarToggle (circular button at -left-3)
+├── SidebarHeader (title + view toggle)
+└── Content area (scrollable)
+    ├── DataView (sources, latency, crime, 311, permits)
+    └── SourcesView (code chunks)
+```
+
+**GlassCard Pattern:**
+```css
+.glass-card {
+  background: rgba(23, 23, 23, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid #2a2a2a;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+```
+
+### PromptSuggestionChip
+
+```css
+.suggestion-chip {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: all 150ms;
+}
+.suggestion-chip:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+```
+
+### DisclaimerBanner
+
+```css
+.disclaimer {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: rgba(251, 191, 36, 0.9);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+```
+
+### SourceCitation
+
+Code chunk display with relevance score badge:
+- `>=85%`: Emerald badge (`bg-emerald-500/15 text-emerald-400`)
+- `>=70%`: Amber badge (`bg-amber-500/15 text-amber-400`)
+- `<70%`: Muted badge (`bg-dark-elevated text-text-muted`)
+
+---
+
+## 4. Animations & Transitions
+
+### Keyframes (tailwind.config.js)
+
+```javascript
+keyframes: {
+  'fade-in': {
+    '0%': { opacity: '0' },
+    '100%': { opacity: '1' },
+  },
+  'blink': {
+    '0%, 100%': { opacity: '1' },
+    '50%': { opacity: '0' },
+  },
+}
+```
+
+### Transition Patterns
+
+| Element | Duration | Easing | Property |
+|---------|----------|--------|----------|
+| Sidebar width | 300ms | ease-in-out | width |
+| Chat pane width | 300ms | ease-in-out | width |
+| View transitions | 300ms | ease-out | opacity |
+| Button hover | 150ms | ease | background, color |
+| Hero slideshow | 2000ms | ease-in-out | opacity |
+| Toggle chevron | 300ms | ease-in-out | transform (rotate) |
+
+### Framer Motion Usage
+
+```typescript
+// View switching
+<AnimatePresence mode="wait">
+  {!active ? <SplashView /> : <WorkspaceView />}
+</AnimatePresence>
+
+// Sidebar animation
+<motion.aside
+  animate={{ width: isOpen ? "40%" : "0%" }}
+  transition={{ duration: 0.3, ease: "easeInOut" }}
+/>
+
+// Staggered entrance
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.1, duration: 0.5 }}
+/>
+```
+
+---
+
+## 5. Responsive Behavior
+
+### Breakpoints
+
+- **Mobile (default):** Single-column, sidebar hidden
+- **md (768px+):** Dual-pane layout, sidebar visible
+
+### Mobile Adaptations
+
+- Sidebar: `hidden md:flex`
+- Chat pane: `w-full` on mobile, `w-[60%]` on desktop (when sidebar open)
+- Hero title: `text-4xl md:text-5xl`
+
+---
+
+## 6. File Structure
+
+```
+frontend/src/
+├── App.tsx                      # Root component, state management
+├── components/
+│   ├── ChatInput.tsx            # Text input (hero + compact variants)
+│   ├── ChatInterface.tsx        # Message list container
+│   ├── MessageBubble.tsx        # Individual message rendering
+│   ├── SidebarPanel.tsx         # Collapsible context panel
+│   ├── SidebarToggle.tsx        # Toggle button component
+│   ├── SidebarHeader.tsx        # Header with view toggles
+│   ├── SourceCitation.tsx       # Code chunk display
+│   ├── HeroSlideshow.tsx        # Background image carousel
+│   ├── DisclaimerBanner.tsx     # Legal notice component
+│   ├── PromptSuggestionChip.tsx # Quick action buttons
+│   └── sidebar/
+│       ├── DataView.tsx         # Data cards (crime, 311, etc.)
+│       └── SourcesView.tsx      # Code references view
+├── lib/
+│   ├── api.ts                   # SSE streaming client
+│   ├── history.ts               # localStorage persistence
+│   └── types.ts                 # TypeScript interfaces
+└── index.css                    # Global styles + Tailwind imports
+```
+
+---
+
+## 7. State Management
+
+### App-Level State
+
+```typescript
+// Core data
+messages: Message[]              // Conversation history
+plan: RetrievalPlan | null       // Router output
+context: ContextObject | null    // Retrieved data
+streaming: boolean               // Active generation
+timings: PhaseTimings            // Latency metrics
+
+// UI state
+sidebarOpen: boolean             // Panel visibility
+sidebarView: 'data' | 'sources'  // Active view tab
+showDisclaimer: boolean          // Legal notice flag
+errorMsg: string | null          // Error display
+```
+
+### Auto-Behaviors
+
+- Sidebar auto-opens when `context` arrives
+- History auto-saves to localStorage on message change
+- Scroll auto-follows new messages
+
+### Keyboard Shortcuts
+
+- `Cmd/Ctrl + B`: Toggle sidebar

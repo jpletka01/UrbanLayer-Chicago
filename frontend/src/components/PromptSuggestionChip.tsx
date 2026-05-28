@@ -8,7 +8,7 @@ export function PromptSuggestionChip({ label, onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="px-4 py-2 text-sm font-medium rounded-full bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 text-white shadow-sm transition-all duration-150"
+      className="px-3 py-2 text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 text-white transition-all duration-150"
     >
       {label}
     </button>

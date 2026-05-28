@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
@@ -6,19 +7,13 @@ import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { chatStream } from "./lib/api";
 import { clearHistory, loadHistory, saveHistory } from "./lib/history";
-import type { ContextObject, Message, PhaseTimings, RetrievalPlan } from "./lib/types";
+import type { ContextObject, Message, PhaseTimings, RetrievalPlan, SidebarView } from "./lib/types";
 
 const SUGGESTIONS = [
-  "🌆 What's going on near 2400 N Milwaukee Ave?",
-  "🚨 Crime trends in Wicker Park last 90 days",
-  "🏗️ Can I open a bar in a residential district?",
-  "🐀 Top 311 complaints in Logan Square",
-];
-
-const INGESTION_STATS = [
-  { label: "Municipal code sections embedded", value: "—" },
-  { label: "Live datasets connected", value: "5" },
-  { label: "Community areas mapped", value: "77" },
+  "What's going on near 2400 N Milwaukee Ave?",
+  "Crime trends in Wicker Park last 90 days",
+  "Can I open a bar in a residential district?",
+  "Top 311 complaints in Logan Square",
 ];
 
 export function App() {
@@ -29,9 +24,22 @@ export function App() {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [timings, setTimings] = useState<PhaseTimings>({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => saveHistory(messages), [messages]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const active = messages.length > 0 || streaming;
 
@@ -60,6 +68,7 @@ export function App() {
           }
         } else if (chunk.type === "context") {
           setContext(chunk.context);
+          setSidebarOpen(true);
           if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
           if (chunk.t_ms !== undefined) {
             setTimings((t) => ({ ...t, retrieval_ms: chunk.t_ms }));
@@ -103,74 +112,142 @@ export function App() {
     setContext(null);
     setShowDisclaimer(false);
     setErrorMsg(null);
-  }
-
-  if (!active) {
-    return (
-      <main className="relative w-full h-screen flex flex-col justify-center items-center px-4 overflow-hidden">
-        <HeroSlideshow />
-        <div className="relative z-10 text-center max-w-3xl space-y-6 mb-8">
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">
-            Chicago City Intelligence
-          </h1>
-          <p className="text-lg text-white/80 leading-relaxed">
-            Ask about crime patterns, 311 complaints, building activity, and zoning rules —
-            anywhere in the city, in plain English.
-          </p>
-          <ChatInput onSubmit={sendMessage} />
-          <div className="flex flex-wrap gap-2 justify-center mt-4">
-            {SUGGESTIONS.map((s) => (
-              <PromptSuggestionChip key={s} label={s} onClick={() => sendMessage(s.replace(/^[^A-Za-z]+/, "").trim())} />
-            ))}
-          </div>
-        </div>
-
-        <section className="relative z-10 w-full bg-slate-50 mt-auto py-12 px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {INGESTION_STATS.map((stat) => (
-              <div key={stat.label} className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                <div className="text-4xl font-extrabold text-slate-900">{stat.value}</div>
-                <div className="text-xs font-medium uppercase tracking-wider text-slate-500 mt-2">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </main>
-    );
+    setSidebarOpen(false);
+    setSidebarView("data");
   }
 
   return (
-    <main className="w-full h-screen flex flex-col bg-slate-50">
-      <header className="h-16 px-6 flex items-center justify-between bg-white/80 backdrop-blur border-b border-slate-200 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-bold tracking-wide text-slate-900">Chicago City Intelligence</span>
-          {context?.community_area_name && (
-            <span className="text-xs text-slate-500">→ {context.community_area_name}</span>
-          )}
-        </div>
-        <button
-          onClick={reset}
-          className="text-xs font-medium text-slate-500 hover:text-slate-900"
-        >
-          New session
-        </button>
-      </header>
-      {errorMsg && (
-        <div className="px-6 py-2 bg-rose-50 border-b border-rose-200 text-rose-700 text-sm">
-          {errorMsg}
-        </div>
-      )}
-      <div className="flex-1 flex overflow-hidden">
-        <ChatInterface
-          messages={messages}
-          streaming={streaming}
-          showDisclaimer={showDisclaimer}
-          onSubmit={sendMessage}
-        />
-        <SidebarPanel plan={plan} context={context} loading={streaming} timings={timings} />
-      </div>
+    <main className="w-full min-h-screen text-text-primary">
+      <AnimatePresence mode="wait">
+        {!active ? (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="relative w-full min-h-screen flex flex-col"
+          >
+            <div className="relative flex-1 flex flex-col justify-center items-center px-4 py-20">
+              <HeroSlideshow />
+              <div className="relative z-10 text-center max-w-2xl space-y-8">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.5 }}
+                >
+                  <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
+                    Chicago City Intelligence
+                  </h1>
+                  <p className="text-lg text-white/80 leading-relaxed">
+                    Ask about crime patterns, 311 complaints, building activity, and zoning rules — anywhere in the city.
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                >
+                  <ChatInput onSubmit={sendMessage} variant="hero" />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                  className="flex flex-wrap gap-2 justify-center"
+                >
+                  {SUGGESTIONS.map((s) => (
+                    <PromptSuggestionChip
+                      key={s}
+                      label={s}
+                      onClick={() => sendMessage(s)}
+                    />
+                  ))}
+                </motion.div>
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="absolute bottom-12 left-0 right-0 z-10 flex justify-around px-8"
+            >
+              <div className="text-center">
+                <div className="text-4xl font-semibold text-white">14,628</div>
+                <div className="text-sm text-white/60 uppercase tracking-wider mt-2">Code sections</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-semibold text-white">5</div>
+                <div className="text-sm text-white/60 uppercase tracking-wider mt-2">Live datasets</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-semibold text-white">77</div>
+                <div className="text-sm text-white/60 uppercase tracking-wider mt-2">Community areas</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="workspace"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="w-full h-screen flex flex-col bg-dark-bg"
+          >
+            <header className="h-14 px-6 flex items-center justify-between bg-dark-bg shrink-0">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={reset}
+                  className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Chicago City Intelligence
+                </button>
+                {context?.community_area_name && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-text-muted">/</span>
+                    <span className="text-text-primary">{context.community_area_name}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={reset}
+                className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
+              >
+                New chat
+              </button>
+            </header>
+
+            {errorMsg && (
+              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="flex-1 flex overflow-hidden">
+              <ChatInterface
+                messages={messages}
+                streaming={streaming}
+                showDisclaimer={showDisclaimer}
+                onSubmit={sendMessage}
+                isSidebarOpen={sidebarOpen}
+              />
+              <SidebarPanel
+                plan={plan}
+                context={context}
+                loading={streaming}
+                timings={timings}
+                isOpen={sidebarOpen}
+                onToggle={() => setSidebarOpen(!sidebarOpen)}
+                activeView={sidebarView}
+                onViewChange={setSidebarView}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

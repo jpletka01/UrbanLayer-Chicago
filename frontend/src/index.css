@@ -9,6 +9,6 @@ html, body, #root {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #f8fafc;
-  color: #0f172a;
+  background: #0d0d0d;
+  color: #eeeeee;
 }

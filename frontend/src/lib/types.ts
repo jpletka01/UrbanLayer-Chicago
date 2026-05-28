@@ -99,3 +99,5 @@ export interface PhaseTimings {
   first_token_ms?: number;
   total_ms?: number;
 }
+
+export type SidebarView = "data" | "sources";

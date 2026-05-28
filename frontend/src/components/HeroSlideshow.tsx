@@ -4,11 +4,11 @@ const SLIDES = [
   "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=1920&q=80",
   "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=80",
   "https://images.unsplash.com/photo-1494522358652-f30e61a60313?w=1920&q=80",
-  "https://images.unsplash.com/photo-1564505750082-7e87dbed6c2c?w=1920&q=80",
-  "https://images.unsplash.com/photo-1531263939005-49b1ec38c5b9?w=1920&q=80",
+  "https://images.unsplash.com/photo-1745872262717-69c8951b5c49?w=1920&q=80",
+  "https://images.unsplash.com/photo-1616624446421-b6a136da737d?w=1920&q=80",
 ];
 
-const INTERVAL_MS = 6000;
+const INTERVAL_MS = 8000;
 
 export function HeroSlideshow() {
   const [idx, setIdx] = useState(0);
@@ -19,17 +19,19 @@ export function HeroSlideshow() {
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-[#090d16]">
+    <div className="absolute inset-0 z-0 overflow-hidden">
       {SLIDES.map((src, i) => (
         <img
           key={src}
           src={src}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] brightness-50 contrast-125"
-          style={{ opacity: i === idx ? 1 : 0 }}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms]"
+          style={{
+            opacity: i === idx ? 1 : 0,
+            filter: "brightness(0.6)",
+          }}
         />
       ))}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
     </div>
   );
 }
