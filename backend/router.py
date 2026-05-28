@@ -54,6 +54,15 @@ Rules:
 - "Can I build/open/operate X" or "is X allowed" -> legal_question, include vector_search, requires_disclaimer=true.
 - If no location and the question requires one, set intent="clarification_needed" and emit a clarification.
 - Always emit valid JSON. Do not wrap it in markdown or commentary.
+
+Search query guidance (for vector_search):
+- The vector database contains the Chicago Municipal Code, primarily zoning (Title 17).
+- For zoning use questions ("is X allowed in Y district"), use terms like "allowed uses", "use table", "permitted uses" + the district type (RS, RT, RM, B, C, M, D, etc.).
+- For dimensional questions (height, setback, FAR), search for "bulk and density", "dimensional standards" + district type.
+- For parking questions, search "parking requirements" or "off-street parking".
+- For sign questions, search "sign regulations" + district type.
+- For definitions, search "definitions" + the term.
+- AVOID putting the specific use name (daycare, restaurant, etc.) as the primary search term — the zoning code uses generic categories like "Public and Civic" or "Commercial". Instead emphasize the district type and "allowed uses".
 """
 
 

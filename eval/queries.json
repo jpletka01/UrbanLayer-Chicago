@@ -113,7 +113,7 @@
         "sources_include": ["vector_search"],
         "intent": "legal_question",
         "requires_disclaimer": true,
-        "retrieval_section_contains_any": ["17-2-0200", "17-9-0201"]
+        "retrieval_section_contains_any": ["17-2-0200", "17-9-0200", "17-7-0570"]
       }
     },
     {
@@ -124,7 +124,7 @@
         "sources_include": ["vector_search"],
         "intent": "legal_question",
         "requires_disclaimer": true,
-        "retrieval_section_contains_any": ["17-17", "17-9-0201"]
+        "retrieval_section_contains_any": ["17-17", "17-9-0200"]
       }
     },
     {
