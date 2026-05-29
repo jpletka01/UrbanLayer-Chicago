@@ -6,7 +6,6 @@ import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
-import { SidebarToggle } from "./components/SidebarToggle";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
 import { fetchSection } from "./lib/api";
 import { SPLASH_STATS, SUGGESTIONS } from "./lib/constants";
@@ -280,33 +279,28 @@ export function App() {
               </div>
             )}
 
-            <div className="flex-1 flex overflow-hidden relative">
+            <div className="flex-1 flex overflow-hidden">
               <ChatInterface
                 messages={messages}
                 streaming={streaming}
                 showDisclaimer={showDisclaimer}
                 onSubmit={sendMessage}
-                isSidebarOpen={sidebarOpen}
                 onCitationClick={handleCitationClick}
                 onDataClick={handleDataClick}
                 streamingContext={context}
-              >
-                <SidebarToggle
-                  isOpen={sidebarOpen}
-                  onToggle={() => setSidebarOpen(!sidebarOpen)}
-                  sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
-                />
-              </ChatInterface>
+              />
               <SidebarPanel
                 plan={plan}
                 context={activeSidebarContext}
                 loading={streaming}
                 isOpen={sidebarOpen}
+                onToggle={() => setSidebarOpen(!sidebarOpen)}
                 activeView={sidebarView}
                 onViewChange={setSidebarView}
                 highlightedSourceIndex={highlightedSourceIndex}
                 highlightedDataSource={highlightedDataSource}
                 sourceFlashSignal={sourceFlash}
+                sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
                 onSourceClick={setHighlightedSourceIndex}
                 onCrossRefClick={handleCrossRefClick}
               />

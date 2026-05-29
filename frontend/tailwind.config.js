@@ -13,10 +13,10 @@ export default {
           elevated: '#1f1f1f',
           border: '#2a2a2a',
           'border-subtle': '#1f1f1f',
-          tooltip: '#1f1f1f',
+          tooltip: '#333333',
           bubble: '#1a1a1a',
           'bubble-user': '#2a2a2a',
-          drawer: '#141414',
+          drawer: '#1a1a1a',
         },
         accent: {
           DEFAULT: '#c96442',

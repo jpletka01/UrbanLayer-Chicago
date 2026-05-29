@@ -3,6 +3,7 @@ import { forwardRef } from "react";
 import { isResolvableSection, stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
+import { ChunkText } from "./ChunkText";
 import { CrossRefPill } from "./CrossRefPill";
 
 interface Props {
@@ -111,9 +112,10 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
               className="overflow-hidden"
             >
               <div className="space-y-3 pt-3">
-                <div className="text-[13px] text-text-secondary font-mono bg-dark-bg/50 p-3 rounded-lg border border-dark-border/50 whitespace-pre-wrap leading-relaxed">
-                  {chunk.text}
-                </div>
+                <ChunkText
+                  text={chunk.text}
+                  className="text-[13px] text-text-secondary font-mono bg-dark-bg p-3 rounded-lg border border-dark-border leading-relaxed"
+                />
 
                 {chunk.cross_references.length > 0 && (
                   <div>
@@ -127,7 +129,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
                         ) : (
                           <span
                             key={i}
-                            className="text-xs font-mono text-text-muted bg-dark-bg/40 px-2 py-0.5 rounded border border-dark-border/50"
+                            className="text-xs font-mono text-text-muted bg-dark-elevated px-2 py-0.5 rounded border border-dark-border"
                           >
                             {xref}
                           </span>

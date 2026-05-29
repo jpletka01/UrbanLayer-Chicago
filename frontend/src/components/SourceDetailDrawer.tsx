@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { isResolvableSection } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
+import { ChunkText } from "./ChunkText";
 import { CrossRefPill } from "./CrossRefPill";
 
 export interface SectionView {
@@ -28,7 +29,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 z-40"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
             onClick={onClose}
           />
           <motion.div
@@ -115,9 +116,10 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
 
               {chunk && (
                 <>
-                  <pre className="whitespace-pre-wrap text-sm text-text-secondary leading-relaxed font-mono bg-dark-surface/30 p-4 rounded-lg border border-dark-border">
-                    {chunk.text}
-                  </pre>
+                  <ChunkText
+                    text={chunk.text}
+                    className="text-sm text-text-secondary leading-relaxed font-mono bg-dark-surface p-4 rounded-lg border border-dark-border"
+                  />
 
                   {chunk.cross_references.length > 0 && (
                     <div className="mt-4">
@@ -131,7 +133,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                           ) : (
                             <span
                               key={i}
-                              className="text-xs font-mono text-text-muted bg-dark-surface/50 px-2 py-0.5 rounded border border-dark-border"
+                              className="text-xs font-mono text-text-muted bg-dark-elevated px-2 py-0.5 rounded border border-dark-border"
                             >
                               {ref}
                             </span>

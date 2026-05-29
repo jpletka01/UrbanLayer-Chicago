@@ -26,6 +26,24 @@ log = logging.getLogger(__name__)
 MAX_CROSS_REF_HOPS = 1
 MAX_CROSS_REF_PER_CHUNK = 3
 
+_LEGEND_RE = re.compile(
+    r"Row \d+ \(all columns\):.*(?:permitted|special use|planned development|[Nn]ot allowed)",
+)
+_REGULAR_ROW_RE = re.compile(r"^Row \d+: ", re.MULTILINE)
+
+
+def _is_legend_only_chunk(text: str) -> bool:
+    """Return True if the chunk is a table legend/key with no real data rows.
+
+    Legend chunks contain only ``Row N (all columns): P = permitted ...``
+    entries and no actual ``Row N: header: value; ...`` data rows.
+    """
+    if "[TABLE]" not in text:
+        return False
+    if not _LEGEND_RE.search(text):
+        return False
+    return not _REGULAR_ROW_RE.search(text)
+
 
 @lru_cache
 def _model():
@@ -56,10 +74,11 @@ def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) ->
     settings = get_settings()
     collection = settings.qdrant_zoning_collection if zoning_only else settings.qdrant_code_collection
     vec = _model().encode(query, normalize_embeddings=True).tolist()
+    fetch_limit = top_k * 3
     try:
         resp = httpx.post(
             f"{_qdrant_url()}/collections/{collection}/points/search",
-            json={"vector": vec, "limit": top_k, "with_payload": True},
+            json={"vector": vec, "limit": fetch_limit, "with_payload": True},
             timeout=10.0,
         )
         resp.raise_for_status()
@@ -67,7 +86,15 @@ def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) ->
     except Exception as exc:
         log.warning("Qdrant query failed against %s: %s", collection, exc)
         return []
-    return [_payload_to_chunk(h.get("payload", {}), h.get("score", 0.0)) for h in hits]
+    chunks = []
+    for h in hits:
+        payload = h.get("payload", {})
+        if _is_legend_only_chunk(payload.get("text", "")):
+            continue
+        chunks.append(_payload_to_chunk(payload, h.get("score", 0.0)))
+        if len(chunks) >= top_k:
+            break
+    return chunks
 
 
 def get_by_section_id(section_id: str) -> CodeChunk | None:

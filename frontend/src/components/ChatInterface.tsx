@@ -1,5 +1,4 @@
-import { motion } from "motion/react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import type { ContextObject, DataSource, Message } from "../lib/types";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
@@ -9,11 +8,9 @@ interface Props {
   streaming: boolean;
   showDisclaimer: boolean;
   onSubmit: (message: string) => void;
-  isSidebarOpen: boolean;
   onCitationClick?: (index: number, messageContext?: ContextObject) => void;
   onDataClick?: (source: DataSource, messageContext?: ContextObject) => void;
   streamingContext?: ContextObject | null;
-  children?: ReactNode;
 }
 
 export function ChatInterface({
@@ -21,11 +18,9 @@ export function ChatInterface({
   streaming,
   showDisclaimer,
   onSubmit,
-  isSidebarOpen,
   onCitationClick,
   onDataClick,
   streamingContext,
-  children,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -34,15 +29,7 @@ export function ChatInterface({
   }, [messages, streaming]);
 
   return (
-    <motion.section
-      initial={false}
-      animate={{
-        width: isSidebarOpen ? "60%" : "100%",
-      }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="h-full flex flex-col bg-dark-bg relative"
-    >
-      {children}
+    <section className="flex-1 min-w-0 h-full flex flex-col bg-dark-bg">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
           {messages.map((m, i) => {
@@ -79,6 +66,6 @@ export function ChatInterface({
           />
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }
