@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-29):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips. The context/data sidebar was redesigned — citations now render as the actual `§` section reference, cross-references are clickable and open a full-section viewer. Most recent work: **sidebar polish + tooltip/background fixes** — sidebar rewritten with a drag-to-resize handle and a collapsed rail; table chunks now render as formatted HTML tables; tooltip backgrounds are solid `#333` with `#444` borders and use `position: fixed` with viewport clamping so they can't be clipped by the sidebar's overflow container; the section-detail drawer has a stronger `bg-black/80 backdrop-blur-sm` overlay. Previous: **capped-result awareness** — Socrata `$limit` guards detected and surfaced so the LLM says "at least N" instead of exact counts.
+**Current status (2026-05-29):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips. The context/data sidebar was redesigned — citations now render as the actual `§` section reference, cross-references are clickable and open a full-section viewer. Most recent work: **landing page count-up animation + smart address autocomplete** — splash stats now animate from 0 with a staggered roll-up effect; address autocomplete no longer replaces the full prompt — it detects the address fragment (last number to end of input), queries only that portion, and splices the selected suggestion back into the original prompt. Previous: **sidebar polish + tooltip/background fixes** — sidebar rewritten with a drag-to-resize handle and a collapsed rail; table chunks now render as formatted HTML tables; tooltip backgrounds are solid `#333` with `#444` borders and use `position: fixed` with viewport clamping so they can't be clipped by the sidebar's overflow container; the section-detail drawer has a stronger `bg-black/80 backdrop-blur-sm` overlay.
 
 ---
 
@@ -257,6 +257,23 @@ Socrata API queries carry `$limit` guards (e.g. 50 permits, 100 businesses) to a
 3. **`prompts.py`** — Extended synthesizer rule 4: when a summary has `"capped": true`, the LLM must say "at least N" instead of stating N as an exact count.
 
 Verification: all 35 assembler + model tests pass; manual smoke test confirms `capped=True` triggers at limit and `capped=False` below it.
+
+---
+
+## Session Log (2026-05-29 — Landing Page Animation + Smart Autocomplete)
+
+Two UI improvements to the landing page and chat input.
+
+**Animated count-up stats:**
+1. **`CountUp` component** — New `frontend/src/components/CountUp.tsx` using `motion`'s `useMotionValue` + `animate` with an exponential ease-out curve (`[0.16, 1, 0.3, 1]`). Triggers once via `useInView`. Accepts a `format` function for locale-aware number formatting (commas).
+2. **Splash stats** — `SPLASH_STATS` in `constants.ts` changed from string values to numeric values with optional `format`. The three stats (14,628 / 5 / 77) now animate from 0 with staggered delays (0.6s, 0.75s, 0.9s) after the container fade-in.
+
+**Smart address autocomplete (prompt-preserving):**
+1. **`findAddressFragment`** — New helper in `ChatInput.tsx` that scans for the last digit sequence in the input (`\d+\D*$`). Returns the start offset and fragment, or `null` if the fragment is too short (<3 chars). This means autocomplete only fires when there's an address-like pattern, not on plain text.
+2. **Query uses fragment only** — Instead of sending the entire input to `/autocomplete`, only the address fragment is sent (e.g., `"525 w arlington"` from `"how is the crime around 525 w arlington"`).
+3. **Splice on select** — `selectSuggestion` now preserves the prompt prefix and splices the selected address in at the fragment's start position. `"how is the crime around 525 w arlington"` + selecting `"525 W Arlington Pl, Chicago, IL"` → `"how is the crime around 525 W Arlington Pl, Chicago, IL"`.
+
+Files changed: `ChatInput.tsx`, `constants.ts`, `App.tsx`. New: `CountUp.tsx`.
 
 ---
 

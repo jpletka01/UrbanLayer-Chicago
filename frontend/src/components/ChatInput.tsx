@@ -10,11 +10,20 @@ interface Props {
   placeholder?: string;
 }
 
+function findAddressFragment(text: string): { start: number; fragment: string } | null {
+  const match = text.match(/\d+\D*$/);
+  if (!match) return null;
+  const start = match.index!;
+  const fragment = text.slice(start);
+  return fragment.length >= MIN_AUTOCOMPLETE_CHARS ? { start, fragment } : null;
+}
+
 export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }: Props) {
   const [value, setValue] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const addressStartRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -23,14 +32,17 @@ export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }:
       clearTimeout(debounceRef.current);
     }
 
-    if (value.length < MIN_AUTOCOMPLETE_CHARS) {
+    const addr = findAddressFragment(value);
+    if (!addr) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
+    addressStartRef.current = addr.start;
+
     debounceRef.current = setTimeout(async () => {
-      const results = await getAutocomplete(value);
+      const results = await getAutocomplete(addr.fragment);
       setSuggestions(results);
       setShowSuggestions(results.length > 0);
       setSelectedIndex(-1);
@@ -64,7 +76,8 @@ export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }:
   }
 
   function selectSuggestion(suggestion: AddressSuggestion) {
-    setValue(suggestion.address);
+    const prefix = value.slice(0, addressStartRef.current);
+    setValue(prefix + suggestion.address);
     setSuggestions([]);
     setShowSuggestions(false);
   }
