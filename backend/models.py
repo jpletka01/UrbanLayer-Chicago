@@ -54,6 +54,7 @@ class CrimeSummary(BaseModel):
     total: int
     arrest_rate: float
     by_type: dict[str, int]
+    capped: bool = False
 
 
 class ThreeOneOneSummary(BaseModel):
@@ -61,23 +62,27 @@ class ThreeOneOneSummary(BaseModel):
     oldest_open_days: int | None
     by_department: dict[str, int]
     top_types: list[str]
+    capped: bool = False
 
 
 class PermitSummary(BaseModel):
     total: int
     total_estimated_cost: float
     top_work_descriptions: list[str]
+    capped: bool = False
 
 
 class ViolationSummary(BaseModel):
     total: int
     open_count: int
     top_descriptions: list[str]
+    capped: bool = False
 
 
 class BusinessSummary(BaseModel):
     total: int
     top_activities: list[str]
+    capped: bool = False
 
 
 class CodeChunk(BaseModel):

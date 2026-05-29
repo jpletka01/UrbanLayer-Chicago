@@ -32,6 +32,7 @@ def _crime_summary(rows: list[dict[str, Any]]) -> CrimeSummary | None:
         total=total,
         arrest_rate=round(arrests / total, 3) if total else 0.0,
         by_type=top,
+        capped=len(rows) >= settings.limit_crime,
     )
 
 
@@ -71,6 +72,7 @@ def _three11_summary(
         oldest_open_days=oldest_days,
         by_department=dict(deps.most_common(settings.top_311_depts)),
         top_types=[t for t, _ in types.most_common(settings.top_311_types)],
+        capped=len(rows) >= settings.limit_311,
     )
 
 
@@ -92,6 +94,7 @@ def _permit_summary(rows: list[dict[str, Any]]) -> PermitSummary | None:
         total=len(rows),
         total_estimated_cost=round(cost_total, 2),
         top_work_descriptions=[d for d, _ in descs.most_common(settings.top_permits)],
+        capped=len(rows) >= settings.limit_permits,
     )
 
 
@@ -111,6 +114,7 @@ def _violation_summary(rows: list[dict[str, Any]]) -> ViolationSummary | None:
         total=len(rows),
         open_count=open_count,
         top_descriptions=[d for d, _ in descs.most_common(settings.top_violations)],
+        capped=len(rows) >= settings.limit_violations,
     )
 
 
@@ -127,6 +131,7 @@ def _business_summary(rows: list[dict[str, Any]]) -> BusinessSummary | None:
     return BusinessSummary(
         total=len(rows),
         top_activities=[a for a, _ in activities.most_common(settings.top_businesses)],
+        capped=len(rows) >= settings.limit_business,
     )
 
 
