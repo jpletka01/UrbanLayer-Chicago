@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-28):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips.
+**Current status (2026-05-28):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips. Most recent work: the context/data sidebar was redesigned — citations now render as the actual `§` section reference, cross-references are clickable and open a full-section viewer, and a Tailwind-token bug that made panels render with transparent backgrounds was fixed.
 
 ---
 
@@ -39,7 +39,7 @@ Decisions that came up later and were resolved:
 Everything below is in the repo, tested and verified.
 
 ### Backend (`backend/`)
-- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events
+- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events, `/autocomplete`, and `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references)
 - `router.py` — Claude-based router producing strict `RetrievalPlan` JSON; system prompt embeds the 77 community-area names + 30+ neighborhood aliases + **search query guidance for zoning-specific terminology**
 - `synthesizer.py` — streaming Claude synthesis call with **inline citation markers** (`[1]`, `[2]`) for code chunks
 - `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers
@@ -52,7 +52,7 @@ Everything below is in the repo, tested and verified.
   - `three11.py` — `v6vf-nfxy` (open requests + response times, `Open - Dup` filtered)
   - `buildings.py` — `ydr8-5enu` permits (uses `reported_cost` field) + `22u3-xenr` violations
   - `business.py` — `uupf-x98q` active licenses
-  - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder
+  - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder; `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
 - `tests/` — **130+ tests** (unit + integration), all passing
 
@@ -75,18 +75,22 @@ Everything below is in the repo, tested and verified.
   - `HeroSlideshow` (5 Unsplash photos, cross-fade)
   - `ChatInput` (glassmorphism pill, hero + compact variants, address autocomplete)
   - `MessageBubble` (react-markdown, inline citations, copy button, typewriter)
-  - `CitationPill` (clickable badge with hover tooltip)
-  - `SourceCitation` (card with score, preview, cross-refs, copy)
-  - `SourceDetailDrawer` (full source text slide-out)
-  - `SidebarPanel`, `SidebarToggle` (collapsible sources panel)
+  - `CitationPill` (renders a `[N]` marker as the `§ <section>` reference + ordinal; hover tooltip; click opens/expands/flashes the source)
+  - `DataPill` (colored `[data:*]` marker → opens Data tab, scrolls to card)
+  - `SourceCitation` (card with rank badge, `§` pill, score, prose preview, in-place full-text expansion, clickable cross-refs)
+  - `CrossRefPill` (clickable cross-reference with hover-preview of the target section)
+  - `SourceDetailDrawer` (full-section viewer for a clicked cross-reference; opaque elevated panel, chained cross-ref navigation)
+  - `sidebar/DataView`, `sidebar/SourcesView` (the two sidebar tabs)
+  - `SidebarPanel`, `SidebarToggle` (collapsible context/data panel)
   - `DisclaimerBanner` (amber, legal disclaimer)
   - `HistorySidebar` (conversation history)
 - `lib/`:
-  - `api.ts` (SSE fetch streaming)
+  - `api.ts` (SSE fetch streaming; `fetchSection` with an immutable-section cache)
   - `history.ts` (localStorage conversations)
   - `types.ts` (matches backend Pydantic, extended with per-message context)
   - `useTypewriter.ts` (character reveal hook)
   - `clipboard.ts` (copy utility)
+  - `codeRefs.ts` (`isResolvableSection`, `stripHeader` helpers)
 - **Builds cleanly** (~322KB JS, 16KB CSS)
 
 ### Benchmarks & Eval (`eval/`)
@@ -99,17 +103,17 @@ Everything below is in the repo, tested and verified.
 
 ## What's NOT Done / Known Issues
 
-### 1. Citation tooltip overlaps text (transparent background)
-The hover tooltip on citation pills has a transparent background causing text overlap. **Fix:** Add solid background color to tooltip in `CitationPill.tsx`.
+### 1. ~~Citation tooltip overlaps text (transparent background)~~ — RESOLVED (2026-05-28)
+Root cause was broader than the tooltip: `tailwind.config.js` had a dead top-level `'bg-dark'` color colliding with the nested `dark.bg`, so the dev JIT silently dropped `.bg-dark-bg` and every panel using it (sidebar, workspace, section drawer) rendered transparent. Removed the dead token; gave the section drawer an explicit `bg-[#141414] shadow-2xl` + darker backdrop. See session log below.
 
-### 2. Source detail drawer covers sidebar
-Opening a source shows a slide-out drawer that overlays the sidebar. User feedback: **expand sources in-place** instead, pushing other sources down. Requires refactoring `SourceCitation.tsx` to be expandable rather than using `SourceDetailDrawer.tsx`.
+### 2. ~~Source detail drawer covers sidebar~~ — RESOLVED (2026-05-28)
+Source cards now expand **in-place** in `SourceCitation.tsx` (full text shown inline, no height cap). The `SourceDetailDrawer` was repurposed for a different job: viewing the full text of a *cross-referenced* section fetched on demand (see session log).
 
 ### 3. Typewriter effect stops after first citation
 The typewriter animation works initially but dumps remaining text all at once after the first `[1]` citation appears. **Root cause:** The `renderChildrenWithCitations` function in `MessageBubble.tsx` may be causing re-renders that reset the typewriter state. Needs investigation.
 
-### 4. No annotations for API-sourced data
-Statistics pulled from Socrata APIs (e.g., "$18.7 million in permits") are not visually distinguished from Municipal Code citations. **Suggestion:** Add a different style of inline annotation for API data, similar to how `[1]` marks code citations but with a different icon/color for data citations.
+### 4. ~~No annotations for API-sourced data~~ — RESOLVED
+Socrata statistics are now marked with `[data:crime]` / `[data:311]` / etc. markers rendered as colored `DataPill` components that open the Data tab and scroll to the relevant card.
 
 ### 5. The Municipal Code is gitignored
 - `chicago-il-codes.html` (~100MB) is not in version control (`.gitignore` line 17).
@@ -167,22 +171,39 @@ Work completed in this session (Chat UI QoL improvements):
 
 ---
 
+## Session Log (2026-05-28 — Context & Data Sidebar Redesign)
+
+Driven by user feedback on the side panel. All changes verified by driving the running app with headless Chromium (Playwright), not just unit tests.
+
+1. **De-cluttered the Data tab** — removed the dev-facing "Latency" benchmarks card and "Active Sources" chips from `sidebar/DataView.tsx`. The live data cards (crime / 311 / permits / violations / business) stay — they're the evidence behind each answer — along with the data-lag note. Dropped the `PhaseTimings` plumbing from `App.tsx` / `SidebarPanel.tsx` that fed the removed card.
+
+2. **Sources tab is now the default** whenever an answer used code sections (`App.tsx` sets the view from `context.code_chunks` on each `context` event); Data is only the default when there are no sources.
+
+3. **Readability pass on sources** (`SourceCitation.tsx`) — section IDs render as `§ <id>` mono pills, the 1–5 rank is a filled circular badge, the collapsed preview is plain prose (header stripped via `lib/codeRefs.ts`) instead of a dense monospace block, and the expanded full text no longer has a `max-h` cap so the whole chunk is readable.
+
+4. **Citations are the section reference itself** — the synthesizer prompt (`synthesizer.py` rule 1) now tells the model to drop a `[N]` marker where the reference belongs and NOT spell out the section number; the frontend renders each `[N]` as a `§ <section>` mono pill with a small ordinal (`CitationPill.tsx`). Clicking a citation opens the sidebar → Sources, scrolls to + auto-expands the source to full size, and plays a one-shot `animate-flash` pulse (re-fires on repeat clicks via a `sourceFlash` counter in `App.tsx`).
+
+5. **Clickable cross-references → full-section viewer** — new `GET /section/{section_id}` endpoint (`main.py`) backed by `vector_search.get_full_section()`, which reassembles a complete section from all its chunks (orders by `chunk_index`, strips repeated headers + `(part N of M)` labels, unions cross-refs). The previously-dead `SourceDetailDrawer.tsx` was repurposed into the viewer for this, with chained cross-ref navigation. Cross-ref pills (`CrossRefPill.tsx`) are clickable and **hover-preview** the target section (title + 3-line snippet), reusing the citation-tooltip pattern; `fetchSection` (`lib/api.ts`) is memoized so the hover prefetch and click share one request. Note: some cross-refs point to sections not in the corpus and 404 — the drawer/tooltip handle that with a graceful "not available" state.
+
+6. **Fixed transparent panel backgrounds (the drawer-overlap bug)** — `tailwind.config.js` had a dead top-level `'bg-dark': '#090d16'` color (never referenced) colliding with the nested `dark.bg`; the collision made the dev Tailwind JIT silently NOT emit `.bg-dark-bg`, so the sidebar, workspace, and section drawer all rendered with transparent backgrounds (invisible normally because `<body>` is dark, but it caused the section drawer's text to overlap the sidebar). Deleted the dead token and gave the drawer an explicit `bg-[#141414] shadow-2xl` + `bg-black/70` backdrop. **If panels ever look see-through again, check for this kind of Tailwind color-name collision first.**
+
+New files: `frontend/src/components/CrossRefPill.tsx`, `frontend/src/lib/codeRefs.ts` (`isResolvableSection`, `stripHeader`).
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
-### Step 1 — Fix citation tooltip styling
-Add solid dark background to tooltip in `CitationPill.tsx` to prevent text overlap.
+### Step 1 — Debug typewriter + citations interaction
+Investigate why typewriter effect stops working after first citation. May need to memoize citation processing or adjust how content is passed to the hook. (Issue #3 — still open.)
 
-### Step 2 — Refactor source expansion to inline
-Replace `SourceDetailDrawer` with in-place expansion in `SourceCitation`. When clicked, card should expand to show full text, pushing other cards down.
+### Step 2 — Decide how to handle un-resolvable cross-references
+Some cross-refs point to sections not in the corpus and return 404 (handled gracefully today as "not available"). Options: hide them rather than render clickable, or investigate why those sections are missing from ingestion.
 
-### Step 3 — Debug typewriter + citations interaction
-Investigate why typewriter effect stops working after first citation. May need to memoize citation processing or adjust how content is passed to the hook.
-
-### Step 4 — Add API data annotations
-Create a new annotation style (different from code citations) for statistics from Socrata APIs. Could be a different colored pill or inline badge like "[permit data]".
-
-### Step 5 — Test multi-turn conversations thoroughly
+### Step 3 — Test multi-turn conversations thoroughly
 The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
+
+### Step 4 — Stretch: Leaflet map view
+Crime pins, 311 markers, zoning overlay. Not started.
 
 ---
 
@@ -199,10 +220,10 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set
 4. **Files most likely to need edits**:
-   - `frontend/src/components/CitationPill.tsx` — tooltip styling
-   - `frontend/src/components/SourceCitation.tsx` — inline expansion
-   - `frontend/src/components/MessageBubble.tsx` — typewriter/citation interaction
+   - `frontend/src/components/MessageBubble.tsx` — typewriter/citation interaction (Issue #3)
    - `frontend/src/lib/useTypewriter.ts` — animation timing
+   - `frontend/src/components/CrossRefPill.tsx` / `SourceDetailDrawer.tsx` — cross-reference behavior
+   - `backend/retrieval/vector_search.py` — `get_full_section` / cross-ref resolution
 
 ## Repo Layout
 

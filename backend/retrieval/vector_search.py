@@ -92,6 +92,67 @@ def get_by_section_id(section_id: str) -> CodeChunk | None:
     return _payload_to_chunk(points[0].get("payload", {}), score=1.0)
 
 
+_PART_LABEL_RE = re.compile(r"\(part \d+ of \d+\)\n?")
+
+
+def get_full_section(section_id: str) -> CodeChunk | None:
+    """Fetch every chunk for a section and reassemble the complete text.
+
+    Sections that exceed the chunker's size budget are split across multiple
+    points (chunk_index 1..N), each carrying a repeated location header. We
+    pull them all, order by chunk_index, keep the first chunk's header, strip
+    the redundant header off parts 2+, and union their cross-references.
+    """
+    settings = get_settings()
+    try:
+        resp = httpx.post(
+            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+            json={
+                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
+                "limit": 64,
+                "with_payload": True,
+            },
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        points = resp.json().get("result", {}).get("points", [])
+    except Exception as exc:
+        log.warning("Qdrant scroll failed for full section %s: %s", section_id, exc)
+        return None
+    if not points:
+        return None
+
+    payloads = [p.get("payload", {}) for p in points]
+    payloads.sort(key=lambda p: p.get("chunk_index", 1))
+
+    parts = [payloads[0].get("text", "")]
+    for p in payloads[1:]:
+        text = p.get("text", "")
+        # Drop the repeated location header (everything up to the first blank line).
+        body = text.split("\n\n", 1)
+        parts.append(body[1] if len(body) > 1 else text)
+    merged = _PART_LABEL_RE.sub("", "\n\n".join(part for part in parts if part))
+
+    seen: set[str] = set()
+    refs: list[str] = []
+    for p in payloads:
+        for ref in p.get("cross_references", []) or []:
+            if ref not in seen:
+                seen.add(ref)
+                refs.append(ref)
+
+    base = payloads[0]
+    return CodeChunk(
+        text=merged,
+        source_document=base.get("source_document", "Chicago Municipal Code"),
+        section=base.get("section", section_id),
+        section_title=base.get("section_title", ""),
+        subsection=base.get("subsection"),
+        score=1.0,
+        cross_references=refs,
+    )
+
+
 _SECTION_REF_RE = re.compile(r"^\d+-\d+-\d+(?:\.\d+)?$")
 
 

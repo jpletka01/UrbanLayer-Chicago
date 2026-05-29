@@ -7,7 +7,6 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        'bg-dark': '#090d16',
         dark: {
           bg: '#0d0d0d',
           surface: '#171717',
@@ -35,10 +34,16 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0' },
         },
+        'flash': {
+          '0%': { boxShadow: '0 0 0 0 rgba(201, 100, 66, 0.7)' },
+          '70%': { boxShadow: '0 0 0 8px rgba(201, 100, 66, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(201, 100, 66, 0)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 2s ease-in-out forwards',
         'blink': 'blink 1s step-end infinite',
+        'flash': 'flash 0.8s ease-out',
       },
     },
   },

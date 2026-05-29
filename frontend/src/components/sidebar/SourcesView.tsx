@@ -1,26 +1,46 @@
-import { createRef, useEffect, useMemo, useState } from "react";
+import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import type { CodeChunk } from "../../lib/types";
 import { SourceCitation } from "../SourceCitation";
 
 interface Props {
   codeChunks: CodeChunk[];
   highlightedIndex?: number | null;
+  flashSignal?: number;
   onSourceClick?: (index: number) => void;
+  onCrossRefClick?: (sectionId: string) => void;
 }
 
-export function SourcesView({ codeChunks, highlightedIndex, onSourceClick }: Props) {
+export function SourcesView({
+  codeChunks,
+  highlightedIndex,
+  flashSignal,
+  onSourceClick,
+  onCrossRefClick,
+}: Props) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [flashingIndex, setFlashingIndex] = useState<number | null>(null);
+  const flashTimer = useRef<number | null>(null);
 
   const refs = useMemo(
     () => codeChunks.map(() => createRef<HTMLDivElement>()),
     [codeChunks.length]
   );
 
+  // When a citation in the chat is clicked, App bumps `flashSignal` and sets
+  // `highlightedIndex`. Open the matching source to full size, scroll it into
+  // view, and flash it briefly. Keyed on flashSignal too, so re-clicking the
+  // same citation re-triggers the flash.
   useEffect(() => {
-    if (highlightedIndex !== null && highlightedIndex !== undefined && refs[highlightedIndex]?.current) {
-      refs[highlightedIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [highlightedIndex, refs]);
+    if (highlightedIndex === null || highlightedIndex === undefined) return;
+    setExpandedIndex(highlightedIndex);
+    refs[highlightedIndex]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashingIndex(highlightedIndex);
+    if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlashingIndex(null), 850);
+    return () => {
+      if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    };
+  }, [highlightedIndex, flashSignal, refs]);
 
   if (codeChunks.length === 0) {
     return (
@@ -65,8 +85,10 @@ export function SourcesView({ codeChunks, highlightedIndex, onSourceClick }: Pro
           chunk={chunk}
           index={i}
           highlighted={highlightedIndex === i}
+          flashing={flashingIndex === i}
           expanded={expandedIndex === i}
           onToggleExpand={() => handleToggleExpand(i)}
+          onCrossRefClick={onCrossRefClick}
         />
       ))}
     </div>

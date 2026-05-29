@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 
 interface Props {
@@ -10,8 +11,8 @@ interface Props {
 export function CitationPill({ index, chunk, onClick }: Props) {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const sectionLabel = chunk?.section ?? `Source ${index + 1}`;
-  const preview = chunk?.text?.slice(0, 150) ?? "";
+  const reference = chunk?.section ? `§ ${chunk.section}` : `Source ${index + 1}`;
+  const preview = chunk ? stripHeader(chunk.text).slice(0, 150) : "";
 
   return (
     <span className="relative inline-block align-baseline">
@@ -19,17 +20,17 @@ export function CitationPill({ index, chunk, onClick }: Props) {
         onClick={() => onClick?.(index)}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center gap-1 h-5 px-1.5 mx-0.5
-                   text-xs font-medium rounded-md
-                   bg-accent/20 text-accent border border-accent/30
-                   hover:bg-accent/30 hover:border-accent/50
-                   transition-colors cursor-pointer"
-        title={sectionLabel}
+        className="inline-flex items-center gap-0.5 h-5 px-1.5 mx-0.5
+                   text-xs font-mono font-medium rounded-md
+                   bg-accent/15 text-accent border border-accent/30
+                   hover:bg-accent/25 hover:border-accent/50
+                   transition-colors cursor-pointer align-baseline"
+        title={`View ${reference}`}
       >
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        {index + 1}
+        {reference}
+        <span className="self-start text-[9px] font-sans font-bold leading-none mt-0.5">
+          {index + 1}
+        </span>
       </button>
       {showTooltip && chunk && (
         <div
@@ -38,8 +39,13 @@ export function CitationPill({ index, chunk, onClick }: Props) {
                      pointer-events-none"
           style={{ backgroundColor: "#1f1f1f" }}
         >
-          <div className="text-xs font-medium text-accent mb-1 truncate">
-            {sectionLabel}
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="w-4 h-4 rounded-full bg-accent text-dark-bg text-[10px] font-bold flex items-center justify-center tabular-nums">
+              {index + 1}
+            </span>
+            <span className="text-xs font-mono font-medium text-accent truncate">
+              §&nbsp;{chunk.section}
+            </span>
           </div>
           {chunk.section_title && (
             <div className="text-xs text-text-secondary mb-2 truncate">
@@ -50,7 +56,7 @@ export function CitationPill({ index, chunk, onClick }: Props) {
             {preview}{preview.length >= 150 ? "..." : ""}
           </div>
           <div className="text-xs text-accent/70 mt-2 flex items-center gap-1">
-            <span>Click to view full source</span>
+            <span>Click to open full source</span>
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>

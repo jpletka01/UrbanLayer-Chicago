@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import type { ContextObject, DataSource, PhaseTimings, RetrievalPlan, SidebarView } from "../lib/types";
+import type { ContextObject, DataSource, RetrievalPlan, SidebarView } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataView } from "./sidebar/DataView";
 import { SourcesView } from "./sidebar/SourcesView";
@@ -8,26 +8,28 @@ interface Props {
   plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
-  timings?: PhaseTimings;
   isOpen: boolean;
   activeView: SidebarView;
   onViewChange: (view: SidebarView) => void;
   highlightedSourceIndex?: number | null;
   highlightedDataSource?: DataSource | null;
+  sourceFlashSignal?: number;
   onSourceClick?: (index: number) => void;
+  onCrossRefClick?: (sectionId: string) => void;
 }
 
 export function SidebarPanel({
   plan,
   context,
   loading,
-  timings,
   isOpen,
   activeView,
   onViewChange,
   highlightedSourceIndex,
   highlightedDataSource,
+  sourceFlashSignal,
   onSourceClick,
+  onCrossRefClick,
 }: Props) {
   const title = context?.community_area_name ?? "Context & Data";
   const subtitle = context?.community_area ? `CA ${context.community_area}` : undefined;
@@ -63,14 +65,15 @@ export function SidebarPanel({
                 plan={plan}
                 context={context}
                 loading={loading}
-                timings={timings}
                 highlightedDataSource={highlightedDataSource}
               />
             ) : (
               <SourcesView
                 codeChunks={context?.code_chunks ?? []}
                 highlightedIndex={highlightedSourceIndex}
+                flashSignal={sourceFlashSignal}
                 onSourceClick={onSourceClick}
+                onCrossRefClick={onCrossRefClick}
               />
             )}
           </div>

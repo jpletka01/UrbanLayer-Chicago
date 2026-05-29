@@ -7,7 +7,8 @@ import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SidebarToggle } from "./components/SidebarToggle";
-import { chatStream } from "./lib/api";
+import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
+import { chatStream, fetchSection } from "./lib/api";
 import {
   clearAllHistory,
   deleteConversation,
@@ -16,7 +17,7 @@ import {
   saveConversation,
   setCurrentConversationId,
 } from "./lib/history";
-import type { Conversation, ContextObject, DataSource, Message, PhaseTimings, RetrievalPlan, SidebarView } from "./lib/types";
+import type { Conversation, ContextObject, DataSource, Message, RetrievalPlan, SidebarView } from "./lib/types";
 
 const SUGGESTIONS = [
   "What's going on near 2400 N Milwaukee Ave?",
@@ -35,12 +36,13 @@ export function App() {
   const [streaming, setStreaming] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [timings, setTimings] = useState<PhaseTimings>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const [highlightedSourceIndex, setHighlightedSourceIndex] = useState<number | null>(null);
   const [highlightedDataSource, setHighlightedDataSource] = useState<DataSource | null>(null);
+  const [sourceFlash, setSourceFlash] = useState(0);
   const [activeSidebarContext, setActiveSidebarContext] = useState<ContextObject | null>(null);
+  const [sectionView, setSectionView] = useState<SectionView | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pendingContextRef = useRef<ContextObject | null>(null);
 
@@ -80,7 +82,6 @@ export function App() {
     setPlan(null);
     setContext(null);
     setShowDisclaimer(false);
-    setTimings({});
     setHistoryOpen(false);
 
     const userMessage: Message = { role: "user", content: text };
@@ -95,22 +96,16 @@ export function App() {
       for await (const chunk of chatStream(text, historySnapshot, controller.signal)) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);
-          if (chunk.t_ms !== undefined) {
-            setTimings((t) => ({ ...t, router_ms: chunk.t_ms }));
-          }
         } else if (chunk.type === "context") {
           setContext(chunk.context);
           setActiveSidebarContext(chunk.context);
           pendingContextRef.current = chunk.context;
           setSidebarOpen(true);
+          // Focus the Sources tab whenever code sections were used; only fall
+          // back to Data when there are no sources to show.
+          setSidebarView(chunk.context.code_chunks?.length ? "sources" : "data");
           if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
-          if (chunk.t_ms !== undefined) {
-            setTimings((t) => ({ ...t, retrieval_ms: chunk.t_ms }));
-          }
         } else if (chunk.type === "token") {
-          if (chunk.t_ms !== undefined) {
-            setTimings((t) => ({ ...t, first_token_ms: chunk.t_ms }));
-          }
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
@@ -120,9 +115,6 @@ export function App() {
             return next;
           });
         } else if (chunk.type === "done") {
-          if (chunk.t_ms !== undefined) {
-            setTimings((t) => ({ ...t, total_ms: chunk.t_ms }));
-          }
           // Attach context to the assistant message for per-message citation binding
           if (pendingContextRef.current) {
             setMessages((m) => {
@@ -191,13 +183,16 @@ export function App() {
   }
 
   function handleCitationClick(index: number, messageContext?: ContextObject) {
+    if (messageContext) {
+      setActiveSidebarContext(messageContext);
+    }
     setSidebarOpen(true);
     setSidebarView("sources");
     setHighlightedSourceIndex(index);
     setHighlightedDataSource(null);
-    if (messageContext) {
-      setActiveSidebarContext(messageContext);
-    }
+    // Bump the flash signal so the target source re-flashes even when it's
+    // already the highlighted one (clicking the same citation twice).
+    setSourceFlash((f) => f + 1);
   }
 
   function handleDataClick(source: DataSource, messageContext?: ContextObject) {
@@ -208,6 +203,12 @@ export function App() {
     if (messageContext) {
       setActiveSidebarContext(messageContext);
     }
+  }
+
+  async function handleCrossRefClick(sectionId: string) {
+    setSectionView({ loading: true, chunk: null });
+    const chunk = await fetchSection(sectionId);
+    setSectionView({ loading: false, chunk });
   }
 
   return (
@@ -366,18 +367,25 @@ export function App() {
                 plan={plan}
                 context={activeSidebarContext}
                 loading={streaming}
-                timings={timings}
                 isOpen={sidebarOpen}
                 activeView={sidebarView}
                 onViewChange={setSidebarView}
                 highlightedSourceIndex={highlightedSourceIndex}
                 highlightedDataSource={highlightedDataSource}
+                sourceFlashSignal={sourceFlash}
                 onSourceClick={setHighlightedSourceIndex}
+                onCrossRefClick={handleCrossRefClick}
               />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <SourceDetailDrawer
+        view={sectionView}
+        onClose={() => setSectionView(null)}
+        onCrossRefClick={handleCrossRefClick}
+      />
     </main>
   );
 }

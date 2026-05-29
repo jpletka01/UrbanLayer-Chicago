@@ -16,7 +16,7 @@ import time
 from typing import AsyncIterator
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -26,7 +26,11 @@ from backend.conversation import synthesize_query
 from backend.models import ChatChunk, ChatRequest, ContextObject, RetrievalPlan
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import geocode_address_suggestions
-from backend.retrieval.vector_search import expand_cross_references, semantic_search
+from backend.retrieval.vector_search import (
+    expand_cross_references,
+    get_full_section,
+    semantic_search,
+)
 from backend.router import route
 from backend.synthesizer import stream_answer
 
@@ -61,6 +65,20 @@ async def autocomplete(q: str = "") -> list[dict]:
     if len(q.strip()) < 3:
         return []
     return await geocode_address_suggestions(q)
+
+
+@app.get("/section/{section_id}")
+async def section(section_id: str) -> dict:
+    """Return the full reassembled municipal-code section by ID.
+
+    Backs the clickable cross-references in the sources panel: a chunk may cite
+    a section that wasn't itself retrieved, so we look it up on demand.
+    """
+    loop = asyncio.get_running_loop()
+    chunk = await loop.run_in_executor(None, lambda: get_full_section(section_id))
+    if chunk is None:
+        raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
+    return chunk.model_dump()
 
 
 def _sse(chunk: ChatChunk) -> str:
