@@ -180,13 +180,13 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
                 )}
               </div>
             ) : streaming ? (
-              <div className="flex items-center gap-2 text-text-secondary">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: "300ms" }} />
+              <div className="flex items-center gap-2.5">
+                <div className="flex gap-1 items-end">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-bounce" style={{ animationDelay: "200ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-bounce" style={{ animationDelay: "400ms" }} />
                 </div>
-                <span className="text-sm">Thinking...</span>
+                <span className="text-sm font-medium animate-text-glow">Thinking</span>
               </div>
             ) : null}
             {showDisclaimer && <DisclaimerBanner />}

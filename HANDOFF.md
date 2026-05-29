@@ -120,8 +120,8 @@ Originally a Tailwind color-name collision (`bg-dark` vs `dark.bg`). After fixin
 ### 2. ~~Source detail drawer covers sidebar~~ — RESOLVED (2026-05-28)
 Source cards now expand **in-place** in `SourceCitation.tsx` (full text shown inline, no height cap). The `SourceDetailDrawer` was repurposed for a different job: viewing the full text of a *cross-referenced* section fetched on demand (see session log).
 
-### 3. Typewriter effect stops after first citation
-The typewriter animation works initially but dumps remaining text all at once after the first `[1]` citation appears. **Root cause:** The `renderChildrenWithCitations` function in `MessageBubble.tsx` may be causing re-renders that reset the typewriter state. Needs investigation.
+### 3. ~~Typewriter effect stops after first citation~~ — RESOLVED (2026-05-29)
+The `useTypewriter` effect depended on `content.length`, which changes on every SSE token. Each change cleared and recreated the interval, preventing the typewriter from advancing while tokens arrived rapidly. When streaming ended, `setDisplayedLength(content.length)` dumped all remaining text at once. Fix: removed `content.length` from the effect dependency (the interval already reads the target via a ref), added a `wasStreamingRef` so the interval continues after streaming ends until it catches up (instead of dumping), and added adaptive step sizing (1/2/3 chars per tick based on how far behind).
 
 ### 4. ~~No annotations for API-sourced data~~ — RESOLVED
 Socrata statistics are now marked with `[data:crime]` / `[data:311]` / etc. markers rendered as colored `DataPill` components that open the Data tab and scroll to the relevant card.
@@ -277,18 +277,31 @@ Files changed: `ChatInput.tsx`, `constants.ts`, `App.tsx`. New: `CountUp.tsx`.
 
 ---
 
+## Session Log (2026-05-29 — Typewriter Fix + Thinking Animation)
+
+Two fixes to the streaming UX.
+
+**Typewriter effect fixed** (`useTypewriter.ts`):
+1. **Root cause** — The `useEffect` depended on `content.length`, which changes on every SSE token. Each change cleared and recreated the `setInterval`, resetting the timer before it could fire. The typewriter fell progressively behind. When streaming ended, `setDisplayedLength(content.length)` dumped all remaining text at once — visible right around the first citation marker.
+2. **Fix** — Removed `content.length` from the effect dependency array (the interval already reads the target length via `contentRef`). Added `wasStreamingRef` to distinguish "never streamed" (show immediately) from "just finished streaming" (let the interval continue until caught up, then self-terminate). Added adaptive step sizing: 1 char/tick normally, 2 when 20+ behind, 3 when 50+ behind.
+
+**Thinking indicator animated** (`MessageBubble.tsx`, `tailwind.config.js`):
+1. **Bouncing dots** — Replaced static `animate-pulse` opacity fade with a `dot-bounce` keyframe (translateY -5px at 40%, staggered 200ms apart, 1.4s cycle). Dots bounce in sequence.
+2. **Glowing text** — "Thinking" text (no ellipsis — dots do that job) oscillates between `#eeeeee` and `#6b6962` via a `text-glow` keyframe on a 2s ease-in-out cycle.
+
+Files changed: `useTypewriter.ts`, `MessageBubble.tsx`, `tailwind.config.js`.
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
-### Step 1 — Debug typewriter + citations interaction
-Investigate why typewriter effect stops working after first citation. May need to memoize citation processing or adjust how content is passed to the hook. (Issue #3 — still open.)
-
-### Step 2 — Decide how to handle un-resolvable cross-references
+### Step 1 — Decide how to handle un-resolvable cross-references
 Some cross-refs point to sections not in the corpus and return 404 (handled gracefully today as "not available"). Options: hide them rather than render clickable, or investigate why those sections are missing from ingestion.
 
-### Step 3 — Test multi-turn conversations thoroughly
+### Step 2 — Test multi-turn conversations thoroughly
 The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
 
-### Step 4 — Stretch: Leaflet map view
+### Step 3 — Stretch: Leaflet map view
 Crime pins, 311 markers, zoning overlay. Not started.
 
 ---

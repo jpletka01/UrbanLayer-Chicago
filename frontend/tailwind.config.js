@@ -43,11 +43,21 @@ export default {
           '70%': { boxShadow: '0 0 0 8px rgba(201, 100, 66, 0)' },
           '100%': { boxShadow: '0 0 0 0 rgba(201, 100, 66, 0)' },
         },
+        'dot-bounce': {
+          '0%, 80%, 100%': { transform: 'translateY(0)' },
+          '40%': { transform: 'translateY(-5px)' },
+        },
+        'text-glow': {
+          '0%, 100%': { color: '#eeeeee' },
+          '50%': { color: '#6b6962' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 2s ease-in-out forwards',
         'blink': 'blink 1s step-end infinite',
         'flash': 'flash 0.8s ease-out',
+        'dot-bounce': 'dot-bounce 1.4s ease-in-out infinite',
+        'text-glow': 'text-glow 2s ease-in-out infinite',
       },
     },
   },

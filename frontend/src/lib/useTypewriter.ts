@@ -5,30 +5,37 @@ export function useTypewriter(content: string, streaming: boolean): string {
   const [displayedLength, setDisplayedLength] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const contentRef = useRef(content);
+  const streamingRef = useRef(streaming);
+  const wasStreamingRef = useRef(false);
 
-  // Keep content ref updated for interval closure
   contentRef.current = content;
+  streamingRef.current = streaming;
+  if (streaming) wasStreamingRef.current = true;
 
   useEffect(() => {
-    // Always clear existing interval first
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    if (!streaming) {
-      // Not streaming — show everything immediately
+    if (!streaming && !wasStreamingRef.current) {
       setDisplayedLength(content.length);
       return;
     }
 
-    // Streaming — advance characters over time
     intervalRef.current = setInterval(() => {
       setDisplayedLength((prev) => {
         const target = contentRef.current.length;
-        if (prev >= target) return prev;
-        // Advance 1-2 chars per tick for smoother feel
-        return Math.min(prev + 1, target);
+        if (prev >= target) {
+          if (!streamingRef.current) {
+            clearInterval(intervalRef.current!);
+            intervalRef.current = null;
+          }
+          return prev;
+        }
+        const behind = target - prev;
+        const step = behind > 50 ? 3 : behind > 20 ? 2 : 1;
+        return Math.min(prev + step, target);
       });
     }, CHAR_DELAY_MS);
 
@@ -38,12 +45,12 @@ export function useTypewriter(content: string, streaming: boolean): string {
         intervalRef.current = null;
       }
     };
-  }, [streaming, content.length]);
+  }, [streaming]);
 
-  // Reset displayed length when content is cleared (new message)
   useEffect(() => {
     if (content.length === 0) {
       setDisplayedLength(0);
+      wasStreamingRef.current = false;
     }
   }, [content.length]);
 
