@@ -9,10 +9,11 @@ export const SUGGESTIONS = [
 ];
 
 // Splash-screen headline stats.
+const commaFmt = (n: number) => n.toLocaleString("en-US");
 export const SPLASH_STATS = [
-  { value: "14,628", label: "Code sections" },
-  { value: "5", label: "Live datasets" },
-  { value: "77", label: "Community areas" },
+  { value: 14628, label: "Code sections", format: commaFmt },
+  { value: 5, label: "Live datasets" },
+  { value: 77, label: "Community areas" },
 ];
 
 // Timings (ms).

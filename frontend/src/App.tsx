@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
+import { CountUp } from "./components/CountUp";
 import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
@@ -234,9 +235,14 @@ export function App() {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="absolute bottom-12 left-0 right-0 z-10 flex justify-around px-8"
             >
-              {SPLASH_STATS.map((stat) => (
+              {SPLASH_STATS.map((stat, i) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-4xl font-semibold text-white">{stat.value}</div>
+                  <CountUp
+                    to={stat.value}
+                    format={stat.format}
+                    delay={0.6 + i * 0.15}
+                    className="text-4xl font-semibold text-white"
+                  />
                   <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{stat.label}</div>
                 </div>
               ))}
