@@ -26,6 +26,41 @@ log = logging.getLogger(__name__)
 MAX_CROSS_REF_HOPS = 1
 MAX_CROSS_REF_PER_CHUNK = 3
 
+
+@lru_cache(maxsize=1)
+def _get_known_sections() -> frozenset[str]:
+    """Scroll all Qdrant points once and cache the set of section IDs."""
+    settings = get_settings()
+    sections: set[str] = set()
+    offset = None
+    while True:
+        body: dict[str, Any] = {
+            "limit": 1000,
+            "with_payload": {"include": ["section"]},
+        }
+        if offset is not None:
+            body["offset"] = offset
+        try:
+            resp = httpx.post(
+                f"{settings.qdrant_url}/collections/{settings.qdrant_code_collection}/points/scroll",
+                json=body,
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            result = resp.json().get("result", {})
+        except Exception as exc:
+            log.warning("Failed to build section index: %s", exc)
+            return frozenset()
+        for point in result.get("points", []):
+            s = point.get("payload", {}).get("section", "")
+            if s:
+                sections.add(s)
+        offset = result.get("next_page_offset")
+        if offset is None:
+            break
+    log.info("Section index built: %d unique sections", len(sections))
+    return frozenset(sections)
+
 _LEGEND_RE = re.compile(
     r"Row \d+ \(all columns\):.*(?:permitted|special use|planned development|[Nn]ot allowed)",
 )
@@ -59,6 +94,10 @@ def _qdrant_url() -> str:
 
 
 def _payload_to_chunk(payload: dict[str, Any], score: float) -> CodeChunk:
+    known = _get_known_sections()
+    refs = payload.get("cross_references", []) or []
+    if known:
+        refs = [r for r in refs if r in known]
     return CodeChunk(
         text=payload.get("text", ""),
         source_document=payload.get("source_document", "Chicago Municipal Code"),
@@ -66,7 +105,7 @@ def _payload_to_chunk(payload: dict[str, Any], score: float) -> CodeChunk:
         section_title=payload.get("section_title", ""),
         subsection=payload.get("subsection"),
         score=score,
-        cross_references=payload.get("cross_references", []) or [],
+        cross_references=refs,
     )
 
 
@@ -160,13 +199,15 @@ def get_full_section(section_id: str) -> CodeChunk | None:
         parts.append(body[1] if len(body) > 1 else text)
     merged = _PART_LABEL_RE.sub("", "\n\n".join(part for part in parts if part))
 
+    known = _get_known_sections()
     seen: set[str] = set()
     refs: list[str] = []
     for p in payloads:
         for ref in p.get("cross_references", []) or []:
             if ref not in seen:
                 seen.add(ref)
-                refs.append(ref)
+                if not known or ref in known:
+                    refs.append(ref)
 
     base = payloads[0]
     return CodeChunk(
@@ -180,7 +221,7 @@ def get_full_section(section_id: str) -> CodeChunk | None:
     )
 
 
-_SECTION_REF_RE = re.compile(r"^\d+-\d+-\d+(?:\.\d+)?$")
+_SECTION_REF_RE = re.compile(r"^\d+[A-Za-z]?-\d+-\d+")
 
 
 def expand_cross_references(chunks: list[CodeChunk]) -> list[CodeChunk]:

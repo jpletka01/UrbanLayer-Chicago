@@ -293,15 +293,31 @@ Files changed: `useTypewriter.ts`, `MessageBubble.tsx`, `tailwind.config.js`.
 
 ---
 
+## Session Log (2026-05-29 — Cross-Reference Filtering)
+
+Cross-reference pills in the sources sidebar were broken in two ways: 240 orange pills showed "unavailable" (section ID passed the regex but didn't exist in Qdrant), and 718 grey pills were non-clickable dead ends (failed the regex, and none existed in the corpus either). Only 1,973 of 2,931 unique cross-refs actually pointed to fetchable sections.
+
+**Backend fix** (`vector_search.py`):
+1. **Section index** — `_get_known_sections()` scrolls all Qdrant points once (paginated, 1k per request), caches a `frozenset` of every section ID in the corpus (~8,600 unique). Uses `lru_cache` so the scroll happens once per process lifetime.
+2. **Filtering** — `_payload_to_chunk()` now filters each chunk's `cross_references` against the cached set. Only refs that exist in the database reach the frontend. Fails open (unfiltered) if Qdrant is unreachable during index build.
+3. **Wider regex** — `_SECTION_REF_RE` broadened from `^\d+-\d+-\d+` to `^\d+[A-Za-z]?-\d+-\d+` to also match `14A-*` style section IDs during cross-ref expansion.
+
+**Frontend fix** (`codeRefs.ts`):
+- Widened `isResolvableSection` regex to match alphanumeric first segments (`14A-1-104`, `14B-3-301.2.2`). Acts as a fallback if the backend index is unavailable.
+
+**Tests** (`test_vector_search.py`):
+- `TestPayloadToChunk` patched to mock `_get_known_sections` (empty frozenset = unfiltered, matching fail-open behavior). Added `test_filters_cross_refs_against_known_sections` to verify filtering when the index IS populated. Regex tests updated for the wider pattern.
+
+Files changed: `vector_search.py`, `codeRefs.ts`, `test_vector_search.py`.
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
-### Step 1 — Decide how to handle un-resolvable cross-references
-Some cross-refs point to sections not in the corpus and return 404 (handled gracefully today as "not available"). Options: hide them rather than render clickable, or investigate why those sections are missing from ingestion.
-
-### Step 2 — Test multi-turn conversations thoroughly
+### Step 1 — Test multi-turn conversations thoroughly
 The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
 
-### Step 3 — Stretch: Leaflet map view
+### Step 2 — Stretch: Leaflet map view
 Crime pins, 311 markers, zoning overlay. Not started.
 
 ---

@@ -10,8 +10,9 @@ from backend.retrieval.vector_search import (
 from backend.models import CodeChunk
 
 
+@patch("backend.retrieval.vector_search._get_known_sections", return_value=frozenset())
 class TestPayloadToChunk:
-    def test_converts_full_payload(self):
+    def test_converts_full_payload(self, _mock_sections):
         payload = {
             "text": "Coach houses are permitted in RS-3 districts.",
             "source_document": "Chicago Municipal Code",
@@ -29,7 +30,7 @@ class TestPayloadToChunk:
         assert chunk.score == 0.92
         assert chunk.cross_references == ["17-2-0200", "17-10-0207"]
 
-    def test_handles_missing_fields(self):
+    def test_handles_missing_fields(self, _mock_sections):
         payload = {"text": "Some text", "section": "1-1-1"}
         chunk = _payload_to_chunk(payload, score=0.5)
 
@@ -39,10 +40,20 @@ class TestPayloadToChunk:
         assert chunk.subsection is None
         assert chunk.cross_references == []
 
-    def test_handles_null_cross_references(self):
+    def test_handles_null_cross_references(self, _mock_sections):
         payload = {"text": "Text", "section": "1-1-1", "cross_references": None}
         chunk = _payload_to_chunk(payload, score=0.5)
         assert chunk.cross_references == []
+
+    def test_filters_cross_refs_against_known_sections(self, _mock_sections):
+        _mock_sections.return_value = frozenset({"17-2-0200"})
+        payload = {
+            "text": "Text",
+            "section": "17-2-0303",
+            "cross_references": ["17-2-0200", "17-10-0207", "Ch.17-2"],
+        }
+        chunk = _payload_to_chunk(payload, score=0.9)
+        assert chunk.cross_references == ["17-2-0200"]
 
 
 class TestSectionRefRegex:
@@ -51,6 +62,8 @@ class TestSectionRefRegex:
         assert _SECTION_REF_RE.match("17-10-0207")
         assert _SECTION_REF_RE.match("1-1-1")
         assert _SECTION_REF_RE.match("17-2-0303.5")
+        assert _SECTION_REF_RE.match("14A-1-104")
+        assert _SECTION_REF_RE.match("14A-3-301.2.2")
 
     def test_rejects_invalid_section_ids(self):
         assert not _SECTION_REF_RE.match("Title17")
