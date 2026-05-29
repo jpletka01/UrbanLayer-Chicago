@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "motion/react";
-import { forwardRef, useState } from "react";
-import { copyToClipboard } from "../lib/clipboard";
+import { forwardRef } from "react";
 import { isResolvableSection, stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
+import { useCopyButton } from "../lib/useCopyButton";
 import { CrossRefPill } from "./CrossRefPill";
 
 interface Props {
@@ -38,16 +38,12 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
     { chunk, index, highlighted, flashing, expanded, onToggleExpand, onCrossRefClick },
     ref
   ) {
-    const [copied, setCopied] = useState(false);
+    const { copied, copy } = useCopyButton(chunk.text);
     const preview = stripHeader(chunk.text);
 
-    const handleCopy = async (e: React.MouseEvent) => {
+    const handleCopy = (e: React.MouseEvent) => {
       e.stopPropagation();
-      const success = await copyToClipboard(chunk.text);
-      if (success) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
+      copy();
     };
 
     return (

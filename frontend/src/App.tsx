@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { HeroSlideshow } from "./components/HeroSlideshow";
@@ -8,7 +8,8 @@ import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SidebarToggle } from "./components/SidebarToggle";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
-import { chatStream, fetchSection } from "./lib/api";
+import { fetchSection } from "./lib/api";
+import { SPLASH_STATS, SUGGESTIONS } from "./lib/constants";
 import {
   clearAllHistory,
   deleteConversation,
@@ -17,25 +18,13 @@ import {
   saveConversation,
   setCurrentConversationId,
 } from "./lib/history";
-import type { Conversation, ContextObject, DataSource, Message, RetrievalPlan, SidebarView } from "./lib/types";
-
-const SUGGESTIONS = [
-  "What's going on near 2400 N Milwaukee Ave?",
-  "Crime trends in Wicker Park last 90 days",
-  "Can I open a bar in a residential district?",
-  "Top 311 complaints in Logan Square",
-];
+import type { Conversation, ContextObject, DataSource, SidebarView } from "./lib/types";
+import { useChat } from "./lib/useChat";
 
 export function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [plan, setPlan] = useState<RetrievalPlan | null>(null);
-  const [context, setContext] = useState<ContextObject | null>(null);
-  const [streaming, setStreaming] = useState(false);
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const [highlightedSourceIndex, setHighlightedSourceIndex] = useState<number | null>(null);
@@ -43,8 +32,27 @@ export function App() {
   const [sourceFlash, setSourceFlash] = useState(0);
   const [activeSidebarContext, setActiveSidebarContext] = useState<ContextObject | null>(null);
   const [sectionView, setSectionView] = useState<SectionView | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const pendingContextRef = useRef<ContextObject | null>(null);
+
+  // When a turn's context arrives, surface it in the sidebar. Focus the Sources
+  // tab whenever code sections were used; only fall back to Data when there are none.
+  function handleContext(ctx: ContextObject) {
+    setActiveSidebarContext(ctx);
+    setSidebarOpen(true);
+    setSidebarView(ctx.code_chunks?.length ? "sources" : "data");
+  }
+
+  const {
+    messages,
+    setMessages,
+    streaming,
+    plan,
+    context,
+    showDisclaimer,
+    errorMsg,
+    sendMessage: sendChat,
+    clearTurnState,
+    reset: resetChat,
+  } = useChat({ onContext: handleContext });
 
   // Migrate old history format on first load
   useEffect(() => {
@@ -76,80 +84,15 @@ export function App() {
 
   const active = messages.length > 0 || streaming;
 
-  async function sendMessage(text: string) {
-    if (streaming) return;
-    setErrorMsg(null);
-    setPlan(null);
-    setContext(null);
-    setShowDisclaimer(false);
+  function sendMessage(text: string) {
     setHistoryOpen(false);
-
-    const userMessage: Message = { role: "user", content: text };
-    const historySnapshot = [...messages];
-    setMessages((m) => [...m, userMessage, { role: "assistant", content: "" }]);
-    setStreaming(true);
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      for await (const chunk of chatStream(text, historySnapshot, controller.signal)) {
-        if (chunk.type === "plan") {
-          setPlan(chunk.plan);
-        } else if (chunk.type === "context") {
-          setContext(chunk.context);
-          setActiveSidebarContext(chunk.context);
-          pendingContextRef.current = chunk.context;
-          setSidebarOpen(true);
-          // Focus the Sources tab whenever code sections were used; only fall
-          // back to Data when there are no sources to show.
-          setSidebarView(chunk.context.code_chunks?.length ? "sources" : "data");
-          if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
-        } else if (chunk.type === "token") {
-          setMessages((m) => {
-            const next = [...m];
-            const last = next[next.length - 1];
-            if (last && last.role === "assistant") {
-              next[next.length - 1] = { ...last, content: last.content + chunk.text };
-            }
-            return next;
-          });
-        } else if (chunk.type === "done") {
-          // Attach context to the assistant message for per-message citation binding
-          if (pendingContextRef.current) {
-            setMessages((m) => {
-              const next = [...m];
-              const last = next[next.length - 1];
-              if (last?.role === "assistant") {
-                next[next.length - 1] = { ...last, context: pendingContextRef.current! };
-              }
-              return next;
-            });
-          }
-        } else if (chunk.type === "error") {
-          setErrorMsg(chunk.error);
-        }
-      }
-    } catch (err) {
-      if ((err as Error).name !== "AbortError") {
-        console.error(err);
-        setErrorMsg((err as Error).message);
-      }
-    } finally {
-      setStreaming(false);
-      abortRef.current = null;
-    }
+    sendChat(text);
   }
 
   function reset() {
-    abortRef.current?.abort();
-    setMessages([]);
+    resetChat();
     setConversationId(null);
     setCurrentConversationId(null);
-    setPlan(null);
-    setContext(null);
-    setShowDisclaimer(false);
-    setErrorMsg(null);
     setSidebarOpen(false);
     setSidebarView("data");
     setHighlightedSourceIndex(null);
@@ -162,10 +105,7 @@ export function App() {
     setConversationId(conv.id);
     setCurrentConversationId(conv.id);
     setHistoryOpen(false);
-    setPlan(null);
-    setContext(null);
-    setShowDisclaimer(false);
-    setErrorMsg(null);
+    clearTurnState();
   }
 
   function handleDeleteConversation(id: string) {
@@ -295,18 +235,12 @@ export function App() {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="absolute bottom-12 left-0 right-0 z-10 flex justify-around px-8"
             >
-              <div className="text-center">
-                <div className="text-4xl font-semibold text-white">14,628</div>
-                <div className="text-sm text-white/60 uppercase tracking-wider mt-2">Code sections</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-semibold text-white">5</div>
-                <div className="text-sm text-white/60 uppercase tracking-wider mt-2">Live datasets</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-semibold text-white">77</div>
-                <div className="text-sm text-white/60 uppercase tracking-wider mt-2">Community areas</div>
-              </div>
+              {SPLASH_STATS.map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <div className="text-4xl font-semibold text-white">{stat.value}</div>
+                  <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{stat.label}</div>
+                </div>
+              ))}
             </motion.div>
           </motion.div>
         ) : (

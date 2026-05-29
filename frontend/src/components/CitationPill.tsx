@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
+import { Tooltip } from "./Tooltip";
 
 interface Props {
   index: number;
@@ -33,12 +34,7 @@ export function CitationPill({ index, chunk, onClick }: Props) {
         </span>
       </button>
       {showTooltip && chunk && (
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
-                     w-72 p-3 rounded-lg border border-dark-border shadow-2xl
-                     pointer-events-none"
-          style={{ backgroundColor: "#1f1f1f" }}
-        >
+        <Tooltip className="w-72 p-3 rounded-lg shadow-2xl">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="w-4 h-4 rounded-full bg-accent text-dark-bg text-[10px] font-bold flex items-center justify-center tabular-nums">
               {index + 1}
@@ -61,7 +57,7 @@ export function CitationPill({ index, chunk, onClick }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </div>
-        </div>
+        </Tooltip>
       )}
     </span>
   );

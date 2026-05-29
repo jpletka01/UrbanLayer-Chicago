@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-const CHAR_DELAY_MS = 15;
+import { TYPEWRITER_CHAR_DELAY_MS as CHAR_DELAY_MS } from "./constants";
 
 export function useTypewriter(content: string, streaming: boolean): string {
   const [displayedLength, setDisplayedLength] = useState(0);

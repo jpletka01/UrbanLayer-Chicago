@@ -1,8 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
-import { copyToClipboard } from "../lib/clipboard";
 import { isResolvableSection } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
+import { useCopyButton } from "../lib/useCopyButton";
 import { CrossRefPill } from "./CrossRefPill";
 
 export interface SectionView {
@@ -17,17 +16,8 @@ interface Props {
 }
 
 export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
-  const [copied, setCopied] = useState(false);
   const chunk = view?.chunk ?? null;
-
-  const handleCopy = async () => {
-    if (!chunk) return;
-    const success = await copyToClipboard(chunk.text);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  const { copied, copy } = useCopyButton(chunk?.text ?? "");
 
   return (
     <AnimatePresence>
@@ -46,7 +36,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-[#141414] border-l border-dark-border shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-dark-drawer border-l border-dark-border shadow-2xl z-50 flex flex-col"
           >
             <div className="flex items-start justify-between p-4 border-b border-dark-border gap-4">
               <div className="min-w-0 flex-1">
@@ -78,7 +68,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
               <div className="flex items-center gap-2 shrink-0">
                 {chunk && (
                   <button
-                    onClick={handleCopy}
+                    onClick={copy}
                     className="p-2 rounded-lg bg-dark-surface border border-dark-border
                                text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-all"
                     title="Copy full text"

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
 import { getAutocomplete } from "../lib/api";
+import { AUTOCOMPLETE_DEBOUNCE_MS, MIN_AUTOCOMPLETE_CHARS } from "../lib/constants";
 import type { AddressSuggestion } from "../lib/types";
 
 interface Props {
@@ -22,7 +23,7 @@ export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }:
       clearTimeout(debounceRef.current);
     }
 
-    if (value.length < 3) {
+    if (value.length < MIN_AUTOCOMPLETE_CHARS) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -33,7 +34,7 @@ export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }:
       setSuggestions(results);
       setShowSuggestions(results.length > 0);
       setSelectedIndex(-1);
-    }, 300);
+    }, AUTOCOMPLETE_DEBOUNCE_MS);
 
     return () => {
       if (debounceRef.current) {

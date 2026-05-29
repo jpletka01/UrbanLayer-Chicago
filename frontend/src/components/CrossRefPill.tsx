@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { fetchSection } from "../lib/api";
 import { stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
+import { Tooltip } from "./Tooltip";
 
 interface Props {
   sectionId: string;
@@ -50,12 +51,7 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
         </svg>
       </button>
       {showTooltip && (
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
-                     w-64 p-3 rounded-lg border border-dark-border shadow-2xl
-                     pointer-events-none text-left"
-          style={{ backgroundColor: "#1f1f1f" }}
-        >
+        <Tooltip className="w-64 p-3 rounded-lg shadow-2xl text-left">
           <div className="text-xs font-mono font-medium text-accent mb-1">§&nbsp;{sectionId}</div>
           {preview.status === "loading" && (
             <div className="text-xs text-text-muted">Loading preview…</div>
@@ -84,7 +80,7 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
               </div>
             </>
           )}
-        </div>
+        </Tooltip>
       )}
     </span>
   );

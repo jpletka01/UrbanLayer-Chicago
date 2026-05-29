@@ -1,7 +1,7 @@
 import { Children, cloneElement, isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import { copyToClipboard } from "../lib/clipboard";
 import type { CodeChunk, DataSource, Message } from "../lib/types";
+import { useCopyButton } from "../lib/useCopyButton";
 import { useTypewriter } from "../lib/useTypewriter";
 import { CitationPill } from "./CitationPill";
 import { DataPill } from "./DataPill";
@@ -18,18 +18,10 @@ interface Props {
 
 export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [] }: Props) {
   const isUser = message.role === "user";
-  const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const { copied, copy } = useCopyButton(message.content);
 
   const displayedContent = useTypewriter(message.content, !!streaming);
-
-  const handleCopy = async () => {
-    const success = await copyToClipboard(message.content);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
 
   const processTextWithCitations = useCallback((text: string): ReactNode[] => {
     const parts = text.split(/(\[\d+\]|\[data:(?:crime|311|permits|violations|business)\])/g);
@@ -117,10 +109,10 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div className="relative max-w-[85%] rounded-2xl px-4 py-3 bg-[#2a2a2a] text-text-primary">
+        <div className="relative max-w-[85%] rounded-2xl px-4 py-3 bg-dark-bubble-user text-text-primary">
           {hovered && (
             <button
-              onClick={handleCopy}
+              onClick={copy}
               className="absolute -left-10 top-1/2 -translate-y-1/2 p-1.5 rounded-lg
                          bg-dark-surface/80 border border-dark-border
                          text-text-muted hover:text-text-primary hover:bg-dark-elevated
@@ -150,10 +142,10 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="relative max-w-[85%] rounded-2xl px-4 py-3 bg-[#1a1a1a]">
+      <div className="relative max-w-[85%] rounded-2xl px-4 py-3 bg-dark-bubble">
         {hovered && !streaming && displayedContent && (
           <button
-            onClick={handleCopy}
+            onClick={copy}
             className="absolute -right-10 top-3 p-1.5 rounded-lg
                        bg-dark-surface/80 border border-dark-border
                        text-text-muted hover:text-text-primary hover:bg-dark-elevated

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { HERO_SLIDE_INTERVAL_MS as INTERVAL_MS } from "../lib/constants";
 
 const SLIDES = [
   "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=1920&q=80",
@@ -7,8 +8,6 @@ const SLIDES = [
   "https://images.unsplash.com/photo-1745872262717-69c8951b5c49?w=1920&q=80",
   "https://images.unsplash.com/photo-1616624446421-b6a136da737d?w=1920&q=80",
 ];
-
-const INTERVAL_MS = 8000;
 
 export function HeroSlideshow() {
   const [idx, setIdx] = useState(0);

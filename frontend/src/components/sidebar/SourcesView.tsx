@@ -1,4 +1,5 @@
 import { createRef, useEffect, useMemo, useRef, useState } from "react";
+import { SOURCE_FLASH_MS } from "../../lib/constants";
 import type { CodeChunk } from "../../lib/types";
 import { SourceCitation } from "../SourceCitation";
 
@@ -36,7 +37,7 @@ export function SourcesView({
     refs[highlightedIndex]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     setFlashingIndex(highlightedIndex);
     if (flashTimer.current) window.clearTimeout(flashTimer.current);
-    flashTimer.current = window.setTimeout(() => setFlashingIndex(null), 850);
+    flashTimer.current = window.setTimeout(() => setFlashingIndex(null), SOURCE_FLASH_MS);
     return () => {
       if (flashTimer.current) window.clearTimeout(flashTimer.current);
     };

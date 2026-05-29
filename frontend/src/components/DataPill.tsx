@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { DataSource } from "../lib/types";
+import { Tooltip } from "./Tooltip";
 
 interface Props {
   source: DataSource;
@@ -63,20 +64,14 @@ export function DataPill({ source, onClick }: Props) {
         </svg>
       </button>
       {showTooltip && (
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
-                     px-2 py-1 rounded-md whitespace-nowrap
-                     border border-dark-border shadow-xl
-                     pointer-events-none"
-          style={{ backgroundColor: "#1f1f1f" }}
-        >
+        <Tooltip className="px-2 py-1 rounded-md whitespace-nowrap shadow-xl">
           <div className={`text-xs font-medium ${colors.text}`}>
             {config.label}
           </div>
           <div className="text-xs text-text-muted">
             Chicago Data Portal
           </div>
-        </div>
+        </Tooltip>
       )}
     </span>
   );

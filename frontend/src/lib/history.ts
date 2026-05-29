@@ -1,15 +1,7 @@
-import type { Message } from "./types";
+import type { Conversation, Message } from "./types";
 
 const CONVERSATIONS_KEY = "chicago.conversations.v1";
 const CURRENT_KEY = "chicago.current_conversation.v1";
-
-export interface Conversation {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: number;
-  updatedAt: number;
-}
 
 function generateId(): string {
   return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
