@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-29):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips. The context/data sidebar was redesigned — citations now render as the actual `§` section reference, cross-references are clickable and open a full-section viewer, and a Tailwind-token bug that made panels render with transparent backgrounds was fixed. Previous work: a behavior-preserving **code-health refactor** — shared Anthropic client, deduped retrieval helpers, prompts/tuning knobs centralized in config, and a `useChat` hook + shared UI primitives on the frontend. Most recent work: **capped-result awareness** — Socrata queries have `$limit` guards that can silently truncate results; the assembler and synthesizer now detect and surface this so the LLM says "at least N" instead of presenting a capped count as exact (see session log below).
+**Current status (2026-05-29):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips. The context/data sidebar was redesigned — citations now render as the actual `§` section reference, cross-references are clickable and open a full-section viewer. Most recent work: **sidebar polish + tooltip/background fixes** — sidebar rewritten with a drag-to-resize handle and a collapsed rail; table chunks now render as formatted HTML tables; tooltip backgrounds are solid `#333` with `#444` borders and use `position: fixed` with viewport clamping so they can't be clipped by the sidebar's overflow container; the section-detail drawer has a stronger `bg-black/80 backdrop-blur-sm` overlay. Previous: **capped-result awareness** — Socrata `$limit` guards detected and surfaced so the LLM says "at least N" instead of exact counts.
 
 ---
 
@@ -83,9 +83,11 @@ Everything below is in the repo, tested and verified.
   - `SourceCitation` (card with rank badge, `§` pill, score, prose preview, in-place full-text expansion, clickable cross-refs)
   - `CrossRefPill` (clickable cross-reference with hover-preview of the target section)
   - `SourceDetailDrawer` (full-section viewer for a clicked cross-reference; opaque elevated panel, chained cross-ref navigation)
-  - `Tooltip` (shared hover-tooltip surface used by `CitationPill` / `CrossRefPill` / `DataPill`)
+  - `Tooltip` (shared hover-tooltip: `position: fixed` with `useLayoutEffect` viewport clamping; solid `#333` bg + `#444` border; flips below trigger when no room above)
+  - `ChunkText` (renders chunk text, delegates table segments to `ChunkTable`)
+  - `ChunkTable` (formatted HTML table rendering for table-bearing chunks)
   - `sidebar/DataView`, `sidebar/SourcesView` (the two sidebar tabs)
-  - `SidebarPanel`, `SidebarToggle` (collapsible context/data panel)
+  - `SidebarPanel` (collapsible context/data panel with drag-to-resize handle and collapsed rail)
   - `DisclaimerBanner` (amber, legal disclaimer)
   - `HistorySidebar` (conversation history)
 - `lib/`:
@@ -99,6 +101,7 @@ Everything below is in the repo, tested and verified.
   - `useTypewriter.ts` (character reveal hook)
   - `clipboard.ts` (copy utility)
   - `codeRefs.ts` (`isResolvableSection`, `stripHeader` helpers)
+  - `parseTable.ts` (parses `[TABLE]`/`Row N:` markup into structured table data for `ChunkTable`)
 - **Builds cleanly** (~322KB JS, 16KB CSS)
 
 ### Benchmarks & Eval (`eval/`)
@@ -111,8 +114,8 @@ Everything below is in the repo, tested and verified.
 
 ## What's NOT Done / Known Issues
 
-### 1. ~~Citation tooltip overlaps text (transparent background)~~ — RESOLVED (2026-05-28)
-Root cause was broader than the tooltip: `tailwind.config.js` had a dead top-level `'bg-dark'` color colliding with the nested `dark.bg`, so the dev JIT silently dropped `.bg-dark-bg` and every panel using it (sidebar, workspace, section drawer) rendered transparent. Removed the dead token; gave the section drawer an explicit `bg-[#141414] shadow-2xl` + darker backdrop. See session log below.
+### 1. ~~Citation tooltip overlaps text (transparent background)~~ — RESOLVED (2026-05-29)
+Originally a Tailwind color-name collision (`bg-dark` vs `dark.bg`). After fixing that, tooltip backgrounds were still invisible because `#1f1f1f` had near-zero contrast against the surrounding dark surfaces. Final fix: bumped tooltip to `#333` with `#444` border (via inline style to bypass Tailwind class-ordering issues), switched to `position: fixed` with `useLayoutEffect` viewport clamping so tooltips can't be clipped by the sidebar's `overflow-y: auto`, and strengthened the section-detail drawer backdrop to `bg-black/80 backdrop-blur-sm`.
 
 ### 2. ~~Source detail drawer covers sidebar~~ — RESOLVED (2026-05-28)
 Source cards now expand **in-place** in `SourceCitation.tsx` (full text shown inline, no height cap). The `SourceDetailDrawer` was repurposed for a different job: viewing the full text of a *cross-referenced* section fetched on demand (see session log).
@@ -220,6 +223,27 @@ A behavior-preserving cleanup of duplication and inlined values that had accumul
 6. **Theme tokens** — added `dark.tooltip/bubble/bubble-user/drawer` to `tailwind.config.js`; removed inline `#1f1f1f/#1a1a1a/#2a2a2a/#141414` hex and the `style={{backgroundColor}}` escape hatches.
 
 **Deferred (considered, not done):** SoQL field-name enums / full query-builder DSL; React Context API to kill prop drilling; making `semantic_search` natively async / batching cross-ref lookups; Zod validation of SSE payloads; refactoring the `parse()` state machine. None are blocking — revisit if scale or churn warrants. Plan file: `~/.claude/plans/merry-prancing-blum.md`.
+
+---
+
+## Session Log (2026-05-29 — Sidebar Polish + Tooltip/Background Fixes)
+
+Two phases: sidebar UX improvements (prior session, uncommitted) and tooltip/background readability fixes (this session). All verified with headless Chromium (Playwright) screenshots.
+
+**Sidebar redesign** (prior session, now committed):
+1. **Drag-to-resize** — `SidebarPanel` rewritten from Framer Motion percentage-width to a pixel-width panel with a left-edge drag handle. Snap-close at <200px, max 60% of viewport.
+2. **Collapsed rail** — When closed, sidebar shows a narrow 44px rail with a document icon, source count badge, and vertical "Sources" label. Replaces the floating `SidebarToggle` button (deleted).
+3. **`ChatInterface` simplified** — Removed `motion.section` with animated width%; now a plain `<section className="flex-1 min-w-0">` that fills remaining space via flexbox.
+4. **Table rendering** — New `ChunkText` / `ChunkTable` components + `parseTable.ts` parser. Table-bearing chunks now render as formatted HTML `<table>` instead of raw `Row N: header=value` text.
+5. **Legend-only chunk filtering** (backend) — `vector_search.py` overfetches 3× and filters out legend/key-only table chunks (no real data rows) before returning top-k.
+
+**Tooltip & background fixes** (this session):
+1. **Tooltip backgrounds** — Bumped from `#1f1f1f` (invisible against `#171717` surfaces) to `#333` with `#444` border. Background set via inline `style` to guarantee it applies regardless of Tailwind class ordering. Removed `backdrop-blur-sm` (was creating a pseudo-transparent look).
+2. **Tooltip viewport clamping** — Switched from `position: absolute` (clipped by sidebar's `overflow-y: auto`) to `position: fixed` with a `useLayoutEffect` that measures the trigger's viewport rect, centers the tooltip, clamps horizontally to stay within 8px of viewport edges, and flips below the trigger when there's no room above.
+3. **Section-detail drawer** — Backdrop overlay strengthened from `bg-black/70` to `bg-black/80 backdrop-blur-sm`. Drawer background bumped from `#141414` to `#1a1a1a`. Inner `ChunkText` and cross-ref pill backgrounds changed from fractional opacity (`/30`, `/40`, `/50`) to solid tokens (`bg-dark-surface`, `bg-dark-elevated`, `bg-dark-bg`).
+4. **Source citation backgrounds** — Same solid-background treatment: expanded chunk text from `bg-dark-bg/50` → `bg-dark-bg`, non-resolvable cross-ref pills from `bg-dark-bg/40` → `bg-dark-elevated`.
+
+Files changed: `tailwind.config.js`, `Tooltip.tsx`, `SourceDetailDrawer.tsx`, `SourceCitation.tsx`, `SidebarPanel.tsx`, `SidebarHeader.tsx`, `ChatInterface.tsx`, `App.tsx`, `vector_search.py`. New: `ChunkText.tsx`, `ChunkTable.tsx`, `parseTable.ts`. Deleted: `SidebarToggle.tsx`.
 
 ---
 
