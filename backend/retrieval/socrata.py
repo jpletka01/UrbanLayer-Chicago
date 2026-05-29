@@ -57,3 +57,28 @@ async def socrata_get(
     finally:
         if owns_client:
             await client.aclose()
+
+
+async def grouped_count(
+    dataset_id: str,
+    *,
+    where: str,
+    group: str,
+    select: str,
+    limit: int,
+    order: str = "count DESC",
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Run a grouped `count(*) as count` aggregation — the shape every retrieval
+    module's "top N by category" query shares."""
+    return await socrata_get(
+        dataset_id,
+        {
+            "$where": where,
+            "$group": group,
+            "$select": f"{select},count(*) as count",
+            "$order": order,
+            "$limit": limit,
+        },
+        client=client,
+    )

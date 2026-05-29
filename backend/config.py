@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     synthesizer_model: str = "claude-sonnet-4-6"
     conversation_model: str = "claude-haiku-4-5-20251001"
 
+    router_max_tokens: int = 600
+    synthesizer_max_tokens: int = 2000
+    conversation_max_tokens: int = 300
+
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_dim: int = 384
     embedding_query_prefix: str = ""
@@ -40,6 +44,22 @@ class Settings(BaseSettings):
     dataset_zoning: str = "p8va-airx"
 
     crime_lag_days: int = 7
+
+    # Per-source Socrata row caps (every query must carry a $limit guard).
+    limit_crime: int = 35
+    limit_311: int = 50
+    limit_permits: int = 50
+    limit_violations: int = 50
+    limit_business: int = 100
+
+    # How many top items each assembled summary keeps.
+    top_crime_types: int = 5
+    top_311_depts: int = 10
+    top_311_types: int = 15
+    top_permits: int = 5
+    top_violations: int = 5
+    top_businesses: int = 5
+    top_chunks: int = 5
 
     data_dir: Path = PROJECT_ROOT / "ingestion" / "data"
 

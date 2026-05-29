@@ -1,10 +1,11 @@
-from backend.assembler import (
-    TOP_311_TYPES,
-    TOP_CHUNKS,
-    TOP_CRIME_TYPES,
-    assemble_context,
-)
+from backend.assembler import assemble_context
+from backend.config import get_settings
 from backend.models import CodeChunk, Location, RetrievalPlan
+
+_settings = get_settings()
+TOP_CRIME_TYPES = _settings.top_crime_types
+TOP_311_TYPES = _settings.top_311_types
+TOP_CHUNKS = _settings.top_chunks
 
 
 def _plan(**kwargs) -> RetrievalPlan:

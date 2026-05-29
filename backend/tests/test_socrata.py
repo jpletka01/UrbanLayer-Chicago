@@ -5,14 +5,6 @@ import httpx
 from backend.retrieval.socrata import socrata_get, SocrataError
 
 
-@pytest.fixture
-def mock_settings():
-    settings = MagicMock()
-    settings.socrata_base = "https://data.cityofchicago.org/resource"
-    settings.socrata_app_token = "test-token"
-    return settings
-
-
 class TestSocrataGet:
     @pytest.mark.asyncio
     async def test_requires_limit_guard(self, mock_settings):

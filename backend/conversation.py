@@ -9,47 +9,13 @@ from __future__ import annotations
 
 import logging
 
-from anthropic import AsyncAnthropic
-
 from backend.config import get_settings
+from backend.llm import get_anthropic_client
 from backend.models import Message
+from backend.prompts import CONVERSATION_SYNTHESIS
 
 
 log = logging.getLogger(__name__)
-
-SYNTHESIS_PROMPT = """You are a query rewriter for a Chicago city information assistant.
-
-Given a conversation history and the user's latest message, produce a single self-contained query that captures the user's full intent.
-
-Rules:
-- If the latest message is already a complete question with all needed context, return it unchanged.
-- If the latest message answers a clarification (like providing a location or confirming a detail), merge the original question with the new information into one clear query.
-- If the latest message is a follow-up question on the same topic, incorporate relevant context from prior turns.
-- Output ONLY the rewritten query. No explanation, no quotes, no prefixes like "Query:".
-
-Examples:
-
-History:
-User: is it legal to add a balcony to my townhouse?
-Assistant: What is the address or neighborhood of your townhouse?
-Latest: it's on wrightwood in lincoln park
-
-Output: Is it legal to add a balcony to a townhouse on Wrightwood in Lincoln Park?
-
-History:
-User: what's the crime rate in wicker park?
-Assistant: [crime statistics response]
-Latest: what about logan square?
-
-Output: What's the crime rate in Logan Square?
-
-History:
-User: can I open a restaurant in a residential zone?
-Assistant: Which specific zoning district are you asking about?
-Latest: RS-3
-
-Output: Can I open a restaurant in an RS-3 residential zoning district?
-"""
 
 
 def needs_synthesis(message: str, history: list[Message]) -> bool:
@@ -136,7 +102,7 @@ async def synthesize_query(message: str, history: list[Message]) -> str:
         return message
 
     settings = get_settings()
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = get_anthropic_client()
 
     history_text = "\n".join(
         f"{'User' if m.role == 'user' else 'Assistant'}: {m.content}"
@@ -148,8 +114,8 @@ async def synthesize_query(message: str, history: list[Message]) -> str:
     try:
         resp = await client.messages.create(
             model=settings.conversation_model,
-            max_tokens=300,
-            system=SYNTHESIS_PROMPT,
+            max_tokens=settings.conversation_max_tokens,
+            system=CONVERSATION_SYNTHESIS,
             messages=[{"role": "user", "content": user_prompt}],
         )
         text = "".join(

@@ -18,6 +18,6 @@ async def businesses_by_community_area(
             "legal_name,doing_business_as_name,license_description,"
             "business_activity,address"
         ),
-        "$limit": 100,
+        "$limit": settings.limit_business,
     }
     return await socrata_get(settings.dataset_business, params, client=client)

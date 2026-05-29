@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 import logging
 
-from anthropic import AsyncAnthropic
-
 from backend.config import get_settings
+from backend.llm import get_anthropic_client
 from backend.models import RetrievalPlan
+from backend.prompts import ROUTER_SYSTEM_TEMPLATE
 from backend.retrieval.geo import (
     COMMUNITY_AREAS,
     NEIGHBORHOOD_ALIASES,
@@ -31,47 +31,15 @@ def _community_area_table() -> str:
     )
 
 
-SYSTEM_PROMPT = f"""You are the routing layer of a Chicago city-information assistant.
-
-Your job: parse a user's message and emit a strict JSON retrieval plan. You do NOT answer the user. You only describe what to fetch.
-
-{_community_area_table()}
-
-Output a JSON object with these fields:
-- sources: array. Pick from: "crime_api", "311_api", "permits_api", "violations_api", "business_api", "vector_search".
-- location.raw: the raw location phrase the user used, or "".
-- location.type: one of "intersection", "address", "neighborhood", "community_area", "none".
-- location.resolved_community_area: integer 1-77 or null. Pick using the table above when you can; leave null if unsure.
-- location.resolved_address: the canonicalized address string the user gave, or null.
-- intent: one of "neighborhood_overview", "incident_lookup", "legal_question", "event_query", "trend_analysis", "clarification_needed".
-- time_range_days: integer, default 90. Use shorter (7, 30) when the user asks about "recent" or "this week".
-- requires_disclaimer: true ONLY for zoning, permit, code, ordinance, or legal-rights questions.
-- search_query: a 1-line semantic query to send to vector search, or null if vector_search is not in sources.
-- clarification: a one-line clarification question to ask the user, or null. ONLY set when intent is "clarification_needed".
-
-Rules:
-- "What's going on in/near X" -> neighborhood_overview, include crime_api + 311_api + permits_api.
-- "Can I build/open/operate X" or "is X allowed" -> legal_question, include vector_search, requires_disclaimer=true.
-- If no location and the question requires one, set intent="clarification_needed" and emit a clarification.
-- Always emit valid JSON. Do not wrap it in markdown or commentary.
-
-Search query guidance (for vector_search):
-- The vector database contains the Chicago Municipal Code, primarily zoning (Title 17).
-- For zoning use questions ("is X allowed in Y district"), use terms like "allowed uses", "use table", "permitted uses" + the district type (RS, RT, RM, B, C, M, D, etc.).
-- For dimensional questions (height, setback, FAR), search for "bulk and density", "dimensional standards" + district type.
-- For parking questions, search "parking requirements" or "off-street parking".
-- For sign questions, search "sign regulations" + district type.
-- For definitions, search "definitions" + the term.
-- AVOID putting the specific use name (daycare, restaurant, etc.) as the primary search term — the zoning code uses generic categories like "Public and Civic" or "Commercial". Instead emphasize the district type and "allowed uses".
-"""
+SYSTEM_PROMPT = ROUTER_SYSTEM_TEMPLATE.format(community_area_table=_community_area_table())
 
 
 async def _llm_plan(message: str) -> dict:
     settings = get_settings()
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = get_anthropic_client()
     resp = await client.messages.create(
         model=settings.router_model,
-        max_tokens=600,
+        max_tokens=settings.router_max_tokens,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": message}],
     )

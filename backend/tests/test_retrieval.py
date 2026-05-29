@@ -12,36 +12,25 @@ from backend.retrieval.buildings import permits_by_community_area, violations_by
 from backend.retrieval.business import businesses_by_community_area
 
 
-@pytest.fixture
-def mock_settings():
-    settings = MagicMock()
-    settings.dataset_crime = "ijzp-q8t2"
-    settings.dataset_311 = "v6vf-nfxy"
-    settings.dataset_permits = "ydr8-5enu"
-    settings.dataset_violations = "22u3-xenr"
-    settings.dataset_business = "uupf-x98q"
-    settings.crime_lag_days = 7
-    return settings
-
-
 class TestCrimeRetrieval:
     @pytest.mark.asyncio
     async def test_crime_by_community_area_query_structure(self, mock_settings):
         with patch("backend.retrieval.crime.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.crime.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
-                await crime_by_community_area(24, days=90)
+            with patch("backend.retrieval.crime.grouped_count", new_callable=AsyncMock) as mock_gc:
+                with patch("backend.retrieval.crime.socrata_get", new_callable=AsyncMock) as mock_get:
+                    mock_gc.return_value = []
+                    mock_get.return_value = []
+                    await crime_by_community_area(24, days=90)
 
-        assert mock_get.call_count == 2
-        crimes_call, arrests_call = mock_get.call_args_list
-        assert crimes_call[0][0] == "ijzp-q8t2"
-        crimes_params = crimes_call[0][1]
-        assert "community_area='24'" in crimes_params["$where"]
-        assert "$group" in crimes_params
-        assert "primary_type" in crimes_params["$group"]
-        assert "$limit" in crimes_params
+        mock_gc.assert_called_once()
+        assert mock_gc.call_args[0][0] == "ijzp-q8t2"
+        gc_kwargs = mock_gc.call_args.kwargs
+        assert "community_area='24'" in gc_kwargs["where"]
+        assert "primary_type" in gc_kwargs["group"]
+        assert gc_kwargs["limit"] == 35
 
-        arrests_params = arrests_call[0][1]
+        mock_get.assert_called_once()
+        arrests_params = mock_get.call_args[0][1]
         assert "arrest=true" in arrests_params["$where"]
 
     @pytest.mark.asyncio
@@ -55,9 +44,11 @@ class TestCrimeRetrieval:
             {"primary_type": "BATTERY", "arrests": "10"},
         ]
         with patch("backend.retrieval.crime.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.crime.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.side_effect = [crimes_data, arrests_data]
-                result = await crime_by_community_area(24, days=90)
+            with patch("backend.retrieval.crime.grouped_count", new_callable=AsyncMock) as mock_gc:
+                with patch("backend.retrieval.crime.socrata_get", new_callable=AsyncMock) as mock_get:
+                    mock_gc.return_value = crimes_data
+                    mock_get.return_value = arrests_data
+                    result = await crime_by_community_area(24, days=90)
 
         assert len(result) == 2
         assert result[0]["arrests"] == "5"
@@ -82,14 +73,13 @@ class TestThree11Retrieval:
     @pytest.mark.asyncio
     async def test_open_311_by_community_area_filters_duplicates(self, mock_settings):
         with patch("backend.retrieval.three11.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.three11.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
+            with patch("backend.retrieval.three11.grouped_count", new_callable=AsyncMock) as mock_gc:
+                mock_gc.return_value = []
                 await open_311_by_community_area(24)
 
-        call_args = mock_get.call_args
-        params = call_args[0][1]
-        assert "sr_type!='Open - Dup'" in params["$where"]
-        assert "status='Open'" in params["$where"]
+        gc_kwargs = mock_gc.call_args.kwargs
+        assert "sr_type!='Open - Dup'" in gc_kwargs["where"]
+        assert "status='Open'" in gc_kwargs["where"]
 
     @pytest.mark.asyncio
     async def test_open_311_oldest_returns_single_record(self, mock_settings):

@@ -15,18 +15,10 @@ from backend.models import (
 )
 
 
-TOP_CRIME_TYPES = 5
-TOP_311_DEPTS = 10
-TOP_311_TYPES = 15
-TOP_PERMITS = 5
-TOP_VIOLATIONS = 5
-TOP_BUSINESSES = 5
-TOP_CHUNKS = 5
-
-
 def _crime_summary(rows: list[dict[str, Any]]) -> CrimeSummary | None:
     if not rows:
         return None
+    settings = get_settings()
     by_type: dict[str, int] = {}
     arrests = 0
     total = 0
@@ -35,7 +27,7 @@ def _crime_summary(rows: list[dict[str, Any]]) -> CrimeSummary | None:
         total += count
         arrests += int(row.get("arrests", 0))
         by_type[row.get("primary_type", "UNKNOWN")] = count
-    top = dict(sorted(by_type.items(), key=lambda kv: kv[1], reverse=True)[:TOP_CRIME_TYPES])
+    top = dict(sorted(by_type.items(), key=lambda kv: kv[1], reverse=True)[:settings.top_crime_types])
     return CrimeSummary(
         total=total,
         arrest_rate=round(arrests / total, 3) if total else 0.0,
@@ -49,6 +41,7 @@ def _three11_summary(
 ) -> ThreeOneOneSummary | None:
     if not rows:
         return None
+    settings = get_settings()
     deps: Counter[str] = Counter()
     types: Counter[str] = Counter()
     total = 0
@@ -76,14 +69,15 @@ def _three11_summary(
     return ThreeOneOneSummary(
         total=total,
         oldest_open_days=oldest_days,
-        by_department=dict(deps.most_common(TOP_311_DEPTS)),
-        top_types=[t for t, _ in types.most_common(TOP_311_TYPES)],
+        by_department=dict(deps.most_common(settings.top_311_depts)),
+        top_types=[t for t, _ in types.most_common(settings.top_311_types)],
     )
 
 
 def _permit_summary(rows: list[dict[str, Any]]) -> PermitSummary | None:
     if not rows:
         return None
+    settings = get_settings()
     descs: Counter[str] = Counter()
     cost_total = 0.0
     for row in rows:
@@ -97,13 +91,14 @@ def _permit_summary(rows: list[dict[str, Any]]) -> PermitSummary | None:
     return PermitSummary(
         total=len(rows),
         total_estimated_cost=round(cost_total, 2),
-        top_work_descriptions=[d for d, _ in descs.most_common(TOP_PERMITS)],
+        top_work_descriptions=[d for d, _ in descs.most_common(settings.top_permits)],
     )
 
 
 def _violation_summary(rows: list[dict[str, Any]]) -> ViolationSummary | None:
     if not rows:
         return None
+    settings = get_settings()
     descs: Counter[str] = Counter()
     open_count = 0
     for row in rows:
@@ -115,13 +110,14 @@ def _violation_summary(rows: list[dict[str, Any]]) -> ViolationSummary | None:
     return ViolationSummary(
         total=len(rows),
         open_count=open_count,
-        top_descriptions=[d for d, _ in descs.most_common(TOP_VIOLATIONS)],
+        top_descriptions=[d for d, _ in descs.most_common(settings.top_violations)],
     )
 
 
 def _business_summary(rows: list[dict[str, Any]]) -> BusinessSummary | None:
     if not rows:
         return None
+    settings = get_settings()
     activities: Counter[str] = Counter()
     for row in rows:
         activity = (row.get("business_activity") or "").strip()
@@ -130,7 +126,7 @@ def _business_summary(rows: list[dict[str, Any]]) -> BusinessSummary | None:
             activities[primary] += 1
     return BusinessSummary(
         total=len(rows),
-        top_activities=[a for a, _ in activities.most_common(TOP_BUSINESSES)],
+        top_activities=[a for a, _ in activities.most_common(settings.top_businesses)],
     )
 
 
@@ -152,7 +148,7 @@ def assemble_context(
     permits = _permit_summary(permit_rows or []) if permit_rows is not None else None
     violations = _violation_summary(violation_rows or []) if violation_rows is not None else None
     businesses = _business_summary(business_rows or []) if business_rows is not None else None
-    chunks = sorted(code_chunks or [], key=lambda c: c.score, reverse=True)[:TOP_CHUNKS]
+    chunks = sorted(code_chunks or [], key=lambda c: c.score, reverse=True)[:settings.top_chunks]
 
     data_as_of = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     lag_note = None

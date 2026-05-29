@@ -1,16 +1,11 @@
-from datetime import datetime, timedelta, timezone
+import asyncio
 from typing import Any
 
 import httpx
 
 from backend.config import get_settings
-from backend.retrieval.socrata import socrata_get
-
-
-def _cutoff_iso(days_ago: int) -> str:
-    settings = get_settings()
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days_ago + settings.crime_lag_days)
-    return cutoff.strftime("%Y-%m-%dT00:00:00.000")
+from backend.retrieval.socrata import grouped_count, socrata_get
+from backend.retrieval.utils import cutoff_iso
 
 
 async def crime_by_community_area(
@@ -20,24 +15,22 @@ async def crime_by_community_area(
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
-    cutoff = _cutoff_iso(days)
+    cutoff = cutoff_iso(days, lag_days=settings.crime_lag_days)
 
-    crimes_params = {
-        "$where": f"community_area='{community_area}' AND date > '{cutoff}'",
-        "$group": "primary_type",
-        "$select": "primary_type,count(*) as count",
-        "$order": "count DESC",
-        "$limit": 35,
-    }
+    crimes_task = grouped_count(
+        settings.dataset_crime,
+        where=f"community_area='{community_area}' AND date > '{cutoff}'",
+        group="primary_type",
+        select="primary_type",
+        limit=settings.limit_crime,
+        client=client,
+    )
     arrests_params = {
         "$where": f"community_area='{community_area}' AND date > '{cutoff}' AND arrest=true",
         "$group": "primary_type",
         "$select": "primary_type,count(*) as arrests",
-        "$limit": 35,
+        "$limit": settings.limit_crime,
     }
-
-    import asyncio
-    crimes_task = socrata_get(settings.dataset_crime, crimes_params, client=client)
     arrests_task = socrata_get(settings.dataset_crime, arrests_params, client=client)
     crimes, arrests = await asyncio.gather(crimes_task, arrests_task)
 
@@ -56,8 +49,9 @@ async def crime_recent_by_block(
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
+    cutoff = cutoff_iso(days, lag_days=settings.crime_lag_days)
     params = {
-        "$where": f"block='{block}' AND date > '{_cutoff_iso(days)}'",
+        "$where": f"block='{block}' AND date > '{cutoff}'",
         "$order": "date DESC",
         "$limit": limit,
     }
