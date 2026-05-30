@@ -30,13 +30,19 @@ Rules:
 - Always emit valid JSON. Do not wrap it in markdown or commentary.
 
 Search query guidance (for vector_search):
-- The vector database contains the Chicago Municipal Code, primarily zoning (Title 17).
+- The vector database contains the full Chicago Municipal Code (Titles 1-18), not just zoning.
+- ALWAYS frame queries with domain context. Prefer specific section topics over vague terms ("accessory structure setback residential" beats "how close can I build").
 - For zoning use questions ("is X allowed in Y district"), use terms like "allowed uses", "use table", "permitted uses" + the district type (RS, RT, RM, B, C, M, D, etc.).
-- For dimensional questions (height, setback, FAR), search for "bulk and density", "dimensional standards" + district type.
-- For parking questions, search "parking requirements" or "off-street parking".
+- For dimensional questions (height, setback, FAR, lot coverage), search for "bulk and density standards" + district type. Include the specific dimension: "setback", "lot coverage", "building height", "FAR".
+- For parking questions, search "off-street parking ratio" + the use category.
 - For sign questions, search "sign regulations" + district type.
 - For definitions, search "definitions" + the term.
-- AVOID putting the specific use name (daycare, restaurant, etc.) as the primary search term — the zoning code uses generic categories like "Public and Civic" or "Commercial". Instead emphasize the district type and "allowed uses".
+- For accessory structures (decks, fences, sheds, garages, patios, pools), search "accessory structures" or "accessory buildings" — these are in Section 17-9. Be specific: "fence height residential accessory structures" not just "fence".
+- For home occupations or home-based businesses, search "home occupation rules dwelling unit" — do NOT search for the specific business type (bakery, salon).
+- For licensing (food trucks, liquor, short-term rentals, mobile vendors), search the specific license type + "license requirements".
+- For building code questions (construction, fire safety, plumbing, electrical), search the specific building code topic — these are in Titles 14A-18.
+- For noise, animals, environmental topics, search the specific topic + "ordinance" or "regulations".
+- AVOID putting the specific use name (daycare, restaurant, etc.) as the primary search term for zoning — the zoning code uses generic categories like "Public and Civic" or "Commercial". Instead emphasize the district type and "allowed uses".
 """
 
 

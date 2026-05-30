@@ -80,13 +80,53 @@ def _is_legend_only_chunk(text: str) -> bool:
     return not _REGULAR_ROW_RE.search(text)
 
 
+_STOPWORDS = frozenset({
+    "a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or",
+    "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+    "do", "does", "did", "will", "would", "could", "should", "may", "might",
+    "can", "i", "my", "me", "we", "our", "you", "your", "it", "its", "they",
+    "them", "their", "this", "that", "what", "which", "who", "how", "when",
+    "where", "not", "no", "if", "but", "so", "from", "with", "by", "about",
+})
+_WORD_RE = re.compile(r"[a-z0-9]+(?:[-'][a-z0-9]+)*")
+
+
 @lru_cache
 def _model():
     from sentence_transformers import SentenceTransformer
 
     settings = get_settings()
-    log.info("Loading sentence-transformers model %s (cold start ~5s)", settings.embedding_model)
+    log.info("Loading sentence-transformers model %s", settings.embedding_model)
     return SentenceTransformer(settings.embedding_model)
+
+
+@lru_cache(maxsize=1)
+def _reranker():
+    from sentence_transformers import CrossEncoder
+
+    settings = get_settings()
+    log.info("Loading cross-encoder model %s", settings.reranker_model)
+    return CrossEncoder(settings.reranker_model)
+
+
+def _keyword_score(query: str, text: str) -> float:
+    """Fraction of unique non-stopword query terms found in the text."""
+    query_terms = {w for w in _WORD_RE.findall(query.lower()) if w not in _STOPWORDS}
+    if not query_terms:
+        return 0.0
+    text_lower = text.lower()
+    return sum(1 for t in query_terms if t in text_lower) / len(query_terms)
+
+
+def _rerank(query: str, chunks: list[CodeChunk], top_k: int) -> list[CodeChunk]:
+    """Re-score chunks with cross-encoder and return top-k."""
+    if not chunks:
+        return chunks
+    reranker = _reranker()
+    pairs = [[query, c.text] for c in chunks]
+    scores = reranker.predict(pairs)
+    scored = sorted(zip(scores, chunks), key=lambda x: x[0], reverse=True)
+    return [chunk for _, chunk in scored[:top_k]]
 
 
 def _qdrant_url() -> str:
@@ -112,8 +152,14 @@ def _payload_to_chunk(payload: dict[str, Any], score: float) -> CodeChunk:
 def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) -> list[CodeChunk]:
     settings = get_settings()
     collection = settings.qdrant_zoning_collection if zoning_only else settings.qdrant_code_collection
-    vec = _model().encode(query, normalize_embeddings=True).tolist()
-    fetch_limit = top_k * 3
+
+    prefixed = settings.embedding_query_prefix + query
+    vec = _model().encode(prefixed, normalize_embeddings=True).tolist()
+
+    rerank = settings.reranker_enabled
+    candidate_count = settings.reranker_candidate_count if rerank else top_k
+    fetch_limit = max(top_k * 5, candidate_count * 3)
+
     try:
         resp = httpx.post(
             f"{_qdrant_url()}/collections/{collection}/points/search",
@@ -125,14 +171,39 @@ def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) ->
     except Exception as exc:
         log.warning("Qdrant query failed against %s: %s", collection, exc)
         return []
-    chunks = []
+
+    kw_weight = settings.keyword_boost_weight
+    scored_hits = []
     for h in hits:
         payload = h.get("payload", {})
         if _is_legend_only_chunk(payload.get("text", "")):
             continue
-        chunks.append(_payload_to_chunk(payload, h.get("score", 0.0)))
-        if len(chunks) >= top_k:
+        dense = h.get("score", 0.0)
+        if kw_weight > 0:
+            kw = _keyword_score(query, payload.get("text", ""))
+            combined = (1 - kw_weight) * dense + kw_weight * kw
+        else:
+            combined = dense
+        scored_hits.append((combined, payload))
+
+    scored_hits.sort(key=lambda x: x[0], reverse=True)
+
+    chunks = []
+    seen_sections: set[str] = set()
+    for score, payload in scored_hits:
+        section = payload.get("section", "")
+        if section in seen_sections:
+            continue
+        seen_sections.add(section)
+        chunks.append(_payload_to_chunk(payload, score))
+        if len(chunks) >= candidate_count:
             break
+
+    if rerank and len(chunks) > top_k:
+        chunks = _rerank(query, chunks, top_k)
+    else:
+        chunks = chunks[:top_k]
+
     return chunks
 
 

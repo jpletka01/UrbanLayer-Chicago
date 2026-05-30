@@ -26,9 +26,15 @@ class Settings(BaseSettings):
     synthesizer_max_tokens: int = 2000
     conversation_max_tokens: int = 300
 
-    embedding_model: str = "BAAI/bge-small-en-v1.5"
-    embedding_dim: int = 384
-    embedding_query_prefix: str = ""
+    embedding_model: str = "BAAI/bge-base-en-v1.5"
+    embedding_dim: int = 768
+    embedding_query_prefix: str = "Represent this sentence for searching relevant passages: "
+
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    reranker_enabled: bool = False
+    reranker_candidate_count: int = 20
+
+    keyword_boost_weight: float = 0.15
 
     qdrant_code_collection: str = "chicago_municipal_code"
     qdrant_zoning_collection: str = "chicago_zoning"

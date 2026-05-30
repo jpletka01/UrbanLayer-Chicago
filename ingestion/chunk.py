@@ -94,6 +94,9 @@ SUBHEADER_COVERAGE = 0.5
 # Soft limit per emitted table block (in chars). Above this we split at the
 # next sub-header row.
 TABLE_BLOCK_CHARS = 1600
+# Minimum block size before a sub-header boundary triggers a split.
+# Below this, the sub-header is inlined and rows keep accumulating.
+TABLE_BLOCK_MIN_CHARS = 400
 
 
 def _is_subheader_row(row: list[str], width: int) -> bool:
@@ -176,9 +179,15 @@ def _flatten_table_blocks(table: dict) -> list[str]:
     char_count = 0
     for raw_row in rows:
         if _is_subheader_row(raw_row, width):
-            flush()
-            current_subheader = next((c for c in raw_row if c.strip()), "")
-            char_count = 0
+            new_subheader = next((c for c in raw_row if c.strip()), "")
+            if char_count >= TABLE_BLOCK_MIN_CHARS:
+                flush()
+                current_subheader = new_subheader
+                char_count = 0
+            else:
+                current_rows.append(f"--- {new_subheader} ---")
+                current_subheader = new_subheader
+                char_count += len(new_subheader) + 8
             continue
         row_idx += 1
         flat = _flatten_row(headers, raw_row, row_idx)
@@ -248,6 +257,22 @@ def _split_body(body: str, budget: int) -> list[str]:
     return pieces or [""]
 
 
+def _merge_small_table_pieces(pieces: list[str], budget: int) -> list[str]:
+    """Merge consecutive small [TABLE] pieces that fit within budget."""
+    merged: list[str] = []
+    for piece in pieces:
+        if (
+            merged
+            and merged[-1].startswith("[TABLE]")
+            and piece.startswith("[TABLE]")
+            and len(merged[-1]) + len(piece) + 2 <= budget
+        ):
+            merged[-1] = merged[-1] + "\n\n" + piece
+        else:
+            merged.append(piece)
+    return merged
+
+
 def chunk_section(sec: dict) -> Iterator[Chunk]:
     body = _body_with_tables(sec)
     if not body:
@@ -258,6 +283,7 @@ def chunk_section(sec: dict) -> Iterator[Chunk]:
     body_budget = max(800, MAX_CHARS - header_len - 40)
 
     pieces = _split_body(body, body_budget) if len(body) > body_budget else [body]
+    pieces = _merge_small_table_pieces(pieces, body_budget)
     total = len(pieces)
 
     leg = sec.get("legislative_history")

@@ -1,14 +1,17 @@
 """Embed chunks with sentence-transformers and upsert into Qdrant.
 
-Loads chunks.jsonl produced by ingestion.chunk, computes embeddings with
-BAAI/bge-small-en-v1.5 (384-dim, 512-token context), and writes them to two
-Qdrant collections:
+Loads chunks.jsonl produced by ingestion.chunk, computes embeddings with the
+configured model (default: BAAI/bge-base-en-v1.5, 768-dim), and writes them
+to two Qdrant collections:
 - chicago_municipal_code (all chunks)
 - chicago_zoning (only Title 17 chunks — enables filter-free zoning queries)
+
+Use --recreate to drop and rebuild collections (required after model changes).
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import uuid
@@ -39,6 +42,10 @@ def _ensure_collection(client: QdrantClient, name: str, size: int) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--recreate", action="store_true", help="Drop and recreate collections")
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     settings = get_settings()
 
@@ -49,6 +56,13 @@ def main() -> None:
     model = SentenceTransformer(settings.embedding_model)
 
     client = QdrantClient(url=settings.qdrant_url)
+    if args.recreate:
+        for name in [settings.qdrant_code_collection, settings.qdrant_zoning_collection]:
+            try:
+                client.delete_collection(name)
+                log.info("Deleted collection %s", name)
+            except Exception:
+                pass
     _ensure_collection(client, settings.qdrant_code_collection, settings.embedding_dim)
     _ensure_collection(client, settings.qdrant_zoning_collection, settings.embedding_dim)
 

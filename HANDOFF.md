@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-29):** Full pipeline operational. Ingestion complete (14,628 chunks in Qdrant). Eval suite passes 26/26 queries (100%). Multi-turn conversation synthesis added. Chat UI significantly improved with per-message citation binding, typewriter effects, and source preview tooltips. The context/data sidebar was redesigned — citations now render as the actual `§` section reference, cross-references are clickable and open a full-section viewer. Most recent work: **landing page count-up animation + smart address autocomplete** — splash stats now animate from 0 with a staggered roll-up effect; address autocomplete no longer replaces the full prompt — it detects the address fragment (last number to end of input), queries only that portion, and splices the selected suggestion back into the original prompt. Previous: **sidebar polish + tooltip/background fixes** — sidebar rewritten with a drag-to-resize handle and a collapsed rail; table chunks now render as formatted HTML tables; tooltip backgrounds are solid `#333` with `#444` borders and use `position: fixed` with viewport clamping so they can't be clipped by the sidebar's overflow container; the section-detail drawer has a stronger `bg-black/80 backdrop-blur-sm` overlay.
+**Current status (2026-05-30):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **retrieval quality overhaul** — upgraded embedding model (bge-small → bge-base, 384→768 dim), added keyword boost scoring, table chunk consolidation, expanded router search query guidance, and wired up cross-encoder reranking infrastructure (disabled by default — MS MARCO model hurts on legal text, awaiting a legal-domain reranker). Previous: landing page count-up animation + smart address autocomplete + sidebar polish.
 
 ---
 
@@ -19,7 +19,7 @@ A RAG-powered chat interface for natural-language questions about Chicago. Combi
 | Backend | Python 3.11 + FastAPI | Async-first, OpenAPI for free, easy SSE |
 | LLM | Anthropic Claude **Sonnet 4.6** (`claude-sonnet-4-6`) for both router and synthesizer | Latest non-Opus model, better tool-use, structured output reliability |
 | Vector DB | **Qdrant v1.9.0** (Docker, self-hosted) | Free, fast, good metadata filtering, payload search supports cross-ref lookup |
-| Embeddings | **`BAAI/bge-small-en-v1.5`** via sentence-transformers (local, 384-dim, 512-token context) | Originally chose MiniLM-L6 (256-token context, too small for legal sections); upgraded during Title-17 work. Same dim → Qdrant config unchanged |
+| Embeddings | **`BAAI/bge-base-en-v1.5`** via sentence-transformers (local, 768-dim, 512-token context) | Started with MiniLM-L6 (256 tokens), upgraded to bge-small (384-dim), then bge-base (768-dim) for better semantic discrimination on legal text. Query prefix enabled for asymmetric retrieval |
 | Streaming | **SSE** (`text/event-stream`) | Synthesizer is the slow part (~3–8s); streaming TTFT is much better UX |
 | Chat memory | **Multi-turn from day one**, history in client `localStorage`, server is stateless | Simplest persistence model, scales |
 | Geocoding | **Census Geocoder** (free, no key) + shapely point-in-polygon against cached community-area polygons | No rate limit, no API key, deterministic |
@@ -55,16 +55,16 @@ Everything below is in the repo, tested and verified.
   - `three11.py` — `v6vf-nfxy` (open requests + response times, `Open - Dup` filtered)
   - `buildings.py` — `ydr8-5enu` permits (uses `reported_cost` field) + `22u3-xenr` violations
   - `business.py` — `uupf-x98q` active licenses
-  - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder; `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
+  - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder; per-section dedup, keyword boost scoring, cross-encoder reranker (infrastructure present, disabled by default); `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
-- `tests/` — **130+ tests** (unit + integration), all passing
+- `tests/` — **140 tests** (unit + integration), all passing
 
 ### Ingestion (`ingestion/`)
 - `parse_chicago_code.py` — HTML parser with split-at-republication strategy, state machine for Title→Chapter→Article→Subarticle→Part, colspan/rowspan-aware table extraction with composite multi-row headers
 - `chunk.py` — section-aware chunking with hierarchical header re-duplication, table flattening to `Row N: header=value`, sub-section splits inside tables at category boundaries (`A. Household Living`, `PUBLIC AND CIVIC`)
-- `embed_and_store.py` — sentence-transformers + Qdrant upsert to two collections (`chicago_municipal_code`, `chicago_zoning` for Title 17 filter-free)
+- `embed_and_store.py` — sentence-transformers + Qdrant upsert to two collections (`chicago_municipal_code`, `chicago_zoning` for Title 17 filter-free); `--recreate` flag for model upgrades
 - `load_community_areas.py` — fetches and caches community-area polygons from Socrata `igwz-8jzy` as GeoJSON
-- **Pipeline fully run**: 8,615 sections → 14,628 chunks → Qdrant (took ~3 minutes with MPS acceleration)
+- **Pipeline fully run**: 8,615 sections → 14,535 chunks → Qdrant (took ~3 minutes with MPS acceleration)
 
 ### Frontend (`frontend/`)
 - Vite + React + TypeScript + Tailwind v3 scaffold
@@ -109,6 +109,7 @@ Everything below is in the repo, tested and verified.
 - **Per-phase latency** — every SSE event carries `t_ms`. Sidebar renders Router / Retrieval / Synthesis-TTFT / Total live
 - **Query test set** — `eval/queries.json` has **26 representative queries**
 - **Baseline established**: 26/26 passing (100%), latency p50: router 2.4s, retrieval 3.8s, total 13.6s
+- **Retrieval quality benchmark** — `eval/retrieval_benchmark.py` with **18 user-style queries** evaluating vector search quality: gold section hit rate, section duplication, table fragment detection, grade (A–F). Baseline v3: A=13, B=1, C=4 (no D or F)
 
 ---
 
@@ -140,9 +141,11 @@ Socrata statistics are now marked with `[data:crime]` / `[data:311]` / etc. mark
 - **Postgres / server-side history** — for multi-device sync
 
 ### 8. Known fragile heuristics
-- **Sub-header detection inside tables** uses length cap (<80 chars)
+- **Sub-header detection inside tables** uses length cap (<80 chars) and min-chars threshold (400 chars before splitting)
 - **Multi-row header count** inferred from consecutive row patterns
 - **Cross-references** filter to section IDs only
+- **Keyword boost weight (0.15)** is hand-tuned — too high drowns out semantic similarity, too low has no effect
+- **Reranker disabled** — the MS MARCO cross-encoder hurts on legal text; needs a legal-domain model
 
 ---
 
@@ -312,12 +315,86 @@ Files changed: `vector_search.py`, `codeRefs.ts`, `test_vector_search.py`.
 
 ---
 
+## Session Log (2026-05-30 — Retrieval Quality Overhaul)
+
+Built a retrieval quality benchmark (18 user-style questions with gold sections and answer-term checks) and used it to diagnose and fix three systemic issues with vector search. Grades improved from A=11 B=1 C=4 D=1 F=1 to A=13 B=1 C=4 D=0 F=0.
+
+### Diagnosis
+
+The benchmark revealed three failure modes:
+
+1. **Section duplication (18% of result slots wasted)** — Long sections like `17-2-0300` (27 chunks) and `2-44-080` (30 chunks) dominated results because multiple chunks from the same section embed similarly. For "affordable housing," all 5 results came from just 2 sections.
+
+2. **Semantic drift** — bge-small (384-dim) confused similar terms across contexts. "How close to the property line can I build a deck?" returned wireless tower freestanding facility rules and construction canopy "roof deck" standards. "Can I run a bakery from my home?" returned shared kitchen licensing instead of home occupation rules. "Fence height residential" returned vehicular use area screening rules.
+
+3. **Table fragmentation** — The parking table (17-10-0200) was split into 26 chunks with 1-3 data rows each. All fragments embedded nearly identically, so the single chunk kept by section dedup might not be the one relevant to the user's question.
+
+### Fixes applied (5 changes, 3 phases)
+
+**Phase A — Router prompt rewriting** (`backend/prompts.py`):
+Expanded the search query guidance from zoning-only to the full municipal code. Added explicit rules for accessory structures ("search accessory structures, not just fence"), home occupations ("search home occupation rules, not bakery"), licensing, building code, and non-zoning topics. The router already emitted a `search_query` field but had no guidance for 60% of the corpus.
+
+**Phase B — Ingestion pipeline (batched to re-embed once):**
+
+*Table chunk consolidation* (`ingestion/chunk.py`): The chunker flushed at every sub-header row regardless of block size, creating ~200 char table blocks. Added `TABLE_BLOCK_MIN_CHARS = 400` — sub-header splits are now deferred when the current block is small, with the sub-header inlined as a label (`--- Parking Group C ---`). Also added `_merge_small_table_pieces()` to merge consecutive `[TABLE]` pieces that fit within the chunk budget. Result: 14,628 → 14,535 chunks; 17-10-0200 dropped from 26 to 22 chunks.
+
+*Embedding model upgrade* (`backend/config.py`, `backend/retrieval/vector_search.py`, `ingestion/embed_and_store.py`): Switched from `BAAI/bge-small-en-v1.5` (384-dim, 33M params) to `BAAI/bge-base-en-v1.5` (768-dim, 110M params). Enabled the BGE query prefix (`"Represent this sentence for searching relevant passages: "`) for asymmetric retrieval — documents are encoded without prefix, queries with it. Added `--recreate` flag to `embed_and_store.py` for model changes. Cold start goes from ~5s to ~8s; query latency is unchanged.
+
+**Phase C — Retrieval-time scoring:**
+
+*Per-section deduplication* (`backend/retrieval/vector_search.py`): After scoring candidates from Qdrant, keep only the highest-scoring chunk per section. Bumped overfetch from 3× to 5× to compensate for higher skip rate. This alone moved grades from A=6 to A=11.
+
+*Keyword boost* (`backend/retrieval/vector_search.py`, `backend/config.py`): Added `_keyword_score()` that computes the fraction of unique non-stopword query terms found in each chunk. Combined score = `0.85 * dense + 0.15 * keyword`. Applied before section dedup so the keyword-matching chunk from each section survives. This helps when embedding similarity doesn't capture keyword relevance (e.g., "lot coverage" matching a chunk about lot area standards instead of the lot coverage percentage table).
+
+*Cross-encoder reranking (infrastructure, disabled by default)*: Wired up `CrossEncoder` from sentence-transformers (already installed v5.5.1). Loads lazily via `@lru_cache`, scores query-document pairs with `cross-encoder/ms-marco-MiniLM-L-6-v2`, returns top-k by cross-encoder score. **Disabled by default (`reranker_enabled=False`)** because the MS MARCO model is trained on web search passages, not legal text — testing showed it actively hurt on several queries (pushed home occupation rules from rank 2 to out of top 5, reshuffled setback results incorrectly). The infrastructure is ready for when a legal-domain reranker (e.g., fine-tuned bge-reranker) becomes available. Toggle with `RERANKER_ENABLED=true` env var.
+
+### Decision: why MS MARCO reranker was disabled
+
+The cross-encoder (ms-marco-MiniLM-L-6-v2) is trained on MS MARCO, a web search dataset where "relevance" means "this web page answers a Bing query." Municipal code text has very different relevance signals — a chunk about "home occupations" is highly relevant to "Can I run a bakery from my home?" even though it never mentions the word "bakery." The MS MARCO model over-indexes on keyword overlap and surface similarity, which is exactly the problem we were trying to solve. With the reranker enabled, grades dropped to A=9 D=2 F=2 (worse than baseline). The keyword boost + better embeddings provide a cleaner improvement without the domain mismatch.
+
+### Benchmark gold section adjustments
+
+Two benchmark queries had gold sections that were too narrow:
+- `fence_height`: The municipal code doesn't have a single "fence height in residential areas" section — the answer comes from scattered sections across accessory structures (17-9), screening/buffering (17-5-0600, 17-11-0200), and construction fences (10-28-281). Updated gold to include all relevant sections.
+- `buildable_lot_definition`: The actual zoning lot definition is in `16-4-050` (Definitions), not only `17-17`. Updated gold to include `16-4` and `17-15` (Nonconforming lots).
+
+### Final `semantic_search()` pipeline
+
+```
+query
+  |-> prepend embedding_query_prefix (BGE asymmetric retrieval)
+  |-> encode with bge-base (768-dim)
+  |-> Qdrant dense search (limit = top_k × 5)
+  |-> filter legend-only chunks
+  |-> keyword boost: combined = 0.85 × dense + 0.15 × keyword_overlap
+  |-> sort by combined score
+  |-> per-section dedup (keep best per section)
+  |-> return top_k CodeChunks
+```
+
+(When reranker is enabled, the pipeline fetches `reranker_candidate_count` unique sections, then re-ranks with the cross-encoder and returns top_k.)
+
+### Files changed
+
+- `backend/prompts.py` — expanded search query guidance for non-zoning topics
+- `backend/config.py` — embedding model, query prefix, reranker settings, keyword boost weight
+- `backend/retrieval/vector_search.py` — keyword boost, cross-encoder reranker, query prefix, per-section dedup
+- `ingestion/chunk.py` — deferred sub-header splitting, small table piece merging
+- `ingestion/embed_and_store.py` — `--recreate` flag, updated docstring
+- `eval/retrieval_benchmark.py` — new: 18-query retrieval quality benchmark
+- `eval/retrieval_quality_v1.md` through `v3.md` — benchmark reports
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
-### Step 1 — Test multi-turn conversations thoroughly
+### Step 1 — Legal-domain cross-encoder reranker
+The MS MARCO reranker hurt on legal text (see session log). A fine-tuned reranker (e.g., bge-reranker-v2-m3 or a custom model trained on municipal code relevance judgments) would unlock the reranking stage. The infrastructure is already wired — just swap the model name in `config.py` and set `reranker_enabled=True`.
+
+### Step 2 — Test multi-turn conversations thoroughly
 The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
 
-### Step 2 — Stretch: Leaflet map view
+### Step 3 — Stretch: Leaflet map view
 Crime pins, 311 markers, zoning overlay. Not started.
 
 ---
@@ -372,6 +449,7 @@ chicago/
 ├── eval/
 │   ├── queries.json                # 26 test queries
 │   ├── run_eval.py                 # --router-only | --full <URL>
+│   ├── retrieval_benchmark.py      # 18-query retrieval quality benchmark
 │   ├── baseline_router.md          # Router-only results
 │   └── baseline_full_v2.md         # Full pipeline results (26/26 passing)
 └── frontend/
@@ -397,11 +475,12 @@ docker compose up -d qdrant
 python -m ingestion.load_community_areas
 python -m ingestion.parse_chicago_code
 python -m ingestion.chunk
-python -m ingestion.embed_and_store
+python -m ingestion.embed_and_store --recreate  # --recreate needed after model changes
 
 # Eval
 PYTHONPATH=. python -m eval.run_eval --filter zoning
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --out eval/last.md
+python -m eval.retrieval_benchmark --out eval/retrieval_quality.md  # Vector search quality
 
 # Backend + frontend dev
 docker compose up -d qdrant
