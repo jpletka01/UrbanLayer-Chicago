@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 
 from backend.config import get_settings
-from backend.llm import get_anthropic_client
+from backend.llm import tracked_create
 from backend.models import Message
 from backend.prompts import CONVERSATION_SYNTHESIS
 
@@ -93,7 +93,12 @@ def needs_synthesis(message: str, history: list[Message]) -> bool:
     return False
 
 
-async def synthesize_query(message: str, history: list[Message]) -> str:
+async def synthesize_query(
+    message: str,
+    history: list[Message],
+    request_group: str = "",
+    conversation_id: str | None = None,
+) -> str:
     """Synthesize conversation history into a single self-contained query.
 
     If synthesis is not needed or fails, returns the original message unchanged.
@@ -102,7 +107,6 @@ async def synthesize_query(message: str, history: list[Message]) -> str:
         return message
 
     settings = get_settings()
-    client = get_anthropic_client()
 
     history_text = "\n".join(
         f"{'User' if m.role == 'user' else 'Assistant'}: {m.content}"
@@ -112,7 +116,10 @@ async def synthesize_query(message: str, history: list[Message]) -> str:
     user_prompt = f"History:\n{history_text}\nLatest: {message}"
 
     try:
-        resp = await client.messages.create(
+        resp = await tracked_create(
+            request_group=request_group,
+            conversation_id=conversation_id,
+            phase="conversation",
             model=settings.conversation_model,
             max_tokens=settings.conversation_max_tokens,
             system=CONVERSATION_SYNTHESIS,

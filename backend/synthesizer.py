@@ -6,7 +6,7 @@ import logging
 from typing import AsyncIterator
 
 from backend.config import get_settings
-from backend.llm import get_anthropic_client
+from backend.llm import tracked_stream
 from backend.models import AnalyticsSummary, ContextObject, Message
 from backend.prompts import SYNTHESIZER_SYSTEM
 
@@ -81,9 +81,10 @@ async def stream_answer(
     user_message: str,
     history: list[Message],
     upload_filenames: list[str] | None = None,
+    request_group: str = "",
+    conversation_id: str | None = None,
 ) -> AsyncIterator[str]:
     settings = get_settings()
-    client = get_anthropic_client()
 
     messages: list[dict] = [{"role": m.role, "content": m.content} for m in history]
     messages.append({
@@ -91,7 +92,10 @@ async def stream_answer(
         "content": _build_user_prompt(context, user_message, upload_filenames),
     })
 
-    async with client.messages.stream(
+    async with tracked_stream(
+        request_group=request_group,
+        conversation_id=conversation_id,
+        phase="synthesizer",
         model=settings.synthesizer_model,
         max_tokens=settings.synthesizer_max_tokens,
         system=SYNTHESIZER_SYSTEM,

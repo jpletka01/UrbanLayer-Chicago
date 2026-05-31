@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -56,6 +56,46 @@ CREATE INDEX IF NOT EXISTS idx_uploads_conv ON uploads(conversation_id);
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY);
 """
 
+_SCHEMA_V2 = """\
+CREATE TABLE IF NOT EXISTS llm_calls (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_group       TEXT NOT NULL,
+    conversation_id     TEXT,
+    phase               TEXT NOT NULL
+        CHECK(phase IN ('conversation', 'router', 'synthesizer')),
+    model               TEXT NOT NULL,
+    input_tokens        INTEGER NOT NULL,
+    output_tokens       INTEGER NOT NULL,
+    cache_read_tokens   INTEGER NOT NULL DEFAULT 0,
+    cache_create_tokens INTEGER NOT NULL DEFAULT 0,
+    duration_ms         INTEGER NOT NULL,
+    status              TEXT NOT NULL DEFAULT 'ok'
+        CHECK(status IN ('ok', 'error')),
+    error_message       TEXT,
+    created_at          INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_llm_calls_created ON llm_calls(created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_group ON llm_calls(request_group);
+
+CREATE TABLE IF NOT EXISTS request_logs (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_group       TEXT NOT NULL UNIQUE,
+    conversation_id     TEXT,
+    user_message        TEXT NOT NULL,
+    intent              TEXT,
+    community_area      INTEGER,
+    community_area_name TEXT,
+    sources             TEXT,
+    total_duration_ms   INTEGER NOT NULL,
+    status              TEXT NOT NULL DEFAULT 'ok',
+    error_message       TEXT,
+    created_at          INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at);
+"""
+
 
 async def init_db() -> None:
     """Open the database and create tables if needed."""
@@ -75,7 +115,17 @@ async def init_db() -> None:
     row = await cur.fetchone()
     if row is None:
         await _db.execute("INSERT INTO schema_version VALUES (?)", (_SCHEMA_VERSION,))
+        await _db.executescript(_SCHEMA_V2)
         await _db.commit()
+    else:
+        version = row[0]
+        if version < 2:
+            await _db.executescript(_SCHEMA_V2)
+            await _db.execute(
+                "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
+            )
+            await _db.commit()
+            log.info("Migrated database schema from v%d to v%d", version, _SCHEMA_VERSION)
 
 
 async def close_db() -> None:
@@ -347,6 +397,283 @@ async def delete_upload(upload_id: str) -> bool:
 # ---------------------------------------------------------------------------
 # Bulk import (localStorage migration)
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# LLM call logging
+# ---------------------------------------------------------------------------
+
+async def save_llm_call(
+    *,
+    request_group: str,
+    conversation_id: str | None,
+    phase: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int = 0,
+    cache_create_tokens: int = 0,
+    duration_ms: int,
+    status: str = "ok",
+    error_message: str | None = None,
+) -> None:
+    db = _get_db()
+    await db.execute(
+        """
+        INSERT INTO llm_calls
+          (request_group, conversation_id, phase, model, input_tokens, output_tokens,
+           cache_read_tokens, cache_create_tokens, duration_ms, status, error_message, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            request_group, conversation_id, phase, model,
+            input_tokens, output_tokens, cache_read_tokens, cache_create_tokens,
+            duration_ms, status, error_message, _now_ms(),
+        ),
+    )
+    await db.commit()
+
+
+async def save_request_log(
+    *,
+    request_group: str,
+    conversation_id: str | None,
+    user_message: str,
+    intent: str | None = None,
+    community_area: int | None = None,
+    community_area_name: str | None = None,
+    sources: list[str] | None = None,
+    total_duration_ms: int,
+    status: str = "ok",
+    error_message: str | None = None,
+) -> None:
+    db = _get_db()
+    await db.execute(
+        """
+        INSERT OR IGNORE INTO request_logs
+          (request_group, conversation_id, user_message, intent, community_area,
+           community_area_name, sources, total_duration_ms, status, error_message, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            request_group, conversation_id, user_message, intent,
+            community_area, community_area_name,
+            json.dumps(sources) if sources else None,
+            total_duration_ms, status, error_message, _now_ms(),
+        ),
+    )
+    await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Admin queries
+# ---------------------------------------------------------------------------
+
+def _period_cutoff_ms(period: str) -> int | None:
+    """Convert a period string to a millisecond cutoff timestamp."""
+    if period == "all":
+        return None
+    import datetime
+    now = time.time() * 1000
+    if period == "today":
+        midnight = datetime.datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        return int(midnight.timestamp() * 1000)
+    days_map = {"7d": 7, "30d": 30, "90d": 90}
+    days = days_map.get(period, 30)
+    return int(now - days * 86_400_000)
+
+
+async def get_admin_overview(period: str) -> dict:
+    db = _get_db()
+    cutoff = _period_cutoff_ms(period)
+    where = "WHERE created_at >= ?" if cutoff else ""
+    params: tuple = (cutoff,) if cutoff else ()
+
+    cur = await db.execute(
+        f"""
+        SELECT
+            COUNT(*) as count,
+            COALESCE(SUM(input_tokens), 0) as input_tokens,
+            COALESCE(SUM(output_tokens), 0) as output_tokens,
+            COALESCE(SUM(cache_read_tokens), 0) as cache_read_tokens,
+            COALESCE(SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END), 0) as error_count
+        FROM llm_calls {where}
+        """,
+        params,
+    )
+    row = await cur.fetchone()
+
+    cur2 = await db.execute(
+        f"""
+        SELECT model,
+            COUNT(*) as count,
+            COALESCE(SUM(input_tokens), 0) as input_tokens,
+            COALESCE(SUM(output_tokens), 0) as output_tokens
+        FROM llm_calls {where}
+        GROUP BY model
+        """,
+        params,
+    )
+    by_model = {
+        r["model"]: {
+            "count": r["count"],
+            "input_tokens": r["input_tokens"],
+            "output_tokens": r["output_tokens"],
+        }
+        for r in await cur2.fetchall()
+    }
+
+    cur3 = await db.execute(
+        f"""
+        SELECT phase,
+            COUNT(*) as count,
+            COALESCE(SUM(input_tokens), 0) as input_tokens,
+            COALESCE(SUM(output_tokens), 0) as output_tokens,
+            COALESCE(AVG(duration_ms), 0) as avg_duration_ms
+        FROM llm_calls {where}
+        GROUP BY phase
+        """,
+        params,
+    )
+    by_phase = {
+        r["phase"]: {
+            "count": r["count"],
+            "input_tokens": r["input_tokens"],
+            "output_tokens": r["output_tokens"],
+            "avg_duration_ms": round(r["avg_duration_ms"]),
+        }
+        for r in await cur3.fetchall()
+    }
+
+    # Count distinct request groups for "total requests"
+    cur4 = await db.execute(
+        f"SELECT COUNT(DISTINCT request_group) as cnt FROM llm_calls {where}",
+        params,
+    )
+    total_requests = (await cur4.fetchone())["cnt"]
+
+    return {
+        "total_requests": total_requests,
+        "total_llm_calls": row["count"],
+        "total_input_tokens": row["input_tokens"],
+        "total_output_tokens": row["output_tokens"],
+        "total_cache_read_tokens": row["cache_read_tokens"],
+        "error_count": row["error_count"],
+        "by_model": by_model,
+        "by_phase": by_phase,
+    }
+
+
+async def get_admin_timeseries(period: str, bucket: str = "day") -> list[dict]:
+    db = _get_db()
+    cutoff = _period_cutoff_ms(period)
+    where = "WHERE created_at >= ?" if cutoff else ""
+    params: tuple = (cutoff,) if cutoff else ()
+
+    if bucket == "hour":
+        bucket_expr = "strftime('%Y-%m-%dT%H:00', created_at / 1000, 'unixepoch')"
+    else:
+        bucket_expr = "strftime('%Y-%m-%d', created_at / 1000, 'unixepoch')"
+
+    cur = await db.execute(
+        f"""
+        SELECT {bucket_expr} as bucket,
+            COUNT(DISTINCT request_group) as request_count,
+            COALESCE(SUM(input_tokens), 0) as input_tokens,
+            COALESCE(SUM(output_tokens), 0) as output_tokens,
+            COALESCE(AVG(duration_ms), 0) as avg_duration_ms,
+            COALESCE(SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END), 0) as error_count
+        FROM llm_calls {where}
+        GROUP BY bucket
+        ORDER BY bucket
+        """,
+        params,
+    )
+    return [dict(r) for r in await cur.fetchall()]
+
+
+async def get_admin_latency(period: str) -> list[dict]:
+    db = _get_db()
+    cutoff = _period_cutoff_ms(period)
+    where = "WHERE status = 'ok'" + (" AND created_at >= ?" if cutoff else "")
+    params: tuple = (cutoff,) if cutoff else ()
+
+    phases = ["conversation", "router", "synthesizer"]
+    results = []
+    for phase in phases:
+        phase_where = where + " AND phase = ?"
+        phase_params = params + (phase,)
+        cur = await db.execute(
+            f"""
+            SELECT duration_ms FROM llm_calls {phase_where}
+            ORDER BY duration_ms
+            """,
+            phase_params,
+        )
+        rows = [r["duration_ms"] for r in await cur.fetchall()]
+        if not rows:
+            continue
+        n = len(rows)
+        results.append({
+            "phase": phase,
+            "p50_ms": rows[n // 2],
+            "p90_ms": rows[int(n * 0.9)],
+            "p99_ms": rows[min(int(n * 0.99), n - 1)],
+            "count": n,
+        })
+
+    return results
+
+
+async def get_admin_conversation_stats() -> dict:
+    db = _get_db()
+    cur = await db.execute("SELECT COUNT(*) as cnt FROM conversations")
+    total_convs = (await cur.fetchone())["cnt"]
+
+    cur = await db.execute("SELECT COUNT(*) as cnt FROM messages")
+    total_msgs = (await cur.fetchone())["cnt"]
+
+    import datetime
+    midnight = datetime.datetime.now().replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    midnight_ms = int(midnight.timestamp() * 1000)
+    cur = await db.execute(
+        "SELECT COUNT(*) as cnt FROM conversations WHERE created_at >= ?",
+        (midnight_ms,),
+    )
+    today_convs = (await cur.fetchone())["cnt"]
+
+    return {
+        "total_conversations": total_convs,
+        "total_messages": total_msgs,
+        "avg_messages_per_conversation": round(total_msgs / total_convs, 1) if total_convs else 0,
+        "conversations_today": today_convs,
+    }
+
+
+async def get_admin_request_logs(limit: int = 50, offset: int = 0) -> list[dict]:
+    db = _get_db()
+    cur = await db.execute(
+        """
+        SELECT id, request_group, conversation_id, user_message, intent,
+               community_area_name, sources, total_duration_ms, status,
+               error_message, created_at
+        FROM request_logs
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+        """,
+        (limit, offset),
+    )
+    rows = await cur.fetchall()
+    results = []
+    for r in rows:
+        entry = dict(r)
+        entry["sources"] = json.loads(entry["sources"]) if entry["sources"] else []
+        results.append(entry)
+    return results
+
 
 async def import_conversations(conversations: list[dict]) -> int:
     """Import conversations from localStorage export. Returns count imported."""

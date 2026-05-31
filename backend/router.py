@@ -6,7 +6,7 @@ import json
 import logging
 
 from backend.config import get_settings
-from backend.llm import get_anthropic_client
+from backend.llm import tracked_create
 from backend.models import RetrievalPlan
 from backend.prompts import ROUTER_SYSTEM_TEMPLATE
 from backend.retrieval.geo import (
@@ -34,10 +34,16 @@ def _community_area_table() -> str:
 SYSTEM_PROMPT = ROUTER_SYSTEM_TEMPLATE.format(community_area_table=_community_area_table())
 
 
-async def _llm_plan(message: str) -> dict:
+async def _llm_plan(
+    message: str,
+    request_group: str = "",
+    conversation_id: str | None = None,
+) -> dict:
     settings = get_settings()
-    client = get_anthropic_client()
-    resp = await client.messages.create(
+    resp = await tracked_create(
+        request_group=request_group,
+        conversation_id=conversation_id,
+        phase="router",
         model=settings.router_model,
         max_tokens=settings.router_max_tokens,
         system=SYSTEM_PROMPT,
@@ -52,8 +58,12 @@ async def _llm_plan(message: str) -> dict:
     return json.loads(text)
 
 
-async def route(message: str) -> RetrievalPlan:
-    raw = await _llm_plan(message)
+async def route(
+    message: str,
+    request_group: str = "",
+    conversation_id: str | None = None,
+) -> RetrievalPlan:
+    raw = await _llm_plan(message, request_group, conversation_id)
 
     location = raw.get("location") or {}
     raw_loc = (location.get("raw") or "").strip()

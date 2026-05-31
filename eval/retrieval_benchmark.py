@@ -535,9 +535,33 @@ def write_markdown(results: list[QueryResult], path: Path) -> None:
     print(f"\nMarkdown report written to {path}")
 
 
+def write_json(results: list[QueryResult], path: Path) -> None:
+    from datetime import datetime, timezone
+    grades = {g: sum(1 for r in results if r.grade == g) for g in "ABCDF"}
+    scores = [r.avg_score for r in results if r.avg_score > 0]
+    output = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "total_queries": len(results),
+        "grade_distribution": grades,
+        "avg_score": round(sum(scores) / len(scores), 4) if scores else 0,
+        "per_query": [
+            {
+                "id": r.id,
+                "grade": r.grade,
+                "score": r.avg_score,
+                "issues": r.issues,
+            }
+            for r in results
+        ],
+    }
+    path.write_text(json.dumps(output, indent=2))
+    print(f"\nJSON results written to {path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, help="Write markdown report")
+    parser.add_argument("--json-out", type=Path, help="Write JSON results for admin dashboard")
     parser.add_argument("--top-k", type=int, default=5, help="Chunks per query (default 5)")
     args = parser.parse_args()
 
@@ -545,6 +569,8 @@ def main():
     print_report(results)
     if args.out:
         write_markdown(results, args.out)
+    if args.json_out:
+        write_json(results, args.json_out)
 
 
 if __name__ == "__main__":

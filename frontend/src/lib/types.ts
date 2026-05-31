@@ -216,3 +216,110 @@ export interface ConversationDetail {
   created_at: number;
   updated_at: number;
 }
+
+// ---------------------------------------------------------------------------
+// Admin dashboard types
+// ---------------------------------------------------------------------------
+
+export interface ModelUsage {
+  count: number;
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_usd: number;
+}
+
+export interface PhaseUsage {
+  count: number;
+  input_tokens: number;
+  output_tokens: number;
+  avg_duration_ms: number;
+  estimated_cost_usd: number;
+}
+
+export interface AdminOverview {
+  total_requests: number;
+  total_llm_calls: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_cache_read_tokens: number;
+  estimated_cost_usd: number;
+  error_count: number;
+  by_model: Record<string, ModelUsage>;
+  by_phase: Record<string, PhaseUsage>;
+}
+
+export interface TimeseriesBucket {
+  bucket: string;
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_usd: number;
+  avg_duration_ms: number;
+  error_count: number;
+}
+
+export interface LatencyPercentiles {
+  phase: string;
+  p50_ms: number;
+  p90_ms: number;
+  p99_ms: number;
+  count: number;
+}
+
+export interface ConversationStats {
+  total_conversations: number;
+  total_messages: number;
+  avg_messages_per_conversation: number;
+  conversations_today: number;
+}
+
+export interface RequestLogEntry {
+  id: number;
+  request_group: string;
+  conversation_id: string | null;
+  user_message: string;
+  intent: string | null;
+  community_area_name: string | null;
+  sources: string[];
+  total_duration_ms: number;
+  status: string;
+  error_message: string | null;
+  created_at: number;
+}
+
+export interface BenchmarkResults {
+  grade_distribution: Record<string, number>;
+  total_queries: number;
+  avg_score: number;
+  last_run: string | null;
+  per_query: Array<{ id: string; grade: string; score: number; issues: string[] }>;
+}
+
+export interface JudgeDimensionScore {
+  dimension: string;
+  grade: string;
+  reasoning: string;
+}
+
+export interface JudgeQueryResult {
+  id: string;
+  question: string;
+  overall_grade: string;
+  overall_reasoning: string;
+  dimensions: JudgeDimensionScore[];
+}
+
+export interface JudgeDimensionSummary {
+  avg_numeric: number;
+  grade_distribution: Record<string, number>;
+}
+
+export interface JudgeResults {
+  overall_grade_distribution: Record<string, number>;
+  dimension_summaries: Record<string, JudgeDimensionSummary>;
+  total_queries: number;
+  skipped_queries: number;
+  avg_score: number;
+  last_run: string | null;
+  per_query: JudgeQueryResult[];
+}

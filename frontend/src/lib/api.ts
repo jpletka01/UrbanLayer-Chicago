@@ -1,12 +1,19 @@
 import { parseSSE } from "./sse";
 import type {
   AddressSuggestion,
+  AdminOverview,
+  BenchmarkResults,
   ChatChunk,
   CodeChunk,
   Conversation,
   ConversationDetail,
+  ConversationStats,
+  JudgeResults,
+  LatencyPercentiles,
   MapData,
   Message,
+  RequestLogEntry,
+  TimeseriesBucket,
   UploadMeta,
 } from "./types";
 
@@ -220,4 +227,72 @@ export async function deleteUpload(uploadId: string): Promise<void> {
   await fetch(`${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}`, {
     method: "DELETE",
   });
+}
+
+// ---------------------------------------------------------------------------
+// Admin API
+// ---------------------------------------------------------------------------
+
+export async function fetchAdminOverview(period: string): Promise<AdminOverview | null> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/admin/overview?period=${period}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchAdminTimeseries(
+  period: string, bucket = "day",
+): Promise<TimeseriesBucket[]> {
+  try {
+    const resp = await fetch(
+      `${API_BASE}/api/admin/timeseries?period=${period}&bucket=${bucket}`,
+    );
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch { return []; }
+}
+
+export async function fetchAdminLatency(period: string): Promise<LatencyPercentiles[]> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/admin/latency?period=${period}`);
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch { return []; }
+}
+
+export async function fetchConversationStats(): Promise<ConversationStats | null> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/admin/conversations`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchRequestLogs(
+  limit = 50, offset = 0,
+): Promise<RequestLogEntry[]> {
+  try {
+    const resp = await fetch(
+      `${API_BASE}/api/admin/requests?limit=${limit}&offset=${offset}`,
+    );
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch { return []; }
+}
+
+export async function fetchBenchmarkResults(): Promise<BenchmarkResults | null> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/admin/benchmark`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchJudgeResults(): Promise<JudgeResults | null> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/admin/judge`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
 }

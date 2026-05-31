@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Bucket 1 (Mobile & Polish)** — mobile-responsive bottom sheet for sidebar content, file upload support (backend endpoints + frontend attach-before-send flow + attachment thumbnails in chat). Previous: URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 192 tests passing.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Bucket 2 complete** — LLM-as-judge synthesis eval (`--judge` flag on `run_eval.py`, grades on 4 dimensions, admin dashboard visualization). Previous: admin dashboard, Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 192 tests passing.
 
 ---
 
@@ -40,16 +40,16 @@ Decisions that came up later and were resolved:
 Everything below is in the repo, tested and verified.
 
 ### Backend (`backend/`)
-- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events (now also emits `map_data` events and enforces message limits), `/autocomplete`, `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references), `/api/map-data` (raw geo-located rows for the map panel), and **`/api/conversations/*`** (7 CRUD endpoints for SQLite-backed conversation persistence)
+- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events (now also emits `map_data` events and enforces message limits), `/autocomplete`, `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references), `/api/map-data` (raw geo-located rows for the map panel), **`/api/conversations/*`** (7 CRUD endpoints for SQLite-backed conversation persistence), and **`/api/admin/*`** (6 endpoints for the admin dashboard: overview, timeseries, latency, conversations, requests, benchmark)
 - `router.py` — Claude-based router producing strict `RetrievalPlan` JSON; system prompt embeds the 77 community-area names + 30+ neighborhood aliases + **search query guidance for zoning-specific terminology**
 - `synthesizer.py` — streaming Claude synthesis call with **inline citation markers** (`[1]`, `[2]`) for code chunks
 - `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers
 - `assembler.py` — pure context-merging function with caps (now sourced from `config.py`: `top_crime_types`, `top_311_types`, `top_chunks`, etc.), `Open - Dup` dedup, auto data-lag note, **capped-result detection** (sets `capped=True` when row count hits the `$limit` guard)
 - `models.py` — Pydantic types: `RetrievalPlan`, `ContextObject`, `ChatChunk` (with `t_ms` timing), `Message`, `ChatRequest`; all five summary models carry a `capped: bool` flag
 - `config.py` — env via pydantic-settings (Anthropic key, Socrata token, Qdrant URL, model/dataset IDs) **plus tuning knobs**: per-LLM `*_max_tokens`, per-source query `*_limit`s, assembler `top_*` caps, `db_path`, `message_limit`
-- `db.py` — **SQLite persistence layer** via `aiosqlite`. WAL mode, singleton connection, schema versioning. Tables: `conversations`, `messages` (with `context_json`/`plan_json`/`map_data_json` blob columns), `uploads` (schema-only, future-proofing), `schema_version`. CRUD helpers + bulk import for localStorage migration
+- `db.py` — **SQLite persistence layer** via `aiosqlite`. WAL mode, singleton connection, schema versioning (v2). Tables: `conversations`, `messages` (with `context_json`/`plan_json`/`map_data_json` blob columns), `uploads`, `llm_calls` (per-LLM-call token/cost/latency logging), `request_logs` (per-chat-turn summary), `schema_version`. CRUD helpers + bulk import + admin query functions (overview aggregation, time-bucketed series, latency percentiles, paginated logs)
 - `analytics.py` — **Server-side analytics**: month-over-month trend computation from raw Socrata rows. Groups by year-month + category, skips partial current month, returns `TrendItem` list. Results attached to `ContextObject.analytics` so Claude can cite trends in synthesis
-- `llm.py` — single `lru_cache`d `get_anthropic_client()` shared by router/synthesizer/conversation (was three per-request clients)
+- `llm.py` — shared Anthropic client (`get_anthropic_client()`) + **`tracked_create()`/`tracked_stream()` wrappers** that capture token usage (input, output, cache_read, cache_create), wall-clock duration, and error status per LLM call, persisting to the `llm_calls` SQLite table. `estimate_cost()` function with Sonnet/Haiku pricing
 - `prompts.py` — the three system prompts (`ROUTER_SYSTEM_TEMPLATE`, `SYNTHESIZER_SYSTEM`, `CONVERSATION_SYNTHESIS`), moved out of the logic modules; synthesizer prompt includes capped-result handling rule
 - `retrieval/`:
   - `socrata.py` — shared async client with retry/backoff, `X-App-Token`, `$limit` guard, and a `grouped_count()` helper for the repeated top-N aggregation shape
@@ -129,17 +129,14 @@ Everything below is in the repo, tested and verified.
 
 ## What's NOT Done
 
-### 1. Mobile responsiveness
-The style guide and map spec both describe a responsive layout (stacked vertically at <768px, sidebar hidden on mobile), but the workspace has no mobile-specific handling. The sidebar, map, and chat layout are desktop-only.
+### ~~1. Mobile responsiveness~~ ✅ DONE (Bucket 1)
 
-### 2. File upload support
-The `uploads` table exists in the SQLite schema (`db.py`) and `ChatInput.tsx` has an "Add attachment" button, but there's no backend handling or frontend upload flow. Useful for letting users attach images of permits, property photos, etc.
+### ~~2. File upload support~~ ✅ DONE (Bucket 1)
 
-### 3. Cost/token logging
-No tracking of Anthropic API token usage per request. Each chat hits Claude 2–3 times (conversation synthesis + router + synthesizer). Wrapping the client in `llm.py` to record `input_tokens`/`output_tokens` from each response would enable cost monitoring and per-conversation billing visibility.
+### ~~3. Cost/token logging~~ ✅ DONE (Bucket 2 — Admin Dashboard)
 
-### 4. LLM-as-judge eval
-The eval suite (`eval/run_eval.py`) checks routing correctness but doesn't grade synthesis quality. An LLM-as-judge layer could score citation accuracy (does `[1]` actually refer to the right section?), factuality (does the answer match the context?), and completeness.
+### ~~4. LLM-as-judge eval~~ ✅ DONE (Bucket 2)
+`eval/run_eval.py --full <URL> --judge` grades each synthesized answer on 4 dimensions (citation accuracy, factuality, completeness, rule compliance) using Claude Sonnet as the judge. Results write to `eval/judge_results.json` and are visualized in the admin dashboard's "Synthesis Quality" section alongside the existing retrieval benchmark.
 
 ### 5. Legal-domain reranker
 The MS MARCO cross-encoder hurt retrieval quality on legal text (see session log). The infrastructure is wired in `vector_search.py` — swap the model name in `config.py` and set `reranker_enabled=True`. Candidates: `bge-reranker-v2-m3`, or a custom model fine-tuned on municipal code relevance judgments.
@@ -1104,13 +1101,175 @@ Two features completing Bucket 1 of the prioritized roadmap: mobile responsivene
 
 ---
 
+## Session Log (2026-05-31 — Bucket 2: Admin Dashboard)
+
+Built a full `/admin` dashboard completing Bucket 2 (Observability & Eval). Two major work streams: backend request logging system and frontend dashboard with interactive graphics.
+
+### Backend: LLM Call Logging System
+
+1. **Schema migration (v1 → v2)** — Two new SQLite tables:
+   - `llm_calls` — one row per LLM API call (phase, model, input/output/cache tokens, duration_ms, status). Indexed on `created_at` and `request_group`.
+   - `request_logs` — one row per `/chat` request (intent, community area, sources, total duration, error). Provides a fast denormalized view for the dashboard.
+
+2. **Tracked LLM wrappers** (`llm.py`) — `tracked_create()` wraps `client.messages.create()` for conversation synthesis and router calls. `tracked_stream()` is an async context manager wrapping `client.messages.stream()` for the synthesizer — captures token usage via `await stream.get_final_message()` after the stream completes. Both persist to SQLite non-fatally (logging errors don't break the chat flow). `estimate_cost()` uses Sonnet ($3/$15 per MTok) and Haiku ($0.80/$4 per MTok) pricing.
+
+3. **Call site updates** — `conversation.py`, `router.py`, `synthesizer.py` each take `request_group` and `conversation_id` params and use the tracked wrappers instead of direct client calls. `_event_stream()` in `main.py` generates a UUID `request_group` at the top of each request and saves a summary `request_log` via fire-and-forget `asyncio.create_task` at the end.
+
+4. **6 admin API endpoints**:
+   - `GET /api/admin/overview?period=30d` — total requests, tokens, cost, errors, by-model and by-phase breakdowns
+   - `GET /api/admin/timeseries?period=30d&bucket=day` — time-bucketed arrays for charts
+   - `GET /api/admin/latency?period=30d` — p50/p90/p99 by phase
+   - `GET /api/admin/conversations` — total convs, messages, avg per conv, today count
+   - `GET /api/admin/requests?limit=50&offset=0` — paginated request log
+   - `GET /api/admin/benchmark` — reads `eval/benchmark_results.json`
+
+5. **Benchmark JSON output** — `eval/retrieval_benchmark.py` gained `--json-out <path>` flag for machine-readable results consumed by the admin API.
+
+### Frontend: Admin Dashboard Page
+
+1. **`AdminDashboard.tsx`** — Full page at `/admin`, completely independent of the chat App component. Period selector (Today / 7 Days / 30 Days / All Time) controls all data fetching. Six sections in a responsive grid layout.
+
+2. **Interactive components** (all custom SVG, no chart library):
+   - `StatCard` — animated metric cards using the existing `CountUp` component (Framer Motion)
+   - `TimeSeriesChart` — SVG area/line chart with hover crosshair + tooltip, gradient fills, auto-scaled gridlines, multiple series support
+   - `BarChart` — horizontal bars for benchmark grade distribution (A-F with semantic colors)
+   - `LatencyTable` — p50/p90/p99 table with color-coded thresholds (>5s=rose, >2s=amber)
+   - `RequestsTable` — paginated log table with expandable detail rows and intent pills
+   - `BenchmarkSection` — score/pass-rate stat cards, grade distribution bar + pie chart (reuses existing PieChart), collapsible per-query detail table with grade badges
+
+3. **Reused existing components** — `PieChart` (cost by model, calls by phase, grade breakdown), `CountUp` (stat cards, conversation stats).
+
+4. **Navigation** — settings icon in workspace header links to `/admin`. "Back to app" link in admin header returns to `/`.
+
+### Design Decisions
+
+- **One row per LLM call** (not per chat request) — maps cleanly to cost calculation since each model has different pricing, avoids NULL-heavy columns when some phases are skipped
+- **Custom SVG charts over recharts/chart.js** — the project already has a sophisticated custom PieChart; adding a 200KB+ charting library for a few charts would be a dependency mismatch. Custom SVG matches the exact dark theme and stays zero-dependency
+- **Non-fatal logging** — `tracked_create`/`tracked_stream` catch and log db errors without breaking the chat flow, so logging never degrades the user experience
+- **`request_logs` denormalized table** — dashboard queries are faster than aggregating from `llm_calls` for per-request summaries. `llm_calls` is the source of truth for per-call token/cost data
+
+### Files Changed/Created
+
+**Backend (new):**
+- (No new test files yet — existing 192 tests all pass with the changes)
+
+**Backend (modified):**
+- `backend/db.py` — `llm_calls` + `request_logs` tables, migration v1→v2, 6 admin query functions
+- `backend/llm.py` — `tracked_create()`, `tracked_stream()`, `estimate_cost()`, cost table
+- `backend/conversation.py` — `tracked_create()` + `request_group`/`conversation_id` params
+- `backend/router.py` — `tracked_create()` + params
+- `backend/synthesizer.py` — `tracked_stream()` + params
+- `backend/main.py` — `request_group` generation, `_save_request_log()`, 6 admin endpoints
+- `backend/config.py` — `enable_request_logging` setting
+
+**Eval (modified):**
+- `eval/retrieval_benchmark.py` — `write_json()` + `--json-out` flag
+
+**Frontend (new):**
+- `frontend/src/components/AdminDashboard.tsx` — main admin page
+- `frontend/src/components/admin/StatCard.tsx` — animated stat card
+- `frontend/src/components/admin/TimeSeriesChart.tsx` — SVG area/line chart
+- `frontend/src/components/admin/BarChart.tsx` — SVG horizontal bar chart
+- `frontend/src/components/admin/LatencyTable.tsx` — percentile table
+- `frontend/src/components/admin/RequestsTable.tsx` — paginated request log
+- `frontend/src/components/admin/BenchmarkSection.tsx` — benchmark visualization
+
+**Frontend (modified):**
+- `frontend/src/main.tsx` — `/admin` route
+- `frontend/src/lib/api.ts` — 6 admin fetch functions
+- `frontend/src/lib/types.ts` — admin TypeScript interfaces
+- `frontend/src/App.tsx` — admin icon link in workspace header
+
+---
+
+## Session Log (2026-05-31 — Bucket 2 Complete: LLM-as-Judge Synthesis Eval)
+
+Final piece of Bucket 2 (Observability & Eval). Added an LLM-as-judge system that grades the quality of synthesized answers using Claude Sonnet as the evaluator.
+
+### Eval Script (`eval/run_eval.py`)
+
+1. **Full data capture** — `_run_full()` now stores the complete answer text (`full_answer`) and full context dict (`context_dict`) on the `Result` dataclass, not just the 400-char excerpt.
+
+2. **Judge dataclasses** — `DimensionScore` (dimension, grade, reasoning) and `JudgeResult` (query_id, question, dimensions, overall_grade, overall_reasoning).
+
+3. **`_run_judge(result, model)`** — Sends each (question, context, answer) triple to Claude for structured rubric grading:
+   - Extracts metadata flags from context (which data sources present, which are capped, whether disclaimer/zoning/analytics apply)
+   - Pre-extracts citation markers from the answer via regex (`[N]` and `[data:X]`) so the judge doesn't have to parse them
+   - Truncates code chunk text to 600 chars to save tokens
+   - Calls `AsyncAnthropic().messages.create()` directly (eval runs outside the backend process)
+   - Parses structured JSON response with graceful fallback on parse errors
+
+4. **4 grading dimensions** (weighted):
+   - **Citation Accuracy (30%)** — `[N]` markers reference valid 1-indexed code_chunks; `[data:X]` matches present sources; inline placement
+   - **Factuality (30%)** — numbers match context; capped data uses "at least N"; no raw JSON; no hallucination
+   - **Completeness (20%)** — direct answer first; crime data lag noted; MoM trends woven when analytics present
+   - **Rule Compliance (20%)** — disclaimer when required; zoning stated as fact with official URL
+
+5. **Overall grade computation** — weighted average of dimension grades (A=4, B=3, C=2, D=1, F=0), rounded to nearest letter.
+
+6. **CLI flags** — `--judge` (boolean, requires `--full`), `--judge-model` (default `claude-sonnet-4-6`), `--judge-out` (default `eval/judge_results.json`).
+
+7. **Output** — stdout summary table with per-dimension breakdowns + JSON file for admin dashboard. Clarification queries (no synthesis) are skipped and counted separately.
+
+### Backend (`backend/main.py`)
+
+**New endpoint `GET /api/admin/judge`** — reads `eval/judge_results.json`, returns empty fallback if file doesn't exist. Mirrors the existing `admin_benchmark()` pattern.
+
+### Frontend
+
+1. **Types** (`types.ts`) — `JudgeDimensionScore`, `JudgeQueryResult`, `JudgeDimensionSummary`, `JudgeResults` interfaces.
+
+2. **API** (`api.ts`) — `fetchJudgeResults()` → `GET /api/admin/judge`.
+
+3. **`JudgeSection.tsx`** (new component in `admin/`) — mirrors `BenchmarkSection` patterns:
+   - 3 stat cards: Avg Score (color-coded), A+B Pass Rate, Total Queries (with skipped count)
+   - Grade distribution bar chart + pie chart (reusing `BarChart` and `PieChart`)
+   - Per-dimension mini stacked bars (2x2 grid) showing A-F distribution with avg numeric score
+   - Collapsible per-query detail table with grade badges for all 5 columns (Overall, Citation, Factuality, Completeness, Compliance); click to expand and show reasoning strings
+   - Footer with last run timestamp and regeneration command
+
+4. **Dashboard layout** (`AdminDashboard.tsx`) — Row 5 is now a dedicated eval row:
+   - **Row 5**: Retrieval Quality | Synthesis Quality (side by side)
+   - **Row 6**: Conversations (full width, 4-column stat grid)
+   - **Row 7**: Recent Requests (unchanged)
+
+### Design Decisions
+
+- **Single judge call per query** (all 4 dimensions at once) — more efficient than separate calls and allows the judge to consider cross-dimension interactions
+- **Eval runs outside the backend** — uses `AsyncAnthropic()` directly, not `tracked_create()`, since the eval script has no db connection. Judge LLM costs are not tracked in the admin dashboard (intentional — they're one-off eval costs, not production costs)
+- **Pre-extracted citations** — regex-extracted `[N]` and `[data:X]` markers are included in the judge prompt so the LLM doesn't need to parse them itself, reducing counting errors
+- **Context truncation** — code chunk text truncated to 600 chars in the judge prompt since the judge mainly verifies citation validity, not deep-reads every chunk. Full context JSON capped at 15K chars.
+- **`temperature=0`** — deterministic judge grades for reproducible eval runs
+
+### Files Changed/Created
+
+**Eval:**
+- `eval/run_eval.py` — extended: full data capture, judge dataclasses, `_run_judge()`, CLI flags, JSON output
+
+**Backend:**
+- `backend/main.py` — added `GET /api/admin/judge` endpoint
+
+**Frontend (new):**
+- `frontend/src/components/admin/JudgeSection.tsx` — synthesis quality visualization
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — judge TypeScript interfaces
+- `frontend/src/lib/api.ts` — `fetchJudgeResults()`
+- `frontend/src/components/AdminDashboard.tsx` — judge state, fetch, new Row 5/6/7 layout
+
+**Docs:**
+- `HANDOFF.md` — updated status, "What's NOT Done", next steps, repo layout, quick reference
+
+---
+
 ## Recommended Next Steps (4 Buckets, In Order)
 
 ### ~~Bucket 1: Mobile & Polish~~ ✅ DONE
 
-### Bucket 2: Observability & Eval
-- **Cost/token logging** — Wrap the Anthropic client in `llm.py` to capture `usage` from each API response. Store per-request token counts (model, input_tokens, output_tokens, cache_read/creation) in a new SQLite table or log file. Enables cost dashboards and per-conversation billing.
-- **LLM-as-judge eval** — Extend `eval/run_eval.py` with a synthesis grading pass. Use Claude to score each answer on citation accuracy, factuality against context, and completeness. Output a quality report alongside the existing routing pass/fail.
+### ~~Bucket 2: Observability & Eval~~ ✅ DONE
+- ~~**Cost/token logging**~~ ✅ — `tracked_create()`/`tracked_stream()` wrappers in `llm.py` capture per-call token usage and duration. Stored in `llm_calls` + `request_logs` SQLite tables.
+- ~~**Admin dashboard**~~ ✅ — `/admin` route with interactive charts: stat cards, time-series area charts, pie charts (cost by model, calls by phase), latency percentile table, retrieval benchmark grade visualization with per-query drill-down, conversation stats, paginated request log.
+- ~~**LLM-as-judge eval**~~ ✅ — `eval/run_eval.py --full <URL> --judge` grades synthesis on 4 dimensions (citation accuracy, factuality, completeness, rule compliance) via Claude Sonnet. Results in `eval/judge_results.json`, visualized in admin dashboard "Synthesis Quality" section alongside retrieval benchmark.
 
 ### Bucket 3: Retrieval Quality
 - **Legal-domain reranker** — Infrastructure is wired in `vector_search.py`. Try `bge-reranker-v2-m3` or a legal-domain fine-tune. Toggle with `RERANKER_ENABLED=true`.
@@ -1136,10 +1295,10 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `frontend/src/App.tsx` + `frontend/src/components/SidebarPanel.tsx` — mobile responsive layout (not yet implemented)
-   - `backend/llm.py` — token/cost logging wrapper
-   - `backend/retrieval/vector_search.py` — reranker model swap
-   - `frontend/src/components/ChatInput.tsx` + `backend/main.py` — file upload flow
+   - `backend/retrieval/vector_search.py` — reranker model swap (Bucket 3)
+   - `backend/config.py` — reranker settings
+   - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
+   - `frontend/vite.config.ts` — production build config (Bucket 4)
 
 ## Repo Layout
 
@@ -1155,13 +1314,14 @@ chicago/
 ├── pytest.ini                      # Test configuration
 ├── .env.example
 ├── backend/
-│   ├── main.py                     # FastAPI /chat (SSE w/ t_ms timing) + /api/conversations/* CRUD
+│   ├── main.py                     # FastAPI /chat (SSE) + /api/conversations/* + /api/admin/* (6 endpoints)
 │   ├── router.py                   # Claude router (with search query guidance)
 │   ├── synthesizer.py              # Claude streaming synth (with citation markers + analytics)
 │   ├── conversation.py             # Multi-turn context synthesis (improved heuristics)
 │   ├── assembler.py                # Pure (pytest-covered)
 │   ├── analytics.py                # Server-side MoM trend computation for synthesis
-│   ├── db.py                       # SQLite persistence (aiosqlite, WAL, schema versioning)
+│   ├── db.py                       # SQLite persistence (aiosqlite, WAL, schema v2: +llm_calls, +request_logs)
+│   ├── llm.py                      # Shared client + tracked_create/tracked_stream wrappers + cost estimation
 │   ├── models.py
 │   ├── config.py
 │   ├── data/                       # SQLite database (gitignored)
@@ -1175,18 +1335,23 @@ chicago/
 │   └── load_community_areas.py     # CA polygons → GeoJSON
 ├── eval/
 │   ├── queries.json                # 26 test queries
-│   ├── run_eval.py                 # --router-only | --full <URL>
-│   ├── retrieval_benchmark.py      # 18-query retrieval quality benchmark
+│   ├── run_eval.py                 # --router-only | --full <URL> | --judge (LLM-as-judge synthesis eval)
+│   ├── retrieval_benchmark.py      # 18-query retrieval quality benchmark (--json-out for admin dashboard)
+│   ├── benchmark_results.json      # Machine-readable benchmark output (generated, read by admin API)
+│   ├── judge_results.json          # Machine-readable judge output (generated, read by admin API)
 │   ├── baseline_router.md          # Router-only results
 │   └── baseline_full_v2.md         # Full pipeline results (26/26 passing)
 └── frontend/
     ├── src/components/             # Hero, ChatInput, MessageBubble, CitationPill, SourceCitation, Sidebar, etc.
+    │   ├── AdminDashboard.tsx      # /admin page: stat cards, charts, tables, benchmark + judge viz
+    │   ├── admin/                  # StatCard, TimeSeriesChart, BarChart, LatencyTable, RequestsTable,
+    │   │                           #   BenchmarkSection, JudgeSection
     │   └── sidebar/                # MapView, MapLayerToggles, MapLegend, ArrestFilter, StatusFilter,
     │                               #   CostFilter, DateRangeSlider, DataView, AnalyticsSection,
     │                               #   PieChart, TrendTable, SourcesView
-    ├── src/lib/                    # api (SSE), history (API-backed), types, useChat, useTypewriter,
-    │                               #   clipboard, mapColors, analytics, sse, useCopyButton, constants,
-    │                               #   codeRefs, parseTable, useConversationRouter (URL ↔ state sync)
+    ├── src/lib/                    # api (SSE + admin endpoints), history (API-backed), types, useChat,
+    │                               #   useTypewriter, clipboard, mapColors, analytics, sse, useCopyButton,
+    │                               #   constants, codeRefs, parseTable, useConversationRouter
     └── src/App.tsx                 # State machine with per-message context + URL routing
 ```
 
@@ -1212,7 +1377,9 @@ python -m ingestion.embed_and_store --recreate  # --recreate needed after model 
 # Eval
 PYTHONPATH=. python -m eval.run_eval --filter zoning
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --out eval/last.md
+PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge  # LLM-as-judge synthesis quality
 python -m eval.retrieval_benchmark --out eval/retrieval_quality.md  # Vector search quality
+python -m eval.retrieval_benchmark --json-out eval/benchmark_results.json  # For admin dashboard
 
 # Backend + frontend dev
 docker compose up -d qdrant

@@ -468,6 +468,9 @@ def _build_map_response(
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
     elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
+    request_group = str(uuid.uuid4())
+    plan: RetrievalPlan | None = None
+    error_msg: str | None = None
 
     # Message limit enforcement
     if req.conversation_id:
@@ -482,14 +485,26 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
             return
 
-    query = await synthesize_query(req.message, req.history)
+    query = await synthesize_query(
+        req.message, req.history,
+        request_group=request_group,
+        conversation_id=req.conversation_id,
+    )
 
     try:
-        plan = await route(query)
+        plan = await route(
+            query,
+            request_group=request_group,
+            conversation_id=req.conversation_id,
+        )
     except Exception as exc:
         log.exception("Router failed")
-        yield _sse(ChatChunk(type="error", error=f"Router failed: {exc}", t_ms=elapsed_ms()))
+        error_msg = f"Router failed: {exc}"
+        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+        asyncio.create_task(_save_request_log(
+            request_group, req, plan, elapsed_ms(), "error", error_msg,
+        ))
         return
 
     yield _sse(ChatChunk(type="plan", plan=plan, t_ms=elapsed_ms()))
@@ -497,6 +512,9 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     if plan.intent == "clarification_needed" and plan.clarification:
         yield _sse(ChatChunk(type="token", text=plan.clarification, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+        asyncio.create_task(_save_request_log(
+            request_group, req, plan, elapsed_ms(), "ok", None,
+        ))
         return
 
     # Run retrieval and map-data fetch concurrently
@@ -507,8 +525,12 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         )
     except Exception as exc:
         log.exception("Retrieval failed")
-        yield _sse(ChatChunk(type="error", error=f"Retrieval failed: {exc}", t_ms=elapsed_ms()))
+        error_msg = f"Retrieval failed: {exc}"
+        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+        asyncio.create_task(_save_request_log(
+            request_group, req, plan, elapsed_ms(), "error", error_msg,
+        ))
         return
 
     # Compute analytics from map rows and attach to context
@@ -541,15 +563,52 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             user_message=req.message,
             history=req.history,
             upload_filenames=upload_filenames,
+            request_group=request_group,
+            conversation_id=req.conversation_id,
         ):
             chunk_t = elapsed_ms() if first_token else None
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
             first_token = False
     except Exception as exc:
         log.exception("Synthesizer failed")
-        yield _sse(ChatChunk(type="error", error=f"Synthesizer failed: {exc}", t_ms=elapsed_ms()))
+        error_msg = f"Synthesizer failed: {exc}"
+        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
 
     yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+
+    asyncio.create_task(_save_request_log(
+        request_group, req, plan, elapsed_ms(),
+        "error" if error_msg else "ok", error_msg,
+    ))
+
+
+async def _save_request_log(
+    request_group: str,
+    req: ChatRequest,
+    plan: RetrievalPlan | None,
+    total_duration_ms: int,
+    status: str,
+    error_message: str | None,
+) -> None:
+    try:
+        await db.save_request_log(
+            request_group=request_group,
+            conversation_id=req.conversation_id,
+            user_message=req.message[:500],
+            intent=plan.intent if plan else None,
+            community_area=(
+                plan.location.resolved_community_area if plan else None
+            ),
+            community_area_name=(
+                plan.location.resolved_community_area_name if plan else None
+            ),
+            sources=list(plan.sources) if plan else None,
+            total_duration_ms=total_duration_ms,
+            status=status,
+            error_message=error_message[:500] if error_message else None,
+        )
+    except Exception:
+        log.warning("Failed to save request log")
 
 
 @app.post("/chat")
@@ -559,3 +618,100 @@ async def chat(req: ChatRequest) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Admin API
+# ---------------------------------------------------------------------------
+
+@app.get("/api/admin/overview")
+async def admin_overview(period: str = "30d") -> dict:
+    from backend.llm import estimate_cost
+    overview = await db.get_admin_overview(period)
+    # Compute estimated costs
+    for model, usage in overview["by_model"].items():
+        usage["estimated_cost_usd"] = round(
+            estimate_cost(model, usage["input_tokens"], usage["output_tokens"]), 4,
+        )
+    for phase_data in overview["by_phase"].values():
+        phase_data["estimated_cost_usd"] = 0.0
+    overview["estimated_cost_usd"] = round(
+        sum(u["estimated_cost_usd"] for u in overview["by_model"].values()), 4,
+    )
+    return overview
+
+
+@app.get("/api/admin/timeseries")
+async def admin_timeseries(period: str = "30d", bucket: str = "day") -> list[dict]:
+    from backend.llm import estimate_cost, COST_PER_MTOK
+    rows = await db.get_admin_timeseries(period, bucket)
+    for row in rows:
+        row["estimated_cost_usd"] = round(
+            estimate_cost("claude-sonnet-4-6", row["input_tokens"], row["output_tokens"]),
+            4,
+        )
+        row["avg_duration_ms"] = round(row["avg_duration_ms"])
+    return rows
+
+
+@app.get("/api/admin/latency")
+async def admin_latency(period: str = "30d") -> list[dict]:
+    return await db.get_admin_latency(period)
+
+
+@app.get("/api/admin/conversations")
+async def admin_conversations() -> dict:
+    return await db.get_admin_conversation_stats()
+
+
+@app.get("/api/admin/requests")
+async def admin_requests(limit: int = 50, offset: int = 0) -> list[dict]:
+    return await db.get_admin_request_logs(limit, offset)
+
+
+@app.get("/api/admin/benchmark")
+async def admin_benchmark() -> dict:
+    import json as json_mod
+    benchmark_path = Path(__file__).resolve().parent.parent / "eval" / "benchmark_results.json"
+    if not benchmark_path.exists():
+        return {
+            "grade_distribution": {},
+            "total_queries": 0,
+            "avg_score": 0,
+            "last_run": None,
+            "per_query": [],
+        }
+    try:
+        data = json_mod.loads(benchmark_path.read_text())
+        return data
+    except Exception:
+        return {
+            "grade_distribution": {},
+            "total_queries": 0,
+            "avg_score": 0,
+            "last_run": None,
+            "per_query": [],
+        }
+
+
+_EMPTY_JUDGE = {
+    "overall_grade_distribution": {},
+    "dimension_summaries": {},
+    "total_queries": 0,
+    "skipped_queries": 0,
+    "avg_score": 0,
+    "last_run": None,
+    "per_query": [],
+}
+
+
+@app.get("/api/admin/judge")
+async def admin_judge() -> dict:
+    import json as json_mod
+    judge_path = Path(__file__).resolve().parent.parent / "eval" / "judge_results.json"
+    if not judge_path.exists():
+        return dict(_EMPTY_JUDGE)
+    try:
+        return json_mod.loads(judge_path.read_text())
+    except Exception:
+        return dict(_EMPTY_JUDGE)

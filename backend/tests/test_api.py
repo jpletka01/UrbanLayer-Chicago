@@ -278,6 +278,62 @@ class TestChatEndpoint:
         assert isinstance(plan_event["t_ms"], int)
 
 
+class TestAdminJudgeEndpoint:
+    def test_returns_empty_when_no_file(self, client):
+        with patch("backend.main.Path") as MockPath:
+            mock_path = MagicMock()
+            mock_path.exists.return_value = False
+            MockPath.return_value.resolve.return_value.parent.parent.__truediv__ = lambda s, x: mock_path
+            # The endpoint reads the file path inline, so we patch at the module level
+            response = client.get("/api/admin/judge")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_queries"] == 0
+        assert data["per_query"] == []
+        assert data["overall_grade_distribution"] == {}
+
+    def test_returns_data_when_file_exists(self, client, tmp_path):
+        judge_data = {
+            "timestamp": "2026-05-31T12:00:00+00:00",
+            "last_run": "2026-05-31T12:00:00+00:00",
+            "judge_model": "claude-sonnet-4-6",
+            "total_queries": 2,
+            "skipped_queries": 1,
+            "overall_grade_distribution": {"A": 1, "B": 1},
+            "dimension_summaries": {},
+            "avg_score": 0.875,
+            "per_query": [
+                {
+                    "id": "q1",
+                    "question": "Test?",
+                    "overall_grade": "A",
+                    "overall_reasoning": "Good",
+                    "dimensions": [],
+                },
+                {
+                    "id": "q2",
+                    "question": "Test2?",
+                    "overall_grade": "B",
+                    "overall_reasoning": "OK",
+                    "dimensions": [],
+                },
+            ],
+        }
+        judge_file = tmp_path / "judge_results.json"
+        judge_file.write_text(json.dumps(judge_data))
+
+        with patch("pathlib.Path.exists", return_value=True), \
+             patch("pathlib.Path.read_text", return_value=judge_file.read_text()):
+            response = client.get("/api/admin/judge")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_queries"] == 2
+        assert data["avg_score"] == 0.875
+        assert len(data["per_query"]) == 2
+
+
 def _parse_sse_events(text: str) -> list[dict]:
     events = []
     for line in text.split("\n"):

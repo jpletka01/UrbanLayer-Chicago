@@ -92,6 +92,8 @@ class Settings(BaseSettings):
     ]
     upload_max_per_message: int = 3
 
+    enable_request_logging: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:
