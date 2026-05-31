@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **map interactivity & category color overhaul** — click-to-detail popups with Google Street View links, advanced donut chart with thin-slice ring and hover expansion, per-category colors for all data sources (crime/311/permits) with semantic color mapping (violent→red, non-violent→blue), expandable pie legends, 1% crime bucketing threshold, permits API limit raised to 500. Previous: map filters, date slider, data analytics section.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **SQLite conversation persistence + analytics-enriched synthesis** — conversations stored server-side in SQLite (replacing localStorage), month-over-month trends computed server-side and included in Claude's synthesis context, 10-message limit per conversation, per-question state toggling (click a past question to load its map/data/analytics). Previous: map interactivity & category color overhaul.
 
 ---
 
@@ -21,7 +21,7 @@ A RAG-powered chat interface for natural-language questions about Chicago. Combi
 | Vector DB | **Qdrant v1.9.0** (Docker, self-hosted) | Free, fast, good metadata filtering, payload search supports cross-ref lookup |
 | Embeddings | **`BAAI/bge-base-en-v1.5`** via sentence-transformers (local, 768-dim, 512-token context) | Started with MiniLM-L6 (256 tokens), upgraded to bge-small (384-dim), then bge-base (768-dim) for better semantic discrimination on legal text. Query prefix enabled for asymmetric retrieval |
 | Streaming | **SSE** (`text/event-stream`) | Synthesizer is the slow part (~3–8s); streaming TTFT is much better UX |
-| Chat memory | **Multi-turn from day one**, history in client `localStorage`, server is stateless | Simplest persistence model, scales |
+| Chat memory | **Multi-turn from day one**, history in **SQLite** (`backend/data/chicago.db` via `aiosqlite`), server-side persistence with per-message context/plan/mapData | Migrated from localStorage; low user count → SQLite is ideal |
 | Geocoding | **Census Geocoder** (free, no key) + shapely point-in-polygon against cached community-area polygons | No rate limit, no API key, deterministic |
 | Frontend | **React + TypeScript + Vite + Tailwind v3** | Type-safe contract with FastAPI Pydantic via OpenAPI |
 | Map | **Mapbox GL JS** (dark-v11 basemap) + **deck.gl** (ScatterplotLayer, GeoJsonLayer) via `@deck.gl/mapbox` MapboxOverlay | Interactive geo visualization in the sidebar; Mapbox token is a public `pk.*` key, safe in frontend code |
@@ -40,13 +40,15 @@ Decisions that came up later and were resolved:
 Everything below is in the repo, tested and verified.
 
 ### Backend (`backend/`)
-- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events, `/autocomplete`, `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references), and `/api/map-data` (raw geo-located rows for the map panel)
+- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events (now also emits `map_data` events and enforces message limits), `/autocomplete`, `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references), `/api/map-data` (raw geo-located rows for the map panel), and **`/api/conversations/*`** (7 CRUD endpoints for SQLite-backed conversation persistence)
 - `router.py` — Claude-based router producing strict `RetrievalPlan` JSON; system prompt embeds the 77 community-area names + 30+ neighborhood aliases + **search query guidance for zoning-specific terminology**
 - `synthesizer.py` — streaming Claude synthesis call with **inline citation markers** (`[1]`, `[2]`) for code chunks
 - `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers
 - `assembler.py` — pure context-merging function with caps (now sourced from `config.py`: `top_crime_types`, `top_311_types`, `top_chunks`, etc.), `Open - Dup` dedup, auto data-lag note, **capped-result detection** (sets `capped=True` when row count hits the `$limit` guard)
 - `models.py` — Pydantic types: `RetrievalPlan`, `ContextObject`, `ChatChunk` (with `t_ms` timing), `Message`, `ChatRequest`; all five summary models carry a `capped: bool` flag
-- `config.py` — env via pydantic-settings (Anthropic key, Socrata token, Qdrant URL, model/dataset IDs) **plus tuning knobs**: per-LLM `*_max_tokens`, per-source query `*_limit`s, and assembler `top_*` caps
+- `config.py` — env via pydantic-settings (Anthropic key, Socrata token, Qdrant URL, model/dataset IDs) **plus tuning knobs**: per-LLM `*_max_tokens`, per-source query `*_limit`s, assembler `top_*` caps, `db_path`, `message_limit`
+- `db.py` — **SQLite persistence layer** via `aiosqlite`. WAL mode, singleton connection, schema versioning. Tables: `conversations`, `messages` (with `context_json`/`plan_json`/`map_data_json` blob columns), `uploads` (schema-only, future-proofing), `schema_version`. CRUD helpers + bulk import for localStorage migration
+- `analytics.py` — **Server-side analytics**: month-over-month trend computation from raw Socrata rows. Groups by year-month + category, skips partial current month, returns `TrendItem` list. Results attached to `ContextObject.analytics` so Claude can cite trends in synthesis
 - `llm.py` — single `lru_cache`d `get_anthropic_client()` shared by router/synthesizer/conversation (was three per-request clients)
 - `prompts.py` — the three system prompts (`ROUTER_SYSTEM_TEMPLATE`, `SYNTHESIZER_SYSTEM`, `CONVERSATION_SYNTHESIS`), moved out of the logic modules; synthesizer prompt includes capped-result handling rule
 - `retrieval/`:
@@ -59,7 +61,7 @@ Everything below is in the repo, tested and verified.
   - `map_data.py` — raw geo-located row fetching for the map panel (`crimes_for_map`, `requests_311_for_map`, `permits_for_map`, `zoning_for_map`); uses `socrata_get` directly with higher row limits (200/150/100) and `latitude IS NOT NULL` filters
   - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder; per-section dedup, keyword boost scoring, cross-encoder reranker (infrastructure present, disabled by default); `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
-- `tests/` — **156 tests** (unit + integration), all passing
+- `tests/` — **177 tests** (unit + integration), all passing
 
 ### Ingestion (`ingestion/`)
 - `parse_chicago_code.py` — HTML parser with split-at-republication strategy, state machine for Title→Chapter→Article→Subarticle→Part, colspan/rowspan-aware table extraction with composite multi-row headers
@@ -96,13 +98,13 @@ Everything below is in the repo, tested and verified.
   - `DisclaimerBanner` (amber, legal disclaimer)
   - `HistorySidebar` (conversation history)
 - `lib/`:
-  - `api.ts` (SSE fetch streaming; `fetchSection` with an immutable-section cache)
-  - `useChat.ts` (owns the SSE consumption loop + per-turn state; lifted out of `App.tsx`)
+  - `api.ts` (SSE fetch streaming; `fetchSection` with an immutable-section cache; **conversation CRUD functions**: `listConversations`, `getConversation`, `createConversation`, `deleteConversationAPI`, `saveMessages`, `updateMessageMapData`, `importConversations`)
+  - `useChat.ts` (owns the SSE consumption loop + per-turn state; lifted out of `App.tsx`; **now accepts `conversationId`**, handles `map_data` SSE events, enforces client-side 10-message limit, exposes `atMessageLimit`)
   - `sse.ts` (reusable `parseSSE` generator used by `api.ts`)
   - `useCopyButton.ts` (shared copy-to-clipboard hook with transient "copied" flag)
   - `constants.ts` (SUGGESTIONS, splash stats, and the magic timers/thresholds)
-  - `history.ts` (localStorage conversations)
-  - `types.ts` (matches backend Pydantic, extended with per-message context; single source of `Conversation`)
+  - `history.ts` (**async, API-backed** — replaced localStorage with server API calls; includes `migrateLocalStorageToSQLite()` for one-time migration)
+  - `types.ts` (matches backend Pydantic, extended with per-message context/plan/mapData; `Conversation` is now a summary type; `StoredMessage`/`ConversationDetail` for API responses; `AnalyticsSummary`/`TrendItem` types)
   - `useTypewriter.ts` (character reveal hook)
   - `clipboard.ts` (copy utility)
   - `codeRefs.ts` (`isResolvableSection`, `stripHeader` helpers)
@@ -143,7 +145,8 @@ Implemented with Mapbox GL JS + deck.gl instead of Leaflet (better WebGL perform
 - **LLM-as-judge eval** — grade synthesis answers for citation accuracy + factuality
 - **Cost/token logging** — wrap the Anthropic client to record tokens per request
 - **Deployment** — currently local-only
-- **Postgres / server-side history** — for multi-device sync
+- ~~**Postgres / server-side history** — for multi-device sync~~ — RESOLVED: SQLite persistence implemented (2026-05-31)
+- **File upload support** — `uploads` table exists in SQLite schema but no UI or backend handling yet
 
 ### 8. Known fragile heuristics
 - **Sub-header detection inside tables** uses length cap (<80 chars) and min-chars threshold (400 chars before splitting)
@@ -630,6 +633,105 @@ All three sources share colors between the map dots and the analytics pie/trend 
 
 ---
 
+## Session Log (2026-05-31 — SQLite Persistence, Analytics Synthesis, Message Limits, Per-Question State)
+
+Four-feature session replacing the localStorage-based conversation model with a full server-side persistence layer.
+
+### Feature 1: SQLite Conversation Persistence
+
+Replaced frontend localStorage with server-side SQLite (`backend/data/chicago.db`). The database uses WAL mode via `aiosqlite` for async access.
+
+**Schema** (4 tables):
+- `conversations` — id, title, created_at, updated_at
+- `messages` — conversation_id, role, content, `context_json`/`plan_json`/`map_data_json` (JSON blob columns), `map_fetched_at`, position
+- `uploads` — schema only (future-proofing for file upload support)
+- `schema_version` — migration versioning
+
+**7 REST endpoints** added to `main.py`:
+- `GET/POST/DELETE /api/conversations` — list, create, clear all
+- `GET/DELETE /api/conversations/{id}` — get full conversation, delete
+- `PUT /api/conversations/{id}/messages` — append messages
+- `PATCH /api/conversations/{id}/messages/{position}` — update map data on a single message
+- `POST /api/conversations/import` — bulk import for localStorage migration
+
+**Frontend migration**: On first load, `migrateLocalStorageToSQLite()` reads the old `chicago.conversations.v1` localStorage key, POSTs all conversations to the import endpoint, then removes the localStorage keys. All `history.ts` functions are now async and delegate to the API.
+
+### Feature 2: Analytics-Enriched Claude Synthesis
+
+Server-side month-over-month trend computation, so Claude can cite specific trends in its answers.
+
+**New module `backend/analytics.py`**: Ports the trend logic from `frontend/src/lib/analytics.ts` to Python. Groups records by year-month + category, skips the current partial month, compares the two most recent complete months, returns `TrendItem` list (category, current_count, prior_count, change_pct). Capped at 8 categories per source.
+
+**Pipeline change**: `_event_stream` now runs `_retrieve(plan)` and `_fetch_map_rows(plan)` concurrently via `asyncio.gather`. The map rows are used to compute analytics, which are attached to `context.analytics` before the context is emitted and before synthesis begins.
+
+**Synthesis prompt**: `_build_user_prompt` in `synthesizer.py` formats analytics as human-readable text (not JSON) appended after the context block. Example: `"Crime: BATTERY: 245 (up 23%)"`. The synthesizer system prompt (rule 8) instructs Claude to weave the 2-4 most notable trends into its answer naturally.
+
+**New SSE event type `map_data`**: After the context event, the pipeline emits the map data response. This eliminates the separate `/api/map-data` round-trip for the current turn — the frontend receives map data inline with the stream.
+
+### Feature 3: 10-Message Limit
+
+Enforced on both sides:
+- **Backend**: If `conversation_id` is provided in `ChatRequest`, `_event_stream` counts user messages in SQLite. If >= 10, emits `error: "MESSAGE_LIMIT_REACHED"` and returns immediately.
+- **Frontend**: `useChat` exposes `atMessageLimit`. `ChatInterface` replaces the input with "You've reached the 10-message limit. Start a new conversation" when at the limit.
+
+Configurable via `message_limit` in `config.py` (default 10).
+
+### Feature 4: Per-Question State Toggling
+
+Clicking a past user-message bubble loads that question's associated state into the sidebar.
+
+**Data stored per assistant message**: `context` (already existed), `plan` (NEW), `mapData` (NEW), `mapFetchedAt` (NEW). All attached to the assistant message on the "done" SSE event and persisted in SQLite.
+
+**Click flow**: `MessageBubble` → `ChatInterface.onMessageClick(index)` → `App.handleMessageClick`:
+1. Find the assistant message at `index + 1`
+2. Load its `context` into sidebar data/sources panels
+3. Load its `plan` (drives filter mode, time range)
+4. Load its `mapData` with staleness check:
+   - If `mapFetchedAt` within 24 hours → use stored data
+   - If older → re-fetch via `/api/map-data`, update in SQLite via PATCH endpoint
+5. Set `selectedMessageIndex` for visual highlighting
+
+**Visual indicators**: User message bubbles get `cursor-pointer`, hover `ring-1 ring-white/20`, selected `ring-1 ring-accent/40`.
+
+### Design Decisions
+
+- **JSON blob columns over normalized tables** — context/plan/mapData are written once and read whole. No query benefit from normalization for a single-user app.
+- **Map data in SSE stream** — avoids a second round-trip for the current turn. Historical turns still use `/api/map-data` when data is stale.
+- **24h staleness threshold** — map data older than a day is re-fetched since crime/311/permit data updates frequently. Fresh enough for recent conversations, current enough for revisits.
+- **aiosqlite singleton** — single user, single writer. No connection pooling needed.
+- **Analytics as text, not JSON** — formatting trends as "BATTERY: 245 (up 23%)" instead of `{"category": "BATTERY", ...}` saves ~40% tokens in the synthesis prompt.
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/db.py` — SQLite persistence layer
+- `backend/analytics.py` — trend computation
+- `backend/tests/test_db.py` — 15 tests
+- `backend/tests/test_analytics.py` — 14 tests
+
+**Backend (modified):**
+- `backend/main.py` — conversation endpoints, analytics pipeline, map_data SSE, message limit
+- `backend/models.py` — TrendItem, AnalyticsSummary, ConversationSummary, StoredMessage, ConversationDetail, SaveMessagesRequest, ImportRequest; ContextObject.analytics; ChatChunk.map_data; ChatRequest.conversation_id
+- `backend/config.py` — db_path, message_limit
+- `backend/synthesizer.py` — _format_analytics, analytics in _build_user_prompt
+- `backend/prompts.py` — rule 8 (trend weaving)
+- `backend/tests/test_api.py` — updated mocks for _fetch_map_rows + db
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — Message extended (plan/mapData/mapFetchedAt), StoredMessage, ConversationDetail, AnalyticsSummary, TrendItem
+- `frontend/src/lib/api.ts` — conversation CRUD, chatStream accepts conversationId
+- `frontend/src/lib/history.ts` — full rewrite to async API-backed + migration
+- `frontend/src/lib/useChat.ts` — conversationId, onPlan/onMapData callbacks, message limit
+- `frontend/src/App.tsx` — async lifecycle, per-question handler, map data from SSE
+- `frontend/src/components/ChatInterface.tsx` — message clicking, limit UI
+- `frontend/src/components/MessageBubble.tsx` — isSelected/onSelect props
+
+**Other:**
+- `.gitignore` — added `backend/data/`
+- `requirements.txt` — added `aiosqlite>=0.20.0`
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
 ### Step 1 — Legal-domain cross-encoder reranker
@@ -675,15 +777,18 @@ chicago/
 ├── pytest.ini                      # Test configuration
 ├── .env.example
 ├── backend/
-│   ├── main.py                     # FastAPI /chat (SSE w/ t_ms timing)
+│   ├── main.py                     # FastAPI /chat (SSE w/ t_ms timing) + /api/conversations/* CRUD
 │   ├── router.py                   # Claude router (with search query guidance)
-│   ├── synthesizer.py              # Claude streaming synth (with citation markers)
+│   ├── synthesizer.py              # Claude streaming synth (with citation markers + analytics)
 │   ├── conversation.py             # Multi-turn context synthesis (improved heuristics)
 │   ├── assembler.py                # Pure (pytest-covered)
+│   ├── analytics.py                # Server-side MoM trend computation for synthesis
+│   ├── db.py                       # SQLite persistence (aiosqlite, WAL, schema versioning)
 │   ├── models.py
 │   ├── config.py
+│   ├── data/                       # SQLite database (gitignored)
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py + map_data.py
-│   └── tests/                      # 156 tests (unit + integration)
+│   └── tests/                      # 177 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -710,7 +815,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 156 tests
+python -m pytest backend/tests/ -q           # 177 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 
