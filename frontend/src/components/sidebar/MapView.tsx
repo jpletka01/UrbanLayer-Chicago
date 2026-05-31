@@ -4,15 +4,17 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag } from "../../lib/types";
 import {
-  CRIME_TYPE_COLORS, crimeColor, deptColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
+  CRIME_TYPE_COLORS, crimeColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { MapLayerToggles } from "./MapLayerToggles";
 import { MapLegend } from "./MapLegend";
-import { ArrestFilter } from "./ArrestFilter";
 import type { ArrestFilterValue } from "./ArrestFilter";
+import type { StatusFilterValue } from "./StatusFilter";
+import { costBucket } from "./CostFilter";
+import type { CostFilterValue } from "./CostFilter";
 import { DateRangeSlider } from "./DateRangeSlider";
 
 type SelectedItem =
@@ -102,15 +104,34 @@ export function MapView({ mapData, loading, sources }: Props) {
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
-  const filterMode = deriveFilterMode(sources);
+  const rawFilterMode = deriveFilterMode(sources);
 
-  const [overviewToggles, setOverviewToggles] = useState<Record<string, boolean>>({
-    crimes: true, "requests-311": true, permits: true, zoning: false,
-  });
+  type SourceTab = "crime" | "311" | "permits";
+  const availableTabs: SourceTab[] = [];
+  if (mapData?.crimes?.length) availableTabs.push("crime");
+  if (mapData?.requests_311?.length) availableTabs.push("311");
+  if (mapData?.building_permits?.length) availableTabs.push("permits");
+
+  const [activeTab, setActiveTab] = useState<SourceTab | null>(null);
+  const isMultiSource = rawFilterMode === "overview";
+  const filterMode: FilterMode = isMultiSource
+    ? (activeTab && availableTabs.includes(activeTab) ? activeTab : availableTabs[0] ?? "crime")
+    : rawFilterMode;
+
+  useEffect(() => {
+    if (isMultiSource && availableTabs.length > 0) {
+      if (!activeTab || !availableTabs.includes(activeTab)) {
+        setActiveTab(availableTabs[0]);
+      }
+    }
+  }, [mapData, isMultiSource]);
+
   const [crimeTypeToggles, setCrimeTypeToggles] = useState<Record<string, boolean>>({});
   const [srTypeToggles, setSrTypeToggles] = useState<Record<string, boolean>>({});
   const [permitTypeToggles, setPermitTypeToggles] = useState<Record<string, boolean>>({});
   const [arrestFilter, setArrestFilter] = useState<ArrestFilterValue>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("all");
+  const [costFilter, setCostFilter] = useState<CostFilterValue>("all");
   const [dateRange, setDateRange] = useState<[number, number] | null>(null);
   const [dateBounds, setDateBounds] = useState<{ min: number; max: number } | null>(null);
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
@@ -118,36 +139,57 @@ export function MapView({ mapData, loading, sources }: Props) {
 
   // Reset sub-type filters when data changes
   useEffect(() => {
-    if (filterMode === "crime" && mapData?.crimes?.length) {
+    if (mapData?.crimes?.length) {
       setCrimeTypeToggles(buildCrimeTypeFilters(mapData.crimes));
       setArrestFilter("all");
     }
-    if (filterMode === "311" && mapData?.requests_311?.length) {
+    if (mapData?.requests_311?.length) {
       setSrTypeToggles(buildSrTypeFilters(mapData.requests_311));
+      setStatusFilter("all");
     }
-    if (filterMode === "permits" && mapData?.building_permits?.length) {
+    if (mapData?.building_permits?.length) {
       setPermitTypeToggles(buildPermitTypeFilters(mapData.building_permits));
+      setCostFilter("all");
     }
+    setSelectedItem(null);
+  }, [mapData]);
+
+  // Recompute date bounds when active tab or data changes
+  useEffect(() => {
     if (mapData) {
       const bounds = computeDateBounds(mapData, filterMode);
       setDateBounds(bounds);
       setDateRange(bounds ? [bounds.min, bounds.max] : null);
     }
-    setSelectedItem(null);
   }, [mapData, filterMode]);
 
-  const toggleOverview = useCallback((id: string) => {
-    setOverviewToggles(prev => ({ ...prev, [id]: !prev[id] }));
-  }, []);
+  const soloToggle = useCallback(
+    (prev: Record<string, boolean>, id: string): Record<string, boolean> => {
+      const keys = Object.keys(prev);
+      const allActive = keys.every(k => prev[k]);
+      const activeKeys = keys.filter(k => prev[k]);
+      const isOnlySolo = activeKeys.length === 1 && activeKeys[0] === id;
+
+      if (isOnlySolo) {
+        return Object.fromEntries(keys.map(k => [k, true]));
+      }
+      if (allActive || !prev[id]) {
+        return Object.fromEntries(keys.map(k => [k, k === id]));
+      }
+      return Object.fromEntries(keys.map(k => [k, k === id]));
+    },
+    [],
+  );
+
   const toggleCrimeType = useCallback((id: string) => {
-    setCrimeTypeToggles(prev => ({ ...prev, [id]: !prev[id] }));
-  }, []);
+    setCrimeTypeToggles(prev => soloToggle(prev, id));
+  }, [soloToggle]);
   const toggleSrType = useCallback((id: string) => {
-    setSrTypeToggles(prev => ({ ...prev, [id]: !prev[id] }));
-  }, []);
+    setSrTypeToggles(prev => soloToggle(prev, id));
+  }, [soloToggle]);
   const togglePermitType = useCallback((id: string) => {
-    setPermitTypeToggles(prev => ({ ...prev, [id]: !prev[id] }));
-  }, []);
+    setPermitTypeToggles(prev => soloToggle(prev, id));
+  }, [soloToggle]);
 
   // Initialize map
   useEffect(() => {
@@ -274,6 +316,8 @@ export function MapView({ mapData, loading, sources }: Props) {
         const typeMatch = activeTypes.has(r.sr_type) ||
           (otherActive && !topTypes.has(r.sr_type));
         if (!typeMatch) return false;
+        if (statusFilter === "closed" && r.status !== "Closed") return false;
+        if (statusFilter === "open" && r.status === "Closed") return false;
         if (!passesDateFilter(r.created_date, dateRange)) return false;
         return true;
       });
@@ -304,6 +348,7 @@ export function MapView({ mapData, loading, sources }: Props) {
         const typeMatch = activeTypes.has(normalized) ||
           (otherActive && !PERMIT_TYPE_ORDER.includes(normalized));
         if (!typeMatch) return false;
+        if (costFilter !== "all" && costBucket(p.estimated_cost) !== costFilter) return false;
         if (!passesDateFilter(p.issue_date, dateRange)) return false;
         return true;
       });
@@ -323,65 +368,9 @@ export function MapView({ mapData, loading, sources }: Props) {
           })
         );
       }
-    } else {
-      // Overview mode: source-level toggles + date filter
-      if (overviewToggles.crimes && mapData?.crimes?.length) {
-        const filtered = mapData.crimes.filter(c => passesDateFilter(c.date, dateRange));
-        if (filtered.length > 0) {
-          layers.push(
-            new ScatterplotLayer<MapCrime>({
-              id: "crimes",
-              data: filtered,
-              getPosition: d => [d.longitude, d.latitude],
-              getRadius: 40,
-              getFillColor: d => crimeColor(d.primary_type),
-              pickable: true,
-              radiusMinPixels: 3,
-              radiusMaxPixels: 8,
-              radiusUnits: "meters",
-            })
-          );
-        }
-      }
-      if (overviewToggles["requests-311"] && mapData?.requests_311?.length) {
-        const filtered = mapData.requests_311.filter(r => passesDateFilter(r.created_date, dateRange));
-        if (filtered.length > 0) {
-          layers.push(
-            new ScatterplotLayer<MapRequest311>({
-              id: "requests-311",
-              data: filtered,
-              getPosition: d => [d.longitude, d.latitude],
-              getRadius: 35,
-              getFillColor: d => deptColor(d.owner_department),
-              pickable: true,
-              radiusMinPixels: 3,
-              radiusMaxPixels: 7,
-              radiusUnits: "meters",
-            })
-          );
-        }
-      }
-      if (overviewToggles.permits && mapData?.building_permits?.length) {
-        const filtered = mapData.building_permits.filter(p => passesDateFilter(p.issue_date, dateRange));
-        if (filtered.length > 0) {
-          layers.push(
-            new ScatterplotLayer<MapPermit>({
-              id: "permits",
-              data: filtered,
-              getPosition: d => [d.longitude, d.latitude],
-              getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
-              getFillColor: [99, 153, 34, 180],
-              pickable: true,
-              radiusMinPixels: 3,
-              radiusMaxPixels: 12,
-              radiusUnits: "meters",
-            })
-          );
-        }
-      }
     }
 
-    if (ENABLE_ZONING && overviewToggles.zoning && mapData?.zoning) {
+    if (ENABLE_ZONING && mapData?.zoning) {
       layers.push(
         new GeoJsonLayer({
           id: "zoning",
@@ -412,14 +401,34 @@ export function MapView({ mapData, loading, sources }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, overviewToggles, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, dateRange, mapReady]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady]);
 
-  // Fly to address
+  // Fit map bounds to data points
   useEffect(() => {
-    if (!mapRef.current || !mapReady || !mapData?.queried_address) return;
-    const { longitude, latitude } = mapData.queried_address;
-    mapRef.current.flyTo({ center: [longitude, latitude], zoom: 14, duration: 1500 });
-  }, [mapData?.queried_address, mapReady]);
+    if (!mapRef.current || !mapReady || !mapData) return;
+
+    const lngs: number[] = [];
+    const lats: number[] = [];
+
+    for (const c of mapData.crimes) { lngs.push(c.longitude); lats.push(c.latitude); }
+    for (const r of mapData.requests_311) { lngs.push(r.longitude); lats.push(r.latitude); }
+    for (const p of mapData.building_permits) { lngs.push(p.longitude); lats.push(p.latitude); }
+    if (mapData.queried_address) {
+      lngs.push(mapData.queried_address.longitude);
+      lats.push(mapData.queried_address.latitude);
+    }
+
+    if (lngs.length === 0) return;
+
+    const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+    const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+
+    if (sw[0] === ne[0] && sw[1] === ne[1]) {
+      mapRef.current.flyTo({ center: sw, zoom: 14, duration: 1500 });
+    } else {
+      mapRef.current.fitBounds([sw, ne], { padding: 40, duration: 1500, maxZoom: 15 });
+    }
+  }, [mapData, mapReady]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -432,7 +441,7 @@ export function MapView({ mapData, loading, sources }: Props) {
   // Build dynamic toggle configs
   let toggleConfigs: { id: string; label: string; color: string; active: boolean }[] = [];
   let activeToggles: Record<string, boolean> = {};
-  let onToggle: (id: string) => void = toggleOverview;
+  let onToggle: (id: string) => void = () => {};
 
   if (filterMode === "crime") {
     toggleConfigs = Object.keys(crimeTypeToggles).map(type => {
@@ -466,23 +475,23 @@ export function MapView({ mapData, loading, sources }: Props) {
     }));
     activeToggles = permitTypeToggles;
     onToggle = togglePermitType;
-  } else {
-    toggleConfigs = [
-      { id: "crimes", label: "Crime", color: "rgb(226,75,74)", active: overviewToggles.crimes },
-      { id: "requests-311", label: "311", color: "rgb(0,188,212)", active: overviewToggles["requests-311"] },
-      { id: "permits", label: "Permits", color: "rgb(99,153,34)", active: overviewToggles.permits },
-      ...(ENABLE_ZONING
-        ? [{ id: "zoning", label: "Zoning", color: "rgb(201,100,66)", active: overviewToggles.zoning }]
-        : []),
-    ];
-    activeToggles = overviewToggles;
-    onToggle = toggleOverview;
   }
 
   const hasData = mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
 
   const arrestCount = mapData?.crimes?.filter(c => isArrested(c.arrest)).length ?? 0;
   const crimeTotal = mapData?.crimes?.length ?? 0;
+
+  const closedCount = mapData?.requests_311?.filter(r => r.status === "Closed").length ?? 0;
+  const requests311Total = mapData?.requests_311?.length ?? 0;
+
+  const permitsTotal = mapData?.building_permits?.length ?? 0;
+  const permitCostCounts: Record<CostFilterValue, number> = {
+    all: permitsTotal,
+    "under25k": mapData?.building_permits?.filter(p => p.estimated_cost < 25_000).length ?? 0,
+    "25k-250k": mapData?.building_permits?.filter(p => p.estimated_cost >= 25_000 && p.estimated_cost <= 250_000).length ?? 0,
+    "over250k": mapData?.building_permits?.filter(p => p.estimated_cost > 250_000).length ?? 0,
+  };
 
   const capped = mapData?.capped ?? {};
   const isCapped = Object.values(capped).some(Boolean);
@@ -516,13 +525,93 @@ export function MapView({ mapData, loading, sources }: Props) {
         <MapLegend activeLayers={activeToggles} filterMode={filterMode} />
       )}
 
-      {mapReady && filterMode === "crime" && crimeTotal > 0 && (
-        <ArrestFilter
-          value={arrestFilter}
-          onChange={setArrestFilter}
-          arrestCount={arrestCount}
-          totalCount={crimeTotal}
-        />
+      {mapReady && hasData && (
+        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[calc(50%-8px)]">
+          {isMultiSource && availableTabs.length > 1 && (
+            <div className="flex w-full bg-dark-surface/90 backdrop-blur-sm rounded-md border border-dark-border shadow-sm overflow-hidden">
+              {availableTabs.map((tab) => {
+                const label = tab === "crime" ? "Crime" : tab === "311" ? "311" : "Permits";
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 px-2.5 py-1 text-[11px] font-medium transition-colors duration-150
+                      ${filterMode === tab
+                        ? "bg-dark-elevated text-text-primary"
+                        : "text-text-muted hover:text-text-secondary hover:bg-dark-surface/60"
+                      }
+                      ${tab !== availableTabs[0] ? "border-l border-dark-border" : ""}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {filterMode === "crime" && crimeTotal > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {(["all", "arrested", "not-arrested"] as ArrestFilterValue[]).map((opt) => {
+                const label = opt === "all" ? `All (${crimeTotal})` : opt === "arrested" ? `Arrested (${arrestCount})` : `No Arrest (${crimeTotal - arrestCount})`;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => setArrestFilter(opt)}
+                    className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                      ${arrestFilter === opt
+                        ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
+                        : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
+                      }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {filterMode === "311" && requests311Total > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {(["all", "closed", "open"] as StatusFilterValue[]).map((opt) => {
+                const label = opt === "all" ? `All (${requests311Total})` : opt === "closed" ? `Closed (${closedCount})` : `Open (${requests311Total - closedCount})`;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => setStatusFilter(opt)}
+                    className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                      ${statusFilter === opt
+                        ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
+                        : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
+                      }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {filterMode === "permits" && permitsTotal > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {(["all", "under25k", "25k-250k", "over250k"] as CostFilterValue[]).map((opt) => {
+                const label = opt === "all" ? `All (${permitsTotal})` : opt === "under25k" ? `<$25K (${permitCostCounts.under25k})` : opt === "25k-250k" ? `$25K–$250K (${permitCostCounts["25k-250k"]})` : `>$250K (${permitCostCounts.over250k})`;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => setCostFilter(opt)}
+                    className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                      ${costFilter === opt
+                        ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
+                        : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
+                      }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {loading && (

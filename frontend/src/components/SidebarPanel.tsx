@@ -227,7 +227,7 @@ export function SidebarPanel({
 
 const MIN_DATA_HEIGHT = 0;
 const COLLAPSED_DATA_HEIGHT = 36;
-const DEFAULT_DATA_RATIO = 0.25; // data gets 25% of available height by default
+const DEFAULT_DATA_RATIO = 0.5; // data gets 50% of available height by default
 
 interface DataMapLayoutProps {
   mapData: MapData | null;
