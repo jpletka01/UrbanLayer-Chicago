@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import type { ContextObject, MapData } from "../../lib/types";
+import type { MapData } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
-import { deptColorCSS, normalizeDept, crimeColorCSS, srTypeMapColorCSS, permitColorCSS } from "../../lib/mapColors";
+import { deptColorCSS, normalizeDept, crimeColorCSS, srTypeMapColorCSS, permitColorCSS, normalizePermitType } from "../../lib/mapColors";
 import { computeTrends, computePieSlices, getTrendMonthLabels } from "../../lib/analytics";
 import { PieChart } from "./PieChart";
 import { TrendTable } from "./TrendTable";
@@ -11,10 +11,9 @@ type ThreeOneOneGrouping = "sr_type" | "department";
 interface Props {
   mapData: MapData;
   filterMode: FilterMode;
-  context?: ContextObject | null;
 }
 
-export function AnalyticsSection({ mapData, filterMode, context }: Props) {
+export function AnalyticsSection({ mapData, filterMode }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [threeOneOneGrouping, setThreeOneOneGrouping] = useState<ThreeOneOneGrouping>("sr_type");
 
@@ -42,9 +41,10 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
 
   const permitAnalytics = useMemo(() => {
     if (!mapData.building_permits.length) return null;
+    const getType = (p: (typeof mapData.building_permits)[0]) => normalizePermitType(p.permit_type);
     return {
-      trends: computeTrends(mapData.building_permits, p => p.issue_date, p => p.permit_type, permitColorCSS),
-      pie: computePieSlices(mapData.building_permits, p => p.permit_type, permitColorCSS),
+      trends: computeTrends(mapData.building_permits, p => p.issue_date, getType, permitColorCSS),
+      pie: computePieSlices(mapData.building_permits, getType, permitColorCSS),
       monthLabels: getTrendMonthLabels(mapData.building_permits, p => p.issue_date),
     };
   }, [mapData.building_permits]);
@@ -80,7 +80,6 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
               trends={crimeAnalytics.trends}
               pie={crimeAnalytics.pie}
               monthLabels={crimeAnalytics.monthLabels}
-              totalOverride={context?.crime_last_90d?.total}
             />
           )}
 
@@ -120,7 +119,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                   />
                 )}
                 {threeOneOneAnalytics.pie.length > 0 && (
-                  <PieChart slices={threeOneOneAnalytics.pie} totalOverride={context?.open_311_requests?.total} />
+                  <PieChart slices={threeOneOneAnalytics.pie} />
                 )}
                 {!threeOneOneAnalytics.monthLabels && threeOneOneAnalytics.pie.length > 0 && (
                   <p className="text-[10px] text-text-muted">Not enough data for month-over-month trends.</p>
@@ -135,7 +134,6 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
               trends={permitAnalytics.trends}
               pie={permitAnalytics.pie}
               monthLabels={permitAnalytics.monthLabels}
-              totalOverride={context?.permits?.total}
             />
           )}
         </div>
@@ -149,10 +147,9 @@ interface SourceAnalyticsProps {
   trends: ReturnType<typeof computeTrends>;
   pie: ReturnType<typeof computePieSlices>;
   monthLabels: ReturnType<typeof getTrendMonthLabels>;
-  totalOverride?: number;
 }
 
-function SourceAnalytics({ label, trends, pie, monthLabels, totalOverride }: SourceAnalyticsProps) {
+function SourceAnalytics({ label, trends, pie, monthLabels }: SourceAnalyticsProps) {
   return (
     <div>
       <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">{label}</h4>
@@ -160,7 +157,7 @@ function SourceAnalytics({ label, trends, pie, monthLabels, totalOverride }: Sou
         {monthLabels && trends.length > 0 && (
           <TrendTable rows={trends} currentLabel={monthLabels.current} priorLabel={monthLabels.prior} />
         )}
-        {pie.length > 0 && <PieChart slices={pie} totalOverride={totalOverride} />}
+        {pie.length > 0 && <PieChart slices={pie} />}
         {!monthLabels && pie.length > 0 && (
           <p className="text-[10px] text-text-muted">Not enough data for month-over-month trends.</p>
         )}

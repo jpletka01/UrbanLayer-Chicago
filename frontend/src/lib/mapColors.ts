@@ -3,7 +3,7 @@ import type { SourceTag } from "./types";
 export const CRIME_TYPE_COLORS: Record<string, [number, number, number, number]> = {
   // Violent — hot reds
   HOMICIDE: [183, 28, 28, 210],
-  "CRIM SEXUAL ASSAULT": [198, 40, 40, 200],
+  "CRIMINAL SEXUAL ASSAULT": [198, 40, 40, 200],
   KIDNAPPING: [211, 47, 47, 190],
   ASSAULT: [229, 57, 53, 180],
   BATTERY: [239, 83, 80, 180],
@@ -38,7 +38,9 @@ export const CRIME_TYPE_COLORS: Record<string, [number, number, number, number]>
   GAMBLING: [149, 165, 166, 160],
   "CONCEALED CARRY LICENSE VIOLATION": [141, 182, 205, 160],
   "NON-CRIMINAL": [176, 190, 197, 150],
+  "NON-CRIMINAL (SUBJECT SPECIFIED)": [176, 190, 197, 150],
   OBSCENITY: [158, 158, 158, 150],
+  "PUBLIC INDECENCY": [194, 143, 158, 160],
 
   // Catch-all
   "OTHER OFFENSE": [158, 158, 158, 160],
@@ -69,22 +71,48 @@ export function crimeColor(type: string): [number, number, number, number] {
 
 export const DEPT_COLORS: Record<string, [number, number, number, number]> = {
   "Streets & Sanitation": [0, 188, 212, 180],
-  Buildings: [255, 112, 67, 180],
-  CDOT: [66, 165, 245, 180],
+  "Buildings": [255, 112, 67, 180],
+  "CDOT": [66, 165, 245, 180],
+  "Water Management": [33, 150, 243, 180],
+  "Aviation": [171, 71, 188, 180],
+  "Animal Care": [102, 187, 106, 180],
+  "311 City Services": [255, 167, 38, 180],
+  "Finance": [255, 202, 40, 180],
+  "BACP": [236, 64, 122, 180],
+  "Health": [239, 83, 80, 180],
+  "Fire": [244, 67, 54, 180],
+  "Housing": [141, 110, 99, 180],
+  "City Clerk": [120, 144, 156, 180],
+  "Outside Agencies": [158, 158, 158, 160],
 };
 
+export const DEPT_ORDER = [
+  "Streets & Sanitation", "CDOT", "Buildings", "Water Management",
+  "Aviation", "Animal Care", "311 City Services", "Finance",
+  "BACP", "Health", "Fire", "Housing", "City Clerk", "Outside Agencies",
+];
+
 export function deptColor(dept: string): [number, number, number, number] {
-  if (dept?.includes("Streets") || dept?.includes("Sanitation")) return DEPT_COLORS["Streets & Sanitation"];
-  if (dept?.includes("Buildings") || dept?.includes("BLDG")) return DEPT_COLORS.Buildings;
-  if (dept?.includes("CDOT") || dept?.includes("Transportation")) return DEPT_COLORS.CDOT;
-  return [158, 158, 158, 140];
+  return DEPT_COLORS[normalizeDept(dept)] ?? [158, 158, 158, 140];
 }
 
 export function normalizeDept(dept: string): string {
-  if (dept?.includes("Streets") || dept?.includes("Sanitation")) return "Streets & Sanitation";
-  if (dept?.includes("Buildings") || dept?.includes("BLDG")) return "Buildings";
-  if (dept?.includes("CDOT") || dept?.includes("Transportation")) return "CDOT";
-  return dept || "Other";
+  if (!dept) return "Other";
+  if (dept.includes("Streets") || dept.includes("Sanitation")) return "Streets & Sanitation";
+  if (dept.includes("DOB") || dept === "Buildings" || dept.includes("BLDG")) return "Buildings";
+  if (dept.includes("CDOT") || dept.includes("Transportation")) return "CDOT";
+  if (dept.includes("Water")) return "Water Management";
+  if (dept.includes("Aviation")) return "Aviation";
+  if (dept.includes("Animal")) return "Animal Care";
+  if (dept.includes("311")) return "311 City Services";
+  if (dept.includes("Finance")) return "Finance";
+  if (dept.includes("BACP") || dept.includes("Business Affairs") || dept.includes("Consumer")) return "BACP";
+  if (dept.includes("Health")) return "Health";
+  if (dept.includes("Fire")) return "Fire";
+  if (dept.includes("Housing")) return "Housing";
+  if (dept.includes("Clerk")) return "City Clerk";
+  if (dept.includes("Outside")) return "Outside Agencies";
+  return dept;
 }
 
 export const PERMIT_COLOR: [number, number, number, number] = [99, 153, 34, 180];
@@ -94,13 +122,16 @@ export const PERMIT_TYPE_COLORS: Record<string, [number, number, number, number]
   "RENOVATION/ALTERATION": [255, 152, 0, 180],
   "SIGNS": [156, 39, 176, 180],
   "NEW CONSTRUCTION": [76, 175, 80, 180],
-  "WRECKING/DEMOLITION": [244, 67, 54, 180],
   "ELEVATOR EQUIPMENT": [255, 193, 7, 180],
+  "WRECKING/DEMOLITION": [244, 67, 54, 180],
+  "REINSTATE REVOKED PMT": [141, 110, 99, 180],
+  "EASY PERMIT PROCESS": [120, 144, 156, 180],
 };
 
 export const PERMIT_TYPE_ORDER = [
   "EXPRESS PERMIT", "RENOVATION/ALTERATION", "SIGNS",
-  "NEW CONSTRUCTION", "WRECKING/DEMOLITION", "ELEVATOR EQUIPMENT",
+  "NEW CONSTRUCTION", "ELEVATOR EQUIPMENT", "WRECKING/DEMOLITION",
+  "REINSTATE REVOKED PMT", "EASY PERMIT PROCESS",
 ];
 
 export function normalizePermitType(raw: string): string {
@@ -111,6 +142,8 @@ export function normalizePermitType(raw: string): string {
   if (upper.includes("NEW CONSTRUCTION")) return "NEW CONSTRUCTION";
   if (upper.includes("WRECK") || upper.includes("DEMOLITION")) return "WRECKING/DEMOLITION";
   if (upper.includes("ELEVATOR")) return "ELEVATOR EQUIPMENT";
+  if (upper.includes("REINSTATE")) return "REINSTATE REVOKED PMT";
+  if (upper.includes("EASY PERMIT")) return "EASY PERMIT PROCESS";
   return upper.replace(/^PERMIT\s*[-–—]\s*/i, "").trim() || "OTHER";
 }
 
@@ -161,13 +194,14 @@ export function deriveFilterMode(sources: SourceTag[]): FilterMode {
 }
 
 export const CRIME_TYPE_ORDER = [
-  "THEFT", "BATTERY", "CRIMINAL DAMAGE", "ASSAULT", "DECEPTIVE PRACTICE",
-  "OTHER OFFENSE", "NARCOTICS", "BURGLARY", "MOTOR VEHICLE THEFT", "ROBBERY",
-  "WEAPONS VIOLATION", "CRIMINAL TRESPASS", "OFFENSE INVOLVING CHILDREN",
-  "PUBLIC PEACE VIOLATION", "SEX OFFENSE", "CRIM SEXUAL ASSAULT",
-  "STALKING", "HOMICIDE", "ARSON", "KIDNAPPING", "INTIMIDATION",
-  "PROSTITUTION", "INTERFERENCE WITH PUBLIC OFFICER", "LIQUOR LAW VIOLATION",
-  "GAMBLING", "CONCEALED CARRY LICENSE VIOLATION", "HUMAN TRAFFICKING",
+  "THEFT", "BATTERY", "CRIMINAL DAMAGE", "ASSAULT", "MOTOR VEHICLE THEFT",
+  "OTHER OFFENSE", "DECEPTIVE PRACTICE", "NARCOTICS", "BURGLARY", "ROBBERY",
+  "WEAPONS VIOLATION", "CRIMINAL TRESPASS", "CRIMINAL SEXUAL ASSAULT",
+  "OFFENSE INVOLVING CHILDREN", "SEX OFFENSE", "PUBLIC PEACE VIOLATION",
+  "INTERFERENCE WITH PUBLIC OFFICER", "STALKING", "HOMICIDE", "ARSON",
+  "CONCEALED CARRY LICENSE VIOLATION", "LIQUOR LAW VIOLATION", "INTIMIDATION",
+  "PROSTITUTION", "KIDNAPPING", "OBSCENITY", "PUBLIC INDECENCY",
+  "HUMAN TRAFFICKING", "GAMBLING", "OTHER NARCOTIC VIOLATION", "NON-CRIMINAL",
 ];
 
 export function crimeColorCSS(type: string): string {
@@ -176,9 +210,7 @@ export function crimeColorCSS(type: string): string {
 }
 
 export function deptColorCSS(dept: string): string {
-  const normalized = normalizeDept(dept);
-  const c = DEPT_COLORS[normalized];
-  if (!c) return "rgb(158,158,158)";
+  const c = deptColor(dept);
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
@@ -192,4 +224,9 @@ export function permitColorCSS(type?: string): string {
 
 export function isArrested(arrest: boolean | string): boolean {
   return arrest === true || arrest === "true";
+}
+
+export function capLabel(raw: string, max = 25): string {
+  const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
+  return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TrendRow } from "../../lib/analytics";
+import { capLabel } from "../../lib/mapColors";
 
 type SortKey = "category" | "current" | "prior" | "change";
 type SortDir = "asc" | "desc";
@@ -10,9 +11,6 @@ interface Props {
   priorLabel: string;
 }
 
-function formatLabel(label: string): string {
-  return label.charAt(0) + label.slice(1).toLowerCase().replace(/_/g, " ");
-}
 
 export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("current");
@@ -86,7 +84,7 @@ export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
                     style={{ backgroundColor: row.color }}
                   />
                   <span className="text-text-secondary truncate max-w-[100px]">
-                    {formatLabel(row.category)}
+                    {capLabel(row.category)}
                   </span>
                 </div>
               </td>

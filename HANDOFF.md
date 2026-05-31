@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **SQLite conversation persistence + analytics-enriched synthesis** — conversations stored server-side in SQLite (replacing localStorage), month-over-month trends computed server-side and included in Claude's synthesis context, 10-message limit per conversation, per-question state toggling (click a past question to load its map/data/analytics). Previous: map interactivity & category color overhaul.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Analytics overhaul** — audited all 5 Socrata datasets for complete category coverage (31 crime types, 8 permit types, 14 departments, 105 sr_types, 50+ violation categories, 58 business license types), fixed naming mismatches, removed redundant data cards from sidebar (map + analytics provide the unique visual value), fixed pie chart percentages to sum to 100%. Previous: SQLite conversation persistence + analytics-enriched synthesis.
 
 ---
 
@@ -729,6 +729,84 @@ Clicking a past user-message bubble loads that question's associated state into 
 **Other:**
 - `.gitignore` — added `backend/data/`
 - `requirements.txt` — added `aiosqlite>=0.20.0`
+
+---
+
+## Session Log (2026-05-31 — Analytics Category Audit & Data Panel Cleanup)
+
+Audited all five Socrata API endpoints by querying 500+ items from each to discover every category value that exists. Fixed coverage gaps, removed redundant UI, and fixed the pie chart denominator bug.
+
+### Category Audit Results
+
+Queried distinct values for each categorization field across all datasets:
+
+| Dataset | Field | Types in API | Previously Covered | Gap |
+|---|---|---|---|---|
+| Crime (`ijzp-q8t2`) | `primary_type` | 31 | 30 (1 name mismatch) | `CRIMINAL SEXUAL ASSAULT` vs `CRIM SEXUAL ASSAULT`, missing `PUBLIC INDECENCY` |
+| Permits (`ydr8-5enu`) | `permit_type` | 8 | 6 | `REINSTATE REVOKED PMT` (863/yr), `EASY PERMIT PROCESS` |
+| 311 (`v6vf-nfxy`) | `owner_department` | 14 | 3 | 11 departments bucketed into "Other" |
+| 311 (`v6vf-nfxy`) | `sr_type` | 105 | hash-based (OK) | — |
+| Violations (`22u3-xenr`) | `violation_description` | 50+ | raw strings only | No category grouping |
+| Business (`uupf-x98q`) | `license_description` | 58 | not tracked | — |
+
+### Fix 1: Crime Color Mapping
+
+- **Renamed** `CRIM SEXUAL ASSAULT` → `CRIMINAL SEXUAL ASSAULT` in `CRIME_TYPE_COLORS` to match the API (2,039 crimes/90d were getting grey fallback)
+- **Added** `PUBLIC INDECENCY` and `NON-CRIMINAL (SUBJECT SPECIFIED)` with colors
+- **Expanded** `CRIME_TYPE_ORDER` from 27 to 31 entries (all types from the API)
+
+### Fix 2: Permit Categorization
+
+- **Added** `REINSTATE REVOKED PMT` (brown) and `EASY PERMIT PROCESS` (steel blue) to `PERMIT_TYPE_COLORS`, `PERMIT_TYPE_ORDER`, and `normalizePermitType()`
+- **Backend**: `_normalize_permit_type()` added to `assembler.py` and `analytics.py` — permits are now grouped by normalized type instead of raw strings like `PERMIT – EXPRESS PERMIT PROGRAM`
+- **Model**: `PermitSummary` gained `by_type: dict[str, int]` for per-type breakdown in Claude's synthesis
+
+### Fix 3: Full 311 Department Coverage
+
+Expanded from 3 to all 14 departments with unique colors and normalization rules:
+
+- Streets & Sanitation (cyan), Buildings (coral), CDOT (blue) — existing
+- Water Management (blue), Aviation (purple), Animal Care (green), 311 City Services (amber), Finance (yellow), BACP (pink), Health (red), Fire (red-dark), Housing (brown), City Clerk (steel), Outside Agencies (grey) — new
+
+`normalizeDept()` updated to recognize all API department name patterns (e.g., `DWM - Department of Water Management` → `Water Management`). `DEPT_ORDER` added for consistent toggle ordering.
+
+### Fix 4: Violation & Business Category Enrichment
+
+- **Violations**: 50+ raw descriptions grouped into 16 meaningful categories (Elevator/Escalator, Exterior Structure, Interior Structure, Fire Safety, Permits/Contractor, Pest Control, etc.) via `_categorize_violation()`. `ViolationSummary` gained `by_category: dict[str, int]`.
+- **Business**: `BusinessSummary` gained `by_license_type: dict[str, int]` tracking distribution across 58 license types (Limited Business License, Retail Food, Regulated Business, Tavern, etc.).
+
+### Fix 5: Pie Chart Percentage Fix
+
+The pie chart used `totalOverride` (from context's aggregate count, e.g., 1756 total crimes) as the denominator for percentages, while the arcs used `sliceTotal` (capped map data, e.g., 1000 rows). This made percentages sum to ~57% instead of 100%. **Removed `totalOverride`** — all percentages and the center number now use `sliceTotal` consistently.
+
+### Fix 6: Data Cards Removed
+
+Removed the five data cards (crime, 311, permits, violations, business) from the sidebar `DataView`. These duplicated information already present in Claude's chat response. The sidebar Data tab now shows only:
+- Data lag note (when applicable)
+- Analytics section (pie chart + trend table — visual, interactive, NOT in chat)
+
+The map above the data section continues to provide unique geographic value. `highlightedDataSource` prop chain removed from App → SidebarPanel → DataView.
+
+### Fix 7: Label Truncation
+
+Added shared `capLabel(raw, max=25)` function in `mapColors.ts` — title-cases and truncates labels to 25 characters with "…". Applied consistently across all four label sites: MapView toggle pills, PieChart legend, PieChart center tooltip, TrendTable rows. Replaces the four separate `formatLabel`/`formatSrTypeLabel`/`formatPermitLabel` functions.
+
+### Files Changed
+
+**Backend:**
+- `backend/analytics.py` — `_normalize_permit_type()`, applied to permit trend computation
+- `backend/assembler.py` — `_normalize_permit_type()`, `_categorize_violation()`, `by_type` for permits, `by_category` for violations, `by_license_type` for business
+- `backend/models.py` — `PermitSummary.by_type`, `ViolationSummary.by_category`, `BusinessSummary.by_license_type`
+
+**Frontend:**
+- `frontend/src/lib/mapColors.ts` — fixed `CRIMINAL SEXUAL ASSAULT`, added `PUBLIC INDECENCY`, expanded `CRIME_TYPE_ORDER` to 31, added 2 permit types, expanded `DEPT_COLORS` to 14, added `DEPT_ORDER`, added `capLabel()`
+- `frontend/src/components/sidebar/PieChart.tsx` — removed `totalOverride`, use `sliceTotal` for all percentages, use `capLabel()`
+- `frontend/src/components/sidebar/TrendTable.tsx` — use `capLabel()`
+- `frontend/src/components/sidebar/MapView.tsx` — use `capLabel()` for all toggle labels, removed `formatSrTypeLabel`/`formatPermitLabel`
+- `frontend/src/components/sidebar/AnalyticsSection.tsx` — removed `totalOverride` passthrough, normalize permit types in analytics, removed `context` prop
+- `frontend/src/components/sidebar/DataView.tsx` — removed data cards, kept lag note + analytics only
+- `frontend/src/components/SidebarPanel.tsx` — removed `highlightedDataSource` prop, `hasData` now checks map data
+- `frontend/src/App.tsx` — removed `highlightedDataSource` state, simplified `handleDataClick`
 
 ---
 

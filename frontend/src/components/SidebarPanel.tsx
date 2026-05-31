@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ContextObject, DataSource, MapData, RetrievalPlan, SidebarView, SourceTag } from "../lib/types";
+import type { ContextObject, MapData, RetrievalPlan, SidebarView, SourceTag } from "../lib/types";
 import { deriveFilterMode } from "../lib/mapColors";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataView } from "./sidebar/DataView";
@@ -20,7 +20,6 @@ interface Props {
   activeView: SidebarView;
   onViewChange: (view: SidebarView) => void;
   highlightedSourceIndex?: number | null;
-  highlightedDataSource?: DataSource | null;
   sourceFlashSignal?: number;
   sourceCount?: number;
   onSourceClick?: (index: number) => void;
@@ -39,7 +38,6 @@ export function SidebarPanel({
   activeView,
   onViewChange,
   highlightedSourceIndex,
-  highlightedDataSource,
   sourceFlashSignal,
   sourceCount = 0,
   onSourceClick,
@@ -206,7 +204,6 @@ export function SidebarPanel({
           plan={plan}
           context={context}
           loading={loading}
-          highlightedDataSource={highlightedDataSource}
         />
       ) : (
         <div className="flex-1 overflow-y-auto p-4">
@@ -239,7 +236,6 @@ interface DataMapLayoutProps {
   plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
-  highlightedDataSource?: DataSource | null;
 }
 
 function DataMapLayout({
@@ -249,7 +245,6 @@ function DataMapLayout({
   plan,
   context,
   loading,
-  highlightedDataSource,
 }: DataMapLayoutProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dataHeight, setDataHeight] = useState<number | null>(null);
@@ -257,11 +252,7 @@ function DataMapLayout({
   const [dividerDragging, setDividerDragging] = useState(false);
 
   const hasData =
-    context?.crime_last_90d ||
-    context?.open_311_requests ||
-    context?.permits ||
-    context?.violations ||
-    context?.businesses;
+    mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
 
   // Initialize data height on first render
   useEffect(() => {
@@ -377,7 +368,6 @@ function DataMapLayout({
                 plan={plan}
                 context={context}
                 loading={loading}
-                highlightedDataSource={highlightedDataSource}
                 mapData={mapData}
                 filterMode={deriveFilterMode(mapSources)}
               />

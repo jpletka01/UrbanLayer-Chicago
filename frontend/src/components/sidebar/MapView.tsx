@@ -6,7 +6,7 @@ import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag } from "../
 import {
   CRIME_TYPE_COLORS, crimeColor, deptColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
-  srTypeMapColor, srTypeMapColorCSS, permitColorCSS,
+  srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { MapLayerToggles } from "./MapLayerToggles";
@@ -65,13 +65,6 @@ function buildPermitTypeFilters(permits: MapPermit[]): Record<string, boolean> {
   return out;
 }
 
-function formatSrTypeLabel(type: string): string {
-  return type.replace(/ Complaint$/i, "").replace(/ Request$/i, "");
-}
-
-function formatPermitLabel(type: string): string {
-  return type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ");
-}
 
 function computeDateBounds(mapData: MapData, filterMode: FilterMode): { min: number; max: number } | null {
   const dates: number[] = [];
@@ -448,7 +441,7 @@ export function MapView({ mapData, loading, sources }: Props) {
         : `rgba(${(CRIME_TYPE_COLORS[type] ?? [136, 135, 128, 180]).slice(0, 3).join(",")})`;
       return {
         id: type,
-        label: type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " "),
+        label: capLabel(type),
         color,
         active: crimeTypeToggles[type],
       };
@@ -458,7 +451,7 @@ export function MapView({ mapData, loading, sources }: Props) {
   } else if (filterMode === "311") {
     toggleConfigs = Object.keys(srTypeToggles).map(type => ({
       id: type,
-      label: type === "OTHER" ? "Other" : formatSrTypeLabel(type),
+      label: type === "OTHER" ? "Other" : capLabel(type),
       color: type === "OTHER" ? "rgb(158,158,158)" : srTypeMapColorCSS(type),
       active: srTypeToggles[type],
     }));
@@ -467,7 +460,7 @@ export function MapView({ mapData, loading, sources }: Props) {
   } else if (filterMode === "permits") {
     toggleConfigs = Object.keys(permitTypeToggles).map(type => ({
       id: type,
-      label: type === "OTHER" ? "Other" : formatPermitLabel(type),
+      label: type === "OTHER" ? "Other" : capLabel(type),
       color: type === "OTHER" ? "rgb(136,135,128)" : (permitColorCSS(type)),
       active: permitTypeToggles[type],
     }));

@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { PieSlice } from "../../lib/analytics";
+import { capLabel } from "../../lib/mapColors";
 
 interface Props {
   slices: PieSlice[];
   size?: number;
   innerRadiusRatio?: number;
-  totalOverride?: number;
   thinThreshold?: number;
 }
 
@@ -50,7 +50,6 @@ export function PieChart({
   slices,
   size = 160,
   innerRadiusRatio = 0.6,
-  totalOverride,
   thinThreshold = 0.02,
 }: Props) {
   const [hoveredMain, setHoveredMain] = useState<number | null>(null);
@@ -64,7 +63,6 @@ export function PieChart({
   if (!slices.length) return null;
   const sliceTotal = slices.reduce((a, s) => a + s.value, 0);
   if (!sliceTotal) return null;
-  const total = totalOverride ?? sliceTotal;
 
   const cx = size / 2;
   const cy = size / 2;
@@ -133,7 +131,7 @@ export function PieChart({
 
   const activeSlice = activeIdx !== null ? slices[activeIdx] : null;
   const activePct = activeSlice
-    ? ((activeSlice.value / total) * 100).toFixed(1)
+    ? ((activeSlice.value / sliceTotal) * 100).toFixed(1)
     : null;
 
   // --- Render main donut ---
@@ -305,7 +303,7 @@ export function PieChart({
                     WebkitBoxOrient: "vertical",
                   }}
                 >
-                  {formatLabel(activeSlice.label)}
+                  {capLabel(activeSlice.label)}
                 </div>
                 <div className="text-[9px] text-text-muted">
                   {activeSlice.value.toLocaleString()}
@@ -314,7 +312,7 @@ export function PieChart({
             ) : (
               <>
                 <div className="text-lg font-semibold text-text-primary">
-                  {total.toLocaleString()}
+                  {sliceTotal.toLocaleString()}
                 </div>
                 <div className="text-[9px] text-text-muted uppercase tracking-wide">
                   Total
@@ -327,7 +325,7 @@ export function PieChart({
 
       <div className="w-full grid grid-cols-2 gap-x-3 gap-y-1">
         {(legendExpanded ? slices : slices.slice(0, 8)).map((slice) => {
-          const pct = ((slice.value / total) * 100).toFixed(1);
+          const pct = ((slice.value / sliceTotal) * 100).toFixed(1);
           return (
             <div key={slice.label} className="flex items-center gap-1.5 min-w-0">
               <span
@@ -335,7 +333,7 @@ export function PieChart({
                 style={{ backgroundColor: slice.color }}
               />
               <span className="text-[10px] text-text-secondary truncate">
-                {formatLabel(slice.label)}
+                {capLabel(slice.label)}
               </span>
               <span className="text-[10px] text-text-muted ml-auto shrink-0">
                 {pct}%
@@ -359,6 +357,3 @@ export function PieChart({
   );
 }
 
-function formatLabel(label: string): string {
-  return label.charAt(0) + label.slice(1).toLowerCase().replace(/_/g, " ");
-}

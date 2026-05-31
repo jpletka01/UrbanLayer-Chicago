@@ -6,11 +6,33 @@ ContextObject so Claude can cite trend data in its synthesis.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Callable
 
 from backend.models import AnalyticsSummary, TrendItem
+
+_PERMIT_NORMALIZE = [
+    ("EXPRESS", "EXPRESS PERMIT"),
+    ("RENOVATION", "RENOVATION/ALTERATION"),
+    ("ALTERATION", "RENOVATION/ALTERATION"),
+    ("SIGN", "SIGNS"),
+    ("NEW CONSTRUCTION", "NEW CONSTRUCTION"),
+    ("WRECK", "WRECKING/DEMOLITION"),
+    ("DEMOLITION", "WRECKING/DEMOLITION"),
+    ("ELEVATOR", "ELEVATOR EQUIPMENT"),
+    ("REINSTATE", "REINSTATE REVOKED PMT"),
+    ("EASY PERMIT", "EASY PERMIT PROCESS"),
+]
+
+
+def _normalize_permit_type(raw: str) -> str:
+    upper = (raw or "").upper()
+    for keyword, label in _PERMIT_NORMALIZE:
+        if keyword in upper:
+            return label
+    return re.sub(r"^PERMIT\s*[-–—]\s*", "", upper).strip() or "OTHER"
 
 
 def _to_year_month(date_str: str) -> str | None:
@@ -121,7 +143,7 @@ def compute_analytics(
         permit_trends, p = compute_trends(
             permit_rows,
             get_date=lambda r: r.get("issue_date", ""),
-            get_category=lambda r: r.get("permit_type", "UNKNOWN"),
+            get_category=lambda r: _normalize_permit_type(r.get("permit_type", "")),
         )
         period = period or p
 

@@ -68,6 +68,7 @@ class ThreeOneOneSummary(BaseModel):
 class PermitSummary(BaseModel):
     total: int
     total_estimated_cost: float
+    by_type: dict[str, int] = Field(default_factory=dict)
     top_work_descriptions: list[str]
     capped: bool = False
 
@@ -75,12 +76,14 @@ class PermitSummary(BaseModel):
 class ViolationSummary(BaseModel):
     total: int
     open_count: int
+    by_category: dict[str, int] = Field(default_factory=dict)
     top_descriptions: list[str]
     capped: bool = False
 
 
 class BusinessSummary(BaseModel):
     total: int
+    by_license_type: dict[str, int] = Field(default_factory=dict)
     top_activities: list[str]
     capped: bool = False
 

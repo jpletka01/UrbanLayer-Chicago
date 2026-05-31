@@ -44,7 +44,6 @@ export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const [highlightedSourceIndex, setHighlightedSourceIndex] = useState<number | null>(null);
-  const [highlightedDataSource, setHighlightedDataSource] = useState<DataSource | null>(null);
   const [sourceFlash, setSourceFlash] = useState(0);
   const [activeSidebarContext, setActiveSidebarContext] = useState<ContextObject | null>(null);
   const [sectionView, setSectionView] = useState<SectionView | null>(null);
@@ -169,7 +168,6 @@ export function App() {
     setSidebarOpen(false);
     setSidebarView("data");
     setHighlightedSourceIndex(null);
-    setHighlightedDataSource(null);
     setActiveSidebarContext(null);
     setMapData(null);
     setMapLoading(false);
@@ -307,14 +305,12 @@ export function App() {
     setSidebarOpen(true);
     setSidebarView("sources");
     setHighlightedSourceIndex(index);
-    setHighlightedDataSource(null);
     setSourceFlash((f) => f + 1);
   }
 
-  function handleDataClick(source: DataSource, messageContext?: ContextObject) {
+  function handleDataClick(_source: DataSource, messageContext?: ContextObject) {
     setSidebarOpen(true);
     setSidebarView("data");
-    setHighlightedDataSource(source);
     setHighlightedSourceIndex(null);
     if (messageContext) {
       setActiveSidebarContext(messageContext);
@@ -483,7 +479,6 @@ export function App() {
                 activeView={sidebarView}
                 onViewChange={setSidebarView}
                 highlightedSourceIndex={highlightedSourceIndex}
-                highlightedDataSource={highlightedDataSource}
                 sourceFlashSignal={sourceFlash}
                 sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
                 onSourceClick={setHighlightedSourceIndex}
