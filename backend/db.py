@@ -237,16 +237,33 @@ async def update_message_map_data(
 
 
 async def delete_conversation(conv_id: str) -> bool:
-    db = _get_db()
-    cur = await db.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
-    await db.commit()
+    conn = _get_db()
+    # CASCADE handles DB rows; clean up files on disk
+    try:
+        import shutil
+        settings = get_settings()
+        upload_dir = settings.upload_dir / conv_id
+        if upload_dir.is_dir():
+            shutil.rmtree(upload_dir)
+    except Exception:
+        pass
+    cur = await conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
+    await conn.commit()
     return cur.rowcount > 0
 
 
 async def clear_all_conversations() -> None:
-    db = _get_db()
-    await db.execute("DELETE FROM conversations")
-    await db.commit()
+    conn = _get_db()
+    try:
+        import shutil
+        settings = get_settings()
+        if settings.upload_dir.is_dir():
+            shutil.rmtree(settings.upload_dir)
+            settings.upload_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    await conn.execute("DELETE FROM conversations")
+    await conn.commit()
 
 
 async def count_user_messages(conv_id: str) -> int:
@@ -257,6 +274,74 @@ async def count_user_messages(conv_id: str) -> int:
     )
     row = await cur.fetchone()
     return row[0]
+
+
+# ---------------------------------------------------------------------------
+# Bulk import (localStorage migration)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Uploads
+# ---------------------------------------------------------------------------
+
+async def save_upload(
+    upload_id: str,
+    conversation_id: str,
+    filename: str,
+    mime_type: str | None,
+    size_bytes: int,
+    storage_path: str,
+    message_position: int | None = None,
+) -> dict:
+    db = _get_db()
+    now = _now_ms()
+    await db.execute(
+        """
+        INSERT INTO uploads (id, conversation_id, filename, mime_type, size_bytes, storage_path, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (upload_id, conversation_id, filename, mime_type, size_bytes, storage_path, now),
+    )
+    await db.commit()
+    return {
+        "id": upload_id,
+        "conversation_id": conversation_id,
+        "filename": filename,
+        "mime_type": mime_type,
+        "size_bytes": size_bytes,
+        "created_at": now,
+    }
+
+
+async def get_upload(upload_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT id, conversation_id, filename, mime_type, size_bytes, storage_path, created_at "
+        "FROM uploads WHERE id = ?",
+        (upload_id,),
+    )
+    row = await cur.fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+
+async def get_uploads_for_conversation(conv_id: str) -> list[dict]:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT id, conversation_id, filename, mime_type, size_bytes, created_at "
+        "FROM uploads WHERE conversation_id = ? ORDER BY created_at",
+        (conv_id,),
+    )
+    rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def delete_upload(upload_id: str) -> bool:
+    db = _get_db()
+    cur = await db.execute("DELETE FROM uploads WHERE id = ?", (upload_id,))
+    await db.commit()
+    return cur.rowcount > 0
 
 
 # ---------------------------------------------------------------------------

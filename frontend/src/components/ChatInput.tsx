@@ -3,11 +3,19 @@ import { getAutocomplete } from "../lib/api";
 import { AUTOCOMPLETE_DEBOUNCE_MS, MIN_AUTOCOMPLETE_CHARS } from "../lib/constants";
 import type { AddressSuggestion } from "../lib/types";
 
+export interface PendingAttachment {
+  file: File;
+  previewUrl: string | null;
+}
+
 interface Props {
   onSubmit: (message: string) => void;
   disabled?: boolean;
   variant?: "hero" | "compact";
   placeholder?: string;
+  attachments?: PendingAttachment[];
+  onAttach?: (files: File[]) => void;
+  onRemoveAttachment?: (index: number) => void;
 }
 
 function findAddressFragment(text: string): { start: number; fragment: string } | null {
@@ -18,7 +26,16 @@ function findAddressFragment(text: string): { start: number; fragment: string } 
   return fragment.length >= MIN_AUTOCOMPLETE_CHARS ? { start, fragment } : null;
 }
 
-export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }: Props) {
+export function ChatInput({
+  onSubmit,
+  disabled,
+  variant = "hero",
+  placeholder,
+  attachments = [],
+  onAttach,
+  onRemoveAttachment,
+}: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -169,12 +186,54 @@ export function ChatInput({ onSubmit, disabled, variant = "hero", placeholder }:
 
   return (
     <div ref={containerRef} className="relative">
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          if (files.length > 0 && onAttach) onAttach(files);
+          e.target.value = "";
+        }}
+      />
       <div className="rounded-2xl bg-dark-surface border border-dark-border focus-within:border-accent/50 transition-all duration-200">
+        {attachments.length > 0 && (
+          <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto">
+            {attachments.map((att, i) => (
+              <div key={i} className="relative shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-dark-border bg-dark-elevated group">
+                {att.previewUrl ? (
+                  <img src={att.previewUrl} alt={att.file.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                    <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                    <span className="text-[8px] text-text-muted truncate max-w-[3rem] px-0.5">
+                      {att.file.name.split(".").pop()?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onRemoveAttachment?.(i)}
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-dark-bg border border-dark-border flex items-center justify-center text-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <form onSubmit={submit} className="flex items-center gap-2 p-2">
           <button
             type="button"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-secondary hover:bg-dark-elevated transition-colors shrink-0"
             aria-label="Add attachment"
+            onClick={() => fileInputRef.current?.click()}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path

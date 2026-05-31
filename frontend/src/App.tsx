@@ -5,16 +5,24 @@ import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
 import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
+import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
+import type { PendingAttachment } from "./components/ChatInput";
 import {
   fetchMapData,
   fetchSection,
   getConversation,
   updateMessageMapData,
+  uploadFiles,
 } from "./lib/api";
 import { SPLASH_STATS, SUGGESTIONS } from "./lib/constants";
+import { Footer } from "./components/landing/Footer";
+import { NeighborhoodExplorer } from "./components/landing/NeighborhoodExplorer";
+import { ScrollIndicator } from "./components/landing/ScrollIndicator";
+import { StorySection } from "./components/landing/StorySection";
+import { ValueProps } from "./components/landing/ValueProps";
 import {
   appendMessages,
   clearAllHistory,
@@ -47,6 +55,7 @@ export function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>("data");
   const [highlightedSourceIndex, setHighlightedSourceIndex] = useState<number | null>(null);
   const [sourceFlash, setSourceFlash] = useState(0);
@@ -56,6 +65,7 @@ export function App() {
   const [mapLoading, setMapLoading] = useState(false);
   const [mapSources, setMapSources] = useState<SourceTag[]>([]);
   const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -114,8 +124,7 @@ export function App() {
 
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
-    setSidebarOpen(true);
-    // Default to Data tab (map) for zoning questions so the user sees the zoning overlay
+    openSidebarResponsive();
     setSidebarView(ctx.parcel_zoning ? "data" : ctx.code_chunks?.length ? "sources" : "data");
   }
 
@@ -204,15 +213,50 @@ export function App() {
 
   async function sendMessage(text: string) {
     setHistoryOpen(false);
-    if (!conversationId) {
-      const id = generateId();
+    let cid = conversationId;
+    if (!cid) {
+      cid = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
-      await createConversation(id, title);
-      setConversationId(id);
-      conversationIdRef.current = id;
-      navigateToConversation(id);
+      await createConversation(cid, title);
+      setConversationId(cid);
+      conversationIdRef.current = cid;
+      navigateToConversation(cid);
     }
-    sendChat(text);
+
+    let uploadMetas: import("./lib/types").UploadMeta[] | undefined;
+    if (pendingAttachments.length > 0) {
+      try {
+        uploadMetas = await uploadFiles(cid, pendingAttachments.map((a) => a.file));
+      } catch (err) {
+        console.error("Upload failed:", err);
+      }
+      // Clean up preview URLs
+      for (const att of pendingAttachments) {
+        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+      }
+      setPendingAttachments([]);
+    }
+
+    sendChat(text, uploadMetas);
+  }
+
+  function handleAttach(files: File[]) {
+    const remaining = 3 - pendingAttachments.length;
+    const toAdd = files.slice(0, remaining);
+    const newAttachments: PendingAttachment[] = toAdd.map((file) => ({
+      file,
+      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    }));
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+  }
+
+  function handleRemoveAttachment(index: number) {
+    setPendingAttachments((prev) => {
+      const next = [...prev];
+      const removed = next.splice(index, 1)[0];
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      return next;
+    });
   }
 
   function reset() {
@@ -220,6 +264,7 @@ export function App() {
     setConversationId(null);
     conversationIdRef.current = null;
     setSidebarOpen(false);
+    setMobileSidebarOpen(false);
     setSidebarView("data");
     setHighlightedSourceIndex(null);
     setActiveSidebarContext(null);
@@ -284,7 +329,7 @@ export function App() {
       // Load context
       if (assistantMsg.context) {
         setActiveSidebarContext(assistantMsg.context);
-        setSidebarOpen(true);
+        openSidebarResponsive();
         setSidebarView(assistantMsg.context.code_chunks?.length ? "sources" : "data");
       }
 
@@ -354,18 +399,26 @@ export function App() {
     [messages],
   );
 
+  function openSidebarResponsive() {
+    if (window.innerWidth < 768) {
+      setMobileSidebarOpen(true);
+    } else {
+      setSidebarOpen(true);
+    }
+  }
+
   function handleCitationClick(index: number, messageContext?: ContextObject) {
     if (messageContext) {
       setActiveSidebarContext(messageContext);
     }
-    setSidebarOpen(true);
+    openSidebarResponsive();
     setSidebarView("sources");
     setHighlightedSourceIndex(index);
     setSourceFlash((f) => f + 1);
   }
 
   function handleDataClick(_source: DataSource, messageContext?: ContextObject) {
-    setSidebarOpen(true);
+    openSidebarResponsive();
     setSidebarView("data");
     setHighlightedSourceIndex(null);
     if (messageContext) {
@@ -402,82 +455,116 @@ export function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="relative w-full min-h-screen flex flex-col"
+            className="w-full"
           >
-            {conversations.length > 0 && (
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                onClick={() => setHistoryOpen(true)}
-                className="absolute top-4 left-4 z-20 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
-                title="View history"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </motion.button>
-            )}
-
-            <div className="relative flex-1 flex flex-col justify-center items-center px-4 py-20">
+            {/* Hero + value props — slideshow covers both */}
+            <div className="relative">
               <HeroSlideshow />
-              <div className="relative z-10 text-center max-w-2xl space-y-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.5 }}
-                >
-                  <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
-                    UrbanLayer
-                  </h1>
-                  <p className="text-lg text-white/80 leading-relaxed">
-                    Chicago public data, explored through conversation.
-                  </p>
-                </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                  <ChatInput onSubmit={sendMessage} variant="hero" />
-                </motion.div>
+              {/* Hero section — full viewport */}
+              <div className="relative z-10 min-h-screen flex flex-col">
+                {conversations.length > 0 && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={() => setHistoryOpen(true)}
+                    className="absolute top-4 left-4 z-20 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
+                    title="View history"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </motion.button>
+                )}
+
+                <div className="flex-1 flex flex-col justify-center items-center px-4 py-20">
+                  <div className="text-center max-w-2xl space-y-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1, duration: 0.5 }}
+                    >
+                      <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
+                        UrbanLayer
+                      </h1>
+                      <p className="text-lg text-white/80 leading-relaxed">
+                        Chicago public data, explored through conversation.
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                    >
+                      <ChatInput onSubmit={sendMessage} variant="hero" />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4, duration: 0.5 }}
+                      className="flex flex-wrap gap-2 justify-center"
+                    >
+                      {SUGGESTIONS.map((s) => (
+                        <PromptSuggestionChip
+                          key={s}
+                          label={s}
+                          onClick={() => sendMessage(s)}
+                        />
+                      ))}
+                    </motion.div>
+                  </div>
+                </div>
 
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                  className="flex flex-wrap gap-2 justify-center"
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                  className="flex justify-around px-4 md:px-8 pb-6 gap-2"
                 >
-                  {SUGGESTIONS.map((s) => (
-                    <PromptSuggestionChip
-                      key={s}
-                      label={s}
-                      onClick={() => sendMessage(s)}
-                    />
+                  {SPLASH_STATS.map((stat, i) => (
+                    <div key={stat.label} className="text-center">
+                      <CountUp
+                        to={stat.value}
+                        format={stat.format}
+                        delay={0.6 + i * 0.15}
+                        className="text-3xl md:text-4xl font-semibold text-white"
+                      />
+                      <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{stat.label}</div>
+                    </div>
                   ))}
                 </motion.div>
+
+                <ScrollIndicator />
               </div>
+
             </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="absolute bottom-12 left-0 right-0 z-10 flex justify-around px-8"
-            >
-              {SPLASH_STATS.map((stat, i) => (
-                <div key={stat.label} className="text-center">
-                  <CountUp
-                    to={stat.value}
-                    format={stat.format}
-                    delay={0.6 + i * 0.15}
-                    className="text-4xl font-semibold text-white"
-                  />
-                  <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
+            {/* Value props — own background, below the slideshow */}
+            <ValueProps />
+
+            {/* Story interstitial — business use case */}
+            <StorySection
+              image="https://images.unsplash.com/photo-1699898064988-9473dc051320?w=1920&q=80"
+              title="Open a business with confidence"
+              subtitle="Research zoning regulations, check nearby competition, and understand what permits you'll need — before signing a lease."
+              align="left"
+            />
+
+            {/* Interactive explorer */}
+            <NeighborhoodExplorer />
+
+            {/* Story interstitial — move-in use case */}
+            <StorySection
+              image="https://images.unsplash.com/photo-1654043342878-7491a4c4d098?w=1920&q=80"
+              title="Find the right place to live"
+              subtitle="Compare crime trends, check 311 complaint patterns, and see what's being built around your next apartment."
+              align="right"
+            />
+
+            <Footer />
           </motion.div>
         ) : (
           <motion.div
@@ -487,27 +574,48 @@ export function App() {
             transition={{ duration: 0.3 }}
             className="w-full h-screen flex flex-col bg-dark-bg"
           >
-            <header className="h-14 px-6 flex items-center justify-between bg-dark-bg shrink-0">
-              <div className="flex items-center gap-4">
+            <header className="h-14 px-3 md:px-6 flex items-center justify-between bg-dark-bg shrink-0">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
                 <button
                   onClick={reset}
-                  className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+                  className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
                 >
-                  UrbanLayer — Chicago
+                  <span className="hidden md:inline">UrbanLayer — Chicago</span>
+                  <span className="md:hidden">UrbanLayer</span>
                 </button>
                 {context?.community_area_name && (
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm min-w-0">
                     <span className="text-text-muted">/</span>
-                    <span className="text-text-primary">{context.community_area_name}</span>
+                    <span className="text-text-primary truncate max-w-[120px] md:max-w-none">{context.community_area_name}</span>
                   </div>
                 )}
               </div>
-              <button
-                onClick={reset}
-                className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
-              >
-                New chat
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Mobile sidebar toggle */}
+                <button
+                  onClick={() => setMobileSidebarOpen(true)}
+                  className="md:hidden relative w-9 h-9 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
+                  aria-label="Open data panel"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                  </svg>
+                  {(activeSidebarContext?.code_chunks?.length ?? 0) > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-0.5 rounded-full text-[9px] font-semibold flex items-center justify-center bg-accent/20 text-accent">
+                      {activeSidebarContext!.code_chunks!.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={reset}
+                  className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
+                >
+                  <span className="hidden md:inline">New chat</span>
+                  <svg className="w-4 h-4 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </button>
+              </div>
             </header>
 
             {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
@@ -529,6 +637,9 @@ export function App() {
                 selectedMessageIndex={selectedMessageIndex}
                 atMessageLimit={atMessageLimit}
                 onNewChat={reset}
+                attachments={pendingAttachments}
+                onAttach={handleAttach}
+                onRemoveAttachment={handleRemoveAttachment}
               />
               <SidebarPanel
                 plan={plan}
@@ -548,6 +659,23 @@ export function App() {
                 mapSources={mapSources}
               />
             </div>
+
+            <MobileSidebarSheet
+              isOpen={mobileSidebarOpen}
+              onClose={() => setMobileSidebarOpen(false)}
+              plan={plan}
+              context={activeSidebarContext}
+              loading={streaming}
+              activeView={sidebarView}
+              onViewChange={setSidebarView}
+              highlightedSourceIndex={highlightedSourceIndex}
+              sourceFlashSignal={sourceFlash}
+              onSourceClick={setHighlightedSourceIndex}
+              onCrossRefClick={handleCrossRefClick}
+              mapData={mapData}
+              mapLoading={mapLoading}
+              mapSources={mapSources}
+            />
           </motion.div>
         )}
       </AnimatePresence>

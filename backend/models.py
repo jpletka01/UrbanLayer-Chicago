@@ -163,6 +163,7 @@ class ChatRequest(BaseModel):
     message: str
     history: list[Message] = Field(default_factory=list)
     conversation_id: str | None = None
+    upload_ids: list[str] = Field(default_factory=list)
 
 
 class ChatChunk(BaseModel):
@@ -206,6 +207,15 @@ class ConversationDetail(BaseModel):
 
 class SaveMessagesRequest(BaseModel):
     messages: list[StoredMessage]
+
+
+class UploadMeta(BaseModel):
+    id: str
+    conversation_id: str
+    filename: str
+    mime_type: str | None = None
+    size_bytes: int | None = None
+    created_at: int
 
 
 class ImportConversation(BaseModel):

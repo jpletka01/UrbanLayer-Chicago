@@ -43,7 +43,11 @@ def _format_analytics(analytics: AnalyticsSummary) -> str:
     return "\n".join(lines) + "\n\n"
 
 
-def _build_user_prompt(context: ContextObject, user_message: str) -> str:
+def _build_user_prompt(
+    context: ContextObject,
+    user_message: str,
+    upload_filenames: list[str] | None = None,
+) -> str:
     ctx_json = context.model_dump_json(indent=2, exclude={"analytics"})
     parts = [
         "Context data (retrieved from Chicago city databases):\n",
@@ -57,6 +61,13 @@ def _build_user_prompt(context: ContextObject, user_message: str) -> str:
     ):
         parts.append(_format_analytics(context.analytics))
 
+    if upload_filenames:
+        parts.append(
+            f"The user attached {len(upload_filenames)} file(s): {', '.join(upload_filenames)}\n"
+            "Note: File contents are not analyzed in this version. "
+            "The user may be referencing these files in their question.\n\n"
+        )
+
     parts.append(
         f"User question: {user_message}\n\n"
         "Answer the question using only the context data above. Cite sources inline."
@@ -69,12 +80,16 @@ async def stream_answer(
     context: ContextObject,
     user_message: str,
     history: list[Message],
+    upload_filenames: list[str] | None = None,
 ) -> AsyncIterator[str]:
     settings = get_settings()
     client = get_anthropic_client()
 
     messages: list[dict] = [{"role": m.role, "content": m.content} for m in history]
-    messages.append({"role": "user", "content": _build_user_prompt(context, user_message)})
+    messages.append({
+        "role": "user",
+        "content": _build_user_prompt(context, user_message, upload_filenames),
+    })
 
     async with client.messages.stream(
         model=settings.synthesizer_model,

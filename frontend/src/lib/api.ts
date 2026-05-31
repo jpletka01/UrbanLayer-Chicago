@@ -7,6 +7,7 @@ import type {
   ConversationDetail,
   MapData,
   Message,
+  UploadMeta,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
@@ -67,14 +68,31 @@ export async function fetchMapData(params: {
   }
 }
 
+export async function getCommunityAreaByPoint(
+  lat: number,
+  lon: number,
+): Promise<{ community_area: number; name: string } | null> {
+  try {
+    const resp = await fetch(
+      `${API_BASE}/api/community-area?lat=${lat}&lon=${lon}`,
+    );
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function* chatStream(
   message: string,
   history: Message[],
   signal?: AbortSignal,
   conversationId?: string | null,
+  uploadIds?: string[],
 ): AsyncGenerator<ChatChunk, void, unknown> {
   const body: Record<string, unknown> = { message, history };
   if (conversationId) body.conversation_id = conversationId;
+  if (uploadIds?.length) body.upload_ids = uploadIds;
 
   const resp = await fetch(`${API_BASE}/chat`, {
     method: "POST",
@@ -171,4 +189,35 @@ export async function importConversations(
 
 export async function clearAllConversations(): Promise<void> {
   await fetch(`${API_BASE}/api/conversations`, { method: "DELETE" });
+}
+
+// ---------------------------------------------------------------------------
+// File uploads
+// ---------------------------------------------------------------------------
+
+export async function uploadFiles(
+  conversationId: string,
+  files: File[],
+): Promise<UploadMeta[]> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("files", file);
+  }
+  const resp = await fetch(
+    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/uploads`,
+    { method: "POST", body: formData },
+  );
+  if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
+  const data = await resp.json();
+  return data.uploads;
+}
+
+export function getUploadUrl(uploadId: string): string {
+  return `${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}/file`;
+}
+
+export async function deleteUpload(uploadId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}`, {
+    method: "DELETE",
+  });
 }

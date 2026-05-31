@@ -16,9 +16,12 @@ import time
 from typing import Any, AsyncIterator
 
 import httpx
-from fastapi import FastAPI, HTTPException
+import uuid
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from backend.analytics import compute_analytics
 from backend.assembler import assemble_context
@@ -36,7 +39,7 @@ from backend.models import (
     SaveMessagesRequest,
 )
 from backend.retrieval import buildings, business, crime, three11
-from backend.retrieval.geo import geocode_address_suggestions
+from backend.retrieval.geo import COMMUNITY_AREAS, community_area_by_point, geocode_address_suggestions
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.zoning import lookup_zoning
 from backend.retrieval.vector_search import (
@@ -83,6 +86,14 @@ async def autocomplete(q: str = "") -> list[dict]:
     if len(q.strip()) < 3:
         return []
     return await geocode_address_suggestions(q)
+
+
+@app.get("/api/community-area")
+async def community_area_lookup(lat: float, lon: float) -> dict:
+    ca = community_area_by_point(lat, lon)
+    if ca is None:
+        raise HTTPException(status_code=404, detail="Location not within Chicago")
+    return {"community_area": ca, "name": COMMUNITY_AREAS.get(ca, "")}
 
 
 @app.get("/section/{section_id}")
@@ -224,6 +235,82 @@ async def import_conversations(req: ImportRequest) -> dict:
 async def clear_conversations() -> dict:
     await db.clear_all_conversations()
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# File uploads
+# ---------------------------------------------------------------------------
+
+@app.post("/api/conversations/{conv_id}/uploads", status_code=201)
+async def upload_files(conv_id: str, files: list[UploadFile] = File(...)) -> dict:
+    settings = get_settings()
+
+    conv = await db.get_conversation(conv_id)
+    if not conv:
+        raise HTTPException(404, "Conversation not found")
+
+    if len(files) > settings.upload_max_per_message:
+        raise HTTPException(400, f"Max {settings.upload_max_per_message} files per upload")
+
+    results = []
+    for f in files:
+        if f.content_type not in settings.upload_allowed_types:
+            raise HTTPException(400, f"File type {f.content_type} not allowed")
+
+        content = await f.read()
+        if len(content) > settings.upload_max_size_bytes:
+            raise HTTPException(
+                400,
+                f"File exceeds {settings.upload_max_size_bytes // (1024 * 1024)}MB limit",
+            )
+
+        upload_id = str(uuid.uuid4())
+        ext = Path(f.filename).suffix if f.filename else ""
+        upload_dir = settings.upload_dir / conv_id
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        storage_path = upload_dir / f"{upload_id}{ext}"
+        storage_path.write_bytes(content)
+
+        meta = await db.save_upload(
+            upload_id=upload_id,
+            conversation_id=conv_id,
+            filename=f.filename or "unnamed",
+            mime_type=f.content_type,
+            size_bytes=len(content),
+            storage_path=str(storage_path),
+        )
+        results.append(meta)
+
+    return {"uploads": results}
+
+
+@app.get("/api/uploads/{upload_id}/file")
+async def download_file(upload_id: str) -> FileResponse:
+    upload = await db.get_upload(upload_id)
+    if not upload:
+        raise HTTPException(404, "Upload not found")
+    return FileResponse(
+        upload["storage_path"],
+        media_type=upload["mime_type"],
+        filename=upload["filename"],
+    )
+
+
+@app.delete("/api/uploads/{upload_id}")
+async def delete_upload_endpoint(upload_id: str) -> dict:
+    upload = await db.get_upload(upload_id)
+    if not upload:
+        raise HTTPException(404, "Upload not found")
+    path = Path(upload["storage_path"])
+    if path.exists():
+        path.unlink()
+    await db.delete_upload(upload_id)
+    return {"ok": True}
+
+
+@app.get("/api/conversations/{conv_id}/uploads")
+async def list_uploads(conv_id: str) -> list[dict]:
+    return await db.get_uploads_for_conversation(conv_id)
 
 
 # ---------------------------------------------------------------------------
@@ -439,10 +526,21 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     if map_response:
         yield _sse(ChatChunk(type="map_data", map_data=map_response, t_ms=elapsed_ms()))
 
+    # Resolve upload filenames for synthesis context
+    upload_filenames: list[str] = []
+    if req.upload_ids:
+        for uid in req.upload_ids:
+            upload = await db.get_upload(uid)
+            if upload:
+                upload_filenames.append(upload["filename"])
+
     first_token = True
     try:
         async for token in stream_answer(
-            context=context, user_message=req.message, history=req.history
+            context=context,
+            user_message=req.message,
+            history=req.history,
+            upload_filenames=upload_filenames,
         ):
             chunk_t = elapsed_ms() if first_token else None
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))

@@ -81,6 +81,17 @@ class Settings(BaseSettings):
 
     message_limit: int = 10
 
+    upload_dir: Path = PROJECT_ROOT / "backend" / "data" / "uploads"
+    upload_max_size_bytes: int = 10 * 1024 * 1024  # 10 MB
+    upload_allowed_types: list[str] = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/heic",
+        "application/pdf",
+    ]
+    upload_max_per_message: int = 3
+
 
 @lru_cache
 def get_settings() -> Settings:

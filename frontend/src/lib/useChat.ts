@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { chatStream } from "./api";
-import type { ContextObject, MapData, Message, RetrievalPlan } from "./types";
+import type { ContextObject, MapData, Message, RetrievalPlan, UploadMeta } from "./types";
 
 const MESSAGE_LIMIT = 10;
 
@@ -20,7 +20,7 @@ interface UseChat {
   showDisclaimer: boolean;
   errorMsg: string | null;
   atMessageLimit: boolean;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, attachments?: UploadMeta[]) => Promise<void>;
   clearTurnState: () => void;
   reset: () => void;
 }
@@ -58,7 +58,7 @@ export function useChat({
     clearTurnState();
   }
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, attachments?: UploadMeta[]) {
     if (streaming) return;
 
     if (atMessageLimit) {
@@ -73,7 +73,11 @@ export function useChat({
     pendingPlanRef.current = null;
     pendingMapDataRef.current = null;
 
-    const userMessage: Message = { role: "user", content: text };
+    const userMessage: Message = {
+      role: "user",
+      content: text,
+      attachments: attachments?.length ? attachments : undefined,
+    };
     const historySnapshot = [...messages];
     setMessages((m) => [...m, userMessage, { role: "assistant", content: "" }]);
     setStreaming(true);
@@ -81,12 +85,15 @@ export function useChat({
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const uploadIds = attachments?.map((a) => a.id);
+
     try {
       for await (const chunk of chatStream(
         text,
         historySnapshot,
         controller.signal,
         conversationId,
+        uploadIds,
       )) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);

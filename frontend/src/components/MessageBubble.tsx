@@ -1,6 +1,7 @@
 import { Children, cloneElement, isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { getUploadUrl } from "../lib/api";
 import type { CodeChunk, DataSource, Message } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
 import { useTypewriter } from "../lib/useTypewriter";
@@ -179,6 +180,32 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
             </button>
           )}
           <p className="text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="flex gap-2 mt-2">
+              {message.attachments.map((att) => (
+                <button
+                  key={att.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(getUploadUrl(att.id), "_blank");
+                  }}
+                  className="w-16 h-16 rounded-lg overflow-hidden border border-dark-border hover:border-accent/50 transition-colors shrink-0"
+                  title={att.filename}
+                >
+                  {att.mime_type?.startsWith("image/") ? (
+                    <img src={getUploadUrl(att.id)} alt={att.filename} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-dark-elevated flex flex-col items-center justify-center gap-0.5">
+                      <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                      <span className="text-[8px] text-text-muted">PDF</span>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );

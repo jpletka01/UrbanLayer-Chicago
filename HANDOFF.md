@@ -1,4 +1,4 @@
-# Project Handoff — Chicago City Intelligence
+# Project Handoff — UrbanLayer — Chicago
 
 A snapshot of what's been built, the decisions behind it, and what should come next. Companion to `README.md` (user-facing setup) and `~/.claude/plans/velvet-gliding-salamander.md` (the original implementation plan).
 
@@ -6,9 +6,9 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 ## TL;DR
 
-A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
+A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **URL-based conversation routing** — each conversation gets its own `/c/:id` URL via `react-router-dom`; bookmarkable, browser back/forward support, direct-link loading with invalid-ID redirect. Previous: Zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 192 tests passing.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Bucket 1 (Mobile & Polish)** — mobile-responsive bottom sheet for sidebar content, file upload support (backend endpoints + frontend attach-before-send flow + attachment thumbnails in chat). Previous: URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 192 tests passing.
 
 ---
 
@@ -58,10 +58,10 @@ Everything below is in the repo, tested and verified.
   - `three11.py` — `v6vf-nfxy` (open requests + response times, `Open - Dup` filtered)
   - `buildings.py` — `ydr8-5enu` permits (uses `reported_cost` field) + `22u3-xenr` violations
   - `business.py` — `uupf-x98q` active licenses
-  - `map_data.py` — raw geo-located row fetching for the map panel (`crimes_for_map`, `requests_311_for_map`, `permits_for_map`, `zoning_for_map`); uses `socrata_get` directly with higher row limits (200/150/100) and `latitude IS NOT NULL` filters
+  - `map_data.py` — raw geo-located row fetching for the map panel (`crimes_for_map`, `requests_311_for_map`, `permits_for_map`, `zoning_for_map`); uses `socrata_get` directly with row limits (2500/1000/500) and `latitude IS NOT NULL` filters
   - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder; per-section dedup, keyword boost scoring, cross-encoder reranker (infrastructure present, disabled by default); `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
-- `tests/` — **177 tests** (unit + integration), all passing
+- `tests/` — **192 tests** (unit + integration), all passing
 
 ### Ingestion (`ingestion/`)
 - `parse_chicago_code.py` — HTML parser with split-at-republication strategy, state machine for Title→Chapter→Article→Subarticle→Part, colspan/rowspan-aware table extraction with composite multi-row headers
@@ -94,7 +94,14 @@ Everything below is in the repo, tested and verified.
   - `SidebarPanel` (collapsible context/data panel with drag-to-resize handle and collapsed rail; Data tab embeds the map above data cards with a vertical drag divider)
   - `sidebar/MapView` (Mapbox GL JS + deck.gl map with ScatterplotLayers for crime/311/permits/address pin, dynamic layer toggles, tooltips, flyTo animation, ResizeObserver for sidebar resize)
   - `sidebar/MapLayerToggles` (floating toggle pills, context-aware: crime-type filters for crime queries, department filters for 311, source-level toggles for overview)
-  - `sidebar/MapLegend` (compact color legend, auto-hides when no layers active)
+  - `sidebar/MapLegend` (compact color legend, auto-hides when no layers active; zoning category legend in points-off mode)
+  - `sidebar/ArrestFilter` (arrest status segmented control for crime mode)
+  - `sidebar/StatusFilter` (open/closed status filter for 311 mode)
+  - `sidebar/CostFilter` (cost bucket filter for permits mode)
+  - `sidebar/DateRangeSlider` (dual-handle date range slider)
+  - `sidebar/AnalyticsSection` (pie chart + trend table orchestrator by filter mode)
+  - `sidebar/PieChart` (SVG donut with hover expansion, thin-slice ring, expandable legend)
+  - `sidebar/TrendTable` (MoM trend rows with sortable columns, colored arrows)
   - `DisclaimerBanner` (amber, legal disclaimer)
   - `HistorySidebar` (conversation history)
 - `lib/`:
@@ -120,40 +127,36 @@ Everything below is in the repo, tested and verified.
 
 ---
 
-## What's NOT Done / Known Issues
+## What's NOT Done
 
-### 1. ~~Citation tooltip overlaps text (transparent background)~~ — RESOLVED (2026-05-29)
-Originally a Tailwind color-name collision (`bg-dark` vs `dark.bg`). After fixing that, tooltip backgrounds were still invisible because `#1f1f1f` had near-zero contrast against the surrounding dark surfaces. Final fix: bumped tooltip to `#333` with `#444` border (via inline style to bypass Tailwind class-ordering issues), switched to `position: fixed` with `useLayoutEffect` viewport clamping so tooltips can't be clipped by the sidebar's `overflow-y: auto`, and strengthened the section-detail drawer backdrop to `bg-black/80 backdrop-blur-sm`.
+### 1. Mobile responsiveness
+The style guide and map spec both describe a responsive layout (stacked vertically at <768px, sidebar hidden on mobile), but the workspace has no mobile-specific handling. The sidebar, map, and chat layout are desktop-only.
 
-### 2. ~~Source detail drawer covers sidebar~~ — RESOLVED (2026-05-28)
-Source cards now expand **in-place** in `SourceCitation.tsx` (full text shown inline, no height cap). The `SourceDetailDrawer` was repurposed for a different job: viewing the full text of a *cross-referenced* section fetched on demand (see session log).
+### 2. File upload support
+The `uploads` table exists in the SQLite schema (`db.py`) and `ChatInput.tsx` has an "Add attachment" button, but there's no backend handling or frontend upload flow. Useful for letting users attach images of permits, property photos, etc.
 
-### 3. ~~Typewriter effect stops after first citation~~ — RESOLVED (2026-05-29)
-The `useTypewriter` effect depended on `content.length`, which changes on every SSE token. Each change cleared and recreated the interval, preventing the typewriter from advancing while tokens arrived rapidly. When streaming ended, `setDisplayedLength(content.length)` dumped all remaining text at once. Fix: removed `content.length` from the effect dependency (the interval already reads the target via a ref), added a `wasStreamingRef` so the interval continues after streaming ends until it catches up (instead of dumping), and added adaptive step sizing (1/2/3 chars per tick based on how far behind).
+### 3. Cost/token logging
+No tracking of Anthropic API token usage per request. Each chat hits Claude 2–3 times (conversation synthesis + router + synthesizer). Wrapping the client in `llm.py` to record `input_tokens`/`output_tokens` from each response would enable cost monitoring and per-conversation billing visibility.
 
-### 4. ~~No annotations for API-sourced data~~ — RESOLVED
-Socrata statistics are now marked with `[data:crime]` / `[data:311]` / etc. markers rendered as colored `DataPill` components that open the Data tab and scroll to the relevant card.
+### 4. LLM-as-judge eval
+The eval suite (`eval/run_eval.py`) checks routing correctness but doesn't grade synthesis quality. An LLM-as-judge layer could score citation accuracy (does `[1]` actually refer to the right section?), factuality (does the answer match the context?), and completeness.
 
-### 5. The Municipal Code is gitignored
-- `chicago-il-codes.html` (~100MB) is not in version control (`.gitignore` line 17).
-- Anyone cloning the repo needs to obtain it separately.
+### 5. Legal-domain reranker
+The MS MARCO cross-encoder hurt retrieval quality on legal text (see session log). The infrastructure is wired in `vector_search.py` — swap the model name in `config.py` and set `reranker_enabled=True`. Candidates: `bge-reranker-v2-m3`, or a custom model fine-tuned on municipal code relevance judgments.
 
-### 6. ~~Map view~~ — RESOLVED (2026-05-31)
-Implemented with Mapbox GL JS + deck.gl instead of Leaflet (better WebGL performance, dark basemap support, deck.gl's ScatterplotLayer handles thousands of points efficiently). See session log below.
+### 6. Deployment
+Currently local-only. No Dockerfile for the FastAPI backend, no CI/CD, no production config. The Vite SPA needs a static file server that serves `index.html` for all non-asset paths (Vite dev server handles this automatically, production won't).
 
-### 7. Deferred but probably worth doing
-- **LLM-as-judge eval** — grade synthesis answers for citation accuracy + factuality
-- **Cost/token logging** — wrap the Anthropic client to record tokens per request
-- **Deployment** — currently local-only
-- ~~**Postgres / server-side history** — for multi-device sync~~ — RESOLVED: SQLite persistence implemented (2026-05-31)
-- **File upload support** — `uploads` table exists in SQLite schema but no UI or backend handling yet
+### 7. Municipal Code is gitignored
+`chicago-il-codes.html` (~100MB) is not in version control. Anyone cloning the repo needs to obtain it separately from American Legal Publishing.
 
-### 8. Known fragile heuristics
-- **Sub-header detection inside tables** uses length cap (<80 chars) and min-chars threshold (400 chars before splitting)
-- **Multi-row header count** inferred from consecutive row patterns
-- **Cross-references** filter to section IDs only
-- **Keyword boost weight (0.15)** is hand-tuned — too high drowns out semantic similarity, too low has no effect
-- **Reranker disabled** — the MS MARCO cross-encoder hurts on legal text; needs a legal-domain model
+### Known fragile heuristics
+These work well enough but could break on edge cases:
+- **Sub-header detection inside tables** — length cap (<80 chars) and min-chars threshold (400 chars before splitting)
+- **Multi-row header count** — inferred from consecutive row patterns
+- **Cross-references** — filter to section IDs only
+- **Keyword boost weight (0.15)** — hand-tuned; too high drowns out semantic similarity, too low has no effect
+- **Reranker disabled** — see #5 above
 
 ---
 
@@ -1016,16 +1019,107 @@ Vite dev server handles `/c/:id` by default (`appType: 'spa'`). For production d
 
 ---
 
-## Recommended Next Steps (Prioritized)
+## Session Log (2026-05-31 — Bucket 1: Mobile & Polish)
 
-### Step 1 — Legal-domain cross-encoder reranker
-The MS MARCO reranker hurt on legal text (see session log). A fine-tuned reranker (e.g., bge-reranker-v2-m3 or a custom model trained on municipal code relevance judgments) would unlock the reranking stage. The infrastructure is already wired — just swap the model name in `config.py` and set `reranker_enabled=True`.
+Two features completing Bucket 1 of the prioritized roadmap: mobile responsiveness and file upload support.
 
-### Step 2 — Test multi-turn conversations thoroughly
-The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
+### Part A: Mobile Responsiveness
 
-### ~~Step 3 — Zoning overlay on map~~ — RESOLVED (2026-05-31)
-Replaced the broken Socrata endpoint with ArcGIS MapServer. Zoning polygons now render on the map with per-district colors, hover/click interaction, and Zoning/Points toggle controls. The old `VITE_ENABLE_ZONING_LAYER` env var is no longer needed.
+**Problem**: The sidebar (map, data, sources) was completely hidden below 768px via `hidden md:flex` with no alternative access. Mobile users had no way to see map data, analytics, or source citations.
+
+**Solution**: Bottom sheet overlay for mobile, reusing existing sidebar internals.
+
+1. **Extracted `DataMapLayout`** — moved from a private component inside `SidebarPanel.tsx` to `sidebar/DataMapLayout.tsx` so both the desktop sidebar and mobile sheet can import it.
+
+2. **New `MobileSidebarSheet.tsx`** — bottom sheet overlay (70vh, Framer Motion slide-up, drag-down-to-dismiss on handle area, backdrop click to close). Contains `SidebarHeader` (Data/Sources tabs) + `DataMapLayout` or `SourcesView`. Same props as `SidebarPanel`.
+
+3. **Mobile sidebar toggle button** — appears in the workspace header on `md:hidden`. Map icon with source count badge. Opens the bottom sheet.
+
+4. **Responsive sidebar routing** — `openSidebarResponsive()` checks `window.innerWidth < 768` and opens either the desktop sidebar or mobile bottom sheet. Applied to `handleCitationClick`, `handleDataClick`, `handleContext`, and `handleMessageClick`.
+
+5. **Splash page mobile tweaks** — stats row: `px-4 md:px-8`, numbers `text-3xl md:text-4xl`. Story sections: `px-4 md:px-8`.
+
+6. **Workspace header mobile tweaks** — shorter brand name on mobile ("UrbanLayer" vs "UrbanLayer — Chicago"), truncated community area breadcrumb (`max-w-[120px] truncate`), `+` icon for "New chat" on small screens.
+
+7. **Chat area mobile padding** — `px-3 md:px-6`, `py-4 md:py-8` for messages and input.
+
+### Part B: File Upload Support
+
+**Problem**: The `uploads` SQLite table and paperclip button existed but did nothing. No backend endpoints, no frontend upload flow, no attachment rendering.
+
+**Solution**: Attach-before-send model with filenames-only synthesis context. Claude Vision deferred to a future bucket.
+
+**Backend:**
+1. **Config** (`config.py`) — `upload_dir` (`backend/data/uploads/`), `upload_max_size_bytes` (10MB), `upload_allowed_types` (JPEG, PNG, WebP, HEIC, PDF), `upload_max_per_message` (3).
+
+2. **Models** (`models.py`) — `UploadMeta` (id, conversation_id, filename, mime_type, size_bytes, created_at). `ChatRequest.upload_ids` field.
+
+3. **DB functions** (`db.py`) — `save_upload`, `get_upload`, `get_uploads_for_conversation`, `delete_upload`. Conversation deletion cleans up upload files on disk.
+
+4. **Endpoints** (`main.py`):
+   - `POST /api/conversations/{id}/uploads` — multipart upload, validates type/size/count, saves to `backend/data/uploads/{conv_id}/{uuid}.{ext}`
+   - `GET /api/uploads/{id}/file` — serve file via `FileResponse`
+   - `DELETE /api/uploads/{id}` — delete from disk + DB
+   - `GET /api/conversations/{id}/uploads` — list uploads for a conversation
+
+5. **Synthesis context** (`synthesizer.py`) — when `upload_ids` are present, fetches filenames from DB and appends "The user attached N file(s): filename1, filename2" to the synthesis prompt.
+
+6. **Dependency** — added `python-multipart>=0.0.7` to `requirements.txt`.
+
+**Frontend:**
+1. **Types** (`types.ts`) — `UploadMeta` interface, `Message.attachments` field.
+
+2. **API** (`api.ts`) — `uploadFiles(conversationId, files)`, `getUploadUrl(uploadId)`, `deleteUpload(uploadId)`. `chatStream` accepts optional `uploadIds`.
+
+3. **ChatInput** (`ChatInput.tsx`) — hidden `<input type="file" multiple>`, paperclip button wired to trigger it. `PendingAttachment` type with `file` + `previewUrl`. Thumbnail preview row above input with remove buttons. Client-side accepts `image/*` and `.pdf`.
+
+4. **App.tsx** — `pendingAttachments` state, `handleAttach` (creates preview URLs via `URL.createObjectURL`), `handleRemoveAttachment` (revokes URLs). `sendMessage` uploads files first, then passes `upload_ids` through to `sendChat`.
+
+5. **useChat** (`useChat.ts`) — `sendMessage` accepts optional `UploadMeta[]`, attaches them to the user message, passes IDs to `chatStream`.
+
+6. **MessageBubble** (`MessageBubble.tsx`) — user messages with attachments render a row of 64x64 rounded thumbnails (images via `<img>`, PDFs via file icon). Click opens in new tab.
+
+### Files Changed/Created
+
+**New:**
+- `frontend/src/components/MobileSidebarSheet.tsx` — mobile bottom sheet
+- `frontend/src/components/sidebar/DataMapLayout.tsx` — extracted from SidebarPanel
+
+**Modified:**
+- `backend/config.py` — upload settings
+- `backend/models.py` — `UploadMeta`, `ChatRequest.upload_ids`
+- `backend/db.py` — upload CRUD functions, conversation delete cleanup
+- `backend/main.py` — upload endpoints, upload filenames in synthesis
+- `backend/synthesizer.py` — `upload_filenames` parameter
+- `requirements.txt` — `python-multipart`
+- `frontend/src/lib/types.ts` — `UploadMeta`, `Message.attachments`
+- `frontend/src/lib/api.ts` — upload functions, `chatStream` uploadIds
+- `frontend/src/lib/useChat.ts` — attachment support
+- `frontend/src/App.tsx` — mobile sidebar state, attachment state, responsive routing
+- `frontend/src/components/SidebarPanel.tsx` — imports `DataMapLayout` from extracted file
+- `frontend/src/components/ChatInput.tsx` — file picker, preview row, attachment props
+- `frontend/src/components/ChatInterface.tsx` — threads attachment props
+- `frontend/src/components/MessageBubble.tsx` — attachment thumbnail rendering
+- `frontend/src/components/landing/StorySection.tsx` — mobile padding
+
+---
+
+## Recommended Next Steps (4 Buckets, In Order)
+
+### ~~Bucket 1: Mobile & Polish~~ ✅ DONE
+
+### Bucket 2: Observability & Eval
+- **Cost/token logging** — Wrap the Anthropic client in `llm.py` to capture `usage` from each API response. Store per-request token counts (model, input_tokens, output_tokens, cache_read/creation) in a new SQLite table or log file. Enables cost dashboards and per-conversation billing.
+- **LLM-as-judge eval** — Extend `eval/run_eval.py` with a synthesis grading pass. Use Claude to score each answer on citation accuracy, factuality against context, and completeness. Output a quality report alongside the existing routing pass/fail.
+
+### Bucket 3: Retrieval Quality
+- **Legal-domain reranker** — Infrastructure is wired in `vector_search.py`. Try `bge-reranker-v2-m3` or a legal-domain fine-tune. Toggle with `RERANKER_ENABLED=true`.
+- **Code-health items that unblock reranker** — async `semantic_search`, batching cross-ref lookups, and related deferred refactors from the code-health session.
+
+### Bucket 4: Production Readiness
+- **Dockerize backend** — Dockerfile for the FastAPI app, production config.
+- **Production Vite build** — Static file server with SPA-fallback (serve `index.html` for all non-asset paths).
+- **CI pipeline** — Tests + type checking on push.
 
 ---
 
@@ -1041,11 +1135,11 @@ If you're a fresh agent picking this up:
    cd frontend && npm run build         # Should succeed
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
-4. **Files most likely to need edits**:
-   - `frontend/src/components/MessageBubble.tsx` — typewriter/citation interaction (Issue #3)
-   - `frontend/src/lib/useTypewriter.ts` — animation timing
-   - `frontend/src/components/CrossRefPill.tsx` / `SourceDetailDrawer.tsx` — cross-reference behavior
-   - `backend/retrieval/vector_search.py` — `get_full_section` / cross-ref resolution
+4. **Files most likely to need edits** (based on open work items):
+   - `frontend/src/App.tsx` + `frontend/src/components/SidebarPanel.tsx` — mobile responsive layout (not yet implemented)
+   - `backend/llm.py` — token/cost logging wrapper
+   - `backend/retrieval/vector_search.py` — reranker model swap
+   - `frontend/src/components/ChatInput.tsx` + `backend/main.py` — file upload flow
 
 ## Repo Layout
 
@@ -1087,11 +1181,12 @@ chicago/
 │   └── baseline_full_v2.md         # Full pipeline results (26/26 passing)
 └── frontend/
     ├── src/components/             # Hero, ChatInput, MessageBubble, CitationPill, SourceCitation, Sidebar, etc.
-    │   └── sidebar/                # MapView, MapLayerToggles, MapLegend, ArrestFilter, DateRangeSlider,
-    │                               #   DataView, AnalyticsSection, PieChart, TrendTable, SourcesView
-    ├── src/lib/                    # api (SSE), history (API-backed), types, useTypewriter, clipboard,
-    │                               #   mapColors (shared color constants), analytics (trend/pie computation),
-    │                               #   useConversationRouter (URL ↔ state sync)
+    │   └── sidebar/                # MapView, MapLayerToggles, MapLegend, ArrestFilter, StatusFilter,
+    │                               #   CostFilter, DateRangeSlider, DataView, AnalyticsSection,
+    │                               #   PieChart, TrendTable, SourcesView
+    ├── src/lib/                    # api (SSE), history (API-backed), types, useChat, useTypewriter,
+    │                               #   clipboard, mapColors, analytics, sse, useCopyButton, constants,
+    │                               #   codeRefs, parseTable, useConversationRouter (URL ↔ state sync)
     └── src/App.tsx                 # State machine with per-message context + URL routing
 ```
 

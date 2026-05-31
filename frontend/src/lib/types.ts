@@ -1,5 +1,14 @@
 export type Role = "user" | "assistant";
 
+export interface UploadMeta {
+  id: string;
+  conversation_id: string;
+  filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: number;
+}
+
 export interface Message {
   role: Role;
   content: string;
@@ -7,6 +16,7 @@ export interface Message {
   plan?: RetrievalPlan;
   mapData?: MapData;
   mapFetchedAt?: number;
+  attachments?: UploadMeta[];
 }
 
 export type SourceTag =

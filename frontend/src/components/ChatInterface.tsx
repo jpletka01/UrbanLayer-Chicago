@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ContextObject, DataSource, Message } from "../lib/types";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, type PendingAttachment } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
 
 interface Props {
@@ -15,6 +15,9 @@ interface Props {
   selectedMessageIndex?: number | null;
   atMessageLimit?: boolean;
   onNewChat?: () => void;
+  attachments?: PendingAttachment[];
+  onAttach?: (files: File[]) => void;
+  onRemoveAttachment?: (index: number) => void;
 }
 
 export function ChatInterface({
@@ -29,6 +32,9 @@ export function ChatInterface({
   selectedMessageIndex,
   atMessageLimit,
   onNewChat,
+  attachments,
+  onAttach,
+  onRemoveAttachment,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +45,7 @@ export function ChatInterface({
   return (
     <section className="flex-1 min-w-0 h-full flex flex-col bg-dark-bg">
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+        <div className="max-w-3xl mx-auto px-3 md:px-6 py-4 md:py-8 space-y-6">
           {messages.map((m, i) => {
             const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
             const isStreaming = isLastAssistant && streaming;
@@ -66,7 +72,7 @@ export function ChatInterface({
       </div>
 
       <div className="shrink-0 bg-dark-bg">
-        <div className="max-w-3xl mx-auto px-6 py-4">
+        <div className="max-w-3xl mx-auto px-3 md:px-6 py-3 md:py-4">
           {atMessageLimit ? (
             <div className="text-center py-3 text-text-muted text-sm">
               You've reached the 10-message limit for this conversation.{" "}
@@ -83,6 +89,9 @@ export function ChatInterface({
               disabled={streaming}
               variant="compact"
               placeholder="Ask a follow-up..."
+              attachments={attachments}
+              onAttach={onAttach}
+              onRemoveAttachment={onRemoveAttachment}
             />
           )}
         </div>
