@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
@@ -8,18 +8,34 @@ import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
-import { fetchMapData, fetchSection } from "./lib/api";
+import {
+  fetchMapData,
+  fetchSection,
+  getConversation,
+  updateMessageMapData,
+} from "./lib/api";
 import { SPLASH_STATS, SUGGESTIONS } from "./lib/constants";
 import {
+  appendMessages,
   clearAllHistory,
   deleteConversation,
+  generateId,
   loadConversations,
-  migrateOldHistory,
-  saveConversation,
-  setCurrentConversationId,
+  migrateLocalStorageToSQLite,
 } from "./lib/history";
-import type { Conversation, ContextObject, DataSource, MapData, RetrievalPlan, SidebarView, SourceTag } from "./lib/types";
+import { createConversation } from "./lib/api";
+import type {
+  Conversation,
+  ContextObject,
+  DataSource,
+  MapData,
+  RetrievalPlan,
+  SidebarView,
+  SourceTag,
+} from "./lib/types";
 import { useChat } from "./lib/useChat";
+
+const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function App() {
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -35,35 +51,38 @@ export function App() {
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [mapLoading, setMapLoading] = useState(false);
   const [mapSources, setMapSources] = useState<SourceTag[]>([]);
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
   const planRef = useRef<RetrievalPlan | null>(null);
+  const prevStreamingRef = useRef(false);
+  const conversationIdRef = useRef<string | null>(null);
 
-  // When a turn's context arrives, surface it in the sidebar. Focus the Sources
-  // tab whenever code sections were used; only fall back to Data when there are none.
-  // Also pre-fetch map data if a community area was resolved.
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
+
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
     setSidebarOpen(true);
     setSidebarView(ctx.code_chunks?.length ? "sources" : "data");
+  }
 
-    if (ctx.community_area) {
-      const p = planRef.current;
-      const relevantSources = (p?.sources ?? []).filter(
-        (s): s is SourceTag => s === "crime_api" || s === "311_api" || s === "permits_api"
-      );
-      const sourcesToFetch = relevantSources.length > 0 ? relevantSources : (["crime_api", "311_api", "permits_api"] as SourceTag[]);
-      setMapSources(sourcesToFetch);
+  function handleMapData(data: MapData) {
+    setMapData(data);
+    setMapLoading(false);
+    const p = planRef.current;
+    const relevantSources = (p?.sources ?? []).filter(
+      (s): s is SourceTag => s === "crime_api" || s === "311_api" || s === "permits_api",
+    );
+    setMapSources(
+      relevantSources.length > 0
+        ? relevantSources
+        : (["crime_api", "311_api", "permits_api"] as SourceTag[]),
+    );
+  }
+
+  function handlePlan(p: RetrievalPlan) {
+    if (p.location?.resolved_community_area) {
       setMapLoading(true);
-      fetchMapData({
-        community_area: ctx.community_area,
-        time_range_days: p?.time_range_days ?? 90,
-        sources: sourcesToFetch,
-        address_lat: p?.location.resolved_lat ?? undefined,
-        address_lon: p?.location.resolved_lon ?? undefined,
-        address_label: ctx.resolved_address ?? undefined,
-      }).then((data) => {
-        setMapData(data);
-        setMapLoading(false);
-      });
     }
   }
 
@@ -75,29 +94,47 @@ export function App() {
     context,
     showDisclaimer,
     errorMsg,
+    atMessageLimit,
     sendMessage: sendChat,
     clearTurnState,
     reset: resetChat,
-  } = useChat({ onContext: handleContext });
+  } = useChat({
+    onContext: handleContext,
+    onPlan: handlePlan,
+    onMapData: handleMapData,
+    conversationId,
+  });
 
-  useEffect(() => { planRef.current = plan; }, [plan]);
-
-  // Migrate old history format on first load
   useEffect(() => {
-    migrateOldHistory();
-    setConversations(loadConversations());
+    planRef.current = plan;
+  }, [plan]);
+
+  // Init: migrate localStorage, load conversations
+  useEffect(() => {
+    (async () => {
+      await migrateLocalStorageToSQLite();
+      const convos = await loadConversations();
+      setConversations(convos);
+    })();
   }, []);
 
-  // Save conversation when messages change
+  // Save messages to SQLite after stream completes
   useEffect(() => {
-    if (messages.length > 0) {
-      const id = saveConversation(messages, conversationId || undefined);
-      if (!conversationId) {
-        setConversationId(id);
+    if (prevStreamingRef.current && !streaming && messages.length >= 2) {
+      const lastTwo = messages.slice(-2);
+      if (lastTwo[0]?.role === "user" && lastTwo[1]?.role === "assistant") {
+        const cid = conversationIdRef.current;
+        if (cid) {
+          appendMessages(cid, lastTwo).then(() => {
+            loadConversations().then(setConversations);
+          });
+        }
+        // Auto-select the latest question
+        setSelectedMessageIndex(messages.length - 2);
       }
-      setConversations(loadConversations());
     }
-  }, [messages, conversationId]);
+    prevStreamingRef.current = streaming;
+  }, [streaming, messages]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -112,15 +149,23 @@ export function App() {
 
   const active = messages.length > 0 || streaming;
 
-  function sendMessage(text: string) {
+  async function sendMessage(text: string) {
     setHistoryOpen(false);
+    // Create conversation on first message
+    if (!conversationId) {
+      const id = generateId();
+      const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
+      await createConversation(id, title);
+      setConversationId(id);
+      conversationIdRef.current = id;
+    }
     sendChat(text);
   }
 
   function reset() {
     resetChat();
     setConversationId(null);
-    setCurrentConversationId(null);
+    conversationIdRef.current = null;
     setSidebarOpen(false);
     setSidebarView("data");
     setHighlightedSourceIndex(null);
@@ -129,29 +174,131 @@ export function App() {
     setMapData(null);
     setMapLoading(false);
     setMapSources([]);
+    setSelectedMessageIndex(null);
   }
 
-  function loadConversation(conv: Conversation) {
-    setMessages(conv.messages);
+  async function loadConv(conv: Conversation) {
+    const detail = await getConversation(conv.id);
+    if (!detail) return;
+
+    const loaded = detail.messages.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+      context: m.context ?? undefined,
+      plan: m.plan ?? undefined,
+      mapData: m.map_data ?? undefined,
+      mapFetchedAt: m.map_fetched_at ?? undefined,
+    }));
+
+    setMessages(loaded);
     setConversationId(conv.id);
-    setCurrentConversationId(conv.id);
+    conversationIdRef.current = conv.id;
     setHistoryOpen(false);
     clearTurnState();
+
+    // Load the last question's state into the sidebar
+    const lastUserIdx = loaded.length - 2;
+    if (lastUserIdx >= 0) {
+      handleMessageClick(lastUserIdx, loaded);
+    }
   }
 
-  function handleDeleteConversation(id: string) {
-    deleteConversation(id);
-    setConversations(loadConversations());
+  async function handleDeleteConversation(id: string) {
+    await deleteConversation(id);
+    const convos = await loadConversations();
+    setConversations(convos);
     if (conversationId === id) {
       reset();
     }
   }
 
-  function handleClearAll() {
-    clearAllHistory();
+  async function handleClearAll() {
+    await clearAllHistory();
     setConversations([]);
     reset();
   }
+
+  // Per-question state toggling
+  const handleMessageClick = useCallback(
+    (messageIndex: number, msgs?: typeof messages) => {
+      const allMessages = msgs ?? messages;
+      const assistantMsg = allMessages[messageIndex + 1];
+      if (!assistantMsg || assistantMsg.role !== "assistant") return;
+
+      setSelectedMessageIndex(messageIndex);
+
+      // Load context
+      if (assistantMsg.context) {
+        setActiveSidebarContext(assistantMsg.context);
+        setSidebarOpen(true);
+        setSidebarView(assistantMsg.context.code_chunks?.length ? "sources" : "data");
+      }
+
+      // Load plan
+      if (assistantMsg.plan) {
+        planRef.current = assistantMsg.plan;
+        const relevantSources = (assistantMsg.plan.sources ?? []).filter(
+          (s): s is SourceTag => s === "crime_api" || s === "311_api" || s === "permits_api",
+        );
+        setMapSources(
+          relevantSources.length > 0
+            ? relevantSources
+            : (["crime_api", "311_api", "permits_api"] as SourceTag[]),
+        );
+      }
+
+      // Load map data with staleness check
+      if (assistantMsg.mapData) {
+        const isStale =
+          assistantMsg.mapFetchedAt &&
+          Date.now() - assistantMsg.mapFetchedAt > MAP_STALE_MS;
+
+        if (isStale && assistantMsg.context?.community_area && assistantMsg.plan) {
+          setMapLoading(true);
+          const p = assistantMsg.plan;
+          const sources = (p.sources ?? []).filter(
+            (s) => s === "crime_api" || s === "311_api" || s === "permits_api",
+          );
+          fetchMapData({
+            community_area: assistantMsg.context.community_area,
+            time_range_days: p.time_range_days ?? 90,
+            sources: sources.length > 0 ? sources : ["crime_api", "311_api", "permits_api"],
+            address_lat: p.location?.resolved_lat ?? undefined,
+            address_lon: p.location?.resolved_lon ?? undefined,
+            address_label: assistantMsg.context.resolved_address ?? undefined,
+          }).then((data) => {
+            if (data) {
+              setMapData(data);
+              // Update stored map data
+              const cid = conversationIdRef.current;
+              if (cid) {
+                updateMessageMapData(cid, messageIndex + 1, data);
+              }
+            }
+            setMapLoading(false);
+          });
+        } else {
+          setMapData(assistantMsg.mapData);
+        }
+      } else if (assistantMsg.context?.community_area && assistantMsg.plan) {
+        // No saved map data — fetch it
+        setMapLoading(true);
+        const p = assistantMsg.plan;
+        const sources = (p.sources ?? []).filter(
+          (s) => s === "crime_api" || s === "311_api" || s === "permits_api",
+        );
+        fetchMapData({
+          community_area: assistantMsg.context.community_area,
+          time_range_days: p.time_range_days ?? 90,
+          sources: sources.length > 0 ? sources : ["crime_api", "311_api", "permits_api"],
+        }).then((data) => {
+          setMapData(data);
+          setMapLoading(false);
+        });
+      }
+    },
+    [messages],
+  );
 
   function handleCitationClick(index: number, messageContext?: ContextObject) {
     if (messageContext) {
@@ -161,8 +308,6 @@ export function App() {
     setSidebarView("sources");
     setHighlightedSourceIndex(index);
     setHighlightedDataSource(null);
-    // Bump the flash signal so the target source re-flashes even when it's
-    // already the highlighted one (clicking the same citation twice).
     setSourceFlash((f) => f + 1);
   }
 
@@ -188,7 +333,7 @@ export function App() {
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
         conversations={conversations}
-        onSelect={loadConversation}
+        onSelect={loadConv}
         onDelete={handleDeleteConversation}
         onClearAll={handleClearAll}
       />
@@ -203,7 +348,6 @@ export function App() {
             transition={{ duration: 0.3 }}
             className="relative w-full min-h-screen flex flex-col"
           >
-            {/* History button */}
             {conversations.length > 0 && (
               <motion.button
                 initial={{ opacity: 0 }}
@@ -310,7 +454,7 @@ export function App() {
               </button>
             </header>
 
-            {errorMsg && (
+            {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
               <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm">
                 {errorMsg}
               </div>
@@ -325,6 +469,10 @@ export function App() {
                 onCitationClick={handleCitationClick}
                 onDataClick={handleDataClick}
                 streamingContext={context}
+                onMessageClick={handleMessageClick}
+                selectedMessageIndex={selectedMessageIndex}
+                atMessageLimit={atMessageLimit}
+                onNewChat={reset}
               />
               <SidebarPanel
                 plan={plan}

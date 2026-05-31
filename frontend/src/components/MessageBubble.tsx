@@ -14,9 +14,11 @@ interface Props {
   onCitationClick?: (index: number) => void;
   onDataClick?: (source: DataSource) => void;
   codeChunks?: CodeChunk[];
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
-export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [] }: Props) {
+export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect }: Props) {
   const isUser = message.role === "user";
   const [hovered, setHovered] = useState(false);
   const { copied, copy } = useCopyButton(message.content);
@@ -109,10 +111,16 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div className="relative max-w-[85%] rounded-2xl px-4 py-3 bg-dark-bubble-user text-text-primary">
+        <div
+          className={`relative max-w-[85%] rounded-2xl px-4 py-3 bg-dark-bubble-user text-text-primary transition-all
+            ${onSelect ? "cursor-pointer hover:ring-1 hover:ring-white/20" : ""}
+            ${isSelected ? "ring-1 ring-accent/40" : ""}`}
+          onClick={onSelect}
+          title={onSelect ? "Click to view this question's data" : undefined}
+        >
           {hovered && (
             <button
-              onClick={copy}
+              onClick={(e) => { e.stopPropagation(); copy(); }}
               className="absolute -left-10 top-1/2 -translate-y-1/2 p-1.5 rounded-lg
                          bg-dark-surface/80 border border-dark-border
                          text-text-muted hover:text-text-primary hover:bg-dark-elevated

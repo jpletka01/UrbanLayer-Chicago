@@ -59,6 +59,7 @@ Rules:
 5. Be concise. Lead with the direct answer in 1-3 sentences, then supporting detail.
 6. Render numbers as readable prose, not raw JSON. Use markdown for emphasis and short bullet lists only when they aid clarity.
 7. Place citations immediately after the relevant statement, not at the end of paragraphs.
+8. When month-over-month trend data is provided, weave the most notable trends (biggest increases and decreases) into your answer naturally. For example: "Battery incidents are up 23% compared to last month, while theft has declined 15%." Pick the 2-4 most notable changes — don't list every category.
 """
 
 

@@ -11,6 +11,10 @@ interface Props {
   onCitationClick?: (index: number, messageContext?: ContextObject) => void;
   onDataClick?: (source: DataSource, messageContext?: ContextObject) => void;
   streamingContext?: ContextObject | null;
+  onMessageClick?: (messageIndex: number) => void;
+  selectedMessageIndex?: number | null;
+  atMessageLimit?: boolean;
+  onNewChat?: () => void;
 }
 
 export function ChatInterface({
@@ -21,6 +25,10 @@ export function ChatInterface({
   onCitationClick,
   onDataClick,
   streamingContext,
+  onMessageClick,
+  selectedMessageIndex,
+  atMessageLimit,
+  onNewChat,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +43,6 @@ export function ChatInterface({
           {messages.map((m, i) => {
             const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
             const isStreaming = isLastAssistant && streaming;
-            // Use message's own context, or streaming context for the currently streaming message
             const messageContext = isStreaming ? streamingContext : m.context;
             const codeChunks = messageContext?.code_chunks ?? [];
             return (
@@ -49,6 +56,8 @@ export function ChatInterface({
                 onCitationClick={(idx) => onCitationClick?.(idx, messageContext ?? undefined)}
                 onDataClick={(source) => onDataClick?.(source, messageContext ?? undefined)}
                 codeChunks={codeChunks}
+                isSelected={m.role === "user" && selectedMessageIndex === i}
+                onSelect={m.role === "user" ? () => onMessageClick?.(i) : undefined}
               />
             );
           })}
@@ -58,12 +67,24 @@ export function ChatInterface({
 
       <div className="shrink-0 bg-dark-bg">
         <div className="max-w-3xl mx-auto px-6 py-4">
-          <ChatInput
-            onSubmit={onSubmit}
-            disabled={streaming}
-            variant="compact"
-            placeholder="Ask a follow-up..."
-          />
+          {atMessageLimit ? (
+            <div className="text-center py-3 text-text-muted text-sm">
+              You've reached the 10-message limit for this conversation.{" "}
+              <button
+                onClick={onNewChat}
+                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+              >
+                Start a new conversation
+              </button>
+            </div>
+          ) : (
+            <ChatInput
+              onSubmit={onSubmit}
+              disabled={streaming}
+              variant="compact"
+              placeholder="Ask a follow-up..."
+            />
+          )}
         </div>
       </div>
     </section>

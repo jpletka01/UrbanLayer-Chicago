@@ -95,6 +95,20 @@ class CodeChunk(BaseModel):
     cross_references: list[str] = Field(default_factory=list)
 
 
+class TrendItem(BaseModel):
+    category: str
+    current_count: int
+    prior_count: int
+    change_pct: int
+
+
+class AnalyticsSummary(BaseModel):
+    crime_trends: list[TrendItem] | None = None
+    three11_trends: list[TrendItem] | None = None
+    permit_trends: list[TrendItem] | None = None
+    trend_period: str | None = None
+
+
 class ContextObject(BaseModel):
     community_area: int | None = None
     community_area_name: str | None = None
@@ -108,6 +122,7 @@ class ContextObject(BaseModel):
     businesses: BusinessSummary | None = None
     code_chunks: list[CodeChunk] = Field(default_factory=list)
     requires_disclaimer: bool = False
+    analytics: AnalyticsSummary | None = None
 
 
 class MapDataRequest(BaseModel):
@@ -136,12 +151,14 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[Message] = Field(default_factory=list)
+    conversation_id: str | None = None
 
 
 class ChatChunk(BaseModel):
-    type: Literal["plan", "context", "token", "error", "done"]
+    type: Literal["plan", "context", "map_data", "token", "error", "done"]
     plan: RetrievalPlan | None = None
     context: ContextObject | None = None
+    map_data: MapDataResponse | None = None
     text: str | None = None
     error: str | None = None
     # Wall-clock milliseconds since the /chat request was received. Set on
@@ -149,3 +166,44 @@ class ChatChunk(BaseModel):
     # synthesis token. Lets clients render per-phase latency without holding
     # their own timer, and lets the eval harness compute p50/p95 offline.
     t_ms: int | None = None
+
+
+class ConversationSummary(BaseModel):
+    id: str
+    title: str
+    created_at: int
+    updated_at: int
+    message_count: int
+
+
+class StoredMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+    context: ContextObject | None = None
+    plan: RetrievalPlan | None = None
+    map_data: dict | None = None
+    map_fetched_at: int | None = None
+
+
+class ConversationDetail(BaseModel):
+    id: str
+    title: str
+    messages: list[StoredMessage]
+    created_at: int
+    updated_at: int
+
+
+class SaveMessagesRequest(BaseModel):
+    messages: list[StoredMessage]
+
+
+class ImportConversation(BaseModel):
+    id: str
+    title: str
+    messages: list[dict]
+    createdAt: int
+    updatedAt: int
+
+
+class ImportRequest(BaseModel):
+    conversations: list[ImportConversation]

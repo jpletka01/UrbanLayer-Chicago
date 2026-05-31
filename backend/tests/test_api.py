@@ -17,14 +17,19 @@ from backend.models import (
 
 @pytest.fixture
 def client():
-    with patch("backend.main.get_settings") as mock_settings:
+    with patch("backend.main.get_settings") as mock_settings, \
+         patch("backend.main.db") as mock_db:
         mock_settings.return_value = MagicMock(
             anthropic_api_key="test-key",
             socrata_app_token="test-token",
             qdrant_url="http://localhost:6333",
             router_model="claude-sonnet-4-6",
             synthesizer_model="claude-sonnet-4-6",
+            message_limit=10,
         )
+        mock_db.init_db = AsyncMock()
+        mock_db.close_db = AsyncMock()
+        mock_db.count_user_messages = AsyncMock(return_value=0)
         yield TestClient(app)
 
 
@@ -92,11 +97,13 @@ class TestChatEndpoint:
         )
 
     def test_chat_returns_sse_content_type(self, client, mock_plan, mock_context):
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
-                with patch("backend.main.stream_answer") as mock_stream:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
                     mock_route.return_value = mock_plan
                     mock_retrieve.return_value = mock_context
+                    mock_map.return_value = {}
 
                     async def fake_stream(**kwargs):
                         yield "Test response."
@@ -112,11 +119,13 @@ class TestChatEndpoint:
         assert "text/event-stream" in response.headers["content-type"]
 
     def test_chat_streams_plan_event(self, client, mock_plan, mock_context):
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
-                with patch("backend.main.stream_answer") as mock_stream:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
                     mock_route.return_value = mock_plan
                     mock_retrieve.return_value = mock_context
+                    mock_map.return_value = {}
 
                     async def fake_stream(**kwargs):
                         yield "Response."
@@ -134,11 +143,13 @@ class TestChatEndpoint:
         assert plan_events[0]["plan"]["location"]["raw"] == "Wicker Park"
 
     def test_chat_streams_context_event(self, client, mock_plan, mock_context):
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
-                with patch("backend.main.stream_answer") as mock_stream:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
                     mock_route.return_value = mock_plan
                     mock_retrieve.return_value = mock_context
+                    mock_map.return_value = {}
 
                     async def fake_stream(**kwargs):
                         yield "Response."
@@ -156,11 +167,13 @@ class TestChatEndpoint:
         assert context_events[0]["context"]["community_area"] == 24
 
     def test_chat_streams_token_events(self, client, mock_plan, mock_context):
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
-                with patch("backend.main.stream_answer") as mock_stream:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
                     mock_route.return_value = mock_plan
                     mock_retrieve.return_value = mock_context
+                    mock_map.return_value = {}
 
                     async def fake_stream(**kwargs):
                         yield "Hello "
@@ -180,11 +193,13 @@ class TestChatEndpoint:
         assert token_events[1]["text"] == "World"
 
     def test_chat_streams_done_event(self, client, mock_plan, mock_context):
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
-                with patch("backend.main.stream_answer") as mock_stream:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
                     mock_route.return_value = mock_plan
                     mock_retrieve.return_value = mock_context
+                    mock_map.return_value = {}
 
                     async def fake_stream(**kwargs):
                         yield "Response."
@@ -208,8 +223,9 @@ class TestChatEndpoint:
             clarification="Which neighborhood are you asking about?",
         )
 
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map:
                 mock_route.return_value = clarification_plan
 
                 response = client.post(
@@ -238,11 +254,13 @@ class TestChatEndpoint:
         assert "Router failed" in error_events[0]["error"]
 
     def test_chat_includes_timing(self, client, mock_plan, mock_context):
-        with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
-            with patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve:
-                with patch("backend.main.stream_answer") as mock_stream:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
                     mock_route.return_value = mock_plan
                     mock_retrieve.return_value = mock_context
+                    mock_map.return_value = {}
 
                     async def fake_stream(**kwargs):
                         yield "Response."

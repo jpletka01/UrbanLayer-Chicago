@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     top_chunks: int = 5
 
     data_dir: Path = PROJECT_ROOT / "ingestion" / "data"
+    db_path: Path = PROJECT_ROOT / "backend" / "data" / "chicago.db"
+
+    message_limit: int = 10
 
 
 @lru_cache

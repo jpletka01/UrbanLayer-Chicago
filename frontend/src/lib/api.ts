@@ -1,5 +1,13 @@
 import { parseSSE } from "./sse";
-import type { AddressSuggestion, ChatChunk, CodeChunk, MapData, Message } from "./types";
+import type {
+  AddressSuggestion,
+  ChatChunk,
+  CodeChunk,
+  Conversation,
+  ConversationDetail,
+  MapData,
+  Message,
+} from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
@@ -63,11 +71,15 @@ export async function* chatStream(
   message: string,
   history: Message[],
   signal?: AbortSignal,
+  conversationId?: string | null,
 ): AsyncGenerator<ChatChunk, void, unknown> {
+  const body: Record<string, unknown> = { message, history };
+  if (conversationId) body.conversation_id = conversationId;
+
   const resp = await fetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify(body),
     signal,
   });
 
@@ -76,4 +88,87 @@ export async function* chatStream(
   }
 
   yield* parseSSE<ChatChunk>(resp.body.getReader());
+}
+
+// ---------------------------------------------------------------------------
+// Conversation CRUD
+// ---------------------------------------------------------------------------
+
+export async function listConversations(): Promise<Conversation[]> {
+  const resp = await fetch(`${API_BASE}/api/conversations`);
+  if (!resp.ok) return [];
+  const data = await resp.json();
+  return data.map((c: Record<string, unknown>) => ({
+    id: c.id,
+    title: c.title,
+    message_count: c.message_count,
+    createdAt: c.created_at,
+    updatedAt: c.updated_at,
+  }));
+}
+
+export async function getConversation(id: string): Promise<ConversationDetail | null> {
+  const resp = await fetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`);
+  if (!resp.ok) return null;
+  return await resp.json();
+}
+
+export async function createConversation(id: string, title: string): Promise<void> {
+  await fetch(`${API_BASE}/api/conversations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, title }),
+  });
+}
+
+export async function deleteConversationAPI(id: string): Promise<void> {
+  await fetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function saveMessages(
+  conversationId: string,
+  messages: Record<string, unknown>[],
+): Promise<void> {
+  await fetch(
+    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    },
+  );
+}
+
+export async function updateMessageMapData(
+  conversationId: string,
+  position: number,
+  mapData: MapData,
+): Promise<void> {
+  await fetch(
+    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages/${position}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ map_data: mapData, map_fetched_at: Date.now() }),
+    },
+  );
+}
+
+export async function importConversations(
+  conversations: Record<string, unknown>[],
+): Promise<number> {
+  const resp = await fetch(`${API_BASE}/api/conversations/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ conversations }),
+  });
+  if (!resp.ok) return 0;
+  const data = await resp.json();
+  return data.imported ?? 0;
+}
+
+export async function clearAllConversations(): Promise<void> {
+  await fetch(`${API_BASE}/api/conversations`, { method: "DELETE" });
 }

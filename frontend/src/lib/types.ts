@@ -4,6 +4,9 @@ export interface Message {
   role: Role;
   content: string;
   context?: ContextObject;
+  plan?: RetrievalPlan;
+  mapData?: MapData;
+  mapFetchedAt?: number;
 }
 
 export type SourceTag =
@@ -74,6 +77,20 @@ export interface CodeChunk {
   cross_references: string[];
 }
 
+export interface TrendItem {
+  category: string;
+  current_count: number;
+  prior_count: number;
+  change_pct: number;
+}
+
+export interface AnalyticsSummary {
+  crime_trends: TrendItem[] | null;
+  three11_trends: TrendItem[] | null;
+  permit_trends: TrendItem[] | null;
+  trend_period: string | null;
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;
@@ -87,11 +104,13 @@ export interface ContextObject {
   businesses: BusinessSummary | null;
   code_chunks: CodeChunk[];
   requires_disclaimer: boolean;
+  analytics?: AnalyticsSummary | null;
 }
 
 export type ChatChunk =
   | { type: "plan"; plan: RetrievalPlan; t_ms?: number }
   | { type: "context"; context: ContextObject; t_ms?: number }
+  | { type: "map_data"; map_data: MapData; t_ms?: number }
   | { type: "token"; text: string; t_ms?: number }
   | { type: "error"; error: string; t_ms?: number }
   | { type: "done"; t_ms?: number };
@@ -158,7 +177,24 @@ export interface AddressSuggestion {
 export interface Conversation {
   id: string;
   title: string;
-  messages: Message[];
+  message_count: number;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface StoredMessage {
+  role: Role;
+  content: string;
+  context?: ContextObject | null;
+  plan?: RetrievalPlan | null;
+  map_data?: MapData | null;
+  map_fetched_at?: number | null;
+}
+
+export interface ConversationDetail {
+  id: string;
+  title: string;
+  messages: StoredMessage[];
+  created_at: number;
+  updated_at: number;
 }

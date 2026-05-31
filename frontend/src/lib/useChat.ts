@@ -1,11 +1,14 @@
 import { useRef, useState } from "react";
 import { chatStream } from "./api";
-import type { ContextObject, Message, RetrievalPlan } from "./types";
+import type { ContextObject, MapData, Message, RetrievalPlan } from "./types";
+
+const MESSAGE_LIMIT = 10;
 
 interface UseChatOptions {
-  // Fired when the server emits the retrieved context for a turn. Lets the host
-  // drive sidebar/UI reactions without the hook knowing about them.
   onContext?: (context: ContextObject) => void;
+  onPlan?: (plan: RetrievalPlan) => void;
+  onMapData?: (mapData: MapData) => void;
+  conversationId?: string | null;
 }
 
 interface UseChat {
@@ -16,19 +19,18 @@ interface UseChat {
   context: ContextObject | null;
   showDisclaimer: boolean;
   errorMsg: string | null;
+  atMessageLimit: boolean;
   sendMessage: (text: string) => Promise<void>;
-  /** Clear the current turn's plan/context/error/disclaimer (keeps messages). */
   clearTurnState: () => void;
-  /** Abort any in-flight stream and clear all chat state including messages. */
   reset: () => void;
 }
 
-/**
- * Owns a single chat exchange: the SSE consumption loop, streamed message
- * accumulation, and the plan/context/error/disclaimer state for the turn.
- * Sidebar and conversation-history concerns stay with the host component.
- */
-export function useChat({ onContext }: UseChatOptions = {}): UseChat {
+export function useChat({
+  onContext,
+  onPlan,
+  onMapData,
+  conversationId,
+}: UseChatOptions = {}): UseChat {
   const [messages, setMessages] = useState<Message[]>([]);
   const [plan, setPlan] = useState<RetrievalPlan | null>(null);
   const [context, setContext] = useState<ContextObject | null>(null);
@@ -37,6 +39,11 @@ export function useChat({ onContext }: UseChatOptions = {}): UseChat {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pendingContextRef = useRef<ContextObject | null>(null);
+  const pendingPlanRef = useRef<RetrievalPlan | null>(null);
+  const pendingMapDataRef = useRef<MapData | null>(null);
+
+  const userMessageCount = messages.filter((m) => m.role === "user").length;
+  const atMessageLimit = userMessageCount >= MESSAGE_LIMIT;
 
   function clearTurnState() {
     setPlan(null);
@@ -53,7 +60,18 @@ export function useChat({ onContext }: UseChatOptions = {}): UseChat {
 
   async function sendMessage(text: string) {
     if (streaming) return;
+
+    if (atMessageLimit) {
+      setErrorMsg(
+        "You've reached the 10-message limit for this conversation. Please start a new chat.",
+      );
+      return;
+    }
+
     clearTurnState();
+    pendingContextRef.current = null;
+    pendingPlanRef.current = null;
+    pendingMapDataRef.current = null;
 
     const userMessage: Message = { role: "user", content: text };
     const historySnapshot = [...messages];
@@ -64,14 +82,24 @@ export function useChat({ onContext }: UseChatOptions = {}): UseChat {
     abortRef.current = controller;
 
     try {
-      for await (const chunk of chatStream(text, historySnapshot, controller.signal)) {
+      for await (const chunk of chatStream(
+        text,
+        historySnapshot,
+        controller.signal,
+        conversationId,
+      )) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);
+          pendingPlanRef.current = chunk.plan;
+          onPlan?.(chunk.plan);
         } else if (chunk.type === "context") {
           setContext(chunk.context);
           pendingContextRef.current = chunk.context;
           if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
           onContext?.(chunk.context);
+        } else if (chunk.type === "map_data") {
+          pendingMapDataRef.current = chunk.map_data;
+          onMapData?.(chunk.map_data);
         } else if (chunk.type === "token") {
           setMessages((m) => {
             const next = [...m];
@@ -82,17 +110,20 @@ export function useChat({ onContext }: UseChatOptions = {}): UseChat {
             return next;
           });
         } else if (chunk.type === "done") {
-          // Attach context to the assistant message for per-message citation binding
-          if (pendingContextRef.current) {
-            setMessages((m) => {
-              const next = [...m];
-              const last = next[next.length - 1];
-              if (last?.role === "assistant") {
-                next[next.length - 1] = { ...last, context: pendingContextRef.current! };
-              }
-              return next;
-            });
-          }
+          setMessages((m) => {
+            const next = [...m];
+            const last = next[next.length - 1];
+            if (last?.role === "assistant") {
+              next[next.length - 1] = {
+                ...last,
+                context: pendingContextRef.current ?? undefined,
+                plan: pendingPlanRef.current ?? undefined,
+                mapData: pendingMapDataRef.current ?? undefined,
+                mapFetchedAt: pendingMapDataRef.current ? Date.now() : undefined,
+              };
+            }
+            return next;
+          });
         } else if (chunk.type === "error") {
           setErrorMsg(chunk.error);
         }
@@ -116,6 +147,7 @@ export function useChat({ onContext }: UseChatOptions = {}): UseChat {
     context,
     showDisclaimer,
     errorMsg,
+    atMessageLimit,
     sendMessage,
     clearTurnState,
     reset,

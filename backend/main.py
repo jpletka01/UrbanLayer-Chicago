@@ -20,10 +20,21 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from backend.analytics import compute_analytics
 from backend.assembler import assemble_context
 from backend.config import get_settings
 from backend.conversation import synthesize_query
-from backend.models import ChatChunk, ChatRequest, ContextObject, MapDataRequest, MapDataResponse, RetrievalPlan
+from backend import db
+from backend.models import (
+    ChatChunk,
+    ChatRequest,
+    ContextObject,
+    ImportRequest,
+    MapDataRequest,
+    MapDataResponse,
+    RetrievalPlan,
+    SaveMessagesRequest,
+)
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import geocode_address_suggestions
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
@@ -51,8 +62,13 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def _startup() -> None:
-    # Force settings load so a misconfigured env crashes early.
     get_settings()
+    await db.init_db()
+
+
+@app.on_event("shutdown")
+async def _shutdown() -> None:
+    await db.close_db()
 
 
 @app.get("/health")
@@ -144,6 +160,75 @@ async def map_data(req: MapDataRequest) -> MapDataResponse:
     )
 
 
+# ---------------------------------------------------------------------------
+# Conversation CRUD
+# ---------------------------------------------------------------------------
+
+@app.get("/api/conversations")
+async def list_conversations() -> list[dict]:
+    return await db.list_conversations()
+
+
+@app.post("/api/conversations", status_code=201)
+async def create_conversation(body: dict) -> dict:
+    conv_id = body.get("id", f"conv_{int(time.time() * 1000)}")
+    title = body.get("title", "New conversation")
+    return await db.create_conversation(conv_id, title)
+
+
+@app.get("/api/conversations/{conv_id}")
+async def get_conversation(conv_id: str) -> dict:
+    conv = await db.get_conversation(conv_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conv
+
+
+@app.delete("/api/conversations/{conv_id}")
+async def delete_conversation(conv_id: str) -> dict:
+    deleted = await db.delete_conversation(conv_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"ok": True}
+
+
+@app.put("/api/conversations/{conv_id}/messages")
+async def append_messages(conv_id: str, req: SaveMessagesRequest) -> dict:
+    conv = await db.get_conversation(conv_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    messages = [m.model_dump(exclude_none=True) for m in req.messages]
+    await db.save_messages(conv_id, messages)
+    return {"ok": True}
+
+
+@app.patch("/api/conversations/{conv_id}/messages/{position}")
+async def update_message(conv_id: str, position: int, body: dict) -> dict:
+    if "map_data" in body:
+        await db.update_message_map_data(
+            conv_id, position, body["map_data"], body.get("map_fetched_at"),
+        )
+    return {"ok": True}
+
+
+@app.post("/api/conversations/import")
+async def import_conversations(req: ImportRequest) -> dict:
+    count = await db.import_conversations(
+        [c.model_dump() for c in req.conversations]
+    )
+    return {"imported": count}
+
+
+@app.delete("/api/conversations")
+async def clear_conversations() -> dict:
+    await db.clear_all_conversations()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# SSE helpers
+# ---------------------------------------------------------------------------
+
 def _sse(chunk: ChatChunk) -> str:
     return f"data: {chunk.model_dump_json(exclude_none=True)}\n\n"
 
@@ -208,9 +293,93 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
     )
 
 
+async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, list]:
+    """Fetch raw geo-located rows for analytics computation."""
+    ca = plan.location.resolved_community_area
+    if ca is None:
+        return {}
+
+    tasks: dict[str, asyncio.Task] = {}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
+        if "crime_api" in plan.sources:
+            tasks["crimes"] = asyncio.create_task(
+                crimes_for_map(ca, days=plan.time_range_days, client=client)
+            )
+        if "311_api" in plan.sources:
+            tasks["requests_311"] = asyncio.create_task(
+                requests_311_for_map(ca, client=client)
+            )
+        if "permits_api" in plan.sources:
+            tasks["building_permits"] = asyncio.create_task(
+                permits_for_map(ca, days=plan.time_range_days, client=client)
+            )
+
+        results: dict[str, list] = {}
+        if tasks:
+            done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+            for key, value in zip(tasks.keys(), done):
+                if isinstance(value, Exception):
+                    log.warning("Map-row fetch %s failed: %s", key, value)
+                    results[key] = []
+                else:
+                    results[key] = value
+
+    return results
+
+
+def _build_map_response(
+    map_rows: dict[str, list], plan: RetrievalPlan,
+) -> MapDataResponse | None:
+    """Build a MapDataResponse from fetched map rows."""
+    if not map_rows:
+        return None
+    settings = get_settings()
+    crimes = map_rows.get("crimes", [])
+    requests_311 = map_rows.get("requests_311", [])
+    building_permits = map_rows.get("building_permits", [])
+
+    capped: dict[str, bool] = {}
+    if "crimes" in map_rows:
+        capped["crimes"] = len(crimes) >= settings.limit_map_crime
+    if "requests_311" in map_rows:
+        capped["requests_311"] = len(requests_311) >= settings.limit_map_311
+    if "building_permits" in map_rows:
+        capped["building_permits"] = len(building_permits) >= settings.limit_map_permits
+
+    queried_address = None
+    loc = plan.location
+    if loc.resolved_lat is not None and loc.resolved_lon is not None:
+        queried_address = {
+            "latitude": loc.resolved_lat,
+            "longitude": loc.resolved_lon,
+            "label": loc.resolved_address or "",
+        }
+
+    return MapDataResponse(
+        crimes=crimes,
+        requests_311=requests_311,
+        building_permits=building_permits,
+        queried_address=queried_address,
+        capped=capped,
+    )
+
+
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
     elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
+
+    # Message limit enforcement
+    if req.conversation_id:
+        settings = get_settings()
+        count = await db.count_user_messages(req.conversation_id)
+        if count >= settings.message_limit:
+            yield _sse(ChatChunk(
+                type="error",
+                error="MESSAGE_LIMIT_REACHED",
+                t_ms=elapsed_ms(),
+            ))
+            yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+            return
 
     query = await synthesize_query(req.message, req.history)
 
@@ -229,15 +398,32 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         return
 
+    # Run retrieval and map-data fetch concurrently
     try:
-        context = await _retrieve(plan)
+        context, map_rows = await asyncio.gather(
+            _retrieve(plan),
+            _fetch_map_rows(plan),
+        )
     except Exception as exc:
         log.exception("Retrieval failed")
         yield _sse(ChatChunk(type="error", error=f"Retrieval failed: {exc}", t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         return
 
+    # Compute analytics from map rows and attach to context
+    analytics = compute_analytics(
+        crime_rows=map_rows.get("crimes"),
+        three11_rows=map_rows.get("requests_311"),
+        permit_rows=map_rows.get("building_permits"),
+    )
+    context.analytics = analytics
+
     yield _sse(ChatChunk(type="context", context=context, t_ms=elapsed_ms()))
+
+    # Emit map data so the frontend doesn't need a separate fetch
+    map_response = _build_map_response(map_rows, plan)
+    if map_response:
+        yield _sse(ChatChunk(type="map_data", map_data=map_response, t_ms=elapsed_ms()))
 
     first_token = True
     try:
