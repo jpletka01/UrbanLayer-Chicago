@@ -1,5 +1,6 @@
 import { Children, cloneElement, isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { CodeChunk, DataSource, Message } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
 import { useTypewriter } from "../lib/useTypewriter";
@@ -94,14 +95,51 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
       </li>
     ),
     strong: ({ children }: { children?: ReactNode }) => <strong className="font-semibold text-text-primary">{children}</strong>,
-    code: ({ children }: { children?: ReactNode }) => (
-      <code className="px-1.5 py-0.5 rounded bg-dark-elevated text-accent text-sm font-mono">
+    em: ({ children }: { children?: ReactNode }) => <em className="italic text-text-primary">{children}</em>,
+    pre: ({ children }: { children?: ReactNode }) => (
+      <pre className="mb-4 rounded-lg bg-dark-elevated border border-dark-border p-4 overflow-x-auto text-sm font-mono leading-relaxed text-text-primary">
         {children}
-      </code>
+      </pre>
     ),
+    code: ({ children, className }: { children?: ReactNode; className?: string }) => {
+      if (className) {
+        return <code className="text-text-primary">{children}</code>;
+      }
+      return (
+        <code className="px-1.5 py-0.5 rounded bg-dark-elevated text-accent text-sm font-mono">
+          {children}
+        </code>
+      );
+    },
+    blockquote: ({ children }: { children?: ReactNode }) => (
+      <blockquote className="border-l-2 border-accent/40 pl-4 mb-4 text-text-secondary italic">
+        {children}
+      </blockquote>
+    ),
+    hr: () => <hr className="border-dark-border my-6" />,
     h1: ({ children }: { children?: ReactNode }) => <h1 className="text-xl font-semibold text-text-primary mt-6 mb-3">{children}</h1>,
     h2: ({ children }: { children?: ReactNode }) => <h2 className="text-lg font-semibold text-text-primary mt-5 mb-2">{children}</h2>,
     h3: ({ children }: { children?: ReactNode }) => <h3 className="text-base font-semibold text-text-primary mt-4 mb-2">{children}</h3>,
+    table: ({ children }: { children?: ReactNode }) => (
+      <div className="overflow-x-auto mb-4 rounded-lg border border-dark-border">
+        <table className="w-full text-sm">{children}</table>
+      </div>
+    ),
+    thead: ({ children }: { children?: ReactNode }) => (
+      <thead className="bg-dark-elevated text-text-primary">{children}</thead>
+    ),
+    tbody: ({ children }: { children?: ReactNode }) => (
+      <tbody className="divide-y divide-dark-border">{children}</tbody>
+    ),
+    tr: ({ children }: { children?: ReactNode }) => (
+      <tr className="hover:bg-white/[0.03] transition-colors">{children}</tr>
+    ),
+    th: ({ children }: { children?: ReactNode }) => (
+      <th className="px-4 py-2.5 text-left font-semibold text-text-primary whitespace-nowrap">{children}</th>
+    ),
+    td: ({ children }: { children?: ReactNode }) => (
+      <td className="px-4 py-2 text-text-secondary">{children}</td>
+    ),
   }), [renderChildrenWithCitations]);
 
   if (isUser) {
@@ -180,7 +218,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
           <div className="flex-1 min-w-0">
             {displayedContent ? (
               <div className="prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown components={markdownComponents}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                   {displayedContent}
                 </ReactMarkdown>
                 {streaming && (
