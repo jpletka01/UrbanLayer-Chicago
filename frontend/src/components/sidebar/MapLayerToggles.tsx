@@ -12,7 +12,7 @@ interface Props {
 
 export function MapLayerToggles({ layers, onToggle }: Props) {
   return (
-    <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+    <div className="flex flex-col gap-1">
       {layers.map((layer) => (
         <button
           key={layer.id}

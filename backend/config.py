@@ -59,9 +59,12 @@ class Settings(BaseSettings):
     limit_business: int = 100
 
     # Map endpoint row caps (higher than chat — individual points, not aggregates).
-    limit_map_crime: int = 200
-    limit_map_311: int = 150
-    limit_map_permits: int = 100
+    # These must be large enough to cover the full time_range_days window so the
+    # date slider and analytics section have meaningful data. 200 crime rows in a
+    # busy community area only covers ~7 days; 1000 covers ~90 days comfortably.
+    limit_map_crime: int = 2500
+    limit_map_311: int = 1000
+    limit_map_permits: int = 500
     enable_zoning_layer: bool = False
 
     # How many top items each assembled summary keeps.

@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **interactive Mapbox + deck.gl map** integrated into the sidebar Data tab — crimes, 311 requests, and building permits rendered as deck.gl ScatterplotLayers on a dark Mapbox basemap, with context-aware data fetching (only fetches sources the router selected), dynamic filter toggles (crime-type sub-filters for crime queries, department filters for 311, source-level toggles for overview), draggable map/data divider, and collapsible data panel. Previous: retrieval quality overhaul (embedding upgrade, keyword boost, table consolidation).
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **map & data analytics expansion** — arrest status filter for crime queries, dual-handle date range slider for all date-bearing sources, and a data analytics section with month-over-month trend tables (sortable, with trending arrows) and donut pie charts showing category breakdowns. Map data row limits raised to 2500/1000/500 (crime/311/permits) with capped-result notification. Previous: interactive Mapbox + deck.gl map integration, retrieval quality overhaul.
 
 ---
 
@@ -479,6 +479,91 @@ Added an interactive map to the sidebar Data tab, replacing the former stretch g
 
 ---
 
+## Session Log (2026-05-31 — Map Filters, Date Slider, Data Analytics)
+
+Three feature additions to the map/data sidebar, plus a shared refactor to support them. All features are frontend-only except for raised Socrata row limits and a new `capped` field on the map data response.
+
+### Shared Refactor
+
+**Extracted `frontend/src/lib/mapColors.ts`** — `CRIME_TYPE_COLORS`, `crimeColor()`, `DEPT_COLORS`, `deptColor()`, `normalizeDept()`, `deriveFilterMode()`, `isArrested()`, and CSS-string variants moved out of `MapView.tsx` so both MapView and the new analytics components share a single source of truth. `FilterMode` type exported from here.
+
+### Feature 1: Arrest Filter
+
+**New component `ArrestFilter.tsx`** — a segmented control with three states: "All (N)" / "Arrested (N)" / "No Arrest (N)", positioned top-left of the map. Only appears in crime filter mode. Counts update live.
+
+**`MapView.tsx` changes** — `arrestFilter` state (`"all" | "arrested" | "not-arrested"`), resets on new data. Crime layer filtering chain: crime-type toggles → arrest filter → date filter. Uses `isArrested()` from `mapColors.ts` to normalize Socrata's mixed boolean/string `arrest` field.
+
+### Feature 2: Date Range Slider
+
+**New component `DateRangeSlider.tsx`** — dual-handle range slider using two overlaid `<input type="range">` elements with custom dark-theme thumbs via `appearance: none` + webkit/moz pseudo-elements. Shows formatted date labels ("Mar 2 — May 28"). Renders inline (no absolute positioning) inside a shared top-right container with the layer toggles.
+
+**`MapView.tsx` changes** — `computeDateBounds()` extracts min/max dates from relevant data sources. `passesDateFilter()` checks if a record's date falls within the selected range. Date filtering applied in all four modes (crime, 311, permits, overview), each using its source-specific date field (`date`, `created_date`, `issue_date`). The date slider and layer toggles are wrapped in a single `absolute top-2 right-2` container that stacks them vertically.
+
+### Feature 3: Data Analytics Section
+
+**New utility `frontend/src/lib/analytics.ts`** — pure functions:
+- `computeTrends()` — groups records by category + month, compares most recent complete month to prior month, returns `TrendRow[]` with change percentages. Skips the current calendar month if partial.
+- `computePieSlices()` — aggregates by category, returns sorted `PieSlice[]`.
+- `getTrendMonthLabels()` — returns formatted month names for column headers.
+
+**New component `PieChart.tsx`** — SVG donut chart (ring with empty center). Total count displayed in the center — uses `totalOverride` from the context's authoritative aggregate count (e.g., 1756 from `crime_last_90d.total`) rather than the row count of map data. Compact 2-column legend with color dots and percentages. Handles single-slice edge case with `<circle>` elements.
+
+**New component `TrendTable.tsx`** — sortable table with columns: Type, current month, prior month, Trend. Trend column shows colored arrows (↑ red for increases, ↓ green for decreases) with percentage. Column headers clickable to toggle sort key and direction.
+
+**New component `AnalyticsSection.tsx`** — orchestrator, rendered at the bottom of `DataView`. Collapsible via header toggle. Based on filter mode:
+- **Crime**: trends/pie by `primary_type`, colors from `CRIME_TYPE_COLORS`
+- **311**: trends/pie by `sr_type` (default) with toggle to switch to `owner_department` grouping
+- **Permits**: trends/pie by `permit_type`
+- **Overview**: shows all sources that have data
+
+All computations wrapped in `useMemo` keyed on `mapData`.
+
+### Wiring
+
+- `SidebarPanel.tsx` (`DataMapLayout`) now passes `mapData` and `filterMode` (via `deriveFilterMode(mapSources)`) to `DataView`
+- `DataView.tsx` accepts `mapData`, `filterMode`, renders `<AnalyticsSection>` when map data has records, passes `context` for authoritative totals
+
+### Backend: Raised Row Limits + Capped Notification
+
+**`config.py`** — Map row limits raised: `limit_map_crime` 200 → 2500, `limit_map_311` 150 → 1000, `limit_map_permits` 100 → 500. Previous limits only covered ~7 days of data in busy community areas; new limits cover the full 90-day window comfortably. Socrata's API is free with no per-row cost; the extra rows add ~1-2s latency.
+
+**`models.py`** — `MapDataResponse` gained `capped: dict[str, bool]` field indicating which sources hit their row limit.
+
+**`main.py`** — `/api/map-data` endpoint now computes `capped` by comparing each result's row count against its limit.
+
+**`types.ts`** — `MapData` gained optional `capped` field.
+
+**`MapView.tsx`** — when any source is capped, a small amber notice appears bottom-right: "Showing most recent N results".
+
+### Design Decisions
+
+- **SVG donut chart over charting library** — a pie/donut chart is mathematically simple (arc paths). Building it inline avoids adding recharts (~200KB) or chart.js (~170KB) to the bundle. The entire analytics feature adds ~5KB gzipped.
+- **Date slider uses two overlaid range inputs** — no dependency needed. Custom thumb styling via pseudo-elements works across Chrome/Firefox/Safari. A debounced (30ms) onChange prevents excessive deck.gl layer rebuilds during rapid dragging.
+- **311 analytics default to `sr_type` grouping** — more granular than department grouping; users think in terms of "potholes" and "graffiti", not "Streets & Sanitation". Toggle to switch to department view.
+- **Trend arrows: red=up, green=down for crime** — crime increases are bad (red), decreases are good (green). This is intentional and matches the domain semantics.
+- **`totalOverride` on PieChart** — the donut center shows the authoritative aggregate total from the context (e.g., 1756 crimes from the full Socrata count query), not the capped row count from the map data fetch (e.g., 2500). The pie wedge proportions use the sample data so the ring fills completely.
+
+### Files changed/created
+
+- `frontend/src/lib/mapColors.ts` — **new**: shared color constants, `deriveFilterMode`, `isArrested`
+- `frontend/src/lib/analytics.ts` — **new**: trend/pie computation functions
+- `frontend/src/components/sidebar/ArrestFilter.tsx` — **new**: arrest status segmented control
+- `frontend/src/components/sidebar/DateRangeSlider.tsx` — **new**: dual-handle date slider
+- `frontend/src/components/sidebar/PieChart.tsx` — **new**: SVG donut chart
+- `frontend/src/components/sidebar/TrendTable.tsx` — **new**: MoM trend rows with arrows
+- `frontend/src/components/sidebar/AnalyticsSection.tsx` — **new**: analytics orchestrator
+- `frontend/src/components/sidebar/MapView.tsx` — arrest filter + date filter + shared color imports
+- `frontend/src/components/sidebar/MapLayerToggles.tsx` — removed absolute positioning (now in parent container)
+- `frontend/src/components/sidebar/MapLegend.tsx` — positioning adjustment
+- `frontend/src/components/sidebar/DataView.tsx` — accepts mapData/filterMode, renders AnalyticsSection
+- `frontend/src/components/SidebarPanel.tsx` — threads mapData/filterMode to DataView
+- `frontend/src/lib/types.ts` — `MapData.capped` field
+- `backend/config.py` — raised map row limits (2500/1000/500)
+- `backend/models.py` — `MapDataResponse.capped` field
+- `backend/main.py` — capped detection in `/api/map-data`
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
 ### Step 1 — Legal-domain cross-encoder reranker
@@ -547,7 +632,10 @@ chicago/
 │   └── baseline_full_v2.md         # Full pipeline results (26/26 passing)
 └── frontend/
     ├── src/components/             # Hero, ChatInput, MessageBubble, CitationPill, SourceCitation, Sidebar, etc.
-    ├── src/lib/                    # api (SSE), history (localStorage), types, useTypewriter, clipboard
+    │   └── sidebar/                # MapView, MapLayerToggles, MapLegend, ArrestFilter, DateRangeSlider,
+    │                               #   DataView, AnalyticsSection, PieChart, TrendTable, SourcesView
+    ├── src/lib/                    # api (SSE), history (localStorage), types, useTypewriter, clipboard,
+    │                               #   mapColors (shared color constants), analytics (trend/pie computation)
     └── src/App.tsx                 # State machine with per-message context
 ```
 

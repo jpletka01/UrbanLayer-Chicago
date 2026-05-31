@@ -3,8 +3,13 @@ import mapboxgl from "mapbox-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag } from "../../lib/types";
+import { CRIME_TYPE_COLORS, crimeColor, deptColor, normalizeDept, deriveFilterMode, isArrested, CRIME_TYPE_ORDER } from "../../lib/mapColors";
+import type { FilterMode } from "../../lib/mapColors";
 import { MapLayerToggles } from "./MapLayerToggles";
 import { MapLegend } from "./MapLegend";
+import { ArrestFilter } from "./ArrestFilter";
+import type { ArrestFilterValue } from "./ArrestFilter";
+import { DateRangeSlider } from "./DateRangeSlider";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 const ENABLE_ZONING = import.meta.env.VITE_ENABLE_ZONING_LAYER === "true";
@@ -12,54 +17,13 @@ const ENABLE_ZONING = import.meta.env.VITE_ENABLE_ZONING_LAYER === "true";
 const CHICAGO_CENTER: [number, number] = [-87.6298, 41.8781];
 const INITIAL_ZOOM = 11;
 
-const CRIME_TYPE_COLORS: Record<string, [number, number, number, number]> = {
-  THEFT: [239, 159, 39, 180],
-  BATTERY: [226, 75, 74, 180],
-  ASSAULT: [226, 75, 74, 180],
-  ROBBERY: [220, 50, 50, 200],
-  NARCOTICS: [127, 119, 221, 180],
-  "CRIMINAL DAMAGE": [255, 167, 38, 160],
-  BURGLARY: [255, 112, 67, 180],
-  "MOTOR VEHICLE THEFT": [171, 71, 188, 180],
-};
-
-function crimeColor(type: string): [number, number, number, number] {
-  return CRIME_TYPE_COLORS[type] ?? [136, 135, 128, 140];
-}
-
-const DEPT_COLORS: Record<string, [number, number, number, number]> = {
-  "Streets & Sanitation": [0, 188, 212, 180],
-  Buildings: [255, 112, 67, 180],
-  CDOT: [66, 165, 245, 180],
-};
-
-function deptColor(dept: string): [number, number, number, number] {
-  if (dept?.includes("Streets") || dept?.includes("Sanitation")) return DEPT_COLORS["Streets & Sanitation"];
-  if (dept?.includes("Buildings") || dept?.includes("BLDG")) return DEPT_COLORS.Buildings;
-  if (dept?.includes("CDOT") || dept?.includes("Transportation")) return DEPT_COLORS.CDOT;
-  return [158, 158, 158, 140];
-}
-
-type FilterMode = "overview" | "crime" | "311" | "permits";
-
-function deriveFilterMode(sources: SourceTag[]): FilterMode {
-  const mapped = sources.filter(s => s === "crime_api" || s === "311_api" || s === "permits_api");
-  if (mapped.length === 1) {
-    if (mapped[0] === "crime_api") return "crime";
-    if (mapped[0] === "311_api") return "311";
-    if (mapped[0] === "permits_api") return "permits";
-  }
-  return "overview";
-}
-
 function buildCrimeTypeFilters(crimes: MapCrime[]): Record<string, boolean> {
   const types = new Set(crimes.map(c => c.primary_type));
-  const ordered = ["THEFT", "BATTERY", "ASSAULT", "ROBBERY", "NARCOTICS", "CRIMINAL DAMAGE", "BURGLARY", "MOTOR VEHICLE THEFT"];
   const out: Record<string, boolean> = {};
-  for (const t of ordered) {
+  for (const t of CRIME_TYPE_ORDER) {
     if (types.has(t)) out[t] = true;
   }
-  const remaining = [...types].filter(t => !ordered.includes(t));
+  const remaining = [...types].filter(t => !CRIME_TYPE_ORDER.includes(t));
   if (remaining.length > 0) out["OTHER"] = true;
   return out;
 }
@@ -75,11 +39,28 @@ function buildDeptFilters(requests: MapRequest311[]): Record<string, boolean> {
   return out;
 }
 
-function normalizeDept(dept: string): string {
-  if (dept?.includes("Streets") || dept?.includes("Sanitation")) return "Streets & Sanitation";
-  if (dept?.includes("Buildings") || dept?.includes("BLDG")) return "Buildings";
-  if (dept?.includes("CDOT") || dept?.includes("Transportation")) return "CDOT";
-  return dept || "Other";
+function computeDateBounds(mapData: MapData, filterMode: FilterMode): { min: number; max: number } | null {
+  const dates: number[] = [];
+  const parse = (s: string) => { const t = new Date(s).getTime(); return isNaN(t) ? null : t; };
+
+  if ((filterMode === "crime" || filterMode === "overview") && mapData.crimes.length) {
+    for (const c of mapData.crimes) { const t = parse(c.date); if (t) dates.push(t); }
+  }
+  if ((filterMode === "311" || filterMode === "overview") && mapData.requests_311.length) {
+    for (const r of mapData.requests_311) { const t = parse(r.created_date); if (t) dates.push(t); }
+  }
+  if ((filterMode === "permits" || filterMode === "overview") && mapData.building_permits.length) {
+    for (const p of mapData.building_permits) { const t = parse(p.issue_date); if (t) dates.push(t); }
+  }
+
+  if (dates.length === 0) return null;
+  return { min: Math.min(...dates), max: Math.max(...dates) };
+}
+
+function passesDateFilter(dateStr: string, range: [number, number] | null): boolean {
+  if (!range) return true;
+  const t = new Date(dateStr).getTime();
+  return !isNaN(t) && t >= range[0] && t <= range[1];
 }
 
 interface Props {
@@ -101,14 +82,23 @@ export function MapView({ mapData, loading, sources }: Props) {
   });
   const [crimeTypeToggles, setCrimeTypeToggles] = useState<Record<string, boolean>>({});
   const [deptToggles, setDeptToggles] = useState<Record<string, boolean>>({});
+  const [arrestFilter, setArrestFilter] = useState<ArrestFilterValue>("all");
+  const [dateRange, setDateRange] = useState<[number, number] | null>(null);
+  const [dateBounds, setDateBounds] = useState<{ min: number; max: number } | null>(null);
 
   // Reset sub-type filters when data changes
   useEffect(() => {
     if (filterMode === "crime" && mapData?.crimes?.length) {
       setCrimeTypeToggles(buildCrimeTypeFilters(mapData.crimes));
+      setArrestFilter("all");
     }
     if (filterMode === "311" && mapData?.requests_311?.length) {
       setDeptToggles(buildDeptFilters(mapData.requests_311));
+    }
+    if (mapData) {
+      const bounds = computeDateBounds(mapData, filterMode);
+      setDateBounds(bounds);
+      setDateRange(bounds ? [bounds.min, bounds.max] : null);
     }
   }, [mapData, filterMode]);
 
@@ -185,16 +175,19 @@ export function MapView({ mapData, loading, sources }: Props) {
     const layers: (ScatterplotLayer | GeoJsonLayer)[] = [];
 
     if (filterMode === "crime" && mapData?.crimes?.length) {
-      // Crime-specific: one layer per crime type, filtered by toggles
       const activeTypes = new Set(
         Object.entries(crimeTypeToggles).filter(([, v]) => v).map(([k]) => k)
       );
       const otherActive = activeTypes.has("OTHER");
 
       const filteredCrimes = mapData.crimes.filter(c => {
-        if (activeTypes.has(c.primary_type)) return true;
-        if (otherActive && !Object.keys(CRIME_TYPE_COLORS).includes(c.primary_type)) return true;
-        return false;
+        const typeMatch = activeTypes.has(c.primary_type) ||
+          (otherActive && !Object.keys(CRIME_TYPE_COLORS).includes(c.primary_type));
+        if (!typeMatch) return false;
+        if (arrestFilter === "arrested" && !isArrested(c.arrest)) return false;
+        if (arrestFilter === "not-arrested" && isArrested(c.arrest)) return false;
+        if (!passesDateFilter(c.date, dateRange)) return false;
+        return true;
       });
 
       if (filteredCrimes.length > 0) {
@@ -213,7 +206,6 @@ export function MapView({ mapData, loading, sources }: Props) {
         );
       }
     } else if (filterMode === "311" && mapData?.requests_311?.length) {
-      // 311-specific: filter by department toggles
       const activeDepts = new Set(
         Object.entries(deptToggles).filter(([, v]) => v).map(([k]) => k)
       );
@@ -221,9 +213,11 @@ export function MapView({ mapData, loading, sources }: Props) {
 
       const filtered = mapData.requests_311.filter(r => {
         const normalized = normalizeDept(r.owner_department);
-        if (activeDepts.has(normalized)) return true;
-        if (otherActive && !["Streets & Sanitation", "Buildings", "CDOT"].includes(normalized)) return true;
-        return false;
+        const deptMatch = activeDepts.has(normalized) ||
+          (otherActive && !["Streets & Sanitation", "Buildings", "CDOT"].includes(normalized));
+        if (!deptMatch) return false;
+        if (!passesDateFilter(r.created_date, dateRange)) return false;
+        return true;
       });
 
       if (filtered.length > 0) {
@@ -242,56 +236,14 @@ export function MapView({ mapData, loading, sources }: Props) {
         );
       }
     } else if (filterMode === "permits" && mapData?.building_permits?.length) {
-      layers.push(
-        new ScatterplotLayer<MapPermit>({
-          id: "permits",
-          data: mapData.building_permits,
-          getPosition: d => [d.longitude, d.latitude],
-          getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
-          getFillColor: [99, 153, 34, 180],
-          pickable: true,
-          radiusMinPixels: 3,
-          radiusMaxPixels: 12,
-          radiusUnits: "meters",
-        })
+      const filteredPermits = mapData.building_permits.filter(p =>
+        passesDateFilter(p.issue_date, dateRange)
       );
-    } else {
-      // Overview mode: source-level toggles
-      if (overviewToggles.crimes && mapData?.crimes?.length) {
-        layers.push(
-          new ScatterplotLayer<MapCrime>({
-            id: "crimes",
-            data: mapData.crimes,
-            getPosition: d => [d.longitude, d.latitude],
-            getRadius: 40,
-            getFillColor: d => crimeColor(d.primary_type),
-            pickable: true,
-            radiusMinPixels: 3,
-            radiusMaxPixels: 8,
-            radiusUnits: "meters",
-          })
-        );
-      }
-      if (overviewToggles["requests-311"] && mapData?.requests_311?.length) {
-        layers.push(
-          new ScatterplotLayer<MapRequest311>({
-            id: "requests-311",
-            data: mapData.requests_311,
-            getPosition: d => [d.longitude, d.latitude],
-            getRadius: 35,
-            getFillColor: d => deptColor(d.owner_department),
-            pickable: true,
-            radiusMinPixels: 3,
-            radiusMaxPixels: 7,
-            radiusUnits: "meters",
-          })
-        );
-      }
-      if (overviewToggles.permits && mapData?.building_permits?.length) {
+      if (filteredPermits.length > 0) {
         layers.push(
           new ScatterplotLayer<MapPermit>({
             id: "permits",
-            data: mapData.building_permits,
+            data: filteredPermits,
             getPosition: d => [d.longitude, d.latitude],
             getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
             getFillColor: [99, 153, 34, 180],
@@ -301,6 +253,62 @@ export function MapView({ mapData, loading, sources }: Props) {
             radiusUnits: "meters",
           })
         );
+      }
+    } else {
+      // Overview mode: source-level toggles + date filter
+      if (overviewToggles.crimes && mapData?.crimes?.length) {
+        const filtered = mapData.crimes.filter(c => passesDateFilter(c.date, dateRange));
+        if (filtered.length > 0) {
+          layers.push(
+            new ScatterplotLayer<MapCrime>({
+              id: "crimes",
+              data: filtered,
+              getPosition: d => [d.longitude, d.latitude],
+              getRadius: 40,
+              getFillColor: d => crimeColor(d.primary_type),
+              pickable: true,
+              radiusMinPixels: 3,
+              radiusMaxPixels: 8,
+              radiusUnits: "meters",
+            })
+          );
+        }
+      }
+      if (overviewToggles["requests-311"] && mapData?.requests_311?.length) {
+        const filtered = mapData.requests_311.filter(r => passesDateFilter(r.created_date, dateRange));
+        if (filtered.length > 0) {
+          layers.push(
+            new ScatterplotLayer<MapRequest311>({
+              id: "requests-311",
+              data: filtered,
+              getPosition: d => [d.longitude, d.latitude],
+              getRadius: 35,
+              getFillColor: d => deptColor(d.owner_department),
+              pickable: true,
+              radiusMinPixels: 3,
+              radiusMaxPixels: 7,
+              radiusUnits: "meters",
+            })
+          );
+        }
+      }
+      if (overviewToggles.permits && mapData?.building_permits?.length) {
+        const filtered = mapData.building_permits.filter(p => passesDateFilter(p.issue_date, dateRange));
+        if (filtered.length > 0) {
+          layers.push(
+            new ScatterplotLayer<MapPermit>({
+              id: "permits",
+              data: filtered,
+              getPosition: d => [d.longitude, d.latitude],
+              getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
+              getFillColor: [99, 153, 34, 180],
+              pickable: true,
+              radiusMinPixels: 3,
+              radiusMaxPixels: 12,
+              radiusUnits: "meters",
+            })
+          );
+        }
       }
     }
 
@@ -335,7 +343,7 @@ export function MapView({ mapData, loading, sources }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, overviewToggles, crimeTypeToggles, deptToggles, mapReady]);
+  }, [mapData, filterMode, overviewToggles, crimeTypeToggles, deptToggles, arrestFilter, dateRange, mapReady]);
 
   // Fly to address
   useEffect(() => {
@@ -405,15 +413,48 @@ export function MapView({ mapData, loading, sources }: Props) {
 
   const hasData = mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
 
+  const arrestCount = mapData?.crimes?.filter(c => isArrested(c.arrest)).length ?? 0;
+  const crimeTotal = mapData?.crimes?.length ?? 0;
+
+  const capped = mapData?.capped ?? {};
+  const isCapped = Object.values(capped).some(Boolean);
+  const cappedCount = (capped.crimes ? mapData!.crimes.length : 0)
+    + (capped.requests_311 ? mapData!.requests_311.length : 0)
+    + (capped.building_permits ? mapData!.building_permits.length : 0)
+    || (mapData ? mapData.crimes.length + mapData.requests_311.length + mapData.building_permits.length : 0);
+
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
 
+      {mapReady && (
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end w-1/2 max-w-[200px]">
+          {dateBounds && dateRange && hasData && (
+            <DateRangeSlider
+              minDate={dateBounds.min}
+              maxDate={dateBounds.max}
+              startDate={dateRange[0]}
+              endDate={dateRange[1]}
+              onChange={(s, e) => setDateRange([s, e])}
+            />
+          )}
+          {toggleConfigs.length > 0 && (
+            <MapLayerToggles layers={toggleConfigs} onToggle={onToggle} />
+          )}
+        </div>
+      )}
+
       {mapReady && toggleConfigs.length > 0 && (
-        <>
-          <MapLayerToggles layers={toggleConfigs} onToggle={onToggle} />
-          <MapLegend activeLayers={activeToggles} filterMode={filterMode} />
-        </>
+        <MapLegend activeLayers={activeToggles} filterMode={filterMode} />
+      )}
+
+      {mapReady && filterMode === "crime" && crimeTotal > 0 && (
+        <ArrestFilter
+          value={arrestFilter}
+          onChange={setArrestFilter}
+          arrestCount={arrestCount}
+          totalCount={crimeTotal}
+        />
       )}
 
       {loading && (
@@ -426,6 +467,15 @@ export function MapView({ mapData, loading, sources }: Props) {
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <span className="text-text-muted text-xs bg-dark-surface/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
             Ask a question to see data on the map
+          </span>
+        </div>
+      )}
+
+      {!loading && mapReady && isCapped && (
+        <div className="absolute bottom-2 right-2 z-10">
+          <span className="text-[10px] text-amber-400/80 bg-dark-surface/90 backdrop-blur-sm
+                           border border-amber-500/20 rounded-md px-2 py-1">
+            Showing most recent {cappedCount.toLocaleString()} results
           </span>
         </div>
       )}

@@ -144,6 +144,7 @@ export interface MapData {
   building_permits: MapPermit[];
   zoning?: Record<string, unknown> | null;
   queried_address: QueriedAddress | null;
+  capped?: Record<string, boolean>;
 }
 
 export type DataSource = "crime" | "311" | "permits" | "violations" | "business";

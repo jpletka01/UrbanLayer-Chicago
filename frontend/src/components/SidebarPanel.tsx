@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContextObject, DataSource, MapData, RetrievalPlan, SidebarView, SourceTag } from "../lib/types";
+import { deriveFilterMode } from "../lib/mapColors";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataView } from "./sidebar/DataView";
 import { MapView } from "./sidebar/MapView";
@@ -377,6 +378,8 @@ function DataMapLayout({
                 context={context}
                 loading={loading}
                 highlightedDataSource={highlightedDataSource}
+                mapData={mapData}
+                filterMode={deriveFilterMode(mapSources)}
               />
             </div>
           )}

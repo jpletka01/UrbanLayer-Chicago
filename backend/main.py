@@ -122,12 +122,25 @@ async def map_data(req: MapDataRequest) -> MapDataResponse:
             "label": req.address_label or "",
         }
 
+    crimes = results.get("crimes", [])
+    requests_311 = results.get("requests_311", [])
+    building_permits = results.get("building_permits", [])
+
+    capped: dict[str, bool] = {}
+    if "crimes" in results:
+        capped["crimes"] = len(crimes) >= settings.limit_map_crime
+    if "requests_311" in results:
+        capped["requests_311"] = len(requests_311) >= settings.limit_map_311
+    if "building_permits" in results:
+        capped["building_permits"] = len(building_permits) >= settings.limit_map_permits
+
     return MapDataResponse(
-        crimes=results.get("crimes", []),
-        requests_311=results.get("requests_311", []),
-        building_permits=results.get("building_permits", []),
+        crimes=crimes,
+        requests_311=requests_311,
+        building_permits=building_permits,
         zoning=results.get("zoning") if settings.enable_zoning_layer else None,
         queried_address=queried_address,
+        capped=capped,
     )
 
 

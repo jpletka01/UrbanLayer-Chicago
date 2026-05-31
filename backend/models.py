@@ -125,6 +125,7 @@ class MapDataResponse(BaseModel):
     building_permits: list[dict] = Field(default_factory=list)
     zoning: dict | None = None
     queried_address: dict | None = None
+    capped: dict[str, bool] = Field(default_factory=dict)
 
 
 class Message(BaseModel):

@@ -1,11 +1,15 @@
 import { useEffect, useRef } from "react";
-import type { ContextObject, DataSource, RetrievalPlan } from "../../lib/types";
+import type { ContextObject, DataSource, MapData, RetrievalPlan } from "../../lib/types";
+import type { FilterMode } from "../../lib/mapColors";
+import { AnalyticsSection } from "./AnalyticsSection";
 
 interface Props {
   plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
   highlightedDataSource?: DataSource | null;
+  mapData?: MapData | null;
+  filterMode?: FilterMode;
 }
 
 function Skeleton({ height = 24, className = "" }: { height?: number; className?: string }) {
@@ -43,7 +47,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DataView({ plan, context, loading, highlightedDataSource }: Props) {
+export function DataView({ plan, context, loading, highlightedDataSource, mapData, filterMode }: Props) {
   const crimeRef = useRef<HTMLDivElement>(null);
   const threeOneOneRef = useRef<HTMLDivElement>(null);
   const permitsRef = useRef<HTMLDivElement>(null);
@@ -213,6 +217,10 @@ export function DataView({ plan, context, loading, highlightedDataSource }: Prop
           </div>
         </GlassCard>
         </div>
+      )}
+
+      {mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0) && (
+        <AnalyticsSection mapData={mapData} filterMode={filterMode ?? "overview"} context={context} />
       )}
     </div>
   );
