@@ -368,10 +368,10 @@ export function App() {
                   transition={{ delay: 0.1, duration: 0.5 }}
                 >
                   <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
-                    Chicago City Intelligence
+                    UrbanLayer
                   </h1>
                   <p className="text-lg text-white/80 leading-relaxed">
-                    Ask about crime patterns, 311 complaints, building activity, and zoning rules — anywhere in the city.
+                    Chicago public data, explored through conversation.
                   </p>
                 </motion.div>
 
@@ -433,7 +433,7 @@ export function App() {
                   onClick={reset}
                   className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
                 >
-                  Chicago City Intelligence
+                  UrbanLayer — Chicago
                 </button>
                 {context?.community_area_name && (
                   <div className="flex items-center gap-2 text-sm">
