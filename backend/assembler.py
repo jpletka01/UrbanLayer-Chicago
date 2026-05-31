@@ -13,6 +13,7 @@ from backend.models import (
     RetrievalPlan,
     ThreeOneOneSummary,
     ViolationSummary,
+    ZoningSummary,
 )
 
 
@@ -206,6 +207,7 @@ def assemble_context(
     violation_rows: list[dict[str, Any]] | None = None,
     business_rows: list[dict[str, Any]] | None = None,
     code_chunks: list[CodeChunk] | None = None,
+    zoning_info: dict[str, Any] | None = None,
 ) -> ContextObject:
     settings = get_settings()
 
@@ -223,6 +225,14 @@ def assemble_context(
         cutoff = (datetime.now(timezone.utc) - timedelta(days=lag)).strftime("%Y-%m-%d")
         lag_note = f"Crime data excludes the most recent {lag} days (as of {cutoff})."
 
+    parcel_zoning = None
+    if zoning_info and zoning_info.get("zone_class"):
+        parcel_zoning = ZoningSummary(
+            zone_class=zoning_info["zone_class"],
+            zone_type=zoning_info.get("zone_type"),
+            ordinance_num=zoning_info.get("ordinance_num"),
+        )
+
     return ContextObject(
         community_area=plan.location.resolved_community_area,
         community_area_name=plan.location.resolved_community_area_name,
@@ -235,5 +245,6 @@ def assemble_context(
         violations=violations,
         businesses=businesses,
         code_chunks=chunks,
+        parcel_zoning=parcel_zoning,
         requires_disclaimer=plan.requires_disclaimer,
     )

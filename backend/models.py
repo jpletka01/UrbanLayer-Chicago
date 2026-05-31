@@ -88,6 +88,13 @@ class BusinessSummary(BaseModel):
     capped: bool = False
 
 
+class ZoningSummary(BaseModel):
+    zone_class: str
+    zone_type: int | None = None
+    ordinance_num: str | None = None
+    zoning_map_url: str = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+
+
 class CodeChunk(BaseModel):
     text: str
     source_document: str
@@ -124,6 +131,7 @@ class ContextObject(BaseModel):
     violations: ViolationSummary | None = None
     businesses: BusinessSummary | None = None
     code_chunks: list[CodeChunk] = Field(default_factory=list)
+    parcel_zoning: ZoningSummary | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
 

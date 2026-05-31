@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Analytics overhaul** — audited all 5 Socrata datasets for complete category coverage (31 crime types, 8 permit types, 14 departments, 105 sr_types, 50+ violation categories, 58 business license types), fixed naming mismatches, removed redundant data cards from sidebar (map + analytics provide the unique visual value), fixed pie chart percentages to sum to 100%. Previous: SQLite conversation persistence + analytics-enriched synthesis.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Zoning UX overhaul** — Zoning/Points toggles moved above secondary filters; toggling Points off hides all point-related controls (date slider, type toggles, cost/arrest/status filters) and shows a zoning category color legend; enhanced zoning click popup with zone definitions and allowed-use examples; collapsible zoning codes table in the data panel listing all zone classes on the map; **critical geocoding fix** — addresses were not being geocoded when the LLM already resolved the community area, so the address pin, zoning lookup, and definitive zone classification in the AI response were all silently broken. 192 tests passing. Previous: Zoning map integration, analytics category audit, SQLite persistence, map interactivity.
 
 ---
 
@@ -810,6 +810,164 @@ Added shared `capLabel(raw, max=25)` function in `mapColors.ts` — title-cases 
 
 ---
 
+## Session Log (2026-05-31 — Zoning Map Integration)
+
+Three-part feature: ArcGIS-based zoning classification lookup, zoning polygon overlay on the map, and supporting UX (links open in new tabs, sidebar defaults, toggles, disclosure banner).
+
+### Part 1: ArcGIS Zoning Point Lookup
+
+The Chicago Data Portal (Socrata) dataset `p8va-airx` turned out to be non-queryable — its `.geojson` and JSON endpoints both return errors (`"no row or column access to non-tabular tables"`). However, the city's **ArcGIS Zoning MapServer** at `gisapps.chicago.gov/arcgis/rest/services/ExternalApps/Zoning/MapServer` is publicly accessible with no API key, and supports both point and envelope spatial queries.
+
+**New module `backend/retrieval/zoning.py`**:
+- `lookup_zoning(lat, lon)` — point query to Layer 1 ("Zoning Boundaries"). Returns `{"zone_class": "RM-6", "zone_type": 4, "ordinance_num": null}` or `None`. Runs in parallel with other retrieval tasks during chat when `requires_disclaimer=True` and the plan has resolved lat/lon.
+- `zoning_polygons_for_map(community_area)` — envelope query using the community area's bounding box (from `geo.community_area_bounds`). Returns a GeoJSON FeatureCollection with 200–600 polygons per community area (~1 MB). Used by the map overlay.
+
+**New model `ZoningSummary`** (`models.py`): `zone_class`, `zone_type`, `ordinance_num`, and `zoning_map_url` (defaulting to the correct official URL). Added as `parcel_zoning` field on `ContextObject`.
+
+**Synthesizer prompt rule 9** (`prompts.py`): When `parcel_zoning` is present, Claude states the zoning classification as a definitive fact and links to `https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning` — never invents other URLs.
+
+### Part 2: Router Geocoding Fix
+
+**Root cause**: `router.py` called `resolve_address_to_community_area(raw_loc)` but discarded the returned coordinates (`_coords`), so `location.resolved_lat`/`resolved_lon` were always `None`. This meant:
+- The ArcGIS zoning point lookup never triggered
+- No address pin appeared on the map
+- The map couldn't `flyTo` the queried address
+
+**Fix**: Capture the coordinates and store them in the plan's `location.resolved_lat`/`resolved_lon`. Verified: "443 W Wrightwood Ave" now resolves to `(41.9307, -87.6411)`, community area 7 (Lincoln Park), zone class **RM-6**.
+
+### Part 3: Zoning Polygon Overlay on Map
+
+Replaced the broken `zoning_for_map()` in `map_data.py` (which tried the non-functional Socrata endpoint) to delegate to `zoning_polygons_for_map()` from the new ArcGIS module. Flipped `enable_zoning_layer` from `False` to `True` in `config.py`.
+
+**SSE pipeline** (`main.py`): `_fetch_map_rows()` now includes a zoning polygon fetch when `plan.requires_disclaimer` is true. `_build_map_response()` passes the GeoJSON through to `MapDataResponse.zoning`.
+
+**Frontend map** (`MapView.tsx`):
+- Removed the old `VITE_ENABLE_ZONING_LAYER` env var gate
+- Zoning `GeoJsonLayer` renders **first** in the layer array (underneath scatter dots)
+- Per-feature fill/line colors via Chicago's standard zoning color scheme: residential=yellow, business=blue, commercial=purple, manufacturing=magenta, planned development=gray, downtown=teal, parks=green
+- Hover tooltip shows `ZONE_CLASS`; click popup shows Zone Class, Ordinance #, and a link to the official zoning map
+- **"Zoning" toggle** (bottom-left) to show/hide the overlay
+- **"Points" toggle** (bottom-left, next to Zoning) to show/hide all scatter dots — lets users see just zoning polygons + address pin
+
+**Zoning color system** (`mapColors.ts`): `ZONE_PREFIX_COLORS` maps zone class prefixes (RS, RT, RM, B, C, M, PD, PMD, D, DC, DX, DR, DS, T, P, POS) to RGBA tuples. `zoneColor()` extracts the alpha-letter prefix from strings like "B3-2" or "PD 799" and returns the fill color (alpha 80). `zoneLineColor()` returns the same RGB with higher alpha (180) for outlines.
+
+**Sidebar defaults** (`App.tsx`): When `parcel_zoning` is present in the context, the sidebar opens to the Data tab (showing the map) instead of Sources.
+
+### Part 4: UX Additions
+
+**Links open in new tabs** (`MessageBubble.tsx`): All markdown `<a>` elements now have `target="_blank" rel="noopener noreferrer"`.
+
+**Zoning disclosure banner** (`DataView.tsx`): When zoning polygon data is loaded, an amber notice appears in the sidebar: *"This map is a good reference but may not reflect the most recent City Council votes. Check the [official Chicago Zoning Map] for completely up-to-date data."* Uses the same amber pattern as the data lag note.
+
+**Frontend types** (`types.ts`): Added `ZoningSummary` interface and `parcel_zoning` field on `ContextObject`.
+
+### ArcGIS API Details
+
+- **Endpoint**: `https://gisapps.chicago.gov/arcgis/rest/services/ExternalApps/Zoning/MapServer/1/query`
+- **No API key required**, no rate limit observed
+- **14,905 total features** across all of Chicago; `maxRecordCount=2000` per request
+- Community area bounding box queries return 200–600 features, well under the limit
+- Fields: `ZONE_CLASS` (string, e.g. "RS-3", "B3-2", "PD 799"), `ZONE_TYPE` (integer), `ORDINANCE_NUM` (string)
+- Native SRS: EPSG:3435 (IL State Plane East); server reprojects to WGS84 via `outSR=4326`
+- Data updates monthly (~2–6 week lag after City Council votes)
+- The Socrata dataset `p8va-airx` is NOT usable for programmatic queries — use ArcGIS exclusively
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/zoning.py` — ArcGIS point lookup + polygon fetch
+
+**Backend (modified):**
+- `backend/retrieval/map_data.py` — `zoning_for_map()` now delegates to ArcGIS
+- `backend/config.py` — `enable_zoning_layer` → `True`
+- `backend/main.py` — zoning in `_retrieve()`, `_fetch_map_rows()`, `_build_map_response()`
+- `backend/models.py` — `ZoningSummary`, `ContextObject.parcel_zoning`
+- `backend/assembler.py` — accepts `zoning_info`, creates `ZoningSummary`
+- `backend/prompts.py` — synthesizer rule 9 (zoning map URL)
+- `backend/router.py` — store geocoded lat/lon in the plan (was discarding them)
+
+**Backend (tests):**
+- `backend/tests/test_zoning.py` — 12 tests (point lookup + polygon fetch)
+- `backend/tests/test_assembler.py` — 3 zoning tests
+- `backend/tests/test_map_data.py` — updated mock for ArcGIS delegation
+
+**Frontend (modified):**
+- `frontend/src/lib/mapColors.ts` — `ZONE_PREFIX_COLORS`, `zoneColor()`, `zoneLineColor()`, `zoneColorCSS()`
+- `frontend/src/lib/types.ts` — `ZoningSummary`, `ContextObject.parcel_zoning`
+- `frontend/src/components/sidebar/MapView.tsx` — GeoJsonLayer, Zoning/Points toggles, tooltip, click popup
+- `frontend/src/components/sidebar/DataView.tsx` — zoning disclosure banner
+- `frontend/src/components/MessageBubble.tsx` — `target="_blank"` on links
+- `frontend/src/App.tsx` — sidebar defaults to Data tab for zoning questions
+
+### Test Count
+
+192 tests passing (was 177 before this session; +15 new tests).
+
+---
+
+## Session Log (2026-05-31 — Zoning UX Overhaul + Geocoding Fix)
+
+Five changes to the zoning map experience, plus a critical backend bug fix that was preventing address geocoding and zoning lookups from working.
+
+### Bug Fix: Router Geocoding Bypass
+
+**Root cause**: In `router.py`, the geocoding call was gated on `ca is None` — when the LLM already resolved the community area (e.g., Lincoln Park = CA 7 from a zip code), geocoding was skipped entirely. This left `resolved_lat`/`resolved_lon` as `None`, which meant:
+- No address pin on the map
+- The ArcGIS zoning point lookup never triggered (requires lat/lon)
+- Claude couldn't state the definitive zone classification (no `parcel_zoning` in context)
+- The AI gave generic "look it up yourself" answers for zoning questions with addresses
+
+**Fix**: Removed the `ca is None` guard from the geocoding condition. Addresses are now always geocoded when `location.type == "address"` or `resolved_address` is present, regardless of whether the community area is already known. Also switched to using `resolved_address` (the LLM's canonicalized form) as the geocoder input when available, falling back to `raw`.
+
+**Verified**: "525 W Arlington Pl, Chicago, IL, 60614" → (41.927, -87.642) → Community Area 7 (Lincoln Park) → Zone Class **B3-1** (Community Shopping District).
+
+### Change 1: Zoning/Points Toggles Moved Above Secondary Filters
+
+Moved from `bottom-2 left-2` to the top of the `top-2 left-2` control area, appearing as the first controls. All point-related controls (source tabs, arrest/status/cost filters) now render below them.
+
+### Change 2: Points-Off Mode
+
+When the Points toggle is off:
+- Date range slider, type toggles, and all secondary filters (arrest, status, cost) are hidden
+- The capped-results notice is hidden
+- The zoning category legend appears at bottom-left (8 color-coded categories: Residential, Business, Commercial, Manufacturing, Planned Dev., Downtown, Transportation, Parks/Open Space)
+- Only the zoning polygon overlay and address pin remain visible
+
+### Change 3: Enhanced Zoning Click Popup
+
+Clicking a zoning polygon now shows:
+- **Zone Class** (e.g. "B3-1")
+- **Definition** — one-line description (e.g. "Neighborhood retail, offices, and mixed-use")
+- **Allowed uses** — 1-3 example uses (e.g. "Retail store", "Restaurant", "Office space")
+- **Ordinance number** (when available)
+- **Official Map** link
+
+Zone definitions and examples sourced from a new `ZONE_INFO` record in `mapColors.ts` covering all 16 zone prefixes.
+
+### Change 4: Collapsible Zoning Codes Table
+
+New component in the sidebar Data panel listing all unique `ZONE_CLASS` values from the map's GeoJSON features. Styled as a collapsible section matching the Analytics pattern (chevron toggle, rounded container). Columns: color swatch, zone code (monospace), category label. Sorted by category (residential → business → commercial → manufacturing → etc.).
+
+### Change 5: Zoning Helpers Exported
+
+`mapColors.ts` now exports:
+- `zonePrefix()` (was module-private) — extracts the alpha prefix from zone class strings
+- `ZONE_PREFIX_LABELS` — maps 16 prefixes to human-readable names
+- `ZONE_INFO` — maps 16 prefixes to `{ label, description, examples }` for popup and future use
+
+### Files Changed
+
+**Backend:**
+- `backend/router.py` — always geocode address-type locations; prefer `resolved_address` for geocoder input
+
+**Frontend:**
+- `frontend/src/lib/mapColors.ts` — exported `zonePrefix`, added `ZONE_PREFIX_LABELS`, `ZONE_INFO`
+- `frontend/src/components/sidebar/MapView.tsx` — moved Zoning/Points toggles to top-left; gated point controls on `showPoints`; enhanced zoning popup; updated MapLegend props; hid empty-state message when zoning data present
+- `frontend/src/components/sidebar/MapLegend.tsx` — added `showPoints`/`showZoning`/`hasZoning` props; zoning category legend when points off
+- `frontend/src/components/sidebar/DataView.tsx` — added collapsible `ZoningCodesTable` component; updated no-data message for zoning-only queries
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
 ### Step 1 — Legal-domain cross-encoder reranker
@@ -818,8 +976,8 @@ The MS MARCO reranker hurt on legal text (see session log). A fine-tuned reranke
 ### Step 2 — Test multi-turn conversations thoroughly
 The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
 
-### Step 3 — Zoning overlay on map
-The zoning GeoJsonLayer infrastructure exists in `map_data.py` and `MapView.tsx` but is gated behind `ENABLE_ZONING_LAYER=false` / `VITE_ENABLE_ZONING_LAYER=true`. The Socrata `.geojson` endpoint for `p8va-airx` should work but hasn't been tested end-to-end. Enable and verify.
+### ~~Step 3 — Zoning overlay on map~~ — RESOLVED (2026-05-31)
+Replaced the broken Socrata endpoint with ArcGIS MapServer. Zoning polygons now render on the map with per-district colors, hover/click interaction, and Zoning/Points toggle controls. The old `VITE_ENABLE_ZONING_LAYER` env var is no longer needed.
 
 ---
 
@@ -865,8 +1023,8 @@ chicago/
 │   ├── models.py
 │   ├── config.py
 │   ├── data/                       # SQLite database (gitignored)
-│   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py + map_data.py
-│   └── tests/                      # 177 tests (unit + integration)
+│   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py + map_data.py + zoning.py
+│   └── tests/                      # 192 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -893,7 +1051,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 177 tests
+python -m pytest backend/tests/ -q           # 192 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 

@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     limit_map_crime: int = 2500
     limit_map_311: int = 1000
     limit_map_permits: int = 500
-    enable_zoning_layer: bool = False
+    enable_zoning_layer: bool = True
 
     # How many top items each assembled summary keeps.
     top_crime_types: int = 5

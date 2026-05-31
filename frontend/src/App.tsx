@@ -62,7 +62,8 @@ export function App() {
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
     setSidebarOpen(true);
-    setSidebarView(ctx.code_chunks?.length ? "sources" : "data");
+    // Default to Data tab (map) for zoning questions so the user sees the zoning overlay
+    setSidebarView(ctx.parcel_zoning ? "data" : ctx.code_chunks?.length ? "sources" : "data");
   }
 
   function handleMapData(data: MapData) {

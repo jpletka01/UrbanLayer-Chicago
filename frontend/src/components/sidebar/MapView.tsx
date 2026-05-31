@@ -7,6 +7,7 @@ import {
   CRIME_TYPE_COLORS, crimeColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
+  zoneColor, zoneLineColor, zonePrefix, ZONE_INFO,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { MapLayerToggles } from "./MapLayerToggles";
@@ -17,13 +18,19 @@ import { costBucket } from "./CostFilter";
 import type { CostFilterValue } from "./CostFilter";
 import { DateRangeSlider } from "./DateRangeSlider";
 
+interface ZoningClickData {
+  zone_class: string;
+  zone_type: number | null;
+  ordinance_num: string | null;
+}
+
 type SelectedItem =
   | { type: "crime"; data: MapCrime }
   | { type: "311"; data: MapRequest311 }
-  | { type: "permit"; data: MapPermit };
+  | { type: "permit"; data: MapPermit }
+  | { type: "zoning"; data: ZoningClickData };
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
-const ENABLE_ZONING = import.meta.env.VITE_ENABLE_ZONING_LAYER === "true";
 
 const CHICAGO_CENTER: [number, number] = [-87.6298, 41.8781];
 const INITIAL_ZOOM = 11;
@@ -135,7 +142,12 @@ export function MapView({ mapData, loading, sources }: Props) {
   const [dateRange, setDateRange] = useState<[number, number] | null>(null);
   const [dateBounds, setDateBounds] = useState<{ min: number; max: number } | null>(null);
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+  const [showZoning, setShowZoning] = useState(true);
+  const [showPoints, setShowPoints] = useState(true);
   const onClickRef = useRef<(info: { object?: unknown; layer: { id: string } | null }) => void>(() => {});
+
+  const hasZoning = !!(mapData?.zoning && (mapData.zoning as Record<string, unknown>)?.features &&
+    ((mapData.zoning as Record<string, unknown>).features as unknown[]).length > 0);
 
   // Reset sub-type filters when data changes
   useEffect(() => {
@@ -222,6 +234,9 @@ export function MapView({ mapData, loading, sources }: Props) {
           html = `<strong>${o.sr_type}</strong><br/>${formatDate(o.created_date as string)}`;
         } else if (lid === "permits") {
           html = `<strong>${o.permit_type}</strong><br/>${formatDate(o.issue_date as string)}`;
+        } else if (lid === "zoning") {
+          const props = (o as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+          html = `<strong>${props?.ZONE_CLASS ?? "Unknown"}</strong>`;
         } else {
           return null;
         }
@@ -256,6 +271,16 @@ export function MapView({ mapData, loading, sources }: Props) {
       setSelectedItem({ type: "311", data: o as unknown as MapRequest311 });
     } else if (lid === "permits") {
       setSelectedItem({ type: "permit", data: o as unknown as MapPermit });
+    } else if (lid === "zoning") {
+      const props = (o as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+      setSelectedItem({
+        type: "zoning",
+        data: {
+          zone_class: (props?.ZONE_CLASS as string) ?? "Unknown",
+          zone_type: (props?.ZONE_TYPE as number) ?? null,
+          ordinance_num: (props?.ORDINANCE_NUM as string) ?? null,
+        },
+      });
     }
   };
 
@@ -273,7 +298,27 @@ export function MapView({ mapData, loading, sources }: Props) {
 
     const layers: (ScatterplotLayer | GeoJsonLayer)[] = [];
 
-    if (filterMode === "crime" && mapData?.crimes?.length) {
+    // Zoning polygons render first (underneath scatter dots)
+    if (showZoning && hasZoning) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "zoning",
+          data: mapData!.zoning as unknown as GeoJSON.FeatureCollection,
+          getFillColor: (f: unknown) => {
+            const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+            return zoneColor((props?.ZONE_CLASS as string) ?? "");
+          },
+          getLineColor: (f: unknown) => {
+            const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+            return zoneLineColor((props?.ZONE_CLASS as string) ?? "");
+          },
+          lineWidthMinPixels: 1,
+          pickable: true,
+        })
+      );
+    }
+
+    if (showPoints && filterMode === "crime" && mapData?.crimes?.length) {
       const activeTypes = new Set(
         Object.entries(crimeTypeToggles).filter(([, v]) => v).map(([k]) => k)
       );
@@ -305,7 +350,7 @@ export function MapView({ mapData, loading, sources }: Props) {
           })
         );
       }
-    } else if (filterMode === "311" && mapData?.requests_311?.length) {
+    } else if (showPoints && filterMode === "311" && mapData?.requests_311?.length) {
       const activeTypes = new Set(
         Object.entries(srTypeToggles).filter(([, v]) => v).map(([k]) => k)
       );
@@ -337,7 +382,7 @@ export function MapView({ mapData, loading, sources }: Props) {
           })
         );
       }
-    } else if (filterMode === "permits" && mapData?.building_permits?.length) {
+    } else if (showPoints && filterMode === "permits" && mapData?.building_permits?.length) {
       const activeTypes = new Set(
         Object.entries(permitTypeToggles).filter(([, v]) => v).map(([k]) => k)
       );
@@ -370,19 +415,6 @@ export function MapView({ mapData, loading, sources }: Props) {
       }
     }
 
-    if (ENABLE_ZONING && mapData?.zoning) {
-      layers.push(
-        new GeoJsonLayer({
-          id: "zoning",
-          data: mapData.zoning as unknown as GeoJSON.FeatureCollection,
-          getFillColor: [201, 100, 66, 40],
-          getLineColor: [201, 100, 66, 120],
-          lineWidthMinPixels: 1,
-          pickable: false,
-        })
-      );
-    }
-
     if (mapData?.queried_address) {
       layers.push(
         new ScatterplotLayer({
@@ -401,7 +433,7 @@ export function MapView({ mapData, loading, sources }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -504,7 +536,7 @@ export function MapView({ mapData, loading, sources }: Props) {
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
 
-      {mapReady && (
+      {mapReady && showPoints && (
         <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end w-1/2 max-w-[200px] max-h-[calc(100%-16px)] overflow-y-auto">
           {dateBounds && dateRange && hasData && (
             <DateRangeSlider
@@ -521,95 +553,143 @@ export function MapView({ mapData, loading, sources }: Props) {
         </div>
       )}
 
-      {mapReady && toggleConfigs.length > 0 && (
-        <MapLegend activeLayers={activeToggles} filterMode={filterMode} />
+      {mapReady && (
+        <MapLegend
+          activeLayers={activeToggles}
+          filterMode={filterMode}
+          showPoints={showPoints}
+          showZoning={showZoning}
+          hasZoning={hasZoning}
+        />
       )}
 
-      {mapReady && hasData && (
+      {mapReady && (hasZoning || hasData) && (
         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[calc(50%-8px)]">
-          {isMultiSource && availableTabs.length > 1 && (
-            <div className="flex w-full bg-dark-surface/90 backdrop-blur-sm rounded-md border border-dark-border shadow-sm overflow-hidden">
-              {availableTabs.map((tab) => {
-                const label = tab === "crime" ? "Crime" : tab === "311" ? "311" : "Permits";
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 px-2.5 py-1 text-[11px] font-medium transition-colors duration-150
-                      ${filterMode === tab
-                        ? "bg-dark-elevated text-text-primary"
-                        : "text-text-muted hover:text-text-secondary hover:bg-dark-surface/60"
-                      }
-                      ${tab !== availableTabs[0] ? "border-l border-dark-border" : ""}`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+          {hasZoning && (
+            <div className="flex gap-1">
+              <button
+                onClick={() => setShowZoning(s => !s)}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                  ${showZoning
+                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+                  }`}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-sm inline-block border"
+                  style={{
+                    backgroundColor: showZoning ? "rgba(66,133,244,0.5)" : "transparent",
+                    borderColor: showZoning ? "rgba(66,133,244,0.8)" : "#555",
+                  }}
+                />
+                Zoning
+              </button>
+              {hasData && (
+                <button
+                  onClick={() => setShowPoints(s => !s)}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                    ${showPoints
+                      ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+                      : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+                    }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{ backgroundColor: showPoints ? "#eee" : "#555" }}
+                  />
+                  Points
+                </button>
+              )}
             </div>
           )}
 
-          {filterMode === "crime" && crimeTotal > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {(["all", "arrested", "not-arrested"] as ArrestFilterValue[]).map((opt) => {
-                const label = opt === "all" ? `All (${crimeTotal})` : opt === "arrested" ? `Arrested (${arrestCount})` : `No Arrest (${crimeTotal - arrestCount})`;
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => setArrestFilter(opt)}
-                    className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                      ${arrestFilter === opt
-                        ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
-                        : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
-                      }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {showPoints && hasData && (
+            <>
+              {isMultiSource && availableTabs.length > 1 && (
+                <div className="flex w-full bg-dark-surface/90 backdrop-blur-sm rounded-md border border-dark-border shadow-sm overflow-hidden">
+                  {availableTabs.map((tab) => {
+                    const label = tab === "crime" ? "Crime" : tab === "311" ? "311" : "Permits";
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`flex-1 px-2.5 py-1 text-[11px] font-medium transition-colors duration-150
+                          ${filterMode === tab
+                            ? "bg-dark-elevated text-text-primary"
+                            : "text-text-muted hover:text-text-secondary hover:bg-dark-surface/60"
+                          }
+                          ${tab !== availableTabs[0] ? "border-l border-dark-border" : ""}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-          {filterMode === "311" && requests311Total > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {(["all", "closed", "open"] as StatusFilterValue[]).map((opt) => {
-                const label = opt === "all" ? `All (${requests311Total})` : opt === "closed" ? `Closed (${closedCount})` : `Open (${requests311Total - closedCount})`;
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => setStatusFilter(opt)}
-                    className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                      ${statusFilter === opt
-                        ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
-                        : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
-                      }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+              {filterMode === "crime" && crimeTotal > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {(["all", "arrested", "not-arrested"] as ArrestFilterValue[]).map((opt) => {
+                    const label = opt === "all" ? `All (${crimeTotal})` : opt === "arrested" ? `Arrested (${arrestCount})` : `No Arrest (${crimeTotal - arrestCount})`;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setArrestFilter(opt)}
+                        className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                          ${arrestFilter === opt
+                            ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
+                            : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-          {filterMode === "permits" && permitsTotal > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {(["all", "under25k", "25k-250k", "over250k"] as CostFilterValue[]).map((opt) => {
-                const label = opt === "all" ? `All (${permitsTotal})` : opt === "under25k" ? `<$25K (${permitCostCounts.under25k})` : opt === "25k-250k" ? `$25K–$250K (${permitCostCounts["25k-250k"]})` : `>$250K (${permitCostCounts.over250k})`;
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => setCostFilter(opt)}
-                    className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                      ${costFilter === opt
-                        ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
-                        : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
-                      }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+              {filterMode === "311" && requests311Total > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {(["all", "closed", "open"] as StatusFilterValue[]).map((opt) => {
+                    const label = opt === "all" ? `All (${requests311Total})` : opt === "closed" ? `Closed (${closedCount})` : `Open (${requests311Total - closedCount})`;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setStatusFilter(opt)}
+                        className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                          ${statusFilter === opt
+                            ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
+                            : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {filterMode === "permits" && permitsTotal > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {(["all", "under25k", "25k-250k", "over250k"] as CostFilterValue[]).map((opt) => {
+                    const label = opt === "all" ? `All (${permitsTotal})` : opt === "under25k" ? `<$25K (${permitCostCounts.under25k})` : opt === "25k-250k" ? `$25K–$250K (${permitCostCounts["25k-250k"]})` : `>$250K (${permitCostCounts.over250k})`;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setCostFilter(opt)}
+                        className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                          ${costFilter === opt
+                            ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
+                            : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -620,7 +700,7 @@ export function MapView({ mapData, loading, sources }: Props) {
         </div>
       )}
 
-      {!loading && !hasData && mapReady && (
+      {!loading && !hasData && !hasZoning && mapReady && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <span className="text-text-muted text-xs bg-dark-surface/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
             Ask a question to see data on the map
@@ -628,7 +708,7 @@ export function MapView({ mapData, loading, sources }: Props) {
         </div>
       )}
 
-      {!loading && mapReady && isCapped && (
+      {!loading && mapReady && isCapped && showPoints && (
         <div className="absolute bottom-2 right-2 z-10">
           <span className="text-[10px] text-amber-400/80 bg-dark-surface/90 backdrop-blur-sm
                            border border-amber-500/20 rounded-md px-2 py-1">
@@ -649,7 +729,8 @@ export function MapView({ mapData, loading, sources }: Props) {
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-text-primary">
                 {selectedItem.type === "crime" ? "Crime Incident" :
-                 selectedItem.type === "311" ? "311 Request" : "Building Permit"}
+                 selectedItem.type === "311" ? "311 Request" :
+                 selectedItem.type === "zoning" ? "Zoning District" : "Building Permit"}
               </h3>
               <button
                 onClick={() => setSelectedItem(null)}
@@ -695,7 +776,40 @@ function streetViewUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
 }
 
+const ZONING_MAP_URL = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning";
+
 function renderDetailFields(item: SelectedItem) {
+  if (item.type === "zoning") {
+    const d = item.data;
+    const prefix = zonePrefix(d.zone_class);
+    const info = ZONE_INFO[prefix];
+    return (
+      <>
+        <DetailRow label="Zone Class" value={d.zone_class} />
+        {info && (
+          <div className="text-text-muted leading-relaxed">
+            <span className="text-text-secondary font-medium">{info.label}</span>
+            {" — "}{info.description}
+          </div>
+        )}
+        {info && info.examples.length > 0 && (
+          <div>
+            <span className="text-text-muted text-[10px] uppercase tracking-wide">Allowed uses</span>
+            <ul className="mt-0.5 space-y-0.5">
+              {info.examples.map(ex => (
+                <li key={ex} className="flex items-center gap-1.5 text-text-primary">
+                  <span className="w-1 h-1 rounded-full bg-text-muted shrink-0" />
+                  {ex}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {d.ordinance_num && <DetailRow label="Ordinance" value={d.ordinance_num} />}
+        <DetailRow label="Official Map" value="Chicago Zoning Map" href={ZONING_MAP_URL} />
+      </>
+    );
+  }
   if (item.type === "crime") {
     const d = item.data;
     return (

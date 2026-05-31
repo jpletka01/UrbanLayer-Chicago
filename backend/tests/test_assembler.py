@@ -124,3 +124,22 @@ def test_violations_count_open():
     ctx = assemble_context(plan=_plan(), violation_rows=rows)
     assert ctx.violations.open_count == 2
     assert ctx.violations.total == 3
+
+
+def test_zoning_info_attached_when_present():
+    zoning = {"zone_class": "B2", "zone_type": 1, "ordinance_num": "12345"}
+    ctx = assemble_context(plan=_plan(), zoning_info=zoning)
+    assert ctx.parcel_zoning is not None
+    assert ctx.parcel_zoning.zone_class == "B2"
+    assert "ZoningMapWeb" in ctx.parcel_zoning.zoning_map_url
+
+
+def test_zoning_info_none_when_absent():
+    ctx = assemble_context(plan=_plan())
+    assert ctx.parcel_zoning is None
+
+
+def test_zoning_info_none_when_empty_zone_class():
+    zoning = {"zone_class": None, "zone_type": "B"}
+    ctx = assemble_context(plan=_plan(), zoning_info=zoning)
+    assert ctx.parcel_zoning is None

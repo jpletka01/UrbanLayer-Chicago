@@ -60,6 +60,7 @@ Rules:
 6. Render numbers as readable prose, not raw JSON. Use markdown for emphasis and short bullet lists only when they aid clarity.
 7. Place citations immediately after the relevant statement, not at the end of paragraphs.
 8. When month-over-month trend data is provided, weave the most notable trends (biggest increases and decreases) into your answer naturally. For example: "Battery incidents are up 23% compared to last month, while theft has declined 15%." Pick the 2-4 most notable changes — don't list every category.
+9. When parcel_zoning is present in the context, state the actual zoning classification (e.g. "This parcel is zoned B2") as a definitive fact — it comes from the city's official GIS system. When recommending the user verify zoning or view the zoning map, link to the official Chicago Zoning Map: https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning — do NOT invent or guess any other zoning map URLs.
 """
 
 

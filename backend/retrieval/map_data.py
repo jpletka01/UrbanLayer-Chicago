@@ -121,28 +121,7 @@ async def zoning_for_map(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> dict:
-    """Fetch zoning district polygons as GeoJSON from the Socrata .geojson endpoint."""
-    settings = get_settings()
-    url = f"{settings.socrata_base}/{settings.dataset_zoning}.geojson"
-    headers: dict[str, str] = {}
-    if settings.socrata_app_token:
-        headers["X-App-Token"] = settings.socrata_app_token
+    """Fetch zoning district polygons as GeoJSON via the ArcGIS Zoning MapServer."""
+    from backend.retrieval.zoning import zoning_polygons_for_map
 
-    owns_client = client is None
-    if owns_client:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(20.0))
-
-    try:
-        resp = await client.get(
-            url,
-            params={"$where": f"community_area='{community_area}'"},
-            headers=headers,
-        )
-        resp.raise_for_status()
-        return resp.json()
-    except Exception:
-        log.warning("Zoning fetch failed for CA %s, returning empty", community_area, exc_info=True)
-        return {"type": "FeatureCollection", "features": []}
-    finally:
-        if owns_client:
-            await client.aclose()
+    return await zoning_polygons_for_map(community_area, client=client)

@@ -38,6 +38,7 @@ from backend.models import (
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import geocode_address_suggestions
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
+from backend.retrieval.zoning import lookup_zoning
 from backend.retrieval.vector_search import (
     expand_cross_references,
     get_full_section,
@@ -263,13 +264,20 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                     business.businesses_by_community_area(ca, client=client)
                 )
 
-        results: dict[str, list] = {}
+        # Look up parcel zoning via ArcGIS when the query is zoning/legal-related
+        loc = plan.location
+        if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon:
+            tasks["zoning_lookup"] = asyncio.create_task(
+                lookup_zoning(loc.resolved_lat, loc.resolved_lon, client=client)
+            )
+
+        results: dict[str, Any] = {}
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Retrieval %s failed: %s", key, value)
-                    results[key] = []
+                    results[key] = [] if key != "zoning_lookup" else None
                 else:
                     results[key] = value
 
@@ -290,10 +298,11 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         violation_rows=results.get("violations") if "violations" in results else None,
         business_rows=results.get("business") if "business" in results else None,
         code_chunks=code_chunks,
+        zoning_info=results.get("zoning_lookup"),
     )
 
 
-async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, list]:
+async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
     """Fetch raw geo-located rows for analytics computation."""
     ca = plan.location.resolved_community_area
     if ca is None:
@@ -313,14 +322,18 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, list]:
             tasks["building_permits"] = asyncio.create_task(
                 permits_for_map(ca, days=plan.time_range_days, client=client)
             )
+        if plan.requires_disclaimer:
+            tasks["zoning"] = asyncio.create_task(
+                zoning_for_map(ca, client=client)
+            )
 
-        results: dict[str, list] = {}
+        results: dict[str, Any] = {}
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Map-row fetch %s failed: %s", key, value)
-                    results[key] = []
+                    results[key] = [] if key != "zoning" else None
                 else:
                     results[key] = value
 
@@ -328,7 +341,7 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, list]:
 
 
 def _build_map_response(
-    map_rows: dict[str, list], plan: RetrievalPlan,
+    map_rows: dict[str, Any], plan: RetrievalPlan,
 ) -> MapDataResponse | None:
     """Build a MapDataResponse from fetched map rows."""
     if not map_rows:
@@ -359,6 +372,7 @@ def _build_map_response(
         crimes=crimes,
         requests_311=requests_311,
         building_permits=building_permits,
+        zoning=map_rows.get("zoning"),
         queried_address=queried_address,
         capped=capped,
     )

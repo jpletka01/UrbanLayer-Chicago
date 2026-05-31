@@ -78,6 +78,8 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
     a: ({ children, href }: { children?: ReactNode; href?: string }) => (
       <a
         href={href}
+        target="_blank"
+        rel="noopener noreferrer"
         className="text-accent hover:text-accent-hover underline decoration-accent/30 hover:decoration-accent font-medium transition-colors"
       >
         {children}

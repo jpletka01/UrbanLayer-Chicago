@@ -129,7 +129,7 @@ class TestZoningForMap:
     async def test_returns_empty_on_failure(self, mock_map_settings):
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(side_effect=Exception("timeout"))
-        with patch("backend.retrieval.map_data.get_settings", return_value=mock_map_settings):
+        with patch("backend.retrieval.zoning.community_area_bounds", return_value=(41.91, -87.66, 41.95, -87.63)):
             from backend.retrieval.map_data import zoning_for_map
             result = await zoning_for_map(24, client=mock_client)
             assert result["type"] == "FeatureCollection"

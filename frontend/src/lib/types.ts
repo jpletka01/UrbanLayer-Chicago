@@ -91,6 +91,13 @@ export interface AnalyticsSummary {
   trend_period: string | null;
 }
 
+export interface ZoningSummary {
+  zone_class: string;
+  zone_type: number | null;
+  ordinance_num: string | null;
+  zoning_map_url: string;
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;
@@ -103,6 +110,7 @@ export interface ContextObject {
   violations: ViolationSummary | null;
   businesses: BusinessSummary | null;
   code_chunks: CodeChunk[];
+  parcel_zoning?: ZoningSummary | null;
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
 }

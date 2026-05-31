@@ -226,6 +226,89 @@ export function isArrested(arrest: boolean | string): boolean {
   return arrest === true || arrest === "true";
 }
 
+// --- Zoning colors (Chicago standard scheme) ---
+
+const ZONE_PREFIX_COLORS: Record<string, [number, number, number]> = {
+  RS: [255, 235, 59],     // Yellow — single-family residential
+  RT: [255, 224, 130],    // Light yellow — two-flat residential
+  RM: [255, 213, 79],     // Gold — multi-unit residential
+  B:  [66, 133, 244],     // Blue — business
+  C:  [156, 39, 176],     // Purple — commercial
+  M:  [233, 30, 99],      // Magenta/pink — manufacturing
+  PD: [158, 158, 158],    // Gray — planned development
+  PMD:[176, 176, 176],    // Light gray — planned manufacturing
+  D:  [0, 150, 136],      // Teal — downtown core
+  DC: [0, 150, 136],      // Teal — downtown core
+  DX: [38, 166, 154],     // Light teal — downtown mixed-use
+  DR: [77, 182, 172],     // Aqua — downtown residential
+  DS: [0, 137, 123],      // Dark teal — downtown service
+  T:  [141, 110, 99],     // Brown — transportation
+  P:  [76, 175, 80],      // Green — parks
+  POS:[102, 187, 106],    // Light green — open space
+};
+
+const ZONE_FALLBACK: [number, number, number] = [120, 120, 120];
+
+export function zonePrefix(zoneClass: string): string {
+  const s = (zoneClass || "").trim().toUpperCase();
+  // "PD 799" → "PD", "PMD 3" → "PMD", "RS-3" → "RS", "B3-2" → "B", "DX-7" → "DX"
+  const m = s.match(/^([A-Z]+)/);
+  return m ? m[1] : "";
+}
+
+export const ZONE_PREFIX_LABELS: Record<string, string> = {
+  RS: "Residential Single-Unit",
+  RT: "Residential Two-Flat",
+  RM: "Residential Multi-Unit",
+  B: "Business",
+  C: "Commercial",
+  M: "Manufacturing",
+  PD: "Planned Development",
+  PMD: "Planned Manufacturing",
+  D: "Downtown Core",
+  DC: "Downtown Core",
+  DX: "Downtown Mixed-Use",
+  DR: "Downtown Residential",
+  DS: "Downtown Service",
+  T: "Transportation",
+  P: "Parks",
+  POS: "Public Open Space",
+};
+
+export const ZONE_INFO: Record<string, { label: string; description: string; examples: string[] }> = {
+  RS: { label: "Residential Single-Unit", description: "Detached single-family homes on individual lots", examples: ["Single-family house", "Home office", "Accessory garage"] },
+  RT: { label: "Residential Two-Flat", description: "Two-unit residential buildings and townhouses", examples: ["Two-flat building", "Townhouse", "Coach house"] },
+  RM: { label: "Residential Multi-Unit", description: "Apartment buildings and multi-unit residential", examples: ["Apartment building", "Condo building", "Senior housing"] },
+  B: { label: "Business", description: "Neighborhood retail, offices, and mixed-use", examples: ["Retail store", "Restaurant", "Office space"] },
+  C: { label: "Commercial", description: "Larger commercial and auto-oriented uses", examples: ["Auto repair shop", "Shopping center", "Gas station"] },
+  M: { label: "Manufacturing", description: "Industrial and manufacturing uses", examples: ["Warehouse", "Factory", "Distribution center"] },
+  PD: { label: "Planned Development", description: "Custom site-specific development with negotiated terms", examples: ["Mixed-use complex", "Large residential development"] },
+  PMD: { label: "Planned Manufacturing", description: "Protected industrial corridors", examples: ["Industrial campus", "Manufacturing facility"] },
+  D: { label: "Downtown Core", description: "High-density downtown offices and retail", examples: ["Office tower", "Department store", "Hotel"] },
+  DC: { label: "Downtown Core", description: "High-density downtown offices and retail", examples: ["Office tower", "Department store", "Hotel"] },
+  DX: { label: "Downtown Mixed-Use", description: "Mixed residential, office, and retail in the Loop", examples: ["Mixed-use tower", "Residential high-rise"] },
+  DR: { label: "Downtown Residential", description: "Residential towers in downtown Chicago", examples: ["Condo tower", "Apartment high-rise"] },
+  DS: { label: "Downtown Service", description: "Service and support uses in downtown", examples: ["Parking structure", "Utility facility"] },
+  T: { label: "Transportation", description: "Transit-related corridors and facilities", examples: ["Transit station", "Rail corridor"] },
+  P: { label: "Parks & Open Space", description: "Public parks, recreation areas, and open space", examples: ["Public park", "Playground", "Nature preserve"] },
+  POS: { label: "Parks & Open Space", description: "Public parks, recreation areas, and open space", examples: ["Public park", "Playground", "Nature preserve"] },
+};
+
+export function zoneColor(zoneClass: string): [number, number, number, number] {
+  const rgb = ZONE_PREFIX_COLORS[zonePrefix(zoneClass)] ?? ZONE_FALLBACK;
+  return [rgb[0], rgb[1], rgb[2], 80];
+}
+
+export function zoneLineColor(zoneClass: string): [number, number, number, number] {
+  const rgb = ZONE_PREFIX_COLORS[zonePrefix(zoneClass)] ?? ZONE_FALLBACK;
+  return [rgb[0], rgb[1], rgb[2], 180];
+}
+
+export function zoneColorCSS(zoneClass: string): string {
+  const rgb = ZONE_PREFIX_COLORS[zonePrefix(zoneClass)] ?? ZONE_FALLBACK;
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
 export function capLabel(raw: string, max = 25): string {
   const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
   return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;

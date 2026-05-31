@@ -61,11 +61,20 @@ async def route(message: str) -> RetrievalPlan:
     ca = location.get("resolved_community_area")
     ca_name: str | None = None
 
+    resolved_lat: float | None = None
+    resolved_lon: float | None = None
+
     if ca is None and raw_loc:
         ca = community_area_by_name(raw_loc)
-    if ca is None and (location.get("resolved_address") or loc_type == "address") and raw_loc:
-        resolved_ca, _coords = await resolve_address_to_community_area(raw_loc)
-        ca = resolved_ca
+    # Always geocode addresses to get lat/lon for the map pin and zoning lookup,
+    # even when the community area is already known from the LLM or alias table.
+    if (location.get("resolved_address") or loc_type == "address") and raw_loc:
+        geocode_input = location.get("resolved_address") or raw_loc
+        resolved_ca, coords = await resolve_address_to_community_area(geocode_input)
+        if ca is None:
+            ca = resolved_ca
+        if coords:
+            resolved_lat, resolved_lon = coords
     if ca is not None:
         ca_name = COMMUNITY_AREAS.get(int(ca))
 
@@ -78,6 +87,8 @@ async def route(message: str) -> RetrievalPlan:
                 "resolved_community_area": int(ca) if ca is not None else None,
                 "resolved_community_area_name": ca_name,
                 "resolved_address": location.get("resolved_address"),
+                "resolved_lat": resolved_lat,
+                "resolved_lon": resolved_lon,
             },
             "intent": raw.get("intent", "neighborhood_overview"),
             "time_range_days": int(raw.get("time_range_days") or 90),
