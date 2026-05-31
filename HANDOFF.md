@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **Zoning UX overhaul** — Zoning/Points toggles moved above secondary filters; toggling Points off hides all point-related controls (date slider, type toggles, cost/arrest/status filters) and shows a zoning category color legend; enhanced zoning click popup with zone definitions and allowed-use examples; collapsible zoning codes table in the data panel listing all zone classes on the map; **critical geocoding fix** — addresses were not being geocoded when the LLM already resolved the community area, so the address pin, zoning lookup, and definitive zone classification in the AI response were all silently broken. 192 tests passing. Previous: Zoning map integration, analytics category audit, SQLite persistence, map interactivity.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **URL-based conversation routing** — each conversation gets its own `/c/:id` URL via `react-router-dom`; bookmarkable, browser back/forward support, direct-link loading with invalid-ID redirect. Previous: Zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 192 tests passing.
 
 ---
 
@@ -968,6 +968,54 @@ New component in the sidebar Data panel listing all unique `ZONE_CLASS` values f
 
 ---
 
+## Session Log (2026-05-31 — URL-Based Conversation Routing)
+
+Added `react-router-dom` so each conversation gets its own URL (`/c/:id`), like ChatGPT. Conversations are now bookmarkable, shareable, and work with browser back/forward.
+
+### Approach: URL Sync Layer
+
+Rather than splitting App.tsx into separate route components (which would require duplicating or lifting 15+ interrelated state variables), the implementation adds a thin `useConversationRouter` hook that syncs `conversationId` state with the URL bidirectionally. The existing `active` flag (`messages.length > 0 || streaming`) continues to drive the splash-vs-workspace transition.
+
+### Routes
+
+- `/` — splash page (hero slideshow, chat input, suggestion chips)
+- `/c/:id` — conversation view (workspace with chat, sidebar, map)
+
+### How It Works
+
+1. **New conversation**: `sendMessage()` creates a conversation in SQLite, then calls `navigateToConversation(id)` to push `/c/:id` to the browser history.
+
+2. **Load from history**: `loadConv()` fetches the conversation from the API, sets state, then navigates to `/c/:id`.
+
+3. **New chat / reset**: `reset()` clears all state and navigates to `/`.
+
+4. **Direct URL access (bookmark/refresh)**: A URL-sync `useEffect` watches `conversationIdFromUrl` (from `useParams`). When the URL has an ID that doesn't match local state, it loads the conversation from the API. A `loadingConversation` guard renders a blank dark screen during the fetch to prevent the splash from flashing.
+
+5. **Invalid URL**: `/c/nonexistent` → `getConversation` returns null → redirect to `/` with `replace: true` (no bad URL in history).
+
+6. **Browser back/forward**: `react-router-dom` handles `popstate`. The URL-sync effect detects the change and either loads the conversation or resets to splash.
+
+### Race Condition Safety
+
+- The URL-sync effect guards on `conversationIdFromUrl !== conversationId` — no-op when state already matches (prevents loops from `sendMessage`/`loadConv` which set state before navigating).
+- `reset()` sets `conversationId` to null synchronously before navigating, so the effect sees state already cleared.
+- The init effect (migration + load conversation list) and URL-sync effect touch independent state — no race.
+
+### Files Changed/Created
+
+- `frontend/package.json` — added `react-router-dom`
+- `frontend/src/lib/useConversationRouter.ts` — **new**: thin hook wrapping `useParams` + `useNavigate`
+- `frontend/src/main.tsx` — wrapped `<App />` in `<BrowserRouter>` with `"/"` and `"/c/:id"` routes
+- `frontend/src/App.tsx` — import hook, URL-sync effect, navigation calls in `sendMessage`/`reset`/`loadConv`, loading guard
+
+No backend changes. No changes to `history.ts`, `api.ts`, `useChat.ts`, `HistorySidebar.tsx`, or any other file.
+
+### Vite SPA Fallback
+
+Vite dev server handles `/c/:id` by default (`appType: 'spa'`). For production deployment, the static file server would need to serve `index.html` for all non-asset paths.
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
 ### Step 1 — Legal-domain cross-encoder reranker
@@ -1041,9 +1089,10 @@ chicago/
     ├── src/components/             # Hero, ChatInput, MessageBubble, CitationPill, SourceCitation, Sidebar, etc.
     │   └── sidebar/                # MapView, MapLayerToggles, MapLegend, ArrestFilter, DateRangeSlider,
     │                               #   DataView, AnalyticsSection, PieChart, TrendTable, SourcesView
-    ├── src/lib/                    # api (SSE), history (localStorage), types, useTypewriter, clipboard,
-    │                               #   mapColors (shared color constants), analytics (trend/pie computation)
-    └── src/App.tsx                 # State machine with per-message context
+    ├── src/lib/                    # api (SSE), history (API-backed), types, useTypewriter, clipboard,
+    │                               #   mapColors (shared color constants), analytics (trend/pie computation),
+    │                               #   useConversationRouter (URL ↔ state sync)
+    └── src/App.tsx                 # State machine with per-message context + URL routing
 ```
 
 ## Quick Reference — Useful Commands

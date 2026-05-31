@@ -34,11 +34,16 @@ import type {
   SourceTag,
 } from "./lib/types";
 import { useChat } from "./lib/useChat";
+import { useConversationRouter } from "./lib/useConversationRouter";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function App() {
+  const { conversationIdFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
+    useConversationRouter();
+
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [loadingConversation, setLoadingConversation] = useState(!!conversationIdFromUrl);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,6 +63,54 @@ export function App() {
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
+
+  // Sync URL → state: load conversation when URL changes (direct link, browser back/forward)
+  useEffect(() => {
+    if (conversationIdFromUrl && conversationIdFromUrl !== conversationId) {
+      setLoadingConversation(true);
+      (async () => {
+        const detail = await getConversation(conversationIdFromUrl);
+        if (!detail) {
+          navigateReplace("/");
+          setLoadingConversation(false);
+          return;
+        }
+        const loaded = detail.messages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          context: m.context ?? undefined,
+          plan: m.plan ?? undefined,
+          mapData: m.map_data ?? undefined,
+          mapFetchedAt: m.map_fetched_at ?? undefined,
+        }));
+        setMessages(loaded);
+        setConversationId(conversationIdFromUrl);
+        conversationIdRef.current = conversationIdFromUrl;
+        setHistoryOpen(false);
+        clearTurnState();
+        const lastUserIdx = loaded.length - 2;
+        if (lastUserIdx >= 0) {
+          handleMessageClick(lastUserIdx, loaded);
+        }
+        setLoadingConversation(false);
+      })();
+    } else if (!conversationIdFromUrl && conversationId) {
+      // Browser navigated back to splash
+      resetChat();
+      setConversationId(null);
+      conversationIdRef.current = null;
+      setSidebarOpen(false);
+      setSidebarView("data");
+      setHighlightedSourceIndex(null);
+      setActiveSidebarContext(null);
+      setMapData(null);
+      setMapLoading(false);
+      setMapSources([]);
+      setSelectedMessageIndex(null);
+    } else if (!conversationIdFromUrl) {
+      setLoadingConversation(false);
+    }
+  }, [conversationIdFromUrl]);
 
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
@@ -151,13 +204,13 @@ export function App() {
 
   async function sendMessage(text: string) {
     setHistoryOpen(false);
-    // Create conversation on first message
     if (!conversationId) {
       const id = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
       await createConversation(id, title);
       setConversationId(id);
       conversationIdRef.current = id;
+      navigateToConversation(id);
     }
     sendChat(text);
   }
@@ -174,6 +227,7 @@ export function App() {
     setMapLoading(false);
     setMapSources([]);
     setSelectedMessageIndex(null);
+    navigateToSplash();
   }
 
   async function loadConv(conv: Conversation) {
@@ -194,6 +248,7 @@ export function App() {
     conversationIdRef.current = conv.id;
     setHistoryOpen(false);
     clearTurnState();
+    navigateToConversation(conv.id);
 
     // Load the last question's state into the sidebar
     const lastUserIdx = loaded.length - 2;
@@ -322,6 +377,10 @@ export function App() {
     setSectionView({ loading: true, chunk: null });
     const chunk = await fetchSection(sectionId);
     setSectionView({ loading: false, chunk });
+  }
+
+  if (loadingConversation) {
+    return <div className="w-full min-h-screen bg-[#0d0d0d]" />;
   }
 
   return (
