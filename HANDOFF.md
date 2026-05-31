@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **map & data analytics expansion** — arrest status filter for crime queries, dual-handle date range slider for all date-bearing sources, and a data analytics section with month-over-month trend tables (sortable, with trending arrows) and donut pie charts showing category breakdowns. Map data row limits raised to 2500/1000/500 (crime/311/permits) with capped-result notification. Previous: interactive Mapbox + deck.gl map integration, retrieval quality overhaul.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **map interactivity & category color overhaul** — click-to-detail popups with Google Street View links, advanced donut chart with thin-slice ring and hover expansion, per-category colors for all data sources (crime/311/permits) with semantic color mapping (violent→red, non-violent→blue), expandable pie legends, 1% crime bucketing threshold, permits API limit raised to 500. Previous: map filters, date slider, data analytics section.
 
 ---
 
@@ -561,6 +561,72 @@ All computations wrapped in `useMemo` keyed on `mapData`.
 - `backend/config.py` — raised map row limits (2500/1000/500)
 - `backend/models.py` — `MapDataResponse.capped` field
 - `backend/main.py` — capped detection in `/api/map-data`
+
+---
+
+## Session Log (2026-05-31 — Map Interactivity, Pie Chart Overhaul, Category Colors)
+
+Five feature additions across the map and analytics components, plus a backend limit change.
+
+### Feature 1: Map Click-to-Detail Popup
+
+Clicking a dot on the map opens a centered card overlay showing all available fields for that item. The popup type adapts to the data source:
+- **Crime**: Type, Description, Date, Arrest status, Location
+- **311**: Request Type, Status, Department, Date, Location
+- **Permits**: Permit Type, Work Description, Estimated Cost, Issue Date, Location
+
+Location coordinates are a hyperlink that opens **Google Maps Street View** (`map_action=pano`) at those exact coordinates in a new tab. Click the X button or the backdrop to dismiss.
+
+Implementation uses an `onClickRef` to avoid stale closures in the deck.gl `MapboxOverlay` onClick callback. Hover tooltips were simplified to type + date since the click popup handles full detail.
+
+### Feature 2: Pie Chart Overhaul
+
+Complete rewrite of `PieChart.tsx` with:
+- **Hover expansion** — each slice translates outward by 3px along its midpoint angle on hover (CSS `transform: translate`). Non-hovered slices dim to 40% opacity.
+- **Center tooltip** — shows percentage, category name (2-line clamp), and count on hover; total when idle.
+- **Thin-slice ring** — when hovering any slice at or below `thinThreshold` (default 2%), a second concentric ring fades in (250ms ease) outside the main donut. The ring redistributes only the thin slices proportionally to fill 360°, so even a 0.8% slice gets a readable arc. The hovered thin slice highlights at full opacity; others dim to 25%.
+- **Grace period** — ring fade-out is delayed 100ms to prevent flicker when the cursor crosses the 3px gap between the main donut and the ring.
+- **Enlarged hit areas** — thin main-donut slices get invisible transparent paths extending 5px beyond the visible arc (`pointerEvents: "all"`), improving discoverability.
+- **`thinThreshold` prop** — configurable, defaults to `0.02`.
+- **Expandable legend** — the `+N more` text is now a clickable button that expands to show all slices, with "Show less" to collapse.
+- **Default size** bumped from 140 to 160 to accommodate the ring margin (3px gap + 10px ring + 3px expand room).
+
+### Feature 3: Per-Category Colors for All Sources
+
+Crime, 311, and permits now have distinct per-type colors on the map and in analytics, matching the crime "gold standard" pattern of named colors + filter toggles.
+
+**Crime** — `CRIME_TYPE_COLORS` expanded from 8 to 30 named types with semantically appropriate colors: violent crimes (homicide, assault, battery, robbery, kidnapping) get hot reds; weapons/arson/intimidation get deep oranges; property crimes (theft, burglary) keep warm ambers; drug/vice crimes get purples; non-violent/white-collar (deceptive practice, public peace, liquor) get cool blues and teals. `OTHER OFFENSE` and truly unknown types are grey. `CRIME_TYPE_ORDER` expanded to 27 entries so named types get their own toggle when above the 1% threshold.
+
+**Permits** — 6 named permit types with distinct colors (express→cyan, renovation→orange, signs→purple, new construction→green, wrecking/demolition→red, elevator equipment→amber). Per-type filter toggles in permits mode, replacing the flat green.
+
+**311** — switched from 3 department-level toggles to `sr_type`-level toggles (top 8 request types + Other), each with a distinct color from a 12-color hash-assigned palette. Department coloring remains for overview mode.
+
+All three sources share colors between the map dots and the analytics pie/trend charts via `mapColors.ts`.
+
+### Feature 4: Crime 1% Threshold for OTHER Bucket
+
+`buildCrimeTypeFilters` now counts each type's share. Types below 1% of total crimes are bucketed into "Other" regardless of whether they appear in `CRIME_TYPE_ORDER`. The layer filter uses the actual toggle keys (not the static color map) for routing, so the bucketing is consistent.
+
+### Feature 5: Permits API Limit
+
+`limit_permits` in `config.py` raised from 50 to 500 (the chat endpoint limit — the map endpoint was already at 500).
+
+### Design Decisions
+
+- **Semantic crime colors over uniform palette** — users intuitively expect violent crimes to look "angrier" on the map. The color gradient from hot reds (homicide) through warm ambers (theft) to cool blues (deceptive practice) communicates severity at a glance.
+- **Hash-based 311 sr_type colors** — 311 request types are too numerous and varied for a named color map. A 12-color palette with deterministic hash assignment gives each type a distinct color without maintaining a manual mapping.
+- **Street View over regular Maps** — the coordinates hyperlink opens `map_action=pano` (Street View) rather than a pin drop, since users clicking a specific crime/311/permit location want to see what's physically there.
+- **Ring grace period (100ms)** — without it, the cursor crossing the 3px gap between the main donut and the ring triggers a fade-out/fade-in flicker. 100ms is long enough for any reasonable cursor speed but short enough to feel instant.
+
+### Files changed
+
+- `backend/config.py` — `limit_permits` 50 → 500
+- `frontend/src/lib/mapColors.ts` — expanded `CRIME_TYPE_COLORS` (30 types), added `PERMIT_TYPE_COLORS`, `normalizePermitType`, `permitColor`, `SR_TYPE_PALETTE`, `srTypeMapColor`, `hashToColor`; `CRIME_TYPE_ORDER` expanded to 27 entries
+- `frontend/src/components/sidebar/PieChart.tsx` — complete rewrite: hover expansion, thin-slice ring, grace period, hit areas, expandable legend
+- `frontend/src/components/sidebar/MapView.tsx` — click-to-detail popup with Street View links, permit-type/sr-type filter toggles, 1% crime threshold, per-type coloring for all sources
+- `frontend/src/components/sidebar/MapLayerToggles.tsx` — label truncation for long sr_type names
+- `frontend/src/components/sidebar/MapLegend.tsx` — added permits mode legend, updated 311 label
+- `frontend/src/components/sidebar/AnalyticsSection.tsx` — uses shared `crimeColorCSS`/`permitColorCSS`/`srTypeMapColorCSS` instead of local palettes
 
 ---
 

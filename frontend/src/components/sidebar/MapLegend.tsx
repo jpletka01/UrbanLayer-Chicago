@@ -23,7 +23,17 @@ export function MapLegend({ activeLayers, filterMode }: Props) {
     return (
       <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
         border border-dark-border rounded-lg p-2 text-[10px] max-w-[180px]">
-        <div className="text-text-secondary font-semibold mb-0.5">311 Departments</div>
+        <div className="text-text-secondary font-semibold mb-0.5">311 Request Types</div>
+        <div className="text-text-muted">{activeKeys.length} filter{activeKeys.length !== 1 ? "s" : ""} active</div>
+      </div>
+    );
+  }
+
+  if (filterMode === "permits") {
+    return (
+      <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
+        border border-dark-border rounded-lg p-2 text-[10px] max-w-[180px]">
+        <div className="text-text-secondary font-semibold mb-0.5">Permit Types</div>
         <div className="text-text-muted">{activeKeys.length} filter{activeKeys.length !== 1 ? "s" : ""} active</div>
       </div>
     );

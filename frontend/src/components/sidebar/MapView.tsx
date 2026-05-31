@@ -3,13 +3,22 @@ import mapboxgl from "mapbox-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag } from "../../lib/types";
-import { CRIME_TYPE_COLORS, crimeColor, deptColor, normalizeDept, deriveFilterMode, isArrested, CRIME_TYPE_ORDER } from "../../lib/mapColors";
+import {
+  CRIME_TYPE_COLORS, crimeColor, deptColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
+  PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
+  srTypeMapColor, srTypeMapColorCSS, permitColorCSS,
+} from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { MapLayerToggles } from "./MapLayerToggles";
 import { MapLegend } from "./MapLegend";
 import { ArrestFilter } from "./ArrestFilter";
 import type { ArrestFilterValue } from "./ArrestFilter";
 import { DateRangeSlider } from "./DateRangeSlider";
+
+type SelectedItem =
+  | { type: "crime"; data: MapCrime }
+  | { type: "311"; data: MapRequest311 }
+  | { type: "permit"; data: MapPermit };
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 const ENABLE_ZONING = import.meta.env.VITE_ENABLE_ZONING_LAYER === "true";
@@ -18,25 +27,50 @@ const CHICAGO_CENTER: [number, number] = [-87.6298, 41.8781];
 const INITIAL_ZOOM = 11;
 
 function buildCrimeTypeFilters(crimes: MapCrime[]): Record<string, boolean> {
-  const types = new Set(crimes.map(c => c.primary_type));
+  const counts = new Map<string, number>();
+  for (const c of crimes) counts.set(c.primary_type, (counts.get(c.primary_type) ?? 0) + 1);
+  const threshold = crimes.length * 0.01;
   const out: Record<string, boolean> = {};
   for (const t of CRIME_TYPE_ORDER) {
+    if ((counts.get(t) ?? 0) >= threshold) out[t] = true;
+  }
+  const hasOther = [...counts.entries()].some(
+    ([type, count]) => !CRIME_TYPE_ORDER.includes(type) || count < threshold
+  );
+  if (hasOther) out["OTHER"] = true;
+  return out;
+}
+
+function buildSrTypeFilters(requests: MapRequest311[]): Record<string, boolean> {
+  const counts = new Map<string, number>();
+  for (const r of requests) {
+    counts.set(r.sr_type, (counts.get(r.sr_type) ?? 0) + 1);
+  }
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const out: Record<string, boolean> = {};
+  const top = sorted.slice(0, 8);
+  for (const [type] of top) out[type] = true;
+  if (sorted.length > 8) out["OTHER"] = true;
+  return out;
+}
+
+function buildPermitTypeFilters(permits: MapPermit[]): Record<string, boolean> {
+  const types = new Set(permits.map(p => normalizePermitType(p.permit_type)));
+  const out: Record<string, boolean> = {};
+  for (const t of PERMIT_TYPE_ORDER) {
     if (types.has(t)) out[t] = true;
   }
-  const remaining = [...types].filter(t => !CRIME_TYPE_ORDER.includes(t));
+  const remaining = [...types].filter(t => !PERMIT_TYPE_ORDER.includes(t) && t !== "OTHER");
   if (remaining.length > 0) out["OTHER"] = true;
   return out;
 }
 
-function buildDeptFilters(requests: MapRequest311[]): Record<string, boolean> {
-  const depts = new Set(requests.map(r => normalizeDept(r.owner_department)));
-  const ordered = ["Streets & Sanitation", "Buildings", "CDOT"];
-  const out: Record<string, boolean> = {};
-  for (const d of ordered) {
-    if (depts.has(d)) out[d] = true;
-  }
-  if ([...depts].some(d => !ordered.includes(d))) out["Other"] = true;
-  return out;
+function formatSrTypeLabel(type: string): string {
+  return type.replace(/ Complaint$/i, "").replace(/ Request$/i, "");
+}
+
+function formatPermitLabel(type: string): string {
+  return type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ");
 }
 
 function computeDateBounds(mapData: MapData, filterMode: FilterMode): { min: number; max: number } | null {
@@ -81,10 +115,13 @@ export function MapView({ mapData, loading, sources }: Props) {
     crimes: true, "requests-311": true, permits: true, zoning: false,
   });
   const [crimeTypeToggles, setCrimeTypeToggles] = useState<Record<string, boolean>>({});
-  const [deptToggles, setDeptToggles] = useState<Record<string, boolean>>({});
+  const [srTypeToggles, setSrTypeToggles] = useState<Record<string, boolean>>({});
+  const [permitTypeToggles, setPermitTypeToggles] = useState<Record<string, boolean>>({});
   const [arrestFilter, setArrestFilter] = useState<ArrestFilterValue>("all");
   const [dateRange, setDateRange] = useState<[number, number] | null>(null);
   const [dateBounds, setDateBounds] = useState<{ min: number; max: number } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+  const onClickRef = useRef<(info: { object?: unknown; layer: { id: string } | null }) => void>(() => {});
 
   // Reset sub-type filters when data changes
   useEffect(() => {
@@ -93,13 +130,17 @@ export function MapView({ mapData, loading, sources }: Props) {
       setArrestFilter("all");
     }
     if (filterMode === "311" && mapData?.requests_311?.length) {
-      setDeptToggles(buildDeptFilters(mapData.requests_311));
+      setSrTypeToggles(buildSrTypeFilters(mapData.requests_311));
+    }
+    if (filterMode === "permits" && mapData?.building_permits?.length) {
+      setPermitTypeToggles(buildPermitTypeFilters(mapData.building_permits));
     }
     if (mapData) {
       const bounds = computeDateBounds(mapData, filterMode);
       setDateBounds(bounds);
       setDateRange(bounds ? [bounds.min, bounds.max] : null);
     }
+    setSelectedItem(null);
   }, [mapData, filterMode]);
 
   const toggleOverview = useCallback((id: string) => {
@@ -108,8 +149,11 @@ export function MapView({ mapData, loading, sources }: Props) {
   const toggleCrimeType = useCallback((id: string) => {
     setCrimeTypeToggles(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
-  const toggleDept = useCallback((id: string) => {
-    setDeptToggles(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleSrType = useCallback((id: string) => {
+    setSrTypeToggles(prev => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+  const togglePermitType = useCallback((id: string) => {
+    setPermitTypeToggles(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
   // Initialize map
@@ -129,17 +173,20 @@ export function MapView({ mapData, loading, sources }: Props) {
 
     const overlay = new MapboxOverlay({
       interleaved: true,
+      onClick: (info: { object?: unknown; layer: { id: string } | null }) => {
+        onClickRef.current(info);
+      },
       getTooltip: (info: { object?: unknown; layer: { id: string } | null }) => {
         if (!info.object) return null;
         const o = info.object as Record<string, unknown>;
         let html = "";
         const lid = info.layer?.id ?? "";
         if (lid === "crimes" || lid.startsWith("crime-")) {
-          html = `<strong>${o.primary_type}</strong><br/>${o.description}<br/>${formatDate(o.date as string)}<br/>Arrest: ${o.arrest === true || o.arrest === "true" ? "Yes" : "No"}`;
+          html = `<strong>${o.primary_type}</strong><br/>${formatDate(o.date as string)}`;
         } else if (lid === "requests-311" || lid.startsWith("dept-")) {
-          html = `<strong>${o.sr_type}</strong><br/>Status: ${o.status}<br/>Dept: ${o.owner_department}<br/>${formatDate(o.created_date as string)}`;
+          html = `<strong>${o.sr_type}</strong><br/>${formatDate(o.created_date as string)}`;
         } else if (lid === "permits") {
-          html = `<strong>${o.permit_type}</strong><br/>${o.work_description}<br/>Cost: $${Number(o.estimated_cost).toLocaleString()}<br/>${formatDate(o.issue_date as string)}`;
+          html = `<strong>${o.permit_type}</strong><br/>${formatDate(o.issue_date as string)}`;
         } else {
           return null;
         }
@@ -159,6 +206,23 @@ export function MapView({ mapData, loading, sources }: Props) {
       setMapReady(false);
     };
   }, []);
+
+  // Click handler - uses ref to avoid stale closure
+  onClickRef.current = (info) => {
+    if (!info.object || !info.layer) {
+      setSelectedItem(null);
+      return;
+    }
+    const lid = info.layer.id;
+    const o = info.object as Record<string, unknown>;
+    if (lid === "crimes") {
+      setSelectedItem({ type: "crime", data: o as unknown as MapCrime });
+    } else if (lid === "requests-311") {
+      setSelectedItem({ type: "311", data: o as unknown as MapRequest311 });
+    } else if (lid === "permits") {
+      setSelectedItem({ type: "permit", data: o as unknown as MapPermit });
+    }
+  };
 
   // Resize observer
   useEffect(() => {
@@ -180,9 +244,10 @@ export function MapView({ mapData, loading, sources }: Props) {
       );
       const otherActive = activeTypes.has("OTHER");
 
+      const namedTypes = new Set(Object.keys(crimeTypeToggles).filter(k => k !== "OTHER"));
       const filteredCrimes = mapData.crimes.filter(c => {
         const typeMatch = activeTypes.has(c.primary_type) ||
-          (otherActive && !Object.keys(CRIME_TYPE_COLORS).includes(c.primary_type));
+          (otherActive && !namedTypes.has(c.primary_type));
         if (!typeMatch) return false;
         if (arrestFilter === "arrested" && !isArrested(c.arrest)) return false;
         if (arrestFilter === "not-arrested" && isArrested(c.arrest)) return false;
@@ -206,16 +271,16 @@ export function MapView({ mapData, loading, sources }: Props) {
         );
       }
     } else if (filterMode === "311" && mapData?.requests_311?.length) {
-      const activeDepts = new Set(
-        Object.entries(deptToggles).filter(([, v]) => v).map(([k]) => k)
+      const activeTypes = new Set(
+        Object.entries(srTypeToggles).filter(([, v]) => v).map(([k]) => k)
       );
-      const otherActive = activeDepts.has("Other");
+      const otherActive = activeTypes.has("OTHER");
+      const topTypes = new Set(Object.keys(srTypeToggles).filter(k => k !== "OTHER"));
 
       const filtered = mapData.requests_311.filter(r => {
-        const normalized = normalizeDept(r.owner_department);
-        const deptMatch = activeDepts.has(normalized) ||
-          (otherActive && !["Streets & Sanitation", "Buildings", "CDOT"].includes(normalized));
-        if (!deptMatch) return false;
+        const typeMatch = activeTypes.has(r.sr_type) ||
+          (otherActive && !topTypes.has(r.sr_type));
+        if (!typeMatch) return false;
         if (!passesDateFilter(r.created_date, dateRange)) return false;
         return true;
       });
@@ -227,7 +292,7 @@ export function MapView({ mapData, loading, sources }: Props) {
             data: filtered,
             getPosition: d => [d.longitude, d.latitude],
             getRadius: 35,
-            getFillColor: d => deptColor(d.owner_department),
+            getFillColor: d => srTypeMapColor(d.sr_type),
             pickable: true,
             radiusMinPixels: 3,
             radiusMaxPixels: 7,
@@ -236,9 +301,20 @@ export function MapView({ mapData, loading, sources }: Props) {
         );
       }
     } else if (filterMode === "permits" && mapData?.building_permits?.length) {
-      const filteredPermits = mapData.building_permits.filter(p =>
-        passesDateFilter(p.issue_date, dateRange)
+      const activeTypes = new Set(
+        Object.entries(permitTypeToggles).filter(([, v]) => v).map(([k]) => k)
       );
+      const otherActive = activeTypes.has("OTHER");
+
+      const filteredPermits = mapData.building_permits.filter(p => {
+        const normalized = normalizePermitType(p.permit_type);
+        const typeMatch = activeTypes.has(normalized) ||
+          (otherActive && !PERMIT_TYPE_ORDER.includes(normalized));
+        if (!typeMatch) return false;
+        if (!passesDateFilter(p.issue_date, dateRange)) return false;
+        return true;
+      });
+
       if (filteredPermits.length > 0) {
         layers.push(
           new ScatterplotLayer<MapPermit>({
@@ -246,7 +322,7 @@ export function MapView({ mapData, loading, sources }: Props) {
             data: filteredPermits,
             getPosition: d => [d.longitude, d.latitude],
             getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
-            getFillColor: [99, 153, 34, 180],
+            getFillColor: d => permitColor(d.permit_type),
             pickable: true,
             radiusMinPixels: 3,
             radiusMaxPixels: 12,
@@ -343,7 +419,7 @@ export function MapView({ mapData, loading, sources }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, overviewToggles, crimeTypeToggles, deptToggles, arrestFilter, dateRange, mapReady]);
+  }, [mapData, filterMode, overviewToggles, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, dateRange, mapReady]);
 
   // Fly to address
   useEffect(() => {
@@ -380,24 +456,23 @@ export function MapView({ mapData, loading, sources }: Props) {
     activeToggles = crimeTypeToggles;
     onToggle = toggleCrimeType;
   } else if (filterMode === "311") {
-    const deptColorMap: Record<string, string> = {
-      "Streets & Sanitation": "rgb(0,188,212)",
-      Buildings: "rgb(255,112,67)",
-      CDOT: "rgb(66,165,245)",
-      Other: "rgb(158,158,158)",
-    };
-    toggleConfigs = Object.keys(deptToggles).map(dept => ({
-      id: dept,
-      label: dept,
-      color: deptColorMap[dept] ?? "rgb(158,158,158)",
-      active: deptToggles[dept],
+    toggleConfigs = Object.keys(srTypeToggles).map(type => ({
+      id: type,
+      label: type === "OTHER" ? "Other" : formatSrTypeLabel(type),
+      color: type === "OTHER" ? "rgb(158,158,158)" : srTypeMapColorCSS(type),
+      active: srTypeToggles[type],
     }));
-    activeToggles = deptToggles;
-    onToggle = toggleDept;
+    activeToggles = srTypeToggles;
+    onToggle = toggleSrType;
   } else if (filterMode === "permits") {
-    // Permits mode: no sub-type filters, just show all
-    toggleConfigs = [];
-    activeToggles = {};
+    toggleConfigs = Object.keys(permitTypeToggles).map(type => ({
+      id: type,
+      label: type === "OTHER" ? "Other" : formatPermitLabel(type),
+      color: type === "OTHER" ? "rgb(136,135,128)" : (permitColorCSS(type)),
+      active: permitTypeToggles[type],
+    }));
+    activeToggles = permitTypeToggles;
+    onToggle = togglePermitType;
   } else {
     toggleConfigs = [
       { id: "crimes", label: "Crime", color: "rgb(226,75,74)", active: overviewToggles.crimes },
@@ -428,7 +503,7 @@ export function MapView({ mapData, loading, sources }: Props) {
       <div ref={containerRef} className="w-full h-full" />
 
       {mapReady && (
-        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end w-1/2 max-w-[200px]">
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end w-1/2 max-w-[200px] max-h-[calc(100%-16px)] overflow-y-auto">
           {dateBounds && dateRange && hasData && (
             <DateRangeSlider
               minDate={dateBounds.min}
@@ -479,7 +554,102 @@ export function MapView({ mapData, loading, sources }: Props) {
           </span>
         </div>
       )}
+
+      {selectedItem && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center bg-black/30"
+          onClick={() => setSelectedItem(null)}
+        >
+          <div
+            className="bg-dark-surface border border-dark-border rounded-xl p-4 max-w-[280px] w-[90%] shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-text-primary">
+                {selectedItem.type === "crime" ? "Crime Incident" :
+                 selectedItem.type === "311" ? "311 Request" : "Building Permit"}
+              </h3>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="text-text-muted hover:text-text-primary transition-colors p-0.5"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-2 text-xs">
+              {renderDetailFields(selectedItem)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function DetailRow({ label, value, href }: { label: string; value: string; href?: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-text-muted shrink-0">{label}</span>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 text-right transition-colors"
+        >
+          {value} ↗
+        </a>
+      ) : (
+        <span className="text-text-primary text-right">{value}</span>
+      )}
+    </div>
+  );
+}
+
+function streetViewUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+}
+
+function renderDetailFields(item: SelectedItem) {
+  if (item.type === "crime") {
+    const d = item.data;
+    return (
+      <>
+        <DetailRow label="Type" value={d.primary_type} />
+        <DetailRow label="Description" value={d.description} />
+        <DetailRow label="Date" value={formatDate(d.date)} />
+        <DetailRow label="Arrest" value={isArrested(d.arrest) ? "Yes" : "No"} />
+        <DetailRow label="Location" value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
+          href={streetViewUrl(d.latitude, d.longitude)} />
+      </>
+    );
+  }
+  if (item.type === "311") {
+    const d = item.data;
+    return (
+      <>
+        <DetailRow label="Type" value={d.sr_type} />
+        <DetailRow label="Status" value={d.status} />
+        <DetailRow label="Department" value={d.owner_department} />
+        <DetailRow label="Date" value={formatDate(d.created_date)} />
+        <DetailRow label="Location" value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
+          href={streetViewUrl(d.latitude, d.longitude)} />
+      </>
+    );
+  }
+  const d = item.data;
+  return (
+    <>
+      <DetailRow label="Type" value={d.permit_type} />
+      <DetailRow label="Work" value={d.work_description || "N/A"} />
+      <DetailRow label="Est. Cost" value={`$${Number(d.estimated_cost).toLocaleString()}`} />
+      <DetailRow label="Issue Date" value={formatDate(d.issue_date)} />
+      <DetailRow label="Location" value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
+        href={streetViewUrl(d.latitude, d.longitude)} />
+    </>
   );
 }
 

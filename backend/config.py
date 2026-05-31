@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # Per-source Socrata row caps (every query must carry a $limit guard).
     limit_crime: int = 35
     limit_311: int = 50
-    limit_permits: int = 50
+    limit_permits: int = 500
     limit_violations: int = 50
     limit_business: int = 100
 

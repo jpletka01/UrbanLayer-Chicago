@@ -1,28 +1,10 @@
 import { useMemo, useState } from "react";
 import type { ContextObject, MapData } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
-import { deptColorCSS, normalizeDept, CRIME_TYPE_COLORS } from "../../lib/mapColors";
+import { deptColorCSS, normalizeDept, crimeColorCSS, srTypeMapColorCSS, permitColorCSS } from "../../lib/mapColors";
 import { computeTrends, computePieSlices, getTrendMonthLabels } from "../../lib/analytics";
 import { PieChart } from "./PieChart";
 import { TrendTable } from "./TrendTable";
-
-const SR_TYPE_PALETTE = [
-  "#26c6da", "#ff7043", "#42a5f5", "#ab47bc", "#66bb6a",
-  "#ffa726", "#ef5350", "#8d6e63", "#78909c", "#ec407a",
-];
-
-function srTypeColor(type: string): string {
-  let hash = 0;
-  for (let i = 0; i < type.length; i++) hash = ((hash << 5) - hash + type.charCodeAt(i)) | 0;
-  return SR_TYPE_PALETTE[Math.abs(hash) % SR_TYPE_PALETTE.length];
-}
-
-function permitTypeColor(type: string): string {
-  const palette = ["#63992280", "#7cb342", "#558b2f", "#9ccc65", "#aed581"];
-  let hash = 0;
-  for (let i = 0; i < type.length; i++) hash = ((hash << 5) - hash + type.charCodeAt(i)) | 0;
-  return palette[Math.abs(hash) % palette.length];
-}
 
 type ThreeOneOneGrouping = "sr_type" | "department";
 
@@ -38,13 +20,9 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
 
   const crimeAnalytics = useMemo(() => {
     if (!mapData.crimes.length) return null;
-    const colorFn = (cat: string) => {
-      const c = CRIME_TYPE_COLORS[cat];
-      return c ? `rgb(${c[0]},${c[1]},${c[2]})` : "rgb(136,135,128)";
-    };
     return {
-      trends: computeTrends(mapData.crimes, c => c.date, c => c.primary_type, colorFn),
-      pie: computePieSlices(mapData.crimes, c => c.primary_type, colorFn),
+      trends: computeTrends(mapData.crimes, c => c.date, c => c.primary_type, crimeColorCSS),
+      pie: computePieSlices(mapData.crimes, c => c.primary_type, crimeColorCSS),
       monthLabels: getTrendMonthLabels(mapData.crimes, c => c.date),
     };
   }, [mapData.crimes]);
@@ -54,7 +32,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
     const getCategory = threeOneOneGrouping === "sr_type"
       ? (r: (typeof mapData.requests_311)[0]) => r.sr_type
       : (r: (typeof mapData.requests_311)[0]) => normalizeDept(r.owner_department);
-    const colorFn = threeOneOneGrouping === "sr_type" ? srTypeColor : deptColorCSS;
+    const colorFn = threeOneOneGrouping === "sr_type" ? srTypeMapColorCSS : deptColorCSS;
     return {
       trends: computeTrends(mapData.requests_311, r => r.created_date, getCategory, colorFn),
       pie: computePieSlices(mapData.requests_311, getCategory, colorFn),
@@ -65,8 +43,8 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
   const permitAnalytics = useMemo(() => {
     if (!mapData.building_permits.length) return null;
     return {
-      trends: computeTrends(mapData.building_permits, p => p.issue_date, p => p.permit_type, permitTypeColor),
-      pie: computePieSlices(mapData.building_permits, p => p.permit_type, permitTypeColor),
+      trends: computeTrends(mapData.building_permits, p => p.issue_date, p => p.permit_type, permitColorCSS),
+      pie: computePieSlices(mapData.building_permits, p => p.permit_type, permitColorCSS),
       monthLabels: getTrendMonthLabels(mapData.building_permits, p => p.issue_date),
     };
   }, [mapData.building_permits]);

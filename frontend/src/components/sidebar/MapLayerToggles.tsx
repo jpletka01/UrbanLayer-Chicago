@@ -31,7 +31,7 @@ export function MapLayerToggles({ layers, onToggle }: Props) {
               backgroundColor: layer.active ? layer.color : "#555",
             }}
           />
-          {layer.label}
+          <span className="truncate">{layer.label}</span>
         </button>
       ))}
     </div>
