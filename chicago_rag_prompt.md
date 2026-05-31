@@ -1,410 +1,450 @@
-# Chicago City Intelligence — Claude Code Project Prompt
+# Chicago City Intelligence — Architecture & Design
 
 ## Project Overview
 
-Build a **RAG-powered chat interface** that lets users ask natural language questions about the city of Chicago. The system combines live data from the Chicago Data Portal (via Socrata API) with semantic search over embedded municipal documents (zoning codes, city ordinances) to answer questions about public safety, neighborhood conditions, building activity, 311 complaints, and local regulations.
+A **RAG-powered chat interface** for natural-language questions about the city of Chicago. The system combines live data from the Chicago Data Portal (via Socrata API) with semantic search over the embedded Chicago Municipal Code to answer questions about public safety, neighborhood conditions, building activity, 311 complaints, business licensing, and local regulations.
 
-The killer use case is a unified address query: a user types something like _"What's going on near 2400 N Milwaukee Ave?"_ and receives a synthesized response covering recent crime patterns, open 311 service requests, active building permits, and the applicable zoning code — all from a single prompt.
+The killer use case is a unified address query: a user types _"What's going on near 2400 N Milwaukee Ave?"_ and receives a synthesized response covering recent crime patterns, open 311 service requests, active building permits, business licenses, and applicable zoning — all from a single prompt, with an interactive map, analytics charts, and clickable source citations.
 
 ---
 
 ## Tech Stack
 
 ### Backend
-- **Language:** Python
-- **Framework:** FastAPI
-- **LLM:** Anthropic Claude API (claude-sonnet-4-20250514)
-- **Vector DB:** Qdrant (self-hosted via Docker for local dev; Qdrant Cloud free tier for live demo deployment)
-- **Embeddings:** OpenAI `text-embedding-3-small` or a local model via `sentence-transformers`
-- **Async HTTP:** `aiohttp` for parallel Socrata API calls
-- **Env management:** `python-dotenv`
+- **Language:** Python 3.11
+- **Framework:** FastAPI (async-first, SSE streaming)
+- **LLM:** Anthropic Claude Sonnet 4.6 (`claude-sonnet-4-6`) for router + synthesizer; Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) for conversation synthesis
+- **Vector DB:** Qdrant v1.9.0 (Docker, self-hosted) — accessed via raw HTTP API (`httpx`), not `qdrant-client` (due to client/server version incompatibility)
+- **Embeddings:** `BAAI/bge-base-en-v1.5` (768-dim, 512-token context) via `sentence-transformers`, running locally — no OpenAI key needed. Query prefix enabled for asymmetric retrieval
+- **Async HTTP:** `httpx` for Socrata API calls with retry/backoff and shared `X-App-Token`
+- **Persistence:** SQLite via `aiosqlite` (WAL mode) for conversation storage — `backend/data/chicago.db`
+- **Geocoding:** Census Geocoder (free, no API key) + `shapely` point-in-polygon against cached community-area polygons
 
 ### Frontend
-- **Framework:** React (Vite)
-- **Styling:** Tailwind CSS
-- **Chat UI:** Custom component — no off-the-shelf chat library
-- **Map (optional, stretch goal):** Leaflet.js or Mapbox GL for visualizing geographic results
+- **Framework:** React + TypeScript + Vite
+- **Styling:** Tailwind CSS v3 (dark theme throughout, custom color tokens)
+- **Chat UI:** Custom components with typewriter effect, inline citation pills, data pills
+- **Map:** Mapbox GL JS (`dark-v11` basemap) + deck.gl (`ScatterplotLayer`, `GeoJsonLayer`) via `@deck.gl/mapbox` MapboxOverlay
+- **Streaming:** SSE consumption with per-message context binding
+- **State:** React hooks (`useChat`, `useTypewriter`, `useCopyButton`), no external state library
 
 ### Infrastructure
-- **Containerization:** Docker + Docker Compose (one service each for: FastAPI backend, Qdrant, optional Postgres)
-- **Document pipeline:** Standalone Python scripts (not part of the API server) for ingesting and embedding municipal documents
+- **Docker Compose:** Qdrant service (pinned to v1.9.0)
+- **Document pipeline:** Standalone Python scripts (`ingestion/`) for parsing, chunking, embedding, and storing municipal code sections
+- **Env vars:** `.env` (backend: `ANTHROPIC_API_KEY`, `SOCRATA_APP_TOKEN`), `frontend/.env` (`VITE_MAPBOX_TOKEN`)
 
 ---
 
 ## Architecture: Three-Layer RAG Pipeline
 
+```
+User Message
+  │
+  ├─ Conversation Synthesis (Haiku) ─── expands follow-ups into self-contained queries
+  │
+  ├─ LLM Router (Sonnet) ─── produces RetrievalPlan JSON
+  │
+  ├─ Parallel Retrieval (asyncio.gather)
+  │   ├─ Socrata APIs ─── crime, 311, permits, violations, business
+  │   ├─ Vector Search ─── Qdrant semantic search + cross-ref expansion
+  │   └─ Map Data ─── raw geo-located rows for map + analytics
+  │
+  ├─ Context Assembly ─── merges results into ContextObject
+  │
+  ├─ Analytics Computation ─── month-over-month trends from map rows
+  │
+  └─ LLM Synthesis (Sonnet, streaming) ─── generates response with inline citations + trend data
+```
+
 ### Layer 1 — Live Structured Data (Socrata API)
-Real-time queries to the Chicago Data Portal using SoQL. No embeddings — results are fetched at query time and injected directly into the LLM context.
+Real-time queries to the Chicago Data Portal using SoQL. Results are fetched at query time and injected into the LLM context as structured summaries. Each query carries a `$limit` guard and the assembler detects when results hit the cap (`capped: true`), instructing the LLM to say "at least N" instead of exact counts.
 
 ### Layer 2 — Static Document Embeddings (Qdrant Vector Search)
-Chicago Municipal Code and zoning ordinances are chunked, embedded, and stored in Qdrant. Retrieved via semantic similarity search at query time.
+The full Chicago Municipal Code (Titles 1–18, 14,535 chunks from 8,615 sections) is chunked at the subsection level, embedded with `bge-base-en-v1.5`, and stored in Qdrant. Retrieved via semantic similarity with keyword boost scoring and per-section deduplication.
 
 ### Layer 3 — LLM Router + Synthesizer (Claude)
-An LLM-based router parses the user message, produces a retrieval plan, and dispatches parallel queries to Layers 1 and 2. A second LLM call synthesizes all retrieved context into a final response.
+A Claude-based router parses the user message, produces a `RetrievalPlan` (sources, location, intent, time range, search query), and dispatches parallel queries to Layers 1 and 2. A second Claude call synthesizes all retrieved context — including analytics trends — into a streaming response with inline citation markers.
+
+### Layer 4 — Conversation Persistence (SQLite)
+Conversations, messages, and per-message state (context, plan, map data) are persisted in SQLite. Each assistant message stores the full context snapshot that was used to generate it, enabling per-question state toggling in the UI. A 10-message limit per conversation controls token costs.
 
 ---
 
 ## Data Sources
 
-### Priority Socrata Datasets (Chicago Data Portal)
+### Socrata Datasets (Chicago Data Portal)
 
-All datasets are accessed via the Socrata REST API at `https://data.cityofchicago.org/resource/{dataset_id}.json` using SoQL query parameters.
+All datasets accessed via `https://data.cityofchicago.org/resource/{dataset_id}.json` with SoQL query parameters and `X-App-Token` header.
 
-**1. Crimes — 2001 to Present**
-- Dataset ID: `ijzp-q8t2`
-- Key fields: `date`, `primary_type`, `description`, `location_description`, `arrest` (bool), `domestic` (bool), `beat`, `district`, `ward`, `community_area`, `latitude`, `longitude`, `iucr`, `fbi_code`
-- Update cadence: Daily (excludes most recent 7 days — always surface this lag to users)
-- Primary use: Crime trend queries, neighborhood safety assessments, address-level incident lookups
-- Notes: Join with IUCR lookup table (`c7ck-438e`) to translate 4-digit codes to plain English. Use `community_area` (integer 1–77) for neighborhood aggregations. `primary_type` has ~35 categories; map user language like "violent crime" to relevant types (HOMICIDE, ASSAULT, BATTERY, ROBBERY, CRIMINAL SEXUAL ASSAULT) in the router.
+| Dataset | ID | Key Fields | Use |
+|---|---|---|---|
+| Crimes 2001–Present | `ijzp-q8t2` | `date`, `primary_type`, `description`, `arrest`, `community_area`, `latitude`, `longitude` | Crime trends, safety assessments. 7-day data lag always surfaced |
+| 311 Service Requests | `v6vf-nfxy` | `sr_type`, `status`, `owner_department`, `created_date`, `community_area`, `latitude`, `longitude` | Quality-of-life queries. `Open - Dup` filtered before aggregating |
+| Building Permits | `ydr8-5enu` | `permit_type`, `work_description`, `issue_date`, `reported_cost`, `community_area`, `latitude`, `longitude` | Development activity, construction queries |
+| Building Violations | `22u3-xenr` | `violation_date`, `violation_description`, `violation_status`, `community_area`, `latitude`, `longitude` | Property condition, landlord accountability |
+| Business Licenses | `uupf-x98q` | `doing_business_as_name`, `license_description`, `business_activity`, `community_area`, `latitude`, `longitude` | Neighborhood character, business verification |
+| Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area resolution (shapely point-in-polygon) |
+| IUCR Codes | `c7ck-438e` | Crime code lookup | Human-readable crime type translation |
+| Zoning Districts | `p8va-airx` | GeoJSON boundaries | Zoning layer (infrastructure ready, disabled by default) |
 
-**2. 311 Service Requests**
-- Dataset ID: `v6vf-nfxy`
-- Key fields: `sr_number`, `sr_type` (107 distinct types), `owner_department`, `status` (Open / Closed / Canceled / Open - Dup), `created_date`, `closed_date`, `street_address`, `ward`, `community_area`, `police_district`, `latitude`, `longitude`
-- Update cadence: Near real-time
-- Primary use: Neighborhood quality-of-life queries, response time analysis, open issue lookups
-- Notes: Filter out `Open - Dup` records before aggregating counts. The `created_date` → `closed_date` delta gives city response time — a useful derived metric. Group `sr_type` values by `owner_department` for cleaner LLM reasoning. Notable SR types: `Noise - Residential`, `Rodent Baiting/Rat Complaint`, `Pothole in Street`, `Abandoned Vehicle`, `Graffiti Removal`, `Building Violation`.
+### Municipal Code (Vector Search)
 
-**3. Building Permits**
-- Dataset ID: `ydr8-5enu`
-- Key fields: `permit_`, `permit_type`, `work_description`, `application_start_date`, `issue_date`, `street_number`, `street_direction`, `street_name`, `community_area`, `latitude`, `longitude`, `estimated_cost`
-- Primary use: Property development queries, neighborhood construction activity
-
-**4. Building Violations**
-- Dataset ID: `22u3-xenr`
-- Key fields: `violation_date`, `violation_description`, `violation_status`, `property_group`, `street_number`, `street_name`, `community_area`, `latitude`, `longitude`
-- Primary use: Landlord accountability, property condition queries
-- Notes: Cross-reference with the Building Code Scofflaw List for high-value queries ("is my landlord on the scofflaw list?")
-
-**5. Business Licenses — Current Active**
-- Dataset ID: `uupf-x98q`
-- Key fields: `legal_name`, `doing_business_as_name`, `license_description`, `business_activity`, `address`, `ward`, `community_area`, `latitude`, `longitude`, `expiration_date`
-- Primary use: Neighborhood character queries, restaurant/bar lookups, business verification
-
-**Supporting / Geographic Datasets**
-- Community Area Boundaries: `igwz-8jzy` — maps integer (1–77) to name (e.g. 24 = "West Town")
-- Ward Boundaries (2023–): `sp34-6z76`
-- Zoning Districts (current): `p8va-airx` — spatial join to resolve address → zoning classification
-- IUCR Codes: `c7ck-438e` — lookup table for crime code translation
+- **Source:** Local HTML export from American Legal Publishing (`chicago-il-codes.html`, ~100MB, gitignored)
+- **Scope:** Full Chicago Municipal Code, Titles 1–18, including the republished Zoning & Land Use Ordinance (Titles 16/17)
+- **Pipeline:** `parse_chicago_code.py` → `chunk.py` → `embed_and_store.py`
+- **Stats:** 8,615 sections → 14,535 chunks in Qdrant
+- **Embedding model:** `BAAI/bge-base-en-v1.5` (768-dim, 110M params) with BGE query prefix for asymmetric retrieval
 
 ---
 
 ## The Router
 
-The router is an LLM call (Claude) that runs before any retrieval. It receives the raw user message and returns a structured retrieval plan as JSON.
+The router is a Claude Sonnet call that runs before any retrieval. It receives the synthesized query (after multi-turn expansion) and returns a structured `RetrievalPlan`.
 
 ### Router Output Schema
 ```json
 {
-  "sources": ["crime_api", "311_api", "vector_search"],
+  "sources": ["crime_api", "311_api", "permits_api", "violations_api", "business_api", "vector_search"],
   "location": {
-    "raw": "Milwaukee and North",
+    "raw": "Wicker Park",
     "type": "intersection | address | neighborhood | community_area | none",
     "resolved_community_area": 24,
-    "resolved_address": "2400 N Milwaukee Ave"
+    "resolved_community_area_name": "West Town",
+    "resolved_address": "2400 N Milwaukee Ave",
+    "resolved_lat": 41.9270,
+    "resolved_lon": -87.6984
   },
-  "intent": "neighborhood_overview | incident_lookup | legal_question | event_query | trend_analysis",
+  "intent": "neighborhood_overview | incident_lookup | legal_question | event_query | trend_analysis | clarification_needed",
   "time_range_days": 90,
-  "requires_disclaimer": true
+  "requires_disclaimer": true,
+  "search_query": "accessory structures fence height residential",
+  "clarification": null
 }
 ```
 
-### Router Behavior Rules
-- `requires_disclaimer: true` whenever `sources` includes `vector_search` AND `intent` is `legal_question` — zoning and code responses must carry a "consult a professional" disclaimer
-- Location resolution is critical: neighborhood names like "Wicker Park" or "Logan Square" must be mapped to their `community_area` integer before API calls. Embed a static lookup table of all 77 community area names → integers in the router's system prompt.
-- If no location is present and the query requires one, the router should set `location.type = "none"` and the system should ask the user for clarification rather than guessing.
-- Router is iterative-capable: after initial retrieval, it can issue a follow-up retrieval plan if the first results are insufficient (agentic loop, 2 iterations max to control latency).
+### Router System Prompt Features
+- Embeds all 77 community area names + 30+ neighborhood aliases (Wicker Park → West Town, etc.)
+- **Search query guidance** for both zoning and non-zoning topics: home occupations ("search home occupation rules, not bakery"), accessory structures, licensing, building code, etc.
+- Location resolution: maps neighborhood names to `community_area` integers
+- If no location and query requires one: `intent = "clarification_needed"`, emits clarification text
 
 ---
 
-## Parallel Retrieval
+## Context Assembly & Analytics
 
-After the router produces a plan, all source queries fire simultaneously using `asyncio.gather()`.
+### Context Assembler (`assembler.py`)
+Merges raw API results into a `ContextObject` with configurable caps:
 
-### SoQL Query Patterns
-
-**Crime — aggregated by type (neighborhood-level)**
-```
-GET /resource/ijzp-q8t2.json
-  ?$where=community_area='{ca}' AND date > '{date_90d_ago}'
-  &$group=primary_type
-  &$select=primary_type,count(*) as count,sum(case(arrest='true',1,0)) as arrests
-  &$order=count DESC
-  &$limit=10
-```
-
-**Crime — recent incidents (address/block-level)**
-```
-GET /resource/ijzp-q8t2.json
-  ?$where=block='{block}' AND date > '{date_30d_ago}'
-  &$order=date DESC
-  &$limit=20
-```
-
-**311 — open requests by neighborhood**
-```
-GET /resource/v6vf-nfxy.json
-  ?$where=community_area='{ca}' AND status='Open'
-  &$group=owner_department,sr_type
-  &$select=owner_department,sr_type,count(*) as count
-  &$order=count DESC
-  &$limit=15
-  &$having=sr_type != 'Open - Dup'
-```
-
-**311 — response time (closed requests)**
-```
-GET /resource/v6vf-nfxy.json
-  ?$where=community_area='{ca}' AND status='Closed'
-    AND created_date > '{date_90d_ago}'
-  &$select=sr_type,avg(date_diff_d(closed_date,created_date)) as avg_days
-  &$group=sr_type
-  &$order=avg_days DESC
-  &$limit=10
-```
-
----
-
-## Context Assembler
-
-The context assembler merges all retrieval results into a single structured JSON object before the LLM synthesis call. This function should be built and unit-tested independently of the LLM layer.
-
-### Output Shape
 ```json
 {
   "community_area": 24,
   "community_area_name": "West Town",
-  "data_as_of": "2025-05-20",
-  "data_lag_note": "Crime data excludes the most recent 7 days.",
+  "data_lag_note": "Crime data may lag by up to 7 days.",
   "crime_last_90d": {
-    "total": 143,
+    "total": 1756,
     "arrest_rate": 0.18,
-    "by_type": {
-      "THEFT": 61,
-      "BATTERY": 28,
-      "CRIMINAL DAMAGE": 19,
-      "ASSAULT": 14,
-      "NARCOTICS": 11
-    }
+    "by_type": {"THEFT": 412, "BATTERY": 287, ...},
+    "capped": false
   },
-  "open_311_requests": {
-    "total": 37,
-    "oldest_open_days": 94,
-    "by_department": {
-      "Streets & Sanitation": 19,
-      "CDOT": 11,
-      "Buildings": 7
-    },
-    "top_types": ["Pothole in Street", "Rodent Baiting/Rat Complaint", "Graffiti Removal"]
-  },
-  "code_chunks": [
-    {
-      "text": "...",
-      "source_document": "Chicago Municipal Code",
-      "section": "17-2-0100",
-      "section_title": "Residential districts — permitted uses",
-      "score": 0.91
-    }
-  ]
+  "open_311_requests": { ... },
+  "permits": { ... },
+  "violations": { ... },
+  "businesses": { ... },
+  "code_chunks": [ ... ],
+  "analytics": {
+    "crime_trends": [
+      {"category": "BATTERY", "current_count": 245, "prior_count": 199, "change_pct": 23},
+      {"category": "THEFT", "current_count": 189, "prior_count": 222, "change_pct": -15}
+    ],
+    "trend_period": "Apr '26 vs Mar '26"
+  }
 }
 ```
 
-### Assembler Rules
-- Cap `by_type` crime breakdown to top 5 to control context window size
-- Filter `Open - Dup` from 311 counts before aggregating
-- Always include `data_lag_note` when crime data is present
-- Cap `code_chunks` to top 5 by relevance score
-- Each chunk must carry its `section` and `section_title` metadata — this is what gets cited in the response
+### Server-Side Analytics (`analytics.py`)
+Month-over-month trends computed from raw map data rows (up to 2500 crime, 1000 311, 500 permits):
+- Groups records by year-month + category
+- Skips the current partial calendar month
+- Compares the two most recent complete months
+- Returns top 8 categories per source, sorted by current count
+- Results formatted as human-readable text in the synthesis prompt (not JSON) to save tokens
 
 ---
 
-## Vector Search (Qdrant) — Document Ingestion Pipeline
+## Vector Search Pipeline
 
-This is a separate offline pipeline, not part of the API server. Run it once to populate Qdrant, and re-run when source documents update.
-
-### Document Sources (to be located and downloaded)
-- **Chicago Municipal Code:** Available at `https://library.municode.com/il/chicago` — large structured document, ~4,000+ sections
-- **Chicago Zoning Ordinance:** Title 17 of the Municipal Code — the most relevant section for land use queries
-- **Aldermanic Zoning Amendment Summaries:** Available via the City Clerk's Legistar portal
-
-### Chunking Strategy — Critical Design Decision
-Do **not** chunk by character count. The municipal code uses a hierarchical section structure that must be preserved:
-
+### Search Flow
 ```
-Title 17 (Zoning)
-  → Chapter 17-2 (Residential Districts)
-    → Section 17-2-0100 (Permitted Uses)
-      → Subsection (a), (b), (c)...
+query
+  → prepend BGE query prefix ("Represent this sentence for searching relevant passages: ")
+  → encode with bge-base-en-v1.5 (768-dim)
+  → Qdrant dense search (limit = top_k × 5, overfetch for dedup)
+  → filter legend-only table chunks
+  → keyword boost: combined = 0.85 × dense + 0.15 × keyword_overlap
+  → sort by combined score
+  → per-section dedup (keep best chunk per section)
+  → return top_k CodeChunks
 ```
 
-Chunk at the **subsection level**. Each chunk = one subsection, never split across subsections. If a subsection is very long (>800 tokens), split at paragraph boundaries within it, and duplicate the section header in each sub-chunk.
+### Key Features
+- **Per-section deduplication** prevents long sections (e.g., 27 chunks) from dominating results
+- **Keyword boost** (0.15 weight) helps when embedding similarity misses exact-term relevance
+- **Cross-reference expansion** fetches related sections by ID from Qdrant payload
+- **Cross-reference filtering** against a cached section index (scrolled once per process lifetime)
+- **Reranker infrastructure** wired but disabled — MS MARCO model hurts on legal text; ready for a legal-domain reranker
 
-### Metadata Schema (per chunk — stored in Qdrant payload)
-```json
-{
-  "source_document": "Chicago Municipal Code",
-  "title_number": 17,
-  "title_name": "Zoning",
-  "chapter": "17-2",
-  "section": "17-2-0100",
-  "section_title": "Residential districts — permitted uses",
-  "subsection": "a",
-  "effective_date": "2024-01-01",
-  "cross_references": ["17-2-0200", "17-9-0100"],
-  "text": "..."
-}
-```
-
-### Cross-Reference Handling
-The municipal code frequently references other sections ("see Section 17-9-0100 for exceptions"). When a retrieved chunk contains cross-references, the assembler should attempt to fetch those referenced sections from Qdrant by section ID (exact match, not semantic search) and include them as secondary context. This prevents the LLM from missing critical qualifications or exceptions.
-
-### Qdrant Collection Setup
-```python
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams
-
-client = QdrantClient("localhost", port=6333)
-client.create_collection(
-    collection_name="chicago_municipal_code",
-    vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-)
-# Also create a separate collection for zoning if you want independent filtering:
-client.create_collection(
-    collection_name="chicago_zoning",
-    vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-)
-```
+### Chunking Strategy
+- Chunk at the **subsection level**, never splitting across subsections
+- Hierarchical header re-duplication in each chunk
+- Table-aware: colspan/rowspan handling, composite multi-row headers, `[TABLE]` / `Row N: header=value` format
+- Sub-section splits at category boundaries within tables (min 400 chars before splitting)
+- Small table pieces merged when consecutive fragments fit within chunk budget
 
 ---
 
-## LLM Synthesis Prompt Structure
+## LLM Synthesis
 
-### System Prompt
+### SSE Event Stream
+The `/chat` endpoint streams Server-Sent Events:
+
 ```
-You are a Chicago city information assistant. You have access to real-time city data and official municipal documents. Your job is to answer questions about Chicago clearly and accurately.
-
-Rules:
-1. Always cite your sources. For API data, cite the dataset name and date range. For document chunks, cite the section number and title.
-2. Always surface data freshness. If crime data is present, note the 7-day lag.
-3. For any question that touches on legal rights, zoning compliance, permit requirements, or ordinance interpretation, add this disclaimer: "This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department for official guidance."
-4. Never fabricate statistics. If the data doesn't answer the question, say so.
-5. Be concise. Lead with the direct answer, then supporting detail.
+{"type": "plan",     "plan": RetrievalPlan,     "t_ms": 2400}
+{"type": "context",  "context": ContextObject,  "t_ms": 6200}
+{"type": "map_data", "map_data": MapDataResponse, "t_ms": 6500}
+{"type": "token",    "text": "Based on...",     "t_ms": 7100}  ← first token
+{"type": "token",    "text": " crime data"}
+...
+{"type": "done",     "t_ms": 13600}
 ```
 
-### User Prompt Template
-```
-Context data (retrieved from Chicago city databases):
-{context_object_as_json}
+### Synthesis Prompt Structure
 
-User question: {user_message}
+**System prompt** instructs Claude to:
+1. Use `[N]` citation markers that render as `§ <section>` pills in the frontend
+2. Use `[data:crime]` / `[data:311]` / etc. data markers for API statistics
+3. Surface data freshness (7-day crime lag)
+4. Say "at least N" when data is capped
+5. Add legal disclaimer when `requires_disclaimer: true`
+6. Be concise — lead with direct answer
+7. Place citations immediately after relevant statements
+8. Weave notable month-over-month trends into answers naturally
 
-Answer the question using only the context data above. Cite sources inline.
-```
+**User prompt** includes:
+- Full `ContextObject` as indented JSON (excluding analytics)
+- Analytics formatted as readable text: `"Crime: BATTERY: 245 (up 23%)"`
+- The user's question
+- Instruction to answer from context only
 
 ---
 
-## Response Format
+## Conversation Persistence
 
-Responses to the user should follow this structure:
+### SQLite Schema (`backend/db.py`)
 
-1. **Direct answer** — 1–3 sentences answering the question
-2. **Supporting data** — key stats, formatted as readable prose (not raw JSON)
-3. **Source citations** — inline, e.g. "according to CPD crime data (last 90 days, excluding most recent 7 days)"
-4. **Legal disclaimer** — appended automatically when `requires_disclaimer: true`
-5. **Data freshness note** — when crime data is included
+```sql
+conversations (id TEXT PK, title, created_at, updated_at)
+messages (id INTEGER PK, conversation_id FK, role, content,
+          context_json, plan_json, map_data_json, map_fetched_at, position, created_at)
+uploads (id TEXT PK, conversation_id FK, filename, mime_type, size_bytes, storage_path, created_at)
+schema_version (version INTEGER PK)
+```
+
+- WAL mode, foreign keys enabled, singleton `aiosqlite` connection
+- JSON blob columns for context/plan/mapData (written once, read whole)
+- `uploads` table is schema-only (future file upload support)
+- 10-message limit enforced via `count_user_messages()` check before routing
+
+### Conversation API
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/conversations` | List all with message counts |
+| `POST` | `/api/conversations` | Create new conversation |
+| `GET` | `/api/conversations/{id}` | Full conversation with all messages + context/plan/mapData |
+| `DELETE` | `/api/conversations/{id}` | Delete (CASCADE to messages) |
+| `PUT` | `/api/conversations/{id}/messages` | Append message pair |
+| `PATCH` | `/api/conversations/{id}/messages/{position}` | Update map data (staleness refresh) |
+| `POST` | `/api/conversations/import` | Bulk import from localStorage migration |
+
+### Migration
+On first frontend load, `migrateLocalStorageToSQLite()` reads the old `chicago.conversations.v1` localStorage key, POSTs all conversations to the import endpoint, then removes the localStorage keys.
+
+---
+
+## Frontend Architecture
+
+### State Machine
+```
+Splash (hero slideshow + chat pill + suggestions + stats)
+  → [first message]
+Workspace (split-screen: chat + sidebar)
+```
+
+### Per-Message Context
+Each assistant message stores its own `context`, `plan`, `mapData`, and `mapFetchedAt`. This enables:
+- **Citations that survive multi-turn** — `[1]` in an old message still points to the right code chunk
+- **Per-question state toggling** — clicking a past user message loads that turn's data into the sidebar
+- **Map data staleness** — re-fetch if `mapFetchedAt` > 24 hours ago
+
+### Sidebar
+Two tabs: **Data** (map + analytics + data cards) and **Sources** (code chunks with citations).
+
+**Data tab layout:**
+- Mapbox + deck.gl map (~75% height) with ScatterplotLayers for crime/311/permits
+- Context-aware filter toggles (crime types, 311 request types, permit types, or source-level)
+- Arrest filter (All / Arrested / No Arrest) for crime mode
+- Dual-handle date range slider
+- Data cards below the map (crime, 311, permits, violations, business)
+- Analytics section: SVG donut chart with hover expansion + thin-slice ring, MoM trend table with sortable columns
+
+**Sources tab:**
+- Ranked code chunks with `§ section` pills, relevance scores, expandable full text
+- Clickable cross-reference pills with hover preview
+- Full-section viewer drawer for cross-referenced sections
+
+### Key Components
+- `ChatInterface` — message list + input, per-question click handling, message limit UI
+- `MessageBubble` — markdown rendering, citation/data pill injection, typewriter effect, click-to-select for user messages
+- `SidebarPanel` — drag-to-resize, collapsible rail, Data/Sources tabs
+- `MapView` — Mapbox + deck.gl with click-to-detail popups (Google Street View links), flyTo animation
+- `AnalyticsSection` — pie chart + trend table, computed from map data
+- `useChat` — SSE consumption hook, message limit enforcement, plan/context/mapData attachment
 
 ---
 
 ## Project File Structure
 
 ```
-chicago-rag/
+chicago/
 ├── backend/
-│   ├── main.py                  # FastAPI app, /chat endpoint
-│   ├── router.py                # LLM router — parses user message → retrieval plan
+│   ├── main.py                     # FastAPI: /chat SSE, /api/conversations/*, /api/map-data, /section/*
+│   ├── router.py                   # Claude router → RetrievalPlan
+│   ├── synthesizer.py              # Claude streaming synthesis with analytics formatting
+│   ├── conversation.py             # Multi-turn query expansion (Haiku)
+│   ├── assembler.py                # Context assembly with caps + capped detection
+│   ├── analytics.py                # Server-side MoM trend computation
+│   ├── db.py                       # SQLite persistence (aiosqlite, WAL)
+│   ├── models.py                   # Pydantic models for all types
+│   ├── config.py                   # Settings via pydantic-settings
+│   ├── prompts.py                  # System prompts (router, synthesizer, conversation)
+│   ├── llm.py                      # Shared Anthropic client
+│   ├── data/                       # SQLite database (gitignored)
 │   ├── retrieval/
-│   │   ├── crime.py             # Socrata crime API queries (async)
-│   │   ├── three11.py           # Socrata 311 API queries (async)
-│   │   ├── buildings.py         # Socrata building permits/violations (async)
-│   │   ├── vector_search.py     # Qdrant semantic search
-│   │   └── geo.py               # Address → community_area resolution helpers
-│   ├── assembler.py             # Context assembler — merges all retrieval results
-│   ├── synthesizer.py           # LLM synthesis call — builds final response
-│   ├── models.py                # Pydantic models for all request/response shapes
-│   └── config.py                # Env vars, API keys, dataset IDs
+│   │   ├── socrata.py              # Shared async client with retry/backoff
+│   │   ├── crime.py                # Crime API (aggregated + block-level)
+│   │   ├── three11.py              # 311 API (open requests + response times)
+│   │   ├── buildings.py            # Permits + violations
+│   │   ├── business.py             # Business licenses
+│   │   ├── map_data.py             # Raw geo-located rows for map
+│   │   ├── vector_search.py        # Qdrant search + keyword boost + dedup
+│   │   ├── geo.py                  # Geocoding + community area resolution
+│   │   └── utils.py                # Shared helpers (cutoff_iso)
+│   └── tests/                      # 177 tests (unit + integration)
 │
 ├── ingestion/
-│   ├── download_docs.py         # Script to fetch/download municipal PDFs
-│   ├── chunk.py                 # Section-aware chunking logic
-│   ├── embed_and_store.py       # Embed chunks and upsert into Qdrant
-│   └── data/                    # Raw downloaded documents (gitignored)
+│   ├── parse_chicago_code.py       # HTML → sections JSON (split-at-republication strategy)
+│   ├── chunk.py                    # Section-aware chunking with table consolidation
+│   ├── embed_and_store.py          # sentence-transformers → Qdrant (--recreate flag)
+│   ├── load_community_areas.py     # Community area polygons → GeoJSON
+│   └── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
+│
+├── eval/
+│   ├── queries.json                # 26 test queries (all passing)
+│   ├── run_eval.py                 # Router-only and full pipeline eval
+│   └── retrieval_benchmark.py      # 18-query retrieval quality benchmark (A=13 B=1 C=4)
 │
 ├── frontend/
 │   ├── src/
+│   │   ├── App.tsx                 # State machine, async conversation lifecycle, per-question toggling
 │   │   ├── components/
-│   │   │   ├── ChatInterface.jsx
-│   │   │   ├── MessageBubble.jsx
-│   │   │   ├── SourceCitation.jsx
-│   │   │   └── DisclaimerBanner.jsx
-│   │   ├── App.jsx
-│   │   └── main.jsx
+│   │   │   ├── ChatInterface.tsx   # Message list, input, message limit UI
+│   │   │   ├── ChatInput.tsx       # Glassmorphism input with address autocomplete
+│   │   │   ├── MessageBubble.tsx   # Markdown + citations + typewriter + click-to-select
+│   │   │   ├── CitationPill.tsx    # [N] → § section pill with hover tooltip
+│   │   │   ├── DataPill.tsx        # [data:*] → colored data source pill
+│   │   │   ├── CrossRefPill.tsx    # Clickable cross-reference with hover preview
+│   │   │   ├── SourceCitation.tsx  # Source card with rank, score, expandable text
+│   │   │   ├── SourceDetailDrawer.tsx  # Full-section viewer for cross-refs
+│   │   │   ├── SidebarPanel.tsx    # Drag-to-resize, collapsed rail, Data/Sources tabs
+│   │   │   ├── HistorySidebar.tsx  # Conversation history list
+│   │   │   ├── HeroSlideshow.tsx   # Landing page photo carousel
+│   │   │   ├── CountUp.tsx         # Animated stat counter
+│   │   │   └── sidebar/
+│   │   │       ├── MapView.tsx     # Mapbox + deck.gl with click popups
+│   │   │       ├── MapLayerToggles.tsx
+│   │   │       ├── MapLegend.tsx
+│   │   │       ├── ArrestFilter.tsx
+│   │   │       ├── DateRangeSlider.tsx
+│   │   │       ├── DataView.tsx    # Data cards + analytics
+│   │   │       ├── AnalyticsSection.tsx
+│   │   │       ├── PieChart.tsx    # SVG donut with thin-slice ring
+│   │   │       ├── TrendTable.tsx  # MoM trend rows with arrows
+│   │   │       └── SourcesView.tsx
+│   │   └── lib/
+│   │       ├── api.ts              # SSE streaming, conversation CRUD, map data
+│   │       ├── useChat.ts          # Chat state hook with message limit
+│   │       ├── history.ts          # Async API-backed persistence + migration
+│   │       ├── types.ts            # TypeScript types matching backend Pydantic
+│   │       ├── analytics.ts        # Client-side trend/pie computation
+│   │       ├── mapColors.ts        # Shared color constants for map + charts
+│   │       ├── sse.ts              # SSE parser
+│   │       ├── useTypewriter.ts    # Character reveal animation
+│   │       ├── useCopyButton.ts    # Copy-to-clipboard hook
+│   │       ├── constants.ts        # Suggestions, splash stats
+│   │       ├── codeRefs.ts         # Section ID helpers
+│   │       ├── clipboard.ts        # Copy utility
+│   │       └── parseTable.ts       # Table markup parser
 │   └── ...
 │
-├── docker-compose.yml           # FastAPI + Qdrant services
+├── docker-compose.yml              # Qdrant (pinned to v1.9.0)
 ├── .env.example
-└── README.md
+├── HANDOFF.md                      # Detailed session logs and decisions
+├── README.md                       # User-facing setup guide
+└── chicago_rag_prompt.md           # This file
 ```
 
 ---
 
-## Build Order (Recommended Sequence)
-
-Build in this order so each layer is testable before the next depends on it:
-
-1. **Qdrant setup** — Docker Compose, confirm connection, create collections
-2. **Ingestion pipeline** — download, chunk, embed, store a small slice of the municipal code first (just Title 17, Chapter 17-2) to validate the pipeline end-to-end
-3. **Socrata API wrappers** — `crime.py`, `three11.py` as standalone async functions with hardcoded test inputs, confirm real data returns
-4. **Geo resolution helpers** — `geo.py`, load community area lookup table, confirm address → community_area mapping works
-5. **Context assembler** — unit test with mock API responses, confirm JSON shape is correct before any LLM involvement
-6. **LLM router** — prompt engineer and test with 10–15 representative user messages, confirm retrieval plans are accurate
-7. **LLM synthesizer** — test with manually assembled context objects, tune system prompt
-8. **FastAPI `/chat` endpoint** — wire all layers together
-9. **React frontend** — build chat UI against the working API
-
----
-
-## Key Design Decisions (Summary)
+## Key Design Decisions
 
 | Decision | Choice | Reason |
 |---|---|---|
-| Vector DB | Qdrant | Free self-hosted, good metadata filtering, cloud tier for demo |
-| Chunking strategy | Section-aware (subsection level) | Legal cross-references break naive character chunking |
-| Chunk metadata | Section ID, title, cross-refs, effective date | Enables citations and cross-reference resolution |
-| API query execution | Parallel (`asyncio.gather`) | Crime + 311 + vector search are independent; no reason to serialize |
-| Router type | LLM-based | Handles ambiguous location phrasing, intent classification, iterative retrieval |
-| Context window management | Assembler caps: top-5 crime types, top-5 chunks, top-15 311 types | Prevents token overflow while preserving signal |
-| Legal/zoning responses | Auto-disclaimer on `requires_disclaimer: true` | Proactive, not reactive — baked into the pipeline |
-| Data freshness | Always surface 7-day crime lag | Prevents misinformed decisions on stale data |
-| 311 deduplication | Filter `Open - Dup` status before aggregation | Prevents inflated counts from duplicate requests |
+| LLM | Claude Sonnet 4.6 (router + synth), Haiku 4.5 (conversation) | Best tool-use and structured output reliability; Haiku for cheap pre-routing |
+| Vector DB | Qdrant v1.9.0 (Docker) | Free, fast, metadata filtering, payload search for cross-refs |
+| Embeddings | `bge-base-en-v1.5` (768-dim, local) | Better semantic discrimination than bge-small on legal text; no external API |
+| Streaming | SSE (`text/event-stream`) | Synthesis is slow (3–8s); streaming TTFT is critical UX |
+| Persistence | SQLite via `aiosqlite` | Single user, single writer — simplest correct solution |
+| Map | Mapbox + deck.gl | WebGL handles thousands of points; deck.gl's declarative layers make filter toggling trivial |
+| Chunking | Section-aware (subsection level) | Legal cross-references break naive character chunking |
+| Search scoring | 0.85 dense + 0.15 keyword | Keyword boost catches exact-term relevance that embeddings miss |
+| Section dedup | Keep best chunk per section | Prevents long sections from monopolizing result slots |
+| Analytics in synthesis | Text format, not JSON | Saves ~40% tokens vs JSON encoding of trend data |
+| Map data in SSE | Emitted inline with stream | Eliminates separate /api/map-data round-trip for current turn |
+| Map data staleness | 24h threshold | Fresh enough for recent conversations, current enough for revisits |
+| Message limit | 10 user messages per conversation | Controls token costs; enforced both backend and frontend |
 
 ---
 
-## Important Constraints and Edge Cases to Handle
+## Quick Reference — Commands
 
-- **No location in query:** Router sets `location.type = "none"`, system returns a clarification request, does not attempt retrieval
-- **Location is a named neighborhood not in community area list:** Router should fuzzy-match against the 77 community area names, fall back to asking for clarification if confidence is low
-- **User asks about a very recent event (within 7 days):** Response must explicitly state the data lag and suggest checking CPD directly or calling 311
-- **Query spans multiple neighborhoods:** Support comma-separated community areas in SoQL `$where` clause using `IN` operator
-- **Municipal code cross-references:** When a retrieved chunk contains a section reference (e.g. "see Section 17-9-0100"), fetch that section from Qdrant by exact section ID match and include as secondary context
-- **Rate limits:** The Chicago Data Portal uses Socrata, which throttles unauthenticated requests. Register for a free app token at `https://data.cityofchicago.org/profile/app_tokens` and include it in all requests as the `X-App-Token` header
-- **Large result sets:** Always use `$limit` on all Socrata queries. Never fetch unbounded results.
+```bash
+# Backend + frontend dev
+docker compose up -d qdrant
+source .venv/bin/activate
+uvicorn backend.main:app --reload --port 8001
+cd frontend && npm run dev                              # :5173
 
----
+# Tests
+python -m pytest backend/tests/ -q                      # 177 tests
+cd frontend && npx tsc --noEmit                         # type check
 
-## Stretch Goals (Do Not Prioritize Until Core Is Working)
+# Eval
+PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --out eval/last.md
+python -m eval.retrieval_benchmark --out eval/retrieval_quality.md
 
-- **Map view:** Leaflet.js layer showing crime incidents, 311 request pins, and zoning boundaries for a queried neighborhood
-- **Address autocomplete:** Use the City of Chicago geocoder API to validate and autocomplete addresses as the user types
-- **Additional datasets:** Food inspections (restaurant safety queries), traffic crashes (pedestrian/cyclist safety), building permits (neighborhood development activity)
-- **Conversation memory:** Multi-turn chat where follow-up questions like "what about the next neighborhood over?" resolve against the prior context
-- **Source transparency panel:** Expandable UI showing exactly which API calls were made and which document chunks were retrieved for each response
-- **Response time display:** Show average 311 response times per SR type as a supplementary data point on quality-of-life queries
+# Full ingestion pipeline (only if Qdrant data is lost)
+python -m ingestion.load_community_areas
+python -m ingestion.parse_chicago_code
+python -m ingestion.chunk
+python -m ingestion.embed_and_store --recreate
+```
