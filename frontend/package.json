@@ -10,7 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.3.2",
+    "@deck.gl/geo-layers": "^9.3.2",
+    "@deck.gl/layers": "^9.3.2",
+    "@deck.gl/mapbox": "^9.3.2",
     "autoprefixer": "^10.5.0",
+    "mapbox-gl": "^3.24.0",
     "motion": "^12.40.0",
     "postcss": "^8.5.15",
     "react": "^19.2.6",
@@ -20,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

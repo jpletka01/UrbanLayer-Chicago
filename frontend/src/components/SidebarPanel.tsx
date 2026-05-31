@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ContextObject, DataSource, RetrievalPlan, SidebarView } from "../lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ContextObject, DataSource, MapData, RetrievalPlan, SidebarView, SourceTag } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataView } from "./sidebar/DataView";
+import { MapView } from "./sidebar/MapView";
 import { SourcesView } from "./sidebar/SourcesView";
 
 const RAIL_WIDTH = 44;
@@ -23,6 +24,9 @@ interface Props {
   sourceCount?: number;
   onSourceClick?: (index: number) => void;
   onCrossRefClick?: (sectionId: string) => void;
+  mapData?: MapData | null;
+  mapLoading?: boolean;
+  mapSources?: SourceTag[];
 }
 
 export function SidebarPanel({
@@ -39,6 +43,9 @@ export function SidebarPanel({
   sourceCount = 0,
   onSourceClick,
   onCrossRefClick,
+  mapData,
+  mapLoading = false,
+  mapSources = [],
 }: Props) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isDragging, setIsDragging] = useState(false);
@@ -190,15 +197,18 @@ export function SidebarPanel({
       </div>
 
       {/* content */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {activeView === "data" ? (
-          <DataView
-            plan={plan}
-            context={context}
-            loading={loading}
-            highlightedDataSource={highlightedDataSource}
-          />
-        ) : (
+      {activeView === "data" ? (
+        <DataMapLayout
+          mapData={mapData ?? null}
+          mapLoading={mapLoading}
+          mapSources={mapSources}
+          plan={plan}
+          context={context}
+          loading={loading}
+          highlightedDataSource={highlightedDataSource}
+        />
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4">
           <SourcesView
             codeChunks={context?.code_chunks ?? []}
             highlightedIndex={highlightedSourceIndex}
@@ -206,8 +216,179 @@ export function SidebarPanel({
             onSourceClick={onSourceClick}
             onCrossRefClick={onCrossRefClick}
           />
-        )}
-      </div>
+        </div>
+      )}
     </aside>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DataMapLayout — map fills most of the sidebar, data panel at the bottom
+// with a drag divider and collapse toggle.
+// ---------------------------------------------------------------------------
+
+const MIN_DATA_HEIGHT = 0;
+const COLLAPSED_DATA_HEIGHT = 36;
+const DEFAULT_DATA_RATIO = 0.25; // data gets 25% of available height by default
+
+interface DataMapLayoutProps {
+  mapData: MapData | null;
+  mapLoading: boolean;
+  mapSources: SourceTag[];
+  plan: RetrievalPlan | null;
+  context: ContextObject | null;
+  loading: boolean;
+  highlightedDataSource?: DataSource | null;
+}
+
+function DataMapLayout({
+  mapData,
+  mapLoading,
+  mapSources,
+  plan,
+  context,
+  loading,
+  highlightedDataSource,
+}: DataMapLayoutProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dataHeight, setDataHeight] = useState<number | null>(null);
+  const [dataCollapsed, setDataCollapsed] = useState(false);
+  const [dividerDragging, setDividerDragging] = useState(false);
+
+  const hasData =
+    context?.crime_last_90d ||
+    context?.open_311_requests ||
+    context?.permits ||
+    context?.violations ||
+    context?.businesses;
+
+  // Initialize data height on first render
+  useEffect(() => {
+    if (dataHeight !== null || !containerRef.current) return;
+    const h = containerRef.current.clientHeight;
+    setDataHeight(Math.round(h * DEFAULT_DATA_RATIO));
+  }, [dataHeight]);
+
+  const effectiveDataHeight = useMemo(() => {
+    if (dataCollapsed) return COLLAPSED_DATA_HEIGHT;
+    return Math.max(dataHeight ?? 200, MIN_DATA_HEIGHT);
+  }, [dataCollapsed, dataHeight]);
+
+  const handleDividerDrag = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setDividerDragging(true);
+
+      const startY = e.clientY;
+      const startHeight = effectiveDataHeight;
+      const container = containerRef.current;
+      if (!container) return;
+
+      function onMove(ev: MouseEvent) {
+        const delta = startY - ev.clientY;
+        const maxH = (container?.clientHeight ?? 600) - 100;
+        const next = Math.max(COLLAPSED_DATA_HEIGHT, Math.min(startHeight + delta, maxH));
+        setDataHeight(next);
+        if (next <= COLLAPSED_DATA_HEIGHT + 10) {
+          setDataCollapsed(true);
+        } else {
+          setDataCollapsed(false);
+        }
+      }
+
+      function onUp() {
+        setDividerDragging(false);
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      }
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [effectiveDataHeight],
+  );
+
+  useEffect(() => {
+    if (dividerDragging) {
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+    } else {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [dividerDragging]);
+
+  return (
+    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
+      {/* Map area — fills remaining space */}
+      <div className="flex-1 min-h-[100px]">
+        <MapView mapData={mapData} loading={mapLoading} sources={mapSources} />
+      </div>
+
+      {/* Drag divider */}
+      {hasData && (
+        <div
+          className="shrink-0 h-1.5 cursor-row-resize group/divider relative
+                     hover:bg-accent/20 active:bg-accent/30 transition-colors duration-100"
+          onMouseDown={handleDividerDrag}
+          onDoubleClick={() => setDataCollapsed((c) => !c)}
+          title="Drag to resize · Double-click to collapse"
+        >
+          <div className="absolute inset-x-0 top-0 h-px bg-dark-border group-hover/divider:bg-accent/50 transition-colors" />
+        </div>
+      )}
+
+      {/* Data panel */}
+      {hasData && (
+        <div
+          className="shrink-0 overflow-hidden"
+          style={{
+            height: effectiveDataHeight,
+            transition: dividerDragging ? "none" : "height 0.2s ease",
+          }}
+        >
+          {/* Collapse header */}
+          <button
+            onClick={() => setDataCollapsed((c) => !c)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-text-muted
+                       hover:text-text-secondary hover:bg-dark-surface/40 transition-colors"
+          >
+            <svg
+              className={`w-3 h-3 transition-transform duration-200 ${dataCollapsed ? "" : "rotate-180"}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+            Data
+          </button>
+
+          {/* Scrollable data content */}
+          {!dataCollapsed && (
+            <div className="overflow-y-auto px-4 pb-4" style={{ height: effectiveDataHeight - COLLAPSED_DATA_HEIGHT }}>
+              <DataView
+                plan={plan}
+                context={context}
+                loading={loading}
+                highlightedDataSource={highlightedDataSource}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* When no data, map fills everything */}
+      {!hasData && context && !loading && (
+        <div className="shrink-0 px-4 py-3 border-t border-dark-border">
+          <p className="text-xs text-text-muted">No live datasets were queried for this answer.</p>
+        </div>
+      )}
+    </div>
   );
 }

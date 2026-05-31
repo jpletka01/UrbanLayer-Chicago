@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
@@ -8,7 +8,7 @@ import { HistorySidebar } from "./components/HistorySidebar";
 import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
-import { fetchSection } from "./lib/api";
+import { fetchMapData, fetchSection } from "./lib/api";
 import { SPLASH_STATS, SUGGESTIONS } from "./lib/constants";
 import {
   clearAllHistory,
@@ -18,7 +18,7 @@ import {
   saveConversation,
   setCurrentConversationId,
 } from "./lib/history";
-import type { Conversation, ContextObject, DataSource, SidebarView } from "./lib/types";
+import type { Conversation, ContextObject, DataSource, MapData, RetrievalPlan, SidebarView, SourceTag } from "./lib/types";
 import { useChat } from "./lib/useChat";
 
 export function App() {
@@ -32,13 +32,39 @@ export function App() {
   const [sourceFlash, setSourceFlash] = useState(0);
   const [activeSidebarContext, setActiveSidebarContext] = useState<ContextObject | null>(null);
   const [sectionView, setSectionView] = useState<SectionView | null>(null);
+  const [mapData, setMapData] = useState<MapData | null>(null);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [mapSources, setMapSources] = useState<SourceTag[]>([]);
+  const planRef = useRef<RetrievalPlan | null>(null);
 
   // When a turn's context arrives, surface it in the sidebar. Focus the Sources
   // tab whenever code sections were used; only fall back to Data when there are none.
+  // Also pre-fetch map data if a community area was resolved.
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
     setSidebarOpen(true);
     setSidebarView(ctx.code_chunks?.length ? "sources" : "data");
+
+    if (ctx.community_area) {
+      const p = planRef.current;
+      const relevantSources = (p?.sources ?? []).filter(
+        (s): s is SourceTag => s === "crime_api" || s === "311_api" || s === "permits_api"
+      );
+      const sourcesToFetch = relevantSources.length > 0 ? relevantSources : (["crime_api", "311_api", "permits_api"] as SourceTag[]);
+      setMapSources(sourcesToFetch);
+      setMapLoading(true);
+      fetchMapData({
+        community_area: ctx.community_area,
+        time_range_days: p?.time_range_days ?? 90,
+        sources: sourcesToFetch,
+        address_lat: p?.location.resolved_lat ?? undefined,
+        address_lon: p?.location.resolved_lon ?? undefined,
+        address_label: ctx.resolved_address ?? undefined,
+      }).then((data) => {
+        setMapData(data);
+        setMapLoading(false);
+      });
+    }
   }
 
   const {
@@ -53,6 +79,8 @@ export function App() {
     clearTurnState,
     reset: resetChat,
   } = useChat({ onContext: handleContext });
+
+  useEffect(() => { planRef.current = plan; }, [plan]);
 
   // Migrate old history format on first load
   useEffect(() => {
@@ -98,6 +126,9 @@ export function App() {
     setHighlightedSourceIndex(null);
     setHighlightedDataSource(null);
     setActiveSidebarContext(null);
+    setMapData(null);
+    setMapLoading(false);
+    setMapSources([]);
   }
 
   function loadConversation(conv: Conversation) {
@@ -309,6 +340,9 @@ export function App() {
                 sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
                 onSourceClick={setHighlightedSourceIndex}
                 onCrossRefClick={handleCrossRefClick}
+                mapData={mapData}
+                mapLoading={mapLoading}
+                mapSources={mapSources}
               />
             </div>
           </motion.div>

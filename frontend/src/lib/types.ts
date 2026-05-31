@@ -20,6 +20,8 @@ export interface Location {
   resolved_community_area: number | null;
   resolved_community_area_name: string | null;
   resolved_address: string | null;
+  resolved_lat: number | null;
+  resolved_lon: number | null;
 }
 
 export interface RetrievalPlan {
@@ -102,6 +104,47 @@ export interface PhaseTimings {
 }
 
 export type SidebarView = "data" | "sources";
+
+export interface MapCrime {
+  latitude: number;
+  longitude: number;
+  primary_type: string;
+  date: string;
+  description: string;
+  arrest: boolean | string;
+}
+
+export interface MapRequest311 {
+  latitude: number;
+  longitude: number;
+  sr_type: string;
+  status: string;
+  created_date: string;
+  owner_department: string;
+}
+
+export interface MapPermit {
+  latitude: number;
+  longitude: number;
+  permit_type: string;
+  work_description: string;
+  estimated_cost: number;
+  issue_date: string;
+}
+
+export interface QueriedAddress {
+  latitude: number;
+  longitude: number;
+  label: string;
+}
+
+export interface MapData {
+  crimes: MapCrime[];
+  requests_311: MapRequest311[];
+  building_permits: MapPermit[];
+  zoning?: Record<string, unknown> | null;
+  queried_address: QueriedAddress | null;
+}
 
 export type DataSource = "crime" | "311" | "permits" | "violations" | "business";
 

@@ -1,5 +1,5 @@
 import { parseSSE } from "./sse";
-import type { AddressSuggestion, ChatChunk, CodeChunk, Message } from "./types";
+import type { AddressSuggestion, ChatChunk, CodeChunk, MapData, Message } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
@@ -35,6 +35,27 @@ export async function getAutocomplete(query: string): Promise<AddressSuggestion[
     return await resp.json();
   } catch {
     return [];
+  }
+}
+
+export async function fetchMapData(params: {
+  community_area: number;
+  time_range_days: number;
+  sources?: string[];
+  address_lat?: number;
+  address_lon?: number;
+  address_label?: string;
+}): Promise<MapData | null> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/map-data`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!resp.ok) return null;
+    return (await resp.json()) as MapData;
+  } catch {
+    return null;
   }
 }
 

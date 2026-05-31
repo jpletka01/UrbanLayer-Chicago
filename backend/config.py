@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     limit_violations: int = 50
     limit_business: int = 100
 
+    # Map endpoint row caps (higher than chat — individual points, not aggregates).
+    limit_map_crime: int = 200
+    limit_map_311: int = 150
+    limit_map_permits: int = 100
+    enable_zoning_layer: bool = False
+
     # How many top items each assembled summary keeps.
     top_crime_types: int = 5
     top_311_depts: int = 10

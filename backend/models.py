@@ -110,6 +110,23 @@ class ContextObject(BaseModel):
     requires_disclaimer: bool = False
 
 
+class MapDataRequest(BaseModel):
+    community_area: int
+    time_range_days: int = 90
+    sources: list[str] = Field(default_factory=lambda: ["crime_api", "311_api", "permits_api"])
+    address_lat: float | None = None
+    address_lon: float | None = None
+    address_label: str | None = None
+
+
+class MapDataResponse(BaseModel):
+    crimes: list[dict] = Field(default_factory=list)
+    requests_311: list[dict] = Field(default_factory=list)
+    building_permits: list[dict] = Field(default_factory=list)
+    zoning: dict | None = None
+    queried_address: dict | None = None
+
+
 class Message(BaseModel):
     role: Literal["user", "assistant"]
     content: str

@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -23,9 +23,10 @@ from fastapi.responses import StreamingResponse
 from backend.assembler import assemble_context
 from backend.config import get_settings
 from backend.conversation import synthesize_query
-from backend.models import ChatChunk, ChatRequest, ContextObject, RetrievalPlan
+from backend.models import ChatChunk, ChatRequest, ContextObject, MapDataRequest, MapDataResponse, RetrievalPlan
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import geocode_address_suggestions
+from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.vector_search import (
     expand_cross_references,
     get_full_section,
@@ -79,6 +80,55 @@ async def section(section_id: str) -> dict:
     if chunk is None:
         raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
     return chunk.model_dump()
+
+
+@app.post("/api/map-data")
+async def map_data(req: MapDataRequest) -> MapDataResponse:
+    settings = get_settings()
+    tasks: dict[str, asyncio.Task] = {}
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
+        if "crime_api" in req.sources:
+            tasks["crimes"] = asyncio.create_task(
+                crimes_for_map(req.community_area, days=req.time_range_days, client=client)
+            )
+        if "311_api" in req.sources:
+            tasks["requests_311"] = asyncio.create_task(
+                requests_311_for_map(req.community_area, client=client)
+            )
+        if "permits_api" in req.sources:
+            tasks["building_permits"] = asyncio.create_task(
+                permits_for_map(req.community_area, days=req.time_range_days, client=client)
+            )
+        if settings.enable_zoning_layer:
+            tasks["zoning"] = asyncio.create_task(
+                zoning_for_map(req.community_area, client=client)
+            )
+
+        results: dict[str, Any] = {}
+        done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+        for key, value in zip(tasks.keys(), done):
+            if isinstance(value, Exception):
+                log.warning("Map data %s failed: %s", key, value)
+                results[key] = [] if key != "zoning" else {"type": "FeatureCollection", "features": []}
+            else:
+                results[key] = value
+
+    queried_address = None
+    if req.address_lat is not None and req.address_lon is not None:
+        queried_address = {
+            "latitude": req.address_lat,
+            "longitude": req.address_lon,
+            "label": req.address_label or "",
+        }
+
+    return MapDataResponse(
+        crimes=results.get("crimes", []),
+        requests_311=results.get("requests_311", []),
+        building_permits=results.get("building_permits", []),
+        zoning=results.get("zoning") if settings.enable_zoning_layer else None,
+        queried_address=queried_address,
+    )
 
 
 def _sse(chunk: ChatChunk) -> str:

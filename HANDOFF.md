@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-05-30):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **retrieval quality overhaul** — upgraded embedding model (bge-small → bge-base, 384→768 dim), added keyword boost scoring, table chunk consolidation, expanded router search query guidance, and wired up cross-encoder reranking infrastructure (disabled by default — MS MARCO model hurts on legal text, awaiting a legal-domain reranker). Previous: landing page count-up animation + smart address autocomplete + sidebar polish.
+**Current status (2026-05-31):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=13 B=1 C=4** on 18 user-style queries (up from A=11 B=1 C=4 D=1 F=1 before improvements). Most recent work: **interactive Mapbox + deck.gl map** integrated into the sidebar Data tab — crimes, 311 requests, and building permits rendered as deck.gl ScatterplotLayers on a dark Mapbox basemap, with context-aware data fetching (only fetches sources the router selected), dynamic filter toggles (crime-type sub-filters for crime queries, department filters for 311, source-level toggles for overview), draggable map/data divider, and collapsible data panel. Previous: retrieval quality overhaul (embedding upgrade, keyword boost, table consolidation).
 
 ---
 
@@ -24,6 +24,7 @@ A RAG-powered chat interface for natural-language questions about Chicago. Combi
 | Chat memory | **Multi-turn from day one**, history in client `localStorage`, server is stateless | Simplest persistence model, scales |
 | Geocoding | **Census Geocoder** (free, no key) + shapely point-in-polygon against cached community-area polygons | No rate limit, no API key, deterministic |
 | Frontend | **React + TypeScript + Vite + Tailwind v3** | Type-safe contract with FastAPI Pydantic via OpenAPI |
+| Map | **Mapbox GL JS** (dark-v11 basemap) + **deck.gl** (ScatterplotLayer, GeoJsonLayer) via `@deck.gl/mapbox` MapboxOverlay | Interactive geo visualization in the sidebar; Mapbox token is a public `pk.*` key, safe in frontend code |
 | Doc ingest | **Parse local `chicago-il-codes.html`** (American Legal Publishing export, ~100MB) | Originally tried scraping Municode (deleted); the local HTML export is much more reliable |
 
 Decisions that came up later and were resolved:
@@ -39,7 +40,7 @@ Decisions that came up later and were resolved:
 Everything below is in the repo, tested and verified.
 
 ### Backend (`backend/`)
-- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events, `/autocomplete`, and `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references)
+- `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events, `/autocomplete`, `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references), and `/api/map-data` (raw geo-located rows for the map panel)
 - `router.py` — Claude-based router producing strict `RetrievalPlan` JSON; system prompt embeds the 77 community-area names + 30+ neighborhood aliases + **search query guidance for zoning-specific terminology**
 - `synthesizer.py` — streaming Claude synthesis call with **inline citation markers** (`[1]`, `[2]`) for code chunks
 - `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers
@@ -55,9 +56,10 @@ Everything below is in the repo, tested and verified.
   - `three11.py` — `v6vf-nfxy` (open requests + response times, `Open - Dup` filtered)
   - `buildings.py` — `ydr8-5enu` permits (uses `reported_cost` field) + `22u3-xenr` violations
   - `business.py` — `uupf-x98q` active licenses
+  - `map_data.py` — raw geo-located row fetching for the map panel (`crimes_for_map`, `requests_311_for_map`, `permits_for_map`, `zoning_for_map`); uses `socrata_get` directly with higher row limits (200/150/100) and `latitude IS NOT NULL` filters
   - `vector_search.py` — Qdrant semantic search via raw HTTP API + payload-filter cross-ref expansion, lazy embedder; per-section dedup, keyword boost scoring, cross-encoder reranker (infrastructure present, disabled by default); `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
-- `tests/` — **140 tests** (unit + integration), all passing
+- `tests/` — **156 tests** (unit + integration), all passing
 
 ### Ingestion (`ingestion/`)
 - `parse_chicago_code.py` — HTML parser with split-at-republication strategy, state machine for Title→Chapter→Article→Subarticle→Part, colspan/rowspan-aware table extraction with composite multi-row headers
@@ -87,7 +89,10 @@ Everything below is in the repo, tested and verified.
   - `ChunkText` (renders chunk text, delegates table segments to `ChunkTable`)
   - `ChunkTable` (formatted HTML table rendering for table-bearing chunks)
   - `sidebar/DataView`, `sidebar/SourcesView` (the two sidebar tabs)
-  - `SidebarPanel` (collapsible context/data panel with drag-to-resize handle and collapsed rail)
+  - `SidebarPanel` (collapsible context/data panel with drag-to-resize handle and collapsed rail; Data tab embeds the map above data cards with a vertical drag divider)
+  - `sidebar/MapView` (Mapbox GL JS + deck.gl map with ScatterplotLayers for crime/311/permits/address pin, dynamic layer toggles, tooltips, flyTo animation, ResizeObserver for sidebar resize)
+  - `sidebar/MapLayerToggles` (floating toggle pills, context-aware: crime-type filters for crime queries, department filters for 311, source-level toggles for overview)
+  - `sidebar/MapLegend` (compact color legend, auto-hides when no layers active)
   - `DisclaimerBanner` (amber, legal disclaimer)
   - `HistorySidebar` (conversation history)
 - `lib/`:
@@ -131,8 +136,8 @@ Socrata statistics are now marked with `[data:crime]` / `[data:311]` / etc. mark
 - `chicago-il-codes.html` (~100MB) is not in version control (`.gitignore` line 17).
 - Anyone cloning the repo needs to obtain it separately.
 
-### 6. Stretch goals (Phase I)
-- **Leaflet map view** showing crime pins, 311 markers, zoning overlay. *Not started.*
+### 6. ~~Map view~~ — RESOLVED (2026-05-31)
+Implemented with Mapbox GL JS + deck.gl instead of Leaflet (better WebGL performance, dark basemap support, deck.gl's ScatterplotLayer handles thousands of points efficiently). See session log below.
 
 ### 7. Deferred but probably worth doing
 - **LLM-as-judge eval** — grade synthesis answers for citation accuracy + factuality
@@ -386,6 +391,94 @@ query
 
 ---
 
+## Session Log (2026-05-31 — Mapbox + deck.gl Map Integration)
+
+Added an interactive map to the sidebar Data tab, replacing the former stretch goal of a Leaflet map view. Built with Mapbox GL JS (dark-v11 basemap) and deck.gl ScatterplotLayers. The map is embedded directly above the data cards in the sidebar, not as a separate panel or tab.
+
+### Backend
+
+1. **New endpoint `POST /api/map-data`** (`main.py`) — accepts `community_area`, `time_range_days`, and a `sources` array. Only fetches data for the sources the router selected (e.g., a crime-only query only fetches crime rows). Returns raw geo-located rows with lat/lon for map rendering.
+
+2. **New retrieval module `retrieval/map_data.py`** — four async functions using `socrata_get` directly (existing retrieval modules untouched):
+   - `crimes_for_map` — dataset `ijzp-q8t2`, limit 200, `latitude IS NOT NULL` filter
+   - `requests_311_for_map` — dataset `v6vf-nfxy`, limit 150, excludes `Open - Dup`
+   - `permits_for_map` — dataset `ydr8-5enu`, limit 100, renames `reported_cost` → `estimated_cost`
+   - `zoning_for_map` — dataset `p8va-airx` via `.geojson` endpoint (infrastructure ready, disabled by default)
+
+3. **Models** (`models.py`) — `MapDataRequest` with `sources: list[str]` field, `MapDataResponse`
+
+4. **Config** (`config.py`) — `limit_map_crime=200`, `limit_map_311=150`, `limit_map_permits=100`, `enable_zoning_layer=False`
+
+5. **Tests** (`tests/test_map_data.py`) — 8 tests covering row cleaning, null filtering, cost renaming, endpoint shape, queried address, zoning failure resilience
+
+### Frontend
+
+1. **MapView component** (`sidebar/MapView.tsx`) — Mapbox GL JS map with deck.gl `MapboxOverlay`. Layers:
+   - Crimes: ScatterplotLayer, color-coded by `primary_type` (amber=theft, red=battery/assault, purple=narcotics)
+   - 311: ScatterplotLayer, color-coded by `owner_department` (teal=streets, coral=buildings, blue=CDOT)
+   - Permits: ScatterplotLayer, radius scaled by `estimated_cost`, green
+   - Address pin: blue dot with white stroke, rendered when `queried_address` is present
+   - Zoning: GeoJsonLayer (infrastructure present, gated behind `VITE_ENABLE_ZONING_LAYER`)
+   - Hover tooltips styled to match the dark theme (`#333` bg)
+   - `flyTo` animation when a new address is queried
+   - `ResizeObserver` handles sidebar drag-resize
+
+2. **Context-aware data fetching** — `App.tsx` reads `plan.sources` and only passes map-relevant sources (`crime_api`, `311_api`, `permits_api`) to the `/api/map-data` endpoint. A crime-only query only fetches and displays crime data on the map.
+
+3. **Dynamic filter toggles** (`MapLayerToggles.tsx`) — the toggle controls adapt based on what the router requested:
+   - **Crime-only query** → crime-type sub-filters (Theft, Battery, Assault, Robbery, Narcotics, Criminal Damage, Burglary, Motor Vehicle Theft, Other)
+   - **311-only query** → department filters (Streets & Sanitation, Buildings, CDOT, Other)
+   - **Overview query** → source-level toggles (Crime, 311, Permits)
+   - Filter mode derived from `plan.sources` via `deriveFilterMode()`
+
+4. **Map + Data combined layout** (`SidebarPanel.tsx` `DataMapLayout` component) — map fills ~75% of the sidebar by default, data cards at the bottom ~25%. Features:
+   - **Vertical drag divider** between map and data — drag to resize, double-click to collapse/expand
+   - **Collapsible data section** — chevron toggle button collapses data cards, giving map the full sidebar height
+   - When data is sparse (single-source query), the data panel is compact and the map dominates
+
+5. **Types** (`types.ts`) — added `resolved_lat/resolved_lon` to `Location` (backend already sent these, frontend was dropping them), added `MapData`, `MapCrime`, `MapRequest311`, `MapPermit`, `QueriedAddress` interfaces
+
+6. **API client** (`api.ts`) — `fetchMapData()` POSTs to `/api/map-data`
+
+### Dependencies added
+
+- `mapbox-gl`, `@deck.gl/core`, `@deck.gl/layers`, `@deck.gl/mapbox`, `@deck.gl/geo-layers`, `@types/mapbox-gl`
+- Mapbox CSS imported in `main.tsx`
+
+### Environment
+
+- `VITE_MAPBOX_TOKEN` — required in `frontend/.env` (public `pk.*` token)
+- `VITE_ENABLE_ZONING_LAYER` — optional, defaults to `false`
+
+### Design decisions
+
+- **Mapbox + deck.gl over Leaflet** — WebGL rendering handles hundreds of points smoothly in the sidebar's constrained viewport; deck.gl's declarative layer API makes filter toggling trivial (just rebuild the layers array)
+- **Dark basemap** (`dark-v11`) instead of `streets-v12` from the original spec — the app is entirely dark-themed; a light map would clash
+- **ScatterplotLayer for 311** instead of IconLayer — IconLayer requires a sprite atlas; ScatterplotLayer with department-based colors is simpler and visually clear at sidebar scale
+- **Map embedded in Data tab** (not a separate tab) — user feedback preferred combining the related views. Map fills most of the space, data cards sit at the bottom, collapsible
+- **Sources-aware fetching** — avoids fetching irrelevant data (e.g., no 311/permit rows for a crime-specific question), reduces Socrata API calls and map clutter
+
+### Files changed/created
+
+- `backend/config.py` — map limit settings
+- `backend/models.py` — `MapDataRequest`, `MapDataResponse`
+- `backend/retrieval/map_data.py` — **new**: geo-located row fetching
+- `backend/main.py` — `/api/map-data` endpoint
+- `backend/tests/test_map_data.py` — **new**: 8 tests
+- `frontend/src/lib/types.ts` — `Location` lat/lon, map data types
+- `frontend/src/lib/api.ts` — `fetchMapData()`
+- `frontend/src/main.tsx` — mapbox-gl CSS import
+- `frontend/src/App.tsx` — map state, sources-aware fetch, `planRef`
+- `frontend/src/components/SidebarPanel.tsx` — `DataMapLayout` with drag divider + collapsible data
+- `frontend/src/components/SidebarHeader.tsx` — reverted to 2-tab (Data/Sources)
+- `frontend/src/components/sidebar/MapView.tsx` — **new**: Mapbox + deck.gl map
+- `frontend/src/components/sidebar/MapLayerToggles.tsx` — **new**: dynamic toggle pills
+- `frontend/src/components/sidebar/MapLegend.tsx` — **new**: compact legend
+- `.env.example` — added `VITE_MAPBOX_TOKEN`
+- `frontend/.env` — Mapbox token (gitignored)
+
+---
+
 ## Recommended Next Steps (Prioritized)
 
 ### Step 1 — Legal-domain cross-encoder reranker
@@ -394,8 +487,8 @@ The MS MARCO reranker hurt on legal text (see session log). A fine-tuned reranke
 ### Step 2 — Test multi-turn conversations thoroughly
 The conversation synthesis should now handle follow-ups like "do you have their website?" — verify this works in practice.
 
-### Step 3 — Stretch: Leaflet map view
-Crime pins, 311 markers, zoning overlay. Not started.
+### Step 3 — Zoning overlay on map
+The zoning GeoJsonLayer infrastructure exists in `map_data.py` and `MapView.tsx` but is gated behind `ENABLE_ZONING_LAYER=false` / `VITE_ENABLE_ZONING_LAYER=true`. The Socrata `.geojson` endpoint for `p8va-airx` should work but hasn't been tested end-to-end. Enable and verify.
 
 ---
 
@@ -410,7 +503,7 @@ If you're a fresh agent picking this up:
    python -m pytest backend/tests/ -q  # Should pass
    cd frontend && npm run build         # Should succeed
    ```
-3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set
+3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits**:
    - `frontend/src/components/MessageBubble.tsx` — typewriter/citation interaction (Issue #3)
    - `frontend/src/lib/useTypewriter.ts` — animation timing
@@ -438,8 +531,8 @@ chicago/
 │   ├── assembler.py                # Pure (pytest-covered)
 │   ├── models.py
 │   ├── config.py
-│   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py
-│   └── tests/                      # 130+ tests (unit + integration)
+│   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py + map_data.py
+│   └── tests/                      # 156 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -463,7 +556,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 130+ tests
+python -m pytest backend/tests/ -q           # 156 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 
