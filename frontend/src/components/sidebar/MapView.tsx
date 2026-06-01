@@ -108,9 +108,10 @@ interface Props {
   loading: boolean;
   sources: SourceTag[];
   parcelGeometry?: Record<string, unknown> | null;
+  hasTransitContext?: boolean;
 }
 
-export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
+export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitContext }: Props) {
   const rawFilterMode = deriveFilterMode(sources);
 
   type SourceTab = "crime" | "311" | "permits";
@@ -175,6 +176,12 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
       setDateRange(bounds ? [bounds.min, bounds.max] : null);
     }
   }, [mapData, filterMode]);
+
+  useEffect(() => {
+    if (hasTransitContext) {
+      setShowTransit(true);
+    }
+  }, [hasTransitContext]);
 
   useEffect(() => {
     if (showTransit && transitStations.length === 0) {
@@ -297,25 +304,6 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
       );
     }
 
-    if (showTransit && transitStations.length > 0) {
-      layers.push(
-        new ScatterplotLayer<TransitStation>({
-          id: "transit-stations",
-          data: transitStations,
-          getPosition: d => [d.lon, d.lat],
-          getRadius: 50,
-          getFillColor: d => d.type === "cta_rail" ? [0, 161, 222, 200] : [0, 93, 170, 200],
-          getLineColor: [255, 255, 255, 180],
-          stroked: true,
-          lineWidthMinPixels: 1,
-          radiusMinPixels: 4,
-          radiusMaxPixels: 7,
-          radiusUnits: "meters",
-          pickable: true,
-        })
-      );
-    }
-
     if (showPoints && filterMode === "crime" && mapData?.crimes?.length) {
       const activeTypes = new Set(
         Object.entries(crimeTypeToggles).filter(([, v]) => v).map(([k]) => k)
@@ -385,6 +373,25 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
           radiusMaxPixels: 12,
         }));
       }
+    }
+
+    if (showTransit && transitStations.length > 0) {
+      layers.push(
+        new ScatterplotLayer<TransitStation>({
+          id: "transit-stations",
+          data: transitStations,
+          getPosition: d => [d.lon, d.lat],
+          getRadius: 50,
+          getFillColor: d => d.type === "cta_rail" ? [0, 161, 222, 200] : [0, 93, 170, 200],
+          getLineColor: [255, 255, 255, 180],
+          stroked: true,
+          lineWidthMinPixels: 1,
+          radiusMinPixels: 4,
+          radiusMaxPixels: 7,
+          radiusUnits: "meters",
+          pickable: true,
+        })
+      );
     }
 
     if (mapData?.queried_address) {

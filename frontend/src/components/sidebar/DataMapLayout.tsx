@@ -99,7 +99,7 @@ export function DataMapLayout({
     <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
       {/* Map area — fills remaining space */}
       <div className="flex-1 min-h-[100px]">
-        <MapView mapData={mapData} loading={mapLoading} sources={mapSources} parcelGeometry={context?.property?.parcel_geometry} />
+        <MapView mapData={mapData} loading={mapLoading} sources={mapSources} parcelGeometry={context?.property?.parcel_geometry} hasTransitContext={!!context?.neighborhood?.transit} />
       </div>
 
       {/* Drag divider */}

@@ -736,7 +736,7 @@ async def transit_stations() -> list:
     global _transit_stations_cache
     if _transit_stations_cache is not None:
         return _transit_stations_cache
-    stations_path = Path(__file__).resolve().parent / "data" / "transit_stations.json"
+    stations_path = get_settings().data_dir / "transit_stations.json"
     if not stations_path.exists():
         return []
     try:
