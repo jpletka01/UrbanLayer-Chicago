@@ -2,12 +2,13 @@ import { Children, cloneElement, isValidElement, useCallback, useMemo, useState,
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getUploadUrl } from "../lib/api";
-import type { CodeChunk, DataSource, Message } from "../lib/types";
+import type { ActivityItem, CodeChunk, DataSource, Message } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
 import { useTypewriter } from "../lib/useTypewriter";
 import { CitationPill } from "./CitationPill";
 import { DataPill } from "./DataPill";
 import { DisclaimerBanner } from "./DisclaimerBanner";
+import { ThinkingTrace } from "./ThinkingTrace";
 
 interface Props {
   message: Message;
@@ -18,9 +19,10 @@ interface Props {
   codeChunks?: CodeChunk[];
   isSelected?: boolean;
   onSelect?: () => void;
+  activities?: ActivityItem[];
 }
 
-export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect }: Props) {
+export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect, activities }: Props) {
   const isUser = message.role === "user";
   const [hovered, setHovered] = useState(false);
   const { copied, copy } = useCopyButton(message.content);
@@ -245,6 +247,9 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
             </svg>
           </div>
           <div className="flex-1 min-w-0">
+            {streaming && activities && activities.length > 0 && (
+              <ThinkingTrace activities={activities} collapsed={!!displayedContent} />
+            )}
             {displayedContent ? (
               <div className="prose prose-invert prose-sm max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
@@ -254,7 +259,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
                   <span className="inline-block w-0.5 h-5 bg-accent animate-blink align-text-bottom ml-0.5" />
                 )}
               </div>
-            ) : streaming ? (
+            ) : streaming && !activities?.length ? (
               <div className="flex items-center gap-2.5">
                 <div className="flex gap-1 items-end">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-bounce" style={{ animationDelay: "0ms" }} />

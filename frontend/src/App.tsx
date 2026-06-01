@@ -159,6 +159,7 @@ export function App() {
     showDisclaimer,
     errorMsg,
     atMessageLimit,
+    activities,
     sendMessage: sendChat,
     clearTurnState,
     reset: resetChat,
@@ -658,6 +659,7 @@ export function App() {
                 attachments={pendingAttachments}
                 onAttach={handleAttach}
                 onRemoveAttachment={handleRemoveAttachment}
+                activities={activities}
               />
               <SidebarPanel
                 plan={plan}

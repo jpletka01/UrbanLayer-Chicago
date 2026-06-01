@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Walk Score API integration** — walk/transit/bike scores (0–100) from walkscore.com added to neighborhood domain, 48h TTL cache (5,000 calls/day limit), color-coded score bars in sidebar, text attribution. Previous: Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 337 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Live thinking trace** — the bouncing-dots "Thinking" indicator now shows real-time activity labels derived from the SSE stream (e.g., "Searching crime records in Lincoln Park…", "Composing response…"), cycling through active data sources during parallel retrieval and collapsing when the response starts streaming. Previous: Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 337 tests passing.
 
 ---
 
@@ -82,7 +82,7 @@ Everything below is in the repo, tested and verified.
 - Components:
   - `HeroSlideshow` (5 Unsplash photos, cross-fade)
   - `ChatInput` (glassmorphism pill, hero + compact variants, address autocomplete)
-  - `MessageBubble` (react-markdown, inline citations, copy button, typewriter)
+  - `MessageBubble` (react-markdown, inline citations, copy button, typewriter, live activity trace during streaming)
   - `CitationPill` (renders a `[N]` marker as the `§ <section>` reference + ordinal; hover tooltip; click opens/expands/flashes the source)
   - `DataPill` (colored `[data:*]` marker → opens Data tab, scrolls to card)
   - `SourceCitation` (card with rank badge, `§` pill, score, prose preview, in-place full-text expansion, clickable cross-refs)
@@ -107,7 +107,7 @@ Everything below is in the repo, tested and verified.
   - `HistorySidebar` (conversation history)
 - `lib/`:
   - `api.ts` (SSE fetch streaming; `fetchSection` with an immutable-section cache; **conversation CRUD functions**: `listConversations`, `getConversation`, `createConversation`, `deleteConversationAPI`, `saveMessages`, `updateMessageMapData`, `importConversations`)
-  - `useChat.ts` (owns the SSE consumption loop + per-turn state; lifted out of `App.tsx`; **now accepts `conversationId`**, handles `map_data` SSE events, enforces client-side 10-message limit, exposes `atMessageLimit`)
+  - `useChat.ts` (owns the SSE consumption loop + per-turn state; lifted out of `App.tsx`; **now accepts `conversationId`**, handles `map_data` SSE events, enforces client-side 10-message limit, exposes `atMessageLimit`; **activity tracking** derives human-readable labels from `plan.sources` and manages lifecycle across SSE phases)
   - `sse.ts` (reusable `parseSSE` generator used by `api.ts`)
   - `useCopyButton.ts` (shared copy-to-clipboard hook with transient "copied" flag)
   - `constants.ts` (SUGGESTIONS, splash stats, and the magic timers/thresholds)
@@ -2233,6 +2233,62 @@ Added Walk Score, Transit Score, and Bike Score to the neighborhood domain. The 
 **Other:**
 - `.env` — `WALKSCORE_API_KEY`
 - `.env.example` — `WALKSCORE_API_KEY` placeholder
+
+---
+
+## Session Log (2026-06-01 — Live Thinking Trace)
+
+Replaced the static "Thinking" label on the bouncing-dots indicator with a live activity feed that shows what the backend is doing in real time. The label cycles through activities one at a time as each pipeline phase progresses, then collapses smoothly when the response starts streaming. **Zero backend changes** — all activity labels are derived client-side from existing SSE events (`plan`, `context`, `token`).
+
+### UX Flow
+
+```
+● ● ●  Analyzing your question…                              ← immediately on send
+● ● ●  Searching crime records in Lincoln Park…              ← plan arrives, cycles through sources
+● ● ●  Looking up 311 service requests in Lincoln Park…      ← ~1.2s later
+● ● ●  Checking building permits in Lincoln Park…            ← ~1.2s later
+● ● ●  Composing response…                                   ← context arrives
+[fades out as typewriter content appears]
+```
+
+### Implementation
+
+**`useChat.ts`** — new `activities: ActivityItem[]` state managed across the SSE lifecycle:
+- `sendMessage()` → initial "Analyzing your question…" activity
+- `plan` event → `deriveActivitiesFromPlan()` maps each `SourceTag` to a human-readable label with location context (e.g., `crime_api` + "Lincoln Park" → "Searching crime records in Lincoln Park…"). If the plan has a `search_query`, it's quoted in the label.
+- `context` event → all retrieval activities marked done, "Composing response…" added
+- First `token` → all activities marked done (triggers collapse)
+
+**`ThinkingTrace.tsx`** (new component) — renders the bouncing dots + a single label. When multiple sources are active (parallel retrieval), cycles through them every 1.2s via `setInterval`. Uses `key={currentLabel}` on the label `<span>` so React remounts it on each transition, restarting the `text-glow` animation for a natural entry pulse. Fades to `opacity-0` over 300ms when `collapsed` becomes true, then unmounts after the transition.
+
+**`MessageBubble.tsx`** — the ThinkingTrace replaces the old static "Thinking" text during streaming. Falls back to the original bouncing dots if no activities have loaded yet (safety net, effectively never triggers since activities are set synchronously in `sendMessage`).
+
+**Source label mapping** (`SOURCE_LABELS` in `useChat.ts`):
+| SourceTag | Label |
+|---|---|
+| `crime_api` | Searching crime records |
+| `311_api` | Looking up 311 service requests |
+| `permits_api` | Checking building permits |
+| `violations_api` | Pulling building violations |
+| `business_api` | Searching business licenses |
+| `vector_search` | Searching municipal code for "…" |
+| `regulatory_domain` | Checking zoning & regulatory overlays |
+| `property_domain` | Looking up property records |
+| `incentives_domain` | Checking TIF & incentive zones |
+| `neighborhood_domain` | Loading demographics & transit data |
+
+### Files Changed/Created
+
+**Frontend (new):**
+- `frontend/src/components/ThinkingTrace.tsx` — single-line cycling activity indicator
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — `ActivityItem` interface
+- `frontend/src/lib/useChat.ts` — activity state + `deriveActivitiesFromPlan()` + SOURCE_LABELS mapping
+- `frontend/src/components/MessageBubble.tsx` — renders ThinkingTrace, accepts `activities` prop
+- `frontend/src/components/ChatInterface.tsx` — threads `activities` to streaming MessageBubble
+- `frontend/src/App.tsx` — threads `activities` from `useChat` to `ChatInterface`
+- `frontend/tailwind.config.js` — `trace-in` keyframe/animation (entry effect)
 
 ---
 

@@ -334,6 +334,12 @@ export interface MapData {
 
 export type DataSource = "crime" | "311" | "permits" | "violations" | "business";
 
+export interface ActivityItem {
+  id: string;
+  label: string;
+  status: "active" | "done";
+}
+
 export interface AddressSuggestion {
   address: string;
   lat: number;

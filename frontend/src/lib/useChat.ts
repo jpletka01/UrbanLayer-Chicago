@@ -1,8 +1,57 @@
 import { useRef, useState } from "react";
 import { chatStream } from "./api";
-import type { ContextObject, MapData, Message, RetrievalPlan, UploadMeta } from "./types";
+import type {
+  ActivityItem,
+  ContextObject,
+  MapData,
+  Message,
+  RetrievalPlan,
+  SourceTag,
+  UploadMeta,
+} from "./types";
 
 const MESSAGE_LIMIT = 10;
+
+const SOURCE_LABELS: Record<SourceTag, string> = {
+  crime_api: "Searching crime records",
+  "311_api": "Looking up 311 service requests",
+  permits_api: "Checking building permits",
+  violations_api: "Pulling building violations",
+  business_api: "Searching business licenses",
+  vector_search: "Searching municipal code",
+  regulatory_domain: "Checking zoning & regulatory overlays",
+  property_domain: "Looking up property records",
+  incentives_domain: "Checking TIF & incentive zones",
+  neighborhood_domain: "Loading demographics & transit data",
+};
+
+function deriveActivitiesFromPlan(plan: RetrievalPlan): ActivityItem[] {
+  const area = plan.location.resolved_community_area_name;
+  const addr = plan.location.resolved_address;
+  const items: ActivityItem[] = [];
+
+  if (area) {
+    items.push({ id: "location", label: `Located ${area}`, status: "done" });
+  }
+
+  for (const source of plan.sources) {
+    let label = SOURCE_LABELS[source] ?? source;
+    if (source === "vector_search" && plan.search_query) {
+      const q =
+        plan.search_query.length > 50
+          ? plan.search_query.slice(0, 47) + "..."
+          : plan.search_query;
+      label = `Searching municipal code for "${q}"`;
+    } else if (source === "property_domain" && addr) {
+      label += ` for ${addr}`;
+    } else if (area && source !== "vector_search") {
+      label += ` in ${area}`;
+    }
+    items.push({ id: `retrieve_${source}`, label, status: "active" });
+  }
+
+  return items;
+}
 
 interface UseChatOptions {
   onContext?: (context: ContextObject) => void;
@@ -20,6 +69,7 @@ interface UseChat {
   showDisclaimer: boolean;
   errorMsg: string | null;
   atMessageLimit: boolean;
+  activities: ActivityItem[];
   sendMessage: (text: string, attachments?: UploadMeta[]) => Promise<void>;
   clearTurnState: () => void;
   reset: () => void;
@@ -37,10 +87,12 @@ export function useChat({
   const [streaming, setStreaming] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const pendingContextRef = useRef<ContextObject | null>(null);
   const pendingPlanRef = useRef<RetrievalPlan | null>(null);
   const pendingMapDataRef = useRef<MapData | null>(null);
+  const hasTokenRef = useRef(false);
 
   const userMessageCount = messages.filter((m) => m.role === "user").length;
   const atMessageLimit = userMessageCount >= MESSAGE_LIMIT;
@@ -50,6 +102,7 @@ export function useChat({
     setContext(null);
     setShowDisclaimer(false);
     setErrorMsg(null);
+    setActivities([]);
   }
 
   function reset() {
@@ -72,6 +125,11 @@ export function useChat({
     pendingContextRef.current = null;
     pendingPlanRef.current = null;
     pendingMapDataRef.current = null;
+    hasTokenRef.current = false;
+
+    setActivities([
+      { id: "routing", label: "Analyzing your question…", status: "active" },
+    ]);
 
     const userMessage: Message = {
       role: "user",
@@ -99,15 +157,32 @@ export function useChat({
           setPlan(chunk.plan);
           pendingPlanRef.current = chunk.plan;
           onPlan?.(chunk.plan);
+
+          const planActivities = deriveActivitiesFromPlan(chunk.plan);
+          setActivities([
+            { id: "routing", label: "Analyzed your question", status: "done" },
+            ...planActivities,
+          ]);
         } else if (chunk.type === "context") {
           setContext(chunk.context);
           pendingContextRef.current = chunk.context;
           if (chunk.context.requires_disclaimer) setShowDisclaimer(true);
           onContext?.(chunk.context);
+
+          setActivities((prev) => [
+            ...prev.map((a) => ({ ...a, status: "done" as const })),
+            { id: "synthesis", label: "Composing response…", status: "active" },
+          ]);
         } else if (chunk.type === "map_data") {
           pendingMapDataRef.current = chunk.map_data;
           onMapData?.(chunk.map_data);
         } else if (chunk.type === "token") {
+          if (!hasTokenRef.current) {
+            hasTokenRef.current = true;
+            setActivities((prev) =>
+              prev.map((a) => ({ ...a, status: "done" as const })),
+            );
+          }
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
@@ -155,6 +230,7 @@ export function useChat({
     showDisclaimer,
     errorMsg,
     atMessageLimit,
+    activities,
     sendMessage,
     clearTurnState,
     reset,

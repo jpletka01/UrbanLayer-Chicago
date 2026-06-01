@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ContextObject, DataSource, Message } from "../lib/types";
+import type { ActivityItem, ContextObject, DataSource, Message } from "../lib/types";
 import { ChatInput, type PendingAttachment } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
 
@@ -18,6 +18,7 @@ interface Props {
   attachments?: PendingAttachment[];
   onAttach?: (files: File[]) => void;
   onRemoveAttachment?: (index: number) => void;
+  activities?: ActivityItem[];
 }
 
 export function ChatInterface({
@@ -35,6 +36,7 @@ export function ChatInterface({
   attachments,
   onAttach,
   onRemoveAttachment,
+  activities,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +66,7 @@ export function ChatInterface({
                 codeChunks={codeChunks}
                 isSelected={m.role === "user" && selectedMessageIndex === i}
                 onSelect={m.role === "user" ? () => onMessageClick?.(i) : undefined}
+                activities={isStreaming ? activities : undefined}
               />
             );
           })}
