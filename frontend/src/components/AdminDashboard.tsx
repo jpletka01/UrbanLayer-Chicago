@@ -176,17 +176,11 @@ export function AdminDashboard() {
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
       {/* Header */}
-      <header className="h-14 border-b border-dark-border flex items-center justify-between px-6">
+      <header className="h-14 border-b border-dark-border flex items-center px-6">
         <h1 className="text-lg font-semibold tracking-tight">
-          <span className="text-accent">UrbanLayer</span>
+          <Link to="/" className="text-accent hover:text-accent-hover transition-colors">UrbanLayer</Link>
           <span className="text-text-muted ml-2">Admin</span>
         </h1>
-        <Link
-          to="/"
-          className="text-sm text-text-muted hover:text-text-primary transition-colors"
-        >
-          &larr; Back to app
-        </Link>
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-6">

@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Bucket 3 complete** — `bge-reranker-v2-m3` with score blending, batched cross-ref lookups, fully async vector search pipeline. Previous: Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 194 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **`/about` page** — 16-section technical deep dive covering architecture, pipeline design, benchmarks, tradeoffs, and scaling considerations. Previous: Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 194 tests passing.
 
 ---
 
@@ -1352,6 +1352,53 @@ query
 
 ---
 
+## Session Log (2026-06-01 — /about Page + Header Navigation)
+
+Added a comprehensive `/about` page for interview showcase, covering every design decision, tradeoff, benchmark, and scaling consideration.
+
+### /about Page
+
+**New component `AboutPage.tsx`** — 16 content sections rendered as static JSX (not react-markdown) for full control over tables, diagrams, and styling:
+
+1. Project Overview — killer query, what makes it different
+2. Architecture — ASCII pipeline diagram, stack table
+3. Data Layer — 8 Socrata datasets, row limits, capped-result detection, ArcGIS zoning, Census Geocoder
+4. Document Processing — 100MB HTML parse, section-aware chunking, table handling, republication workaround
+5. Vector Search Pipeline — embedding model evolution, full v4 pipeline with exact weights, MS MARCO rejection, rerank-before-dedup rationale
+6. LLM Router — RetrievalPlan schema, intent types, search query guidance, location resolution chain
+7. Streaming Synthesis — SSE events, citation system, synthesis rules
+8. Conversation Management — multi-turn synthesis, per-message context, 10-message limit, SQLite persistence
+9. Map & Geo Visualization — Mapbox + deck.gl, layer stack, dynamic filters, zoning overlay
+10. Analytics — server-side MoM trends, custom SVG donut chart, trend tables
+11. Admin & Observability — tracked LLM wrappers, cost estimation, custom SVG charts
+12. Eval & Benchmarks — exact results for all three eval systems
+13. Frontend Architecture — state machine, per-message switching, URL routing, typewriter, responsive
+14. Testing — 194 tests, coverage areas, patterns
+15. Design Decisions — 15-row table: decision, alternatives, rationale, tradeoff
+16. At Scale — 12-row table: current approach vs 1,000x users
+
+**Layout**: sticky sidebar TOC on desktop (IntersectionObserver active section highlighting), collapsible dropdown on mobile. Matches existing dark theme.
+
+**Tone**: Technical and concise — dense engineering writing with exact numbers, config values, and benchmark grades. Written for senior engineer readers.
+
+### Header Navigation Update
+
+**Both `/about` and `/admin` pages**: UrbanLayer logo in top-left is now a `<Link to="/">` back to the home page. Removed the "← Back to app" text link from top-right. Cleaner navigation pattern.
+
+### Footer Link
+
+**`Footer.tsx`**: Replaced "Built with retrieval-augmented generation" text with a "How it works" `<Link to="/about">`.
+
+### Files Changed/Created
+
+- `frontend/src/components/AboutPage.tsx` — **new**: 16-section technical deep dive page
+- `frontend/src/main.tsx` — added `/about` route
+- `frontend/src/components/landing/Footer.tsx` — "How it works" link to /about
+- `frontend/src/components/AdminDashboard.tsx` — logo links to home, removed back button
+- `HANDOFF.md` — updated status, session log, repo layout
+
+---
+
 ## Recommended Next Steps (1 Bucket Remaining)
 
 ### ~~Bucket 1: Mobile & Polish~~ ✅ DONE
@@ -1433,6 +1480,7 @@ chicago/
 │   └── baseline_full_v2.md         # Full pipeline results (26/26 passing)
 └── frontend/
     ├── src/components/             # Hero, ChatInput, MessageBubble, CitationPill, SourceCitation, Sidebar, etc.
+    │   ├── AboutPage.tsx           # /about page: 16-section technical deep dive (architecture, benchmarks, scaling)
     │   ├── AdminDashboard.tsx      # /admin page: stat cards, charts, tables, benchmark + judge viz
     │   ├── admin/                  # StatCard, TimeSeriesChart, BarChart, LatencyTable, RequestsTable,
     │   │                           #   BenchmarkSection, JudgeSection
