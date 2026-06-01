@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Live thinking trace** — the bouncing-dots "Thinking" indicator now shows real-time activity labels derived from the SSE stream (e.g., "Searching crime records in Lincoln Park…", "Composing response…"), cycling through active data sources during parallel retrieval and collapsing when the response starts streaming. Previous: Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 337 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Multi-turn neighborhood switching fix** — conversations no longer get stuck on the first neighborhood's data; deterministic switch detection bypasses the LLM for "what about X?" / "compare to Y" patterns, and number consistency rules prevent the synthesizer from conflating trend data with period totals. Previous: Live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 347 tests passing.
 
 ---
 
@@ -44,7 +44,7 @@ Everything below is in the repo, tested and verified.
 - `main.py` — FastAPI app, `/chat` SSE endpoint with phase timing events (now also emits `map_data` events and enforces message limits), `/autocomplete`, `/section/{section_id}` (full reassembled municipal-code section, backs clickable cross-references), `/api/map-data` (raw geo-located rows for the map panel), **`/api/conversations/*`** (7 CRUD endpoints for SQLite-backed conversation persistence), and **`/api/admin/*`** (6 endpoints for the admin dashboard: overview, timeseries, latency, conversations, requests, benchmark)
 - `router.py` — Claude-based router producing strict `RetrievalPlan` JSON; system prompt embeds the 77 community-area names + 30+ neighborhood aliases + **search query guidance for zoning-specific terminology**
 - `synthesizer.py` — streaming Claude synthesis call with **inline citation markers** (`[1]`, `[2]`) for code chunks
-- `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers
+- `conversation.py` — **Multi-turn context synthesis** with improved heuristics for detecting follow-up questions, context references ("their", "it", "what about"), and clarification answers. **Deterministic neighborhood switching** bypasses LLM synthesis for "what about X?" / "compare to Y" patterns, substituting the new neighborhood into the original question structure
 - `assembler.py` — pure context-merging function with caps (now sourced from `config.py`: `top_crime_types`, `top_311_types`, `top_chunks`, etc.), `Open - Dup` dedup, auto data-lag note, **capped-result detection** (sets `capped=True` when row count hits the `$limit` guard)
 - `models.py` — Pydantic types: `RetrievalPlan`, `ContextObject`, `ChatChunk` (with `t_ms` timing), `Message`, `ChatRequest`; all five summary models carry a `capped: bool` flag
 - `config.py` — env via pydantic-settings (Anthropic key, Socrata token, Qdrant URL, model/dataset IDs) **plus tuning knobs**: per-LLM `*_max_tokens`, per-source query `*_limit`s, assembler `top_*` caps, `db_path`, `message_limit`
@@ -2289,6 +2289,53 @@ Replaced the static "Thinking" label on the bouncing-dots indicator with a live 
 - `frontend/src/components/ChatInterface.tsx` — threads `activities` to streaming MessageBubble
 - `frontend/src/App.tsx` — threads `activities` from `useChat` to `ChatInterface`
 - `frontend/tailwind.config.js` — `trace-in` keyframe/animation (entry effect)
+
+---
+
+## Session Log (2026-06-01 — Multi-Turn Neighborhood Switching Fix)
+
+Fixed a bug where multi-turn conversations got "stuck" on the first neighborhood's data. When a user asked about West Garfield Park (or Lincoln Park, etc.) and then followed up with "how does that compare to Englewood?" or "what about Austin?", the system kept returning the original neighborhood's data. Also fixed inconsistent crime numbers between turns (842 vs 3,289 for the same area).
+
+### Root Cause Analysis
+
+**Bug 1 — Stuck neighborhood**: The pipeline supports only one `resolved_community_area` per request. When the conversation synthesis layer (`conversation.py`) rewrote follow-up messages, the synthesis model (Haiku) produced queries mentioning BOTH neighborhoods (e.g., "Compare crime in Lincoln Park and Austin"). The router then extracted a single community area and consistently picked the original (more prominent) one.
+
+**Bug 2 — Inconsistent numbers**: The synthesizer received two data sources — `crime_last_90d.total` (authoritative 90-day aggregate) and month-over-month trend data (per-category single-month counts). The LLM conflated these, summing or extrapolating monthly trend counts into a fabricated period total ~4× the real number.
+
+### Fix 1: Deterministic Neighborhood Switch Detection (`conversation.py`)
+
+Added `_try_neighborhood_switch()` — a deterministic pre-check that runs BEFORE the LLM-based synthesis. When the user's message contains a switch/compare signal ("what about", "compare", "vs", etc.) AND mentions a recognizable neighborhood different from the one in history, it:
+1. Finds the new neighborhood in the user's message via `geo.COMMUNITY_AREAS` + `NEIGHBORHOOD_ALIASES`
+2. Finds the old neighborhood from the first user message in history
+3. Substitutes the new name into the original question structure
+
+Example: Original question "crime trends in lincoln park in the last 90 days" + follow-up "how does that compare to austin?" → produces "crime trends in Austin in the last 90 days". No LLM involved — the router gets a clean single-neighborhood query.
+
+Falls through to the LLM-based synthesis for non-switch patterns (clarification answers, topic follow-ups, etc.).
+
+### Fix 2: LLM Synthesis Improvements (`conversation.py`, `prompts.py`)
+
+For cases the deterministic detector doesn't catch:
+- **History truncation**: Assistant messages in synthesis history truncated to ~150 chars (was full multi-paragraph responses). Prevents the synthesis model from being anchored on the old neighborhood.
+- **New synthesis rule**: "If the latest message asks to compare with or switch to a different neighborhood, focus on the NEW location only."
+- **New synthesis example**: Shows "how does that compare to englewood?" → "What's the crime rate in Englewood?"
+- **Comparison keywords**: Added "compare", "versus", "vs" to `needs_synthesis()` context references.
+
+### Fix 3: Number Consistency (`prompts.py`, `synthesizer.py`)
+
+- **Synthesizer rule 20**: "Use `crime_last_90d.total` for the total crime count. Trend data shows per-category counts for a single month and must NOT be summed or extrapolated."
+- **Analytics header clarification**: `_format_analytics()` now labels trend data as "per-category counts for a single month, not the full-period total" — reinforces the rule at the data level.
+
+### Fix 4: Synthesizer Comparison Support (`prompts.py`)
+
+- **Synthesizer rule 19**: "When the user asks to compare with a previously discussed neighborhood, use current context for the new neighborhood and reference statistics from the assistant's earlier response for the prior one. Do not say data is unavailable."
+
+### Files Changed
+
+- `backend/conversation.py` — `_find_neighborhood()`, `_try_neighborhood_switch()`, history truncation in `synthesize_query()`, "compare"/"versus"/"vs" added to context references
+- `backend/prompts.py` — `CONVERSATION_SYNTHESIS` (new rule + example), `SYNTHESIZER_SYSTEM` (rules 19-20)
+- `backend/synthesizer.py` — `_format_analytics()` header clarification
+- `backend/tests/test_conversation.py` — 10 new tests: 3 for `needs_synthesis` comparative patterns, 7 for `_try_neighborhood_switch` (successful switches, same-neighborhood rejection, no-signal rejection, no-match rejection)
 
 ---
 

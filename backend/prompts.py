@@ -84,6 +84,8 @@ Rules:
 16. When partial_failures is present and non-empty, briefly note which data sources were temporarily unavailable (e.g., "Note: property records were temporarily unavailable for this query"). Keep it factual — one sentence, no apology.
 17. When property tax estimation data is present (estimated_annual_tax, tax_breakdown), state the estimated annual property tax bill and the top 3-5 taxing agencies by amount (e.g., "Estimated annual property tax: $8,245, primarily to Chicago Public Schools ($3,120), City of Chicago ($1,890), and Cook County ($1,450)"). Note that this is an estimate based on the prior year's rates and current assessed value.
 18. When Walk Score data is present in the neighborhood summary, mention the Walk Score, Transit Score, and Bike Score with their descriptions (e.g., "This location has a Walk Score of 89 (Very Walkable), Transit Score of 74 (Excellent Transit), and Bike Score of 82 (Very Bikeable)"). Scores are 0-100; higher is better. Integrate them naturally when discussing walkability, transit access, or livability — do not list scores in isolation.
+19. When the user asks to compare the current neighborhood with a previously discussed one, use the data from the current context for the new neighborhood and reference the statistics the assistant provided in conversation history for the prior neighborhood. Do not say data is unavailable for the prior neighborhood — the assistant's earlier response already contains those numbers.
+20. When reporting the total number of crimes for a period, always use crime_last_90d.total — this is the authoritative aggregate from the city database. The month-over-month trend data shows per-category counts for a single month (used for trend direction only) and must NOT be summed or extrapolated to represent the full-period total. The same applies to 311 requests, permits, violations, and business licenses — use their respective .total fields.
 """
 
 
@@ -95,6 +97,7 @@ Rules:
 - If the latest message is already a complete question with all needed context, return it unchanged.
 - If the latest message answers a clarification (like providing a location or confirming a detail), merge the original question with the new information into one clear query.
 - If the latest message is a follow-up question on the same topic, incorporate relevant context from prior turns.
+- If the latest message asks to compare with or switch to a different neighborhood or area, rewrite the query to focus on the NEW location only. The previous location's data is already in conversation history.
 - Output ONLY the rewritten query. No explanation, no quotes, no prefixes like "Query:".
 
 Examples:
@@ -112,6 +115,13 @@ Assistant: [crime statistics response]
 Latest: what about logan square?
 
 Output: What's the crime rate in Logan Square?
+
+History:
+User: what's the crime rate in west garfield park?
+Assistant: [crime statistics for West Garfield Park]
+Latest: how does that compare to englewood?
+
+Output: What's the crime rate in Englewood?
 
 History:
 User: can I open a restaurant in a residential zone?

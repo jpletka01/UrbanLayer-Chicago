@@ -2,7 +2,7 @@
 
 import pytest
 
-from backend.conversation import needs_synthesis
+from backend.conversation import needs_synthesis, _try_neighborhood_switch
 from backend.models import Message
 
 
@@ -107,6 +107,82 @@ class TestNeedsSynthesis:
         ]
         assert needs_synthesis("how do I apply for a variance?", history) is True
 
+    def test_comparative_question_needs_synthesis(self):
+        """Synthesis needed for comparative questions about neighborhoods."""
+        history = [
+            Message(role="user", content="what's the crime rate in west garfield park?"),
+            Message(role="assistant", content="Here are the crime statistics for West Garfield Park..."),
+        ]
+        assert needs_synthesis("how does that compare to englewood?", history) is True
+
+    def test_compare_keyword_triggers_synthesis(self):
+        """Synthesis triggers on 'compare' even without pronouns."""
+        history = [
+            Message(role="user", content="what's the crime rate in west garfield park?"),
+            Message(role="assistant", content="Here are the crime statistics for West Garfield Park..."),
+        ]
+        assert needs_synthesis("compare englewood crime stats", history) is True
+
+    def test_versus_keyword_triggers_synthesis(self):
+        """Synthesis triggers on 'vs' keyword."""
+        history = [
+            Message(role="user", content="what's the crime rate in west garfield park?"),
+            Message(role="assistant", content="Here are the crime statistics for West Garfield Park..."),
+        ]
+        assert needs_synthesis("west garfield park vs englewood crime", history) is True
+
+
+class TestNeighborhoodSwitch:
+    """Test deterministic neighborhood-switch detection."""
+
+    def _history(self, user_msg: str) -> list[Message]:
+        return [
+            Message(role="user", content=user_msg),
+            Message(role="assistant", content="Here are the statistics..."),
+        ]
+
+    def test_compare_to_new_neighborhood(self):
+        history = self._history("crime trends in lincoln park in the last 90 days")
+        result = _try_neighborhood_switch("how does that compare to austin?", history)
+        assert result is not None
+        assert "austin" in result.lower()
+        assert "lincoln park" not in result.lower()
+
+    def test_what_about_new_neighborhood(self):
+        history = self._history("what's the crime rate in west garfield park?")
+        result = _try_neighborhood_switch("what about englewood?", history)
+        assert result is not None
+        assert "englewood" in result.lower()
+        assert "garfield" not in result.lower()
+
+    def test_preserves_original_topic(self):
+        history = self._history("crime trends in lincoln park in the last 90 days")
+        result = _try_neighborhood_switch("what about hyde park?", history)
+        assert result is not None
+        assert "crime" in result.lower()
+        assert "90 days" in result.lower()
+
+    def test_alias_in_original(self):
+        history = self._history("what's happening in wicker park?")
+        result = _try_neighborhood_switch("what about logan square?", history)
+        assert result is not None
+        assert "logan square" in result.lower()
+
+    def test_same_neighborhood_returns_none(self):
+        history = self._history("crime in lincoln park")
+        result = _try_neighborhood_switch("compare lincoln park to other areas", history)
+        assert result is None
+
+    def test_no_switch_signal_returns_none(self):
+        history = self._history("crime in lincoln park")
+        result = _try_neighborhood_switch("tell me about austin", history)
+        assert result is None
+
+    def test_no_recognizable_neighborhood_returns_none(self):
+        history = self._history("crime in lincoln park")
+        result = _try_neighborhood_switch("what about some random place?", history)
+        assert result is None
+
 
 class TestSynthesizeQuery:
     """Integration tests for the actual synthesis call.
@@ -138,6 +214,21 @@ class TestSynthesizeQuery:
 
         result = await synthesize_query("what's happening in wicker park?", [])
         assert result == "what's happening in wicker park?"
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_comparative_query_focuses_on_new_neighborhood(self):
+        """Comparative query should synthesize to focus on the new neighborhood only."""
+        from backend.conversation import synthesize_query
+
+        history = [
+            Message(role="user", content="what's the crime rate in west garfield park?"),
+            Message(role="assistant", content="West Garfield Park had 842 reported crimes in the last 90 days."),
+        ]
+        result = await synthesize_query("how does that compare to englewood?", history)
+
+        assert "englewood" in result.lower()
+        assert "garfield" not in result.lower()
 
     @pytest.mark.integration
     @pytest.mark.asyncio

@@ -18,9 +18,9 @@ def _format_analytics(analytics: AnalyticsSummary) -> str:
     """Format analytics as readable text for Claude (not JSON — saves tokens)."""
     lines: list[str] = []
     if analytics.trend_period:
-        lines.append(f"Month-over-month trends ({analytics.trend_period}):")
+        lines.append(f"Month-over-month trends ({analytics.trend_period}) — per-category counts for a single month, not the full-period total:")
     else:
-        lines.append("Month-over-month trends:")
+        lines.append("Month-over-month trends — per-category counts for a single month, not the full-period total:")
 
     if analytics.crime_trends:
         lines.append("Crime:")

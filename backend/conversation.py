@@ -8,14 +8,63 @@ single self-contained query for the router.
 from __future__ import annotations
 
 import logging
+import re
 
 from backend.config import get_settings
 from backend.llm import tracked_create
 from backend.models import Message
 from backend.prompts import CONVERSATION_SYNTHESIS
+from backend.retrieval.geo import COMMUNITY_AREAS, NEIGHBORHOOD_ALIASES
 
 
 log = logging.getLogger(__name__)
+
+
+def _find_neighborhood(text: str) -> tuple[int | None, str | None]:
+    """Find a community area reference in text. Returns (ca_number, matched_name)."""
+    t = text.lower()
+    for alias, ca in NEIGHBORHOOD_ALIASES.items():
+        if alias in t:
+            return ca, alias
+    for ca, name in COMMUNITY_AREAS.items():
+        if name.lower() in t:
+            return ca, name
+    return None, None
+
+
+def _try_neighborhood_switch(message: str, history: list[Message]) -> str | None:
+    """For neighborhood switch/compare follow-ups, produce a clean single-neighborhood query.
+
+    When the user says "what about Austin?" or "compare to Englewood", takes the
+    original question from history and substitutes the new neighborhood. Returns
+    None if this isn't a neighborhood-switch pattern.
+    """
+    msg_lower = message.lower()
+    switch_signals = ["compare", "versus", " vs ", "what about", "how about",
+                      "look up", "check ", "show me", "switch to", "now do"]
+    if not any(s in msg_lower for s in switch_signals):
+        return None
+
+    new_ca, new_match = _find_neighborhood(message)
+    if not new_ca:
+        return None
+
+    first_user_msg = next((m.content for m in history if m.role == "user"), None)
+    if not first_user_msg:
+        return None
+
+    old_ca, old_match = _find_neighborhood(first_user_msg)
+    if not old_ca or old_ca == new_ca:
+        return None
+
+    new_name = COMMUNITY_AREAS.get(new_ca, new_match or "")
+    result = re.sub(re.escape(old_match or ""), new_name, first_user_msg, count=1, flags=re.IGNORECASE)
+
+    if result == first_user_msg:
+        return None
+
+    log.info("Neighborhood switch: %r -> %r", message, result)
+    return result
 
 
 def needs_synthesis(message: str, history: list[Message]) -> bool:
@@ -57,6 +106,7 @@ def needs_synthesis(message: str, history: list[Message]) -> bool:
         "the same", "there ", "here ",
         "what about", "how about", "and ",
         "also ", "too?", "as well",
+        "compare", "versus ", " vs ",
     ]
     has_context_reference = any(ref in msg_lower for ref in context_references)
 
@@ -106,10 +156,19 @@ async def synthesize_query(
     if not needs_synthesis(message, history):
         return message
 
+    switched = _try_neighborhood_switch(message, history)
+    if switched:
+        return switched
+
     settings = get_settings()
 
+    def _truncate(content: str, role: str, max_chars: int = 150) -> str:
+        if role == "user" or len(content) <= max_chars:
+            return content
+        return content[:max_chars].rsplit(" ", 1)[0] + " …"
+
     history_text = "\n".join(
-        f"{'User' if m.role == 'user' else 'Assistant'}: {m.content}"
+        f"{'User' if m.role == 'user' else 'Assistant'}: {_truncate(m.content, m.role)}"
         for m in history
     )
 
