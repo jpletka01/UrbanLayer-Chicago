@@ -7,6 +7,8 @@ import { PropertyCard } from "./PropertyCard";
 import { RegulatoryCard } from "./RegulatoryCard";
 import { IncentivesCard } from "./IncentivesCard";
 import { NeighborhoodCard } from "./NeighborhoodCard";
+import { ViolationsCard } from "./ViolationsCard";
+import { BusinessCard } from "./BusinessCard";
 
 interface Props {
   plan: RetrievalPlan | null;
@@ -112,7 +114,8 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
 export function DataView({ context, loading, mapData, filterMode }: Props) {
   const hasMapData = mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
   const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
-  const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood);
+  const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood
+    || context?.violations || context?.crime_last_90d || context?.open_311_requests || context?.permits || context?.businesses);
 
   return (
     <div className="space-y-4">
@@ -154,10 +157,13 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
       {context?.regulatory && <RegulatoryCard data={context.regulatory} />}
       {context?.incentives && <IncentivesCard data={context.incentives} />}
       {context?.neighborhood && <NeighborhoodCard data={context.neighborhood} />}
+      {context?.violations && <ViolationsCard data={context.violations} />}
 
-      {hasMapData && (
-        <AnalyticsSection mapData={mapData!} filterMode={filterMode ?? "overview"} />
+      {(hasMapData || context?.crime_last_90d || context?.open_311_requests || context?.permits) && (
+        <AnalyticsSection mapData={mapData} filterMode={filterMode ?? "overview"} context={context} />
       )}
+
+      {context?.businesses && <BusinessCard data={context.businesses} />}
 
       {hasZoning && <ZoningCodesTable mapData={mapData!} />}
     </div>

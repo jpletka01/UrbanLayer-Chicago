@@ -33,7 +33,8 @@ export function DataMapLayout({
   const hasMapPointData =
     mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
   const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
-  const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood);
+  const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood
+    || context?.violations || context?.crime_last_90d || context?.open_311_requests || context?.permits || context?.businesses);
   const hasData = hasMapPointData || hasDomainData || hasZoning;
 
   useEffect(() => {

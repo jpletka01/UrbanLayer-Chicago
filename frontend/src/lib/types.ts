@@ -55,6 +55,7 @@ export interface CrimeSummary {
   total: number;
   arrest_rate: number;
   by_type: Record<string, number>;
+  capped?: boolean;
 }
 
 export interface ThreeOneOneSummary {
@@ -62,23 +63,30 @@ export interface ThreeOneOneSummary {
   oldest_open_days: number | null;
   by_department: Record<string, number>;
   top_types: string[];
+  capped?: boolean;
 }
 
 export interface PermitSummary {
   total: number;
   total_estimated_cost: number;
+  by_type: Record<string, number>;
   top_work_descriptions: string[];
+  capped?: boolean;
 }
 
 export interface ViolationSummary {
   total: number;
   open_count: number;
+  by_category: Record<string, number>;
   top_descriptions: string[];
+  capped?: boolean;
 }
 
 export interface BusinessSummary {
   total: number;
+  by_license_type: Record<string, number>;
   top_activities: string[];
+  capped?: boolean;
 }
 
 export interface CodeChunk {
