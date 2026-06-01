@@ -28,7 +28,8 @@ export type SourceTag =
   | "vector_search"
   | "regulatory_domain"
   | "property_domain"
-  | "incentives_domain";
+  | "incentives_domain"
+  | "neighborhood_domain";
 
 export interface Location {
   raw: string;
@@ -187,6 +188,37 @@ export interface IncentivesSummary {
   census_tract: string | null;
 }
 
+export interface DemographicsSummary {
+  community_area: number | null;
+  community_area_name: string | null;
+  population: number | null;
+  median_household_income: number | null;
+  median_home_value: number | null;
+  median_gross_rent: number | null;
+  median_age: number | null;
+  poverty_rate: number | null;
+  unemployment_rate: number | null;
+  owner_occupied_pct: number | null;
+  bachelors_degree_pct: number | null;
+  vacancy_rate: number | null;
+}
+
+export interface TransitAccess {
+  nearest_cta_rail: string | null;
+  cta_rail_distance_mi: number | null;
+  cta_lines: string[];
+  nearest_metra: string | null;
+  metra_distance_mi: number | null;
+  metra_line: string | null;
+  tod_eligible: boolean;
+  tod_type: string | null;
+}
+
+export interface NeighborhoodSummary {
+  demographics: DemographicsSummary | null;
+  transit: TransitAccess | null;
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;
@@ -203,6 +235,7 @@ export interface ContextObject {
   regulatory?: RegulatorySummary | null;
   property?: PropertySummary | null;
   incentives?: IncentivesSummary | null;
+  neighborhood?: NeighborhoodSummary | null;
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
 }

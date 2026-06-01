@@ -42,6 +42,7 @@ from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import COMMUNITY_AREAS, community_area_by_point, geocode_address_suggestions
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.incentives import incentives_domain
+from backend.retrieval.neighborhood import neighborhood_domain
 from backend.retrieval.property import property_domain
 from backend.retrieval.regulatory import regulatory_domain
 from backend.retrieval.zoning import lookup_zoning
@@ -378,13 +379,24 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 incentives_domain(loc.resolved_lat, loc.resolved_lon, client=client)
             )
 
+        # Neighborhood domain: demographics + transit proximity
+        if "neighborhood_domain" in plan.sources:
+            tasks["neighborhood"] = asyncio.create_task(
+                neighborhood_domain(
+                    loc.resolved_lat or 0.0,
+                    loc.resolved_lon or 0.0,
+                    community_area=ca,
+                    client=client,
+                )
+            )
+
         results: dict[str, Any] = {}
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Retrieval %s failed: %s", key, value)
-                    results[key] = [] if key not in ("zoning_lookup", "regulatory", "property", "incentives") else None
+                    results[key] = [] if key not in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood") else None
                 else:
                     results[key] = value
 
@@ -406,6 +418,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         regulatory_summary=results.get("regulatory"),
         property_summary=results.get("property"),
         incentives_summary=results.get("incentives"),
+        neighborhood_summary=results.get("neighborhood"),
     )
 
 

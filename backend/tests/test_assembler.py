@@ -1,6 +1,14 @@
 from backend.assembler import assemble_context
 from backend.config import get_settings
-from backend.models import CodeChunk, Location, RegulatorySummary, RetrievalPlan
+from backend.models import (
+    CodeChunk,
+    DemographicsSummary,
+    Location,
+    NeighborhoodSummary,
+    RegulatorySummary,
+    RetrievalPlan,
+    TransitAccess,
+)
 
 _settings = get_settings()
 TOP_CRIME_TYPES = _settings.top_crime_types
@@ -160,3 +168,24 @@ def test_regulatory_summary_attached_when_provided():
 def test_regulatory_summary_none_when_absent():
     ctx = assemble_context(plan=_plan())
     assert ctx.regulatory is None
+
+
+def test_neighborhood_summary_attached_when_provided():
+    ns = NeighborhoodSummary(
+        demographics=DemographicsSummary(community_area=24, population=87781),
+        transit=TransitAccess(
+            nearest_cta_rail="Damen",
+            cta_rail_distance_mi=0.3,
+            tod_eligible=True,
+            tod_type="CTA rail",
+        ),
+    )
+    ctx = assemble_context(plan=_plan(), neighborhood_summary=ns)
+    assert ctx.neighborhood is not None
+    assert ctx.neighborhood.demographics.population == 87781
+    assert ctx.neighborhood.transit.nearest_cta_rail == "Damen"
+
+
+def test_neighborhood_summary_none_when_absent():
+    ctx = assemble_context(plan=_plan())
+    assert ctx.neighborhood is None

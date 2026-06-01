@@ -32,4 +32,7 @@ def mock_settings():
     settings.limit_ccao_characteristics = 1
     settings.limit_ccao_assessments = 5
     settings.limit_ccao_sales = 10
+    # Neighborhood domain
+    settings.dataset_demographics = "t68z-cikk"
+    settings.transit_search_radius_mi = 2.0
     return settings

@@ -10,6 +10,7 @@ from backend.models import (
     ContextObject,
     CrimeSummary,
     IncentivesSummary,
+    NeighborhoodSummary,
     PermitSummary,
     PropertySummary,
     RegulatorySummary,
@@ -214,6 +215,7 @@ def assemble_context(
     regulatory_summary: RegulatorySummary | None = None,
     property_summary: PropertySummary | None = None,
     incentives_summary: IncentivesSummary | None = None,
+    neighborhood_summary: NeighborhoodSummary | None = None,
 ) -> ContextObject:
     settings = get_settings()
 
@@ -255,5 +257,6 @@ def assemble_context(
         regulatory=regulatory_summary,
         property=property_summary,
         incentives=incentives_summary,
+        neighborhood=neighborhood_summary,
         requires_disclaimer=plan.requires_disclaimer,
     )

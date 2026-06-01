@@ -60,6 +60,10 @@ class Settings(BaseSettings):
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10
 
+    # Neighborhood domain
+    dataset_demographics: str = "t68z-cikk"
+    transit_search_radius_mi: float = 2.0
+
     # Incentives domain (Chicago Data Portal)
     dataset_tif_boundaries: str = "eejr-xtfb"
     dataset_tif_financials: str = "72uz-ikdv"

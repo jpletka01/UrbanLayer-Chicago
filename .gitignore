@@ -8,6 +8,7 @@ __pycache__/
 
 ingestion/data/
 !ingestion/data/.gitkeep
+!ingestion/data/transit_stations.json
 
 backend/data/
 

@@ -13,6 +13,7 @@ SourceTag = Literal[
     "regulatory_domain",
     "property_domain",
     "incentives_domain",
+    "neighborhood_domain",
 ]
 
 IntentTag = Literal[
@@ -185,6 +186,37 @@ class IncentivesSummary(BaseModel):
     census_tract: str | None = None
 
 
+class DemographicsSummary(BaseModel):
+    community_area: int | None = None
+    community_area_name: str | None = None
+    population: int | None = None
+    median_household_income: int | None = None
+    median_home_value: int | None = None
+    median_gross_rent: int | None = None
+    median_age: float | None = None
+    poverty_rate: float | None = None
+    unemployment_rate: float | None = None
+    owner_occupied_pct: float | None = None
+    bachelors_degree_pct: float | None = None
+    vacancy_rate: float | None = None
+
+
+class TransitAccess(BaseModel):
+    nearest_cta_rail: str | None = None
+    cta_rail_distance_mi: float | None = None
+    cta_lines: list[str] = Field(default_factory=list)
+    nearest_metra: str | None = None
+    metra_distance_mi: float | None = None
+    metra_line: str | None = None
+    tod_eligible: bool = False
+    tod_type: str | None = None
+
+
+class NeighborhoodSummary(BaseModel):
+    demographics: DemographicsSummary | None = None
+    transit: TransitAccess | None = None
+
+
 class CodeChunk(BaseModel):
     text: str
     source_document: str
@@ -225,6 +257,7 @@ class ContextObject(BaseModel):
     regulatory: RegulatorySummary | None = None
     property: PropertySummary | None = None
     incentives: IncentivesSummary | None = None
+    neighborhood: NeighborhoodSummary | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
 

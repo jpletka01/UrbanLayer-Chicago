@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 4** — incentives domain (TIF district boundary check + financials, Opportunity Zone lookup via FCC tract resolution + HUD ArcGIS, Enterprise Zone boundary check). Previous: Expansion Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 275 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 5** — neighborhood domain (community area demographics from Socrata ACS dataset, transit proximity from static GTFS station data + MapServer TOD layers). Previous: Expansion Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
 
 ---
 
@@ -1661,6 +1661,100 @@ Total latency: ~300-500ms (dominated by FCC and conditional API calls).
 
 ---
 
+## Session Log (2026-06-01 — Expansion Phase 5: Neighborhood Domain)
+
+Fifth expansion phase implementing community area demographics and transit proximity data. Answers "What's the area like around this address?", "How's the transit access here?", and enriches site due diligence and development feasibility queries with neighborhood context.
+
+### Data Sources
+
+| Source | API | Strategy |
+|--------|-----|----------|
+| Demographics (ACS) | Socrata `t68z-cikk` (Chicago Data Portal) | Prefetch all 77 community area rows on first call, cache in module-level dict with `asyncio.Lock`. ~5KB total. |
+| CTA Rail Stations (143) | Static JSON from GTFS | Generated offline by `ingestion/build_transit_stations.py` from CTA GTFS feed. Loaded lazily. |
+| Metra Stations (241) | Static JSON from GTFS | Same build script, Metra GTFS feed. |
+| TOD Eligibility | Chicago Zoning MapServer layers 13 (CTA) + 24 (Metra) | Reuses `query_overlay()` from regulatory domain. |
+
+### Design Decisions
+
+- **Socrata `t68z-cikk` over Census API** — pre-aggregated at community area level (the granularity already used throughout the system), no API key needed, single Socrata query. Census API (tract-level) deferred to Phase 7.
+- **Static JSON over runtime GTFS download** — CTA/Metra stations change extremely rarely (last new CTA station was 2015). A committed JSON file has zero startup latency and zero network dependency. Regenerated from GTFS offline via `ingestion/build_transit_stations.py`.
+- **Haversine distance** — accurate to ~0.3% for short distances, more than sufficient for "nearest station within 2 miles."
+- **Reuse `query_overlay()` for TOD** — avoids duplicating ArcGIS query logic. Creates a lightweight import dependency on the regulatory overlays module but the function is a utility, not a domain orchestrator.
+- **`NeighborhoodSummary` wraps both demographics and transit** — follows the one-domain-one-summary pattern where each domain has exactly one summary model on `ContextObject`.
+
+### Orchestration Pattern
+
+```
+neighborhood_domain(lat, lon, community_area=ca)
+  ├─ Parallel (asyncio.gather):
+  │   ├─ fetch_demographics(ca)            → Socrata cache lookup, ~1ms (after first load)
+  │   ├─ find_nearest_stations(lat, lon)   → haversine over 384 stations, ~1ms
+  │   └─ check_tod_eligibility(lat, lon)   → MapServer layers 13+24, ~100-200ms
+  │
+  └─ _build_summary() → NeighborhoodSummary
+```
+
+Total latency: ~200ms (dominated by MapServer TOD queries). Demographics and station lookup are effectively instant after first load.
+
+### GTFS Build Script
+
+`ingestion/build_transit_stations.py` downloads CTA and Metra GTFS feeds, parses `stops.txt`/`routes.txt`/`trips.txt`/`stop_times.txt`, extracts parent stations (CTA) and all stops (Metra), enriches with line names, and writes `backend/data/transit_stations.json`. Handles Metra's non-standard CSV formatting (spaces after commas in headers).
+
+Output: 384 stations (143 CTA rail + 241 Metra), sorted by type then name.
+
+### Retrieval Modules
+
+1. **`backend/retrieval/neighborhood/demographics.py`** — `fetch_demographics(community_area, *, client)` → `DemographicsSummary | None`. Prefetches all 77 rows on first call via `_load_all()` with `asyncio.Lock`. Field mapping handles multiple possible Socrata column name formats. Computes derived rates (poverty, unemployment, vacancy, owner-occupied, bachelor's degree) from raw counts.
+
+2. **`backend/retrieval/neighborhood/transit.py`** — Two functions:
+   - `find_nearest_stations(lat, lon)` → dict with nearest CTA rail and Metra station within radius
+   - `check_tod_eligibility(lat, lon, *, client)` → dict with `tod_eligible` bool and `tod_type`
+   - `build_transit_access()` assembles `TransitAccess` model from the two results
+   - `_haversine_mi()` computes great-circle distance in miles
+
+3. **`backend/retrieval/neighborhood/__init__.py`** — Domain orchestrator. Runs demographics (if CA available) + stations + TOD in parallel. Skips transit queries when lat/lon are zero. Graceful degradation on any sub-query failure.
+
+### Pipeline Wiring
+
+- `main.py`: `neighborhood_domain` task gated on `"neighborhood_domain" in plan.sources`, runs in parallel with all other domains. Passes `community_area` kwarg.
+- `assembler.py`: passes `NeighborhoodSummary` through to `ContextObject.neighborhood`
+- Router prompt: new rule routing demographic/transit/neighborhood overview questions to `neighborhood_domain`
+- Synthesizer prompt: rule 14 (weave demographics naturally, don't dump tables) and rule 15 (mention nearest stations by name with distance, note TOD eligibility and Connected Communities Ordinance)
+
+### Test Count
+
+301 tests passing (was 275; +26 new):
+- `test_neighborhood_demographics.py` — 5 tests (success, unknown CA, caching, Socrata failure, missing fields)
+- `test_neighborhood_transit.py` — 10 tests (haversine known/zero, nearest stations, no stations in radius, TOD CTA/Metra/none/failure, build_transit_access full/none)
+- `test_neighborhood_orchestrator.py` — 9 tests (full assembly, demographics-only, transit-only, no CA no coords, demographics failure, transit failure, all fail, TOD CTA eligible, TOD Metra eligible)
+- `test_assembler.py` — +2 tests (neighborhood attached/absent)
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/neighborhood/__init__.py` — domain orchestrator
+- `backend/retrieval/neighborhood/demographics.py` — Socrata ACS demographics
+- `backend/retrieval/neighborhood/transit.py` — station proximity + TOD eligibility
+- `backend/data/transit_stations.json` — 384 CTA rail + Metra stations
+- `ingestion/build_transit_stations.py` — GTFS → JSON build script
+- `backend/tests/test_neighborhood_demographics.py` — 5 tests
+- `backend/tests/test_neighborhood_transit.py` — 10 tests
+- `backend/tests/test_neighborhood_orchestrator.py` — 9 tests
+
+**Backend (modified):**
+- `backend/models.py` — DemographicsSummary, TransitAccess, NeighborhoodSummary, expanded SourceTag/ContextObject
+- `backend/config.py` — `dataset_demographics`, `transit_search_radius_mi`
+- `backend/main.py` — neighborhood_domain import, task wiring in `_retrieve()`, error handling
+- `backend/assembler.py` — NeighborhoodSummary import, `neighborhood_summary` parameter
+- `backend/prompts.py` — router `neighborhood_domain` rule, synthesizer rules 14-15
+- `backend/tests/conftest.py` — neighborhood domain mock settings
+- `backend/tests/test_assembler.py` — +2 neighborhood tests
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — DemographicsSummary, TransitAccess, NeighborhoodSummary interfaces, expanded SourceTag/ContextObject
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -1675,8 +1769,8 @@ Total latency: ~300-500ms (dominated by FCC and conditional API calls).
 - ~~**Phase 2: Property Domain**~~ ✅ — Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel. Sequential-then-parallel orchestrator pattern.
 - ~~**Phase 3: Regulatory Domain**~~ ✅ — 15 overlay layers, FEMA flood zones, EPA brownfield sites. All in parallel via domain orchestrator.
 - ~~**Phase 4: Incentives Domain**~~ ✅ — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (FCC tract resolution + HUD ArcGIS), Enterprise Zones. Two-phase orchestrator: parallel boundary checks → conditional API follow-ups.
-- **Phase 5: Neighborhood Domain** — Demographics (pre-aggregated community area data from Socrata `t68z-cikk`), transit proximity (GTFS stops.txt parsing + MapServer TOD layers 13/24).
-- **Phase 6: Frontend Integration** — TypeScript types for all domains, property/regulatory/incentives/demographics/transit cards in sidebar, map layer expansion (parcel boundary, overlay polygons, incentive zones, transit stations).
+- ~~**Phase 5: Neighborhood Domain**~~ ✅ — Community area demographics (Socrata ACS `t68z-cikk`, prefetch-all + cache), transit proximity (384 CTA/Metra stations from GTFS-generated static JSON + haversine distance), TOD eligibility (MapServer layers 13/24 via `query_overlay`).
+- **Phase 6: Frontend Integration** — Property/regulatory/incentives/demographics/transit cards in sidebar, map layer expansion (parcel boundary, overlay polygons, incentive zones, transit stations).
 - **Phase 7: Polish & Optimization** — PTAXSIM tax estimation, TTL caching for all spatial lookups, startup preloading, eval expansion, workflow-based context selection.
 
 ### Production Readiness (Bucket 4)
@@ -1699,10 +1793,8 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `backend/retrieval/neighborhood/` — Phase 5: demographics + transit modules
-   - `backend/models.py` — new domain summary models for each phase
-   - `backend/main.py` — wire new domain orchestrators into `_retrieve()`
-   - `frontend/src/components/sidebar/` — Phase 6: property/regulatory/incentives/demographics cards
+   - `frontend/src/components/sidebar/` — Phase 6: property/regulatory/incentives/demographics/transit cards
+   - `frontend/src/components/sidebar/MapView.tsx` — Phase 6: parcel boundary, overlay polygons, incentive zones, transit station layers
    - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
 
 ## Repo Layout
@@ -1733,9 +1825,10 @@ chicago/
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py (async) + map_data.py + zoning.py
 │   │   ├── cache.py                # TTL cache utility for spatial queries
 │   │   ├── incentives/             # Domain orchestrator + tif.py + enterprise_zones.py + opportunity_zones.py
+│   │   ├── neighborhood/           # Domain orchestrator + demographics.py + transit.py
 │   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py
 │   │   └── regulatory/             # Domain orchestrator + overlays.py + flood.py + environmental.py
-│   └── tests/                      # 275 tests (unit + integration)
+│   └── tests/                      # 301 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -1770,7 +1863,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 275 tests
+python -m pytest backend/tests/ -q           # 301 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 
