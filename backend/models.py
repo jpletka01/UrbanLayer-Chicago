@@ -169,6 +169,7 @@ class PropertySummary(BaseModel):
     total_assessed_value: float | None = None
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
+    parcel_geometry: dict | None = None
 
 
 class IncentivesSummary(BaseModel):

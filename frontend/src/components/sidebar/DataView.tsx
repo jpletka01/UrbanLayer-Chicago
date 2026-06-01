@@ -3,6 +3,10 @@ import type { ContextObject, MapData, RetrievalPlan } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
 import { zonePrefix, zoneColorCSS, ZONE_PREFIX_LABELS } from "../../lib/mapColors";
 import { AnalyticsSection } from "./AnalyticsSection";
+import { PropertyCard } from "./PropertyCard";
+import { RegulatoryCard } from "./RegulatoryCard";
+import { IncentivesCard } from "./IncentivesCard";
+import { NeighborhoodCard } from "./NeighborhoodCard";
 
 interface Props {
   plan: RetrievalPlan | null;
@@ -108,6 +112,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
 export function DataView({ context, loading, mapData, filterMode }: Props) {
   const hasMapData = mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
   const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
+  const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood);
 
   return (
     <div className="space-y-4">
@@ -141,9 +146,14 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
         </div>
       )}
 
-      {context && !hasMapData && !hasZoning && !loading && (
+      {context && !hasMapData && !hasZoning && !hasDomainData && !loading && (
         <p className="text-sm text-text-muted">No live datasets were queried for this answer.</p>
       )}
+
+      {context?.property && <PropertyCard data={context.property} />}
+      {context?.regulatory && <RegulatoryCard data={context.regulatory} />}
+      {context?.incentives && <IncentivesCard data={context.incentives} />}
+      {context?.neighborhood && <NeighborhoodCard data={context.neighborhood} />}
 
       {hasMapData && (
         <AnalyticsSection mapData={mapData!} filterMode={filterMode ?? "overview"} />

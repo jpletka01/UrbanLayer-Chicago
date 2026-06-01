@@ -171,6 +171,7 @@ export interface PropertySummary {
   total_assessed_value: number | null;
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
+  parcel_geometry?: Record<string, unknown> | null;
 }
 
 export interface IncentivesSummary {
@@ -253,6 +254,15 @@ export interface PhaseTimings {
   retrieval_ms?: number;
   first_token_ms?: number;
   total_ms?: number;
+}
+
+export interface TransitStation {
+  name: string;
+  lat: number;
+  lon: number;
+  type: "cta_rail" | "metra";
+  lines?: string[];
+  line?: string;
 }
 
 export type SidebarView = "data" | "sources";

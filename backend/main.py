@@ -727,6 +727,25 @@ async def admin_benchmark() -> dict:
         }
 
 
+_transit_stations_cache: list | None = None
+
+
+@app.get("/api/transit-stations")
+async def transit_stations() -> list:
+    import json as json_mod
+    global _transit_stations_cache
+    if _transit_stations_cache is not None:
+        return _transit_stations_cache
+    stations_path = Path(__file__).resolve().parent / "data" / "transit_stations.json"
+    if not stations_path.exists():
+        return []
+    try:
+        _transit_stations_cache = json_mod.loads(stations_path.read_text())
+        return _transit_stations_cache
+    except Exception:
+        return []
+
+
 _EMPTY_JUDGE = {
     "overall_grade_distribution": {},
     "dimension_summaries": {},

@@ -30,8 +30,11 @@ export function DataMapLayout({
   const [dataCollapsed, setDataCollapsed] = useState(false);
   const [dividerDragging, setDividerDragging] = useState(false);
 
-  const hasData =
+  const hasMapPointData =
     mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
+  const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
+  const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood);
+  const hasData = hasMapPointData || hasDomainData || hasZoning;
 
   useEffect(() => {
     if (dataHeight !== null || !containerRef.current) return;
@@ -96,7 +99,7 @@ export function DataMapLayout({
     <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
       {/* Map area — fills remaining space */}
       <div className="flex-1 min-h-[100px]">
-        <MapView mapData={mapData} loading={mapLoading} sources={mapSources} />
+        <MapView mapData={mapData} loading={mapLoading} sources={mapSources} parcelGeometry={context?.property?.parcel_geometry} />
       </div>
 
       {/* Drag divider */}
@@ -155,7 +158,7 @@ export function DataMapLayout({
       )}
 
       {/* When no data, map fills everything */}
-      {!hasData && context && !loading && (
+      {!hasData && context && !loading && !hasDomainData && (
         <div className="shrink-0 px-4 py-3 border-t border-dark-border">
           <p className="text-xs text-text-muted">No live datasets were queried for this answer.</p>
         </div>

@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 5** — neighborhood domain (community area demographics from Socrata ACS dataset, transit proximity from static GTFS station data + MapServer TOD layers). Previous: Expansion Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 6** — frontend integration (4 sidebar data cards for property/regulatory/incentives/neighborhood, transit station map layer, parcel boundary map layer). Previous: Expansion Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
 
 ---
 
@@ -1755,6 +1755,101 @@ Output: 384 stations (143 CTA rail + 241 Metra), sorted by type then name.
 
 ---
 
+## Session Log (2026-06-01 — Expansion Phase 6: Frontend Integration)
+
+Sixth expansion phase surfacing all new backend domain data (property, regulatory, incentives, neighborhood) in the sidebar and on the map. Before this, Phases 1-5 had wired all domain data into the SSE `context` event but the frontend ignored it — no cards, no map layers, and the sidebar wouldn't even open for domain-only queries.
+
+### Foundation Fixes
+
+Three bugs prevented domain data from being visible:
+
+1. **`DataMapLayout.hasData`** only checked for map point data (crimes/311/permits). Domain-only queries (e.g., property lookups) returned `hasData=false`, hiding the entire data panel. Fixed to also check for `context.property`, `context.regulatory`, `context.incentives`, `context.neighborhood`.
+
+2. **`App.handleContext`** only auto-selected the Data tab when `parcel_zoning` was present. Updated both `handleContext` and `handleMessageClick` to detect any domain data and switch to the Data view.
+
+3. **`DataView` no-data fallback** showed "No live datasets were queried" even when domain data was present. Updated the guard to check `hasDomainData`.
+
+### Sidebar Data Cards (4 new components)
+
+All cards use a shared `CollapsibleCard` component (new) for consistent styling: `rounded-xl bg-dark-surface/80 backdrop-blur-sm border border-dark-border`, collapsible header with chevron + icon + title, `defaultOpen` prop.
+
+1. **`PropertyCard.tsx`** — Two-column key-value grid for building characteristics (address, PIN, class, sqft, stories, units, rooms, bedrooms, baths, age, assessed value). Collapsible sub-tables for assessment history (year/land/building/total) and sales history (date/price/deed). Null fields auto-hidden. Numbers formatted with `toLocaleString()`, dollars with `$` prefix.
+
+2. **`RegulatoryCard.tsx`** — Active overlay districts listed as accent-bordered cards (layer type tag, name, description, ordinance). Regulatory status shown as green badges for true flags only (Planned Development, Landmark District, Historic District, etc. — 13 flags total). Flood zone section with amber warning badge when in Special Flood Hazard Area. Brownfield sites listed with amber border.
+
+3. **`IncentivesCard.tsx`** — TIF district: green/gray badge + details (name, period, revenue, expenditure) + collapsible annual financials table. Opportunity Zone and Enterprise Zone: green/gray badges with tract/name details. Dollar amounts formatted with M/K abbreviations for readability.
+
+4. **`NeighborhoodCard.tsx`** — Demographics: 3-column stat grid (Population, Median Income, Home Value) + 2-column secondary stats (Rent, Age, Poverty, Unemployment, Owner-Occupied %, Bachelor's %, Vacancy). Transit: nearest CTA rail station with CTA line-colored pills (Red=#c60c30, Blue=#00a1de, Brown=#62361b, Green=#009b3a, Orange=#f9461c, Purple=#522398, Pink=#e27ea6, Yellow=#f9e300), nearest Metra station with line name, TOD eligibility badge.
+
+Cards render in `DataView` between the notices and AnalyticsSection, in order: Property → Regulatory → Incentives → Neighborhood. Each only appears when its data is non-null.
+
+### Map Layers
+
+1. **Transit Station Markers** — New `GET /api/transit-stations` endpoint serves the existing 384-station JSON file (cached in memory on first request). Frontend fetches lazily on first toggle activation via `fetchTransitStations()` (module-level cache). Rendered as `ScatterplotLayer` — CTA stations in transit blue `[0,161,222]`, Metra in darker blue `[0,93,170]`. Hover tooltip shows station name + lines. "Transit" toggle button added to the top-left map controls alongside Zoning and Points.
+
+2. **Parcel Boundary Outline** — Backend change: `parcels.py` now requests geometry from Cook County GIS (`returnGeometry=true`, `outSR=4326`) and converts Esri rings to GeoJSON Polygon via `_esri_to_geojson()`. Geometry threaded through the property domain orchestrator to `PropertySummary.parcel_geometry`. Frontend renders a `GeoJsonLayer` with accent-color outline (2px, `[201,100,66,220]`) and semi-transparent fill (15% opacity). Auto-appears when property data is present — no separate toggle.
+
+### Example Queries to Test
+
+These queries should trigger the new domain cards and map layers:
+
+| Query | Expected Sidebar Cards | Map Layers |
+|-------|----------------------|------------|
+| "Tell me about the property at 525 W Arlington Pl" | Property (PIN, sqft, class, assessments, sales) | Parcel boundary outline |
+| "What restrictions apply at 443 W Wrightwood Ave?" | Regulatory (overlays, flags, flood zone) | Zoning polygons |
+| "Is 2400 N Milwaukee Ave in a TIF district?" | Incentives (TIF status + financials, OZ, EZ) | — |
+| "What's the area like around 1234 N Western Ave?" | Neighborhood (demographics, transit) | Crime/311/permits + transit toggle |
+| "I'm considering buying 525 W Arlington Pl, what should I know?" | Property + Regulatory + Incentives + Neighborhood (all four) | Parcel boundary + zoning + crime/311 |
+| "Can I open a coffee shop at 1400 N Milwaukee Ave?" | Regulatory (pedestrian street, zoning overlays) + Incentives | Zoning polygons |
+| "What's the assessed value of 1234 S Michigan Ave?" | Property (assessment history, sales) | Parcel boundary |
+| "Are there any brownfield sites near 4100 S Pulaski Rd?" | Regulatory (brownfield sites, flood zone) | — |
+| "Is this an Opportunity Zone?" + address | Incentives (OZ status, census tract) | — |
+| Toggle "Transit" button on any map view | — | 384 CTA rail + Metra station dots |
+
+### Deferred to Phase 7
+
+- Overlay district polygons on map (regulatory domain already retrieves ArcGIS geometry but doesn't surface it in MapDataResponse — requires backend plumbing to return GeoJSON alongside summary)
+- Incentive zone boundary polygons on map (TIF/EZ boundaries exist as shapely polygons in memory — need conversion to GeoJSON + MapDataResponse extension)
+- TTL caching, PTAXSIM tax estimation, startup preloading, eval expansion
+
+### Design Decisions
+
+- **CollapsibleCard shared component** — Prevents duplicating the 15-line card skeleton four more times. Existing AnalyticsSection and ZoningCodesTable inline their own identical pattern; they can adopt CollapsibleCard in a future cleanup pass.
+- **Cards default expanded** — Domain data is high-signal when present. Collapsing by default would hide the value of the query. Users can collapse individual cards.
+- **CTA line color pills** — Each CTA line has a distinct official color (8 colors). Displayed as small colored badges in the transit section for at-a-glance recognition.
+- **Parcel boundary auto-shows** — No toggle needed; the outline is directly tied to property query results and provides essential spatial context.
+- **Transit toggle is always visible** — Unlike Zoning/Points which depend on map data, transit stations are static and useful for any map view. Lazy-loaded on first activation to avoid unnecessary API call.
+- **Dollar formatting with M/K abbreviations** — TIF revenue/expenditure values are often in the millions; `$12.3M` is more readable than `$12,345,678` in a compact sidebar card.
+
+### Files Changed/Created
+
+**Frontend (new):**
+- `frontend/src/components/sidebar/CollapsibleCard.tsx` — shared collapsible card
+- `frontend/src/components/sidebar/PropertyCard.tsx` — property characteristics + history
+- `frontend/src/components/sidebar/RegulatoryCard.tsx` — overlays + flags + flood + brownfields
+- `frontend/src/components/sidebar/IncentivesCard.tsx` — TIF + OZ + EZ
+- `frontend/src/components/sidebar/NeighborhoodCard.tsx` — demographics + transit
+
+**Frontend (modified):**
+- `frontend/src/components/sidebar/DataMapLayout.tsx` — `hasData` expanded for domain data
+- `frontend/src/components/sidebar/DataView.tsx` — renders 4 new cards, updated no-data guard
+- `frontend/src/components/sidebar/MapView.tsx` — transit ScatterplotLayer, parcel GeoJsonLayer, Transit toggle, parcelGeometry prop
+- `frontend/src/App.tsx` — `handleContext` and `handleMessageClick` detect domain data for view selection
+- `frontend/src/lib/api.ts` — `fetchTransitStations()` with module-level cache
+- `frontend/src/lib/types.ts` — `TransitStation` interface, `parcel_geometry` on PropertySummary
+
+**Backend (modified):**
+- `backend/main.py` — `GET /api/transit-stations` endpoint (cached static JSON)
+- `backend/retrieval/property/parcels.py` — `returnGeometry=true`, `outSR=4326`, `_esri_to_geojson()` helper
+- `backend/retrieval/property/__init__.py` — passes geometry to PropertySummary
+- `backend/models.py` — `parcel_geometry: dict | None` on PropertySummary
+
+### Test Count
+
+301 tests passing (unchanged — frontend changes are pure UI, backend changes are minimal and covered by existing mocks).
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -1770,8 +1865,8 @@ Output: 384 stations (143 CTA rail + 241 Metra), sorted by type then name.
 - ~~**Phase 3: Regulatory Domain**~~ ✅ — 15 overlay layers, FEMA flood zones, EPA brownfield sites. All in parallel via domain orchestrator.
 - ~~**Phase 4: Incentives Domain**~~ ✅ — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (FCC tract resolution + HUD ArcGIS), Enterprise Zones. Two-phase orchestrator: parallel boundary checks → conditional API follow-ups.
 - ~~**Phase 5: Neighborhood Domain**~~ ✅ — Community area demographics (Socrata ACS `t68z-cikk`, prefetch-all + cache), transit proximity (384 CTA/Metra stations from GTFS-generated static JSON + haversine distance), TOD eligibility (MapServer layers 13/24 via `query_overlay`).
-- **Phase 6: Frontend Integration** — Property/regulatory/incentives/demographics/transit cards in sidebar, map layer expansion (parcel boundary, overlay polygons, incentive zones, transit stations).
-- **Phase 7: Polish & Optimization** — PTAXSIM tax estimation, TTL caching for all spatial lookups, startup preloading, eval expansion, workflow-based context selection.
+- ~~**Phase 6: Frontend Integration**~~ ✅ — 4 sidebar data cards (PropertyCard, RegulatoryCard, IncentivesCard, NeighborhoodCard), CollapsibleCard shared component, transit station ScatterplotLayer (384 CTA/Metra), parcel boundary GeoJsonLayer, foundation fixes for domain-data visibility.
+- **Phase 7: Polish & Optimization** — PTAXSIM tax estimation, TTL caching for all spatial lookups, startup preloading, eval expansion, workflow-based context selection, overlay/incentive zone polygons on map.
 
 ### Production Readiness (Bucket 4)
 - **Dockerize backend** — Dockerfile for the FastAPI app, production config.
@@ -1793,8 +1888,9 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `frontend/src/components/sidebar/` — Phase 6: property/regulatory/incentives/demographics/transit cards
-   - `frontend/src/components/sidebar/MapView.tsx` — Phase 6: parcel boundary, overlay polygons, incentive zones, transit station layers
+   - `backend/retrieval/regulatory/overlays.py` — Phase 7: surface overlay GeoJSON for map rendering
+   - `backend/retrieval/incentives/tif.py` — Phase 7: surface TIF/EZ boundary GeoJSON for map rendering
+   - `frontend/src/components/sidebar/MapView.tsx` — Phase 7: overlay district polygons, incentive zone boundary layers
    - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
 
 ## Repo Layout
@@ -1811,7 +1907,7 @@ chicago/
 ├── pytest.ini                      # Test configuration
 ├── .env.example
 ├── backend/
-│   ├── main.py                     # FastAPI /chat (SSE) + /api/conversations/* + /api/admin/* (6 endpoints)
+│   ├── main.py                     # FastAPI /chat (SSE) + /api/conversations/* + /api/admin/* + /api/transit-stations
 │   ├── router.py                   # Claude router (with search query guidance)
 │   ├── synthesizer.py              # Claude streaming synth (with citation markers + analytics)
 │   ├── conversation.py             # Multi-turn context synthesis (improved heuristics)
@@ -1851,7 +1947,8 @@ chicago/
     │   │                           #   BenchmarkSection, JudgeSection
     │   └── sidebar/                # MapView, MapLayerToggles, MapLegend, ArrestFilter, StatusFilter,
     │                               #   CostFilter, DateRangeSlider, DataView, AnalyticsSection,
-    │                               #   PieChart, TrendTable, SourcesView
+    │                               #   PieChart, TrendTable, SourcesView, CollapsibleCard,
+    │                               #   PropertyCard, RegulatoryCard, IncentivesCard, NeighborhoodCard
     ├── src/lib/                    # api (SSE + admin endpoints), history (API-backed), types, useChat,
     │                               #   useTypewriter, clipboard, mapColors, analytics, sse, useCopyButton,
     │                               #   constants, codeRefs, parseTable, useConversationRouter

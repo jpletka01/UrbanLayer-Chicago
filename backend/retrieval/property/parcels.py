@@ -6,6 +6,16 @@ import httpx
 
 log = logging.getLogger(__name__)
 
+def _esri_to_geojson(esri_geom: dict | None) -> dict | None:
+    """Convert Esri JSON rings to GeoJSON Polygon."""
+    if not esri_geom:
+        return None
+    rings = esri_geom.get("rings")
+    if not rings:
+        return None
+    return {"type": "Polygon", "coordinates": rings}
+
+
 PARCEL_QUERY_URL = (
     "https://gis.cookcountyil.gov/traditional/rest/services"
     "/cookVwrDynmc/MapServer/44/query"
@@ -27,9 +37,10 @@ async def lookup_parcel(
         "geometry": f"{lon},{lat}",
         "geometryType": "esriGeometryPoint",
         "inSR": "4326",
+        "outSR": "4326",
         "spatialRel": "esriSpatialRelIntersects",
         "outFields": "*",
-        "returnGeometry": "false",
+        "returnGeometry": "true",
         "f": "json",
     }
     owns = client is None
@@ -47,6 +58,7 @@ async def lookup_parcel(
         if not pin_raw:
             return None
         pin14 = str(pin_raw).replace("-", "").zfill(14)
+        geometry = _esri_to_geojson(features[0].get("geometry"))
         return {
             "pin14": pin14,
             "bldg_class": attrs.get("BLDGClass"),
@@ -54,6 +66,7 @@ async def lookup_parcel(
             "land_sqft": attrs.get("LandSqft"),
             "total_value": attrs.get("TotalValue"),
             "address": attrs.get("Address"),
+            "geometry": geometry,
         }
     except Exception as exc:
         log.warning("Parcel lookup failed for (%s, %s): %s", lat, lon, exc)

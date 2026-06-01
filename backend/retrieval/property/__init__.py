@@ -161,4 +161,5 @@ def _build_summary(
         total_assessed_value=total_assessed_value,
         assessment_history=assessment_history,
         sales_history=sales_history,
+        parcel_geometry=parcel.get("geometry"),
     )

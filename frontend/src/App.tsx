@@ -126,7 +126,8 @@ export function App() {
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
     openSidebarResponsive();
-    setSidebarView(ctx.parcel_zoning ? "data" : ctx.code_chunks?.length ? "sources" : "data");
+    const hasDomain = ctx.parcel_zoning || ctx.property || ctx.regulatory || ctx.incentives || ctx.neighborhood;
+    setSidebarView(hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data");
   }
 
   function handleMapData(data: MapData) {
@@ -331,7 +332,9 @@ export function App() {
       if (assistantMsg.context) {
         setActiveSidebarContext(assistantMsg.context);
         openSidebarResponsive();
-        setSidebarView(assistantMsg.context.code_chunks?.length ? "sources" : "data");
+        const hasDomain = assistantMsg.context.parcel_zoning || assistantMsg.context.property ||
+          assistantMsg.context.regulatory || assistantMsg.context.incentives || assistantMsg.context.neighborhood;
+        setSidebarView(hasDomain ? "data" : assistantMsg.context.code_chunks?.length ? "sources" : "data");
       }
 
       // Load plan

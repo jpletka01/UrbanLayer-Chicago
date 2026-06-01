@@ -296,3 +296,15 @@ export async function fetchJudgeResults(): Promise<JudgeResults | null> {
     return await resp.json();
   } catch { return null; }
 }
+
+let _transitStationsCache: import("./types").TransitStation[] | null = null;
+
+export async function fetchTransitStations(): Promise<import("./types").TransitStation[]> {
+  if (_transitStationsCache) return _transitStationsCache;
+  try {
+    const resp = await fetch(`${API_BASE}/api/transit-stations`);
+    if (!resp.ok) return [];
+    _transitStationsCache = await resp.json();
+    return _transitStationsCache!;
+  } catch { return []; }
+}

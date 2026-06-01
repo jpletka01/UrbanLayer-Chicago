@@ -1,0 +1,159 @@
+import type { NeighborhoodSummary } from "../../lib/types";
+import { CollapsibleCard } from "./CollapsibleCard";
+
+const PeopleIcon = (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round"
+      d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+  </svg>
+);
+
+const CTA_LINE_COLORS: Record<string, string> = {
+  Red: "#c60c30",
+  Blue: "#00a1de",
+  Brown: "#62361b",
+  Green: "#009b3a",
+  Orange: "#f9461c",
+  Purple: "#522398",
+  Pink: "#e27ea6",
+  Yellow: "#f9e300",
+};
+
+function fmtNum(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return n.toLocaleString();
+}
+
+function fmtDollar(n: number | null | undefined): string {
+  if (n == null) return "—";
+  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  return `$${n.toLocaleString()}`;
+}
+
+function fmtPct(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return `${n.toFixed(1)}%`;
+}
+
+function StatBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-sm font-semibold text-text-primary">{value}</div>
+      <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
+    </div>
+  );
+}
+
+function KV({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value || value === "—") return null;
+  return (
+    <div className="flex justify-between items-baseline gap-2">
+      <span className="text-text-muted text-[11px]">{label}</span>
+      <span className="text-text-primary text-[11px] font-mono text-right">{value}</span>
+    </div>
+  );
+}
+
+export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
+  const demo = data.demographics;
+  const transit = data.transit;
+
+  return (
+    <CollapsibleCard title="Neighborhood" icon={PeopleIcon}>
+      <div className="space-y-3">
+        {/* Demographics */}
+        {demo && (
+          <>
+            {/* Headline stats */}
+            <div className="grid grid-cols-3 gap-2 py-1">
+              <StatBox label="Population" value={fmtNum(demo.population)} />
+              <StatBox label="Med. Income" value={fmtDollar(demo.median_household_income)} />
+              <StatBox label="Home Value" value={fmtDollar(demo.median_home_value)} />
+            </div>
+
+            {/* Secondary stats */}
+            <div className="space-y-0.5">
+              <KV label="Median Rent" value={fmtDollar(demo.median_gross_rent)} />
+              <KV label="Median Age" value={demo.median_age != null ? String(demo.median_age) : null} />
+              <KV label="Poverty Rate" value={fmtPct(demo.poverty_rate)} />
+              <KV label="Unemployment" value={fmtPct(demo.unemployment_rate)} />
+              <KV label="Owner-Occupied" value={fmtPct(demo.owner_occupied_pct)} />
+              <KV label="Bachelor's Degree" value={fmtPct(demo.bachelors_degree_pct)} />
+              <KV label="Vacancy Rate" value={fmtPct(demo.vacancy_rate)} />
+            </div>
+          </>
+        )}
+
+        {/* Transit Access */}
+        {transit && (transit.nearest_cta_rail || transit.nearest_metra) && (
+          <div className="space-y-1.5">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">Transit</span>
+
+            {/* CTA Rail */}
+            {transit.nearest_cta_rail && (
+              <div className="rounded-lg bg-dark-elevated/60 px-3 py-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] text-text-primary">{transit.nearest_cta_rail}</span>
+                  {transit.cta_rail_distance_mi != null && (
+                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                      {transit.cta_rail_distance_mi.toFixed(2)} mi
+                    </span>
+                  )}
+                </div>
+                {transit.cta_lines.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {transit.cta_lines.map(line => (
+                      <span
+                        key={line}
+                        className="rounded px-1.5 py-0.5 text-[9px] font-medium"
+                        style={{
+                          backgroundColor: (CTA_LINE_COLORS[line] ?? "#666") + "25",
+                          color: CTA_LINE_COLORS[line] ?? "#999",
+                          border: `1px solid ${(CTA_LINE_COLORS[line] ?? "#666")}40`,
+                        }}
+                      >
+                        {line}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Metra */}
+            {transit.nearest_metra && (
+              <div className="rounded-lg bg-dark-elevated/60 px-3 py-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] text-text-primary">{transit.nearest_metra}</span>
+                  {transit.metra_distance_mi != null && (
+                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                      {transit.metra_distance_mi.toFixed(2)} mi
+                    </span>
+                  )}
+                </div>
+                {transit.metra_line && (
+                  <p className="text-[10px] text-text-muted mt-0.5">{transit.metra_line}</p>
+                )}
+              </div>
+            )}
+
+            {/* TOD Eligibility */}
+            {transit.tod_eligible && (
+              <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400
+                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                TOD Eligible
+                {transit.tod_type && <span className="text-emerald-400/70">({transit.tod_type})</span>}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* No data state */}
+        {!demo && !transit && (
+          <p className="text-[11px] text-text-muted">No neighborhood data available.</p>
+        )}
+      </div>
+    </CollapsibleCard>
+  );
+}

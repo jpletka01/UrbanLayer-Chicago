@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
-import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag } from "../../lib/types";
+import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
+import { fetchTransitStations } from "../../lib/api";
 import {
   CRIME_TYPE_COLORS, crimeColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
@@ -103,9 +104,10 @@ interface Props {
   mapData: MapData | null;
   loading: boolean;
   sources: SourceTag[];
+  parcelGeometry?: Record<string, unknown> | null;
 }
 
-export function MapView({ mapData, loading, sources }: Props) {
+export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -144,6 +146,8 @@ export function MapView({ mapData, loading, sources }: Props) {
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [showZoning, setShowZoning] = useState(true);
   const [showPoints, setShowPoints] = useState(true);
+  const [showTransit, setShowTransit] = useState(false);
+  const [transitStations, setTransitStations] = useState<TransitStation[]>([]);
   const onClickRef = useRef<(info: { object?: unknown; layer: { id: string } | null }) => void>(() => {});
 
   const hasZoning = !!(mapData?.zoning && (mapData.zoning as Record<string, unknown>)?.features &&
@@ -174,6 +178,12 @@ export function MapView({ mapData, loading, sources }: Props) {
       setDateRange(bounds ? [bounds.min, bounds.max] : null);
     }
   }, [mapData, filterMode]);
+
+  useEffect(() => {
+    if (showTransit && transitStations.length === 0) {
+      fetchTransitStations().then(setTransitStations);
+    }
+  }, [showTransit]);
 
   const soloToggle = useCallback(
     (prev: Record<string, boolean>, id: string): Record<string, boolean> => {
@@ -237,6 +247,11 @@ export function MapView({ mapData, loading, sources }: Props) {
         } else if (lid === "zoning") {
           const props = (o as Record<string, unknown>).properties as Record<string, unknown> | undefined;
           html = `<strong>${props?.ZONE_CLASS ?? "Unknown"}</strong>`;
+        } else if (lid === "transit-stations") {
+          const s = o as unknown as TransitStation;
+          const lineInfo = s.type === "cta_rail" && s.lines?.length
+            ? `<br/>${s.lines.join(", ")}` : s.line ? `<br/>${s.line}` : "";
+          html = `<strong>${s.name}</strong>${lineInfo}<br/><span style="opacity:0.7">${s.type === "cta_rail" ? "CTA Rail" : "Metra"}</span>`;
         } else {
           return null;
         }
@@ -313,6 +328,43 @@ export function MapView({ mapData, loading, sources }: Props) {
             return zoneLineColor((props?.ZONE_CLASS as string) ?? "");
           },
           lineWidthMinPixels: 1,
+          pickable: true,
+        })
+      );
+    }
+
+    if (parcelGeometry) {
+      const feature = {
+        type: "Feature" as const,
+        geometry: parcelGeometry,
+        properties: {},
+      };
+      layers.push(
+        new GeoJsonLayer({
+          id: "parcel-boundary",
+          data: { type: "FeatureCollection", features: [feature] } as unknown as GeoJSON.FeatureCollection,
+          getFillColor: [201, 100, 66, 35],
+          getLineColor: [201, 100, 66, 220],
+          lineWidthMinPixels: 2,
+          pickable: false,
+        })
+      );
+    }
+
+    if (showTransit && transitStations.length > 0) {
+      layers.push(
+        new ScatterplotLayer<TransitStation>({
+          id: "transit-stations",
+          data: transitStations,
+          getPosition: d => [d.lon, d.lat],
+          getRadius: 50,
+          getFillColor: d => d.type === "cta_rail" ? [0, 161, 222, 200] : [0, 93, 170, 200],
+          getLineColor: [255, 255, 255, 180],
+          stroked: true,
+          lineWidthMinPixels: 1,
+          radiusMinPixels: 4,
+          radiusMaxPixels: 7,
+          radiusUnits: "meters",
           pickable: true,
         })
       );
@@ -433,7 +485,7 @@ export function MapView({ mapData, loading, sources }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, transitStations, parcelGeometry]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -563,10 +615,10 @@ export function MapView({ mapData, loading, sources }: Props) {
         />
       )}
 
-      {mapReady && (hasZoning || hasData) && (
+      {mapReady && (hasZoning || hasData || true) && (
         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[calc(50%-8px)]">
-          {hasZoning && (
-            <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
+            {hasZoning && (
               <button
                 onClick={() => setShowZoning(s => !s)}
                 className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
@@ -584,24 +636,42 @@ export function MapView({ mapData, loading, sources }: Props) {
                 />
                 Zoning
               </button>
-              {hasData && (
-                <button
-                  onClick={() => setShowPoints(s => !s)}
-                  className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                    ${showPoints
-                      ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
-                      : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
-                    }`}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full inline-block"
-                    style={{ backgroundColor: showPoints ? "#eee" : "#555" }}
-                  />
-                  Points
-                </button>
-              )}
-            </div>
-          )}
+            )}
+            {hasData && (
+              <button
+                onClick={() => setShowPoints(s => !s)}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                  ${showPoints
+                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+                  }`}
+              >
+                <span
+                  className="w-2 h-2 rounded-full inline-block"
+                  style={{ backgroundColor: showPoints ? "#eee" : "#555" }}
+                />
+                Points
+              </button>
+            )}
+            <button
+              onClick={() => setShowTransit(s => !s)}
+              className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                ${showTransit
+                  ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+                  : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+                }`}
+            >
+              <span
+                className="w-2 h-2 rounded-sm inline-block"
+                style={{
+                  backgroundColor: showTransit ? "rgba(0,161,222,0.5)" : "transparent",
+                  borderColor: showTransit ? "rgba(0,161,222,0.8)" : "#555",
+                  border: "1px solid",
+                }}
+              />
+              Transit
+            </button>
+          </div>
 
           {showPoints && hasData && (
             <>
