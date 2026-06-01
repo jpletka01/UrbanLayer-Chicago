@@ -30,9 +30,10 @@ class Settings(BaseSettings):
     embedding_dim: int = 768
     embedding_query_prefix: str = "Represent this sentence for searching relevant passages: "
 
-    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    reranker_enabled: bool = False
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"
+    reranker_enabled: bool = True
     reranker_candidate_count: int = 20
+    reranker_weight: float = 0.2
 
     keyword_boost_weight: float = 0.15
 

@@ -1,0 +1,130 @@
+{
+  "timestamp": "2026-06-01T00:14:11.938336+00:00",
+  "total_queries": 18,
+  "grade_distribution": {
+    "A": 13,
+    "B": 1,
+    "C": 4,
+    "D": 0,
+    "F": 0
+  },
+  "avg_score": 0.6649,
+  "per_query": [
+    {
+      "id": "setback_single_family",
+      "grade": "A",
+      "score": 0.682,
+      "issues": []
+    },
+    {
+      "id": "home_occupation",
+      "grade": "A",
+      "score": 0.5135,
+      "issues": []
+    },
+    {
+      "id": "minimum_lot_size",
+      "grade": "C",
+      "score": 0.6918,
+      "issues": [
+        "answer terms missing from results: ['square feet']"
+      ]
+    },
+    {
+      "id": "adu_allowed",
+      "grade": "C",
+      "score": 0.7288,
+      "issues": [
+        "answer terms missing from results: ['accessory dwelling']"
+      ]
+    },
+    {
+      "id": "noise_ordinance",
+      "grade": "A",
+      "score": 0.7276,
+      "issues": []
+    },
+    {
+      "id": "fence_height",
+      "grade": "A",
+      "score": 0.6455,
+      "issues": []
+    },
+    {
+      "id": "garage_conversion",
+      "grade": "A",
+      "score": 0.5391,
+      "issues": []
+    },
+    {
+      "id": "short_term_rental",
+      "grade": "A",
+      "score": 0.6983,
+      "issues": []
+    },
+    {
+      "id": "deck_setback",
+      "grade": "A",
+      "score": 0.6409,
+      "issues": []
+    },
+    {
+      "id": "food_trucks",
+      "grade": "A",
+      "score": 0.7385,
+      "issues": []
+    },
+    {
+      "id": "tree_removal",
+      "grade": "A",
+      "score": 0.5801,
+      "issues": []
+    },
+    {
+      "id": "lot_coverage_rm5",
+      "grade": "C",
+      "score": 0.6034,
+      "issues": [
+        "answer terms missing from results: ['lot coverage', 'percent']"
+      ]
+    },
+    {
+      "id": "landscaping_requirements",
+      "grade": "A",
+      "score": 0.7211,
+      "issues": []
+    },
+    {
+      "id": "rooftop_deck",
+      "grade": "A",
+      "score": 0.6977,
+      "issues": []
+    },
+    {
+      "id": "liquor_school_distance",
+      "grade": "C",
+      "score": 0.6102,
+      "issues": [
+        "answer terms missing from results: ['feet']"
+      ]
+    },
+    {
+      "id": "restaurant_parking",
+      "grade": "B",
+      "score": 0.6064,
+      "issues": []
+    },
+    {
+      "id": "affordable_housing",
+      "grade": "A",
+      "score": 0.816,
+      "issues": []
+    },
+    {
+      "id": "buildable_lot_definition",
+      "grade": "A",
+      "score": 0.728,
+      "issues": []
+    }
+  ]
+}

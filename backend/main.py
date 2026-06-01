@@ -103,8 +103,7 @@ async def section(section_id: str) -> dict:
     Backs the clickable cross-references in the sources panel: a chunk may cite
     a section that wasn't itself retrieved, so we look it up on demand.
     """
-    loop = asyncio.get_running_loop()
-    chunk = await loop.run_in_executor(None, lambda: get_full_section(section_id))
+    chunk = await get_full_section(section_id)
     if chunk is None:
         raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
     return chunk.model_dump()
@@ -370,11 +369,8 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
-        loop = asyncio.get_running_loop()
-        chunks = await loop.run_in_executor(
-            None, lambda: semantic_search(plan.search_query, top_k=5)
-        )
-        code_chunks = await loop.run_in_executor(None, lambda: expand_cross_references(chunks))
+        chunks = await semantic_search(plan.search_query, top_k=5)
+        code_chunks = await expand_cross_references(chunks)
 
     return assemble_context(
         plan=plan,

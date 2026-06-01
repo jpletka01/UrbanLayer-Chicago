@@ -177,10 +177,11 @@ class TestQdrantIntegration:
         assert collections is not None
 
     @pytest.mark.skipif(not qdrant_available(), reason="Qdrant not available")
-    def test_semantic_search_returns_chunks(self):
+    @pytest.mark.asyncio
+    async def test_semantic_search_returns_chunks(self):
         from backend.retrieval.vector_search import semantic_search
 
-        results = semantic_search("parking requirements for residential zones", top_k=3)
+        results = await semantic_search("parking requirements for residential zones", top_k=3)
 
         # Will be empty if collection isn't populated, but shouldn't error
         assert isinstance(results, list)

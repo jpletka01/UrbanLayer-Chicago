@@ -1,18 +1,20 @@
+import asyncio
+
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from backend.retrieval.vector_search import (
     _payload_to_chunk,
     expand_cross_references,
+    get_by_section_ids_batch,
     MAX_CROSS_REF_PER_CHUNK,
     _SECTION_REF_RE,
 )
 from backend.models import CodeChunk
 
 
-@patch("backend.retrieval.vector_search._get_known_sections", return_value=frozenset())
 class TestPayloadToChunk:
-    def test_converts_full_payload(self, _mock_sections):
+    def test_converts_full_payload(self):
         payload = {
             "text": "Coach houses are permitted in RS-3 districts.",
             "source_document": "Chicago Municipal Code",
@@ -30,7 +32,7 @@ class TestPayloadToChunk:
         assert chunk.score == 0.92
         assert chunk.cross_references == ["17-2-0200", "17-10-0207"]
 
-    def test_handles_missing_fields(self, _mock_sections):
+    def test_handles_missing_fields(self):
         payload = {"text": "Some text", "section": "1-1-1"}
         chunk = _payload_to_chunk(payload, score=0.5)
 
@@ -40,19 +42,19 @@ class TestPayloadToChunk:
         assert chunk.subsection is None
         assert chunk.cross_references == []
 
-    def test_handles_null_cross_references(self, _mock_sections):
+    def test_handles_null_cross_references(self):
         payload = {"text": "Text", "section": "1-1-1", "cross_references": None}
         chunk = _payload_to_chunk(payload, score=0.5)
         assert chunk.cross_references == []
 
-    def test_filters_cross_refs_against_known_sections(self, _mock_sections):
-        _mock_sections.return_value = frozenset({"17-2-0200"})
+    def test_filters_cross_refs_against_known_sections(self):
+        known = frozenset({"17-2-0200"})
         payload = {
             "text": "Text",
             "section": "17-2-0303",
             "cross_references": ["17-2-0200", "17-10-0207", "Ch.17-2"],
         }
-        chunk = _payload_to_chunk(payload, score=0.9)
+        chunk = _payload_to_chunk(payload, score=0.9, known_sections=known)
         assert chunk.cross_references == ["17-2-0200"]
 
 
@@ -85,18 +87,26 @@ class TestExpandCrossReferences:
             cross_references=["17-10-0207", "17-2-0200"],
         )
 
-    def test_expands_valid_section_refs(self, base_chunk):
-        ref_chunk = CodeChunk(
-            text="Referenced parking requirements.",
-            source_document="Chicago Municipal Code",
-            section="17-10-0207",
-            section_title="Parking",
+    def _make_chunk(self, section_id, text="Ref text"):
+        return CodeChunk(
+            text=text,
+            source_document="CMC",
+            section=section_id,
+            section_title="Ref",
             score=1.0,
         )
 
-        with patch("backend.retrieval.vector_search.get_by_section_id") as mock_get:
-            mock_get.return_value = ref_chunk
-            result = expand_cross_references([base_chunk])
+    def test_expands_valid_section_refs(self, base_chunk):
+        batch = {
+            "17-10-0207": self._make_chunk("17-10-0207", "Referenced parking requirements."),
+            "17-2-0200": self._make_chunk("17-2-0200"),
+        }
+
+        async def mock_batch(ids):
+            return batch
+
+        with patch("backend.retrieval.vector_search.get_by_section_ids_batch", side_effect=mock_batch):
+            result = asyncio.run(expand_cross_references([base_chunk]))
 
         assert len(result) == 3
         assert result[0].section == "17-2-0303"
@@ -112,17 +122,12 @@ class TestExpandCrossReferences:
             score=0.85,
         )
 
-        with patch("backend.retrieval.vector_search.get_by_section_id") as mock_get:
-            def side_effect(section_id):
-                return CodeChunk(
-                    text=f"Ref for {section_id}",
-                    source_document="CMC",
-                    section=section_id,
-                    section_title="Ref",
-                    score=1.0,
-                )
-            mock_get.side_effect = side_effect
-            result = expand_cross_references([base_chunk, existing_chunk])
+        async def mock_batch(ids):
+            assert "17-10-0207" not in ids
+            return {"17-2-0200": self._make_chunk("17-2-0200")}
+
+        with patch("backend.retrieval.vector_search.get_by_section_ids_batch", side_effect=mock_batch):
+            result = asyncio.run(expand_cross_references([base_chunk, existing_chunk]))
 
         sections = [c.section for c in result]
         assert sections.count("17-10-0207") == 1
@@ -138,19 +143,16 @@ class TestExpandCrossReferences:
             cross_references=["Title17", "Ch.17-2", "17-3-0200"],
         )
 
-        ref_chunk = CodeChunk(
-            text="Valid section.",
-            source_document="CMC",
-            section="17-3-0200",
-            section_title="Section",
-            score=1.0,
-        )
+        captured_ids = []
 
-        with patch("backend.retrieval.vector_search.get_by_section_id") as mock_get:
-            mock_get.return_value = ref_chunk
-            result = expand_cross_references([chunk_with_title_ref])
+        async def mock_batch(ids):
+            captured_ids.extend(ids)
+            return {"17-3-0200": self._make_chunk("17-3-0200", "Valid section.")}
 
-        mock_get.assert_called_once_with("17-3-0200")
+        with patch("backend.retrieval.vector_search.get_by_section_ids_batch", side_effect=mock_batch):
+            result = asyncio.run(expand_cross_references([chunk_with_title_ref]))
+
+        assert captured_ids == ["17-3-0200"]
         assert len(result) == 2
 
     def test_caps_cross_refs_per_chunk(self):
@@ -163,39 +165,40 @@ class TestExpandCrossReferences:
             cross_references=[f"17-1-{i:04d}" for i in range(10)],
         )
 
-        with patch("backend.retrieval.vector_search.get_by_section_id") as mock_get:
-            mock_get.return_value = CodeChunk(
-                text="Ref",
-                source_document="CMC",
-                section="17-1-0001",
-                section_title="Ref",
-                score=1.0,
-            )
-            result = expand_cross_references([chunk_with_many_refs])
+        batch = {f"17-1-{i:04d}": self._make_chunk(f"17-1-{i:04d}") for i in range(10)}
+        captured_ids = []
 
-        assert mock_get.call_count == MAX_CROSS_REF_PER_CHUNK
+        async def mock_batch(ids):
+            captured_ids.extend(ids)
+            return batch
+
+        with patch("backend.retrieval.vector_search.get_by_section_ids_batch", side_effect=mock_batch):
+            result = asyncio.run(expand_cross_references([chunk_with_many_refs]))
+
+        assert len(captured_ids) == MAX_CROSS_REF_PER_CHUNK
         assert len(result) == 1 + MAX_CROSS_REF_PER_CHUNK
 
     def test_sets_reduced_score_on_expanded_refs(self, base_chunk):
-        ref_chunk = CodeChunk(
-            text="Referenced chunk.",
-            source_document="CMC",
-            section="17-10-0207",
-            section_title="Parking",
-            score=1.0,
-        )
+        batch = {
+            "17-10-0207": self._make_chunk("17-10-0207", "Referenced chunk."),
+            "17-2-0200": self._make_chunk("17-2-0200"),
+        }
 
-        with patch("backend.retrieval.vector_search.get_by_section_id") as mock_get:
-            mock_get.return_value = ref_chunk
-            result = expand_cross_references([base_chunk])
+        async def mock_batch(ids):
+            return batch
+
+        with patch("backend.retrieval.vector_search.get_by_section_ids_batch", side_effect=mock_batch):
+            result = asyncio.run(expand_cross_references([base_chunk]))
 
         expanded = [c for c in result if c.section == "17-10-0207"][0]
         assert expanded.score == 0.5
 
     def test_handles_missing_reference(self, base_chunk):
-        with patch("backend.retrieval.vector_search.get_by_section_id") as mock_get:
-            mock_get.return_value = None
-            result = expand_cross_references([base_chunk])
+        async def mock_batch(ids):
+            return {}
+
+        with patch("backend.retrieval.vector_search.get_by_section_ids_batch", side_effect=mock_batch):
+            result = asyncio.run(expand_cross_references([base_chunk]))
 
         assert len(result) == 1
         assert result[0].section == "17-2-0303"

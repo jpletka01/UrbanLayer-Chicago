@@ -1,0 +1,126 @@
+{
+  "timestamp": "2026-06-01T00:40:00.010418+00:00",
+  "total_queries": 18,
+  "grade_distribution": {
+    "A": 15,
+    "B": 1,
+    "C": 2,
+    "D": 0,
+    "F": 0
+  },
+  "avg_score": 0.7378,
+  "per_query": [
+    {
+      "id": "setback_single_family",
+      "grade": "A",
+      "score": 0.8664,
+      "issues": []
+    },
+    {
+      "id": "home_occupation",
+      "grade": "A",
+      "score": 0.7545,
+      "issues": []
+    },
+    {
+      "id": "minimum_lot_size",
+      "grade": "A",
+      "score": 0.6487,
+      "issues": []
+    },
+    {
+      "id": "adu_allowed",
+      "grade": "C",
+      "score": 0.7894,
+      "issues": [
+        "answer terms missing from results: ['accessory dwelling']"
+      ]
+    },
+    {
+      "id": "noise_ordinance",
+      "grade": "A",
+      "score": 0.767,
+      "issues": []
+    },
+    {
+      "id": "fence_height",
+      "grade": "A",
+      "score": 0.8069,
+      "issues": []
+    },
+    {
+      "id": "garage_conversion",
+      "grade": "A",
+      "score": 0.7575,
+      "issues": []
+    },
+    {
+      "id": "short_term_rental",
+      "grade": "A",
+      "score": 0.8096,
+      "issues": []
+    },
+    {
+      "id": "deck_setback",
+      "grade": "A",
+      "score": 0.7132,
+      "issues": []
+    },
+    {
+      "id": "food_trucks",
+      "grade": "A",
+      "score": 0.8396,
+      "issues": []
+    },
+    {
+      "id": "tree_removal",
+      "grade": "A",
+      "score": 0.7752,
+      "issues": []
+    },
+    {
+      "id": "lot_coverage_rm5",
+      "grade": "C",
+      "score": 0.6938,
+      "issues": [
+        "answer terms missing from results: ['lot coverage', 'percent']"
+      ]
+    },
+    {
+      "id": "landscaping_requirements",
+      "grade": "A",
+      "score": 0.8174,
+      "issues": []
+    },
+    {
+      "id": "rooftop_deck",
+      "grade": "A",
+      "score": 0.7914,
+      "issues": []
+    },
+    {
+      "id": "liquor_school_distance",
+      "grade": "A",
+      "score": 0.5558,
+      "issues": []
+    },
+    {
+      "id": "restaurant_parking",
+      "grade": "B",
+      "score": 0.6217,
+      "issues": []
+    },
+    {
+      "id": "affordable_housing",
+      "grade": "A",
+      "score": 0.7078,
+      "issues": []
+    },
+    {
+      "id": "buildable_lot_definition",
+      "grade": "A",
+      "score": 0.5652,
+      "issues": []
+    }
+  ]
+}

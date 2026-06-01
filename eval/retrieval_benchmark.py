@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import re
 import sys
@@ -28,8 +29,8 @@ QUERIES = [
         "id": "setback_single_family",
         "question": "What are the setback requirements for a single-family home in Chicago?",
         "category": "dimensional_standards",
-        "why": "Common homeowner question — should retrieve RS district setback rules from 17-2-0300",
-        "gold_sections": ["17-2-0300"],
+        "why": "Common homeowner question — should retrieve RS district setback rules from 17-2-0300, and the setback projection/obstruction table from 17-17-0300",
+        "gold_sections": ["17-2-0300", "17-17-0300"],
         "answer_must_contain": ["setback", "feet"],
     },
     {
@@ -310,9 +311,13 @@ def _grade_query(analyses: list[ChunkAnalysis], answer_must_contain: list[str]) 
 
 
 def run_benchmark(top_k: int = 5) -> list[QueryResult]:
+    return asyncio.run(_run_benchmark_async(top_k))
+
+
+async def _run_benchmark_async(top_k: int) -> list[QueryResult]:
     results = []
     for q in QUERIES:
-        chunks = semantic_search(q["question"], top_k=top_k)
+        chunks = await semantic_search(q["question"], top_k=top_k)
         analyses = [
             _analyze_chunk(c, i + 1, q["gold_sections"])
             for i, c in enumerate(chunks)

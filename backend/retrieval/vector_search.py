@@ -6,10 +6,14 @@ Provides two retrieval modes:
 
 Uses raw HTTP API instead of qdrant-client to avoid version compatibility issues
 between the Python client (1.18.x) and Qdrant server (1.9.x).
+
+All public functions are async. CPU-bound operations (embedding encode,
+cross-encoder predict) run in a thread pool via run_in_executor.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from functools import lru_cache
@@ -26,40 +30,49 @@ log = logging.getLogger(__name__)
 MAX_CROSS_REF_HOPS = 1
 MAX_CROSS_REF_PER_CHUNK = 3
 
+_known_sections_cache: frozenset[str] | None = None
+_known_sections_lock = asyncio.Lock()
 
-@lru_cache(maxsize=1)
-def _get_known_sections() -> frozenset[str]:
+
+async def _get_known_sections() -> frozenset[str]:
     """Scroll all Qdrant points once and cache the set of section IDs."""
-    settings = get_settings()
-    sections: set[str] = set()
-    offset = None
-    while True:
-        body: dict[str, Any] = {
-            "limit": 1000,
-            "with_payload": {"include": ["section"]},
-        }
-        if offset is not None:
-            body["offset"] = offset
-        try:
-            resp = httpx.post(
-                f"{settings.qdrant_url}/collections/{settings.qdrant_code_collection}/points/scroll",
-                json=body,
-                timeout=30.0,
-            )
-            resp.raise_for_status()
-            result = resp.json().get("result", {})
-        except Exception as exc:
-            log.warning("Failed to build section index: %s", exc)
-            return frozenset()
-        for point in result.get("points", []):
-            s = point.get("payload", {}).get("section", "")
-            if s:
-                sections.add(s)
-        offset = result.get("next_page_offset")
-        if offset is None:
-            break
-    log.info("Section index built: %d unique sections", len(sections))
-    return frozenset(sections)
+    global _known_sections_cache
+    if _known_sections_cache is not None:
+        return _known_sections_cache
+    async with _known_sections_lock:
+        if _known_sections_cache is not None:
+            return _known_sections_cache
+        settings = get_settings()
+        sections: set[str] = set()
+        offset = None
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            while True:
+                body: dict[str, Any] = {
+                    "limit": 1000,
+                    "with_payload": {"include": ["section"]},
+                }
+                if offset is not None:
+                    body["offset"] = offset
+                try:
+                    resp = await client.post(
+                        f"{settings.qdrant_url}/collections/{settings.qdrant_code_collection}/points/scroll",
+                        json=body,
+                    )
+                    resp.raise_for_status()
+                    result = resp.json().get("result", {})
+                except Exception as exc:
+                    log.warning("Failed to build section index: %s", exc)
+                    return frozenset()
+                for point in result.get("points", []):
+                    s = point.get("payload", {}).get("section", "")
+                    if s:
+                        sections.add(s)
+                offset = result.get("next_page_offset")
+                if offset is None:
+                    break
+        _known_sections_cache = frozenset(sections)
+        log.info("Section index built: %d unique sections", len(_known_sections_cache))
+        return _known_sections_cache
 
 _LEGEND_RE = re.compile(
     r"Row \d+ \(all columns\):.*(?:permitted|special use|planned development|[Nn]ot allowed)",
@@ -118,26 +131,47 @@ def _keyword_score(query: str, text: str) -> float:
     return sum(1 for t in query_terms if t in text_lower) / len(query_terms)
 
 
-def _rerank(query: str, chunks: list[CodeChunk], top_k: int) -> list[CodeChunk]:
-    """Re-score chunks with cross-encoder and return top-k."""
-    if not chunks:
-        return chunks
+def _rerank_payloads_sync(
+    query: str,
+    scored_hits: list[tuple[float, dict[str, Any]]],
+) -> list[tuple[float, dict[str, Any]]]:
+    """Blend dense+keyword scores with cross-encoder scores (CPU-bound)."""
+    if not scored_hits:
+        return scored_hits
+    settings = get_settings()
     reranker = _reranker()
-    pairs = [[query, c.text] for c in chunks]
-    scores = reranker.predict(pairs)
-    scored = sorted(zip(scores, chunks), key=lambda x: x[0], reverse=True)
-    return [chunk for _, chunk in scored[:top_k]]
+    texts = [p.get("text", "") for _, p in scored_hits]
+    pairs = [[query, t] for t in texts]
+    raw_scores = reranker.predict(pairs)
+
+    rmin, rmax = float(min(raw_scores)), float(max(raw_scores))
+    r_range = rmax - rmin if rmax > rmin else 1.0
+    omin = min(s for s, _ in scored_hits)
+    omax = max(s for s, _ in scored_hits)
+    o_range = omax - omin if omax > omin else 1.0
+
+    w = settings.reranker_weight
+    result = []
+    for (orig_score, payload), rs in zip(scored_hits, raw_scores):
+        norm_r = (float(rs) - rmin) / r_range
+        norm_o = (orig_score - omin) / o_range
+        final = round((1 - w) * norm_o + w * norm_r, 4)
+        result.append((final, payload))
+    return result
 
 
 def _qdrant_url() -> str:
     return get_settings().qdrant_url
 
 
-def _payload_to_chunk(payload: dict[str, Any], score: float) -> CodeChunk:
-    known = _get_known_sections()
+def _payload_to_chunk(
+    payload: dict[str, Any],
+    score: float,
+    known_sections: frozenset[str] = frozenset(),
+) -> CodeChunk:
     refs = payload.get("cross_references", []) or []
-    if known:
-        refs = [r for r in refs if r in known]
+    if known_sections:
+        refs = [r for r in refs if r in known_sections]
     return CodeChunk(
         text=payload.get("text", ""),
         source_document=payload.get("source_document", "Chicago Municipal Code"),
@@ -149,28 +183,31 @@ def _payload_to_chunk(payload: dict[str, Any], score: float) -> CodeChunk:
     )
 
 
-def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) -> list[CodeChunk]:
+async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) -> list[CodeChunk]:
     settings = get_settings()
     collection = settings.qdrant_zoning_collection if zoning_only else settings.qdrant_code_collection
 
+    loop = asyncio.get_running_loop()
     prefixed = settings.embedding_query_prefix + query
-    vec = _model().encode(prefixed, normalize_embeddings=True).tolist()
+    vec = await loop.run_in_executor(
+        None, lambda: _model().encode(prefixed, normalize_embeddings=True).tolist()
+    )
 
     rerank = settings.reranker_enabled
     candidate_count = settings.reranker_candidate_count if rerank else top_k
     fetch_limit = max(top_k * 5, candidate_count * 3)
 
-    try:
-        resp = httpx.post(
-            f"{_qdrant_url()}/collections/{collection}/points/search",
-            json={"vector": vec, "limit": fetch_limit, "with_payload": True},
-            timeout=10.0,
-        )
-        resp.raise_for_status()
-        hits = resp.json().get("result", [])
-    except Exception as exc:
-        log.warning("Qdrant query failed against %s: %s", collection, exc)
-        return []
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                f"{_qdrant_url()}/collections/{collection}/points/search",
+                json={"vector": vec, "limit": fetch_limit, "with_payload": True},
+            )
+            resp.raise_for_status()
+            hits = resp.json().get("result", [])
+        except Exception as exc:
+            log.warning("Qdrant query failed against %s: %s", collection, exc)
+            return []
 
     kw_weight = settings.keyword_boost_weight
     scored_hits = []
@@ -186,8 +223,14 @@ def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) ->
             combined = dense
         scored_hits.append((combined, payload))
 
+    if rerank and len(scored_hits) > top_k:
+        scored_hits = await loop.run_in_executor(
+            None, lambda: _rerank_payloads_sync(query, scored_hits)
+        )
+
     scored_hits.sort(key=lambda x: x[0], reverse=True)
 
+    known = await _get_known_sections()
     chunks = []
     seen_sections: set[str] = set()
     for score, payload in scored_hits:
@@ -195,44 +238,40 @@ def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) ->
         if section in seen_sections:
             continue
         seen_sections.add(section)
-        chunks.append(_payload_to_chunk(payload, score))
-        if len(chunks) >= candidate_count:
+        chunks.append(_payload_to_chunk(payload, score, known))
+        if len(chunks) >= top_k:
             break
-
-    if rerank and len(chunks) > top_k:
-        chunks = _rerank(query, chunks, top_k)
-    else:
-        chunks = chunks[:top_k]
 
     return chunks
 
 
-def get_by_section_id(section_id: str) -> CodeChunk | None:
+async def get_by_section_id(section_id: str) -> CodeChunk | None:
     settings = get_settings()
-    try:
-        resp = httpx.post(
-            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
-            json={
-                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
-                "limit": 1,
-                "with_payload": True,
-            },
-            timeout=10.0,
-        )
-        resp.raise_for_status()
-        points = resp.json().get("result", {}).get("points", [])
-    except Exception as exc:
-        log.warning("Qdrant scroll failed for %s: %s", section_id, exc)
-        return None
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+                json={
+                    "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
+                    "limit": 1,
+                    "with_payload": True,
+                },
+            )
+            resp.raise_for_status()
+            points = resp.json().get("result", {}).get("points", [])
+        except Exception as exc:
+            log.warning("Qdrant scroll failed for %s: %s", section_id, exc)
+            return None
     if not points:
         return None
-    return _payload_to_chunk(points[0].get("payload", {}), score=1.0)
+    known = await _get_known_sections()
+    return _payload_to_chunk(points[0].get("payload", {}), score=1.0, known_sections=known)
 
 
 _PART_LABEL_RE = re.compile(r"\(part \d+ of \d+\)\n?")
 
 
-def get_full_section(section_id: str) -> CodeChunk | None:
+async def get_full_section(section_id: str) -> CodeChunk | None:
     """Fetch every chunk for a section and reassemble the complete text.
 
     Sections that exceed the chunker's size budget are split across multiple
@@ -241,21 +280,21 @@ def get_full_section(section_id: str) -> CodeChunk | None:
     the redundant header off parts 2+, and union their cross-references.
     """
     settings = get_settings()
-    try:
-        resp = httpx.post(
-            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
-            json={
-                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
-                "limit": 64,
-                "with_payload": True,
-            },
-            timeout=10.0,
-        )
-        resp.raise_for_status()
-        points = resp.json().get("result", {}).get("points", [])
-    except Exception as exc:
-        log.warning("Qdrant scroll failed for full section %s: %s", section_id, exc)
-        return None
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+                json={
+                    "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
+                    "limit": 64,
+                    "with_payload": True,
+                },
+            )
+            resp.raise_for_status()
+            points = resp.json().get("result", {}).get("points", [])
+        except Exception as exc:
+            log.warning("Qdrant scroll failed for full section %s: %s", section_id, exc)
+            return None
     if not points:
         return None
 
@@ -265,12 +304,11 @@ def get_full_section(section_id: str) -> CodeChunk | None:
     parts = [payloads[0].get("text", "")]
     for p in payloads[1:]:
         text = p.get("text", "")
-        # Drop the repeated location header (everything up to the first blank line).
         body = text.split("\n\n", 1)
         parts.append(body[1] if len(body) > 1 else text)
     merged = _PART_LABEL_RE.sub("", "\n\n".join(part for part in parts if part))
 
-    known = _get_known_sections()
+    known = await _get_known_sections()
     seen: set[str] = set()
     refs: list[str] = []
     for p in payloads:
@@ -295,7 +333,43 @@ def get_full_section(section_id: str) -> CodeChunk | None:
 _SECTION_REF_RE = re.compile(r"^\d+[A-Za-z]?-\d+-\d+")
 
 
-def expand_cross_references(chunks: list[CodeChunk]) -> list[CodeChunk]:
+async def get_by_section_ids_batch(section_ids: list[str]) -> dict[str, CodeChunk]:
+    """Fetch multiple sections in a single Qdrant scroll call."""
+    if not section_ids:
+        return {}
+    settings = get_settings()
+    filter_body = {
+        "should": [
+            {"key": "section", "match": {"value": sid}}
+            for sid in section_ids
+        ]
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+                json={
+                    "filter": filter_body,
+                    "limit": len(section_ids),
+                    "with_payload": True,
+                },
+            )
+            resp.raise_for_status()
+            points = resp.json().get("result", {}).get("points", [])
+        except Exception as exc:
+            log.warning("Qdrant batch scroll failed: %s", exc)
+            return {}
+    known = await _get_known_sections()
+    result: dict[str, CodeChunk] = {}
+    for point in points:
+        payload = point.get("payload", {})
+        sid = payload.get("section", "")
+        if sid and sid not in result:
+            result[sid] = _payload_to_chunk(payload, score=1.0, known_sections=known)
+    return result
+
+
+async def expand_cross_references(chunks: list[CodeChunk]) -> list[CodeChunk]:
     """One-hop expansion: pull referenced sections by exact ID, dedupe by section.
 
     Cross-references stored in payload may also include Title/Chapter anchors
@@ -303,7 +377,7 @@ def expand_cross_references(chunks: list[CodeChunk]) -> list[CodeChunk]:
     everything else is silently skipped.
     """
     seen: set[str] = {c.section for c in chunks}
-    extras: list[CodeChunk] = []
+    needed: dict[str, float] = {}
     for chunk in chunks:
         pulled = 0
         for ref in chunk.cross_references:
@@ -311,10 +385,19 @@ def expand_cross_references(chunks: list[CodeChunk]) -> list[CodeChunk]:
                 break
             if ref in seen or not _SECTION_REF_RE.match(ref):
                 continue
-            referenced = get_by_section_id(ref)
-            if referenced:
-                referenced.score = min(chunk.score, 0.5)
-                extras.append(referenced)
-                seen.add(ref)
-                pulled += 1
+            if ref not in needed:
+                needed[ref] = min(chunk.score, 0.5)
+            seen.add(ref)
+            pulled += 1
+
+    if not needed:
+        return chunks
+
+    fetched = await get_by_section_ids_batch(list(needed.keys()))
+    extras: list[CodeChunk] = []
+    for ref, score in needed.items():
+        if ref in fetched:
+            chunk = fetched[ref]
+            chunk.score = score
+            extras.append(chunk)
     return chunks + extras
