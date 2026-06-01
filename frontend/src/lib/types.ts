@@ -27,7 +27,8 @@ export type SourceTag =
   | "business_api"
   | "vector_search"
   | "regulatory_domain"
-  | "property_domain";
+  | "property_domain"
+  | "incentives_domain";
 
 export interface Location {
   raw: string;
@@ -171,6 +172,21 @@ export interface PropertySummary {
   sales_history: SaleRecord[];
 }
 
+export interface IncentivesSummary {
+  in_tif_district: boolean;
+  tif_name: string | null;
+  tif_year_start: number | null;
+  tif_end_year: number | null;
+  tif_total_revenue: number | null;
+  tif_total_expenditure: number | null;
+  tif_financials: Record<string, unknown>[];
+  in_opportunity_zone: boolean;
+  oz_tract: string | null;
+  in_enterprise_zone: boolean;
+  enterprise_zone_name: string | null;
+  census_tract: string | null;
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;
@@ -186,6 +202,7 @@ export interface ContextObject {
   parcel_zoning?: ZoningSummary | null;
   regulatory?: RegulatorySummary | null;
   property?: PropertySummary | null;
+  incentives?: IncentivesSummary | null;
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
 }

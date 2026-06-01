@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10
 
+    # Incentives domain (Chicago Data Portal)
+    dataset_tif_boundaries: str = "eejr-xtfb"
+    dataset_tif_financials: str = "72uz-ikdv"
+    dataset_enterprise_zones: str = "64xf-pyvh"
+    limit_tif_financials: int = 5
+
     crime_lag_days: int = 7
 
     # Per-source Socrata row caps (every query must carry a $limit guard).

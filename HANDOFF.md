@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 2** — property domain (Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel). Previous: Expansion Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 247 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 4** — incentives domain (TIF district boundary check + financials, Opportunity Zone lookup via FCC tract resolution + HUD ArcGIS, Enterprise Zone boundary check). Previous: Expansion Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 275 tests passing.
 
 ---
 
@@ -1571,6 +1571,96 @@ The CCAO data lives on a different Socrata portal (`datacatalog.cookcountyil.gov
 
 ---
 
+## Session Log (2026-06-01 — Expansion Phase 4: Incentives Domain)
+
+Fourth expansion phase implementing incentive zone detection. Answers "What TIF district is this in?", "Are there any incentives available here?", and "Is this an Opportunity Zone?" The domain follows the same orchestrator pattern as regulatory and property, with a two-phase execution model: parallel boundary checks first, then conditional API follow-ups.
+
+### Orchestration Pattern
+
+```
+incentives_domain(lat, lon)
+  ├─ Phase A (parallel):
+  │   ├─ check_tif(lat, lon)            → shapely point-in-polygon, ~1ms
+  │   ├─ check_enterprise_zone(lat, lon) → shapely point-in-polygon, ~1ms
+  │   └─ resolve_census_tract(lat, lon)  → FCC API, ~100-200ms
+  │
+  └─ Phase B (conditional):
+      ├─ If TIF hit → fetch_tif_financials(tif_name) → Socrata, ~200ms
+      └─ If tract resolved → check_opportunity_zone(tract_fips) → HUD ArcGIS, ~200ms
+```
+
+Total latency: ~300-500ms (dominated by FCC and conditional API calls).
+
+### Data Sources
+
+| Source | API | Strategy |
+|--------|-----|----------|
+| TIF Districts (active) | Socrata `eejr-xtfb` GeoJSON | Download at startup, shapely point-in-polygon. Cached via module-level variable + `asyncio.Lock`. |
+| TIF Financials | Socrata `72uz-ikdv` | Query by TIF name, last 5 years. Only if boundary check hits. |
+| Enterprise Zones | Socrata `64xf-pyvh` GeoJSON | Same startup-loading pattern as TIF. |
+| Opportunity Zones | FCC `geo.fcc.gov/api/census/area` → HUD ArcGIS FeatureServer | Two-step: resolve lat/lon to 11-char census tract FIPS, then query HUD for OZ designation. |
+
+### Retrieval Modules
+
+1. **`backend/retrieval/incentives/tif.py`** — `_load_tif_boundaries()` downloads Socrata GeoJSON once and caches shapely polygons at module level (async lock, same pattern as `_get_known_sections` in vector_search.py). `check_tif()` does point-in-polygon, returns TIF name + properties or None. `fetch_tif_financials()` queries Socrata by TIF name for revenue/expenditure data.
+
+2. **`backend/retrieval/incentives/enterprise_zones.py`** — Same boundary-loading pattern as TIF. `check_enterprise_zone()` returns zone name or None.
+
+3. **`backend/retrieval/incentives/opportunity_zones.py`** — `resolve_census_tract()` calls FCC API, extracts 11-char FIPS from `block_fips`. `check_opportunity_zone()` queries HUD ArcGIS FeatureServer by tract FIPS, returns designation status.
+
+4. **`backend/retrieval/incentives/__init__.py`** — Domain orchestrator. Phase A gathers all three boundary/tract checks in parallel. Phase B conditionally fires TIF financials and OZ check based on Phase A results. `_build_summary()` merges into `IncentivesSummary`.
+
+### Model
+
+`IncentivesSummary`: `in_tif_district`, `tif_name`, `tif_year_start`, `tif_end_year`, `tif_total_revenue`, `tif_total_expenditure`, `tif_financials` (list[dict]), `in_opportunity_zone`, `oz_tract`, `in_enterprise_zone`, `enterprise_zone_name`, `census_tract`.
+
+### Pipeline Wiring
+
+- `main.py`: `incentives_domain` task gated on `"incentives_domain" in plan.sources` and resolved lat/lon, runs in parallel with regulatory, property, and all other domains
+- `assembler.py`: passes `IncentivesSummary` through to `ContextObject.incentives`
+- Router prompt: new rule routing TIF/OZ/EZ/incentive questions to `incentives_domain`
+- Synthesizer prompt: rule 13 instructs Claude to state each applicable incentive program with practical implications
+
+### Design Decisions
+
+- **Shapely point-in-polygon over API spatial queries** for TIF and EZ — boundaries change rarely, so downloading once and checking locally (~1ms) is faster and more reliable than hitting Socrata's spatial API per request (~200ms).
+- **Two-phase orchestration** — Phase A runs all independent checks in parallel. Phase B only fires when Phase A produces actionable results (TIF name for financials, tract FIPS for OZ). Avoids unnecessary API calls.
+- **FCC API for tract resolution** instead of parsing Census Geocoder response — the FCC endpoint is simpler (single GET, returns tract FIPS directly) and doesn't require the address string that Census Geocoder needs.
+- **HUD ArcGIS by tract FIPS** instead of spatial query — the HUD endpoint's `where=GEOID='{fips}'` query is deterministic and cacheable by tract, vs. spatial queries that depend on coordinate precision.
+- **No new env vars required** — TIF/EZ datasets use the existing `SOCRATA_APP_TOKEN` (Chicago Data Portal). FCC and HUD ArcGIS are fully public with no auth.
+
+### Test Count
+
+275 tests passing (was 247; +28 new):
+- `test_incentives_tif.py` — 7 tests (hit, miss, load failure, financials success/error, caching, properties passthrough)
+- `test_incentives_ez.py` — 5 tests (hit, miss, load failure, caching, name fallback)
+- `test_incentives_oz.py` — 8 tests (tract resolution success/empty/error/short-fips, OZ designated/not-found/error, params)
+- `test_incentives_orchestrator.py` — 8 tests (full assembly, no incentives, TIF triggers financials, no TIF skips financials, partial Phase A failure, all fail, OZ not designated, Phase B financials failure)
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/incentives/__init__.py` — domain orchestrator
+- `backend/retrieval/incentives/tif.py` — TIF boundary loading + financials
+- `backend/retrieval/incentives/enterprise_zones.py` — Enterprise Zone boundary loading
+- `backend/retrieval/incentives/opportunity_zones.py` — FCC tract resolution + HUD OZ check
+- `backend/tests/test_incentives_tif.py` — 7 tests
+- `backend/tests/test_incentives_ez.py` — 5 tests
+- `backend/tests/test_incentives_oz.py` — 8 tests
+- `backend/tests/test_incentives_orchestrator.py` — 8 tests
+
+**Backend (modified):**
+- `backend/models.py` — IncentivesSummary, expanded SourceTag/ContextObject
+- `backend/config.py` — TIF/EZ dataset IDs, `limit_tif_financials`
+- `backend/main.py` — incentives_domain import, task wiring in `_retrieve()`, error handling
+- `backend/assembler.py` — IncentivesSummary import, `incentives_summary` parameter
+- `backend/prompts.py` — router `incentives_domain` rule, synthesizer rule 13
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — IncentivesSummary interface, expanded SourceTag/ContextObject
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -1584,7 +1674,7 @@ The CCAO data lives on a different Socrata portal (`datacatalog.cookcountyil.gov
 - ~~**Phase 1: Infrastructure Foundation**~~ ✅ — Domain architecture (SourceTag, WorkflowHint, TTL cache, RegulatorySummary model, ContextObject expansion, router/synthesizer prompt updates).
 - ~~**Phase 2: Property Domain**~~ ✅ — Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel. Sequential-then-parallel orchestrator pattern.
 - ~~**Phase 3: Regulatory Domain**~~ ✅ — 15 overlay layers, FEMA flood zones, EPA brownfield sites. All in parallel via domain orchestrator.
-- **Phase 4: Incentives Domain** — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (census tract → CDFI lookup), Enterprise Zones. TIF/EZ boundaries can be cached at startup (same pattern as community areas in `geo.py`).
+- ~~**Phase 4: Incentives Domain**~~ ✅ — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (FCC tract resolution + HUD ArcGIS), Enterprise Zones. Two-phase orchestrator: parallel boundary checks → conditional API follow-ups.
 - **Phase 5: Neighborhood Domain** — Demographics (pre-aggregated community area data from Socrata `t68z-cikk`), transit proximity (GTFS stops.txt parsing + MapServer TOD layers 13/24).
 - **Phase 6: Frontend Integration** — TypeScript types for all domains, property/regulatory/incentives/demographics/transit cards in sidebar, map layer expansion (parcel boundary, overlay polygons, incentive zones, transit stations).
 - **Phase 7: Polish & Optimization** — PTAXSIM tax estimation, TTL caching for all spatial lookups, startup preloading, eval expansion, workflow-based context selection.
@@ -1609,10 +1699,10 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `backend/retrieval/incentives/` — Phase 4: TIF, OZ, Enterprise Zone modules
    - `backend/retrieval/neighborhood/` — Phase 5: demographics + transit modules
    - `backend/models.py` — new domain summary models for each phase
    - `backend/main.py` — wire new domain orchestrators into `_retrieve()`
+   - `frontend/src/components/sidebar/` — Phase 6: property/regulatory/incentives/demographics cards
    - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
 
 ## Repo Layout
@@ -1642,9 +1732,10 @@ chicago/
 │   ├── data/                       # SQLite database (gitignored)
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py (async) + map_data.py + zoning.py
 │   │   ├── cache.py                # TTL cache utility for spatial queries
+│   │   ├── incentives/             # Domain orchestrator + tif.py + enterprise_zones.py + opportunity_zones.py
 │   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py
 │   │   └── regulatory/             # Domain orchestrator + overlays.py + flood.py + environmental.py
-│   └── tests/                      # 247 tests (unit + integration)
+│   └── tests/                      # 275 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -1679,7 +1770,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 247 tests
+python -m pytest backend/tests/ -q           # 275 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 

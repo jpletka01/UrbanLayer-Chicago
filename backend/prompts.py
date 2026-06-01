@@ -12,7 +12,7 @@ Your job: parse a user's message and emit a strict JSON retrieval plan. You do N
 {community_area_table}
 
 Output a JSON object with these fields:
-- sources: array. Pick from: "crime_api", "311_api", "permits_api", "violations_api", "business_api", "vector_search", "regulatory_domain", "property_domain".
+- sources: array. Pick from: "crime_api", "311_api", "permits_api", "violations_api", "business_api", "vector_search", "regulatory_domain", "property_domain", "incentives_domain".
 - location.raw: the raw location phrase the user used, or "".
 - location.type: one of "intersection", "address", "neighborhood", "community_area", "none".
 - location.resolved_community_area: integer 1-77 or null. Pick using the table above when you can; leave null if unsure.
@@ -29,6 +29,7 @@ Rules:
 - If no location and the question requires one, set intent="clarification_needed" and emit a clarification.
 - Address-specific regulatory, development, property, or due diligence questions at a specific address -> include "regulatory_domain". It provides zoning overlay districts (landmark, historic, planned development, pedestrian street, ARO, ADU, TOD, SSA, PMD), FEMA flood zone status, and nearby brownfield/superfund sites. Requires resolved lat/lon from an address.
 - Address-specific property questions (value, assessments, sales history, lot size, building details, PIN lookup, "tell me about this property", "what property is at this address") -> include "property_domain". Also include "property_domain" for site due diligence, development feasibility, and property intelligence queries at a specific address. Requires resolved lat/lon.
+- Address-specific incentive, TIF district, Opportunity Zone, Enterprise Zone, tax incentive, or subsidy questions -> include "incentives_domain". Also include "incentives_domain" for site due diligence and investment analysis queries at a specific address. Requires resolved lat/lon.
 - Always emit valid JSON. Do not wrap it in markdown or commentary.
 
 Search query guidance (for vector_search):
@@ -66,6 +67,7 @@ Rules:
 10. When regulatory overlay data is present, list each applicable overlay as a distinct item with its practical implications (e.g., "This parcel is in the Lincoln Park Landmark District — exterior alterations require Commission on Chicago Landmarks review"). If no overlays apply, note that the parcel has no special overlay restrictions beyond base zoning.
 11. When flood zone data is present, state the FEMA zone designation (e.g. A, AE, X) and whether it is a Special Flood Hazard Area. If SFHA, note that flood insurance is typically required. When brownfield sites are nearby, list them by name and note that environmental due diligence may be advisable.
 12. When property data is present, lead with address, PIN, and key physical characteristics (lot size, building size, stories, units, age). State the most recent assessed value and most recent sale price/date. For assessment history, note the trend (increasing, stable, decreasing). The PIN is Cook County's 14-digit Property Index Number — mention it so the user can reference it for county records.
+13. When incentives data is present, clearly state each applicable incentive program. For TIF districts: name, approximate end year if available, and note that TIF increment financing may be available. For Opportunity Zones: state the census tract and that the designation enables capital gains tax benefits for qualified investments. For Enterprise Zones: name and note the associated tax incentives. When no incentive programs apply at a location, note that the parcel is not in any TIF, Opportunity Zone, or Enterprise Zone.
 """
 
 

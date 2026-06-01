@@ -12,6 +12,7 @@ SourceTag = Literal[
     "vector_search",
     "regulatory_domain",
     "property_domain",
+    "incentives_domain",
 ]
 
 IntentTag = Literal[
@@ -169,6 +170,21 @@ class PropertySummary(BaseModel):
     sales_history: list[SaleRecord] = Field(default_factory=list)
 
 
+class IncentivesSummary(BaseModel):
+    in_tif_district: bool = False
+    tif_name: str | None = None
+    tif_year_start: int | None = None
+    tif_end_year: int | None = None
+    tif_total_revenue: float | None = None
+    tif_total_expenditure: float | None = None
+    tif_financials: list[dict] = Field(default_factory=list)
+    in_opportunity_zone: bool = False
+    oz_tract: str | None = None
+    in_enterprise_zone: bool = False
+    enterprise_zone_name: str | None = None
+    census_tract: str | None = None
+
+
 class CodeChunk(BaseModel):
     text: str
     source_document: str
@@ -208,6 +224,7 @@ class ContextObject(BaseModel):
     parcel_zoning: ZoningSummary | None = None
     regulatory: RegulatorySummary | None = None
     property: PropertySummary | None = None
+    incentives: IncentivesSummary | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
 
