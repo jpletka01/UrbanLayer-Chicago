@@ -1,8 +1,8 @@
 """Neighborhood domain orchestrator.
 
-Fetches community area demographics and transit proximity data
-for a given location. Demographics are keyed on community area;
-transit proximity uses lat/lon coordinates.
+Fetches community area demographics, transit proximity data,
+and Walk Score for a given location. Demographics are keyed on
+community area; transit proximity and Walk Score use lat/lon.
 """
 
 import asyncio
@@ -10,13 +10,15 @@ import logging
 
 import httpx
 
-from backend.models import NeighborhoodSummary
+from backend.config import get_settings
+from backend.models import NeighborhoodSummary, WalkScoreSummary
 from backend.retrieval.neighborhood.demographics import fetch_demographics
 from backend.retrieval.neighborhood.transit import (
     build_transit_access,
     check_tod_eligibility,
     find_nearest_stations,
 )
+from backend.retrieval.neighborhood.walkscore import fetch_walkscore
 
 log = logging.getLogger(__name__)
 
@@ -26,10 +28,11 @@ async def neighborhood_domain(
     lon: float,
     *,
     community_area: int | None = None,
+    address: str | None = None,
     workflow: str = "general",
     client: httpx.AsyncClient | None = None,
 ) -> NeighborhoodSummary:
-    """Fetch demographics and transit data for a location."""
+    """Fetch demographics, transit, and Walk Score data for a location."""
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
@@ -51,6 +54,13 @@ async def neighborhood_domain(
                 check_tod_eligibility(lat, lon, client=client)
             )
 
+        if has_coords and address:
+            settings = get_settings()
+            if settings.walkscore_api_key and workflow not in ("property_intelligence",):
+                tasks["walkscore"] = asyncio.create_task(
+                    fetch_walkscore(lat, lon, address, client=client)
+                )
+
         results: dict[str, object] = {}
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
@@ -65,6 +75,7 @@ async def neighborhood_domain(
             results.get("demographics"),
             results.get("stations"),
             results.get("tod"),
+            results.get("walkscore"),
         )
     finally:
         if owns:
@@ -75,9 +86,11 @@ def _build_summary(
     demographics,
     station_result: dict | None,
     tod_result: dict | None,
+    walkscore_result: WalkScoreSummary | None = None,
 ) -> NeighborhoodSummary:
     transit = build_transit_access(station_result, tod_result)
     return NeighborhoodSummary(
         demographics=demographics,
         transit=transit,
+        walkscore=walkscore_result,
     )

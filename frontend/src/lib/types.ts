@@ -224,9 +224,20 @@ export interface TransitAccess {
   tod_type: string | null;
 }
 
+export interface WalkScoreSummary {
+  walk_score: number | null;
+  walk_description: string | null;
+  transit_score: number | null;
+  transit_description: string | null;
+  bike_score: number | null;
+  bike_description: string | null;
+  ws_link: string | null;
+}
+
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
   transit: TransitAccess | null;
+  walkscore: WalkScoreSummary | null;
 }
 
 export interface ContextObject {

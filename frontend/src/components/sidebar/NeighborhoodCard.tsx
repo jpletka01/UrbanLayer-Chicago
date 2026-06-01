@@ -54,6 +54,34 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
   );
 }
 
+function scoreColor(score: number): string {
+  if (score >= 90) return "#22c55e";
+  if (score >= 70) return "#4ade80";
+  if (score >= 50) return "#facc15";
+  if (score >= 25) return "#f97316";
+  return "#ef4444";
+}
+
+function ScoreBar({ score, description, label }: { score: number; description: string | null; label: string }) {
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between items-baseline">
+        <span className="text-[10px] text-text-muted">{label}</span>
+        <span className="text-[11px] text-text-primary font-mono">{score}</span>
+      </div>
+      <div className="h-1.5 bg-dark-elevated rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${score}%`, backgroundColor: scoreColor(score) }}
+        />
+      </div>
+      {description && (
+        <p className="text-[10px] text-text-muted">{description}</p>
+      )}
+    </div>
+  );
+}
+
 export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
   const demo = data.demographics;
   const transit = data.transit;
@@ -149,8 +177,32 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
           </div>
         )}
 
+        {/* Walk Score */}
+        {data.walkscore && (data.walkscore.walk_score != null || data.walkscore.transit_score != null || data.walkscore.bike_score != null) && (
+          <div className="space-y-2">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">Walk Score</span>
+            {data.walkscore.walk_score != null && (
+              <ScoreBar score={data.walkscore.walk_score} description={data.walkscore.walk_description} label="Walk" />
+            )}
+            {data.walkscore.transit_score != null && (
+              <ScoreBar score={data.walkscore.transit_score} description={data.walkscore.transit_description} label="Transit" />
+            )}
+            {data.walkscore.bike_score != null && (
+              <ScoreBar score={data.walkscore.bike_score} description={data.walkscore.bike_description} label="Bike" />
+            )}
+            <a
+              href={data.walkscore.ws_link || "https://www.walkscore.com"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[9px] text-text-muted hover:text-text-secondary transition-colors underline"
+            >
+              Walk Score®
+            </a>
+          </div>
+        )}
+
         {/* No data state */}
-        {!demo && !transit && (
+        {!demo && !transit && !data.walkscore && (
           <p className="text-[11px] text-text-muted">No neighborhood data available.</p>
         )}
       </div>

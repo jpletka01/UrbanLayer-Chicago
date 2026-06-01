@@ -405,13 +405,14 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 incentives_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
             )
 
-        # Neighborhood domain: demographics + transit proximity
+        # Neighborhood domain: demographics + transit proximity + Walk Score
         if "neighborhood_domain" in plan.sources:
             tasks["neighborhood"] = asyncio.create_task(
                 neighborhood_domain(
                     loc.resolved_lat or 0.0,
                     loc.resolved_lon or 0.0,
                     community_area=ca,
+                    address=loc.resolved_address,
                     workflow=wf,
                     client=client,
                 )

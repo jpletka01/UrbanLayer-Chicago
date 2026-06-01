@@ -222,9 +222,20 @@ class TransitAccess(BaseModel):
     tod_type: str | None = None
 
 
+class WalkScoreSummary(BaseModel):
+    walk_score: int | None = None
+    walk_description: str | None = None
+    transit_score: int | None = None
+    transit_description: str | None = None
+    bike_score: int | None = None
+    bike_description: str | None = None
+    ws_link: str | None = None
+
+
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
     transit: TransitAccess | None = None
+    walkscore: WalkScoreSummary | None = None
 
 
 class CodeChunk(BaseModel):

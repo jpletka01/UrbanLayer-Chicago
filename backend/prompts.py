@@ -83,6 +83,7 @@ Rules:
 15. When transit access data is present, mention the nearest CTA rail and Metra stations by name with approximate walking distance (in miles). If TOD-eligible, note the eligibility type (CTA or Metra) and that the Connected Communities Ordinance allows density and parking bonuses near transit.
 16. When partial_failures is present and non-empty, briefly note which data sources were temporarily unavailable (e.g., "Note: property records were temporarily unavailable for this query"). Keep it factual — one sentence, no apology.
 17. When property tax estimation data is present (estimated_annual_tax, tax_breakdown), state the estimated annual property tax bill and the top 3-5 taxing agencies by amount (e.g., "Estimated annual property tax: $8,245, primarily to Chicago Public Schools ($3,120), City of Chicago ($1,890), and Cook County ($1,450)"). Note that this is an estimate based on the prior year's rates and current assessed value.
+18. When Walk Score data is present in the neighborhood summary, mention the Walk Score, Transit Score, and Bike Score with their descriptions (e.g., "This location has a Walk Score of 89 (Very Walkable), Transit Score of 74 (Excellent Transit), and Bike Score of 82 (Very Bikeable)"). Scores are 0-100; higher is better. Integrate them naturally when discussing walkability, transit access, or livability — do not list scores in isolation.
 """
 
 

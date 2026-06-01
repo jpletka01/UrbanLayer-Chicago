@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     # Neighborhood domain
     dataset_demographics: str = "t68z-cikk"
     transit_search_radius_mi: float = 2.0
+    walkscore_api_key: str = ""
 
     # Incentives domain (Chicago Data Portal)
     dataset_tif_boundaries: str = "eejr-xtfb"

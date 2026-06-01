@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from backend.models import DemographicsSummary, TransitAccess
+from backend.models import DemographicsSummary, TransitAccess, WalkScoreSummary
 from backend.retrieval.neighborhood import neighborhood_domain
 
 
@@ -205,3 +205,87 @@ async def test_general_workflow_fetches_demographics(mock_demo, mock_stations, m
     )
 
     mock_demo.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.neighborhood.fetch_walkscore")
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_full_assembly_with_walkscore(mock_demo, mock_stations, mock_tod, mock_ws):
+    mock_demo.return_value = DemographicsSummary(community_area=24, population=87781)
+    mock_stations.return_value = {
+        "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.3, "lines": ["Blue"]},
+        "nearest_metra": None,
+    }
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+    mock_ws.return_value = WalkScoreSummary(
+        walk_score=89, walk_description="Very Walkable",
+        transit_score=74, bike_score=82,
+    )
+
+    result = await neighborhood_domain(
+        41.93, -87.65, community_area=24, address="123 N Damen Ave", client=AsyncMock(),
+    )
+
+    assert result.demographics is not None
+    assert result.transit is not None
+    assert result.walkscore is not None
+    assert result.walkscore.walk_score == 89
+    mock_ws.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.neighborhood.fetch_walkscore")
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_walkscore_skipped_without_address(mock_demo, mock_stations, mock_tod, mock_ws):
+    mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+
+    result = await neighborhood_domain(41.93, -87.65, address=None, client=AsyncMock())
+
+    assert result.walkscore is None
+    mock_ws.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.neighborhood.fetch_walkscore")
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_walkscore_skipped_property_intelligence(mock_demo, mock_stations, mock_tod, mock_ws):
+    mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+
+    result = await neighborhood_domain(
+        41.93, -87.65, address="123 Main St",
+        workflow="property_intelligence", client=AsyncMock(),
+    )
+
+    assert result.walkscore is None
+    mock_ws.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.neighborhood.fetch_walkscore")
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_walkscore_failure_others_ok(mock_demo, mock_stations, mock_tod, mock_ws):
+    mock_demo.return_value = DemographicsSummary(community_area=24, population=50000)
+    mock_stations.return_value = {
+        "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.3, "lines": ["Blue"]},
+        "nearest_metra": None,
+    }
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+    mock_ws.side_effect = Exception("Walk Score API down")
+
+    result = await neighborhood_domain(
+        41.93, -87.65, community_area=24, address="123 Main St", client=AsyncMock(),
+    )
+
+    assert result.demographics is not None
+    assert result.transit is not None
+    assert result.walkscore is None

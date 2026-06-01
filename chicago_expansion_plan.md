@@ -231,6 +231,7 @@ Three portals, same API pattern: `https://{domain}/resource/{dataset_id}.json?$w
 | Pace GTFS (static) | `pacebus.com/gtfs/gtfs.zip` | None | Non-commercial use only |
 | CTA Train Tracker | `lapi.transitchicago.com/api/1.1/ttarrivals.aspx` | Free API key | Real-time arrivals, 100K req/day |
 | Divvy GBFS | `gbfs.divvybikes.com/gbfs/gbfs.json` | None | Real-time station/bike data |
+| **Walk Score API** | **`api.walkscore.com/score?format=json&lat=...&lon=...&transit=1&bike=1&wsapikey=...`** | **API key (free tier)** | **✅ INTEGRATED — Walk/Transit/Bike scores (0-100). 5,000 calls/day. 48h TTL cache. Requires address + lat/lon. Server-side only.** |
 
 ---
 
@@ -307,9 +308,10 @@ Incentives Domain (keyed on lat/lon + census tract, mostly parallel)
   └─ census tract → [Opportunity Zone]
   └─ TIF ID (if hit) → TIF financials (sequential)
 
-Neighborhood Domain (keyed on community area + lat/lon)
+Neighborhood Domain (keyed on community area + lat/lon + address)
   └─ community area → [Demographics] 
   └─ lat/lon → [Transit proximity]
+  └─ lat/lon + address → [Walk Score API] (walk/transit/bike scores)
 
 Development Domain (existing, keyed on community area)
   └─ community area → [Permits, Violations, Business Licenses]
@@ -403,6 +405,16 @@ class TransitAccess(BaseModel):
     tod_eligible: bool = False
     tod_type: str | None = None   # "CTA rail", "Metra", "high-frequency bus"
 
+# --- Walk Score (INTEGRATED) ---
+class WalkScoreSummary(BaseModel):
+    walk_score: int | None = None          # 0-100
+    walk_description: str | None = None    # e.g. "Very Walkable"
+    transit_score: int | None = None       # 0-100
+    transit_description: str | None = None # e.g. "Excellent Transit"
+    bike_score: int | None = None          # 0-100
+    bike_description: str | None = None    # e.g. "Very Bikeable"
+    ws_link: str | None = None             # property page URL (attribution)
+
 # --- Expanded ContextObject ---
 # Add optional fields to existing ContextObject:
 #   property: PropertySummary | None = None
@@ -410,6 +422,7 @@ class TransitAccess(BaseModel):
 #   incentives: IncentivesSummary | None = None
 #   demographics: DemographicsSummary | None = None
 #   transit: TransitAccess | None = None
+#   walkscore: WalkScoreSummary | None = None  # ✅ INTEGRATED
 ```
 
 ### PIN System
@@ -609,6 +622,7 @@ backend/retrieval/
     __init__.py          # neighborhood_domain() orchestrator
     demographics.py      # Census/ACS
     transit.py           # GTFS-based station proximity
+    walkscore.py         # Walk Score API (walk/transit/bike scores) ✅
   # Existing modules stay in place (unchanged):
   crime.py, three11.py, buildings.py, business.py,
   geo.py, vector_search.py, zoning.py, socrata.py,
@@ -794,7 +808,7 @@ Add TypeScript interfaces in `frontend/src/lib/types.ts` mirroring all new Pydan
 
 ### Phase 5: Neighborhood Domain (Week 5)
 
-**Goal:** Demographics, transit proximity, TOD eligibility.
+**Goal:** Demographics, transit proximity, TOD eligibility, walkability scores.
 
 1. `backend/retrieval/neighborhood/demographics.py`
    - Option A (simpler): Use pre-aggregated community area data from `data.cityofchicago.org/resource/t68z-cikk.json`. Prefetch at startup, store in cache. Query by community area number.
@@ -806,8 +820,16 @@ Add TypeScript interfaces in `frontend/src/lib/types.ts` mirroring all new Pydan
    - `nearest_stations(lat, lon, radius_mi=1.0)` → sorted by distance (haversine)
    - TOD eligibility: check if within TSL layers 13/24 from MapServer (simplest), OR calculate distance from CTA/Metra stations + apply Connected Communities Ordinance rules (½ mile rail, ¼ mile bus)
    - **Recommend using MapServer layers 13/24** for TOD — they contain pre-computed boundaries
-3. Orchestrator, assembler, synthesis prompt, tests
-4. Frontend: add transit station markers to map
+3. ✅ **`backend/retrieval/neighborhood/walkscore.py`** — Walk Score API integration (DONE)
+   - Single GET to `api.walkscore.com/score` with `transit=1&bike=1` returns Walk Score, Transit Score, and Bike Score (all 0-100)
+   - API key: `WALKSCORE_API_KEY` env var, 5,000 calls/day limit
+   - 48-hour TTL cache (walk scores change rarely), `_NOT_FOUND` sentinel for bad coordinates
+   - Requires `address` parameter (threaded from `plan.location.resolved_address`)
+   - Skipped when API key is empty or workflow is `property_intelligence`
+   - Frontend: color-coded score bars in `NeighborhoodCard.tsx`, text "Walk Score®" attribution link
+   - Synthesis prompt rule 18: weave scores naturally into walkability/livability discussion
+4. Orchestrator, assembler, synthesis prompt, tests
+5. Frontend: add transit station markers to map
 
 ### Phase 6: Frontend Integration (Week 6)
 
@@ -973,9 +995,10 @@ SOCRATA_APP_TOKEN=           # Chicago Data Portal
 # New
 COOK_COUNTY_SOCRATA_TOKEN=   # datacatalog.cookcountyil.gov (optional, recommended)
 CENSUS_API_KEY=              # api.census.gov (free, register at census.gov)
+WALKSCORE_API_KEY=           # walkscore.com (free tier, 5000 calls/day) ✅ INTEGRATED
 ```
 
-No other API keys required. All ArcGIS services (Chicago, Cook County, FEMA, EPA, HUD, NPS) are fully public with no authentication.
+Walk Score API key is required for walk/transit/bike scores. All ArcGIS services (Chicago, Cook County, FEMA, EPA, HUD, NPS) are fully public with no authentication.
 
 ## Appendix B: Key Endpoint Reference
 

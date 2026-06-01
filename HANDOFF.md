@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 7 complete (all stretch items)** — workflow-based context selection (domain orchestrators skip unnecessary sub-queries per workflow type), overlay district polygons on map (targeted geometry fetch for hit layers only), incentive zone boundary polygons on map (TIF/EZ dashed outlines), PTAXSIM property tax estimation (8.8GB CCAO SQLite DB, line-item breakdown by PIN). Previous: Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 325 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Walk Score API integration** — walk/transit/bike scores (0–100) from walkscore.com added to neighborhood domain, 48h TTL cache (5,000 calls/day limit), color-coded score bars in sidebar, text attribution. Previous: Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 337 tests passing.
 
 ---
 
@@ -2180,6 +2180,62 @@ Frontend `PropertyCard.tsx` shows "Est. Annual Tax" with a collapsible agency-le
 
 ---
 
+## Session Log (2026-06-01 — Walk Score API Integration)
+
+Added Walk Score, Transit Score, and Bike Score to the neighborhood domain. The Walk Score API (`api.walkscore.com/score`) returns all three scores in a single call when `transit=1&bike=1` are set.
+
+### Implementation
+
+**New sub-module `backend/retrieval/neighborhood/walkscore.py`**: `fetch_walkscore(lat, lon, address, *, client)` → `WalkScoreSummary | None`. Single GET to the Walk Score API. TTL cache with 48-hour expiry (Walk Score data changes rarely; long TTL protects the 5,000 calls/day rate limit). Cache key rounded to 4 decimal places (~11m). `_NOT_FOUND` sentinel caches bad-coordinates/bad-key responses to avoid re-hitting. Returns `None` gracefully on API errors, quota exceeded, or missing API key.
+
+**Orchestrator update**: `neighborhood_domain()` gained `address: str | None = None` parameter. Walk Score task runs in parallel with demographics/transit/TOD, gated on: having coordinates + address + a configured API key + workflow not being `"property_intelligence"`.
+
+**Pipeline wiring**: `main.py` passes `loc.resolved_address` (already available from the router's geocoding) to the orchestrator.
+
+**Model**: `WalkScoreSummary` with 7 fields (walk/transit/bike scores + descriptions + `ws_link` for attribution). Added as `walkscore` field on `NeighborhoodSummary`.
+
+**Frontend**: `NeighborhoodCard.tsx` renders a "Walk Score" section with three color-coded progress bars (green ≥90, light green ≥70, yellow ≥50, orange ≥25, red <25). Text-only "Walk Score®" attribution link to `ws_link` or fallback `walkscore.com` (required by API TOS).
+
+**Synthesis prompt**: Rule 18 instructs Claude to mention all three scores with descriptions naturally in prose.
+
+### API Details
+
+- **Endpoint**: `GET https://api.walkscore.com/score?format=json&address=...&lat=...&lon=...&transit=1&bike=1&wsapikey=...`
+- **API key**: `WALKSCORE_API_KEY` env var, 5,000 calls/day limit
+- **Response status codes**: 1=success, 2=calculating, 30=bad coords, 40=bad key, 41=quota exceeded
+- **Coverage**: US and Canada only (Chicago is covered)
+- **Server-side only** — calls must not come from browser JS
+
+### Test Count
+
+337 tests passing (was 325; +12 new):
+- `test_neighborhood_walkscore.py` — 8 tests (success, cached, not-found cached, API down, quota exceeded, bad key, no key configured, cache rounding)
+- `test_neighborhood_orchestrator.py` — +4 tests (full assembly with walkscore, skipped without address, skipped for property_intelligence, failure with others OK)
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/neighborhood/walkscore.py` — Walk Score API fetch + cache
+- `backend/tests/test_neighborhood_walkscore.py` — 8 tests
+
+**Backend (modified):**
+- `backend/config.py` — `walkscore_api_key` setting
+- `backend/models.py` — `WalkScoreSummary`, `NeighborhoodSummary.walkscore`
+- `backend/retrieval/neighborhood/__init__.py` — `address` param, walkscore task wiring
+- `backend/main.py` — pass `loc.resolved_address` to neighborhood orchestrator
+- `backend/prompts.py` — synthesizer rule 18 (Walk Score)
+- `backend/tests/test_neighborhood_orchestrator.py` — +4 tests
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — `WalkScoreSummary` interface, `NeighborhoodSummary.walkscore`
+- `frontend/src/components/sidebar/NeighborhoodCard.tsx` — score bars + attribution link
+
+**Other:**
+- `.env` — `WALKSCORE_API_KEY`
+- `.env.example` — `WALKSCORE_API_KEY` placeholder
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -2194,7 +2250,7 @@ Frontend `PropertyCard.tsx` shows "Est. Annual Tax" with a collapsible agency-le
 - ~~**Phase 2: Property Domain**~~ ✅
 - ~~**Phase 3: Regulatory Domain**~~ ✅
 - ~~**Phase 4: Incentives Domain**~~ ✅
-- ~~**Phase 5: Neighborhood Domain**~~ ✅
+- ~~**Phase 5: Neighborhood Domain**~~ ✅ — Including Walk Score API integration (walk/transit/bike scores)
 - ~~**Phase 6: Frontend Integration**~~ ✅
 - ~~**Phase 7: Polish & Optimization**~~ ✅ — All core and stretch items complete. TTL caching, startup preloading, graceful degradation, workflow_hint emission + workflow-based context selection, eval expansion, PTAXSIM tax estimation, overlay district polygons on map, incentive zone boundary polygons on map.
 
@@ -2252,10 +2308,10 @@ chicago/
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py (async) + map_data.py + zoning.py
 │   │   ├── cache.py                # TTL cache utility for spatial queries
 │   │   ├── incentives/             # Domain orchestrator + tif.py + enterprise_zones.py + opportunity_zones.py
-│   │   ├── neighborhood/           # Domain orchestrator + demographics.py + transit.py
+│   │   ├── neighborhood/           # Domain orchestrator + demographics.py + transit.py + walkscore.py
 │   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py + tax_estimate.py
 │   │   └── regulatory/             # Domain orchestrator + overlays.py (+ geometry queries) + flood.py + environmental.py
-│   └── tests/                      # 325 tests (unit + integration)
+│   └── tests/                      # 337 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -2291,7 +2347,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 325 tests
+python -m pytest backend/tests/ -q           # 337 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 
