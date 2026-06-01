@@ -108,6 +108,35 @@ export interface ZoningSummary {
   zoning_map_url: string;
 }
 
+export interface OverlayDistrict {
+  layer_type: string;
+  name: string | null;
+  ordinance: string | null;
+  description: string | null;
+}
+
+export interface RegulatorySummary {
+  overlays: OverlayDistrict[];
+  in_planned_development: boolean;
+  in_landmark_district: boolean;
+  is_landmark_building: boolean;
+  in_historic_district: boolean;
+  on_national_register: boolean;
+  in_lakefront_protection: boolean;
+  on_pedestrian_street: boolean;
+  in_special_district: boolean;
+  in_pmd: boolean;
+  in_tod_area: boolean;
+  in_adu_area: boolean;
+  in_aro_zone: boolean;
+  in_ssa: boolean;
+  ssa_name: string | null;
+  flood_zone: string | null;
+  flood_zone_subtype: string | null;
+  in_special_flood_hazard: boolean;
+  brownfield_sites: Record<string, unknown>[];
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;
@@ -121,6 +150,7 @@ export interface ContextObject {
   businesses: BusinessSummary | null;
   code_chunks: CodeChunk[];
   parcel_zoning?: ZoningSummary | null;
+  regulatory?: RegulatorySummary | null;
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
 }

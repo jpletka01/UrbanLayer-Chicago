@@ -10,6 +10,7 @@ from backend.models import (
     ContextObject,
     CrimeSummary,
     PermitSummary,
+    RegulatorySummary,
     RetrievalPlan,
     ThreeOneOneSummary,
     ViolationSummary,
@@ -208,6 +209,7 @@ def assemble_context(
     business_rows: list[dict[str, Any]] | None = None,
     code_chunks: list[CodeChunk] | None = None,
     zoning_info: dict[str, Any] | None = None,
+    regulatory_summary: RegulatorySummary | None = None,
 ) -> ContextObject:
     settings = get_settings()
 
@@ -246,5 +248,6 @@ def assemble_context(
         businesses=businesses,
         code_chunks=chunks,
         parcel_zoning=parcel_zoning,
+        regulatory=regulatory_summary,
         requires_disclaimer=plan.requires_disclaimer,
     )

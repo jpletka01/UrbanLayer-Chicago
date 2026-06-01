@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **`/about` page** — 16-section technical deep dive covering architecture, pipeline design, benchmarks, tradeoffs, and scaling considerations. Previous: Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 194 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 1+3** — infrastructure foundation (domain architecture, WorkflowHint, TTL cache, expanded SourceTag/RetrievalPlan/ContextObject) + regulatory domain (12+ zoning overlay layers, FEMA flood zones, EPA brownfield sites). Previous: `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 223 tests passing.
 
 ---
 
@@ -1399,21 +1399,116 @@ Added a comprehensive `/about` page for interview showcase, covering every desig
 
 ---
 
-## Recommended Next Steps (1 Bucket Remaining)
+## Session Log (2026-06-01 — Expansion Phase 1 + Phase 3: Infrastructure + Regulatory Domain)
 
-### ~~Bucket 1: Mobile & Polish~~ ✅ DONE
+First implementation session of the `chicago_expansion_plan.md`. Phase 1 sets up the domain architecture scaffolding; Phase 3 implements the regulatory domain — 12+ zoning overlay layers from Chicago's MapServer, FEMA flood zones, and EPA brownfield sites.
 
-### ~~Bucket 2: Observability & Eval~~ ✅ DONE
-- ~~**Cost/token logging**~~ ✅ — `tracked_create()`/`tracked_stream()` wrappers in `llm.py` capture per-call token usage and duration. Stored in `llm_calls` + `request_logs` SQLite tables.
-- ~~**Admin dashboard**~~ ✅ — `/admin` route with interactive charts: stat cards, time-series area charts, pie charts (cost by model, calls by phase), latency percentile table, retrieval benchmark grade visualization with per-query drill-down, conversation stats, paginated request log.
-- ~~**LLM-as-judge eval**~~ ✅ — `eval/run_eval.py --full <URL> --judge` grades synthesis on 4 dimensions (citation accuracy, factuality, completeness, rule compliance) via Claude Sonnet. Results in `eval/judge_results.json`, visualized in admin dashboard "Synthesis Quality" section alongside retrieval benchmark.
+### Phase 1: Infrastructure Foundation
 
-### ~~Bucket 3: Retrieval Quality~~ ✅ DONE
-- ~~**Legal-domain reranker**~~ ✅ — `bge-reranker-v2-m3` enabled with score blending (`reranker_weight=0.2`). Reranking runs BEFORE per-section dedup so the reranker picks the best chunk per section. Benchmark improved A=13→15, C=4→2. Remaining 2 C-grades (`adu_allowed`, `lot_coverage_rm5`) are term-mismatch issues where the answer terms don't appear in any chunk of the retrieved sections.
-- ~~**Batched cross-ref lookups**~~ ✅ — `get_by_section_ids_batch()` replaces up to 15 serial HTTP calls with a single Qdrant scroll using `should` (OR) filters.
-- ~~**Async vector search**~~ ✅ — `vector_search.py` fully converted to `httpx.AsyncClient`. CPU-bound operations (embedding encode, cross-encoder predict) run in thread pools via `run_in_executor`. `main.py` calls async functions directly, no more `run_in_executor` wrappers.
+1. **Expanded SourceTag** (`models.py`) — Added `"regulatory_domain"` to the 6-value Literal union (now 7). Future phases will add `"property_domain"`, `"incentives_domain"`, `"neighborhood_domain"`.
 
-### Bucket 4: Production Readiness
+2. **WorkflowHint type** (`models.py`) — New Literal type with 6 values: `general`, `site_due_diligence`, `development_feasibility`, `business_launch`, `property_intelligence`, `neighborhood_overview`. Added as optional field on `RetrievalPlan` (default `"general"`). The router does NOT emit it yet — it's forward-looking infrastructure for Phase 7 (workflow-based context selection).
+
+3. **Domain models** (`models.py`):
+   - `OverlayDistrict` — layer_type, name, ordinance, description
+   - `RegulatorySummary` — 12+ boolean flags (in_planned_development, in_landmark_district, is_landmark_building, in_historic_district, on_national_register, in_lakefront_protection, on_pedestrian_street, in_special_district, in_pmd, in_tod_area, in_adu_area, in_aro_zone, in_ssa), ssa_name, flood_zone/flood_zone_subtype/in_special_flood_hazard, brownfield_sites list
+   - Added `regulatory: RegulatorySummary | None` to `ContextObject`
+
+4. **TTL cache utility** (`backend/retrieval/cache.py`) — Simple dict-based in-memory cache with `time.monotonic()` timestamps. `get()` returns None if expired. `set()` evicts oldest entry at maxsize. Thread-safe for asyncio's single-threaded event loop. Not yet wired into any retrieval module — available for Phase 7 optimization.
+
+5. **Router prompt expansion** (`prompts.py`) — Added `"regulatory_domain"` to the sources pick-list. Added routing rule: address-specific regulatory, development, property, or due diligence questions → include `"regulatory_domain"`. The regulatory domain requires resolved lat/lon.
+
+6. **Synthesizer prompt expansion** (`prompts.py`) — Two new rules:
+   - Rule 10: When regulatory overlays are present, list each as a distinct item with practical implications. Note when no overlays apply.
+   - Rule 11: When flood zone data is present, state FEMA designation and SFHA status. When brownfield sites nearby, list by name and note environmental due diligence.
+
+7. **Frontend types** (`types.ts`) — Added `OverlayDistrict` and `RegulatorySummary` interfaces mirroring the Pydantic models. Expanded `ContextObject` with optional `regulatory` field.
+
+### Phase 3: Regulatory Domain
+
+1. **Overlay queries** (`backend/retrieval/regulatory/overlays.py`) — Generalized the existing `lookup_zoning()` pattern from `zoning.py`. `query_overlay(lat, lon, layer_id, *, client)` queries any of the 15 overlay layers (2-24) on the Chicago Zoning MapServer. `query_all_overlays(lat, lon, *, client)` runs all 15 in parallel via `asyncio.gather(return_exceptions=True)`. The `OVERLAY_LAYERS` dict maps layer IDs to type slugs and human-readable names.
+
+   Layers queried: Planned Developments (2), Lakefront Protection (3), Pedestrian Streets (4), Landmark Districts (5), Historic Districts (6), Landmark Buildings (7), National Register (8), Special Districts (9), FEMA Floodplain local copy (11), PMD SubAreas (12), TOD/CTA (13), ADU Areas (17), ARO Zones (20), SSAs (23), TOD/Metra (24).
+
+2. **FEMA flood zones** (`backend/retrieval/regulatory/flood.py`) — `query_flood_zone(lat, lon, *, client)` queries FEMA's NFHL MapServer layer 28. Returns `{fld_zone, zone_subty, sfha_tf}` or None. Uses 15s timeout (federal endpoint may be slower than Chicago's MapServer).
+
+3. **EPA brownfield sites** (`backend/retrieval/regulatory/environmental.py`) — `query_brownfield_sites(lat, lon, *, radius_meters=1000, client)` queries EPA's FRS_INTERESTS MapServer layer 5 with a 1km distance buffer. Returns up to 10 site dicts with site_name, epa_id, interest_type, lat/lon. Uses 15s timeout.
+
+4. **Domain orchestrator** (`backend/retrieval/regulatory/__init__.py`) — `regulatory_domain(lat, lon, *, workflow="general", client)` runs all three sub-queries (overlays, flood, brownfield) in parallel via `asyncio.gather(return_exceptions=True)`. Processes results into a `RegulatorySummary`:
+   - Overlay hits are mapped to `OverlayDistrict` objects using `OVERLAY_LAYERS` metadata
+   - Boolean flags set via `FLAG_MAP` dict (layer type slug → RegulatorySummary field name)
+   - TOD: `in_tod_area=True` if either CTA (layer 13) or Metra (layer 24) hits
+   - SSA: extracts SSA name from attributes (`SSA_NAME`, `SSA`, or `SSA_NUM`)
+   - Flood: maps `sfha_tf == "T"` to `in_special_flood_hazard`
+   - Feature name extraction tries multiple ArcGIS attribute patterns: NAME, DIST_NAME, PD_NAME, SSA_NAME, AREA_NAME
+   - Graceful degradation: any sub-query failure → that section defaults to empty/False
+
+5. **Wiring** (`main.py`) — Added `regulatory_domain` task to `_retrieve()`, gated on `"regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon`. Updated error handling to produce `None` (not `[]`) on failure. Passed result to `assemble_context()` as `regulatory_summary`.
+
+6. **Assembler** (`assembler.py`) — Added `regulatory_summary: RegulatorySummary | None = None` parameter. Passes through to `ContextObject(regulatory=regulatory_summary)`.
+
+### Design Decisions
+
+- **Kept `zoning.py` as-is** — The existing `lookup_zoning()` handles the base zoning classification (layer 1). The regulatory domain adds overlay information (layers 2-24) alongside it, not replacing it. No backward-compatibility risk.
+- **Query all 15 layers every time** — Each query is ~50-100ms, all run in parallel, total wall-clock ~200-400ms. Selective querying based on workflow_hint is a future optimization.
+- **External ArcGIS endpoints (FEMA, EPA) use 15s timeout** vs 10s for Chicago's MapServer — federal endpoints can be slower.
+- **EPA results capped at 10** via `resultRecordCount` — in industrial areas the 1km radius could return dozens of sites.
+
+### Test Count
+
+223 tests passing (was 194; +29 new):
+- `test_regulatory_overlays.py` — 9 tests (single query, no features, errors, URL construction, geometry params, multi-layer, graceful skip)
+- `test_regulatory_flood.py` — 6 tests (flood hit, no flood, missing field, errors, params)
+- `test_regulatory_environmental.py` — 6 tests (sites found, empty, name filter, errors, buffer params)
+- `test_regulatory_orchestrator.py` — 7 tests (full assembly, flag mapping, partial failure, all-fail, SSA name, TOD/Metra, SFHA false)
+- `test_assembler.py` — +2 tests (regulatory attached/absent)
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/cache.py` — TTLCache utility
+- `backend/retrieval/regulatory/__init__.py` — domain orchestrator
+- `backend/retrieval/regulatory/overlays.py` — MapServer overlay queries
+- `backend/retrieval/regulatory/flood.py` — FEMA NFHL query
+- `backend/retrieval/regulatory/environmental.py` — EPA brownfield query
+- `backend/tests/test_regulatory_overlays.py` — 9 tests
+- `backend/tests/test_regulatory_flood.py` — 6 tests
+- `backend/tests/test_regulatory_environmental.py` — 6 tests
+- `backend/tests/test_regulatory_orchestrator.py` — 7 tests
+
+**Backend (modified):**
+- `backend/models.py` — OverlayDistrict, RegulatorySummary, WorkflowHint, expanded SourceTag/RetrievalPlan/ContextObject
+- `backend/assembler.py` — regulatory_summary parameter + import
+- `backend/main.py` — regulatory_domain import, task wiring, error handling, assembler call
+- `backend/prompts.py` — router sources + rule, synthesizer rules 10-11
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — OverlayDistrict, RegulatorySummary interfaces, expanded ContextObject
+
+**Docs:**
+- `HANDOFF.md` — updated status, session log, repo layout, next steps
+
+---
+
+## Recommended Next Steps
+
+### Original Buckets (All Done)
+
+- ~~**Bucket 1: Mobile & Polish**~~ ✅
+- ~~**Bucket 2: Observability & Eval**~~ ✅
+- ~~**Bucket 3: Retrieval Quality**~~ ✅
+
+### Expansion Plan (`chicago_expansion_plan.md`)
+
+- ~~**Phase 1: Infrastructure Foundation**~~ ✅ — Domain architecture (SourceTag, WorkflowHint, TTL cache, RegulatorySummary model, ContextObject expansion, router/synthesizer prompt updates).
+- **Phase 2: Property Domain** — Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel. Adds `PropertySummary` to ContextObject. The PIN is the universal join key for all Cook County property data.
+- ~~**Phase 3: Regulatory Domain**~~ ✅ — 15 overlay layers, FEMA flood zones, EPA brownfield sites. All in parallel via domain orchestrator.
+- **Phase 4: Incentives Domain** — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (census tract → CDFI lookup), Enterprise Zones. TIF/EZ boundaries can be cached at startup (same pattern as community areas in `geo.py`).
+- **Phase 5: Neighborhood Domain** — Demographics (pre-aggregated community area data from Socrata `t68z-cikk`), transit proximity (GTFS stops.txt parsing + MapServer TOD layers 13/24).
+- **Phase 6: Frontend Integration** — TypeScript types for all domains, property/regulatory/incentives/demographics/transit cards in sidebar, map layer expansion (parcel boundary, overlay polygons, incentive zones, transit stations).
+- **Phase 7: Polish & Optimization** — PTAXSIM tax estimation, TTL caching for all spatial lookups, startup preloading, eval expansion, workflow-based context selection.
+
+### Production Readiness (Bucket 4)
 - **Dockerize backend** — Dockerfile for the FastAPI app, production config.
 - **Production Vite build** — Static file server with SPA-fallback (serve `index.html` for all non-asset paths).
 - **CI pipeline** — Tests + type checking on push.
@@ -1433,9 +1528,12 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
+   - `backend/retrieval/property/` — Phase 2: Cook County GIS parcel + CCAO Socrata modules
+   - `backend/retrieval/incentives/` — Phase 4: TIF, OZ, Enterprise Zone modules
+   - `backend/retrieval/neighborhood/` — Phase 5: demographics + transit modules
+   - `backend/models.py` — new domain summary models for each phase
+   - `backend/main.py` — wire new domain orchestrators into `_retrieve()`
    - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
-   - `frontend/vite.config.ts` — production build config (Bucket 4)
-   - `.github/workflows/` — CI pipeline (Bucket 4)
 
 ## Repo Layout
 
@@ -1463,7 +1561,9 @@ chicago/
 │   ├── config.py
 │   ├── data/                       # SQLite database (gitignored)
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py (async) + map_data.py + zoning.py
-│   └── tests/                      # 194 tests (unit + integration)
+│   │   ├── cache.py                # TTL cache utility for spatial queries
+│   │   └── regulatory/             # Domain orchestrator + overlays.py + flood.py + environmental.py
+│   └── tests/                      # 223 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -1498,7 +1598,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 194 tests
+python -m pytest backend/tests/ -q           # 223 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 

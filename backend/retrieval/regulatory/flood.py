@@ -1,0 +1,59 @@
+"""Query FEMA National Flood Hazard Layer (NFHL) via ArcGIS REST."""
+
+import logging
+
+import httpx
+
+log = logging.getLogger(__name__)
+
+FEMA_NFHL_URL = (
+    "https://hazards.fema.gov/gis/nfhl/rest/services"
+    "/public/NFHL/MapServer/28/query"
+)
+
+
+async def query_flood_zone(
+    lat: float,
+    lon: float,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict | None:
+    """Query the FEMA NFHL for the flood zone at a point.
+
+    Returns ``{"fld_zone": "AE", "zone_subty": "...", "sfha_tf": "T"}``
+    or ``None`` if the point is outside any mapped flood zone.
+    """
+    params = {
+        "geometry": f"{lon},{lat}",
+        "geometryType": "esriGeometryPoint",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "outFields": "FLD_ZONE,ZONE_SUBTY,SFHA_TF",
+        "returnGeometry": "false",
+        "f": "json",
+    }
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    try:
+        resp = await client.get(FEMA_NFHL_URL, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        features = data.get("features", [])
+        if not features:
+            return None
+        attrs = features[0].get("attributes", {})
+        fld_zone = attrs.get("FLD_ZONE")
+        if not fld_zone:
+            return None
+        return {
+            "fld_zone": fld_zone,
+            "zone_subty": attrs.get("ZONE_SUBTY"),
+            "sfha_tf": attrs.get("SFHA_TF"),
+        }
+    except Exception as exc:
+        log.warning("FEMA flood zone query failed for (%s, %s): %s", lat, lon, exc)
+        return None
+    finally:
+        if owns:
+            await client.aclose()

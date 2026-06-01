@@ -10,6 +10,7 @@ SourceTag = Literal[
     "violations_api",
     "business_api",
     "vector_search",
+    "regulatory_domain",
 ]
 
 IntentTag = Literal[
@@ -20,6 +21,16 @@ IntentTag = Literal[
     "trend_analysis",
     "clarification_needed",
 ]
+
+WorkflowHint = Literal[
+    "general",
+    "site_due_diligence",
+    "development_feasibility",
+    "business_launch",
+    "property_intelligence",
+    "neighborhood_overview",
+]
+
 
 LocationType = Literal[
     "intersection",
@@ -48,6 +59,7 @@ class RetrievalPlan(BaseModel):
     requires_disclaimer: bool = False
     search_query: str | None = None
     clarification: str | None = None
+    workflow_hint: WorkflowHint = "general"
 
 
 class CrimeSummary(BaseModel):
@@ -95,6 +107,35 @@ class ZoningSummary(BaseModel):
     zoning_map_url: str = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
 
 
+class OverlayDistrict(BaseModel):
+    layer_type: str
+    name: str | None = None
+    ordinance: str | None = None
+    description: str | None = None
+
+
+class RegulatorySummary(BaseModel):
+    overlays: list[OverlayDistrict] = Field(default_factory=list)
+    in_planned_development: bool = False
+    in_landmark_district: bool = False
+    is_landmark_building: bool = False
+    in_historic_district: bool = False
+    on_national_register: bool = False
+    in_lakefront_protection: bool = False
+    on_pedestrian_street: bool = False
+    in_special_district: bool = False
+    in_pmd: bool = False
+    in_tod_area: bool = False
+    in_adu_area: bool = False
+    in_aro_zone: bool = False
+    in_ssa: bool = False
+    ssa_name: str | None = None
+    flood_zone: str | None = None
+    flood_zone_subtype: str | None = None
+    in_special_flood_hazard: bool = False
+    brownfield_sites: list[dict] = Field(default_factory=list)
+
+
 class CodeChunk(BaseModel):
     text: str
     source_document: str
@@ -132,6 +173,7 @@ class ContextObject(BaseModel):
     businesses: BusinessSummary | None = None
     code_chunks: list[CodeChunk] = Field(default_factory=list)
     parcel_zoning: ZoningSummary | None = None
+    regulatory: RegulatorySummary | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
 

@@ -12,7 +12,7 @@ Your job: parse a user's message and emit a strict JSON retrieval plan. You do N
 {community_area_table}
 
 Output a JSON object with these fields:
-- sources: array. Pick from: "crime_api", "311_api", "permits_api", "violations_api", "business_api", "vector_search".
+- sources: array. Pick from: "crime_api", "311_api", "permits_api", "violations_api", "business_api", "vector_search", "regulatory_domain".
 - location.raw: the raw location phrase the user used, or "".
 - location.type: one of "intersection", "address", "neighborhood", "community_area", "none".
 - location.resolved_community_area: integer 1-77 or null. Pick using the table above when you can; leave null if unsure.
@@ -27,6 +27,7 @@ Rules:
 - "What's going on in/near X" -> neighborhood_overview, include crime_api + 311_api + permits_api.
 - "Can I build/open/operate X" or "is X allowed" -> legal_question, include vector_search, requires_disclaimer=true.
 - If no location and the question requires one, set intent="clarification_needed" and emit a clarification.
+- Address-specific regulatory, development, property, or due diligence questions at a specific address -> include "regulatory_domain". It provides zoning overlay districts (landmark, historic, planned development, pedestrian street, ARO, ADU, TOD, SSA, PMD), FEMA flood zone status, and nearby brownfield/superfund sites. Requires resolved lat/lon from an address.
 - Always emit valid JSON. Do not wrap it in markdown or commentary.
 
 Search query guidance (for vector_search):
@@ -61,6 +62,8 @@ Rules:
 7. Place citations immediately after the relevant statement, not at the end of paragraphs.
 8. When month-over-month trend data is provided, weave the most notable trends (biggest increases and decreases) into your answer naturally. For example: "Battery incidents are up 23% compared to last month, while theft has declined 15%." Pick the 2-4 most notable changes — don't list every category.
 9. When parcel_zoning is present in the context, state the actual zoning classification (e.g. "This parcel is zoned B2") as a definitive fact — it comes from the city's official GIS system. When recommending the user verify zoning or view the zoning map, link to the official Chicago Zoning Map: https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning — do NOT invent or guess any other zoning map URLs.
+10. When regulatory overlay data is present, list each applicable overlay as a distinct item with its practical implications (e.g., "This parcel is in the Lincoln Park Landmark District — exterior alterations require Commission on Chicago Landmarks review"). If no overlays apply, note that the parcel has no special overlay restrictions beyond base zoning.
+11. When flood zone data is present, state the FEMA zone designation (e.g. A, AE, X) and whether it is a Special Flood Hazard Area. If SFHA, note that flood insurance is typically required. When brownfield sites are nearby, list them by name and note that environmental due diligence may be advisable.
 """
 
 

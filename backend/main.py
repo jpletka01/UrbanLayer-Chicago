@@ -41,6 +41,7 @@ from backend.models import (
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import COMMUNITY_AREAS, community_area_by_point, geocode_address_suggestions
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
+from backend.retrieval.regulatory import regulatory_domain
 from backend.retrieval.zoning import lookup_zoning
 from backend.retrieval.vector_search import (
     expand_cross_references,
@@ -357,13 +358,19 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 lookup_zoning(loc.resolved_lat, loc.resolved_lon, client=client)
             )
 
+        # Regulatory domain: overlay districts, flood zones, brownfield sites
+        if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+            tasks["regulatory"] = asyncio.create_task(
+                regulatory_domain(loc.resolved_lat, loc.resolved_lon, client=client)
+            )
+
         results: dict[str, Any] = {}
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Retrieval %s failed: %s", key, value)
-                    results[key] = [] if key != "zoning_lookup" else None
+                    results[key] = [] if key not in ("zoning_lookup", "regulatory") else None
                 else:
                     results[key] = value
 
@@ -382,6 +389,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         business_rows=results.get("business") if "business" in results else None,
         code_chunks=code_chunks,
         zoning_info=results.get("zoning_lookup"),
+        regulatory_summary=results.get("regulatory"),
     )
 
 

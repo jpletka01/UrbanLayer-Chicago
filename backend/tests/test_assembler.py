@@ -1,6 +1,6 @@
 from backend.assembler import assemble_context
 from backend.config import get_settings
-from backend.models import CodeChunk, Location, RetrievalPlan
+from backend.models import CodeChunk, Location, RegulatorySummary, RetrievalPlan
 
 _settings = get_settings()
 TOP_CRIME_TYPES = _settings.top_crime_types
@@ -143,3 +143,20 @@ def test_zoning_info_none_when_empty_zone_class():
     zoning = {"zone_class": None, "zone_type": "B"}
     ctx = assemble_context(plan=_plan(), zoning_info=zoning)
     assert ctx.parcel_zoning is None
+
+
+def test_regulatory_summary_attached_when_provided():
+    reg = RegulatorySummary(
+        in_landmark_district=True,
+        flood_zone="AE",
+        in_special_flood_hazard=True,
+    )
+    ctx = assemble_context(plan=_plan(), regulatory_summary=reg)
+    assert ctx.regulatory is not None
+    assert ctx.regulatory.in_landmark_district is True
+    assert ctx.regulatory.flood_zone == "AE"
+
+
+def test_regulatory_summary_none_when_absent():
+    ctx = assemble_context(plan=_plan())
+    assert ctx.regulatory is None
