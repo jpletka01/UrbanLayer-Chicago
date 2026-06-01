@@ -8,9 +8,12 @@ log = logging.getLogger(__name__)
 
 FCC_CENSUS_URL = "https://geo.fcc.gov/api/census/area"
 
+# HUD's Opportunity Zones FeatureServer now exposes the tract polygons on
+# layer 13 (was 0), keyed by GEOID10. The layer contains *only* designated
+# zones — a tract appearing in it is designated; absence means it is not.
 HUD_OZ_URL = (
     "https://services.arcgis.com/VTyQ9soqVukalItT/arcgis/rest/services"
-    "/Opportunity_Zones/FeatureServer/0/query"
+    "/Opportunity_Zones/FeatureServer/13/query"
 )
 
 
@@ -56,8 +59,8 @@ async def check_opportunity_zone(
     Returns ``{"tract": "17031...", "designated": True}`` or ``None``.
     """
     params = {
-        "where": f"GEOID='{tract_fips}'",
-        "outFields": "GEOID,DESIGNATED",
+        "where": f"GEOID10='{tract_fips}'",
+        "outFields": "GEOID10",
         "returnGeometry": "false",
         "f": "json",
     }
@@ -73,8 +76,8 @@ async def check_opportunity_zone(
             return None
         attrs = features[0].get("attributes", {})
         return {
-            "tract": attrs.get("GEOID", tract_fips),
-            "designated": bool(attrs.get("DESIGNATED")),
+            "tract": attrs.get("GEOID10", tract_fips),
+            "designated": True,
         }
     except Exception as exc:
         log.warning("HUD Opportunity Zone query failed for tract %s: %s", tract_fips, exc)

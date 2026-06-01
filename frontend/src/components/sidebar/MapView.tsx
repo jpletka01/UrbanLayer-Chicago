@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import mapboxgl from "mapbox-gl";
-import { MapboxOverlay } from "@deck.gl/mapbox";
+import { useEffect, useState, useCallback } from "react";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
 import { fetchTransitStations } from "../../lib/api";
@@ -11,8 +9,13 @@ import {
   zoneColor, zoneLineColor, zonePrefix, ZONE_INFO,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
+import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
+import { buildLayerTooltip, type LayerPickInfo } from "../../lib/mapTooltip";
+import { pointLayer } from "../../lib/mapLayers";
+import { formatDate } from "../../lib/format";
 import { MapLayerToggles } from "./MapLayerToggles";
 import { MapLegend } from "./MapLegend";
+import { ToggleGroup } from "./ToggleGroup";
 import type { ArrestFilterValue } from "./ArrestFilter";
 import type { StatusFilterValue } from "./StatusFilter";
 import { costBucket } from "./CostFilter";
@@ -108,11 +111,6 @@ interface Props {
 }
 
 export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const overlayRef = useRef<MapboxOverlay | null>(null);
-  const [mapReady, setMapReady] = useState(false);
-
   const rawFilterMode = deriveFilterMode(sources);
 
   type SourceTab = "crime" | "311" | "permits";
@@ -148,7 +146,6 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
   const [showPoints, setShowPoints] = useState(true);
   const [showTransit, setShowTransit] = useState(false);
   const [transitStations, setTransitStations] = useState<TransitStation[]>([]);
-  const onClickRef = useRef<(info: { object?: unknown; layer: { id: string } | null }) => void>(() => {});
 
   const hasZoning = !!(mapData?.zoning && (mapData.zoning as Record<string, unknown>)?.features &&
     ((mapData.zoning as Record<string, unknown>).features as unknown[]).length > 0);
@@ -213,67 +210,8 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
     setPermitTypeToggles(prev => soloToggle(prev, id));
   }, [soloToggle]);
 
-  // Initialize map
-  useEffect(() => {
-    if (!containerRef.current || !MAPBOX_TOKEN) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
-      center: CHICAGO_CENTER,
-      zoom: INITIAL_ZOOM,
-      attributionControl: false,
-    });
-
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
-
-    const overlay = new MapboxOverlay({
-      interleaved: true,
-      onClick: (info: { object?: unknown; layer: { id: string } | null }) => {
-        onClickRef.current(info);
-      },
-      getTooltip: (info: { object?: unknown; layer: { id: string } | null }) => {
-        if (!info.object) return null;
-        const o = info.object as Record<string, unknown>;
-        let html = "";
-        const lid = info.layer?.id ?? "";
-        if (lid === "crimes" || lid.startsWith("crime-")) {
-          html = `<strong>${o.primary_type}</strong><br/>${formatDate(o.date as string)}`;
-        } else if (lid === "requests-311" || lid.startsWith("dept-")) {
-          html = `<strong>${o.sr_type}</strong><br/>${formatDate(o.created_date as string)}`;
-        } else if (lid === "permits") {
-          html = `<strong>${o.permit_type}</strong><br/>${formatDate(o.issue_date as string)}`;
-        } else if (lid === "zoning") {
-          const props = (o as Record<string, unknown>).properties as Record<string, unknown> | undefined;
-          html = `<strong>${props?.ZONE_CLASS ?? "Unknown"}</strong>`;
-        } else if (lid === "transit-stations") {
-          const s = o as unknown as TransitStation;
-          const lineInfo = s.type === "cta_rail" && s.lines?.length
-            ? `<br/>${s.lines.join(", ")}` : s.line ? `<br/>${s.line}` : "";
-          html = `<strong>${s.name}</strong>${lineInfo}<br/><span style="opacity:0.7">${s.type === "cta_rail" ? "CTA Rail" : "Metra"}</span>`;
-        } else {
-          return null;
-        }
-        return { html, style: { backgroundColor: "#333", color: "#eee", fontSize: "12px", borderRadius: "8px", padding: "8px 12px", fontFamily: "Inter, system-ui, sans-serif", maxWidth: "240px" } };
-      },
-    });
-    map.addControl(overlay);
-
-    mapRef.current = map;
-    overlayRef.current = overlay;
-    map.on("load", () => setMapReady(true));
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      overlayRef.current = null;
-      setMapReady(false);
-    };
-  }, []);
-
-  // Click handler - uses ref to avoid stale closure
-  onClickRef.current = (info) => {
+  // Map click → open the detail modal for the picked feature.
+  const handleMapClick = useCallback((info: LayerPickInfo) => {
     if (!info.object || !info.layer) {
       setSelectedItem(null);
       return;
@@ -287,7 +225,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
     } else if (lid === "permits") {
       setSelectedItem({ type: "permit", data: o as unknown as MapPermit });
     } else if (lid === "zoning") {
-      const props = (o as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+      const props = o.properties as Record<string, unknown> | undefined;
       setSelectedItem({
         type: "zoning",
         data: {
@@ -297,7 +235,15 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
         },
       });
     }
-  };
+  }, []);
+
+  // Initialize Mapbox + deck.gl overlay (shared lifecycle hook).
+  const { containerRef, mapRef, overlayRef, mapReady } = useMapboxOverlay({
+    center: CHICAGO_CENTER,
+    zoom: INITIAL_ZOOM,
+    getTooltip: buildLayerTooltip,
+    onClick: handleMapClick,
+  });
 
   // Resize observer
   useEffect(() => {
@@ -305,7 +251,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
     const observer = new ResizeObserver(() => { mapRef.current?.resize(); });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [mapReady]);
+  }, [mapReady, containerRef, mapRef]);
 
   // Update layers
   useEffect(() => {
@@ -388,19 +334,9 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
       });
 
       if (filteredCrimes.length > 0) {
-        layers.push(
-          new ScatterplotLayer<MapCrime>({
-            id: "crimes",
-            data: filteredCrimes,
-            getPosition: d => [d.longitude, d.latitude],
-            getRadius: 40,
-            getFillColor: d => crimeColor(d.primary_type),
-            pickable: true,
-            radiusMinPixels: 3,
-            radiusMaxPixels: 8,
-            radiusUnits: "meters",
-          })
-        );
+        layers.push(pointLayer("crimes", filteredCrimes, {
+          getFillColor: d => crimeColor(d.primary_type),
+        }));
       }
     } else if (showPoints && filterMode === "311" && mapData?.requests_311?.length) {
       const activeTypes = new Set(
@@ -420,19 +356,11 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
       });
 
       if (filtered.length > 0) {
-        layers.push(
-          new ScatterplotLayer<MapRequest311>({
-            id: "requests-311",
-            data: filtered,
-            getPosition: d => [d.longitude, d.latitude],
-            getRadius: 35,
-            getFillColor: d => srTypeMapColor(d.sr_type),
-            pickable: true,
-            radiusMinPixels: 3,
-            radiusMaxPixels: 7,
-            radiusUnits: "meters",
-          })
-        );
+        layers.push(pointLayer("requests-311", filtered, {
+          getFillColor: d => srTypeMapColor(d.sr_type),
+          getRadius: 35,
+          radiusMaxPixels: 7,
+        }));
       }
     } else if (showPoints && filterMode === "permits" && mapData?.building_permits?.length) {
       const activeTypes = new Set(
@@ -451,19 +379,11 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
       });
 
       if (filteredPermits.length > 0) {
-        layers.push(
-          new ScatterplotLayer<MapPermit>({
-            id: "permits",
-            data: filteredPermits,
-            getPosition: d => [d.longitude, d.latitude],
-            getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
-            getFillColor: d => permitColor(d.permit_type),
-            pickable: true,
-            radiusMinPixels: 3,
-            radiusMaxPixels: 12,
-            radiusUnits: "meters",
-          })
-        );
+        layers.push(pointLayer("permits", filteredPermits, {
+          getFillColor: d => permitColor(d.permit_type),
+          getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
+          radiusMaxPixels: 12,
+        }));
       }
     }
 
@@ -485,7 +405,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, transitStations, parcelGeometry]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, transitStations, parcelGeometry, overlayRef]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -512,7 +432,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
     } else {
       mapRef.current.fitBounds([sw, ne], { padding: 40, duration: 1500, maxZoom: 15 });
     }
-  }, [mapData, mapReady]);
+  }, [mapData, mapReady, mapRef]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -698,66 +618,40 @@ export function MapView({ mapData, loading, sources, parcelGeometry }: Props) {
               )}
 
               {filterMode === "crime" && crimeTotal > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {(["all", "arrested", "not-arrested"] as ArrestFilterValue[]).map((opt) => {
-                    const label = opt === "all" ? `All (${crimeTotal})` : opt === "arrested" ? `Arrested (${arrestCount})` : `No Arrest (${crimeTotal - arrestCount})`;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => setArrestFilter(opt)}
-                        className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                          ${arrestFilter === opt
-                            ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
-                            : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
-                          }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <ToggleGroup<ArrestFilterValue>
+                  value={arrestFilter}
+                  onChange={setArrestFilter}
+                  options={[
+                    { value: "all", label: `All (${crimeTotal})` },
+                    { value: "arrested", label: `Arrested (${arrestCount})` },
+                    { value: "not-arrested", label: `No Arrest (${crimeTotal - arrestCount})` },
+                  ]}
+                />
               )}
 
               {filterMode === "311" && requests311Total > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {(["all", "closed", "open"] as StatusFilterValue[]).map((opt) => {
-                    const label = opt === "all" ? `All (${requests311Total})` : opt === "closed" ? `Closed (${closedCount})` : `Open (${requests311Total - closedCount})`;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => setStatusFilter(opt)}
-                        className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                          ${statusFilter === opt
-                            ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
-                            : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
-                          }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <ToggleGroup<StatusFilterValue>
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={[
+                    { value: "all", label: `All (${requests311Total})` },
+                    { value: "closed", label: `Closed (${closedCount})` },
+                    { value: "open", label: `Open (${requests311Total - closedCount})` },
+                  ]}
+                />
               )}
 
               {filterMode === "permits" && permitsTotal > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {(["all", "under25k", "25k-250k", "over250k"] as CostFilterValue[]).map((opt) => {
-                    const label = opt === "all" ? `All (${permitsTotal})` : opt === "under25k" ? `<$25K (${permitCostCounts.under25k})` : opt === "25k-250k" ? `$25K–$250K (${permitCostCounts["25k-250k"]})` : `>$250K (${permitCostCounts.over250k})`;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => setCostFilter(opt)}
-                        className={`px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                          ${costFilter === opt
-                            ? "bg-dark-elevated text-text-primary border-dark-border shadow-sm"
-                            : "bg-dark-surface/90 text-text-muted border-transparent hover:text-text-secondary hover:bg-dark-surface/60"
-                          }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <ToggleGroup<CostFilterValue>
+                  value={costFilter}
+                  onChange={setCostFilter}
+                  options={[
+                    { value: "all", label: `All (${permitsTotal})` },
+                    { value: "under25k", label: `<$25K (${permitCostCounts.under25k})` },
+                    { value: "25k-250k", label: `$25K–$250K (${permitCostCounts["25k-250k"]})` },
+                    { value: "over250k", label: `>$250K (${permitCostCounts.over250k})` },
+                  ]}
+                />
               )}
             </>
           )}
@@ -917,13 +811,4 @@ function renderDetailFields(item: SelectedItem) {
         href={streetViewUrl(d.latitude, d.longitude)} />
     </>
   );
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return iso;
-  }
 }

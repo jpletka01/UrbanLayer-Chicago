@@ -16,5 +16,8 @@ node_modules/
 dist/
 .vite/
 
+# Playwright test run artifacts
+test-results/
+
 # Large source files (download separately)
 chicago-il-codes.html

@@ -6,8 +6,10 @@ import httpx
 
 log = logging.getLogger(__name__)
 
+# FEMA relocated the public NFHL service from /gis/nfhl/rest/services to
+# /arcgis/rest/services. Layer 28 is "Flood Hazard Zones".
 FEMA_NFHL_URL = (
-    "https://hazards.fema.gov/gis/nfhl/rest/services"
+    "https://hazards.fema.gov/arcgis/rest/services"
     "/public/NFHL/MapServer/28/query"
 )
 

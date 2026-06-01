@@ -20,7 +20,7 @@ async def test_returns_brownfield_sites():
         "features": [
             {
                 "attributes": {
-                    "SITE_NAME": "Former Gas Station",
+                    "PRIMARY_NAME": "Former Gas Station",
                     "REGISTRY_ID": "110012345",
                     "INTEREST_TYPE": "BROWNFIELDS SITE",
                     "LATITUDE83": 41.931,
@@ -29,7 +29,7 @@ async def test_returns_brownfield_sites():
             },
             {
                 "attributes": {
-                    "SITE_NAME": "Industrial Yard",
+                    "PRIMARY_NAME": "Industrial Yard",
                     "REGISTRY_ID": "110067890",
                     "INTEREST_TYPE": "BROWNFIELDS SITE",
                     "LATITUDE83": 41.932,
@@ -63,7 +63,7 @@ async def test_skips_features_without_site_name():
     resp_data = {
         "features": [
             {"attributes": {"REGISTRY_ID": "123", "INTEREST_TYPE": "X"}},
-            {"attributes": {"SITE_NAME": "Real Site", "REGISTRY_ID": "456"}},
+            {"attributes": {"PRIMARY_NAME": "Real Site", "REGISTRY_ID": "456"}},
         ]
     }
     client = AsyncMock(spec=httpx.AsyncClient)
@@ -105,3 +105,18 @@ async def test_sends_distance_buffer_params():
     assert params["distance"] == "500"
     assert params["units"] == "esriSRUnit_Meter"
     assert params["resultRecordCount"] == "10"
+
+
+# --- live integration test (real EPA service) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_brownfields_live_returns_sites():
+    """Hit EPA's ACRES brownfields FeatureServer (free, no key)."""
+    # Pilsen industrial corridor — dense with brownfield (ACRES) sites.
+    result = await query_brownfield_sites(41.853, -87.656, radius_meters=3000)
+    assert len(result) > 0
+    site = result[0]
+    assert site["site_name"]
+    assert site["epa_id"]

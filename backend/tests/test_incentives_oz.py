@@ -121,3 +121,32 @@ async def test_resolve_tract_params():
     assert params["lat"] == "41.93"
     assert params["lon"] == "-87.65"
     assert params["format"] == "json"
+
+
+# --- live integration tests (real FCC + HUD APIs, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_resolve_census_tract_live():
+    tract = await resolve_census_tract(41.8789, -87.6359)  # the Loop
+    assert tract is not None
+    assert len(tract) == 11 and tract.startswith("17031")  # Cook County
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_check_oz_designated_live():
+    # 17031540101 is a designated Cook County Opportunity Zone (HUD layer 13).
+    result = await check_opportunity_zone("17031540101")
+    assert result is not None
+    assert result["designated"] is True
+    assert result["tract"] == "17031540101"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_check_oz_not_designated_live():
+    # The Loop tract is not a designated Opportunity Zone.
+    result = await check_opportunity_zone("17031839100")
+    assert result is None

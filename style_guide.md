@@ -1,4 +1,4 @@
-# Chicago City Intelligence — Style Guide
+# UrbanLayer — Chicago: Style Guide
 
 ## 1. Design System Tokens & Constants
 
@@ -54,7 +54,7 @@ Full-screen immersive view with:
 |                                                  |
 |              [Background Slideshow]              |
 |                                                  |
-|           Chicago City Intelligence              |
+|                  UrbanLayer                      |
 |        Ask about crime, 311, zoning...           |
 |                                                  |
 |            [  Search Input  ]                    |
@@ -85,10 +85,11 @@ Dual-pane layout with collapsible sidebar:
 ```
 
 **Sidebar Behavior:**
-- Starts closed, auto-opens when context data arrives
-- Toggle via button or keyboard shortcut (Cmd/Ctrl+B)
-- Animated width transition (300ms ease-in-out)
-- View toggle: Data / Sources
+- Starts closed (collapsed rail: 44px, document icon, source count badge)
+- Auto-opens when context data arrives
+- Toggle via collapsed rail click or keyboard shortcut (Cmd/Ctrl+B)
+- Drag-to-resize left edge handle; snap-close at <200px, max 60% viewport
+- View toggle: Data / Sources (Sources default when code chunks exist; Data when zoning present)
 
 ---
 
@@ -148,12 +149,16 @@ Two variants: `hero` and `compact`
 
 **Structure:**
 ```
-<aside> (motion.aside with animated width)
-├── SidebarToggle (circular button at -left-3)
-├── SidebarHeader (title + view toggle)
+<aside> (pixel-width panel with drag-to-resize handle)
+├── Collapsed rail (44px, document icon, source count badge, vertical "Sources" label)
+├── SidebarHeader (title + Data/Sources view toggle)
 └── Content area (scrollable)
-    ├── DataView (sources, latency, crime, 311, permits)
-    └── SourcesView (code chunks)
+    ├── DataView
+    │   ├── DataMapLayout (map ~75%, data cards ~25%, vertical drag divider)
+    │   │   ├── MapView (Mapbox + deck.gl, zoning overlay, filter controls)
+    │   │   └── Data section (data lag note, zoning codes table, analytics)
+    │   └── AnalyticsSection (pie chart + trend table)
+    └── SourcesView (code chunks with citations)
 ```
 
 **GlassCard Pattern:**
@@ -238,24 +243,22 @@ keyframes: {
 
 ### Framer Motion Usage
 
+Framer Motion is used for splash page animations and view transitions. The sidebar uses CSS pixel-width + drag-to-resize instead of Framer Motion.
+
 ```typescript
-// View switching
-<AnimatePresence mode="wait">
-  {!active ? <SplashView /> : <WorkspaceView />}
-</AnimatePresence>
-
-// Sidebar animation
-<motion.aside
-  animate={{ width: isOpen ? "40%" : "0%" }}
-  transition={{ duration: 0.3, ease: "easeInOut" }}
-/>
-
-// Staggered entrance
+// Splash page entrance animations
 <motion.div
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
   transition={{ delay: 0.1, duration: 0.5 }}
 />
+
+// CountUp stats (useMotionValue + animate)
+const value = useMotionValue(0);
+animate(value, target, { duration: 1.5, ease: [0.16, 1, 0.3, 1] });
+
+// Source citations (expand/collapse)
+<motion.div animate={{ height }} />
 ```
 
 ---
@@ -279,25 +282,55 @@ keyframes: {
 
 ```
 frontend/src/
-├── App.tsx                      # Root component, state management
+├── App.tsx                      # Root component, state machine, URL routing, per-question toggling
+├── main.tsx                     # BrowserRouter with "/" and "/c/:id" routes
 ├── components/
-│   ├── ChatInput.tsx            # Text input (hero + compact variants)
-│   ├── ChatInterface.tsx        # Message list container
-│   ├── MessageBubble.tsx        # Individual message rendering
-│   ├── SidebarPanel.tsx         # Collapsible context panel
-│   ├── SidebarToggle.tsx        # Toggle button component
+│   ├── ChatInput.tsx            # Text input (hero + compact variants) with address autocomplete
+│   ├── ChatInterface.tsx        # Message list container, per-question click handling, message limit UI
+│   ├── MessageBubble.tsx        # Markdown rendering, citation/data pills, typewriter, click-to-select
+│   ├── CitationPill.tsx         # [N] → § section pill with hover tooltip
+│   ├── DataPill.tsx             # [data:*] → colored data source pill
+│   ├── CrossRefPill.tsx         # Clickable cross-reference with hover preview
+│   ├── SidebarPanel.tsx         # Drag-to-resize, collapsed rail, Data/Sources tabs
 │   ├── SidebarHeader.tsx        # Header with view toggles
-│   ├── SourceCitation.tsx       # Code chunk display
+│   ├── SourceCitation.tsx       # Source card with rank, score, expandable text
+│   ├── SourceDetailDrawer.tsx   # Full-section viewer for cross-refs
 │   ├── HeroSlideshow.tsx        # Background image carousel
+│   ├── HistorySidebar.tsx       # Conversation history list
+│   ├── CountUp.tsx              # Animated stat counter (motion useMotionValue)
+│   ├── ChunkText.tsx            # Chunk text renderer (delegates tables to ChunkTable)
+│   ├── ChunkTable.tsx           # Formatted HTML table for table-bearing chunks
+│   ├── Tooltip.tsx              # Shared hover tooltip (position: fixed, viewport clamping)
 │   ├── DisclaimerBanner.tsx     # Legal notice component
 │   ├── PromptSuggestionChip.tsx # Quick action buttons
 │   └── sidebar/
-│       ├── DataView.tsx         # Data cards (crime, 311, etc.)
+│       ├── MapView.tsx          # Mapbox + deck.gl with click popups, zoning overlay
+│       ├── MapLayerToggles.tsx  # Dynamic toggle pills (crime types, 311 types, source-level)
+│       ├── MapLegend.tsx        # Compact legend, zoning category legend in points-off mode
+│       ├── ArrestFilter.tsx     # Arrest status segmented control (crime mode)
+│       ├── StatusFilter.tsx     # Open/Closed status filter (311 mode)
+│       ├── CostFilter.tsx       # Cost bucket filter (permits mode)
+│       ├── DateRangeSlider.tsx  # Dual-handle date range slider
+│       ├── DataView.tsx         # Data lag note + analytics (data cards removed)
+│       ├── AnalyticsSection.tsx # Pie chart + trend table orchestrator
+│       ├── PieChart.tsx         # SVG donut with hover expansion + thin-slice ring
+│       ├── TrendTable.tsx       # MoM trend rows with sortable columns
 │       └── SourcesView.tsx      # Code references view
 ├── lib/
-│   ├── api.ts                   # SSE streaming client
-│   ├── history.ts               # localStorage persistence
-│   └── types.ts                 # TypeScript interfaces
+│   ├── api.ts                   # SSE streaming, conversation CRUD, map data, fetchSection
+│   ├── useChat.ts               # Chat state hook with message limit, SSE consumption
+│   ├── history.ts               # Async API-backed persistence + localStorage migration
+│   ├── types.ts                 # TypeScript types matching backend Pydantic models
+│   ├── analytics.ts             # Client-side trend/pie computation
+│   ├── mapColors.ts             # Shared color constants for map + charts + zone colors
+│   ├── sse.ts                   # SSE parser
+│   ├── useConversationRouter.ts # URL ↔ conversationId sync (useParams + useNavigate)
+│   ├── useTypewriter.ts         # Character reveal animation
+│   ├── useCopyButton.ts         # Copy-to-clipboard hook
+│   ├── constants.ts             # Suggestions, splash stats, timers
+│   ├── codeRefs.ts              # Section ID helpers (isResolvableSection, stripHeader)
+│   ├── clipboard.ts             # Copy utility
+│   └── parseTable.ts            # Table markup parser for ChunkTable
 └── index.css                    # Global styles + Tailwind imports
 ```
 
@@ -307,26 +340,35 @@ frontend/src/
 
 ### App-Level State
 
+Most chat state lives in the `useChat` hook (`lib/useChat.ts`):
+
 ```typescript
-// Core data
+// useChat hook (lib/useChat.ts)
 messages: Message[]              // Conversation history
 plan: RetrievalPlan | null       // Router output
 context: ContextObject | null    // Retrieved data
 streaming: boolean               // Active generation
-timings: PhaseTimings            // Latency metrics
-
-// UI state
-sidebarOpen: boolean             // Panel visibility
-sidebarView: 'data' | 'sources'  // Active view tab
 showDisclaimer: boolean          // Legal notice flag
 errorMsg: string | null          // Error display
+atMessageLimit: boolean          // 10-message limit reached
+
+// App.tsx state
+conversationId: string | null   // Active conversation (synced with URL)
+sidebarOpen: boolean             // Panel visibility
+sidebarView: 'data' | 'sources' // Active view tab
+mapData: MapData | null          // Geo-located rows for map
+selectedMessageIndex: number | null // Per-question state toggling
+historyOpen: boolean             // History sidebar visibility
+loadingConversation: boolean     // URL-sync loading guard
 ```
 
 ### Auto-Behaviors
 
 - Sidebar auto-opens when `context` arrives
-- History auto-saves to localStorage on message change
+- Conversations auto-persist to SQLite via API
 - Scroll auto-follows new messages
+- Sources tab is default when code chunks exist; Data tab when zoning data is present
+- URL auto-syncs with conversation ID (`/c/:id`)
 
 ### Keyboard Shortcuts
 

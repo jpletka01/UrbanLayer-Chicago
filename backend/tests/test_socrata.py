@@ -105,3 +105,22 @@ class TestSocrataGet:
 
         call_args = mock_client.get.call_args
         assert "X-App-Token" not in call_args[1]["headers"]
+
+
+@pytest.mark.integration
+class TestSocrataLive:
+    """Hits the real Chicago Data Portal (free, no key required).
+
+    The mocked tests above cover the wrapper's transport mechanics (retries,
+    the $limit guard, header logic) which a live API can't reproduce; these
+    verify we can actually reach Socrata and parse a real response.
+    """
+
+    @pytest.mark.asyncio
+    async def test_crime_dataset_returns_rows(self):
+        # ijzp-q8t2 is the Crimes dataset; uses real settings (socrata_base).
+        rows = await socrata_get("ijzp-q8t2", {"$limit": 3, "$order": "date DESC"})
+        assert isinstance(rows, list)
+        assert len(rows) <= 3
+        if rows:
+            assert "primary_type" in rows[0]

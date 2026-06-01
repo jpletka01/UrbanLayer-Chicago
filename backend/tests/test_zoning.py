@@ -179,3 +179,24 @@ async def test_polygons_passes_correct_envelope(mock_bounds):
     params = client.get.call_args.kwargs.get("params", {})
     assert params["geometry"] == "-87.66,41.91,-87.63,41.95"
     assert params["outSR"] == "4326"
+
+
+# --- live integration tests (real Chicago ArcGIS Zoning service, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_lookup_zoning_live():
+    result = await lookup_zoning(41.9307, -87.6411)  # Lincoln Park
+    assert result is not None
+    assert isinstance(result["zone_class"], str) and result["zone_class"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_zoning_polygons_live():
+    # Community area 7 = Lincoln Park; expect a few hundred zoning polygons.
+    fc = await zoning_polygons_for_map(7)
+    assert fc["type"] == "FeatureCollection"
+    assert len(fc["features"]) > 0
+    assert "ZONE_CLASS" in fc["features"][0]["properties"]

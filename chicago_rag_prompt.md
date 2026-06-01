@@ -1,8 +1,8 @@
-# Chicago City Intelligence — Architecture & Design
+# UrbanLayer — Chicago: Architecture & Design
 
 ## Project Overview
 
-A **RAG-powered chat interface** for natural-language questions about the city of Chicago. The system combines live data from the Chicago Data Portal (via Socrata API) with semantic search over the embedded Chicago Municipal Code to answer questions about public safety, neighborhood conditions, building activity, 311 complaints, business licensing, and local regulations.
+A **RAG-powered chat interface** (branded as **UrbanLayer — Chicago**) for natural-language questions about the city of Chicago. The system combines live data from the Chicago Data Portal (via Socrata API) with semantic search over the embedded Chicago Municipal Code to answer questions about public safety, neighborhood conditions, building activity, 311 complaints, business licensing, and local regulations.
 
 The killer use case is a unified address query: a user types _"What's going on near 2400 N Milwaukee Ave?"_ and receives a synthesized response covering recent crime patterns, open 311 service requests, active building permits, business licenses, and applicable zoning — all from a single prompt, with an interactive map, analytics charts, and clickable source citations.
 
@@ -47,6 +47,7 @@ User Message
   ├─ Parallel Retrieval (asyncio.gather)
   │   ├─ Socrata APIs ─── crime, 311, permits, violations, business
   │   ├─ Vector Search ─── Qdrant semantic search + cross-ref expansion
+  │   ├─ ArcGIS Zoning ─── point lookup (zone class) + polygon fetch (map overlay)
   │   └─ Map Data ─── raw geo-located rows for map + analytics
   │
   ├─ Context Assembly ─── merges results into ContextObject
@@ -85,7 +86,7 @@ All datasets accessed via `https://data.cityofchicago.org/resource/{dataset_id}.
 | Business Licenses | `uupf-x98q` | `doing_business_as_name`, `license_description`, `business_activity`, `community_area`, `latitude`, `longitude` | Neighborhood character, business verification |
 | Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area resolution (shapely point-in-polygon) |
 | IUCR Codes | `c7ck-438e` | Crime code lookup | Human-readable crime type translation |
-| Zoning Districts | `p8va-airx` | GeoJSON boundaries | Zoning layer (infrastructure ready, disabled by default) |
+| Zoning Districts | ArcGIS MapServer | `ZONE_CLASS`, `ZONE_TYPE`, `ORDINANCE_NUM` | Zoning point lookup + polygon overlay. Uses `gisapps.chicago.gov/arcgis/rest/services/ExternalApps/Zoning/MapServer/1/query` (no API key). Socrata `p8va-airx` is non-queryable |
 
 ### Municipal Code (Vector Search)
 
@@ -151,6 +152,12 @@ Merges raw API results into a `ContextObject` with configurable caps:
   "violations": { ... },
   "businesses": { ... },
   "code_chunks": [ ... ],
+  "parcel_zoning": {
+    "zone_class": "RM-6",
+    "zone_type": 4,
+    "ordinance_num": null,
+    "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+  },
   "analytics": {
     "crime_trends": [
       {"category": "BATTERY", "current_count": 245, "prior_count": 199, "change_pct": 23},
@@ -228,6 +235,7 @@ The `/chat` endpoint streams Server-Sent Events:
 6. Be concise — lead with direct answer
 7. Place citations immediately after relevant statements
 8. Weave notable month-over-month trends into answers naturally
+9. When `parcel_zoning` is present, state the zoning classification as a definitive fact and link to `https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning` — never invent other URLs
 
 **User prompt** includes:
 - Full `ContextObject` as indented JSON (excluding analytics)
@@ -246,12 +254,19 @@ conversations (id TEXT PK, title, created_at, updated_at)
 messages (id INTEGER PK, conversation_id FK, role, content,
           context_json, plan_json, map_data_json, map_fetched_at, position, created_at)
 uploads (id TEXT PK, conversation_id FK, filename, mime_type, size_bytes, storage_path, created_at)
+llm_calls (id INTEGER PK, request_group, conversation_id, phase, model,
+           input_tokens, output_tokens, cache_read_tokens, cache_create_tokens,
+           duration_ms, status, error_message, created_at)
+request_logs (id INTEGER PK, request_group UNIQUE, conversation_id, user_message,
+              intent, community_area, community_area_name, sources,
+              total_duration_ms, status, error_message, created_at)
 schema_version (version INTEGER PK)
 ```
 
 - WAL mode, foreign keys enabled, singleton `aiosqlite` connection
 - JSON blob columns for context/plan/mapData (written once, read whole)
-- `uploads` table is schema-only (future file upload support)
+- `llm_calls` logs every Anthropic API call (router, synthesizer, conversation synthesis) with token counts and wall-clock timing
+- `request_logs` stores one summary row per `/chat` request (intent, location, sources, total duration)
 - 10-message limit enforced via `count_user_messages()` check before routing
 
 ### Conversation API
@@ -266,6 +281,21 @@ schema_version (version INTEGER PK)
 | `PATCH` | `/api/conversations/{id}/messages/{position}` | Update map data (staleness refresh) |
 | `POST` | `/api/conversations/import` | Bulk import from localStorage migration |
 
+### Admin API
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/admin/overview?period=30d` | Summary: total requests, tokens, cost, errors, by-model/by-phase |
+| `GET` | `/api/admin/timeseries?period=30d&bucket=day` | Time-bucketed arrays for charts |
+| `GET` | `/api/admin/latency?period=30d` | p50/p90/p99 by phase |
+| `GET` | `/api/admin/conversations` | Conversation stats |
+| `GET` | `/api/admin/requests?limit=50&offset=0` | Paginated request log |
+| `GET` | `/api/admin/benchmark` | Retrieval benchmark results from `eval/benchmark_results.json` |
+
+### LLM Call Tracking
+
+Every Anthropic API call is logged via `tracked_create()` (non-streaming) or `tracked_stream()` (streaming) wrappers in `llm.py`. Each chat request generates a UUID `request_group` that links the 1-3 LLM calls from a single turn. Token usage is captured from `response.usage` (non-streaming) or `await stream.get_final_message()` (streaming). Cost estimation uses per-model pricing tables. Logging is non-fatal — db errors are caught and logged without disrupting the chat flow.
+
 ### Migration
 On first frontend load, `migrateLocalStorageToSQLite()` reads the old `chicago.conversations.v1` localStorage key, POSTs all conversations to the import endpoint, then removes the localStorage keys.
 
@@ -273,11 +303,20 @@ On first frontend load, `migrateLocalStorageToSQLite()` reads the old `chicago.c
 
 ## Frontend Architecture
 
-### State Machine
+### Routing & State Machine
+
+URL-based conversation routing via `react-router-dom`:
+- `/` — splash page (hero slideshow, chat input, suggestion chips, animated stats)
+- `/c/:id` — conversation view (workspace with chat, sidebar, map)
+- `/admin` — admin dashboard (usage metrics, latency, cost, benchmark results)
+
+Conversations are bookmarkable and work with browser back/forward. Direct URL access loads from SQLite; invalid IDs redirect to `/`.
+
 ```
-Splash (hero slideshow + chat pill + suggestions + stats)
-  → [first message]
-Workspace (split-screen: chat + sidebar)
+Splash (/) — hero slideshow + chat pill + suggestions + stats
+  → [first message] → create conversation → navigate to /c/:id
+Workspace (/c/:id) — split-screen: chat + sidebar
+Admin (/admin) — observability dashboard (independent of chat state)
 ```
 
 ### Per-Message Context
@@ -287,14 +326,16 @@ Each assistant message stores its own `context`, `plan`, `mapData`, and `mapFetc
 - **Map data staleness** — re-fetch if `mapFetchedAt` > 24 hours ago
 
 ### Sidebar
-Two tabs: **Data** (map + analytics + data cards) and **Sources** (code chunks with citations).
+Two tabs: **Data** (map + analytics) and **Sources** (code chunks with citations).
 
 **Data tab layout:**
-- Mapbox + deck.gl map (~75% height) with ScatterplotLayers for crime/311/permits
+- Mapbox + deck.gl map (~75% height) with ScatterplotLayers for crime/311/permits + GeoJsonLayer for zoning polygons
+- Zoning/Points toggles (top-left) — Points off hides all scatter dots and shows zoning category legend
 - Context-aware filter toggles (crime types, 311 request types, permit types, or source-level)
 - Arrest filter (All / Arrested / No Arrest) for crime mode
 - Dual-handle date range slider
-- Data cards below the map (crime, 311, permits, violations, business)
+- Data lag note (when applicable)
+- Zoning codes table (collapsible, when zoning data present)
 - Analytics section: SVG donut chart with hover expansion + thin-slice ring, MoM trend table with sortable columns
 
 **Sources tab:**
@@ -306,7 +347,7 @@ Two tabs: **Data** (map + analytics + data cards) and **Sources** (code chunks w
 - `ChatInterface` — message list + input, per-question click handling, message limit UI
 - `MessageBubble` — markdown rendering, citation/data pill injection, typewriter effect, click-to-select for user messages
 - `SidebarPanel` — drag-to-resize, collapsible rail, Data/Sources tabs
-- `MapView` — Mapbox + deck.gl with click-to-detail popups (Google Street View links), flyTo animation
+- `MapView` — Mapbox + deck.gl with click-to-detail popups (Google Street View links), flyTo animation, zoning polygon overlay with per-district colors
 - `AnalyticsSection` — pie chart + trend table, computed from map data
 - `useChat` — SSE consumption hook, message limit enforcement, plan/context/mapData attachment
 
@@ -317,17 +358,17 @@ Two tabs: **Data** (map + analytics + data cards) and **Sources** (code chunks w
 ```
 chicago/
 ├── backend/
-│   ├── main.py                     # FastAPI: /chat SSE, /api/conversations/*, /api/map-data, /section/*
+│   ├── main.py                     # FastAPI: /chat SSE, /api/conversations/*, /api/admin/*, /api/map-data, /section/*
 │   ├── router.py                   # Claude router → RetrievalPlan
 │   ├── synthesizer.py              # Claude streaming synthesis with analytics formatting
 │   ├── conversation.py             # Multi-turn query expansion (Haiku)
 │   ├── assembler.py                # Context assembly with caps + capped detection
 │   ├── analytics.py                # Server-side MoM trend computation
-│   ├── db.py                       # SQLite persistence (aiosqlite, WAL)
+│   ├── db.py                       # SQLite persistence (aiosqlite, WAL, schema v2: +llm_calls, +request_logs)
 │   ├── models.py                   # Pydantic models for all types
 │   ├── config.py                   # Settings via pydantic-settings
 │   ├── prompts.py                  # System prompts (router, synthesizer, conversation)
-│   ├── llm.py                      # Shared Anthropic client
+│   ├── llm.py                      # Shared client + tracked_create/tracked_stream + cost estimation
 │   ├── data/                       # SQLite database (gitignored)
 │   ├── retrieval/
 │   │   ├── socrata.py              # Shared async client with retry/backoff
@@ -337,9 +378,10 @@ chicago/
 │   │   ├── business.py             # Business licenses
 │   │   ├── map_data.py             # Raw geo-located rows for map
 │   │   ├── vector_search.py        # Qdrant search + keyword boost + dedup
+│   │   ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch
 │   │   ├── geo.py                  # Geocoding + community area resolution
 │   │   └── utils.py                # Shared helpers (cutoff_iso)
-│   └── tests/                      # 177 tests (unit + integration)
+│   └── tests/                      # 192 tests (unit + integration)
 │
 ├── ingestion/
 │   ├── parse_chicago_code.py       # HTML → sections JSON (split-at-republication strategy)
@@ -351,12 +393,14 @@ chicago/
 ├── eval/
 │   ├── queries.json                # 26 test queries (all passing)
 │   ├── run_eval.py                 # Router-only and full pipeline eval
-│   └── retrieval_benchmark.py      # 18-query retrieval quality benchmark (A=13 B=1 C=4)
+│   ├── retrieval_benchmark.py      # 18-query retrieval quality benchmark (--json-out for admin)
+│   └── benchmark_results.json      # Machine-readable benchmark output (generated)
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── App.tsx                 # State machine, async conversation lifecycle, per-question toggling
 │   │   ├── components/
+│   │   │   ├── AdminDashboard.tsx  # /admin page: metrics, charts, benchmark, request log
 │   │   │   ├── ChatInterface.tsx   # Message list, input, message limit UI
 │   │   │   ├── ChatInput.tsx       # Glassmorphism input with address autocomplete
 │   │   │   ├── MessageBubble.tsx   # Markdown + citations + typewriter + click-to-select
@@ -365,23 +409,37 @@ chicago/
 │   │   │   ├── CrossRefPill.tsx    # Clickable cross-reference with hover preview
 │   │   │   ├── SourceCitation.tsx  # Source card with rank, score, expandable text
 │   │   │   ├── SourceDetailDrawer.tsx  # Full-section viewer for cross-refs
+│   │   │   ├── Tooltip.tsx         # Shared hover tooltip (position: fixed, viewport clamping)
+│   │   │   ├── ChunkText.tsx       # Chunk text renderer (delegates tables to ChunkTable)
+│   │   │   ├── ChunkTable.tsx      # Formatted HTML table for table-bearing chunks
+│   │   │   ├── DisclaimerBanner.tsx # Legal disclaimer banner
+│   │   │   ├── PromptSuggestionChip.tsx # Splash page suggestion chips
 │   │   │   ├── SidebarPanel.tsx    # Drag-to-resize, collapsed rail, Data/Sources tabs
 │   │   │   ├── HistorySidebar.tsx  # Conversation history list
 │   │   │   ├── HeroSlideshow.tsx   # Landing page photo carousel
 │   │   │   ├── CountUp.tsx         # Animated stat counter
+│   │   │   ├── admin/
+│   │   │   │   ├── StatCard.tsx        # Animated metric card (wraps CountUp)
+│   │   │   │   ├── TimeSeriesChart.tsx # SVG area/line chart with hover crosshair
+│   │   │   │   ├── BarChart.tsx        # Horizontal bar chart (benchmark grades)
+│   │   │   │   ├── LatencyTable.tsx    # p50/p90/p99 table with color thresholds
+│   │   │   │   ├── RequestsTable.tsx   # Paginated request log with expandable rows
+│   │   │   │   └── BenchmarkSection.tsx # Score cards + grade bars + pie + per-query table
 │   │   │   └── sidebar/
-│   │   │       ├── MapView.tsx     # Mapbox + deck.gl with click popups
+│   │   │       ├── MapView.tsx     # Mapbox + deck.gl with click popups, zoning overlay
 │   │   │       ├── MapLayerToggles.tsx
 │   │   │       ├── MapLegend.tsx
 │   │   │       ├── ArrestFilter.tsx
+│   │   │       ├── StatusFilter.tsx   # Open/Closed status filter (311 mode)
+│   │   │       ├── CostFilter.tsx     # Cost bucket filter (permits mode)
 │   │   │       ├── DateRangeSlider.tsx
-│   │   │       ├── DataView.tsx    # Data cards + analytics
+│   │   │       ├── DataView.tsx    # Data lag note + analytics (data cards removed)
 │   │   │       ├── AnalyticsSection.tsx
 │   │   │       ├── PieChart.tsx    # SVG donut with thin-slice ring
 │   │   │       ├── TrendTable.tsx  # MoM trend rows with arrows
 │   │   │       └── SourcesView.tsx
 │   │   └── lib/
-│   │       ├── api.ts              # SSE streaming, conversation CRUD, map data
+│   │       ├── api.ts              # SSE streaming, conversation CRUD, map data, admin endpoints
 │   │       ├── useChat.ts          # Chat state hook with message limit
 │   │       ├── history.ts          # Async API-backed persistence + migration
 │   │       ├── types.ts            # TypeScript types matching backend Pydantic
@@ -390,6 +448,7 @@ chicago/
 │   │       ├── sse.ts              # SSE parser
 │   │       ├── useTypewriter.ts    # Character reveal animation
 │   │       ├── useCopyButton.ts    # Copy-to-clipboard hook
+│   │       ├── useConversationRouter.ts # URL ↔ conversationId sync
 │   │       ├── constants.ts        # Suggestions, splash stats
 │   │       ├── codeRefs.ts         # Section ID helpers
 │   │       ├── clipboard.ts        # Copy utility
@@ -422,6 +481,9 @@ chicago/
 | Map data in SSE | Emitted inline with stream | Eliminates separate /api/map-data round-trip for current turn |
 | Map data staleness | 24h threshold | Fresh enough for recent conversations, current enough for revisits |
 | Message limit | 10 user messages per conversation | Controls token costs; enforced both backend and frontend |
+| LLM logging | Per-call rows, not per-request | Maps cleanly to cost calculation (different model pricing); avoids NULLs when phases are skipped |
+| Admin charts | Custom SVG, no chart library | Existing PieChart is custom SVG; adding recharts (300KB) would be a dependency mismatch |
+| Admin logging | Non-fatal wrappers | DB save errors are caught — logging never degrades the chat experience |
 
 ---
 
@@ -435,7 +497,7 @@ uvicorn backend.main:app --reload --port 8001
 cd frontend && npm run dev                              # :5173
 
 # Tests
-python -m pytest backend/tests/ -q                      # 177 tests
+python -m pytest backend/tests/ -q                      # 192 tests
 cd frontend && npx tsc --noEmit                         # type check
 
 # Eval

@@ -101,3 +101,23 @@ async def test_pin_with_dashes_stripped():
     assert result is not None
     assert result["pin14"] == "14241020170000"
     assert "-" not in result["pin14"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_parcel_live_lincoln_park():
+    """Hit the real Cook County GIS parcel layer (free, no key).
+
+    This point definitely has a parcel, so a None result means the GIS service
+    is down/slow (it is intermittently). Retry a few times, then skip rather
+    than flap on transient upstream failures.
+    """
+    result = None
+    for _ in range(3):
+        result = await lookup_parcel(41.9307, -87.6411)  # ~451 W Wrightwood Ave
+        if result is not None:
+            break
+    if result is None:
+        pytest.skip("Cook County GIS unavailable (transient)")
+    assert result["pin14"].isdigit() and len(result["pin14"]) == 14
+    assert result["address"]

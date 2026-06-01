@@ -81,3 +81,37 @@ async def test_sends_correct_params():
     params = client.get.call_args.kwargs.get("params") or client.get.call_args[1].get("params")
     assert params["outFields"] == "FLD_ZONE,ZONE_SUBTY,SFHA_TF"
     assert params["geometry"] == "-87.65,41.93"
+
+
+# --- live integration tests (real FEMA NFHL service, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_fema_nfhl_endpoint_reachable():
+    """Confirm FEMA_NFHL_URL points at the live NFHL service.
+
+    Distinguishes a path regression (404 -> the old /gis/nfhl/ host returns
+    an auth page) from the service simply being overloaded (504 -> skip).
+    """
+    params = {"where": "1=1", "outFields": "FLD_ZONE",
+              "returnGeometry": "false", "f": "json", "resultRecordCount": "1"}
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.get(FEMA_NFHL_URL, params=params)
+        except httpx.HTTPError as exc:
+            pytest.skip(f"FEMA NFHL unreachable: {exc}")
+    if resp.status_code >= 500:
+        pytest.skip(f"FEMA NFHL returned {resp.status_code} (service intermittently slow)")
+    assert resp.status_code == 200, f"FEMA NFHL path looks wrong (HTTP {resp.status_code})"
+    assert "application/json" in resp.headers.get("content-type", "")
+    data = resp.json()
+    assert "fields" in data or "features" in data
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_query_flood_zone_live_smoke():
+    """The wrapper should return a valid dict or None — never raise."""
+    result = await query_flood_zone(41.9307, -87.6411)
+    assert result is None or isinstance(result.get("fld_zone"), str)

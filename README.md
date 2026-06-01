@@ -71,8 +71,8 @@ The Municipal Code is parsed from a local HTML export. Drop `chicago-il-codes.ht
 ## Run
 
 ```bash
-# Backend (port 8000)
-.venv/bin/uvicorn backend.main:app --reload
+# Backend (port 8001)
+.venv/bin/uvicorn backend.main:app --reload --port 8001
 
 # Frontend (port 5173)
 cd frontend && npm run dev
@@ -104,7 +104,7 @@ Reports per-title counts of sections, tables, cross-refs, definitions, legislati
 PYTHONPATH=. .venv/bin/python -m eval.run_eval --out eval/last_report.md
 
 # Full — hit a running backend, also checks retrieval + records timings
-PYTHONPATH=. .venv/bin/python -m eval.run_eval --full http://localhost:8000 --out eval/last_full.md
+PYTHONPATH=. .venv/bin/python -m eval.run_eval --full http://localhost:8001 --out eval/last_full.md
 
 # Filter
 PYTHONPATH=. .venv/bin/python -m eval.run_eval --filter zoning
@@ -113,7 +113,7 @@ PYTHONPATH=. .venv/bin/python -m eval.run_eval --filter zoning
 ## Smoke test the API
 
 ```bash
-curl -N -X POST http://localhost:8000/chat \
+curl -N -X POST http://localhost:8001/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"What kind of crime is happening in Wicker Park?","history":[]}'
 ```

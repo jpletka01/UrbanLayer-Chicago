@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 6** — frontend integration (4 sidebar data cards for property/regulatory/incentives/neighborhood, transit station map layer, parcel boundary map layer). Previous: Expansion Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Breakage fix + map refactor + real-API tests** — fixed the frontend↔backend port mismatch (standardized on :8001), de-duplicated the two map components behind a shared `useMapboxOverlay` hook + tooltip/layer/`FilterButton` helpers, and converted the external-API tests to hit live endpoints — which surfaced and fixed three broken upstream services (FEMA flood path, HUD Opportunity Zones layer/schema, EPA brownfields repointed to the ACRES ArcGIS republish). Previous: **Expansion Phase 6** — frontend integration (4 sidebar data cards for property/regulatory/incentives/neighborhood, transit station map layer, parcel boundary map layer). Previous: Expansion Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
 
 ---
 
@@ -1847,6 +1847,51 @@ These queries should trigger the new domain cards and map layers:
 ### Test Count
 
 301 tests passing (unchanged — frontend changes are pure UI, backend changes are minimal and covered by existing mocks).
+
+---
+
+## Session Log (2026-06-01 — Breakage Fix, Map Refactor, Real-API Tests + Endpoint Repair)
+
+A cleanup/repair pass after the Phase 1–6 expansion. Three threads: fix the app that "stopped working," de-duplicate the two map components, and make the external-API tests hit live endpoints — which surfaced (and fixed) three broken upstream services.
+
+### 1. The breakage was a port mismatch (not the expansion code)
+
+The browser console was full of `NetworkError` / `CORS status (null)` on `localhost:8001/api/conversations`. Root cause: the backend was being launched on **:8000** (per a stale README line), but the entire frontend + docs toolchain expects **:8001** (`frontend/src/lib/api.ts`, this file, `chicago_rag_prompt.md`, the admin `JudgeSection`). Connection-refused → the `(null)` status. The `events.mapbox.com` CORS lines and `WEBGL_debug_renderer_info` warnings are benign (blocked Mapbox telemetry + a Firefox deprecation notice).
+
+Standardized on **:8001** everywhere:
+- `README.md` — `Run` section now launches `uvicorn … --port 8001`; eval/curl examples updated to `:8001`.
+- `frontend/.env` — added explicit `VITE_API_BASE=http://localhost:8001`; new `frontend/.env.example` documents both frontend env vars.
+
+> Note for whoever runs this: the two servers are separate — open the app at **`http://localhost:5173`** (Vite), which calls the backend on **`:8001`**. Start the backend with `--port 8001`.
+
+### 2. Frontend map refactor (de-duplicated `LandingMap` + `MapView`)
+
+The two Mapbox+deck.gl components duplicated ~50 lines each of init/tooltip/layer code, and `MapView` repeated filter-button markup. Extracted shared pieces (all new files under `frontend/src/`):
+- `lib/useMapboxOverlay.ts` — single map-lifecycle hook (map + `MapboxOverlay` create/teardown). Hardens against StrictMode double-init and swallows the benign `webglcontextlost` event so the context restores.
+- `lib/mapTooltip.ts` — `buildLayerTooltip(info)`, one tooltip builder handling every layer id (crime/311/permit/zoning/transit).
+- `lib/mapLayers.ts` — `pointLayer(id, data, opts)` factory for the crime/311/permit ScatterplotLayers.
+- `lib/format.ts` — shared `formatDate` (was a private copy in `MapView`).
+- `components/sidebar/FilterButton.tsx` + `ToggleGroup.tsx` — the pill toggle, replacing 3 inline arrest/status/cost blocks.
+
+`LandingMap` and `MapView` rewritten to consume these. The standalone `ArrestFilter`/`StatusFilter`/`CostFilter` components (dead since `MapView` inlined them) were slimmed to just their exported types + `costBucket`. `dummyData.ts` confirmed landing-only. `npm run build` (tsc) clean; lint problem count went **down** 31→26 (no new issues introduced).
+
+### 3. Tests now hit real external APIs — and three were broken
+
+Added `@pytest.mark.integration` live tests for every external integration. This exposed real upstream drift the mocks had been hiding (the source modules silently returned `None`/`[]`, so these features had quietly stopped working):
+
+| Service | Was | Fix |
+|---|---|---|
+| **FEMA flood** (`regulatory/flood.py`) | `/gis/nfhl/rest/services/…` (now an IBM WebSEAL auth page) | base path → `…/arcgis/rest/services/public/NFHL/MapServer/28/query`. Service is intermittently `504`; the reachability test skips on 5xx but fails on a wrong path. |
+| **HUD Opportunity Zones** (`incentives/opportunity_zones.py`) | `FeatureServer/0`, fields `GEOID`/`DESIGNATED` | layer → `13`, field → `GEOID10`; the layer contains only designated zones, so presence ⇒ designated. |
+| **EPA brownfields** (`regulatory/environmental.py`) | `geopub.epa.gov/OEI/FRS_INTERESTS/MapServer/5` (decommissioned, 404) | repointed to EPA's national ArcGIS Online republish **`FRS_INTERESTS_ACRES`** (the brownfields registry): `https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/FRS_INTERESTS_ACRES/FeatureServer/0/query`. Field rename `SITE_NAME` → `PRIMARY_NAME`. |
+
+Live-verified working (free, no key): Cook County GIS parcels, Chicago zoning (point + envelope polygons), Census/FCC tract resolution, Socrata, HUD OZ, EPA ACRES brownfields. FEMA's path is corrected but its service is flaky today.
+
+Test files converted with live calls + invariant assertions (kept the pure transport/parsing/error-path unit tests, which a live API can't reproduce): `test_socrata.py`, `test_property_parcels.py` (retries+skips on transient GIS outage), `test_zoning.py`, `test_incentives_oz.py`, `test_regulatory_flood.py`, `test_regulatory_environmental.py`.
+
+### Test Count
+
+**281 offline tests pass** (`pytest -m "not integration and not expensive"`). Integration suite passes live (`pytest -m integration`) — FEMA reachability skips when the upstream is 504-ing. Anthropic-dependent tests remain behind `-m expensive`.
 
 ---
 
