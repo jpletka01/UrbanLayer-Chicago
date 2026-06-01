@@ -23,15 +23,18 @@ async def socrata_get(
     params: dict[str, Any],
     *,
     client: httpx.AsyncClient | None = None,
+    base_url: str | None = None,
+    app_token: str | None = None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
     if "$limit" not in params:
         raise ValueError(f"Socrata query for {dataset_id} missing $limit guard")
 
-    url = f"{settings.socrata_base}/{dataset_id}.json"
+    url = f"{base_url or settings.socrata_base}/{dataset_id}.json"
     headers: dict[str, str] = {}
-    if settings.socrata_app_token:
-        headers["X-App-Token"] = settings.socrata_app_token
+    token = app_token if app_token is not None else settings.socrata_app_token
+    if token:
+        headers["X-App-Token"] = token
 
     owns_client = client is None
     if owns_client:

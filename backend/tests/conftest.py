@@ -23,4 +23,13 @@ def mock_settings():
     settings.limit_permits = 50
     settings.limit_violations = 50
     settings.limit_business = 100
+    # Cook County / CCAO
+    settings.cook_county_socrata_base = "https://datacatalog.cookcountyil.gov/resource"
+    settings.cook_county_socrata_token = ""
+    settings.dataset_ccao_characteristics = "x54s-btds"
+    settings.dataset_ccao_assessments = "uzyt-m557"
+    settings.dataset_ccao_sales = "wvhk-k5uv"
+    settings.limit_ccao_characteristics = 1
+    settings.limit_ccao_assessments = 5
+    settings.limit_ccao_sales = 10
     return settings

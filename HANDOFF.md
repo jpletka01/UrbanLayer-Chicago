@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 1+3** — infrastructure foundation (domain architecture, WorkflowHint, TTL cache, expanded SourceTag/RetrievalPlan/ContextObject) + regulatory domain (12+ zoning overlay layers, FEMA flood zones, EPA brownfield sites). Previous: `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 223 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 2** — property domain (Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel). Previous: Expansion Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 247 tests passing.
 
 ---
 
@@ -1490,6 +1490,87 @@ First implementation session of the `chicago_expansion_plan.md`. Phase 1 sets up
 
 ---
 
+## Session Log (2026-06-01 — Expansion Phase 2: Property Domain)
+
+Second expansion phase implementing Cook County property data retrieval. The property domain follows the regulatory domain orchestrator pattern but with a key structural difference: **sequential-then-parallel** execution (parcel GIS lookup first to obtain the PIN, then three CCAO Socrata queries fan out in parallel using that PIN).
+
+### Socrata Generalization
+
+The CCAO data lives on a different Socrata portal (`datacatalog.cookcountyil.gov`) than the Chicago Data Portal (`data.cityofchicago.org`). Rather than duplicating `socrata_get()`, added optional `base_url` and `app_token` parameters — existing callers are unaffected, and CCAO queries pass the Cook County base URL. A separate `COOK_COUNTY_SOCRATA_TOKEN` env var is supported but optional.
+
+### Property Retrieval Modules
+
+1. **`backend/retrieval/property/parcels.py`** — Cook County GIS parcel lookup via ArcGIS REST (MapServer layer 44). Point query at `gis.cookcountyil.gov`. Returns PIN14 (zero-padded, dashes stripped), building class, building/land square footage, total value, and address. Same query pattern as existing `zoning.py`.
+
+2. **`backend/retrieval/property/characteristics.py`** — CCAO property characteristics by PIN (dataset `x54s-btds`). Returns most recent year's record: building SF, land SF, stories, units, rooms, bedrooms, bathrooms, building age, class description.
+
+3. **`backend/retrieval/property/assessments.py`** — CCAO assessed values by PIN (dataset `uzyt-m557`). Returns up to 5 years of assessment history ordered by tax year descending. Values fall back from `mailed_tot` → `certified_tot` → `board_tot`.
+
+4. **`backend/retrieval/property/sales.py`** — CCAO sales history by PIN (dataset `wvhk-k5uv`). Returns up to 10 most recent sales with date, price, and deed type.
+
+5. **`backend/retrieval/property/__init__.py`** — Domain orchestrator. Step 1: `lookup_parcel(lat, lon)` → PIN14 (returns None if no parcel found). Step 2: `asyncio.gather(get_characteristics, get_assessments, get_sales)` in parallel using the PIN. `_build_summary()` merges GIS parcel data with CCAO enrichment (CCAO values override GIS when available). `_safe_int()` / `_safe_float()` handle Socrata's string-typed numbers.
+
+### Models
+
+- `AssessmentRecord(BaseModel)` — year, land, building, total (all optional)
+- `SaleRecord(BaseModel)` — date, price, deed_type (all optional)
+- `PropertySummary(BaseModel)` — pin14, address, bldg_class, bldg_class_description, bldg_sqft, land_sqft, stories, units, rooms, bedrooms, full_baths, half_baths, bldg_age, total_assessed_value, assessment_history, sales_history
+- Added `"property_domain"` to `SourceTag`, `property: PropertySummary | None` to `ContextObject`
+
+### Pipeline Wiring
+
+- `main.py`: `property_domain` task gated on `"property_domain" in plan.sources` and resolved lat/lon, runs in parallel with regulatory and other domains
+- `assembler.py`: passes `PropertySummary` through to `ContextObject.property`
+- Router prompt: new rule routing property/value/assessment/sales/PIN questions to `property_domain`
+- Synthesizer prompt: rule 12 instructs Claude to lead with address, PIN, physical characteristics, most recent assessed value, and sales history
+
+### Design Decisions
+
+- **Sequential-then-parallel** — The PIN is the join key for all CCAO data. The parcel GIS lookup (~300ms) must complete before the three Socrata queries (~200ms each, in parallel) can start. Total property domain latency: ~500ms.
+- **Returns None when no parcel found** — Distinct from "parcel found but no CCAO data" (returns PropertySummary with empty histories). Lets the synthesizer handle both cases appropriately.
+- **CCAO overrides GIS values** — The parcel GIS layer has coarse building/land sqft; CCAO characteristics are more detailed. The orchestrator prefers CCAO when available, falls back to GIS.
+- **Typed sub-models** — `AssessmentRecord` and `SaleRecord` instead of `list[dict]` for better validation and frontend type generation.
+
+### Test Count
+
+247 tests passing (was 223; +24 new):
+- `test_property_parcels.py` — 7 tests (found, empty, HTTP error, connection error, geometry params, zero-padding, dash stripping)
+- `test_property_characteristics.py` — 3 tests (valid, empty, error)
+- `test_property_assessments.py` — 3 tests (list, empty, error)
+- `test_property_sales.py` — 3 tests (list, empty, error)
+- `test_property_orchestrator.py` — 8 tests (full assembly, no parcel, partial failure, all failure, PIN forwarding, safe_int, safe_float, assessment fallback)
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/property/__init__.py` — domain orchestrator
+- `backend/retrieval/property/parcels.py` — Cook County GIS parcel lookup
+- `backend/retrieval/property/characteristics.py` — CCAO characteristics
+- `backend/retrieval/property/assessments.py` — CCAO assessments
+- `backend/retrieval/property/sales.py` — CCAO sales
+- `backend/tests/test_property_parcels.py` — 7 tests
+- `backend/tests/test_property_characteristics.py` — 3 tests
+- `backend/tests/test_property_assessments.py` — 3 tests
+- `backend/tests/test_property_sales.py` — 3 tests
+- `backend/tests/test_property_orchestrator.py` — 8 tests
+
+**Backend (modified):**
+- `backend/retrieval/socrata.py` — added `base_url`, `app_token` params to `socrata_get()`
+- `backend/config.py` — Cook County Socrata settings (base URL, token, 3 dataset IDs, 3 limits)
+- `backend/models.py` — AssessmentRecord, SaleRecord, PropertySummary, expanded SourceTag/ContextObject
+- `backend/main.py` — property_domain import, task wiring in `_retrieve()`, error handling, assembler call
+- `backend/assembler.py` — PropertySummary import, `property_summary` parameter
+- `backend/prompts.py` — router `property_domain` rule, synthesizer rule 12
+- `backend/tests/conftest.py` — Cook County mock settings
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — AssessmentRecord, SaleRecord, PropertySummary interfaces, expanded SourceTag/ContextObject
+
+**Other:**
+- `.env.example` — COOK_COUNTY_SOCRATA_TOKEN
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -1501,7 +1582,7 @@ First implementation session of the `chicago_expansion_plan.md`. Phase 1 sets up
 ### Expansion Plan (`chicago_expansion_plan.md`)
 
 - ~~**Phase 1: Infrastructure Foundation**~~ ✅ — Domain architecture (SourceTag, WorkflowHint, TTL cache, RegulatorySummary model, ContextObject expansion, router/synthesizer prompt updates).
-- **Phase 2: Property Domain** — Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel. Adds `PropertySummary` to ContextObject. The PIN is the universal join key for all Cook County property data.
+- ~~**Phase 2: Property Domain**~~ ✅ — Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel. Sequential-then-parallel orchestrator pattern.
 - ~~**Phase 3: Regulatory Domain**~~ ✅ — 15 overlay layers, FEMA flood zones, EPA brownfield sites. All in parallel via domain orchestrator.
 - **Phase 4: Incentives Domain** — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (census tract → CDFI lookup), Enterprise Zones. TIF/EZ boundaries can be cached at startup (same pattern as community areas in `geo.py`).
 - **Phase 5: Neighborhood Domain** — Demographics (pre-aggregated community area data from Socrata `t68z-cikk`), transit proximity (GTFS stops.txt parsing + MapServer TOD layers 13/24).
@@ -1528,7 +1609,6 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `backend/retrieval/property/` — Phase 2: Cook County GIS parcel + CCAO Socrata modules
    - `backend/retrieval/incentives/` — Phase 4: TIF, OZ, Enterprise Zone modules
    - `backend/retrieval/neighborhood/` — Phase 5: demographics + transit modules
    - `backend/models.py` — new domain summary models for each phase
@@ -1562,8 +1642,9 @@ chicago/
 │   ├── data/                       # SQLite database (gitignored)
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py (async) + map_data.py + zoning.py
 │   │   ├── cache.py                # TTL cache utility for spatial queries
+│   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py
 │   │   └── regulatory/             # Domain orchestrator + overlays.py + flood.py + environmental.py
-│   └── tests/                      # 223 tests (unit + integration)
+│   └── tests/                      # 247 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -1598,7 +1679,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 223 tests
+python -m pytest backend/tests/ -q           # 247 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 

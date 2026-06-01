@@ -25,7 +25,9 @@ export type SourceTag =
   | "permits_api"
   | "violations_api"
   | "business_api"
-  | "vector_search";
+  | "vector_search"
+  | "regulatory_domain"
+  | "property_domain";
 
 export interface Location {
   raw: string;
@@ -137,6 +139,38 @@ export interface RegulatorySummary {
   brownfield_sites: Record<string, unknown>[];
 }
 
+export interface AssessmentRecord {
+  year: number | null;
+  land: number | null;
+  building: number | null;
+  total: number | null;
+}
+
+export interface SaleRecord {
+  date: string | null;
+  price: number | null;
+  deed_type: string | null;
+}
+
+export interface PropertySummary {
+  pin14: string | null;
+  address: string | null;
+  bldg_class: string | null;
+  bldg_class_description: string | null;
+  bldg_sqft: number | null;
+  land_sqft: number | null;
+  stories: number | null;
+  units: number | null;
+  rooms: number | null;
+  bedrooms: number | null;
+  full_baths: number | null;
+  half_baths: number | null;
+  bldg_age: number | null;
+  total_assessed_value: number | null;
+  assessment_history: AssessmentRecord[];
+  sales_history: SaleRecord[];
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;
@@ -151,6 +185,7 @@ export interface ContextObject {
   code_chunks: CodeChunk[];
   parcel_zoning?: ZoningSummary | null;
   regulatory?: RegulatorySummary | null;
+  property?: PropertySummary | null;
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
 }

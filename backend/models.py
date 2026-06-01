@@ -11,6 +11,7 @@ SourceTag = Literal[
     "business_api",
     "vector_search",
     "regulatory_domain",
+    "property_domain",
 ]
 
 IntentTag = Literal[
@@ -136,6 +137,38 @@ class RegulatorySummary(BaseModel):
     brownfield_sites: list[dict] = Field(default_factory=list)
 
 
+class AssessmentRecord(BaseModel):
+    year: int | None = None
+    land: float | None = None
+    building: float | None = None
+    total: float | None = None
+
+
+class SaleRecord(BaseModel):
+    date: str | None = None
+    price: float | None = None
+    deed_type: str | None = None
+
+
+class PropertySummary(BaseModel):
+    pin14: str | None = None
+    address: str | None = None
+    bldg_class: str | None = None
+    bldg_class_description: str | None = None
+    bldg_sqft: int | None = None
+    land_sqft: int | None = None
+    stories: int | None = None
+    units: int | None = None
+    rooms: int | None = None
+    bedrooms: int | None = None
+    full_baths: int | None = None
+    half_baths: int | None = None
+    bldg_age: int | None = None
+    total_assessed_value: float | None = None
+    assessment_history: list[AssessmentRecord] = Field(default_factory=list)
+    sales_history: list[SaleRecord] = Field(default_factory=list)
+
+
 class CodeChunk(BaseModel):
     text: str
     source_document: str
@@ -174,6 +207,7 @@ class ContextObject(BaseModel):
     code_chunks: list[CodeChunk] = Field(default_factory=list)
     parcel_zoning: ZoningSummary | None = None
     regulatory: RegulatorySummary | None = None
+    property: PropertySummary | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
 

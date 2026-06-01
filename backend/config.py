@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     dataset_iucr: str = "c7ck-438e"
     dataset_zoning: str = "p8va-airx"
 
+    # Cook County Socrata (datacatalog.cookcountyil.gov)
+    cook_county_socrata_base: str = "https://datacatalog.cookcountyil.gov/resource"
+    cook_county_socrata_token: str = ""
+    dataset_ccao_characteristics: str = "x54s-btds"
+    dataset_ccao_assessments: str = "uzyt-m557"
+    dataset_ccao_sales: str = "wvhk-k5uv"
+    limit_ccao_characteristics: int = 1
+    limit_ccao_assessments: int = 5
+    limit_ccao_sales: int = 10
+
     crime_lag_days: int = 7
 
     # Per-source Socrata row caps (every query must carry a $limit guard).
