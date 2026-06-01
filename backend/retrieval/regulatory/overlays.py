@@ -9,7 +9,12 @@ import logging
 
 import httpx
 
+from backend.retrieval.cache import TTLCache
+
 log = logging.getLogger(__name__)
+
+_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_NOT_FOUND = object()
 
 ZONING_BASE_URL = (
     "https://gisapps.chicago.gov/arcgis/rest/services"
@@ -85,6 +90,13 @@ async def query_all_overlays(
 
     Returns a list of ``(layer_id, attributes)`` for layers that returned results.
     """
+    key = f"overlays:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return []
+    if cached is not None:
+        return cached
+
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
@@ -101,6 +113,7 @@ async def query_all_overlays(
                 log.warning("Overlay layer %d raised: %s", lid, result)
             elif result is not None:
                 hits.append((lid, result))
+        _cache.set(key, hits if hits else _NOT_FOUND)
         return hits
     finally:
         if owns:

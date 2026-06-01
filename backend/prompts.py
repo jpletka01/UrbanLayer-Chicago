@@ -22,6 +22,13 @@ Output a JSON object with these fields:
 - requires_disclaimer: true ONLY for zoning, permit, code, ordinance, or legal-rights questions.
 - search_query: a 1-line semantic query to send to vector search, or null if vector_search is not in sources.
 - clarification: a one-line clarification question to ask the user, or null. ONLY set when intent is "clarification_needed".
+- workflow_hint: one of "general", "site_due_diligence", "development_feasibility", "business_launch", "property_intelligence", "neighborhood_overview". Describes the user's workflow:
+  - "site_due_diligence": user wants a comprehensive report on a property or site (buying, leasing, investing, "what should I know", "do a due diligence report")
+  - "development_feasibility": user wants to know if they can build or develop something at a location ("can I build", "is it feasible", "what can I develop")
+  - "business_launch": user wants to open or operate a business at a location ("can I open", "what permits do I need to open")
+  - "property_intelligence": user wants property details — value, PIN, assessments, sales, lot size ("what property is at", "assessed value of", "tell me about the property")
+  - "neighborhood_overview": user wants to understand an area — crime, demographics, activity, transit ("what's going on in", "what's the area like", "tell me about the neighborhood")
+  - "general": any other question
 
 Rules:
 - "What's going on in/near X" -> neighborhood_overview, include crime_api + 311_api + permits_api.
@@ -31,6 +38,9 @@ Rules:
 - Address-specific property questions (value, assessments, sales history, lot size, building details, PIN lookup, "tell me about this property", "what property is at this address") -> include "property_domain". Also include "property_domain" for site due diligence, development feasibility, and property intelligence queries at a specific address. Requires resolved lat/lon.
 - Address-specific incentive, TIF district, Opportunity Zone, Enterprise Zone, tax incentive, or subsidy questions -> include "incentives_domain". Also include "incentives_domain" for site due diligence and investment analysis queries at a specific address. Requires resolved lat/lon.
 - Neighborhood overview, demographic, population, income, transit access, or "what's this area like" questions -> include "neighborhood_domain". It provides community area demographics (population, income, poverty, age) and transit proximity (nearest CTA/Metra stations, TOD eligibility). Also include "neighborhood_domain" for site due diligence and development feasibility queries at a specific address. Works with community area only (demographics) or lat/lon (transit + demographics).
+- For "site_due_diligence" at a specific address: include ALL of regulatory_domain, property_domain, incentives_domain, neighborhood_domain, plus crime_api and permits_api. Set workflow_hint="site_due_diligence".
+- For "development_feasibility" at a specific address: include regulatory_domain, property_domain, vector_search (for zoning bulk/density rules), and permits_api. Set workflow_hint="development_feasibility".
+- For "business_launch" at a specific address: include vector_search (licensing/zoning), regulatory_domain, incentives_domain, and business_api. Set workflow_hint="business_launch".
 - Always emit valid JSON. Do not wrap it in markdown or commentary.
 
 Search query guidance (for vector_search):
@@ -71,6 +81,7 @@ Rules:
 13. When incentives data is present, clearly state each applicable incentive program. For TIF districts: name, approximate end year if available, and note that TIF increment financing may be available. For Opportunity Zones: state the census tract and that the designation enables capital gains tax benefits for qualified investments. For Enterprise Zones: name and note the associated tax incentives. When no incentive programs apply at a location, note that the parcel is not in any TIF, Opportunity Zone, or Enterprise Zone.
 14. When demographics data is present, weave key statistics into your answer naturally — do not dump a raw table. Lead with population and median household income, then mention other relevant stats (poverty rate, vacancy, education) only when they inform the user's question.
 15. When transit access data is present, mention the nearest CTA rail and Metra stations by name with approximate walking distance (in miles). If TOD-eligible, note the eligibility type (CTA or Metra) and that the Connected Communities Ordinance allows density and parking bonuses near transit.
+16. When partial_failures is present and non-empty, briefly note which data sources were temporarily unavailable (e.g., "Note: property records were temporarily unavailable for this query"). Keep it factual — one sentence, no apology.
 """
 
 

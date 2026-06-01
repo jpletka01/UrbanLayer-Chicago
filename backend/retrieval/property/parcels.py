@@ -4,7 +4,12 @@ import logging
 
 import httpx
 
+from backend.retrieval.cache import TTLCache
+
 log = logging.getLogger(__name__)
+
+_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_NOT_FOUND = object()
 
 def _esri_to_geojson(esri_geom: dict | None) -> dict | None:
     """Convert Esri JSON rings to GeoJSON Polygon."""
@@ -33,6 +38,13 @@ async def lookup_parcel(
     Returns a dict with pin14, bldg_class, bldg_sqft, land_sqft,
     total_value, and address — or None if no parcel found.
     """
+    key = f"parcel:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return None
+    if cached is not None:
+        return cached
+
     params = {
         "geometry": f"{lon},{lat}",
         "geometryType": "esriGeometryPoint",
@@ -52,14 +64,16 @@ async def lookup_parcel(
         data = resp.json()
         features = data.get("features", [])
         if not features:
+            _cache.set(key, _NOT_FOUND)
             return None
         attrs = features[0].get("attributes", {})
         pin_raw = attrs.get("PIN14") or attrs.get("PIN")
         if not pin_raw:
+            _cache.set(key, _NOT_FOUND)
             return None
         pin14 = str(pin_raw).replace("-", "").zfill(14)
         geometry = _esri_to_geojson(features[0].get("geometry"))
-        return {
+        result = {
             "pin14": pin14,
             "bldg_class": attrs.get("BLDGClass"),
             "bldg_sqft": attrs.get("BldgSqft"),
@@ -68,6 +82,8 @@ async def lookup_parcel(
             "address": attrs.get("Address"),
             "geometry": geometry,
         }
+        _cache.set(key, result)
+        return result
     except Exception as exc:
         log.warning("Parcel lookup failed for (%s, %s): %s", lat, lon, exc)
         return None

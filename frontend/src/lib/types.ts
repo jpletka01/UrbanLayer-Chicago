@@ -239,6 +239,7 @@ export interface ContextObject {
   neighborhood?: NeighborhoodSummary | null;
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
+  partial_failures?: string[];
 }
 
 export type ChatChunk =

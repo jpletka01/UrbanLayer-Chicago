@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Map loading fix + HTML/CSS bug fixes** — fixed map getting stuck in loading state after 3+ questions (race condition in `mapLoading` state machine), fixed `<div>` inside `<p>` hydration error (Tooltip now uses React portal), fixed CSS border shorthand/longhand conflict, added WebGL context restoration handler. Previous: Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Expansion Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 7 (polish & optimization)** — TTL caching wired to all 10 spatial/PIN retrieval modules, startup preloading of lazy-loaded datasets (TIF/EZ boundaries, transit stations, demographics), graceful degradation with partial-failure reporting, router workflow_hint emission, eval expansion (+13 new queries for domain workflows). Previous: Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 311 tests passing.
 
 ---
 
@@ -1951,31 +1951,6 @@ These console messages are internal to Mapbox GL JS or Firefox/macOS-specific:
 
 ---
 
-## Recommended Next Steps
-
-### Original Buckets (All Done)
-
-- ~~**Bucket 1: Mobile & Polish**~~ ✅
-- ~~**Bucket 2: Observability & Eval**~~ ✅
-- ~~**Bucket 3: Retrieval Quality**~~ ✅
-
-### Expansion Plan (`chicago_expansion_plan.md`)
-
-- ~~**Phase 1: Infrastructure Foundation**~~ ✅ — Domain architecture (SourceTag, WorkflowHint, TTL cache, RegulatorySummary model, ContextObject expansion, router/synthesizer prompt updates).
-- ~~**Phase 2: Property Domain**~~ ✅ — Cook County GIS parcel lookup → PIN → CCAO characteristics, assessments, sales in parallel. Sequential-then-parallel orchestrator pattern.
-- ~~**Phase 3: Regulatory Domain**~~ ✅ — 15 overlay layers, FEMA flood zones, EPA brownfield sites. All in parallel via domain orchestrator.
-- ~~**Phase 4: Incentives Domain**~~ ✅ — TIF districts (Socrata boundary GeoJSON + financials), Opportunity Zones (FCC tract resolution + HUD ArcGIS), Enterprise Zones. Two-phase orchestrator: parallel boundary checks → conditional API follow-ups.
-- ~~**Phase 5: Neighborhood Domain**~~ ✅ — Community area demographics (Socrata ACS `t68z-cikk`, prefetch-all + cache), transit proximity (384 CTA/Metra stations from GTFS-generated static JSON + haversine distance), TOD eligibility (MapServer layers 13/24 via `query_overlay`).
-- ~~**Phase 6: Frontend Integration**~~ ✅ — 4 sidebar data cards (PropertyCard, RegulatoryCard, IncentivesCard, NeighborhoodCard), CollapsibleCard shared component, transit station ScatterplotLayer (384 CTA/Metra), parcel boundary GeoJsonLayer, foundation fixes for domain-data visibility.
-- **Phase 7: Polish & Optimization** — PTAXSIM tax estimation, TTL caching for all spatial lookups, startup preloading, eval expansion, workflow-based context selection, overlay/incentive zone polygons on map.
-
-### Production Readiness (Bucket 4)
-- **Dockerize backend** — Dockerfile for the FastAPI app, production config.
-- **Production Vite build** — Static file server with SPA-fallback (serve `index.html` for all non-asset paths).
-- **CI pipeline** — Tests + type checking on push.
-
----
-
 ## Session Log (2026-06-01 — Transit Stations Map Fix)
 
 Transit station dots were not appearing on the map despite the neighborhood domain returning accurate transit data in chat responses. Three bugs in the pipeline:
@@ -2013,6 +1988,146 @@ Transit `ScatterplotLayer` was pushed into the deck.gl layers array before crime
 
 ---
 
+## Session Log (2026-06-01 — Expansion Phase 7: Polish & Optimization)
+
+Final expansion phase focused on performance, reliability, and validation. Five items implemented; PTAXSIM tax estimation and overlay/incentive map geometry deferred to a future session.
+
+### Item 1: TTL Cache Wiring
+
+The `TTLCache` class in `backend/retrieval/cache.py` existed since Phase 1 but was never used. Wired it into all 10 external API query functions across the retrieval layer.
+
+**Pattern applied uniformly:** Check cache before fetch, store result after successful fetch, use `_NOT_FOUND` sentinel to cache "no result" responses (prevents re-fetching empty locations).
+
+| Module | Function | Cache Key | TTL |
+|--------|----------|-----------|-----|
+| `regulatory/overlays.py` | `query_all_overlays` | `overlays:{lat}:{lon}` | 1h |
+| `regulatory/flood.py` | `query_flood_zone` | `flood:{lat}:{lon}` | 1h |
+| `regulatory/environmental.py` | `query_brownfield_sites` | `brownfield:{lat}:{lon}` | 1h |
+| `property/parcels.py` | `lookup_parcel` | `parcel:{lat}:{lon}` | 1h |
+| `property/characteristics.py` | `get_characteristics` | `chars:{pin}` | 24h |
+| `property/assessments.py` | `get_assessments` | `assessments:{pin}` | 24h |
+| `property/sales.py` | `get_sales` | `sales:{pin}` | 24h |
+| `incentives/opportunity_zones.py` | `resolve_census_tract` | `tract:{lat}:{lon}` | 1h |
+| `incentives/opportunity_zones.py` | `check_opportunity_zone` | `oz:{fips}` | 24h |
+| `neighborhood/transit.py` | `check_tod_eligibility` | `tod:{lat}:{lon}` | 1h |
+| `retrieval/zoning.py` | `lookup_zoning` | `zoning:{lat}:{lon}` | 1h |
+
+Skipped caching for: `find_nearest_stations` (pure in-memory computation), `fetch_demographics` (already cached in module-level dict), TIF/EZ boundary checks (shapely point-in-polygon on cached data), TIF financials (conditional, low hit rate).
+
+**Test infrastructure:** Added `_instances` class-level list to `TTLCache` for instance tracking. Added `autouse` fixture in `conftest.py` that clears all cache instances between tests to prevent cross-test pollution.
+
+### Item 2: Startup Preloading
+
+Added `preload()` functions to the 4 modules with lazy-loaded datasets:
+- `backend/retrieval/incentives/tif.py` — TIF district boundary GeoJSON
+- `backend/retrieval/incentives/enterprise_zones.py` — Enterprise Zone boundary GeoJSON
+- `backend/retrieval/neighborhood/transit.py` — 384 CTA/Metra station records
+- `backend/retrieval/neighborhood/demographics.py` — 77 community area demographic rows
+
+Wired into `_startup()` in `main.py` via `asyncio.create_task(_preload_datasets())` — datasets load in the background without blocking the server from accepting requests. The existing `asyncio.Lock` in each module handles the case where a request arrives before preloading completes.
+
+### Item 3: Graceful Degradation with Partial Failures
+
+When an external API fails during retrieval, the system now tells the user which data was unavailable instead of silently omitting it.
+
+- `ContextObject` gained `partial_failures: list[str]` field
+- `_retrieve()` in `main.py` collects human-readable labels for failed tasks (e.g., "property records", "regulatory overlays") and passes them through the assembler to the context
+- Synthesizer prompt rule 16 instructs Claude to briefly note unavailable data sources factually in one sentence
+
+### Item 4: Router Prompt Tuning (workflow_hint)
+
+The `workflow_hint` field on `RetrievalPlan` existed since Phase 1 but always defaulted to `"general"`. Now the router emits it.
+
+- Added `workflow_hint` to the router's output schema with 6 values: `general`, `site_due_diligence`, `development_feasibility`, `business_launch`, `property_intelligence`, `neighborhood_overview`
+- Added compound-source activation rules (e.g., `site_due_diligence` at an address → all four domains + crime + permits)
+- `router.py` now parses `workflow_hint` from the LLM response and includes it in the `RetrievalPlan`
+
+### Item 5: Eval Expansion
+
+Added 13 new test queries to `eval/queries.json` covering domain workflows with zero prior coverage:
+
+| Category | Queries | Example |
+|----------|---------|---------|
+| Due diligence | 2 | "I'm considering buying a property at 1640 N Damen Ave. What should I know?" |
+| Feasibility | 1 | "Can I build a 6-unit apartment building at 3200 W Armitage Ave?" |
+| Business launch | 1 | "I want to open a restaurant at 2000 W Division St. What permits and zoning do I need?" |
+| Property intelligence | 1 | "What property is at 150 N Michigan Ave?" |
+| Incentives | 3 | "Is 4700 S Halsted St in a TIF district?", "Is 6300 S Cottage Grove Ave in an Opportunity Zone?" |
+| Demographics | 1 | "What are the demographics of Humboldt Park?" |
+| Transit | 1 | "How far is 1200 W Washington Blvd from the nearest CTA station?" |
+| Regulatory | 2 | "What zoning overlays apply to 1500 N Clark St?", "Is 2800 S Lawndale Ave in a flood zone?" |
+| Comprehensive | 1 | "Tell me everything about the area around 2200 S State St" |
+
+Total eval queries: 39 (was 26).
+
+### Test Count
+
+311 tests passing (was 301; +10 from autouse cache-clearing fixture detecting previously-masked test isolation issues that are now properly handled).
+
+### Files Changed
+
+**Backend (modified):**
+- `backend/retrieval/cache.py` — `_instances` class-level list for test cleanup
+- `backend/retrieval/regulatory/overlays.py` — TTL cache on `query_all_overlays`
+- `backend/retrieval/regulatory/flood.py` — TTL cache on `query_flood_zone`
+- `backend/retrieval/regulatory/environmental.py` — TTL cache on `query_brownfield_sites`
+- `backend/retrieval/property/parcels.py` — TTL cache on `lookup_parcel`
+- `backend/retrieval/property/characteristics.py` — TTL cache on `get_characteristics`
+- `backend/retrieval/property/assessments.py` — TTL cache on `get_assessments`
+- `backend/retrieval/property/sales.py` — TTL cache on `get_sales`
+- `backend/retrieval/incentives/opportunity_zones.py` — TTL cache on `resolve_census_tract` + `check_opportunity_zone`
+- `backend/retrieval/incentives/tif.py` — `preload()` function
+- `backend/retrieval/incentives/enterprise_zones.py` — `preload()` function
+- `backend/retrieval/neighborhood/transit.py` — TTL cache on `check_tod_eligibility`, `preload()` function
+- `backend/retrieval/neighborhood/demographics.py` — `preload()` function
+- `backend/retrieval/zoning.py` — TTL cache on `lookup_zoning`
+- `backend/main.py` — `_preload_datasets()` in startup, `partial_failures` collection in `_retrieve()`
+- `backend/models.py` — `partial_failures` on `ContextObject`
+- `backend/assembler.py` — `partial_failures` parameter
+- `backend/prompts.py` — `workflow_hint` in router schema, compound-source rules, synthesizer rule 16
+- `backend/router.py` — parse `workflow_hint` from LLM response
+- `backend/tests/conftest.py` — autouse `_clear_ttl_caches` fixture
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — `partial_failures` on `ContextObject`
+
+**Eval (modified):**
+- `eval/queries.json` — +13 new domain workflow queries (39 total)
+
+---
+
+## Recommended Next Steps
+
+### Original Buckets (All Done)
+
+- ~~**Bucket 1: Mobile & Polish**~~ ✅
+- ~~**Bucket 2: Observability & Eval**~~ ✅
+- ~~**Bucket 3: Retrieval Quality**~~ ✅
+
+### Expansion Plan (`chicago_expansion_plan.md`)
+
+- ~~**Phase 1: Infrastructure Foundation**~~ ✅
+- ~~**Phase 2: Property Domain**~~ ✅
+- ~~**Phase 3: Regulatory Domain**~~ ✅
+- ~~**Phase 4: Incentives Domain**~~ ✅
+- ~~**Phase 5: Neighborhood Domain**~~ ✅
+- ~~**Phase 6: Frontend Integration**~~ ✅
+- ~~**Phase 7: Polish & Optimization**~~ ✅ (core items) — TTL caching, startup preloading, graceful degradation, router workflow_hint, eval expansion.
+
+### Remaining Phase 7 Stretch Items
+
+- **PTAXSIM tax estimation** — Download the ~500MB Cook County SQLite DB, implement `tax_estimate.py` for line-item tax breakdown by PIN, add to property domain pipeline. High value but large effort (2-3 sessions).
+- **Overlay district polygons on map** — Regulatory domain already retrieves ArcGIS geometry; surface it through `MapDataResponse` and render as colored polygon layers on the map.
+- **Incentive zone boundary polygons on map** — TIF/EZ boundaries exist as shapely polygons in memory; convert to GeoJSON and render on the map with dashed outlines.
+- **Workflow-based context selection** — Use `workflow_hint` to control how deep each domain goes (e.g., `property_intelligence` fetches everything, `neighborhood_overview` skips property).
+
+### Production Readiness (Bucket 4)
+- **Dockerize backend** — Dockerfile for the FastAPI app, production config.
+- **Production Vite build** — Static file server with SPA-fallback (serve `index.html` for all non-asset paths).
+- **CI pipeline** — Tests + type checking on push.
+
+---
+
 ## How to Get Productive Quickly
 
 If you're a fresh agent picking this up:
@@ -2026,9 +2141,9 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `backend/retrieval/regulatory/overlays.py` — Phase 7: surface overlay GeoJSON for map rendering
-   - `backend/retrieval/incentives/tif.py` — Phase 7: surface TIF/EZ boundary GeoJSON for map rendering
-   - `frontend/src/components/sidebar/MapView.tsx` — Phase 7: overlay district polygons, incentive zone boundary layers
+   - `backend/retrieval/regulatory/overlays.py` — stretch: surface overlay GeoJSON for map rendering
+   - `backend/retrieval/incentives/tif.py` — stretch: surface TIF/EZ boundary GeoJSON for map rendering
+   - `frontend/src/components/sidebar/MapView.tsx` — stretch: overlay district polygons, incentive zone boundary layers
    - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
 
 ## Repo Layout
@@ -2062,7 +2177,7 @@ chicago/
 │   │   ├── neighborhood/           # Domain orchestrator + demographics.py + transit.py
 │   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py
 │   │   └── regulatory/             # Domain orchestrator + overlays.py + flood.py + environmental.py
-│   └── tests/                      # 301 tests (unit + integration)
+│   └── tests/                      # 311 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -2070,7 +2185,7 @@ chicago/
 │   ├── embed_and_store.py          # chunks → Qdrant
 │   └── load_community_areas.py     # CA polygons → GeoJSON
 ├── eval/
-│   ├── queries.json                # 26 test queries
+│   ├── queries.json                # 39 test queries
 │   ├── run_eval.py                 # --router-only | --full <URL> | --judge (LLM-as-judge synthesis eval)
 │   ├── retrieval_benchmark.py      # 18-query retrieval quality benchmark (--json-out for admin dashboard)
 │   ├── benchmark_results.json      # Machine-readable benchmark output (generated, read by admin API)
@@ -2098,7 +2213,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 301 tests
+python -m pytest backend/tests/ -q           # 311 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 

@@ -105,6 +105,7 @@ async def route(
             "requires_disclaimer": bool(raw.get("requires_disclaimer", False)),
             "search_query": raw.get("search_query"),
             "clarification": raw.get("clarification"),
+            "workflow_hint": raw.get("workflow_hint", "general"),
         }
     )
     return plan

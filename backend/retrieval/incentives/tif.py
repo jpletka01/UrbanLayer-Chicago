@@ -105,3 +105,8 @@ async def fetch_tif_financials(
     except Exception as exc:
         log.warning("TIF financials query failed for %r: %s", tif_name, exc)
         return []
+
+
+async def preload(*, client: httpx.AsyncClient | None = None) -> None:
+    """Pre-warm TIF boundary cache at startup."""
+    await _load_tif_boundaries(client=client)

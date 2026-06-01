@@ -11,7 +11,11 @@ import logging
 
 import httpx
 
+from backend.retrieval.cache import TTLCache
+
 log = logging.getLogger(__name__)
+
+_cache = TTLCache(ttl_seconds=3600, maxsize=256)
 
 EPA_BROWNFIELDS_URL = (
     "https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services"
@@ -30,6 +34,11 @@ async def query_brownfield_sites(
 
     Returns a list of site dicts (may be empty).
     """
+    key = f"brownfield:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
     params = {
         "geometry": f"{lon},{lat}",
         "geometryType": "esriGeometryPoint",
@@ -63,6 +72,7 @@ async def query_brownfield_sites(
                 "latitude": attrs.get("LATITUDE83"),
                 "longitude": attrs.get("LONGITUDE83"),
             })
+        _cache.set(key, sites)
         return sites
     except Exception as exc:
         log.warning("EPA brownfield query failed for (%s, %s): %s", lat, lon, exc)

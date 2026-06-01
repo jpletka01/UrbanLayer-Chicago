@@ -216,6 +216,7 @@ def assemble_context(
     property_summary: PropertySummary | None = None,
     incentives_summary: IncentivesSummary | None = None,
     neighborhood_summary: NeighborhoodSummary | None = None,
+    partial_failures: list[str] | None = None,
 ) -> ContextObject:
     settings = get_settings()
 
@@ -259,4 +260,5 @@ def assemble_context(
         incentives=incentives_summary,
         neighborhood=neighborhood_summary,
         requires_disclaimer=plan.requires_disclaimer,
+        partial_failures=partial_failures or [],
     )

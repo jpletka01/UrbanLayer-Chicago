@@ -258,6 +258,127 @@
         "location_resolved": true,
         "requires_disclaimer": true
       }
+    },
+    {
+      "id": "site_due_diligence",
+      "question": "I'm considering buying a property at 1640 N Damen Ave. What should I know?",
+      "category": "due_diligence",
+      "expect": {
+        "sources_include": ["property_domain", "regulatory_domain"],
+        "location_resolved": true,
+        "location_type_one_of": ["address"]
+      }
+    },
+    {
+      "id": "full_due_diligence",
+      "question": "Do a full site due diligence report for 5600 W Chicago Ave",
+      "category": "due_diligence",
+      "expect": {
+        "sources_include": ["property_domain", "regulatory_domain", "incentives_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "development_feasibility",
+      "question": "Can I build a 6-unit apartment building at 3200 W Armitage Ave?",
+      "category": "feasibility",
+      "expect": {
+        "sources_include": ["vector_search", "regulatory_domain"],
+        "requires_disclaimer": true,
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "business_launch_restaurant",
+      "question": "I want to open a restaurant at 2000 W Division St. What permits and zoning do I need?",
+      "category": "business_launch",
+      "expect": {
+        "sources_include": ["vector_search"],
+        "requires_disclaimer": true,
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "property_intelligence_address",
+      "question": "What property is at 150 N Michigan Ave?",
+      "category": "property_intelligence",
+      "expect": {
+        "sources_include": ["property_domain"],
+        "location_resolved": true,
+        "location_type_one_of": ["address"]
+      }
+    },
+    {
+      "id": "tif_district_check",
+      "question": "Is 4700 S Halsted St in a TIF district?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "opportunity_zone_check",
+      "question": "Is 6300 S Cottage Grove Ave in an Opportunity Zone?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "tax_incentives_nearby",
+      "question": "What tax incentives are available near 3500 S Michigan Ave?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "neighborhood_demographics",
+      "question": "What are the demographics of Humboldt Park?",
+      "category": "demographics",
+      "expect": {
+        "sources_include": ["neighborhood_domain"],
+        "expected_community_area": 23
+      }
+    },
+    {
+      "id": "transit_proximity",
+      "question": "How far is 1200 W Washington Blvd from the nearest CTA station?",
+      "category": "transit",
+      "expect": {
+        "sources_include": ["neighborhood_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "regulatory_overlays",
+      "question": "What zoning overlays apply to 1500 N Clark St?",
+      "category": "regulatory",
+      "expect": {
+        "sources_include": ["regulatory_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "flood_zone_check",
+      "question": "Is 2800 S Lawndale Ave in a flood zone?",
+      "category": "regulatory",
+      "expect": {
+        "sources_include": ["regulatory_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "comprehensive_area_overview",
+      "question": "Tell me everything about the area around 2200 S State St",
+      "category": "comprehensive",
+      "expect": {
+        "sources_any_of": ["crime_api", "311_api", "neighborhood_domain"],
+        "location_resolved": true
+      }
     }
   ]
 }

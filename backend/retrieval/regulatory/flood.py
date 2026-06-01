@@ -4,7 +4,12 @@ import logging
 
 import httpx
 
+from backend.retrieval.cache import TTLCache
+
 log = logging.getLogger(__name__)
+
+_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_NOT_FOUND = object()
 
 # FEMA relocated the public NFHL service from /gis/nfhl/rest/services to
 # /arcgis/rest/services. Layer 28 is "Flood Hazard Zones".
@@ -25,6 +30,13 @@ async def query_flood_zone(
     Returns ``{"fld_zone": "AE", "zone_subty": "...", "sfha_tf": "T"}``
     or ``None`` if the point is outside any mapped flood zone.
     """
+    key = f"flood:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return None
+    if cached is not None:
+        return cached
+
     params = {
         "geometry": f"{lon},{lat}",
         "geometryType": "esriGeometryPoint",
@@ -43,16 +55,20 @@ async def query_flood_zone(
         data = resp.json()
         features = data.get("features", [])
         if not features:
+            _cache.set(key, _NOT_FOUND)
             return None
         attrs = features[0].get("attributes", {})
         fld_zone = attrs.get("FLD_ZONE")
         if not fld_zone:
+            _cache.set(key, _NOT_FOUND)
             return None
-        return {
+        result = {
             "fld_zone": fld_zone,
             "zone_subty": attrs.get("ZONE_SUBTY"),
             "sfha_tf": attrs.get("SFHA_TF"),
         }
+        _cache.set(key, result)
+        return result
     except Exception as exc:
         log.warning("FEMA flood zone query failed for (%s, %s): %s", lat, lon, exc)
         return None

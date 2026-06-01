@@ -72,6 +72,28 @@ app.add_middleware(
 async def _startup() -> None:
     get_settings()
     await db.init_db()
+    asyncio.create_task(_preload_datasets())
+
+
+async def _preload_datasets() -> None:
+    """Pre-warm lazy-loaded datasets in the background."""
+    from backend.retrieval.incentives import tif, enterprise_zones
+    from backend.retrieval.neighborhood import transit, demographics
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+        labels = ["TIF boundaries", "EZ boundaries", "transit stations", "demographics"]
+        results = await asyncio.gather(
+            tif.preload(client=client),
+            enterprise_zones.preload(client=client),
+            transit.preload(),
+            demographics.preload(client=client),
+            return_exceptions=True,
+        )
+        for label, result in zip(labels, results):
+            if isinstance(result, Exception):
+                log.warning("Startup preload %s failed: %s", label, result)
+            else:
+                log.info("Preloaded %s", label)
 
 
 @app.on_event("shutdown")
@@ -390,13 +412,29 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 )
             )
 
+        _FAILURE_LABELS = {
+            "crime": "crime statistics",
+            "311": "311 service requests",
+            "permits": "building permits",
+            "violations": "building violations",
+            "business": "business licenses",
+            "zoning_lookup": "parcel zoning",
+            "regulatory": "regulatory overlays",
+            "property": "property records",
+            "incentives": "incentive zones",
+            "neighborhood": "demographics and transit",
+        }
+
         results: dict[str, Any] = {}
+        partial_failures: list[str] = []
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Retrieval %s failed: %s", key, value)
                     results[key] = [] if key not in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood") else None
+                    if key in _FAILURE_LABELS:
+                        partial_failures.append(_FAILURE_LABELS[key])
                 else:
                     results[key] = value
 
@@ -419,6 +457,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         property_summary=results.get("property"),
         incentives_summary=results.get("incentives"),
         neighborhood_summary=results.get("neighborhood"),
+        partial_failures=partial_failures,
     )
 
 

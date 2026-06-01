@@ -9,9 +9,12 @@ import httpx
 
 from backend.config import get_settings
 from backend.models import TransitAccess
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.regulatory.overlays import query_overlay
 
 log = logging.getLogger(__name__)
+
+_tod_cache = TTLCache(ttl_seconds=3600, maxsize=256)
 
 _stations: list[dict] | None = None
 _stations_lock = asyncio.Lock()
@@ -82,6 +85,11 @@ async def check_tod_eligibility(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> dict:
+    key = f"tod:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _tod_cache.get(key)
+    if cached is not None:
+        return cached
+
     results = await asyncio.gather(
         query_overlay(lat, lon, TOD_CTA_LAYER, client=client),
         query_overlay(lat, lon, TOD_METRA_LAYER, client=client),
@@ -96,10 +104,18 @@ async def check_tod_eligibility(
         log.warning("TOD Metra layer query failed: %s", results[1])
 
     if cta_tod:
-        return {"tod_eligible": True, "tod_type": "CTA rail"}
-    if metra_tod:
-        return {"tod_eligible": True, "tod_type": "Metra"}
-    return {"tod_eligible": False, "tod_type": None}
+        result = {"tod_eligible": True, "tod_type": "CTA rail"}
+    elif metra_tod:
+        result = {"tod_eligible": True, "tod_type": "Metra"}
+    else:
+        result = {"tod_eligible": False, "tod_type": None}
+    _tod_cache.set(key, result)
+    return result
+
+
+async def preload() -> None:
+    """Pre-warm transit station cache at startup."""
+    await _load_stations()
 
 
 def build_transit_access(

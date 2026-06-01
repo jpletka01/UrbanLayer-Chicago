@@ -110,3 +110,8 @@ async def fetch_demographics(
     if row is None:
         return None
     return _build_demographics(row, community_area)
+
+
+async def preload(*, client: httpx.AsyncClient | None = None) -> None:
+    """Pre-warm demographics cache at startup."""
+    await _load_all(client=client)

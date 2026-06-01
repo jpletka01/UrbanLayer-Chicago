@@ -85,3 +85,8 @@ async def check_enterprise_zone(
         if poly.contains(point):
             return {"zone_name": name}
     return None
+
+
+async def preload(*, client: httpx.AsyncClient | None = None) -> None:
+    """Pre-warm Enterprise Zone boundary cache at startup."""
+    await _load_ez_boundaries(client=client)

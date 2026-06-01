@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 
+from backend.retrieval.cache import TTLCache
+
 
 @pytest.fixture
 def mock_settings():
@@ -36,3 +38,13 @@ def mock_settings():
     settings.dataset_demographics = "t68z-cikk"
     settings.transit_search_radius_mi = 2.0
     return settings
+
+
+@pytest.fixture(autouse=True)
+def _clear_ttl_caches():
+    """Clear all TTLCache instances before each test to prevent cross-test pollution."""
+    for instance in TTLCache._instances:
+        instance._store.clear()
+    yield
+    for instance in TTLCache._instances:
+        instance._store.clear()

@@ -261,6 +261,7 @@ class ContextObject(BaseModel):
     neighborhood: NeighborhoodSummary | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
+    partial_failures: list[str] = Field(default_factory=list)
 
 
 class MapDataRequest(BaseModel):

@@ -9,9 +9,13 @@ import logging
 
 import httpx
 
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.geo import community_area_bounds
 
 log = logging.getLogger(__name__)
+
+_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_NOT_FOUND = object()
 
 ZONING_QUERY_URL = (
     "https://gisapps.chicago.gov/arcgis/rest/services"
@@ -31,6 +35,13 @@ async def lookup_zoning(
 
     Returns {"zone_class": "B3-2", "zone_type": 1, "ordinance_num": "..."} or None.
     """
+    key = f"zoning:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return None
+    if cached is not None:
+        return cached
+
     params = {
         "geometry": f"{lon},{lat}",
         "geometryType": "esriGeometryPoint",
@@ -49,16 +60,20 @@ async def lookup_zoning(
         data = resp.json()
         features = data.get("features", [])
         if not features:
+            _cache.set(key, _NOT_FOUND)
             return None
         attrs = features[0].get("attributes", {})
         zone_class = attrs.get("ZONE_CLASS")
         if not zone_class:
+            _cache.set(key, _NOT_FOUND)
             return None
-        return {
+        result = {
             "zone_class": zone_class,
             "zone_type": attrs.get("ZONE_TYPE"),
             "ordinance_num": attrs.get("ORDINANCE_NUM"),
         }
+        _cache.set(key, result)
+        return result
     except Exception as exc:
         log.warning("Zoning lookup failed for (%s, %s): %s", lat, lon, exc)
         return None

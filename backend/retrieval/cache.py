@@ -9,10 +9,13 @@ from typing import Any
 
 class TTLCache:
 
+    _instances: list["TTLCache"] = []
+
     def __init__(self, ttl_seconds: int, maxsize: int = 2048):
         self._ttl = ttl_seconds
         self._maxsize = maxsize
         self._store: dict[str, tuple[float, Any]] = {}
+        TTLCache._instances.append(self)
 
     def get(self, key: str) -> Any | None:
         entry = self._store.get(key)
