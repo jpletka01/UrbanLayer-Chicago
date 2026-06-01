@@ -102,6 +102,9 @@ class Settings(BaseSettings):
 
     message_limit: int = 10
 
+    ptaxsim_db_path: Path = PROJECT_ROOT / "backend" / "data" / "ptaxsim.db"
+    ptaxsim_enabled: bool = True
+
     upload_dir: Path = PROJECT_ROOT / "backend" / "data" / "uploads"
     upload_max_size_bytes: int = 10 * 1024 * 1024  # 10 MB
     upload_allowed_types: list[str] = [

@@ -12,16 +12,16 @@ from backend.retrieval.socrata import socrata_get
 
 log = logging.getLogger(__name__)
 
-_tif_boundaries: list[tuple[str, dict, Any]] | None = None
+_tif_boundaries: list[tuple[str, dict, Any, dict]] | None = None
 _tif_lock = asyncio.Lock()
 
 
 async def _load_tif_boundaries(
     *, client: httpx.AsyncClient | None = None,
-) -> list[tuple[str, dict, Any]]:
+) -> list[tuple[str, dict, Any, dict]]:
     """Download TIF district GeoJSON from Socrata and build shapely polygons.
 
-    Returns list of (tif_name, properties_dict, shapely_geometry).
+    Returns list of (tif_name, properties_dict, shapely_geometry, geojson_geometry).
     Cached in module-level variable after first load.
     """
     global _tif_boundaries
@@ -43,7 +43,7 @@ async def _load_tif_boundaries(
             if owns:
                 await client.aclose()
 
-        boundaries: list[tuple[str, dict, Any]] = []
+        boundaries: list[tuple[str, dict, Any, dict]] = []
         for feat in fc.get("features", []):
             props = feat.get("properties", {})
             geom = feat.get("geometry")
@@ -52,7 +52,7 @@ async def _load_tif_boundaries(
             name = props.get("tif_name") or props.get("name") or "Unknown TIF"
             try:
                 poly = shape(geom)
-                boundaries.append((name, props, poly))
+                boundaries.append((name, props, poly, geom))
             except Exception:
                 continue
 
@@ -78,9 +78,33 @@ async def check_tif(
         return None
 
     point = Point(lon, lat)
-    for name, props, poly in boundaries:
+    for name, props, poly, _geom in boundaries:
         if poly.contains(point):
             return {"tif_name": name, "properties": props}
+    return None
+
+
+async def tif_geojson_feature(
+    lat: float,
+    lon: float,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict | None:
+    """Return a GeoJSON Feature for the TIF district at a point, or None."""
+    try:
+        boundaries = await _load_tif_boundaries(client=client)
+    except Exception as exc:
+        log.warning("Failed to load TIF boundaries for geometry: %s", exc)
+        return None
+
+    point = Point(lon, lat)
+    for name, props, poly, geom in boundaries:
+        if poly.contains(point):
+            return {
+                "type": "Feature",
+                "geometry": geom,
+                "properties": {"name": name, "zone_type": "tif", **props},
+            }
     return None
 
 

@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 7 (polish & optimization)** — TTL caching wired to all 10 spatial/PIN retrieval modules, startup preloading of lazy-loaded datasets (TIF/EZ boundaries, transit stations, demographics), graceful degradation with partial-failure reporting, router workflow_hint emission, eval expansion (+13 new queries for domain workflows). Previous: Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 311 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Expansion Phase 7 complete (all stretch items)** — workflow-based context selection (domain orchestrators skip unnecessary sub-queries per workflow type), overlay district polygons on map (targeted geometry fetch for hit layers only), incentive zone boundary polygons on map (TIF/EZ dashed outlines), PTAXSIM property tax estimation (8.8GB CCAO SQLite DB, line-item breakdown by PIN). Previous: Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 325 tests passing.
 
 ---
 
@@ -2096,6 +2096,90 @@ Total eval queries: 39 (was 26).
 
 ---
 
+## Session Log (2026-06-01 — Expansion Phase 7 Complete: Stretch Items)
+
+Final session completing all four Phase 7 stretch items. The expansion plan is now fully implemented.
+
+### Item 1: Workflow-Based Context Selection
+
+`plan.workflow_hint` (already emitted by the router but never consumed) is now passed from `_retrieve()` in `main.py` to all four domain orchestrators. Each orchestrator uses the hint to skip unnecessary sub-queries:
+
+| Orchestrator | Workflow | Skipped |
+|---|---|---|
+| Property | `development_feasibility` | Assessments + sales (only lot/building characteristics needed) |
+| Regulatory | `business_launch` | Brownfield/environmental query |
+| Incentives | `business_launch` | TIF financials (just need membership flag) |
+| Neighborhood | `property_intelligence` | Demographics (only transit for TOD matters) |
+
+Default `workflow="general"` runs everything (backward-compatible).
+
+### Item 2: Incentive Zone Boundary Polygons on Map
+
+TIF and Enterprise Zone modules (`tif.py`, `enterprise_zones.py`) were downloading full Socrata GeoJSON at startup but discarding the original geometry dict after converting to shapely polygons. Changed the boundary cache tuples from 3-element `(name, props, shapely_polygon)` to 4-element `(name, props, shapely_polygon, geojson_geometry)`.
+
+New functions `tif_geojson_feature()` and `ez_geojson_feature()` return the matched district's GeoJSON Feature for map rendering. Wired into `_fetch_map_rows()` → new `incentive_zones` field on `MapDataResponse` → rendered as dashed-outline `GeoJsonLayer` with `PathStyleExtension` (TIF=deep orange, EZ=green). "Incentives" toggle in the map control panel.
+
+### Item 3: Overlay District Polygons on Map
+
+New functions in `overlays.py`: `query_overlay_with_geometry()` (point query with `returnGeometry=true`, `f=geojson`) and `overlay_geojson_features()` (batch parallel geometry fetch for a list of layer IDs).
+
+**Key design decision:** Fetch geometry only for the specific overlay layers that the attribute-only point query already identified as relevant (typically 1-3 layers), not all 15 layers for the community area. This keeps payload small and latency low. The attribute query's TTL cache means the hit-detection call in `_fetch_map_rows` is effectively free.
+
+Helper `_fetch_overlay_geojson()` in `main.py` calls `query_all_overlays()` (cache hit), extracts hit layer IDs, then calls `overlay_geojson_features()`. Result goes to `overlay_districts` field on `MapDataResponse`.
+
+Frontend renders as `GeoJsonLayer` with per-overlay-type colors (16 types: landmark=gold, historic=brown, TOD=blue, pedestrian_street=teal, etc.) via new `overlayColor()`/`overlayLineColor()` in `mapColors.ts`. "Overlays" toggle in the map control panel.
+
+### Item 4: PTAXSIM Property Tax Estimation
+
+Downloaded CCAO's PTAXSIM SQLite database (8.8GB uncompressed) from S3 via `scripts/download_ptaxsim.py`. The database contains pre-computed `tax_bill_total` per PIN per year plus agency-level rates per tax code.
+
+**New module `backend/retrieval/property/tax_estimate.py`**: `estimate_tax(year, pin14)` opens the PTAXSIM DB via `aiosqlite` (singleton connection, lazy), looks up the PIN's tax code and total bill, then joins `tax_code` × `agency_info` to produce line-item amounts (proportional allocation: `tax_bill_total × agency_rate / tax_code_rate`). Returns top 15 agencies sorted by amount.
+
+Wired into the property domain orchestrator as a parallel task alongside CCAO characteristics/assessments/sales (gated on `ptaxsim_enabled` config, default `True`). New `TaxLineItem` model, `estimated_annual_tax`/`tax_code`/`tax_breakdown` fields on `PropertySummary`. Synthesizer rule 17 instructs Claude to cite the estimated annual tax and top 3-5 agencies.
+
+Frontend `PropertyCard.tsx` shows "Est. Annual Tax" with a collapsible agency-level breakdown table.
+
+### Test Count
+
+325 tests passing (was 311; +14 new):
+- `test_property_orchestrator.py` — +2 workflow tests (development_feasibility skips, general fetches all)
+- `test_regulatory_orchestrator.py` — +2 workflow tests (business_launch skips brownfield, general includes it)
+- `test_incentives_orchestrator.py` — +2 workflow tests (business_launch skips financials, general fetches them)
+- `test_neighborhood_orchestrator.py` — +2 workflow tests (property_intelligence skips demographics, general fetches them)
+- `test_property_tax_estimate.py` — 6 new tests (full breakdown, missing PIN, dashed PIN, exemptions, disabled, missing DB)
+
+### Files Changed/Created
+
+**Backend (new):**
+- `backend/retrieval/property/tax_estimate.py` — PTAXSIM tax breakdown by PIN
+- `backend/tests/test_property_tax_estimate.py` — 6 tests
+- `scripts/download_ptaxsim.py` — PTAXSIM DB download script
+
+**Backend (modified):**
+- `backend/main.py` — workflow_hint wiring, `_fetch_overlay_geojson()` helper, incentive/overlay geometry in `_fetch_map_rows`/`_build_map_response`, PTAXSIM shutdown handler
+- `backend/models.py` — `TaxLineItem`, `estimated_annual_tax`/`tax_code`/`tax_breakdown` on PropertySummary, `overlay_districts`/`incentive_zones` on MapDataResponse
+- `backend/config.py` — `ptaxsim_db_path`, `ptaxsim_enabled`
+- `backend/prompts.py` — synthesizer rule 17 (tax estimation)
+- `backend/retrieval/property/__init__.py` — workflow-based depth control, PTAXSIM parallel task, tax fields in `_build_summary`
+- `backend/retrieval/regulatory/__init__.py` — workflow-based brownfield skip
+- `backend/retrieval/regulatory/overlays.py` — `query_overlay_with_geometry()`, `overlay_geojson_features()`
+- `backend/retrieval/incentives/__init__.py` — workflow-based financials skip
+- `backend/retrieval/incentives/tif.py` — 4-tuple boundary cache, `tif_geojson_feature()`
+- `backend/retrieval/incentives/enterprise_zones.py` — 4-tuple boundary cache, `ez_geojson_feature()`
+- `backend/retrieval/neighborhood/__init__.py` — workflow-based demographics skip
+- `backend/tests/test_property_orchestrator.py` — +2 workflow tests
+- `backend/tests/test_regulatory_orchestrator.py` — +2 workflow tests
+- `backend/tests/test_incentives_orchestrator.py` — +2 workflow tests
+- `backend/tests/test_neighborhood_orchestrator.py` — +2 workflow tests
+
+**Frontend (modified):**
+- `frontend/src/lib/types.ts` — `TaxLineItem`, PropertySummary tax fields, MapData overlay/incentive fields
+- `frontend/src/lib/mapColors.ts` — `OVERLAY_TYPE_COLORS`, `overlayColor()`, `overlayLineColor()`, `overlayColorCSS()`
+- `frontend/src/components/sidebar/MapView.tsx` — incentive zones GeoJsonLayer (dashed), overlay districts GeoJsonLayer (colored), toggles, `PathStyleExtension` import
+- `frontend/src/components/sidebar/PropertyCard.tsx` — tax estimate section with collapsible breakdown
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -2112,14 +2196,7 @@ Total eval queries: 39 (was 26).
 - ~~**Phase 4: Incentives Domain**~~ ✅
 - ~~**Phase 5: Neighborhood Domain**~~ ✅
 - ~~**Phase 6: Frontend Integration**~~ ✅
-- ~~**Phase 7: Polish & Optimization**~~ ✅ (core items) — TTL caching, startup preloading, graceful degradation, router workflow_hint, eval expansion.
-
-### Remaining Phase 7 Stretch Items
-
-- **PTAXSIM tax estimation** — Download the ~500MB Cook County SQLite DB, implement `tax_estimate.py` for line-item tax breakdown by PIN, add to property domain pipeline. High value but large effort (2-3 sessions).
-- **Overlay district polygons on map** — Regulatory domain already retrieves ArcGIS geometry; surface it through `MapDataResponse` and render as colored polygon layers on the map.
-- **Incentive zone boundary polygons on map** — TIF/EZ boundaries exist as shapely polygons in memory; convert to GeoJSON and render on the map with dashed outlines.
-- **Workflow-based context selection** — Use `workflow_hint` to control how deep each domain goes (e.g., `property_intelligence` fetches everything, `neighborhood_overview` skips property).
+- ~~**Phase 7: Polish & Optimization**~~ ✅ — All core and stretch items complete. TTL caching, startup preloading, graceful degradation, workflow_hint emission + workflow-based context selection, eval expansion, PTAXSIM tax estimation, overlay district polygons on map, incentive zone boundary polygons on map.
 
 ### Production Readiness (Bucket 4)
 - **Dockerize backend** — Dockerfile for the FastAPI app, production config.
@@ -2141,10 +2218,9 @@ If you're a fresh agent picking this up:
    ```
 3. **Verify env**: `.env` should have `ANTHROPIC_API_KEY` and `SOCRATA_APP_TOKEN` set; `frontend/.env` needs `VITE_MAPBOX_TOKEN` (a public `pk.*` Mapbox token)
 4. **Files most likely to need edits** (based on open work items):
-   - `backend/retrieval/regulatory/overlays.py` — stretch: surface overlay GeoJSON for map rendering
-   - `backend/retrieval/incentives/tif.py` — stretch: surface TIF/EZ boundary GeoJSON for map rendering
-   - `frontend/src/components/sidebar/MapView.tsx` — stretch: overlay district polygons, incentive zone boundary layers
    - `Dockerfile` / `docker-compose.yml` — production deployment (Bucket 4)
+   - `backend/main.py` — CI/CD hooks, production config
+   - `frontend/vite.config.ts` — production build settings
 
 ## Repo Layout
 
@@ -2159,6 +2235,8 @@ chicago/
 ├── requirements.txt
 ├── pytest.ini                      # Test configuration
 ├── .env.example
+├── scripts/
+│   └── download_ptaxsim.py         # Downloads + decompresses PTAXSIM DB (~1GB compressed → 8.8GB)
 ├── backend/
 │   ├── main.py                     # FastAPI /chat (SSE) + /api/conversations/* + /api/admin/* + /api/transit-stations
 │   ├── router.py                   # Claude router (with search query guidance)
@@ -2170,14 +2248,14 @@ chicago/
 │   ├── llm.py                      # Shared client + tracked_create/tracked_stream wrappers + cost estimation
 │   ├── models.py
 │   ├── config.py
-│   ├── data/                       # SQLite database (gitignored)
+│   ├── data/                       # SQLite databases (gitignored): chicago.db + ptaxsim.db
 │   ├── retrieval/                  # socrata.py + per-dataset wrappers + geo.py + vector_search.py (async) + map_data.py + zoning.py
 │   │   ├── cache.py                # TTL cache utility for spatial queries
 │   │   ├── incentives/             # Domain orchestrator + tif.py + enterprise_zones.py + opportunity_zones.py
 │   │   ├── neighborhood/           # Domain orchestrator + demographics.py + transit.py
-│   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py
-│   │   └── regulatory/             # Domain orchestrator + overlays.py + flood.py + environmental.py
-│   └── tests/                      # 311 tests (unit + integration)
+│   │   ├── property/               # Domain orchestrator + parcels.py + characteristics.py + assessments.py + sales.py + tax_estimate.py
+│   │   └── regulatory/             # Domain orchestrator + overlays.py (+ geometry queries) + flood.py + environmental.py
+│   └── tests/                      # 325 tests (unit + integration)
 ├── ingestion/
 │   ├── data/                       # Generated: sections/, chunks.jsonl, community_areas.geojson
 │   ├── parse_chicago_code.py       # HTML → sections JSON, --stats flag
@@ -2213,7 +2291,7 @@ chicago/
 ```bash
 # Tests + builds
 source .venv/bin/activate
-python -m pytest backend/tests/ -q           # 311 tests
+python -m pytest backend/tests/ -q           # 325 tests
 python -m pytest backend/tests/test_integration.py -v  # Real API tests
 cd frontend && npm run build
 
@@ -2233,6 +2311,9 @@ PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --out eval/las
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge  # LLM-as-judge synthesis quality
 python -m eval.retrieval_benchmark --out eval/retrieval_quality.md  # Vector search quality
 python -m eval.retrieval_benchmark --json-out eval/benchmark_results.json  # For admin dashboard
+
+# PTAXSIM (optional — enables property tax estimation)
+python scripts/download_ptaxsim.py              # ~1GB download, decompresses to 8.8GB
 
 # Backend + frontend dev
 docker compose up -d qdrant

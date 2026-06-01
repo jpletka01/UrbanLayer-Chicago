@@ -36,7 +36,8 @@ async def neighborhood_domain(
     try:
         tasks: dict[str, asyncio.Task] = {}
 
-        if community_area is not None:
+        skip_demographics = workflow in ("property_intelligence",)
+        if community_area is not None and not skip_demographics:
             tasks["demographics"] = asyncio.create_task(
                 fetch_demographics(community_area, client=client)
             )

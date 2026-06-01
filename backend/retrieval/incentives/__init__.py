@@ -56,7 +56,8 @@ async def incentives_domain(
         # Phase B: conditional follow-up queries
         phase_b_tasks: dict[str, asyncio.Task] = {}
 
-        if tif_result and tif_result.get("tif_name"):
+        skip_financials = workflow in ("business_launch",)
+        if tif_result and tif_result.get("tif_name") and not skip_financials:
             phase_b_tasks["financials"] = asyncio.create_task(
                 fetch_tif_financials(tif_result["tif_name"], client=client)
             )

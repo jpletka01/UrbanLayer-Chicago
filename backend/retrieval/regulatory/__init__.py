@@ -46,24 +46,31 @@ async def regulatory_domain(
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        overlay_task = query_all_overlays(lat, lon, client=client)
-        flood_task = query_flood_zone(lat, lon, client=client)
-        brownfield_task = query_brownfield_sites(lat, lon, client=client)
+        skip_brownfield = workflow in ("business_launch",)
 
-        results = await asyncio.gather(
-            overlay_task, flood_task, brownfield_task, return_exceptions=True,
-        )
+        coros: dict[str, object] = {
+            "overlays": query_all_overlays(lat, lon, client=client),
+            "flood": query_flood_zone(lat, lon, client=client),
+        }
+        if not skip_brownfield:
+            coros["brownfield"] = query_brownfield_sites(lat, lon, client=client)
 
-        overlay_hits = results[0] if not isinstance(results[0], Exception) else []
-        flood_result = results[1] if not isinstance(results[1], Exception) else None
-        brownfield_result = results[2] if not isinstance(results[2], Exception) else []
+        results_list = await asyncio.gather(*coros.values(), return_exceptions=True)
+        results_map = dict(zip(coros.keys(), results_list))
 
-        if isinstance(results[0], Exception):
-            log.warning("Overlay queries failed: %s", results[0])
-        if isinstance(results[1], Exception):
-            log.warning("Flood zone query failed: %s", results[1])
-        if isinstance(results[2], Exception):
-            log.warning("Brownfield query failed: %s", results[2])
+        overlay_hits = results_map["overlays"] if not isinstance(results_map["overlays"], Exception) else []
+        flood_result = results_map["flood"] if not isinstance(results_map["flood"], Exception) else None
+        brownfield_result = results_map.get("brownfield")
+        if isinstance(brownfield_result, Exception):
+            log.warning("Brownfield query failed: %s", brownfield_result)
+            brownfield_result = []
+        elif brownfield_result is None:
+            brownfield_result = []
+
+        if isinstance(results_map["overlays"], Exception):
+            log.warning("Overlay queries failed: %s", results_map["overlays"])
+        if isinstance(results_map["flood"], Exception):
+            log.warning("Flood zone query failed: %s", results_map["flood"])
 
         return _build_summary(overlay_hits, flood_result, brownfield_result)
     finally:

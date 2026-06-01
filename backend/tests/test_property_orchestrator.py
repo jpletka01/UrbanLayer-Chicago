@@ -175,6 +175,56 @@ def test_safe_float_handles_various_inputs():
     assert _safe_float("N/A") is None
 
 
+@pytest.mark.asyncio
+async def test_development_feasibility_skips_assessments_and_sales():
+    """workflow=development_feasibility should only fetch characteristics."""
+    with patch("backend.retrieval.property.lookup_parcel", new_callable=AsyncMock) as mock_parcel, \
+         patch("backend.retrieval.property.get_characteristics", new_callable=AsyncMock) as mock_chars, \
+         patch("backend.retrieval.property.get_assessments", new_callable=AsyncMock) as mock_assess, \
+         patch("backend.retrieval.property.get_sales", new_callable=AsyncMock) as mock_sales:
+
+        mock_parcel.return_value = SAMPLE_PARCEL
+        mock_chars.return_value = SAMPLE_CHARS
+        mock_assess.return_value = SAMPLE_ASSESSMENTS
+        mock_sales.return_value = SAMPLE_SALES
+
+        client = AsyncMock()
+        result = await property_domain(41.93, -87.64, workflow="development_feasibility", client=client)
+
+        assert result is not None
+        assert result.pin14 == "14241020170000"
+        assert result.bldg_sqft == 2600
+        mock_chars.assert_awaited_once()
+        mock_assess.assert_not_awaited()
+        mock_sales.assert_not_awaited()
+        assert result.assessment_history == []
+        assert result.sales_history == []
+
+
+@pytest.mark.asyncio
+async def test_general_workflow_fetches_everything():
+    """workflow=general (default) should fetch all sub-queries."""
+    with patch("backend.retrieval.property.lookup_parcel", new_callable=AsyncMock) as mock_parcel, \
+         patch("backend.retrieval.property.get_characteristics", new_callable=AsyncMock) as mock_chars, \
+         patch("backend.retrieval.property.get_assessments", new_callable=AsyncMock) as mock_assess, \
+         patch("backend.retrieval.property.get_sales", new_callable=AsyncMock) as mock_sales:
+
+        mock_parcel.return_value = SAMPLE_PARCEL
+        mock_chars.return_value = SAMPLE_CHARS
+        mock_assess.return_value = SAMPLE_ASSESSMENTS
+        mock_sales.return_value = SAMPLE_SALES
+
+        client = AsyncMock()
+        result = await property_domain(41.93, -87.64, workflow="general", client=client)
+
+        assert result is not None
+        mock_chars.assert_awaited_once()
+        mock_assess.assert_awaited_once()
+        mock_sales.assert_awaited_once()
+        assert len(result.assessment_history) == 2
+        assert len(result.sales_history) == 2
+
+
 def test_build_summary_assessment_fallback_values():
     """Assessment should fall back from mailed to certified to board values."""
     parcel = {"pin14": "12345678901234", "address": "TEST"}

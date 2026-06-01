@@ -80,6 +80,86 @@ async def query_overlay(
             await client.aclose()
 
 
+async def query_overlay_with_geometry(
+    lat: float,
+    lon: float,
+    layer_id: int,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict | None:
+    """Query a single overlay layer at a point, returning GeoJSON with geometry."""
+    url = f"{ZONING_BASE_URL}/{layer_id}/query"
+    params = {
+        "geometry": f"{lon},{lat}",
+        "geometryType": "esriGeometryPoint",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "outFields": "*",
+        "returnGeometry": "true",
+        "outSR": "4326",
+        "f": "geojson",
+    }
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    try:
+        resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        features = data.get("features", [])
+        if not features:
+            return None
+        return features[0]
+    except Exception as exc:
+        log.warning("Overlay geometry query layer %d failed for (%s, %s): %s", layer_id, lat, lon, exc)
+        return None
+    finally:
+        if owns:
+            await client.aclose()
+
+
+async def overlay_geojson_features(
+    lat: float,
+    lon: float,
+    layer_ids: list[int],
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict:
+    """Fetch GeoJSON features with geometry for specific overlay layers.
+
+    Returns a GeoJSON FeatureCollection with overlay metadata injected
+    into each feature's properties.
+    """
+    if not layer_ids:
+        return {"type": "FeatureCollection", "features": []}
+
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    try:
+        coros = [
+            query_overlay_with_geometry(lat, lon, lid, client=client)
+            for lid in layer_ids
+        ]
+        results = await asyncio.gather(*coros, return_exceptions=True)
+
+        features = []
+        for lid, result in zip(layer_ids, results):
+            if isinstance(result, Exception) or result is None:
+                continue
+            meta = OVERLAY_LAYERS.get(lid, {})
+            props = result.get("properties", {})
+            props["overlay_type"] = meta.get("type", f"layer_{lid}")
+            props["overlay_name"] = meta.get("name", f"Layer {lid}")
+            result["properties"] = props
+            features.append(result)
+
+        return {"type": "FeatureCollection", "features": features}
+    finally:
+        if owns:
+            await client.aclose()
+
+
 async def query_all_overlays(
     lat: float,
     lon: float,

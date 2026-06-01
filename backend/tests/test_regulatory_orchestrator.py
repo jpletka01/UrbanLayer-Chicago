@@ -138,3 +138,34 @@ async def test_sfha_false_for_non_t_value(mock_overlays, mock_flood, mock_brownf
 
     assert result.flood_zone == "X"
     assert result.in_special_flood_hazard is False
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.regulatory.query_brownfield_sites")
+@patch("backend.retrieval.regulatory.query_flood_zone")
+@patch("backend.retrieval.regulatory.query_all_overlays")
+async def test_business_launch_skips_brownfield(mock_overlays, mock_flood, mock_brownfield):
+    mock_overlays.return_value = [(4, {"NAME": "Milwaukee Ave"})]
+    mock_flood.return_value = None
+    mock_brownfield.return_value = [{"site_name": "Should Not Be Called"}]
+
+    result = await regulatory_domain(41.93, -87.65, workflow="business_launch", client=AsyncMock())
+
+    assert result.on_pedestrian_street is True
+    mock_brownfield.assert_not_awaited()
+    assert result.brownfield_sites == []
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.regulatory.query_brownfield_sites")
+@patch("backend.retrieval.regulatory.query_flood_zone")
+@patch("backend.retrieval.regulatory.query_all_overlays")
+async def test_general_workflow_includes_brownfield(mock_overlays, mock_flood, mock_brownfield):
+    mock_overlays.return_value = []
+    mock_flood.return_value = None
+    mock_brownfield.return_value = [{"site_name": "Old Plant"}]
+
+    result = await regulatory_domain(41.93, -87.65, workflow="general", client=AsyncMock())
+
+    mock_brownfield.assert_awaited_once()
+    assert len(result.brownfield_sites) == 1

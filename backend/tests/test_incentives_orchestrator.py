@@ -174,3 +174,44 @@ async def test_phase_b_financials_failure(mock_tif, mock_ez, mock_tract, mock_fi
     assert result.in_tif_district is True
     assert result.tif_name == "Test TIF"
     assert result.tif_financials == []
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_opportunity_zone")
+@patch("backend.retrieval.incentives.fetch_tif_financials")
+@patch("backend.retrieval.incentives.resolve_census_tract")
+@patch("backend.retrieval.incentives.check_enterprise_zone")
+@patch("backend.retrieval.incentives.check_tif")
+async def test_business_launch_skips_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_oz):
+    mock_tif.return_value = {"tif_name": "Test TIF", "properties": {"start_year": "2010"}}
+    mock_ez.return_value = None
+    mock_tract.return_value = None
+    mock_fin.return_value = [{"year": "2023", "revenue": "5000000"}]
+    mock_oz.return_value = None
+
+    result = await incentives_domain(41.93, -87.65, workflow="business_launch", client=AsyncMock())
+
+    assert result.in_tif_district is True
+    assert result.tif_name == "Test TIF"
+    mock_fin.assert_not_awaited()
+    assert result.tif_financials == []
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_opportunity_zone")
+@patch("backend.retrieval.incentives.fetch_tif_financials")
+@patch("backend.retrieval.incentives.resolve_census_tract")
+@patch("backend.retrieval.incentives.check_enterprise_zone")
+@patch("backend.retrieval.incentives.check_tif")
+async def test_general_workflow_fetches_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_oz):
+    mock_tif.return_value = {"tif_name": "Test TIF", "properties": {}}
+    mock_ez.return_value = None
+    mock_tract.return_value = None
+    mock_fin.return_value = [{"year": "2023", "revenue": "5000000"}]
+    mock_oz.return_value = None
+
+    result = await incentives_domain(41.93, -87.65, workflow="general", client=AsyncMock())
+
+    assert result.in_tif_district is True
+    mock_fin.assert_awaited_once()
+    assert len(result.tif_financials) == 1

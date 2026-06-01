@@ -309,6 +309,40 @@ export function zoneColorCSS(zoneClass: string): string {
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
+// --- Overlay district colors (regulatory overlays on map) ---
+const OVERLAY_TYPE_COLORS: Record<string, [number, number, number]> = {
+  planned_development: [158, 158, 158],
+  lakefront_protection: [0, 188, 212],
+  pedestrian_street: [0, 150, 136],
+  landmark_district: [255, 193, 7],
+  historic_district: [141, 110, 99],
+  landmark_building: [255, 160, 0],
+  national_register: [188, 170, 164],
+  special_district: [121, 85, 72],
+  fema_floodplain: [33, 150, 243],
+  pmd_subarea: [255, 152, 0],
+  tod_cta: [63, 81, 181],
+  tod_metra: [48, 63, 159],
+  adu_area: [76, 175, 80],
+  aro_zone: [156, 39, 176],
+  ssa: [233, 30, 99],
+};
+
+export function overlayColor(type: string): [number, number, number, number] {
+  const rgb = OVERLAY_TYPE_COLORS[type] ?? [120, 120, 120];
+  return [rgb[0], rgb[1], rgb[2], 50];
+}
+
+export function overlayLineColor(type: string): [number, number, number, number] {
+  const rgb = OVERLAY_TYPE_COLORS[type] ?? [120, 120, 120];
+  return [rgb[0], rgb[1], rgb[2], 200];
+}
+
+export function overlayColorCSS(type: string): string {
+  const rgb = OVERLAY_TYPE_COLORS[type] ?? [120, 120, 120];
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
 export function capLabel(raw: string, max = 25): string {
   const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
   return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;

@@ -99,6 +99,8 @@ async def _preload_datasets() -> None:
 @app.on_event("shutdown")
 async def _shutdown() -> None:
     await db.close_db()
+    from backend.retrieval.property.tax_estimate import close as close_ptaxsim
+    await close_ptaxsim()
 
 
 @app.get("/health")
@@ -383,22 +385,24 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 lookup_zoning(loc.resolved_lat, loc.resolved_lon, client=client)
             )
 
+        wf = plan.workflow_hint or "general"
+
         # Regulatory domain: overlay districts, flood zones, brownfield sites
         if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
             tasks["regulatory"] = asyncio.create_task(
-                regulatory_domain(loc.resolved_lat, loc.resolved_lon, client=client)
+                regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
             )
 
         # Property domain: parcel lookup -> PIN -> characteristics/assessments/sales
         if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
             tasks["property"] = asyncio.create_task(
-                property_domain(loc.resolved_lat, loc.resolved_lon, client=client)
+                property_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
             )
 
         # Incentives domain: TIF, Enterprise Zone, Opportunity Zone
         if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
             tasks["incentives"] = asyncio.create_task(
-                incentives_domain(loc.resolved_lat, loc.resolved_lon, client=client)
+                incentives_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
             )
 
         # Neighborhood domain: demographics + transit proximity
@@ -408,6 +412,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                     loc.resolved_lat or 0.0,
                     loc.resolved_lon or 0.0,
                     community_area=ca,
+                    workflow=wf,
                     client=client,
                 )
             )
@@ -461,6 +466,18 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
     )
 
 
+async def _fetch_overlay_geojson(
+    lat: float, lon: float, client: httpx.AsyncClient,
+) -> dict | None:
+    """Get GeoJSON features for overlays that hit at this point."""
+    from backend.retrieval.regulatory.overlays import query_all_overlays, overlay_geojson_features
+    hits = await query_all_overlays(lat, lon, client=client)
+    if not hits:
+        return None
+    layer_ids = [lid for lid, _ in hits]
+    return await overlay_geojson_features(lat, lon, layer_ids, client=client)
+
+
 async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
     """Fetch raw geo-located rows for analytics computation."""
     ca = plan.location.resolved_community_area
@@ -486,13 +503,30 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
                 zoning_for_map(ca, client=client)
             )
 
+        loc = plan.location
+        if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+            tasks["overlay_geojson"] = asyncio.create_task(
+                _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon, client)
+            )
+
+        if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+            from backend.retrieval.incentives.tif import tif_geojson_feature
+            from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
+            tasks["tif_geojson"] = asyncio.create_task(
+                tif_geojson_feature(loc.resolved_lat, loc.resolved_lon, client=client)
+            )
+            tasks["ez_geojson"] = asyncio.create_task(
+                ez_geojson_feature(loc.resolved_lat, loc.resolved_lon, client=client)
+            )
+
         results: dict[str, Any] = {}
         if tasks:
             done = await asyncio.gather(*tasks.values(), return_exceptions=True)
             for key, value in zip(tasks.keys(), done):
                 if isinstance(value, Exception):
                     log.warning("Map-row fetch %s failed: %s", key, value)
-                    results[key] = [] if key != "zoning" else None
+                    _NONE_ON_FAIL = {"zoning", "tif_geojson", "ez_geojson", "overlay_geojson"}
+                    results[key] = None if key in _NONE_ON_FAIL else []
                 else:
                     results[key] = value
 
@@ -527,11 +561,23 @@ def _build_map_response(
             "label": loc.resolved_address or "",
         }
 
+    incentive_features = []
+    if map_rows.get("tif_geojson"):
+        incentive_features.append(map_rows["tif_geojson"])
+    if map_rows.get("ez_geojson"):
+        incentive_features.append(map_rows["ez_geojson"])
+    incentive_zones = (
+        {"type": "FeatureCollection", "features": incentive_features}
+        if incentive_features else None
+    )
+
     return MapDataResponse(
         crimes=crimes,
         requests_311=requests_311,
         building_permits=building_permits,
         zoning=map_rows.get("zoning"),
+        overlay_districts=map_rows.get("overlay_geojson"),
+        incentive_zones=incentive_zones,
         queried_address=queried_address,
         capped=capped,
     )

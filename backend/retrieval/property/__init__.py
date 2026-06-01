@@ -9,7 +9,10 @@ import logging
 
 import httpx
 
-from backend.models import AssessmentRecord, PropertySummary, SaleRecord
+import datetime
+
+from backend.config import get_settings
+from backend.models import AssessmentRecord, PropertySummary, SaleRecord, TaxLineItem
 from backend.retrieval.property.assessments import get_assessments
 from backend.retrieval.property.characteristics import get_characteristics
 from backend.retrieval.property.parcels import lookup_parcel
@@ -41,25 +44,46 @@ async def property_domain(
 
         pin14 = parcel["pin14"]
 
-        results = await asyncio.gather(
-            get_characteristics(pin14, client=client),
-            get_assessments(pin14, client=client),
-            get_sales(pin14, client=client),
-            return_exceptions=True,
-        )
+        skip_history = workflow in ("development_feasibility",)
 
-        chars = results[0] if not isinstance(results[0], Exception) else None
-        assessments = results[1] if not isinstance(results[1], Exception) else []
-        sales = results[2] if not isinstance(results[2], Exception) else []
+        coros = [get_characteristics(pin14, client=client)]
+        if not skip_history:
+            coros.append(get_assessments(pin14, client=client))
+            coros.append(get_sales(pin14, client=client))
 
-        if isinstance(results[0], Exception):
-            log.warning("CCAO characteristics failed: %s", results[0])
-        if isinstance(results[1], Exception):
-            log.warning("CCAO assessments failed: %s", results[1])
-        if isinstance(results[2], Exception):
-            log.warning("CCAO sales failed: %s", results[2])
+        settings = get_settings()
+        if settings.ptaxsim_enabled:
+            from backend.retrieval.property.tax_estimate import estimate_tax
+            tax_year = datetime.date.today().year - 1
+            coros.append(estimate_tax(tax_year, pin14))
 
-        return _build_summary(parcel, chars, assessments, sales)
+        results = await asyncio.gather(*coros, return_exceptions=True)
+
+        idx = 0
+        chars = results[idx] if not isinstance(results[idx], Exception) else None
+        if isinstance(results[idx], Exception):
+            log.warning("CCAO characteristics failed: %s", results[idx])
+        idx += 1
+
+        assessments: list[dict] = []
+        sales: list[dict] = []
+        if not skip_history:
+            assessments = results[idx] if not isinstance(results[idx], Exception) else []
+            if isinstance(results[idx], Exception):
+                log.warning("CCAO assessments failed: %s", results[idx])
+            idx += 1
+            sales = results[idx] if not isinstance(results[idx], Exception) else []
+            if isinstance(results[idx], Exception):
+                log.warning("CCAO sales failed: %s", results[idx])
+            idx += 1
+
+        tax_result = None
+        if settings.ptaxsim_enabled:
+            tax_result = results[idx] if not isinstance(results[idx], Exception) else None
+            if isinstance(results[idx], Exception):
+                log.warning("PTAXSIM tax estimate failed: %s", results[idx])
+
+        return _build_summary(parcel, chars, assessments, sales, tax_result)
     finally:
         if owns:
             await client.aclose()
@@ -88,6 +112,7 @@ def _build_summary(
     chars: dict | None,
     assessments: list[dict],
     sales: list[dict],
+    tax_result: dict | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
     address = parcel.get("address")
@@ -144,6 +169,19 @@ def _build_summary(
         )
         sales_history.append(rec)
 
+    estimated_annual_tax = None
+    tax_code = None
+    tax_breakdown: list[TaxLineItem] = []
+    if tax_result:
+        estimated_annual_tax = tax_result.get("tax_bill_total")
+        tax_code = tax_result.get("tax_code")
+        for item in tax_result.get("line_items", []):
+            tax_breakdown.append(TaxLineItem(
+                agency=item["agency"],
+                rate=item["rate"],
+                amount=item["amount"],
+            ))
+
     return PropertySummary(
         pin14=pin14,
         address=address,
@@ -159,6 +197,9 @@ def _build_summary(
         half_baths=half_baths,
         bldg_age=bldg_age,
         total_assessed_value=total_assessed_value,
+        estimated_annual_tax=estimated_annual_tax,
+        tax_code=tax_code,
+        tax_breakdown=tax_breakdown,
         assessment_history=assessment_history,
         sales_history=sales_history,
         parcel_geometry=parcel.get("geometry"),

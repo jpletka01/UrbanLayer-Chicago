@@ -168,3 +168,40 @@ async def test_tod_metra_eligible(mock_demo, mock_stations, mock_tod):
 
     assert result.transit.tod_eligible is True
     assert result.transit.tod_type == "Metra"
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_property_intelligence_skips_demographics(mock_demo, mock_stations, mock_tod):
+    mock_demo.return_value = DemographicsSummary(community_area=7, population=65000)
+    mock_stations.return_value = {
+        "nearest_cta_rail": {"name": "Armitage", "distance_mi": 0.3, "lines": ["Brown", "Purple"]},
+        "nearest_metra": None,
+    }
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+
+    result = await neighborhood_domain(
+        41.92, -87.65, community_area=7, workflow="property_intelligence", client=AsyncMock(),
+    )
+
+    mock_demo.assert_not_awaited()
+    assert result.demographics is None
+    assert result.transit is not None
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_general_workflow_fetches_demographics(mock_demo, mock_stations, mock_tod):
+    mock_demo.return_value = DemographicsSummary(community_area=7, population=65000)
+    mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+
+    result = await neighborhood_domain(
+        41.92, -87.65, community_area=7, workflow="general", client=AsyncMock(),
+    )
+
+    mock_demo.assert_awaited_once()

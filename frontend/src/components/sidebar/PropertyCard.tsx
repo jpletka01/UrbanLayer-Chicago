@@ -56,6 +56,7 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: (string | null)
 
 export function PropertyCard({ data }: { data: PropertySummary }) {
   const [showAssessments, setShowAssessments] = useState(false);
+  const [showTax, setShowTax] = useState(false);
   const [showSales, setShowSales] = useState(false);
 
   const baths = [
@@ -141,6 +142,44 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
                   ])}
                 />
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Tax Estimate */}
+        {data.estimated_annual_tax != null && (
+          <div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-text-muted">Est. Annual Tax</span>
+              <span className="font-medium text-text-primary">{fmtDollar(data.estimated_annual_tax)}</span>
+            </div>
+            {data.tax_breakdown.length > 0 && (
+              <>
+                <button
+                  onClick={() => setShowTax(t => !t)}
+                  className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors mt-1"
+                >
+                  <svg
+                    className={`w-2.5 h-2.5 transition-transform duration-150 ${showTax ? "" : "-rotate-90"}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                  Tax Breakdown ({data.tax_breakdown.length} agencies)
+                </button>
+                {showTax && (
+                  <div className="mt-1.5">
+                    <MiniTable
+                      headers={["Agency", "Rate", "Amount"]}
+                      rows={data.tax_breakdown.map(t => [
+                        t.agency,
+                        `${t.rate.toFixed(3)}%`,
+                        fmtDollar(t.amount),
+                      ])}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

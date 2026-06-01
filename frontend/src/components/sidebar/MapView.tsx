@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
+import { PathStyleExtension } from "@deck.gl/extensions";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
 import { fetchTransitStations } from "../../lib/api";
 import {
@@ -7,6 +8,7 @@ import {
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
   zoneColor, zoneLineColor, zonePrefix, ZONE_INFO,
+  overlayColor, overlayLineColor,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
@@ -146,6 +148,8 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   const [showZoning, setShowZoning] = useState(true);
   const [showPoints, setShowPoints] = useState(true);
   const [showTransit, setShowTransit] = useState(false);
+  const [showIncentives, setShowIncentives] = useState(true);
+  const [showOverlays, setShowOverlays] = useState(true);
   const [transitStations, setTransitStations] = useState<TransitStation[]>([]);
 
   const hasZoning = !!(mapData?.zoning && (mapData.zoning as Record<string, unknown>)?.features &&
@@ -304,6 +308,57 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
       );
     }
 
+    // Incentive zone boundary polygons (dashed outlines)
+    const hasIncentiveZones = mapData?.incentive_zones &&
+      (mapData.incentive_zones as Record<string, unknown>).features &&
+      ((mapData.incentive_zones as Record<string, unknown>).features as unknown[]).length > 0;
+    if (showIncentives && hasIncentiveZones) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "incentive-zones",
+          data: mapData!.incentive_zones as unknown as GeoJSON.FeatureCollection,
+          getFillColor: (f: unknown) => {
+            const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+            const zt = (props?.zone_type as string) ?? "";
+            return zt === "tif" ? [255, 87, 34, 25] as [number, number, number, number] : [76, 175, 80, 25] as [number, number, number, number];
+          },
+          getLineColor: (f: unknown) => {
+            const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+            const zt = (props?.zone_type as string) ?? "";
+            return zt === "tif" ? [255, 87, 34, 200] as [number, number, number, number] : [76, 175, 80, 200] as [number, number, number, number];
+          },
+          lineWidthMinPixels: 2,
+          getDashArray: [8, 4],
+          dashJustified: true,
+          extensions: [new PathStyleExtension({ dash: true })],
+          pickable: true,
+        })
+      );
+    }
+
+    // Overlay district polygons (regulatory overlays)
+    const hasOverlayDistricts = mapData?.overlay_districts &&
+      (mapData.overlay_districts as Record<string, unknown>).features &&
+      ((mapData.overlay_districts as Record<string, unknown>).features as unknown[]).length > 0;
+    if (showOverlays && hasOverlayDistricts) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "overlay-districts",
+          data: mapData!.overlay_districts as unknown as GeoJSON.FeatureCollection,
+          getFillColor: (f: unknown) => {
+            const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+            return overlayColor((props?.overlay_type as string) ?? "");
+          },
+          getLineColor: (f: unknown) => {
+            const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+            return overlayLineColor((props?.overlay_type as string) ?? "");
+          },
+          lineWidthMinPixels: 2,
+          pickable: true,
+        })
+      );
+    }
+
     if (showPoints && filterMode === "crime" && mapData?.crimes?.length) {
       const activeTypes = new Set(
         Object.entries(crimeTypeToggles).filter(([, v]) => v).map(([k]) => k)
@@ -412,7 +467,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, transitStations, parcelGeometry, overlayRef, contextRestored]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, showIncentives, showOverlays, transitStations, parcelGeometry, overlayRef, contextRestored]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -597,6 +652,44 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
               />
               Transit
             </button>
+            {mapData?.incentive_zones && (
+              <button
+                onClick={() => setShowIncentives(s => !s)}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                  ${showIncentives
+                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+                  }`}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-sm inline-block"
+                  style={{
+                    backgroundColor: showIncentives ? "rgba(255,87,34,0.5)" : "transparent",
+                    border: showIncentives ? "1px solid rgba(255,87,34,0.8)" : "1px solid #555",
+                  }}
+                />
+                Incentives
+              </button>
+            )}
+            {mapData?.overlay_districts && (
+              <button
+                onClick={() => setShowOverlays(s => !s)}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                  ${showOverlays
+                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+                  }`}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-sm inline-block"
+                  style={{
+                    backgroundColor: showOverlays ? "rgba(156,39,176,0.5)" : "transparent",
+                    border: showOverlays ? "1px solid rgba(156,39,176,0.8)" : "1px solid #555",
+                  }}
+                />
+                Overlays
+              </button>
+            )}
           </div>
 
           {showPoints && hasData && (

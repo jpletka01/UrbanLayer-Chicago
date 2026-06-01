@@ -152,6 +152,12 @@ class SaleRecord(BaseModel):
     deed_type: str | None = None
 
 
+class TaxLineItem(BaseModel):
+    agency: str
+    rate: float
+    amount: float
+
+
 class PropertySummary(BaseModel):
     pin14: str | None = None
     address: str | None = None
@@ -167,6 +173,9 @@ class PropertySummary(BaseModel):
     half_baths: int | None = None
     bldg_age: int | None = None
     total_assessed_value: float | None = None
+    estimated_annual_tax: float | None = None
+    tax_code: str | None = None
+    tax_breakdown: list[TaxLineItem] = Field(default_factory=list)
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None
@@ -278,6 +287,8 @@ class MapDataResponse(BaseModel):
     requests_311: list[dict] = Field(default_factory=list)
     building_permits: list[dict] = Field(default_factory=list)
     zoning: dict | None = None
+    overlay_districts: dict | None = None
+    incentive_zones: dict | None = None
     queried_address: dict | None = None
     capped: dict[str, bool] = Field(default_factory=dict)
 

@@ -154,6 +154,12 @@ export interface SaleRecord {
   deed_type: string | null;
 }
 
+export interface TaxLineItem {
+  agency: string;
+  rate: number;
+  amount: number;
+}
+
 export interface PropertySummary {
   pin14: string | null;
   address: string | null;
@@ -169,6 +175,9 @@ export interface PropertySummary {
   half_baths: number | null;
   bldg_age: number | null;
   total_assessed_value: number | null;
+  estimated_annual_tax: number | null;
+  tax_code: string | null;
+  tax_breakdown: TaxLineItem[];
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
   parcel_geometry?: Record<string, unknown> | null;
@@ -306,6 +315,8 @@ export interface MapData {
   requests_311: MapRequest311[];
   building_permits: MapPermit[];
   zoning?: Record<string, unknown> | null;
+  overlay_districts?: Record<string, unknown> | null;
+  incentive_zones?: Record<string, unknown> | null;
   queried_address: QueriedAddress | null;
   capped?: Record<string, boolean>;
 }

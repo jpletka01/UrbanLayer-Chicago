@@ -11,16 +11,16 @@ from backend.config import get_settings
 
 log = logging.getLogger(__name__)
 
-_ez_boundaries: list[tuple[str, dict, Any]] | None = None
+_ez_boundaries: list[tuple[str, dict, Any, dict]] | None = None
 _ez_lock = asyncio.Lock()
 
 
 async def _load_ez_boundaries(
     *, client: httpx.AsyncClient | None = None,
-) -> list[tuple[str, dict, Any]]:
+) -> list[tuple[str, dict, Any, dict]]:
     """Download Enterprise Zone GeoJSON from Socrata and build shapely polygons.
 
-    Returns list of (zone_name, properties_dict, shapely_geometry).
+    Returns list of (zone_name, properties_dict, shapely_geometry, geojson_geometry).
     """
     global _ez_boundaries
     async with _ez_lock:
@@ -41,7 +41,7 @@ async def _load_ez_boundaries(
             if owns:
                 await client.aclose()
 
-        boundaries: list[tuple[str, dict, Any]] = []
+        boundaries: list[tuple[str, dict, Any, dict]] = []
         for feat in fc.get("features", []):
             props = feat.get("properties", {})
             geom = feat.get("geometry")
@@ -55,7 +55,7 @@ async def _load_ez_boundaries(
             )
             try:
                 poly = shape(geom)
-                boundaries.append((name, props, poly))
+                boundaries.append((name, props, poly, geom))
             except Exception:
                 continue
 
@@ -81,9 +81,33 @@ async def check_enterprise_zone(
         return None
 
     point = Point(lon, lat)
-    for name, _props, poly in boundaries:
+    for name, _props, poly, _geom in boundaries:
         if poly.contains(point):
             return {"zone_name": name}
+    return None
+
+
+async def ez_geojson_feature(
+    lat: float,
+    lon: float,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict | None:
+    """Return a GeoJSON Feature for the Enterprise Zone at a point, or None."""
+    try:
+        boundaries = await _load_ez_boundaries(client=client)
+    except Exception as exc:
+        log.warning("Failed to load EZ boundaries for geometry: %s", exc)
+        return None
+
+    point = Point(lon, lat)
+    for name, props, poly, geom in boundaries:
+        if poly.contains(point):
+            return {
+                "type": "Feature",
+                "geometry": geom,
+                "properties": {"name": name, "zone_type": "enterprise_zone", **props},
+            }
     return None
 
 
