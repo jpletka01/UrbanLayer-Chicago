@@ -184,17 +184,19 @@ export function App() {
 
   // Save messages to SQLite after stream completes
   useEffect(() => {
-    if (prevStreamingRef.current && !streaming && messages.length >= 2) {
-      const lastTwo = messages.slice(-2);
-      if (lastTwo[0]?.role === "user" && lastTwo[1]?.role === "assistant") {
-        const cid = conversationIdRef.current;
-        if (cid) {
-          appendMessages(cid, lastTwo).then(() => {
-            loadConversations().then(setConversations);
-          });
+    if (prevStreamingRef.current && !streaming) {
+      setMapLoading(false);
+      if (messages.length >= 2) {
+        const lastTwo = messages.slice(-2);
+        if (lastTwo[0]?.role === "user" && lastTwo[1]?.role === "assistant") {
+          const cid = conversationIdRef.current;
+          if (cid) {
+            appendMessages(cid, lastTwo).then(() => {
+              loadConversations().then(setConversations);
+            });
+          }
+          setSelectedMessageIndex(messages.length - 2);
         }
-        // Auto-select the latest question
-        setSelectedMessageIndex(messages.length - 2);
       }
     }
     prevStreamingRef.current = streaming;
@@ -351,6 +353,7 @@ export function App() {
       }
 
       // Load map data with staleness check
+      setMapLoading(false);
       if (assistantMsg.mapData) {
         const isStale =
           assistantMsg.mapFetchedAt &&
@@ -372,19 +375,19 @@ export function App() {
           }).then((data) => {
             if (data) {
               setMapData(data);
-              // Update stored map data
               const cid = conversationIdRef.current;
               if (cid) {
                 updateMessageMapData(cid, messageIndex + 1, data);
               }
             }
             setMapLoading(false);
+          }).catch(() => {
+            setMapLoading(false);
           });
         } else {
           setMapData(assistantMsg.mapData);
         }
       } else if (assistantMsg.context?.community_area && assistantMsg.plan) {
-        // No saved map data — fetch it
         setMapLoading(true);
         const p = assistantMsg.plan;
         const sources = (p.sources ?? []).filter(
@@ -396,6 +399,8 @@ export function App() {
           sources: sources.length > 0 ? sources : ["crime_api", "311_api", "permits_api"],
         }).then((data) => {
           setMapData(data);
+          setMapLoading(false);
+        }).catch(() => {
           setMapLoading(false);
         });
       }

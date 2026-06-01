@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 interface Props {
@@ -6,13 +7,15 @@ interface Props {
 }
 
 export function Tooltip({ className = "", children }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const trigger = el.parentElement;
+    const anchor = anchorRef.current;
+    const el = tooltipRef.current;
+    if (!anchor || !el) return;
+    const trigger = anchor.parentElement;
     if (!trigger) return;
 
     const tr = trigger.getBoundingClientRect();
@@ -31,17 +34,23 @@ export function Tooltip({ className = "", children }: Props) {
   }, []);
 
   return (
-    <div
-      ref={ref}
-      className={`fixed z-50 rounded-lg border border-[#444]
-                  shadow-[0_4px_24px_rgba(0,0,0,0.7)] pointer-events-none ${className}`}
-      style={
-        pos
-          ? { left: pos.left, top: pos.top, backgroundColor: "#333" }
-          : { opacity: 0, backgroundColor: "#333" }
-      }
-    >
-      {children}
-    </div>
+    <>
+      <span ref={anchorRef} style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }} />
+      {createPortal(
+        <div
+          ref={tooltipRef}
+          className={`fixed z-50 rounded-lg border border-[#444]
+                      shadow-[0_4px_24px_rgba(0,0,0,0.7)] pointer-events-none ${className}`}
+          style={
+            pos
+              ? { left: pos.left, top: pos.top, backgroundColor: "#333" }
+              : { opacity: 0, backgroundColor: "#333" }
+          }
+        >
+          {children}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }

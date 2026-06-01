@@ -245,7 +245,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   }, []);
 
   // Initialize Mapbox + deck.gl overlay (shared lifecycle hook).
-  const { containerRef, mapRef, overlayRef, mapReady } = useMapboxOverlay({
+  const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
     center: CHICAGO_CENTER,
     zoom: INITIAL_ZOOM,
     getTooltip: buildLayerTooltip,
@@ -412,7 +412,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, transitStations, parcelGeometry, overlayRef]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, transitStations, parcelGeometry, overlayRef, contextRestored]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -592,8 +592,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                 className="w-2 h-2 rounded-sm inline-block"
                 style={{
                   backgroundColor: showTransit ? "rgba(0,161,222,0.5)" : "transparent",
-                  borderColor: showTransit ? "rgba(0,161,222,0.8)" : "#555",
-                  border: "1px solid",
+                  border: showTransit ? "1px solid rgba(0,161,222,0.8)" : "1px solid #555",
                 }}
               />
               Transit

@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function LandingMap({ mapData, source, loading }: Props) {
-  const { containerRef, mapRef, overlayRef, mapReady } = useMapboxOverlay({
+  const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
     center: CHICAGO_CENTER,
     zoom: 12,
     getTooltip: buildLayerTooltip,
@@ -54,7 +54,7 @@ export function LandingMap({ mapData, source, loading }: Props) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapReady, mapData, source, overlayRef]);
+  }, [mapReady, mapData, source, overlayRef, contextRestored]);
 
   // Fit bounds when data changes
   useEffect(() => {

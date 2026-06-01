@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Breakage fix + map refactor + real-API tests** — fixed the frontend↔backend port mismatch (standardized on :8001), de-duplicated the two map components behind a shared `useMapboxOverlay` hook + tooltip/layer/`FilterButton` helpers, and converted the external-API tests to hit live endpoints — which surfaced and fixed three broken upstream services (FEMA flood path, HUD Opportunity Zones layer/schema, EPA brownfields repointed to the ACRES ArcGIS republish). Previous: **Expansion Phase 6** — frontend integration (4 sidebar data cards for property/regulatory/incentives/neighborhood, transit station map layer, parcel boundary map layer). Previous: Expansion Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%). Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Map loading fix + HTML/CSS bug fixes** — fixed map getting stuck in loading state after 3+ questions (race condition in `mapLoading` state machine), fixed `<div>` inside `<p>` hydration error (Tooltip now uses React portal), fixed CSS border shorthand/longhand conflict, added WebGL context restoration handler. Previous: Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Expansion Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 301 tests passing.
 
 ---
 
@@ -1895,6 +1895,62 @@ Test files converted with live calls + invariant assertions (kept the pure trans
 
 ---
 
+## Session Log (2026-06-01 — Map Loading Fix + HTML/CSS Bug Fixes)
+
+Fixed three frontend bugs discovered via Firefox console errors during a 3-question conversation session. The most critical: the map getting permanently stuck in a "Loading map data..." overlay after the 3rd question, persisting even when switching to other questions with cached data.
+
+### Bug 1: Map stuck loading after 3+ questions (CRITICAL)
+
+**Root cause**: A race condition in the `mapLoading` state machine. Two paths caused `mapLoading` to get stuck at `true`:
+
+1. **`handleMessageClick` Path B** (cached, non-stale data) called `setMapData(assistantMsg.mapData)` but never called `setMapLoading(false)`. If `mapLoading` was already `true` from a streaming question's `handlePlan()` call, the loading overlay persisted forever — even on questions with perfectly good cached data.
+
+2. **Streaming ends without map data**: `handlePlan()` sets `mapLoading(true)` when the plan includes a location, but if the `map_data` SSE chunk never arrives (network issue, or the question didn't need map data), nothing ever resets it to `false`.
+
+3. **No `.catch()` on fetch promises**: If `fetchMapData()` rejected (network error), `setMapLoading(false)` was never called.
+
+**Fix** (3 changes in `App.tsx`):
+- `handleMessageClick` now calls `setMapLoading(false)` upfront before the conditional logic — only the stale/missing-data fetch paths re-set it to `true`
+- Added `.catch(() => setMapLoading(false))` to both `fetchMapData` promise chains
+- When streaming ends (`prevStreaming && !streaming`), `setMapLoading(false)` is called as a safety net
+
+### Bug 2: `<div>` inside `<p>` hydration error
+
+**Root cause**: `Tooltip.tsx` renders a `<div>` that ends up nested inside `<p>` tags when `DataPill`/`CitationPill` are rendered inside Markdown paragraphs via `MessageBubble.tsx`. The nesting chain: `<p>` (Markdown) → `<span>` (DataPill) → `<div>` (Tooltip) — invalid HTML.
+
+**Fix**: Tooltip now uses `createPortal` from `react-dom` to render the tooltip `<div>` at `document.body`. An invisible `<span>` anchor stays inline for position measurement via `useLayoutEffect`. Visual behavior is identical (Tooltip already used `position: fixed`).
+
+### Bug 3: CSS border shorthand/longhand conflict
+
+**Root cause**: In `MapView.tsx`, the Transit toggle indicator set both `borderColor` and `border: "1px solid"` as separate inline style properties. The shorthand overwrites the longhand, and React warns about the conflict.
+
+**Fix**: Merged into a single `border` property: `border: showTransit ? "1px solid rgba(0,161,222,0.8)" : "1px solid #555"`.
+
+### Bug 4: WebGL context restoration (preventive)
+
+**Root cause**: `useMapboxOverlay.ts` called `e.preventDefault()` on `webglcontextlost` (telling the browser to attempt restoration) but had no `webglcontextrestored` handler. When the browser restored the context, the map and deck.gl overlay stayed frozen.
+
+**Fix**: Added `webglcontextrestored` handler that reloads the map style via `map.setStyle(map.getStyle())` and increments a `contextRestored` counter. Both `MapView` and `LandingMap` include `contextRestored` in their layer-update effect dependency arrays, causing deck.gl to re-create layer WebGL resources on restoration.
+
+### Non-actionable warnings (not fixed)
+
+These console messages are internal to Mapbox GL JS or Firefox/macOS-specific:
+- `WEBGL_debug_renderer_info is deprecated` — Firefox deprecation notice, requires Mapbox library update
+- `WebGL warning: texSubImage` — Firefox internal
+- CORS errors for `events.mapbox.com` — Mapbox telemetry blocked, doesn't affect functionality
+- `WebGL warning: validateProgram` — macOS-specific no-op
+- `WebGL warning: drawElementsInstanced` — one-time harmless warning
+
+### Files Changed
+
+- `frontend/src/App.tsx` — `handleMessageClick` upfront `setMapLoading(false)`, `.catch()` handlers, streaming-end cleanup
+- `frontend/src/components/Tooltip.tsx` — `createPortal` to `document.body`, anchor `<span>` for positioning
+- `frontend/src/components/sidebar/MapView.tsx` — CSS border fix, `contextRestored` dependency
+- `frontend/src/lib/useMapboxOverlay.ts` — `webglcontextrestored` handler, `contextRestored` state + return
+- `frontend/src/components/landing/LandingMap.tsx` — `contextRestored` dependency
+
+---
+
 ## Recommended Next Steps
 
 ### Original Buckets (All Done)
@@ -1917,6 +1973,43 @@ Test files converted with live calls + invariant assertions (kept the pure trans
 - **Dockerize backend** — Dockerfile for the FastAPI app, production config.
 - **Production Vite build** — Static file server with SPA-fallback (serve `index.html` for all non-asset paths).
 - **CI pipeline** — Tests + type checking on push.
+
+---
+
+## Session Log (2026-06-01 — Transit Stations Map Fix)
+
+Transit station dots were not appearing on the map despite the neighborhood domain returning accurate transit data in chat responses. Three bugs in the pipeline:
+
+### Bug 1: Backend file path (wrong directory)
+
+`/api/transit-stations` endpoint in `main.py` hardcoded `Path(__file__).resolve().parent / "data" / "transit_stations.json"`, which resolved to `backend/data/` — a directory that doesn't contain the file. The transit retrieval module (`neighborhood/transit.py`) correctly used `get_settings().data_dir` (→ `ingestion/data/`), but the REST endpoint didn't follow the same pattern. The endpoint silently returned `[]`.
+
+**Fix**: Changed to `get_settings().data_dir / "transit_stations.json"`.
+
+### Bug 2: Frontend never auto-enabled transit layer
+
+`showTransit` in `MapView.tsx` defaulted to `false` and was only toggled by manual button click. Even when the chat response included transit context (`context.neighborhood.transit`), the map never turned on the transit layer automatically.
+
+**Fix**: Added `hasTransitContext` prop to `MapView`, passed from `DataMapLayout` as `!!context?.neighborhood?.transit`. A `useEffect` sets `showTransit(true)` when this prop is true.
+
+### Bug 3: Frontend cached empty result permanently
+
+`fetchTransitStations()` in `api.ts` used `if (_transitStationsCache)` as the cache guard. In JavaScript, an empty array `[]` is truthy. Before Bug 1 was fixed, the endpoint returned `[]`, which got cached. After fixing the backend, the frontend still returned the cached `[]` without retrying. This also survived Vite HMR because `api.ts` wasn't edited — module-level variables persist across HMR of other files.
+
+**Fix**: Changed guard to `if (_transitStationsCache && _transitStationsCache.length > 0)`. Empty results are now treated as "not cached, retry."
+
+### Layer z-order fix
+
+Transit `ScatterplotLayer` was pushed into the deck.gl layers array before crime/311/permits dots (earlier = below in deck.gl). Moved it after data dots so transit stations render on top.
+
+**Layer order (bottom to top):** Zoning polygons → Parcel boundary → Crime/311/Permits dots → Transit stations → Address pin.
+
+### Files changed
+
+- `backend/main.py` — file path fix in `/api/transit-stations`
+- `frontend/src/lib/api.ts` — cache guard fix
+- `frontend/src/components/sidebar/MapView.tsx` — `hasTransitContext` prop, auto-show effect, layer reorder
+- `frontend/src/components/sidebar/DataMapLayout.tsx` — pass `hasTransitContext` to MapView
 
 ---
 

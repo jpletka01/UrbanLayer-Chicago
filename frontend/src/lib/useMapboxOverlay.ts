@@ -27,6 +27,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [contextRestored, setContextRestored] = useState(0);
 
   // Keep the latest callbacks without retriggering init. Updated in an effect
   // (not during render) so the tooltip/click handlers always see fresh props.
@@ -56,6 +57,11 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
       (e as unknown as { preventDefault?: () => void }).preventDefault?.();
     });
 
+    map.on("webglcontextrestored", () => {
+      map.setStyle(map.getStyle());
+      setContextRestored((c) => c + 1);
+    });
+
     const overlay = new MapboxOverlay({
       interleaved: true,
       getTooltip: (info: LayerPickInfo) => optsRef.current.getTooltip?.(info) ?? null,
@@ -75,5 +81,5 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     };
   }, []);
 
-  return { containerRef, mapRef, overlayRef, mapReady };
+  return { containerRef, mapRef, overlayRef, mapReady, contextRestored };
 }
