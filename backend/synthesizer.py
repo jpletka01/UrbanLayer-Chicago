@@ -9,6 +9,7 @@ from backend.config import get_settings
 from backend.llm import tracked_stream
 from backend.models import AnalyticsSummary, ContextObject, Message
 from backend.prompts import SYNTHESIZER_SYSTEM
+from backend.vision import prepare_upload_content_blocks
 
 
 log = logging.getLogger(__name__)
@@ -43,10 +44,9 @@ def _format_analytics(analytics: AnalyticsSummary) -> str:
     return "\n".join(lines) + "\n\n"
 
 
-def _build_user_prompt(
+def _build_user_text(
     context: ContextObject,
     user_message: str,
-    upload_filenames: list[str] | None = None,
 ) -> str:
     ctx_json = context.model_dump_json(indent=2, exclude={"analytics"})
     parts = [
@@ -61,13 +61,6 @@ def _build_user_prompt(
     ):
         parts.append(_format_analytics(context.analytics))
 
-    if upload_filenames:
-        parts.append(
-            f"The user attached {len(upload_filenames)} file(s): {', '.join(upload_filenames)}\n"
-            "Note: File contents are not analyzed in this version. "
-            "The user may be referencing these files in their question.\n\n"
-        )
-
     parts.append(
         f"User question: {user_message}\n\n"
         "Answer the question using only the context data above. Cite sources inline."
@@ -75,21 +68,39 @@ def _build_user_prompt(
     return "".join(parts)
 
 
+def _build_user_content(
+    context: ContextObject,
+    user_message: str,
+    upload_content_blocks: list[dict] | None = None,
+) -> str | list[dict]:
+    """Build user message content. Returns str for text-only, list for multimodal."""
+    text = _build_user_text(context, user_message)
+    if not upload_content_blocks:
+        return text
+    content: list[dict] = [{"type": "text", "text": text}]
+    content.extend(upload_content_blocks)
+    return content
+
+
 async def stream_answer(
     *,
     context: ContextObject,
     user_message: str,
     history: list[Message],
-    upload_filenames: list[str] | None = None,
+    upload_ids: list[str] | None = None,
     request_group: str = "",
     conversation_id: str | None = None,
 ) -> AsyncIterator[str]:
     settings = get_settings()
 
+    upload_blocks: list[dict] | None = None
+    if upload_ids:
+        upload_blocks = await prepare_upload_content_blocks(upload_ids) or None
+
     messages: list[dict] = [{"role": m.role, "content": m.content} for m in history]
     messages.append({
         "role": "user",
-        "content": _build_user_prompt(context, user_message, upload_filenames),
+        "content": _build_user_content(context, user_message, upload_blocks),
     })
 
     async with tracked_stream(

@@ -20,6 +20,10 @@ interface Props {
   mapData?: MapData | null;
   mapLoading?: boolean;
   mapSources?: SourceTag[];
+  showDataBadge?: boolean;
+  showSourcesBadge?: boolean;
+  dataCount?: number;
+  sourceCount?: number;
 }
 
 export function MobileSidebarSheet({
@@ -37,6 +41,10 @@ export function MobileSidebarSheet({
   mapData,
   mapLoading = false,
   mapSources = [],
+  showDataBadge = false,
+  showSourcesBadge = false,
+  dataCount = 0,
+  sourceCount = 0,
 }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
@@ -98,6 +106,10 @@ export function MobileSidebarSheet({
                 activeView={activeView}
                 onViewChange={onViewChange}
                 hasCodeChunks={hasCodeChunks}
+                dataCount={dataCount}
+                sourceCount={sourceCount}
+                showDataBadge={showDataBadge}
+                showSourcesBadge={showSourcesBadge}
               />
               <button
                 onClick={onClose}

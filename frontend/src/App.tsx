@@ -50,6 +50,22 @@ import { useConversationRouter } from "./lib/useConversationRouter";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+function countDataCategories(ctx: ContextObject | null): number {
+  if (!ctx) return 0;
+  let count = 0;
+  if (ctx.crime_last_90d) count++;
+  if (ctx.open_311_requests) count++;
+  if (ctx.permits) count++;
+  if (ctx.violations) count++;
+  if (ctx.businesses) count++;
+  if (ctx.parcel_zoning) count++;
+  if (ctx.regulatory) count++;
+  if (ctx.property) count++;
+  if (ctx.incentives) count++;
+  if (ctx.neighborhood) count++;
+  return count;
+}
+
 export function App() {
   const { conversationIdFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
     useConversationRouter();
@@ -70,6 +86,8 @@ export function App() {
   const [mapSources, setMapSources] = useState<SourceTag[]>([]);
   const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [dataTabViewed, setDataTabViewed] = useState(true);
+  const [sourcesTabViewed, setSourcesTabViewed] = useState(true);
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -121,6 +139,8 @@ export function App() {
       setMapLoading(false);
       setMapSources([]);
       setSelectedMessageIndex(null);
+      setDataTabViewed(true);
+      setSourcesTabViewed(true);
     } else if (!conversationIdFromUrl) {
       setLoadingConversation(false);
     }
@@ -130,7 +150,10 @@ export function App() {
     setActiveSidebarContext(ctx);
     openSidebarResponsive();
     const hasDomain = ctx.parcel_zoning || ctx.property || ctx.regulatory || ctx.incentives || ctx.neighborhood;
-    setSidebarView(hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data");
+    const autoView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
+    setSidebarView(autoView);
+    setDataTabViewed(autoView === "data");
+    setSourcesTabViewed(autoView === "sources");
   }
 
   function handleMapData(data: MapData) {
@@ -280,6 +303,8 @@ export function App() {
     setMapLoading(false);
     setMapSources([]);
     setSelectedMessageIndex(null);
+    setDataTabViewed(true);
+    setSourcesTabViewed(true);
     navigateToSplash();
   }
 
@@ -340,7 +365,10 @@ export function App() {
         openSidebarResponsive();
         const hasDomain = assistantMsg.context.parcel_zoning || assistantMsg.context.property ||
           assistantMsg.context.regulatory || assistantMsg.context.incentives || assistantMsg.context.neighborhood;
-        setSidebarView(hasDomain ? "data" : assistantMsg.context.code_chunks?.length ? "sources" : "data");
+        const autoView = hasDomain ? "data" : assistantMsg.context.code_chunks?.length ? "sources" : "data";
+        setSidebarView(autoView);
+        setDataTabViewed(autoView === "data");
+        setSourcesTabViewed(autoView === "sources");
       }
 
       // Load plan
@@ -420,12 +448,19 @@ export function App() {
     }
   }
 
+  function handleViewChange(view: SidebarView) {
+    setSidebarView(view);
+    if (view === "data") setDataTabViewed(true);
+    if (view === "sources") setSourcesTabViewed(true);
+  }
+
   function handleCitationClick(index: number, messageContext?: ContextObject) {
     if (messageContext) {
       setActiveSidebarContext(messageContext);
     }
     openSidebarResponsive();
     setSidebarView("sources");
+    setSourcesTabViewed(true);
     setHighlightedSourceIndex(index);
     setSourceFlash((f) => f + 1);
   }
@@ -433,6 +468,7 @@ export function App() {
   function handleDataClick(_source: DataSource, messageContext?: ContextObject) {
     openSidebarResponsive();
     setSidebarView("data");
+    setDataTabViewed(true);
     setHighlightedSourceIndex(null);
     if (messageContext) {
       setActiveSidebarContext(messageContext);
@@ -622,10 +658,8 @@ export function App() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                   </svg>
-                  {(activeSidebarContext?.code_chunks?.length ?? 0) > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-0.5 rounded-full text-[9px] font-semibold flex items-center justify-center bg-accent/20 text-accent">
-                      {activeSidebarContext!.code_chunks!.length}
-                    </span>
+                  {((!dataTabViewed && countDataCategories(activeSidebarContext) > 0) || (!sourcesTabViewed && (activeSidebarContext?.code_chunks?.length ?? 0) > 0)) && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent" />
                   )}
                 </button>
                 <button
@@ -680,7 +714,7 @@ export function App() {
                 isOpen={sidebarOpen}
                 onToggle={() => setSidebarOpen(!sidebarOpen)}
                 activeView={sidebarView}
-                onViewChange={setSidebarView}
+                onViewChange={handleViewChange}
                 highlightedSourceIndex={highlightedSourceIndex}
                 sourceFlashSignal={sourceFlash}
                 sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
@@ -689,6 +723,8 @@ export function App() {
                 mapData={mapData}
                 mapLoading={mapLoading}
                 mapSources={mapSources}
+                showDataBadge={!dataTabViewed}
+                showSourcesBadge={!sourcesTabViewed}
               />
             </div>
 
@@ -699,7 +735,7 @@ export function App() {
               context={activeSidebarContext}
               loading={streaming}
               activeView={sidebarView}
-              onViewChange={setSidebarView}
+              onViewChange={handleViewChange}
               highlightedSourceIndex={highlightedSourceIndex}
               sourceFlashSignal={sourceFlash}
               onSourceClick={setHighlightedSourceIndex}
@@ -707,6 +743,10 @@ export function App() {
               mapData={mapData}
               mapLoading={mapLoading}
               mapSources={mapSources}
+              showDataBadge={!dataTabViewed}
+              showSourcesBadge={!sourcesTabViewed}
+              dataCount={countDataCategories(activeSidebarContext)}
+              sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
             />
           </motion.div>
         )}

@@ -36,8 +36,10 @@ def client():
 class TestHealthEndpoint:
     def test_health_returns_ok(self, client):
         response = client.get("/health")
-        assert response.status_code == 200
-        assert response.json() == {"ok": True}
+        data = response.json()
+        assert "ok" in data
+        assert "qdrant" in data
+        assert "db" in data
 
 
 class TestAutocompleteEndpoint:

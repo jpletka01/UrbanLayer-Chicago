@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
 from backend.prompts import SYNTHESIZER_SYSTEM as SYSTEM_PROMPT
-from backend.synthesizer import _build_user_prompt
+from backend.synthesizer import _build_user_text
 from backend.models import (
     CodeChunk,
     ContextObject,
@@ -23,7 +23,7 @@ class TestBuildUserPrompt:
                 by_type={"THEFT": 80, "BATTERY": 70},
             ),
         )
-        prompt = _build_user_prompt(ctx, "What's happening?")
+        prompt = _build_user_text(ctx, "What's happening?")
 
         assert "```json" in prompt
         assert '"community_area": 24' in prompt
@@ -32,13 +32,13 @@ class TestBuildUserPrompt:
 
     def test_includes_user_message(self):
         ctx = ContextObject()
-        prompt = _build_user_prompt(ctx, "Tell me about Wicker Park")
+        prompt = _build_user_text(ctx, "Tell me about Wicker Park")
 
         assert "User question: Tell me about Wicker Park" in prompt
 
     def test_includes_citation_instruction(self):
         ctx = ContextObject()
-        prompt = _build_user_prompt(ctx, "What's the crime like?")
+        prompt = _build_user_text(ctx, "What's the crime like?")
 
         assert "Cite sources" in prompt
 
@@ -54,7 +54,7 @@ class TestBuildUserPrompt:
                 )
             ]
         )
-        prompt = _build_user_prompt(ctx, "Can I build a coach house?")
+        prompt = _build_user_text(ctx, "Can I build a coach house?")
 
         assert "17-2-0303" in prompt
         assert "Coach houses" in prompt
@@ -82,7 +82,7 @@ class TestSystemPrompt:
 class TestContextSerialization:
     def test_empty_context_serializes(self):
         ctx = ContextObject()
-        prompt = _build_user_prompt(ctx, "Test")
+        prompt = _build_user_text(ctx, "Test")
         assert "community_area" in prompt
         assert "null" in prompt or "None" not in prompt
 
@@ -113,7 +113,7 @@ class TestContextSerialization:
             ],
             requires_disclaimer=True,
         )
-        prompt = _build_user_prompt(ctx, "Overview please")
+        prompt = _build_user_text(ctx, "Overview please")
 
         assert "West Town" in prompt
         assert "Crime data may lag" in prompt

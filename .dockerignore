@@ -1,0 +1,17 @@
+.venv
+node_modules
+.git
+__pycache__
+*.pyc
+backend/data/
+ingestion/data/
+chicago-il-codes.html
+eval/
+test-results/
+.env
+.env.*
+*.egg-info
+.pytest_cache
+.mypy_cache
+frontend/node_modules
+frontend/dist

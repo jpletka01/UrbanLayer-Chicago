@@ -59,13 +59,15 @@ log = logging.getLogger(__name__)
 
 app = FastAPI(title="Chicago City Intelligence")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_settings = get_settings()
+if _settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_settings.cors_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.on_event("startup")
@@ -105,7 +107,30 @@ async def _shutdown() -> None:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"ok": True}
+    settings = get_settings()
+    qdrant_ok = False
+    db_ok = False
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(3.0)) as client:
+            r = await client.get(f"{settings.qdrant_url}/healthz")
+            qdrant_ok = r.status_code == 200
+    except Exception:
+        pass
+
+    try:
+        db_conn = db._get_db()
+        await db_conn.execute("SELECT 1")
+        db_ok = True
+    except Exception:
+        pass
+
+    ok = qdrant_ok and db_ok
+    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok}
+    if not ok:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=result, status_code=503)
+    return result
 
 
 @app.get("/autocomplete")
@@ -667,21 +692,13 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     if map_response:
         yield _sse(ChatChunk(type="map_data", map_data=map_response, t_ms=elapsed_ms()))
 
-    # Resolve upload filenames for synthesis context
-    upload_filenames: list[str] = []
-    if req.upload_ids:
-        for uid in req.upload_ids:
-            upload = await db.get_upload(uid)
-            if upload:
-                upload_filenames.append(upload["filename"])
-
     first_token = True
     try:
         async for token in stream_answer(
             context=context,
             user_message=req.message,
             history=req.history,
-            upload_filenames=upload_filenames,
+            upload_ids=req.upload_ids or None,
             request_group=request_group,
             conversation_id=req.conversation_id,
         ):

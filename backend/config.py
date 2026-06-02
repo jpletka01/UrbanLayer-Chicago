@@ -113,10 +113,14 @@ class Settings(BaseSettings):
         "image/jpeg",
         "image/png",
         "image/webp",
-        "image/heic",
         "application/pdf",
     ]
     upload_max_per_message: int = 3
+
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     enable_request_logging: bool = True
 

@@ -2751,3 +2751,734 @@ The new page follows a narrative arc: **Breadth** (look how much we cover) → *
 - **6 domain cards over 3 generic value props** — the old "Know your neighborhood" / "Understand what's changing" / "Get answers, not spreadsheets" cards were too abstract to communicate the product's actual capabilities. The new cards enumerate specific data points per domain, making the breadth immediately visible.
 - **25+ as the hero stat, not the exact count** — data source count changes as APIs are added. "25+" is durable and communicates scale without needing updates.
 - **Kept the NeighborhoodExplorer** — it's the strongest section on the page because it's interactive and proves the system works with real data. Enhanced the copy but didn't restructure it.
+
+---
+
+## Tier 1 Implementation Plans (2026-06-02)
+
+Three detailed implementation plans for the next priority features. **All three implemented on 2026-06-02.** Implementation order: Plan 2 (smallest, frontend-only) → Plan 3 (backend, completes half-built feature) → Plan 1 (infrastructure, benefits from final requirements.txt).
+
+**Implementation summary (2026-06-02):**
+
+**Plan 2 (Notification Badges) — DONE.** Added `dataTabViewed`/`sourcesTabViewed` state to `App.tsx`. Badges reset when context changes (new response or clicking a different message) and clear when the user views that tab. `countDataCategories()` counts 10 ContextObject fields (crime, 311, permits, violations, businesses, parcel_zoning, regulatory, property, incentives, neighborhood). Accent-colored count pills render inline next to tab labels in `SidebarHeader.tsx`. Collapsed rail and mobile toggle show badges for unseen content. Files: `App.tsx`, `SidebarHeader.tsx`, `SidebarPanel.tsx`, `MobileSidebarSheet.tsx`.
+
+**Plan 3 (Claude Vision) — DONE.** Created `backend/vision.py` — reads uploads from disk, resizes images >1568px via Pillow (LANCZOS, JPEG q=85), base64 encodes into Anthropic multimodal content blocks (image or document type). `synthesizer.py` refactored: `_build_user_prompt` → `_build_user_text` + new `_build_user_content` that returns a multimodal list when uploads exist. `stream_answer` accepts `upload_ids` directly (no more filename-only pass-through). `main.py` simplified: removed filename-resolution loop. Vision prompt rule added to `SYNTHESIZER_SYSTEM`. HEIC dropped from allowed types (backend config + frontend accept attribute). `Pillow>=10.0.0` added to `requirements.txt`. Files: `backend/vision.py` (new), `backend/synthesizer.py`, `backend/main.py`, `backend/prompts.py`, `backend/config.py`, `frontend/ChatInput.tsx`, `requirements.txt`.
+
+**Plan 1 (Dockerize) — DONE.** Three-container compose: `backend/Dockerfile` (multi-stage, CPU-only PyTorch ~200MB, pre-downloads BGE embedding + reranker models into image layer), `frontend/Dockerfile` (Node build → nginx:alpine), `frontend/nginx.conf` (SPA fallback, proxies `/api/*`, `/chat`, `/health`, `/autocomplete`, `/section/*` to backend with SSE-friendly buffering-off). `.dockerignore` excludes .venv, node_modules, .git, data dirs, ingestion, eval. `requirements.prod.txt` = requirements.txt minus pytest. `docker-compose.yml` rewritten with Qdrant healthcheck, backend with `backend_data` volume for SQLite persistence, frontend on port 80. `docker-compose.override.yml` for dev (mounts local code, enables `--reload`, skips frontend build). `backend/config.py` gained `cors_origins` setting (defaults to localhost:5173; set `CORS_ORIGINS='[]'` in Docker since nginx handles same-origin). `backend/main.py` CORS now configurable (skipped when empty list), `/health` enhanced to check Qdrant reachability + SQLite connection, returns 503 on failure. All 358 tests pass.
+
+### Plan 1: Dockerize the Backend
+
+**Goal:** Make the full stack launchable with `docker compose up` — backend, frontend, and Qdrant — so it can be demoed, deployed, or handed to anyone without local Python/Node setup.
+
+**Approach: Three-Container Compose**
+
+**Backend container** (`backend/Dockerfile`):
+- Multi-stage build. Stage 1 (builder): `python:3.11-slim`, install CPU-only PyTorch via `--index-url https://download.pytorch.org/whl/cpu` (~200MB vs ~2GB CUDA), then `requirements.txt`. Pre-download HuggingFace models (`BAAI/bge-base-en-v1.5` + `BAAI/bge-reranker-v2-m3`) by importing them in a throwaway script so they're baked into the image layer.
+- Stage 2 (runtime): copy venv + model cache + `backend/` directory only. Set `HF_HOME` / `TRANSFORMERS_CACHE` env vars pointing at the cached models. No `ingestion/`, `eval/`, `tests/`, `frontend/`, `.git/`, or `chicago-il-codes.html`.
+- Separate test/dev deps: create `requirements.prod.txt` (everything except `pytest*`) for the Docker build. Keep `requirements.txt` as-is for local dev.
+- CMD: `uvicorn backend.main:app --host 0.0.0.0 --port 8001`
+- Estimated image size: ~2-3GB (dominated by model weights).
+
+**Frontend container** (`frontend/Dockerfile`):
+- Two-stage build. Stage 1: `node:20-alpine`, `npm ci && npm run build`. Stage 2: `nginx:alpine`, copy `dist/` to nginx html root.
+- Custom `frontend/nginx.conf`: serves static files, proxies `/chat`, `/api/*`, `/health`, `/autocomplete`, `/section/*` to `http://backend:8001`. SPA fallback via `try_files $uri /index.html`. Cache headers (long-lived for hashed assets, no-cache for `index.html`).
+- Build args: `VITE_MAPBOX_TOKEN` (required), `VITE_API_BASE` set to empty string (nginx proxies API, so relative paths work — `api.ts` line 20 falls back to `""` which means same-origin).
+
+**Updated `docker-compose.yml`**:
+- `qdrant`: existing, unchanged.
+- `backend`: build from `backend/Dockerfile`, `env_file: .env`, override `QDRANT_URL=http://qdrant:6333`. Volume: `backend_data:/app/backend/data` (SQLite + uploads persist). Depends on `qdrant` with healthcheck. Restart: `unless-stopped`.
+- `frontend`: build from `frontend/Dockerfile`, ports `80:80`. Build args from `.env`. Depends on `backend`. Restart: `unless-stopped`.
+
+**Supporting files**:
+- `.dockerignore` at project root (exclude `.venv`, `node_modules`, `.git`, `__pycache__`, `backend/data/`, `ingestion/data/`, `chicago-il-codes.html`, `eval/`, `test-results/`).
+- `docker-compose.override.yml` for dev (mounts local backend code, enables `--reload`, skips frontend build).
+
+**Backend changes**:
+- `backend/config.py` — add `cors_origins: list[str]` setting (default `["http://localhost:5173", "http://127.0.0.1:5173"]`). In production via Docker, set to `[]` since nginx handles same-origin.
+- `backend/main.py` — use `settings.cors_origins` instead of hardcoded origins. Skip CORS middleware when list is empty. Enhance `/health` to check Qdrant reachability (`GET {qdrant_url}/healthz`) and SQLite connection, returning `{"ok": true, "qdrant": true, "db": true}` or 503 on failure.
+
+**What NOT to include**: Ingestion pipeline (runs once, not part of serving). GPU support (CPU-only PyTorch is correct for embedding + reranking).
+
+**Risks**:
+- HuggingFace download flakiness during build — mitigated by Docker layer caching.
+- SQLite WAL mode in Docker — works with named volumes on local Docker; would NOT work on network-mounted filesystems.
+- Missing `VITE_MAPBOX_TOKEN` at build time — map silently breaks; document prominently.
+
+**Files to create/modify**:
+
+| File | Action |
+|------|--------|
+| `backend/Dockerfile` | Create |
+| `frontend/Dockerfile` | Create |
+| `frontend/nginx.conf` | Create |
+| `.dockerignore` | Create |
+| `requirements.prod.txt` | Create (requirements.txt minus pytest*) |
+| `docker-compose.yml` | Rewrite (add backend + frontend services) |
+| `docker-compose.override.yml` | Create (dev overrides) |
+| `backend/config.py` | Add `cors_origins` setting |
+| `backend/main.py` | Configurable CORS, enhanced `/health` |
+
+---
+
+### Plan 2: Notification Badges on Data/Sources Tabs
+
+**Goal:** Show users that rich data is waiting in sidebar tabs they haven't looked at yet. Numeric badges on the "Data" and "Sources" tab headers that appear when new data arrives and disappear after the user views that tab.
+
+**Approach: "New Data" Badges That Clear on View**
+
+**Data tab badge** — count of non-null domain data categories in the current `ContextObject`:
+- `crime_last_90d`, `open_311_requests`, `permits`, `violations`, `businesses` (Socrata summaries)
+- `parcel_zoning`, `regulatory`, `property`, `incentives`, `neighborhood` (domain data)
+- Count range: 0–10. Show badge when count > 0 AND user hasn't viewed the Data tab for this context.
+
+**Sources tab badge** — `code_chunks.length`. Show when count > 0 AND user hasn't viewed Sources for this context.
+
+**State model — two booleans in `App.tsx`**: `dataTabViewed` and `sourcesTabViewed`.
+
+Reset to `false` when `activeSidebarContext` changes (new response arriving via `handleContext`, or user clicking a different old message via `handleMessageClick`).
+
+Set to `true` when user switches to that tab (`onViewChange`), tab is auto-selected on context arrival (e.g., Sources auto-selected when code chunks exist), or sidebar opens and active tab is already that tab.
+
+Result: badges reappear whenever context changes, clear once the user views the tab. No per-message persistence needed.
+
+**Implementation**:
+
+1. **Helper function** — `countDataCategories(context: ContextObject | null): number` inline in `SidebarPanel.tsx`. Checks each of 10 `ContextObject` fields for non-null.
+
+2. **`App.tsx`** — Add `dataTabViewed`/`sourcesTabViewed` state (init `true`). Reset both to `false` in `handleContext` and `handleMessageClick`. Set relevant flag to `true` in `onViewChange` handler and when auto-selecting a tab. Pass `showDataBadge`/`showSourcesBadge` (computed as `count > 0 && !tabViewed`) to sidebar components. Update mobile toggle button badge.
+
+3. **`SidebarHeader.tsx`** — Add `dataCount`, `sourceCount`, `showDataBadge`, `showSourcesBadge` props. Render pill badge (`bg-accent/20 text-accent text-[10px] font-semibold rounded-full`) to right of each tab label when `showXBadge` is true. Count displayed inside badge.
+
+4. **`SidebarPanel.tsx`** — Accept badge visibility props from parent. Compute `dataCount` from context. Pass to `SidebarHeader`. Update collapsed rail to show badge(s) only when there's unseen content.
+
+5. **`MobileSidebarSheet.tsx`** — Same pattern: accept badge visibility props, pass to `SidebarHeader`.
+
+**Design details**:
+- Badge style matches existing collapsed-rail badge: `bg-accent/20 text-accent text-[10px] font-semibold rounded-full min-w-[1.25rem] h-5 px-1`.
+- Position: inline-flex to right of tab label text, inside the tab button.
+- Subtle scale-in via `transition-all duration-200`.
+- Badge on **inactive** tab is the key signal — "switch here, there's content you haven't seen."
+- When context arrives and sidebar auto-opens to Sources, Sources badge clears instantly (you're already looking at it). Data badge persists as the interesting signal.
+
+**Risks**:
+- Badge clutter with high counts — cap at "9+" if needed, but most queries activate 3-5 categories.
+- Layout shift — pills are small (20px), use `min-w` to prevent jitter.
+
+**Files to modify**:
+
+| File | Change |
+|------|--------|
+| `frontend/src/App.tsx` | Add viewed state, reset/set logic, compute badge visibility, pass to sidebar |
+| `frontend/src/components/SidebarHeader.tsx` | Add badge props, render conditional pill badges on tabs |
+| `frontend/src/components/SidebarPanel.tsx` | Compute `dataCount`, pass badge visibility to header, update rail |
+| `frontend/src/components/MobileSidebarSheet.tsx` | Accept/pass badge visibility props |
+
+---
+
+### Plan 3: Claude Vision for File Uploads
+
+**Goal:** Make the existing upload pipeline actually work — uploaded images and PDFs should be analyzed by Claude during synthesis, not just mentioned by filename. Users can photograph a building, a lease document, or an inspection report and ask questions about it in the Chicago context.
+
+**Key decision: images go to the synthesis phase only, not the router.** The router's job is parsing text queries into structured retrieval plans. Adding images to the router would increase cost and latency without much benefit — the user describes what they want in text, the image provides evidence. TODO comment notes router vision can be added later for cases where the image IS the query.
+
+**Implementation**:
+
+1. **Create `backend/vision.py`** — file processing module:
+   - `async def prepare_upload_content_blocks(upload_ids: list[str]) -> list[dict]`: for each upload_id, look up DB record → read file from `storage_path` → process by MIME type → return Anthropic content block. Images (JPEG, PNG, WebP): resize if needed, return `{"type": "image", "source": {"type": "base64", ...}}`. PDFs: return `{"type": "document", "source": {"type": "base64", "media_type": "application/pdf", ...}}`. Errors (file missing, corrupted): log warning, skip file, don't block.
+   - `def _maybe_resize_image(data, mime_type, max_dim=1568) -> (bytes, str)`: Claude downscales images >1568px internally, so resize before sending to save bandwidth and tokens. Use `PIL.Image.thumbnail()` with LANCZOS. Convert to JPEG quality=85 for photos. A 4032x3024 iPhone photo (~4MB) → ~300KB after resize.
+
+2. **Modify `backend/synthesizer.py`**: The key change is `_build_user_prompt` currently returns a `str`. With images, user message content must be a `list[dict]` (Anthropic multimodal format).
+   - Rename `_build_user_prompt` → `_build_user_text` (returns text portion).
+   - New `_build_user_content(context, user_message, upload_content_blocks) -> str | list[dict]`: if no uploads, return plain string (preserves current behavior exactly). If uploads, return `[{"type": "text", "text": text_with_preamble}, ...content_blocks]`.
+   - Update `stream_answer` to accept `upload_ids: list[str]` instead of `upload_filenames: list[str]`. Call `prepare_upload_content_blocks(upload_ids)` inside.
+   - The `tracked_stream` wrapper in `llm.py` passes `**kwargs` through to `client.messages.stream()`, so no changes needed there.
+
+3. **Modify `backend/main.py`** (lines 670-676): replace filename-resolution loop with passing `upload_ids` directly to `stream_answer`.
+
+4. **Modify `backend/prompts.py`**: add vision rule to `SYNTHESIZER_SYSTEM` — analyze visual content in Chicago context, for building photos identify visible features, for documents extract and cross-reference with city data, state observations before connecting to data.
+
+5. **Drop HEIC support**: remove `"image/heic"` from `upload_allowed_types` in `backend/config.py`. iPhones convert to JPEG when uploading through web forms. Also update `accept` attribute in `ChatInput.tsx`.
+
+6. **No other frontend changes needed.** The frontend already handles file picking, upload, passing `upload_ids` in chat stream, and rendering attachment thumbnails.
+
+**Token cost implications**:
+- 1024x1024 image ≈ 765 input tokens → ~$0.002 at Sonnet pricing.
+- After resize, phone photos ≈ 500-800 tokens. 3 images: ~$0.006 per message.
+- PDFs vary by page count. 5-page PDF ≈ 2000-3000 tokens.
+- Images only sent to synthesis (not router) — no double-counting.
+- Existing `llm_calls` table automatically captures higher input tokens — visible in admin.
+
+**Future-proofing for tier 2 context management**:
+- Images are sent only on the turn they're uploaded (`upload_ids` is per-`ChatRequest`, not accumulated). On follow-up turns, the image is NOT re-sent — backend `Message` model is text-only.
+- Future enhancement (NOT this PR): after synthesis, extract a text summary of what Claude observed. Store as `image_analysis: str` on the assistant message context. On follow-ups, include text summary instead of raw image. Keeps vision insights available without re-sending images.
+
+**Risks**:
+- Token cost with large PDFs — consider configurable page limit or warning log for >20 pages.
+- Memory usage: loading + resizing + base64 for 3 × 10MB = ~60MB peak. Fine for single-user.
+- Latency: +1-2s for base64 encoding + larger payload. Acceptable given 3-8s synthesis time.
+
+**Files to create/modify**:
+
+| File | Action |
+|------|--------|
+| `backend/vision.py` | Create — file reading, resizing, base64 encoding, content blocks |
+| `backend/synthesizer.py` | Modify — multimodal content blocks, accept upload_ids |
+| `backend/main.py` | Modify — pass upload_ids instead of filenames |
+| `backend/prompts.py` | Modify — add vision analysis rules to SYNTHESIZER_SYSTEM |
+| `backend/config.py` | Modify — drop `image/heic`, add `vision_max_image_dim: int = 1568` |
+| `frontend/src/components/ChatInput.tsx` | Modify — remove HEIC from file input `accept` attribute |
+
+---
+
+### Verification Checklist
+
+**Plan 1 (Docker)**: `docker compose up --build` brings up all three services. Frontend at `http://localhost` proxies API calls. Test a chat query end-to-end. SQLite data persists across container restarts. `/health` returns qdrant + db status.
+
+**Plan 2 (Badges)**: Send a query returning both code chunks and data (e.g., address query). Badges appear on both tabs. Clicking a tab clears its badge. Clicking old messages re-shows badges. Collapsed rail shows badges. Mobile bottom sheet shows badges.
+
+**Plan 3 (Vision)**: Upload a photo, ask about it. Claude's response references image content. Upload a PDF, verify analysis. Admin dashboard shows higher input token counts. No-upload queries behave identically to before.
+
+---
+
+## Tier 2 Implementation Plans (2026-06-02)
+
+Three detailed implementation plans for the Tier 2 features. These are planning-only — no code changes made in this session. Tier 2 focuses on infrastructure that must exist before monetization: intelligent token management, latency reduction, and exportable reports that provide standalone value. Implementation order: Plan 2 (smallest, extends existing patterns) → Plan 3 (medium, frontend-focused) → Plan 1 (largest, core pipeline change).
+
+### Plan 1: Intelligent Context Management
+
+**Goal:** Replace the current approach — where the synthesizer receives the full text of ALL prior conversation messages plus the current turn's complete ContextObject — with a system where each prior turn is reduced to a compact structured summary, and the synthesizer can selectively reference specific prior-turn data on demand. This addresses linear token growth, dataset bleeding between locations, and wasted context on stale data. Lays the groundwork for raising the 10-message conversation limit and potential paywalling of extended conversations.
+
+**Current problem in detail:** The synthesizer call in `stream_answer()` builds messages like:
+```python
+messages = [{"role": m.role, "content": m.content} for m in history]
+messages.append({"role": "user", "content": _build_user_prompt(context, user_message)})
+```
+Every prior message is included verbatim. A 5-turn conversation about an address can have 3000-5000 tokens of history per prior turn, plus the current turn's ContextObject (~2000 tokens). Total input grows to 15,000-25,000 tokens by turn 5 — expensive and noisy. The synthesizer struggles to find the needle (the user's simple follow-up question) in the haystack (pages of prior crime/property/regulatory data that isn't relevant to the current question).
+
+**Approach: Hybrid Summary + Selective Retrieval**
+
+The recommended design combines two strategies: **per-turn structured summaries** (generated cheaply after each turn, no LLM call) that always travel with history, plus **location-aware context isolation** that prevents data bleeding between distinct locations.
+
+**How it works, step by step:**
+
+1. **After each assistant turn completes**, a new module (`backend/context_manager.py`) generates a `TurnSummary` from the just-completed turn's ContextObject and RetrievalPlan. This summary is ~100-200 tokens (vs. 2000-5000 for the raw context + response) and captures: location queried, data sources used, key statistics (crime total, permit count, assessed value), code sections cited, and the user's question. This is a **pure function** — no LLM call, no extra cost, no latency.
+
+2. **The `TurnSummary` is stored** in a new `summary_json` column on the `messages` table (alongside the existing `context_json`), so it persists and can be loaded when a conversation is resumed.
+
+3. **On subsequent turns**, instead of sending all prior message text to the synthesizer, the system sends:
+   - (a) The TurnSummaries for all prior turns (compact, structured)
+   - (b) The last 2 assistant messages verbatim (sliding window for continuity)
+   - (c) The current turn's full ContextObject
+
+4. **Location-aware context isolation**: The TurnSummary includes the `community_area` and `resolved_address`. When the router detects a new location (different community area or address from the most recent turn), the synthesizer prompt explicitly instructs: "The user has switched locations. Prior turn data is for [old location] and should only be referenced if the user explicitly requests a comparison." This eliminates dataset bleeding.
+
+5. **Token budget math**: A 5-turn conversation currently sends ~15,000-25,000 tokens of history. With summaries: 5 × 150 tokens (summaries) + 2 × 2000 tokens (last 2 turns verbatim) + 2000 tokens (current context) = ~6,750 tokens. That's a **55-73% reduction** in synthesizer input tokens.
+
+**Why SQLite summaries, not MD files on disk:** The `context_json` blob already lives in SQLite per message. Adding `summary_json` alongside it keeps a single source of truth with no filesystem cleanup, no path management, and no risk of orphaned files. The structured summary achieves the same goal as MD files — quick retrieval of prior-turn knowledge without loading the full context.
+
+**Alternative approaches considered:**
+
+| Approach | Pros | Cons |
+|---|---|---|
+| MD files per turn on disk | Human-readable, easy to inspect | Second source of truth, filesystem cleanup needed, no advantage over SQLite |
+| Full Claude tool-use for prior context | Most flexible — Claude decides what to retrieve | Adds 1-3s latency per tool call, changes synthesizer API mode, complicates streaming SSE, harder to test |
+| Pure LLM summarization (Haiku per turn) | Highest-quality summaries | $0.002-0.01 per turn extra cost, adds latency, another failure point |
+| Pure sliding window (last 3 turns) | Simplest to implement | Loses early-conversation context, bad for 10+ turn conversations |
+| **Hybrid summary + selective injection (chosen)** | No extra LLM cost, predictable token budget, location-aware isolation, compatible with future tool-use upgrade | Summaries are heuristic not LLM-generated — less fluent than LLM summaries |
+
+**Detailed implementation steps:**
+
+**Phase 1: TurnSummary generation and storage (backend-only, no user-facing change)**
+
+**Step 1: Create `backend/context_manager.py`**
+
+Key types and functions:
+
+```python
+class TurnSummary(BaseModel):
+    """Compact summary of one conversation turn (~100-200 tokens)."""
+    turn_index: int
+    user_question: str                      # original user message, max 200 chars
+    location_community_area: int | None
+    location_community_area_name: str | None
+    location_address: str | None
+    workflow_hint: str
+    sources_used: list[str]
+    key_facts: list[str]                    # max 10 bullet-point facts
+    code_sections_cited: list[str]          # section IDs only
+    data_as_of: str | None
+
+def summarize_turn(
+    turn_index: int,
+    user_message: str,
+    plan: RetrievalPlan,
+    context: ContextObject,
+) -> TurnSummary:
+    """Pure function: extract key facts from a completed turn's context. No LLM call."""
+
+def format_summaries_for_prompt(
+    summaries: list[TurnSummary],
+    current_location: Location | None = None,
+) -> str:
+    """Format turn summaries as concise text for the synthesizer prompt.
+    Groups by location. Marks which turns are for the current vs. different locations."""
+
+def detect_location_switch(
+    current_plan: RetrievalPlan,
+    prior_summaries: list[TurnSummary],
+) -> tuple[bool, str | None]:
+    """Returns (switched, prior_location_name) if the user changed locations."""
+```
+
+The `summarize_turn` function extracts key facts heuristically from each domain:
+- Crime: "{total} crimes, {arrest_rate}% arrest rate, top type: {top_type}"
+- Property: "PIN {pin14}, {bldg_sqft}sqft, assessed at ${total_assessed_value}"
+- Regulatory: list of active overlays by name
+- Incentives: TIF name, OZ status
+- Neighborhood: population, median income, Walk Score
+- Code: section IDs only (the text is in Qdrant, not worth repeating)
+- Each fact is one line, max 10 facts per turn
+
+**Step 2: Extend `backend/models.py`**
+
+Add `TurnSummary` to models.py (BaseModel with the fields above). Add `summary_json: str | None` to `StoredMessage`. No changes to `Message` (the lightweight chat history type that travels in `ChatRequest`).
+
+**Step 3: Schema migration in `backend/db.py`**
+
+Add `summary_json TEXT` column to the `messages` table. Bump `_SCHEMA_VERSION` to 3. Add `_SCHEMA_V3` migration: `ALTER TABLE messages ADD COLUMN summary_json TEXT`. Update `save_messages` to accept and store the summary JSON. Update `get_conversation` to return it. `ALTER TABLE ADD COLUMN` is non-destructive — old messages get `NULL`, which the code handles by falling back to full-text history.
+
+**Step 4: Modify `backend/main.py` `_event_stream`**
+
+After synthesis completes (after the `async for token in stream_answer(...)` loop), call `summarize_turn()` with the turn's plan and context. Include the TurnSummary in the message save. This is fire-and-forget — it does not affect the SSE stream or add latency.
+
+**Phase 2: Use summaries in synthesis (the token-saving change)**
+
+**Step 5: Modify `backend/synthesizer.py`**
+
+Replace the current `stream_answer` signature. Instead of receiving `history: list[Message]` (full text of all prior turns), receive `turn_summaries: list[TurnSummary]` plus `recent_messages: list[Message]` (last 2 assistant messages only, for continuity).
+
+New history builder:
+```python
+messages = []
+# Prior turn context via summaries
+if summaries:
+    summary_text = format_summaries_for_prompt(summaries, current_location)
+    messages.append({"role": "user", "content": summary_text})
+    messages.append({"role": "assistant", "content": "Understood. I have the conversation context."})
+# Sliding window: last 2 user+assistant pairs verbatim
+for m in recent_messages[-4:]:
+    messages.append({"role": m.role, "content": m.content})
+# Current turn with full context
+messages.append({"role": "user", "content": _build_user_prompt(context, user_message)})
+```
+
+**Step 6: Modify `backend/main.py` to load summaries**
+
+When processing a chat request with `conversation_id`, load `TurnSummary` objects from SQLite for this conversation. Pass them to `stream_answer` instead of the full history. For conversations without summaries (pre-migration), fall back to the current full-history approach.
+
+**Step 7: Modify `backend/prompts.py`**
+
+Add to `SYNTHESIZER_SYSTEM`:
+- "You receive a conversation history section summarizing what was discussed in prior turns. Use these summaries for continuity."
+- "When the user has switched locations, prior turn data is for [location] only. Do not apply prior location data to the current query unless the user explicitly requests a comparison."
+- "If you need specific data from a prior turn that is not in the summaries, note that limitation rather than guessing."
+
+**Phase 3: Frontend awareness (optional polish)**
+
+**Step 8: Emit `turn_summary` SSE event and update frontend types**
+
+Add `"turn_summary"` variant to `ChatChunk`. Frontend stores it on the message. Enables future UX: showing "Context: Lincoln Park crime, regulatory, property" badges on prior messages.
+
+**Files to create/modify:**
+
+| File | Action |
+|------|--------|
+| `backend/context_manager.py` | **Create** — TurnSummary model, summarize_turn(), format_summaries_for_prompt(), detect_location_switch() |
+| `backend/models.py` | **Modify** — add TurnSummary, extend StoredMessage with summary_json |
+| `backend/db.py` | **Modify** — schema v3 migration (summary_json column), update save/get |
+| `backend/synthesizer.py` | **Modify** — new signature accepting summaries + recent_messages, new history builder |
+| `backend/main.py` | **Modify** — generate summary after turn, load summaries for subsequent turns, pass to synthesizer |
+| `backend/prompts.py` | **Modify** — add summary-aware rules, location-switch isolation rules |
+| `backend/config.py` | **Modify** — add `context_summary_max_facts: int = 10`, `context_sliding_window_turns: int = 2` |
+| `frontend/src/lib/types.ts` | **Modify** — add TurnSummary type |
+| `frontend/src/lib/useChat.ts` | **Modify** — handle turn_summary SSE event |
+| `backend/tests/test_context_manager.py` | **Create** — unit tests for summarize_turn, format_summaries, detect_location_switch |
+| `backend/tests/test_synthesizer.py` | **Modify** — update for new signature |
+
+**Risks and mitigations:**
+
+| Risk | Mitigation |
+|---|---|
+| Heuristic summaries miss important nuances | Keep last 2 turns verbatim as safety net. LLM-generated summaries can be added later as opt-in upgrade. |
+| Schema migration breaks existing conversations | `ALTER TABLE ADD COLUMN` is non-destructive. Old messages have `summary_json = NULL`, code falls back to full-text history. |
+| Location detection false positives | Use exact `community_area` integer comparison, not name matching. Only trigger isolation language when both turns have resolved locations and they differ. |
+| Summaries too lossy for some follow-ups | The `context_json` blob still exists. Future selective injection can pull it if needed. |
+| Synthesis quality regression | Test with full eval suite (`eval/run_eval.py --full --judge`) before and after the change. The sliding window (last 2 turns verbatim) provides the most important recent context. |
+
+**Verification checklist:**
+
+- [ ] `summarize_turn()` produces valid TurnSummary for each domain (crime, property, regulatory, incentives, neighborhood, vector search)
+- [ ] Schema migration from v2 to v3 is non-destructive (old conversations still load)
+- [ ] Multi-turn conversation: ask about Lincoln Park, then ask a follow-up — synthesizer receives summary of turn 1, not full text
+- [ ] Neighborhood switch: ask about Lincoln Park, then "what about Englewood?" — synthesizer prompt contains location isolation instruction
+- [ ] Token count comparison: same 5-turn conversation with old vs. new system, verify 50%+ reduction in synthesizer input tokens (visible in admin dashboard `llm_calls` table)
+- [ ] `eval/run_eval.py --full --judge` passes — no synthesis quality regression
+- [ ] 380 existing tests still pass (schema migration backward-compatible)
+- [ ] Pre-migration conversations (without summaries) still work via full-text fallback
+
+**Estimated complexity:** **Large** — 3-5 days. Phase 1 (summary generation + storage) can ship independently as a no-op change. Phase 2 (using summaries in synthesis) is the behavioral change requiring eval validation. Phase 3 (frontend awareness) is optional polish.
+
+---
+
+### Plan 2: Reduce Latency on Large API Calls
+
+**Goal:** Cut median total query latency from ~13s to ~9s by caching the uncached Socrata core queries (crime, 311, permits, violations, business — currently the largest uncached component at 2-5s per turn), adding HTTP connection pooling, and implementing per-conversation context reuse for repeat queries against the same location.
+
+**Current state:** TTL caching is already wired into 11 external API functions across the property/regulatory/incentives domains (via `backend/retrieval/cache.py`). Startup preloading covers TIF/EZ boundaries, transit stations, and demographics. `asyncio.gather` parallelizes retrieval throughout. But the 5 Socrata core queries — the ones that run on nearly EVERY query — have **no caching at all**. Same-address re-queries within a session repeat everything.
+
+**Approach: Three-Layer Caching Strategy**
+
+**Layer 1: Socrata query-level TTL cache** — Apply the existing `TTLCache` pattern to the 5 uncached Socrata query functions. This is the highest-ROI change — a mechanical application of a proven pattern.
+
+**Layer 2: Shared long-lived httpx.AsyncClient** — Replace per-request `httpx.AsyncClient` construction with a singleton that benefits from HTTP connection reuse, TCP keep-alive, and HTTP/2 multiplexing.
+
+**Layer 3: Per-conversation context reuse** — When a follow-up query targets the same community area and time range, reuse the prior turn's ContextObject for overlapping sources instead of re-retrieving.
+
+**Alternative approaches considered:**
+
+| Approach | Pros | Cons |
+|---|---|---|
+| Redis/Memcached external cache | Production-grade, shared across processes | Adds infrastructure dependency, overkill for single-user/low-scale |
+| Full response caching (cache entire ContextObject by query hash) | Maximal cache hit rate | Fragile — slight query variation = miss, hard to invalidate partially |
+| Speculative prefetching (prefetch adjacent community areas) | Instant for "what about [neighbor]?" | Wastes API calls for 70%+ of cases, Socrata rate limit risk |
+| CDN/proxy caching | Zero code changes | Socrata already has CDN; parameterized queries aren't cacheable at URL level |
+| **Three-layer caching (chosen)** | Targets actual bottleneck, uses existing TTLCache pattern, no new dependencies | TTL staleness for time-sensitive data (acceptable given 7-day crime lag) |
+
+**Detailed implementation steps:**
+
+**Step 1: Add TTL caching to Socrata core queries**
+
+Files: `backend/retrieval/crime.py`, `backend/retrieval/three11.py`, `backend/retrieval/buildings.py`, `backend/retrieval/business.py`
+
+Each file gets a module-level `TTLCache` instance, following the exact pattern in `backend/retrieval/zoning.py` and `backend/retrieval/property/parcels.py`:
+
+```python
+from backend.retrieval.cache import TTLCache
+_cache = TTLCache(ttl_seconds=900, maxsize=256)
+
+async def crime_by_community_area(community_area, *, days=90, client=None):
+    key = f"crime:{community_area}:{days}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+    # ... existing retrieval code ...
+    _cache.set(key, result)
+    return result
+```
+
+TTL values by source (chosen based on data freshness characteristics):
+- Crime: **900s (15 min)** — data has a 7-day reporting lag; 15-min TTL is invisible relative to this
+- 311: **900s (15 min)** — open requests change slowly
+- Permits: **3600s (1 hour)** — infrequently updated
+- Violations: **3600s (1 hour)** — same
+- Business licenses: **3600s (1 hour)** — same
+
+For `backend/retrieval/map_data.py`: map data functions fetch larger datasets (2500 crime rows vs. 35 for chat) and get their own cache instances with the same TTLs.
+
+**Step 2: Shared long-lived httpx.AsyncClient**
+
+File: `backend/retrieval/socrata.py`
+
+Currently `main.py:_retrieve()` creates `async with httpx.AsyncClient() as client:` per request — a new TCP connection pool each time. Socrata supports HTTP keep-alive.
+
+```python
+@lru_cache
+def get_socrata_client() -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        timeout=httpx.Timeout(connect=5.0, read=20.0, write=10.0, pool=5.0),
+        limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        http2=True,
+    )
+```
+
+Update `socrata_get()` to use this when `client is None`. Update `main.py:_retrieve()` and `_fetch_map_rows()` to not create their own clients. Add cleanup to `main.py:_shutdown()`.
+
+**Step 3: Per-conversation context reuse**
+
+File: `backend/main.py`
+
+When a follow-up query targets the same community area as the prior turn, skip re-retrieval for overlapping sources. After routing:
+
+```python
+if req.conversation_id and req.history:
+    prior_ctx = _find_reusable_context(req.history, plan)
+    if prior_ctx:
+        context = _merge_contexts(prior_ctx, plan, new_sources_only=True)
+```
+
+`_find_reusable_context` checks: same community_area, overlapping sources, prior context less than 15 minutes old. For overlapping sources, reuse cached summaries directly. Only re-fetch sources new in this turn's plan.
+
+**Step 4: Cache hit metrics**
+
+File: `backend/retrieval/cache.py`
+
+Add hit/miss counters to `TTLCache`. New `/api/admin/cache` endpoint that iterates `TTLCache._instances` and reports hit rates per cache. Visible in admin dashboard for monitoring cache effectiveness.
+
+**Files to create/modify:**
+
+| File | Action |
+|------|--------|
+| `backend/retrieval/crime.py` | **Modify** — add TTLCache (15 min TTL) |
+| `backend/retrieval/three11.py` | **Modify** — add TTLCache (15 min TTL) |
+| `backend/retrieval/buildings.py` | **Modify** — add TTLCache (1 hour TTL, separate for permits and violations) |
+| `backend/retrieval/business.py` | **Modify** — add TTLCache (1 hour TTL) |
+| `backend/retrieval/map_data.py` | **Modify** — add TTLCache for map-level queries |
+| `backend/retrieval/socrata.py` | **Modify** — shared long-lived httpx.AsyncClient with HTTP/2 |
+| `backend/retrieval/cache.py` | **Modify** — add hit/miss counters, hit_rate property |
+| `backend/main.py` | **Modify** — remove per-request client construction, add context reuse logic, add `/api/admin/cache` endpoint, close shared client on shutdown |
+| `backend/config.py` | **Modify** — add `cache_ttl_crime: int = 900`, `cache_ttl_slow: int = 3600` |
+
+**Risks and mitigations:**
+
+| Risk | Mitigation |
+|---|---|
+| Stale cache for crime data (15 min window) | Crime data already has 7-day reporting lag. 15-min TTL is invisible vs. this baseline staleness. |
+| Memory growth from cached responses | Maxsize=256 per cache with LRU eviction. ~50KB max per entry. Total: ~12MB across all caches. |
+| Shared httpx.AsyncClient thread safety | httpx.AsyncClient is safe for concurrent use within a single asyncio event loop (standard FastAPI model). |
+| HTTP/2 unsupported by Socrata | httpx falls back to HTTP/1.1 transparently if negotiation fails. |
+| Context reuse returns stale data | Only reuse within same conversation and within 15 minutes. New conversations start fresh. |
+
+**Verification checklist:**
+
+- [ ] Same community area queried twice in 15 minutes — second query is <1s (cache hit)
+- [ ] Different community area — full retrieval happens (cache miss)
+- [ ] Cache TTL expiry — after TTL, data is re-fetched
+- [ ] `/api/admin/cache` endpoint returns hit rates for all cache instances
+- [ ] `eval/run_eval.py` passes with caching enabled (same quality, lower latency)
+- [ ] Latency comparison: run the 39-query eval suite with and without caching, measure p50/p90
+- [ ] Memory usage stable under repeated queries (no unbounded growth)
+- [ ] 380 existing tests pass (cache is transparent to business logic)
+- [ ] Shared httpx client properly closed on shutdown (no resource leaks)
+
+**Estimated complexity:** **Small-Medium** — 1-2 days. Step 1 is mechanical pattern replication. Step 2 is a refactor. Step 3 adds moderate logic.
+
+---
+
+### Plan 3: Conversation Export with Sources and Maps
+
+**Goal:** Add a "Download Report" button to the chat interface that generates a professional, printable document containing the full conversation transcript, map screenshot(s), data summaries (property, regulatory, incentives, neighborhood), source citations (municipal code sections), and data provenance disclaimers. Primary use case: real estate due diligence — an investor or developer asks UrbanLayer about a site and exports a polished report to share with partners, attorneys, or lenders. Works entirely client-side to avoid server-side dependencies, with lazy-loaded libraries to avoid impacting the 923KB bundle.
+
+**Approach: Client-Side HTML-to-PDF with Lazy Loading**
+
+Generate a styled HTML document from conversation data already in frontend state, then convert to PDF using `jspdf` + `html2canvas` loaded via dynamic `import()`. Map screenshot via Mapbox GL JS built-in `getCanvas().toDataURL()` (requires `preserveDrawingBuffer: true`).
+
+**Why client-side:**
+- All data is already in the frontend (per-message `context`, `plan`, `mapData` in state)
+- No new backend endpoints needed
+- No server-side PDF library (would add `reportlab` or `weasyprint` — heavy)
+- Map screenshot must happen client-side anyway (WebGL canvas)
+
+**Alternative approaches considered:**
+
+| Approach | Pros | Cons |
+|---|---|---|
+| Server-side PDF (reportlab/weasyprint) | Full layout control, no client dependency | Adds Python dependency, can't capture map, data must round-trip to backend |
+| @react-pdf/renderer | React-native, programmatic PDF | Can't render WebGL maps, requires re-building components for PDF, large bundle |
+| Print stylesheet only (no download) | Zero dependencies, instant | No downloadable file, relies on Print dialog, inconsistent cross-browser |
+| Puppeteer/Playwright server-side | Pixel-perfect screenshot of actual UI | Heavy dependency (headless Chrome, 200MB+), high memory |
+| **HTML report + jspdf lazy-loaded (chosen)** | Small footprint (~70KB), map capture works, lazy-loaded, Print fallback | html2canvas can have rendering quirks with complex CSS |
+
+**Detailed implementation steps:**
+
+**Step 1: Enable map canvas capture**
+
+File: `frontend/src/components/sidebar/MapView.tsx`
+
+Add `preserveDrawingBuffer: true` to Mapbox GL JS map initialization. Performance note: ~5-10% slower frame rendering, negligible for a sidebar map that isn't continuously animating.
+
+Expose `getMapScreenshot()` via a ref/callback:
+```typescript
+export function getMapScreenshot(mapRef: React.RefObject<mapboxgl.Map | null>): string | null {
+    if (!mapRef.current) return null;
+    try { return mapRef.current.getCanvas().toDataURL('image/png'); }
+    catch { return null; }
+}
+```
+
+**Step 2: Create the report builder module**
+
+File: `frontend/src/lib/reportBuilder.ts`
+
+Takes conversation data and produces structured report content:
+
+```typescript
+interface ReportSection {
+    type: 'header' | 'qa' | 'map' | 'property' | 'regulatory' | 'incentives' |
+          'neighborhood' | 'sources' | 'disclaimer';
+    title: string;
+    content: string | Record<string, unknown>;
+}
+
+interface ReportData {
+    title: string;
+    address: string | null;
+    communityArea: string | null;
+    generatedAt: string;
+    sections: ReportSection[];
+    mapScreenshotDataUrl: string | null;
+}
+
+export function buildReportData(
+    messages: Message[],
+    mapScreenshot: string | null,
+    conversationTitle: string,
+): ReportData
+```
+
+Key logic:
+- Extract the **most recent** context per data domain (last assistant message with property data for property section, etc.)
+- Format Q&A pairs with clean text (strip markdown artifacts)
+- Collect all unique `code_chunks` across all turns for the sources section
+- Build disclaimer text from `requires_disclaimer` flags and `data_lag_note`
+- De-duplicate across turns (same property appearing in multiple turns)
+
+**Step 3: Create the report renderer component**
+
+File: `frontend/src/components/ExportReport.tsx`
+
+Full-page overlay with scrollable report preview + action buttons:
+
+Report sections (in order):
+1. **Header** — "UrbanLayer Site Report" + address/location + date
+2. **Map** — embedded PNG from screenshot (full-width)
+3. **Property Summary** — table: PIN, address, sqft, assessments, tax estimate
+4. **Regulatory Overview** — overlay list, zoning, flood zone, brownfields
+5. **Incentive Programs** — TIF details, OZ/EZ status
+6. **Neighborhood Profile** — demographics, transit, Walk Score bars
+7. **Conversation Transcript** — each Q&A pair, formatted
+8. **Municipal Code Citations** — each cited section with title and excerpt
+9. **Data Sources & Provenance** — all sources queried, timestamps, disclaimer, capped-result warnings
+
+Styling: inline styles (not Tailwind) for html2canvas compatibility. Light theme (white background, dark text) for print readability.
+
+**Step 4: Lazy-load PDF libraries**
+
+File: `frontend/src/lib/pdfExport.ts`
+
+```typescript
+export async function downloadPDF(reportElement: HTMLElement, filename: string): Promise<void> {
+    const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+    ]);
+    const canvas = await html2canvas(reportElement, {
+        scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
+    });
+    // Multi-page PDF generation from canvas...
+    pdf.save(filename);
+}
+```
+
+Dynamic import means ~70KB is only loaded on "Download PDF" click. Initial bundle unaffected.
+
+**Step 5: Add the export button**
+
+File: `frontend/src/components/ChatInterface.tsx`
+
+"Download Report" button in chat header, visible when:
+- At least one completed assistant message with context data exists
+- Not currently streaming
+- Conversation has messages (not splash screen)
+
+File: `frontend/src/App.tsx`
+
+Add `showExport` state. When true, render `ExportReport` as modal overlay. Pass map screenshot ref.
+
+**Step 6: Install dependencies**
+
+```
+npm install jspdf html2canvas
+```
+
+Lazy-loaded via dynamic import — zero impact on initial bundle chunk.
+
+**Step 7: Print stylesheet**
+
+File: `frontend/src/index.css`
+
+```css
+@media print {
+    body > #root > *:not(.export-report) { display: none !important; }
+    .export-report { display: block !important; }
+}
+```
+
+**Report content for real estate due diligence:**
+
+A complete export captures everything a professional needs for site evaluation:
+- Property: PIN, building class, dimensions, 5-year assessment history, recent sales, estimated annual tax with agency breakdown
+- Zoning: zone class with description, link to official map, key permitted/prohibited uses
+- Regulatory: all overlay designations (landmark, historic, planned development, TOD, etc.), flood zone, brownfield proximity
+- Incentives: TIF district financials (revenue/expenditure history), Opportunity Zone, Enterprise Zone
+- Safety: 90-day crime summary with arrest rates, 311 open issues, building violations, recent permits
+- Neighborhood: demographics, Walk/Transit/Bike scores, nearest CTA/Metra stations
+- Legal: all cited municipal code sections with full text and cross-references
+- Provenance: data-as-of dates, API lag notes, capped-result warnings, legal disclaimer
+
+**Files to create/modify:**
+
+| File | Action |
+|------|--------|
+| `frontend/src/lib/reportBuilder.ts` | **Create** — buildReportData(), ReportData/ReportSection types |
+| `frontend/src/lib/pdfExport.ts` | **Create** — downloadPDF() with lazy jspdf + html2canvas |
+| `frontend/src/components/ExportReport.tsx` | **Create** — report preview overlay + download/print buttons |
+| `frontend/src/components/sidebar/MapView.tsx` | **Modify** — add `preserveDrawingBuffer`, expose getMapScreenshot |
+| `frontend/src/components/ChatInterface.tsx` | **Modify** — add "Download Report" button |
+| `frontend/src/App.tsx` | **Modify** — add showExport state, render ExportReport overlay, pass map ref |
+| `frontend/src/index.css` | **Modify** — add @media print rules |
+| `frontend/package.json` | **Modify** — add jspdf, html2canvas dependencies |
+
+**Risks and mitigations:**
+
+| Risk | Mitigation |
+|---|---|
+| html2canvas rendering quirks (complex CSS) | Report uses inline styles with simple light-theme layout, avoids complex dark-theme CSS of main UI |
+| Map screenshot blank (WebGL context lost) | Fallback: omit map section, show "Map screenshot unavailable." The deck.gl overlay sits on a separate canvas — use html2canvas on the container div to capture both. |
+| Multi-page PDF pagination cuts mid-section | Use html2canvas to render as single tall image, slice into A4 pages. Alternative: jspdf's `html()` method with native pagination. |
+| jspdf + html2canvas large for users who never export | Dynamic import — 70KB only loaded on click. Initial bundle unaffected. |
+| Deck.gl layers not captured by map.getCanvas() | html2canvas on the map container div captures all child canvases (Mapbox + deck.gl). Test with deck.gl layers active. |
+
+**Verification checklist:**
+
+- [ ] "Download Report" button appears only when there's assistant context data and not streaming
+- [ ] Report preview shows all sections: header, map, property, regulatory, incentives, neighborhood, transcript, sources, disclaimer
+- [ ] "Download PDF" produces a valid multi-page PDF with readable text
+- [ ] "Print" opens browser print dialog with report formatted correctly
+- [ ] Map screenshot captures both Mapbox base map and deck.gl overlay layers
+- [ ] PDF file size is reasonable (<5MB for a typical report)
+- [ ] Initial page load bundle size unchanged (jspdf/html2canvas lazy-loaded)
+- [ ] Report works for conversations with only code citations (no data cards)
+- [ ] Report works for conversations with only data (no code citations)
+- [ ] Disclaimer appears when any turn had `requires_disclaimer: true`
+- [ ] Export works on mobile (responsive report layout)
+- [ ] Filename is descriptive: `{address_or_area}_{date}_report.pdf`
+
+**Estimated complexity:** **Medium** — 2-3 days. Report builder logic is straightforward since all data is already structured in frontend state. Main complexity is PDF generation (multi-page layout, map screenshot with deck.gl, html2canvas fidelity).
+
+---
+
+### Tier 2 Implementation Order
+
+1. **Plan 2: Latency** (1-2 days) — smallest, extends existing patterns, immediate user impact
+2. **Plan 3: Export** (2-3 days) — medium, frontend-focused, high perceived value for due diligence users
+3. **Plan 1: Context Management** (3-5 days) — largest, core pipeline change, but most important for sustainability and monetization
+
+Total estimated effort: **6-10 days** across all three plans.
+
+### Tier 2 Verification Checklist
+
+**Plan 1 (Context Management)**: 5-turn conversation with a location switch mid-way. Verify: (a) synthesizer input tokens are 50%+ lower than before, (b) follow-up after location switch doesn't bleed prior location data, (c) simple follow-ups ("what about crime?") still work correctly, (d) eval suite passes without regression.
+
+**Plan 2 (Latency)**: Same community area queried twice — second query <1s. Admin cache endpoint shows hit rates >0. Eval suite latency p50 drops measurably.
+
+**Plan 3 (Export)**: Complete a multi-turn conversation about an address. Click Download Report. PDF contains map, property table, regulatory overlays, code citations, and transcript. File is <5MB and prints cleanly.

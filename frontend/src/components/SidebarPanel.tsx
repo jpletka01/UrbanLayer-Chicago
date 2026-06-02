@@ -9,6 +9,22 @@ const MIN_WIDTH = 320;
 const DEFAULT_WIDTH = 480;
 const SNAP_CLOSE_THRESHOLD = 200;
 
+function countDataCategories(ctx: ContextObject | null): number {
+  if (!ctx) return 0;
+  let count = 0;
+  if (ctx.crime_last_90d) count++;
+  if (ctx.open_311_requests) count++;
+  if (ctx.permits) count++;
+  if (ctx.violations) count++;
+  if (ctx.businesses) count++;
+  if (ctx.parcel_zoning) count++;
+  if (ctx.regulatory) count++;
+  if (ctx.property) count++;
+  if (ctx.incentives) count++;
+  if (ctx.neighborhood) count++;
+  return count;
+}
+
 interface Props {
   plan: RetrievalPlan | null;
   context: ContextObject | null;
@@ -25,6 +41,8 @@ interface Props {
   mapData?: MapData | null;
   mapLoading?: boolean;
   mapSources?: SourceTag[];
+  showDataBadge?: boolean;
+  showSourcesBadge?: boolean;
 }
 
 export function SidebarPanel({
@@ -43,6 +61,8 @@ export function SidebarPanel({
   mapData,
   mapLoading = false,
   mapSources = [],
+  showDataBadge = false,
+  showSourcesBadge = false,
 }: Props) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isDragging, setIsDragging] = useState(false);
@@ -51,6 +71,8 @@ export function SidebarPanel({
   const title = context?.community_area_name ?? "Context & Data";
   const subtitle = context?.community_area ? `CA ${context.community_area}` : undefined;
   const hasCodeChunks = (context?.code_chunks?.length ?? 0) > 0;
+  const dataCount = countDataCategories(context);
+  const srcCount = context?.code_chunks?.length ?? 0;
 
   const maxWidth = useCallback(
     () => Math.min(window.innerWidth * 0.6, window.innerWidth - 400),
@@ -132,9 +154,14 @@ export function SidebarPanel({
             />
           </svg>
 
-          {sourceCount > 0 && (
+          {showDataBadge && dataCount > 0 && (
             <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent">
-              {sourceCount}
+              {dataCount > 9 ? "9+" : dataCount}
+            </span>
+          )}
+          {showSourcesBadge && srcCount > 0 && (
+            <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent">
+              {srcCount > 9 ? "9+" : srcCount}
             </span>
           )}
         </div>
@@ -180,6 +207,10 @@ export function SidebarPanel({
           activeView={activeView}
           onViewChange={onViewChange}
           hasCodeChunks={hasCodeChunks}
+          dataCount={dataCount}
+          sourceCount={srcCount}
+          showDataBadge={showDataBadge}
+          showSourcesBadge={showSourcesBadge}
         />
         <button
           onClick={onToggle}
