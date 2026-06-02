@@ -121,12 +121,12 @@ def _parse_year(dt_str: str | None) -> int | None:
         return None
 
 
-async def tif_districts_by_community_area(
+async def _active_tif_boundaries_for_ca(
     ca: int,
     *,
     client: httpx.AsyncClient | None = None,
-) -> list[dict[str, Any]]:
-    """Return all active (non-repealed) TIF districts overlapping a community area."""
+) -> list[tuple[str, dict, Any, dict]]:
+    """Return boundary tuples for all active TIF districts overlapping a community area."""
     try:
         boundaries = await _load_tif_boundaries(client=client)
     except Exception as exc:
@@ -134,20 +134,73 @@ async def tif_districts_by_community_area(
         return []
 
     ca_str = str(ca)
-    results: list[dict[str, Any]] = []
-    for name, props, _poly, _geom in boundaries:
+    hits: list[tuple[str, dict, Any, dict]] = []
+    for name, props, poly, geom in boundaries:
         if props.get("repealed_d"):
             continue
         comm_areas = [c.strip() for c in (props.get("comm_area") or "").split(",")]
         if ca_str in comm_areas:
-            results.append({
-                "tif_name": name,
-                "start_year": _parse_year(props.get("approval_d")),
-                "end_year": _parse_year(props.get("expiration")),
-                "type": props.get("type"),
-                "tif_ref": props.get("ref"),
-            })
-    return results
+            hits.append((name, props, poly, geom))
+    return hits
+
+
+async def tif_districts_by_community_area(
+    ca: int,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Return all active (non-repealed) TIF districts overlapping a community area."""
+    hits = await _active_tif_boundaries_for_ca(ca, client=client)
+    return [
+        {
+            "tif_name": name,
+            "start_year": _parse_year(props.get("approval_d")),
+            "end_year": _parse_year(props.get("expiration")),
+            "type": props.get("type"),
+            "tif_ref": props.get("ref"),
+        }
+        for name, props, _poly, _geom in hits
+    ]
+
+
+async def tif_geojson_by_community_area(
+    ca: int,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict]:
+    """Return GeoJSON Features for all active TIF districts in a community area."""
+    hits = await _active_tif_boundaries_for_ca(ca, client=client)
+    return [
+        {
+            "type": "Feature",
+            "geometry": geom,
+            "properties": {"name": name, "zone_type": "tif", **props},
+        }
+        for name, props, _poly, geom in hits
+    ]
+
+
+async def fetch_tif_fund_analysis(
+    tif_name: str,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Fetch district-level annual fund analysis (revenue, expenditure, balance)."""
+    settings = get_settings()
+    params = {
+        "$where": f"tif_district='{tif_name.replace(chr(39), chr(39)*2)}'",
+        "$order": "report_year DESC",
+        "$limit": settings.limit_tif_fund_analysis,
+    }
+    try:
+        return await socrata_get(
+            settings.dataset_tif_fund_analysis,
+            params,
+            client=client,
+        )
+    except Exception as exc:
+        log.warning("TIF fund analysis query failed for %r: %s", tif_name, exc)
+        return []
 
 
 async def fetch_tif_financials(

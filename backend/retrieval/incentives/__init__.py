@@ -17,6 +17,7 @@ from backend.retrieval.incentives.opportunity_zones import check_opportunity_zon
 from backend.retrieval.incentives.tif import (
     check_tif,
     fetch_tif_financials,
+    fetch_tif_fund_analysis,
     tif_districts_by_community_area,
     _parse_year,
 )
@@ -87,6 +88,9 @@ async def _incentives_by_point(
         phase_b_tasks["financials"] = asyncio.create_task(
             fetch_tif_financials(tif_result["tif_name"], client=client)
         )
+        phase_b_tasks["fund_analysis"] = asyncio.create_task(
+            fetch_tif_fund_analysis(tif_result["tif_name"], client=client)
+        )
 
     if tract_fips:
         phase_b_tasks["oz"] = asyncio.create_task(
@@ -107,6 +111,7 @@ async def _incentives_by_point(
         tif_result, ez_result, tract_fips,
         phase_b_results.get("financials"),
         phase_b_results.get("oz"),
+        fund_analysis=phase_b_results.get("fund_analysis"),
     )
 
 
@@ -121,6 +126,24 @@ async def _incentives_by_community_area(
     except Exception as exc:
         log.warning("TIF community area lookup failed: %s", exc)
         tif_list = []
+
+    if tif_list:
+        fund_results = await asyncio.gather(
+            *(fetch_tif_fund_analysis(d["tif_name"], client=client) for d in tif_list),
+            return_exceptions=True,
+        )
+        for district, fund_data in zip(tif_list, fund_results):
+            if isinstance(fund_data, Exception) or not fund_data:
+                continue
+            latest = fund_data[0]
+            district["property_tax_revenue"] = _safe_float(
+                latest.get("property_tax_increment_current")
+            )
+            district["fund_balance"] = _safe_float(latest.get("fund_balance"))
+            district["total_expenditure"] = _safe_float(
+                latest.get("total_expenditure")
+            )
+            district["report_year"] = latest.get("report_year")
 
     return IncentivesSummary(
         in_tif_district=len(tif_list) > 0,
@@ -152,6 +175,8 @@ def _build_summary(
     tract_fips: str | None,
     tif_financials: list[dict] | None,
     oz_result: dict | None,
+    *,
+    fund_analysis: list[dict] | None = None,
 ) -> IncentivesSummary:
     in_tif = tif_result is not None
     tif_name = tif_result["tif_name"] if tif_result else None
@@ -169,25 +194,36 @@ def _build_summary(
             or _safe_int(props.get("end_year"))
         )
 
-    tif_total_revenue = None
-    tif_total_expenditure = None
-    financials_list: list[dict] = []
-    if tif_financials:
-        financials_list = tif_financials
-        total_public = 0.0
-        total_payments = 0.0
-        has_public = False
-        for record in tif_financials:
-            pub = _safe_float(record.get("public_funds"))
-            pay = _safe_float(record.get("current_year_payments"))
-            if pub is not None:
-                total_public += pub
-                has_public = True
-            if pay is not None:
-                total_payments += pay
-        if has_public:
-            tif_total_expenditure = total_public
-            tif_total_revenue = total_payments if total_payments else None
+    tif_property_tax_revenue = None
+    tif_cumulative_revenue = None
+    tif_fund_balance = None
+    tif_annual_expenditure = None
+    tif_fund_history: list[dict] = []
+
+    if fund_analysis:
+        latest = fund_analysis[0]
+        tif_property_tax_revenue = _safe_float(
+            latest.get("property_tax_increment_current")
+        )
+        tif_cumulative_revenue = _safe_float(
+            latest.get("property_tax_increment_cumulative")
+        )
+        tif_fund_balance = _safe_float(latest.get("fund_balance"))
+        tif_annual_expenditure = _safe_float(latest.get("total_expenditure"))
+
+        for row in fund_analysis:
+            tif_fund_history.append({
+                "year": row.get("report_year"),
+                "revenue": _safe_float(row.get("property_tax_increment_current")),
+                "expenditure": _safe_float(row.get("total_expenditure")),
+                "fund_balance": _safe_float(row.get("fund_balance")),
+                "net_income": _safe_float(row.get("net_income")),
+            })
+
+    tif_total_revenue = tif_property_tax_revenue
+    tif_total_expenditure = tif_annual_expenditure
+
+    financials_list: list[dict] = tif_financials or []
 
     in_oz = oz_result is not None and oz_result.get("designated", False)
     oz_tract = oz_result.get("tract") if oz_result else None
@@ -202,6 +238,11 @@ def _build_summary(
         tif_end_year=tif_end_year,
         tif_total_revenue=tif_total_revenue,
         tif_total_expenditure=tif_total_expenditure,
+        tif_property_tax_revenue=tif_property_tax_revenue,
+        tif_cumulative_revenue=tif_cumulative_revenue,
+        tif_fund_balance=tif_fund_balance,
+        tif_annual_expenditure=tif_annual_expenditure,
+        tif_fund_history=tif_fund_history,
         tif_financials=financials_list,
         in_opportunity_zone=in_oz,
         oz_tract=oz_tract,

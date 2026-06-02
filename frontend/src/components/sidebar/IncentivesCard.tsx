@@ -52,7 +52,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
         {/* TIF District */}
         <div className="space-y-1.5">
           <Badge active={data.in_tif_district} label={data.in_tif_district ? "In TIF District" : "Not in TIF"} termKey="tif_district" />
-          {data.in_tif_district && (
+          {data.in_tif_district && data.tif_name && (
             <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
               <KV label="TIF Name" value={data.tif_name} />
               {(data.tif_year_start != null || data.tif_end_year != null) && (
@@ -61,13 +61,34 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
                   value={[data.tif_year_start, data.tif_end_year].filter(Boolean).join(" — ")}
                 />
               )}
-              <KV label="Total Revenue" value={fmtDollar(data.tif_total_revenue)} />
-              <KV label="Total Expenditure" value={fmtDollar(data.tif_total_expenditure)} />
+              <KV label="Property Tax Revenue" value={fmtDollar(data.tif_property_tax_revenue)} />
+              <KV label="Cumulative Revenue" value={fmtDollar(data.tif_cumulative_revenue)} />
+              <KV label="Fund Balance" value={fmtDollar(data.tif_fund_balance)} />
+              <KV label="Annual Expenditure" value={fmtDollar(data.tif_annual_expenditure)} />
             </div>
           )}
 
-          {/* TIF Financials */}
-          {data.tif_financials.length > 0 && (
+          {/* Neighborhood-level: multiple TIF districts */}
+          {data.tif_districts_in_area && data.tif_districts_in_area.length > 0 && !data.tif_name && (
+            <div className="space-y-1.5">
+              {data.tif_districts_in_area.map((d, i) => {
+                const dr = d as Record<string, unknown>;
+                return (
+                  <div key={i} className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
+                    <KV label="District" value={String(dr.tif_name ?? "—")} />
+                    {(dr.start_year != null || dr.end_year != null) && (
+                      <KV label="Period" value={[dr.start_year, dr.end_year].filter(Boolean).join(" — ")} />
+                    )}
+                    <KV label="Tax Revenue" value={fmtDollar(dr.property_tax_revenue as number | null)} />
+                    <KV label="Fund Balance" value={fmtDollar(dr.fund_balance as number | null)} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Fund History Table */}
+          {data.tif_fund_history.length > 0 && (
             <button
               onClick={() => setShowFinancials(f => !f)}
               className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
@@ -78,10 +99,10 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-              Annual Financials ({data.tif_financials.length} yrs)
+              Annual Financials ({data.tif_fund_history.length} yrs)
             </button>
           )}
-          {showFinancials && data.tif_financials.length > 0 && (
+          {showFinancials && data.tif_fund_history.length > 0 && (
             <div className="mt-1">
               <table className="w-full text-[11px]">
                 <thead>
@@ -92,7 +113,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.tif_financials.map((row, i) => {
+                  {data.tif_fund_history.map((row, i) => {
                     const r = row as Record<string, unknown>;
                     return (
                       <tr key={i} className="border-t border-dark-border/50">

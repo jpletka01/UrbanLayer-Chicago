@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from backend.retrieval.incentives import tif
+from backend.retrieval.incentives.tif import fetch_tif_fund_analysis, tif_geojson_by_community_area
 
 
 @pytest.fixture(autouse=True)
@@ -204,6 +205,93 @@ async def test_tif_districts_by_community_area_no_match(mock_client_cls):
 
     results = await tif.tif_districts_by_community_area(99, client=mock_client)
     assert results == []
+
+
+# --- fetch_tif_fund_analysis ---
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.socrata_get")
+async def test_fetch_fund_analysis_success(mock_socrata):
+    mock_socrata.return_value = [
+        {
+            "report_year": "2024",
+            "tif_district": "Fullerton/Milwaukee",
+            "property_tax_increment_current": "21911518",
+            "property_tax_increment_cumulative": "192573767",
+            "total_expenditure": "24619936",
+            "fund_balance": "63162041",
+            "net_income": "-1270044",
+        },
+        {
+            "report_year": "2023",
+            "tif_district": "Fullerton/Milwaukee",
+            "property_tax_increment_current": "21604111",
+            "property_tax_increment_cumulative": "170662249",
+            "total_expenditure": "7694785",
+            "fund_balance": "64432085",
+            "net_income": "15618068",
+        },
+    ]
+    result = await fetch_tif_fund_analysis("Fullerton/Milwaukee", client=AsyncMock())
+    assert len(result) == 2
+    assert result[0]["report_year"] == "2024"
+    assert result[0]["property_tax_increment_current"] == "21911518"
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.socrata_get")
+async def test_fetch_fund_analysis_error(mock_socrata):
+    mock_socrata.side_effect = Exception("Socrata down")
+    result = await fetch_tif_fund_analysis("Fullerton/Milwaukee", client=AsyncMock())
+    assert result == []
+
+
+# --- tif_geojson_by_community_area ---
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.httpx.AsyncClient")
+async def test_tif_geojson_by_community_area(mock_client_cls):
+    geojson = _make_geojson([
+        _make_feature("Fullerton/Milwaukee", (-87.70, 41.93), comm_area="16,21,22"),
+        _make_feature("Pulaski Corridor", (-87.73, 41.92), comm_area="16,20,21,22,23"),
+        _make_feature("Unrelated TIF", (-87.60, 41.80), comm_area="44,45"),
+        _make_feature("Repealed One", (-87.71, 41.93), comm_area="22", repealed_d="2020-01-01T00:00:00.000"),
+    ])
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = geojson
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_resp
+
+    features = await tif_geojson_by_community_area(22, client=mock_client)
+    assert len(features) == 2
+    names = {f["properties"]["name"] for f in features}
+    assert names == {"Fullerton/Milwaukee", "Pulaski Corridor"}
+    assert all(f["type"] == "Feature" for f in features)
+    assert all(f["geometry"]["type"] == "Polygon" for f in features)
+    assert all(f["properties"]["zone_type"] == "tif" for f in features)
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.httpx.AsyncClient")
+async def test_tif_geojson_by_community_area_no_match(mock_client_cls):
+    geojson = _make_geojson([
+        _make_feature("Some TIF", (-87.65, 41.93), comm_area="10,11"),
+    ])
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = geojson
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_resp
+
+    features = await tif_geojson_by_community_area(99, client=mock_client)
+    assert features == []
 
 
 # --- _parse_year ---

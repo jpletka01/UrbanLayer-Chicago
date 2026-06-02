@@ -14,6 +14,7 @@ Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Tok
 | Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area (shapely) |
 | TIF District Boundaries | `eejr-xtfb` | geometry (multipolygon), name, approval_d, expiration, comm_area, repealed_d | Preloaded at startup. Point-in-polygon for address queries, comm_area matching for neighborhood queries. Repealed districts filtered out |
 | TIF Annual Report Projects | `72uz-ikdv` | tif_district, report_year, public_funds, current_year_payments, project_name, status | Per-project financial data. Queried by `tif_district` (not tif_name). Conditional query when point-based TIF hit |
+| TIF Fund Analysis | `qm7s-3ctt` | tif_district, report_year, property_tax_increment_current/cumulative, total_expenditure, fund_balance, net_income | District-level annual financials. Primary source for TIF revenue/expenditure/balance headlines |
 | Enterprise Zone Boundaries | `64xf-pyvh` | geometry, zone_name | Preloaded at startup |
 | ACS 5-Year by Community Area | `t68z-cikk` | population, income brackets, poverty | Demographics (estimated medians) |
 | Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |

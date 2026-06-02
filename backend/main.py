@@ -541,15 +541,21 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
             _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon)
         )
 
-    if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-        from backend.retrieval.incentives.tif import tif_geojson_feature
-        from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
-        tasks["tif_geojson"] = asyncio.create_task(
-            tif_geojson_feature(loc.resolved_lat, loc.resolved_lon)
-        )
-        tasks["ez_geojson"] = asyncio.create_task(
-            ez_geojson_feature(loc.resolved_lat, loc.resolved_lon)
-        )
+    if "incentives_domain" in plan.sources:
+        if loc.resolved_lat and loc.resolved_lon:
+            from backend.retrieval.incentives.tif import tif_geojson_feature
+            from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
+            tasks["tif_geojson"] = asyncio.create_task(
+                tif_geojson_feature(loc.resolved_lat, loc.resolved_lon)
+            )
+            tasks["ez_geojson"] = asyncio.create_task(
+                ez_geojson_feature(loc.resolved_lat, loc.resolved_lon)
+            )
+        elif ca is not None:
+            from backend.retrieval.incentives.tif import tif_geojson_by_community_area
+            tasks["tif_geojson_list"] = asyncio.create_task(
+                tif_geojson_by_community_area(ca)
+            )
 
     results: dict[str, Any] = {}
     if tasks:
@@ -596,6 +602,8 @@ def _build_map_response(
     incentive_features = []
     if map_rows.get("tif_geojson"):
         incentive_features.append(map_rows["tif_geojson"])
+    if map_rows.get("tif_geojson_list"):
+        incentive_features.extend(map_rows["tif_geojson_list"])
     if map_rows.get("ez_geojson"):
         incentive_features.append(map_rows["ez_geojson"])
     incentive_zones = (

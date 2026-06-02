@@ -52,10 +52,12 @@ Address → lat/lon → Cook County GIS Parcel (primary) or Socrata Parcel Unive
 lat/lon → [Zoning Layers 1-24, FEMA Flood, EPA Brownfields] all in parallel
 ```
 
-**Incentives** (keyed on lat/lon + census tract, two-phase):
+**Incentives** (keyed on lat/lon or community area, two-phase):
 ```
 lat/lon → [TIF boundary, Enterprise Zone] in parallel
-  → conditional: TIF financials (if TIF hit), Opportunity Zone (needs tract)
+  → conditional: TIF fund analysis + project financials (if TIF hit), Opportunity Zone (needs tract)
+community_area → all active TIF districts via comm_area matching
+  → fund analysis for each district in parallel
 ```
 
 **Neighborhood** (keyed on community area + lat/lon):

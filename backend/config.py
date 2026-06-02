@@ -74,8 +74,10 @@ class Settings(BaseSettings):
     # Incentives domain (Chicago Data Portal)
     dataset_tif_boundaries: str = "eejr-xtfb"
     dataset_tif_financials: str = "72uz-ikdv"
+    dataset_tif_fund_analysis: str = "qm7s-3ctt"
     dataset_enterprise_zones: str = "64xf-pyvh"
     limit_tif_financials: int = 5
+    limit_tif_fund_analysis: int = 5
 
     crime_lag_days: int = 7
 

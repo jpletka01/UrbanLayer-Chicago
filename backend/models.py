@@ -188,6 +188,11 @@ class IncentivesSummary(BaseModel):
     tif_end_year: int | None = None
     tif_total_revenue: float | None = None
     tif_total_expenditure: float | None = None
+    tif_property_tax_revenue: float | None = None
+    tif_cumulative_revenue: float | None = None
+    tif_fund_balance: float | None = None
+    tif_annual_expenditure: float | None = None
+    tif_fund_history: list[dict] = Field(default_factory=list)
     tif_financials: list[dict] = Field(default_factory=list)
     tif_districts_in_area: list[dict] | None = None
     in_opportunity_zone: bool = False

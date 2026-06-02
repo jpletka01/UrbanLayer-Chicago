@@ -47,7 +47,7 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 | `CollapsibleCard` | Reusable pattern for sidebar data cards |
 | `PropertyCard` | Parcel info, assessment history, sales |
 | `RegulatoryCard` | Zoning overlays, status badges, flood zone — all with InfoTooltip hover definitions |
-| `IncentivesCard` | TIF/OZ/EZ status with InfoTooltip definitions, census tract links to Census Reporter |
+| `IncentivesCard` | TIF/OZ/EZ status with fund analysis financials (revenue, balance, expenditure), per-district cards for neighborhood queries, expandable annual history table, InfoTooltip definitions, census tract links |
 | `InfoTooltip` | Dotted-underline hover/tap popover for domain terms. Wraps children, looks up `termDefinitions.ts` |
 | `NeighborhoodCard` | Demographics, transit, Walk Score |
 | `ViolationsCard` | Building violations |

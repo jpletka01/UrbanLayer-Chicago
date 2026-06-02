@@ -199,7 +199,13 @@ export interface IncentivesSummary {
   tif_end_year: number | null;
   tif_total_revenue: number | null;
   tif_total_expenditure: number | null;
+  tif_property_tax_revenue: number | null;
+  tif_cumulative_revenue: number | null;
+  tif_fund_balance: number | null;
+  tif_annual_expenditure: number | null;
+  tif_fund_history: Record<string, unknown>[];
   tif_financials: Record<string, unknown>[];
+  tif_districts_in_area?: Record<string, unknown>[] | null;
   in_opportunity_zone: boolean;
   oz_tract: string | null;
   in_enterprise_zone: boolean;
