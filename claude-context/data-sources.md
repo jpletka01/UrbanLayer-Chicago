@@ -4,13 +4,13 @@
 
 Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Token` header.
 
-| Dataset | ID | Key Fields | Use |
-|---------|-----|-----------|-----|
-| Crimes 2001–Present | `ijzp-q8t2` | date, primary_type, description, arrest, community_area, lat/lon | Crime trends, safety. 7-day data lag |
-| 311 Service Requests | `v6vf-nfxy` | sr_type, status, owner_department, created_date, lat/lon | Quality-of-life. `Open - Dup` filtered |
-| Building Permits | `ydr8-5enu` | permit_type, work_description, issue_date, reported_cost, lat/lon | Development activity |
-| Building Violations | `22u3-xenr` | violation_date, violation_description, violation_status, lat/lon | Property condition. Open-first ordering (status ASC), limit 200 |
-| Business Licenses | `uupf-x98q` | doing_business_as_name, license_description, business_activity, date_issued, lat/lon | Neighborhood character. Filtered to active only (license_status='AAI'), limit 500 |
+| Dataset | ID | Key Fields | Use | Limit | Cap Rate |
+|---------|-----|-----------|-----|-------|----------|
+| Crimes 2001–Present | `ijzp-q8t2` | date, primary_type, description, arrest, community_area, lat/lon | Crime trends, safety. 7-day data lag | 35 | 0% |
+| 311 Service Requests | `v6vf-nfxy` | sr_type, status, owner_department, created_date, lat/lon | Quality-of-life. `Open - Dup` filtered | 50 | **100%** |
+| Building Permits | `ydr8-5enu` | permit_type, work_description, issue_date, reported_cost, lat/lon | Development activity | 500 | **100%** |
+| Building Violations | `22u3-xenr` | violation_date, violation_description, violation_status, lat/lon | Property condition. Open-first ordering (status ASC) | 200 | **100%** |
+| Business Licenses | `uupf-x98q` | doing_business_as_name, license_description, business_activity, date_issued, lat/lon | Neighborhood character. Filtered to active only (license_status='AAI') | 500 | **100%** |
 | Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area (shapely) |
 | TIF District Boundaries | `eejr-xtfb` | geometry (multipolygon), tif_name | Preloaded at startup for point-in-polygon |
 | TIF Financial Reports | `72uz-ikdv` | tif_name, year, revenue, expenditure | Conditional query when TIF hit |
@@ -24,7 +24,7 @@ Base: `https://datacatalog.cookcountyil.gov/resource/{id}.json`. Same SODA 2.1 A
 
 | Dataset | ID | Key Fields | Join Key |
 |---------|-----|-----------|----------|
-| Parcel Universe (Current) | `pabr-t5kh` | pin, class, township, lat, lon | PIN |
+| Parcel Universe (Current) | `pabr-t5kh` | pin, class, township, lat, lon | PIN — also used as **fallback for lat/lon → PIN** when GIS is down (bounding-box query on lat/lon) |
 | Assessed Values | `uzyt-m557` | pin, tax_year, mailed_tot, certified_tot, board_tot | PIN + year |
 | Parcel Sales | `wvhk-k5uv` | pin, sale_date, sale_price, deed_type | PIN |
 | Single/Multi-Family Characteristics | `x54s-btds` | pin, char_bldg_sf, char_land_sf, char_rooms, char_age | PIN |
@@ -62,19 +62,20 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 
 ## External ArcGIS Services
 
-| Service | Endpoint | Use |
-|---------|----------|-----|
-| Cook County GIS Parcels | `gis.cookcountyil.gov/.../cookVwrDynmc/MapServer/44/query` | lat/lon → PIN14 (layer 44, max 2000 records) |
-| FEMA Flood Zones | `hazards.fema.gov/.../NFHL/MapServer/28/query` | FLD_ZONE, SFHA_TF |
-| EPA Brownfields | `geopub.epa.gov/.../FRS_INTERESTS/MapServer/5/query` | SITE_NAME, CLEANUP_STATUS (1km radius) |
-| HUD Opportunity Zones | `services.arcgis.com/.../Opportunity_Zones/FeatureServer/0/query` | GEOID match by tract FIPS |
+| Service | Endpoint | Use | Status |
+|---------|----------|-----|--------|
+| Cook County GIS Parcels | `gis.cookcountyil.gov/.../cookVwrDynmc/MapServer/44/query` | lat/lon → PIN14 (layer 44, max 2000 records) | **Intermittent** — spatial index broken, queries can timeout 60s+. Socrata Parcel Universe (`pabr-t5kh`) used as automatic fallback (bounding-box on lat/lon, no polygon geometry). |
+| FEMA Flood Zones | `hazards.fema.gov/.../NFHL/MapServer/28/query` | FLD_ZONE, SFHA_TF | Working (occasional 500s) |
+| EPA Brownfields | `geopub.epa.gov/.../FRS_INTERESTS/MapServer/5/query` | SITE_NAME, CLEANUP_STATUS (1km radius) | Working |
+| HUD Opportunity Zones | `services.arcgis.com/.../Opportunity_Zones/FeatureServer/0/query` | GEOID match by tract FIPS | Working |
 
 ## Other APIs
 
 | API | Auth | Use |
 |-----|------|-----|
 | Census Geocoder | None | Address → lat/lon. Already integrated in `geo.py` |
-| FCC Census Block | None | lat/lon → tract FIPS (~100ms). Used for OZ lookup |
+| FCC Census Block | None | lat/lon → tract FIPS (~100ms). Used for OZ lookup + census tract demographics |
+| Census Reporter | None | ACS 5-year data by census tract (age, income, race, education, transportation distributions). 24h TTL cache. Endpoint: `api.censusreporter.org/1.0/data/show/latest` |
 | Walk Score | API key (free, 5K/day) | Walk/Transit/Bike scores (0-100). 48h TTL cache |
 | CTA GTFS (static) | None | Parsed at startup → transit station locations |
 | Metra GTFS (static) | None | Parsed at startup → station locations |

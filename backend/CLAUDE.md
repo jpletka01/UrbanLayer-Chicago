@@ -31,12 +31,12 @@ retrieval/
 ├── map_data.py             # Raw geo-located rows for map (2500/1000/500 row limits)
 ├── vector_search.py        # Async Qdrant search + keyword boost + bge-reranker + per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch
-├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases)
+├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
 ├── utils.py                # Shared helpers (cutoff_iso)
-├── property/               # Orchestrator: parcels → PIN → [characteristics, assessments, sales, tax] parallel
+├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel
 ├── incentives/             # Orchestrator: [TIF, enterprise_zones] parallel → conditional [financials, OZ]
-└── neighborhood/           # Orchestrator: [demographics, transit, walkscore] parallel
+└── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore] parallel
 ```
 
 ## Patterns

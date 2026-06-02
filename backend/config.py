@@ -56,9 +56,14 @@ class Settings(BaseSettings):
     dataset_ccao_characteristics: str = "x54s-btds"
     dataset_ccao_assessments: str = "uzyt-m557"
     dataset_ccao_sales: str = "wvhk-k5uv"
+    dataset_ccao_parcels: str = "pabr-t5kh"
     limit_ccao_characteristics: int = 1
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10
+    limit_ccao_parcels: int = 20
+
+    # Census Reporter API (tract-level ACS demographics)
+    census_reporter_base: str = "https://api.censusreporter.org/1.0"
 
     # Neighborhood domain
     dataset_demographics: str = "t68z-cikk"
