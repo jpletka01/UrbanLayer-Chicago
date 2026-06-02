@@ -130,3 +130,27 @@ async def test_query_all_overlays_skips_failed_layers():
 
     assert isinstance(hits, list)
     assert call_count == len(OVERLAY_LAYERS)
+
+
+# --- live integration tests (real Chicago ArcGIS Zoning overlay service, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_overlay_live_lincoln_park():
+    """Lincoln Park address should hit at least one overlay (e.g. landmark/historic)."""
+    hits = await query_all_overlays(41.9307, -87.6411)
+    assert isinstance(hits, list)
+    assert len(hits) > 0, "Expected at least one overlay hit in Lincoln Park"
+    layer_id, attrs = hits[0]
+    assert layer_id in OVERLAY_LAYERS
+    assert isinstance(attrs, dict)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_single_overlay_live():
+    """Query the ADU eligible area layer (17) for a Lincoln Park address."""
+    result = await query_overlay(41.9307, -87.6411, 17)
+    # ADU eligibility may or may not apply — just verify the call succeeds
+    assert result is None or isinstance(result, dict)

@@ -127,3 +127,27 @@ def test_build_transit_access_full():
 
 def test_build_transit_access_none():
     assert build_transit_access(None, None) is None
+
+
+# --- live integration tests (local transit data + real ArcGIS TOD overlay) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_find_nearest_stations_live():
+    """Find nearest stations using real cached transit data."""
+    transit_mod._stations = None  # force reload from transit_stations.json
+    result = await find_nearest_stations(41.9307, -87.6411, radius_mi=3.0)
+    assert result["nearest_cta_rail"] is not None
+    assert result["nearest_cta_rail"]["name"]
+    assert result["nearest_cta_rail"]["distance_mi"] < 3.0
+    assert result["nearest_metra"] is not None
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_tod_eligibility_live():
+    """Check TOD eligibility against the real ArcGIS overlay layers."""
+    result = await check_tod_eligibility(41.9307, -87.6411)
+    assert isinstance(result["tod_eligible"], bool)
+    assert result["tod_type"] is None or isinstance(result["tod_type"], str)

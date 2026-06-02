@@ -255,17 +255,19 @@ async def test_walkscore_skipped_without_address(mock_demo, mock_stations, mock_
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_walkscore_skipped_property_intelligence(mock_demo, mock_stations, mock_tod, mock_ws):
+async def test_walkscore_called_for_property_intelligence(mock_demo, mock_stations, mock_tod, mock_ws):
     mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
     mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+    mock_ws.return_value = WalkScoreSummary(walk_score=85, walk_description="Very Walkable")
 
     result = await neighborhood_domain(
         41.93, -87.65, address="123 Main St",
         workflow="property_intelligence", client=AsyncMock(),
     )
 
-    assert result.walkscore is None
-    mock_ws.assert_not_called()
+    assert result.walkscore is not None
+    assert result.walkscore.walk_score == 85
+    mock_ws.assert_awaited_once()
 
 
 @pytest.mark.asyncio

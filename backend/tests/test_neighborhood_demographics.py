@@ -67,7 +67,7 @@ async def test_cache_populated_on_first_call(mock_socrata):
     mock_socrata.return_value = [SAMPLE_ROW]
     await fetch_demographics(24, client=AsyncMock())
     await fetch_demographics(24, client=AsyncMock())
-    mock_socrata.assert_called_once()
+    assert mock_socrata.call_count == 2  # demographics + socioeconomic, called once total (cached)
 
 
 @pytest.mark.asyncio
@@ -87,3 +87,22 @@ async def test_handles_missing_fields(mock_socrata):
     assert result.population == 50000
     assert result.median_household_income is None
     assert result.poverty_rate is None
+
+
+# --- live integration test (real Socrata demographics dataset, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_demographics_live_lincoln_park():
+    """Fetch real demographics for Lincoln Park (CA 7) from Socrata.
+
+    Note: The dataset (t68z-cikk) provides population and income
+    distribution brackets but not pre-computed median values. Fields
+    like median_household_income will be None with this dataset.
+    """
+    demo_mod._cache = None  # ensure fresh fetch
+    result = await fetch_demographics(7)
+    assert result is not None
+    assert result.community_area == 7
+    assert result.population is not None and result.population > 0

@@ -62,6 +62,7 @@ class Settings(BaseSettings):
 
     # Neighborhood domain
     dataset_demographics: str = "t68z-cikk"
+    dataset_socioeconomic: str = "kn9c-c2s2"
     transit_search_radius_mi: float = 2.0
     walkscore_api_key: str = ""
 

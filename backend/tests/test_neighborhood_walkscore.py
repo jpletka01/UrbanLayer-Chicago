@@ -125,3 +125,32 @@ async def test_cache_key_rounding():
     await fetch_walkscore(41.91234, -87.65435, "123 Main St", client=client)
 
     assert client.get.call_count == 1
+
+
+# --- live integration tests (real Walk Score API, requires WALKSCORE_API_KEY) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_walkscore_live_lincoln_park():
+    """Hit the real Walk Score API for a known walkable Lincoln Park address."""
+    result = await fetch_walkscore(41.9307, -87.6411, "443 W Wrightwood Ave, Chicago, IL")
+    if result is None:
+        pytest.skip("Walk Score API unavailable (quota exceeded or key missing)")
+    assert isinstance(result, WalkScoreSummary)
+    assert result.walk_score is not None and result.walk_score > 0
+    assert result.walk_description is not None
+    assert result.transit_score is not None
+    assert result.bike_score is not None
+    assert result.ws_link is not None and "walkscore.com" in result.ws_link
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_walkscore_live_returns_high_scores_for_urban():
+    """Lincoln Park is highly walkable — scores should reflect that."""
+    result = await fetch_walkscore(41.9307, -87.6411, "443 W Wrightwood Ave, Chicago, IL")
+    if result is None:
+        pytest.skip("Walk Score API unavailable (quota exceeded or key missing)")
+    assert result.walk_score >= 70, f"Expected high Walk Score for Lincoln Park, got {result.walk_score}"
+    assert result.bike_score >= 60, f"Expected high Bike Score for Lincoln Park, got {result.bike_score}"

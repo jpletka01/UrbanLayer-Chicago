@@ -36,6 +36,7 @@ def mock_settings():
     settings.limit_ccao_sales = 10
     # Neighborhood domain
     settings.dataset_demographics = "t68z-cikk"
+    settings.dataset_socioeconomic = "kn9c-c2s2"
     settings.transit_search_radius_mi = 2.0
     return settings
 

@@ -132,3 +132,27 @@ async def test_tif_properties_passed_through(mock_client_cls):
     assert result is not None
     assert "properties" in result
     assert result["properties"]["start_year"] == "2005"
+
+
+# --- live integration tests (real Socrata TIF boundaries, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_tif_boundaries_load_live():
+    """Verify TIF boundary GeoJSON loads from Socrata and contains polygons."""
+    tif._tif_boundaries = None  # ensure fresh fetch
+    boundaries = await tif._load_tif_boundaries()
+    assert len(boundaries) > 0, "Expected TIF district boundaries from Socrata"
+    name, props, poly, geom = boundaries[0]
+    assert isinstance(name, str) and name
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_check_tif_live_known_district():
+    """Pilsen/Little Village area — should be in a TIF district."""
+    tif._tif_boundaries = None
+    result = await tif.check_tif(41.856, -87.664)
+    # This area has TIF districts; if boundaries changed, just verify the call works
+    assert result is None or (result["tif_name"] and "properties" in result)

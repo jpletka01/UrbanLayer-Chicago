@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Sidebar data enrichment** — added ViolationsCard and BusinessCard components, integrated crime/311/permit summary stats (totals, arrest rate, oldest request, estimated cost) as headers in the AnalyticsSection. All 5 API summary data types now have sidebar representation. **Known issue:** building violations and Walk Score data are fetched by the backend but the synthesizer inconsistently omits them from the response text — see "Known synthesis gaps" below. Previous: Multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 347 tests passing.
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Walk Score + demographics + sidebar data fixes** — Walk Score now appears in sidebar for all address queries (was excluded for `property_intelligence` workflow); demographics rebuilt to merge two Socrata datasets (ACS `t68z-cikk` + socioeconomic indicators `kn9c-c2s2`) with median income estimation from bracket distributions; router prompt updated so broad address queries ("tell me about [address]") include all data sources (violations, business); Cook County GIS parcel lookup retry for intermittent empty responses; 12 new live integration tests for Walk Score and other free APIs. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. Previous: Sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 380 tests passing (339 unit + 41 integration).
 
 ---
 
@@ -62,7 +62,7 @@ Everything below is in the repo, tested and verified.
   - `map_data.py` — raw geo-located row fetching for the map panel (`crimes_for_map`, `requests_311_for_map`, `permits_for_map`, `zoning_for_map`); uses `socrata_get` directly with row limits (2500/1000/500) and `latitude IS NOT NULL` filters
   - `vector_search.py` — Fully async Qdrant semantic search via `httpx.AsyncClient` + batched cross-ref expansion, lazy embedder; per-section dedup, keyword boost scoring, **`bge-reranker-v2-m3` cross-encoder reranker** with score blending (reranks BEFORE dedup so the best chunk per section survives); `get_full_section()` reassembles a whole section from its chunks for the `/section` endpoint
   - `geo.py` — 77 community areas + alias table + Census Geocoder + shapely
-- `tests/` — **192 tests** (unit + integration), all passing
+- `tests/` — **380 tests** (339 unit + 41 integration), all passing
 
 ### Ingestion (`ingestion/`)
 - `parse_chicago_code.py` — HTML parser with split-at-republication strategy, state machine for Title→Chapter→Article→Subarticle→Part, colspan/rowspan-aware table extraction with composite multi-row headers
@@ -156,13 +156,15 @@ These work well enough but could break on edge cases:
 - **Keyword boost weight (0.15)** — hand-tuned; too high drowns out semantic similarity, too low has no effect
 - **Reranker weight (0.2)** — hand-tuned; higher values (0.3–0.5) regress `minimum_lot_size` and `setback_single_family`
 
-### Known synthesis gaps — data fetched but not mentioned
+### Known synthesis gaps
 
-Tested with: `"What can you tell me about 443 W WRIGHTWOOD AVE, CHICAGO, IL, 60614"`
+- **Building violations** — The `violations_api` source is fetched and the `ViolationSummary` is assembled into the `ContextObject`, but the synthesizer inconsistently mentions it in the response text. The data IS present in the context and the sidebar `ViolationsCard` renders correctly — this is a synthesis prompt attention issue. Likely fix: add violations to the explicit "must-cover" list in the synthesizer prompt for site_due_diligence workflows.
 
-- **Building violations** — The `violations_api` source is fetched and the `ViolationSummary` (total, open count, by-category breakdown) is assembled into the `ContextObject`, but the synthesizer inconsistently mentions it. Some runs include a full violations section in the response; others omit it entirely. The data IS present in the context fed to the LLM — this is a synthesis prompt / attention issue, not a retrieval issue. Likely fix: strengthen the synthesizer prompt to ensure violations are always surfaced when the data is present, or add violations to the explicit "must-cover" list for site_due_diligence workflows.
+- **~~Walk Score~~** — **FIXED.** Walk Score was excluded for `property_intelligence` workflow, and the router classified broad address queries as `property_intelligence`. Both issues resolved: Walk Score no longer has a workflow exclusion, and the router now classifies "what can you tell me about [address]" as `site_due_diligence`. Walk Score (93/79/92 for Lincoln Park) now flows through to the sidebar and synthesis.
 
-- **Walk Score** — The Walk Score API integration (`backend/retrieval/neighborhood/walkscore.py`) is fully wired: API key is configured, `neighborhood_domain` calls it for address queries when `walkscore_api_key` is set and workflow is not `property_intelligence`, and the `NeighborhoodCard` in the sidebar renders the score bars. However, Walk Score data does not consistently appear in either the LLM text or the sidebar. Possible causes: (1) the Walk Score API returns status 2 ("still calculating") or status 41 (daily quota exceeded) transiently, returning `None`; (2) the API call fails silently and gets swallowed by the `partial_failures` mechanism; (3) the synthesizer simply doesn't mention it even when present. Needs investigation — check backend logs during a live query to confirm whether `fetch_walkscore` returns data or `None`.
+- **Demographics median values are estimated** — The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is estimated by interpolating the bracket containing the 50th percentile household. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Median home value, rent, owner-occupied %, bachelor's degree %, and vacancy rate are not available from either dataset and remain null.
+
+- **Cook County GIS intermittent failures** — The parcel lookup (`parcels.py`) intermittently returns 0 features for valid coordinates. A retry with 0.5s delay was added, but the service remains unreliable. When it fails, `PropertyCard` is absent from the sidebar. The integration test retries 3 times and skips on persistent failure.
 
 - **Violation categories are homegrown** — The Chicago Data Portal violations dataset (`22u3-xenr`) has no standard category field. Each row has a free-text `violation_description`. Our `_categorize_violation()` in `assembler.py` does first-match keyword bucketing into 16 custom categories. These are reasonable but imperfect — the dataset also has a `violation_code` numeric field we're not fetching, which might give more reliable groupings.
 
@@ -2495,3 +2497,92 @@ curl -N -X POST http://localhost:8001/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"What kind of crime is happening in Wicker Park?","history":[]}'
 ```
+
+---
+
+## Session Log (2026-06-01 — Walk Score + Demographics Fix, Live Integration Tests)
+
+Investigated and fixed missing sidebar data for address queries. The query "What can you tell me about 443 W WRIGHTWOOD AVE" was returning transit, crime, 311, permits, zoning overlays, flood zone, and incentive data — but missing Walk Score, demographics, violations, business licenses, and property data.
+
+### Root Causes Found
+
+1. **Walk Score excluded for `property_intelligence` workflow** — `neighborhood/__init__.py:59` had `workflow not in ("property_intelligence",)`, and the router classified broad address queries as `property_intelligence`. Walk Score API works perfectly (returns 93/79/92 for Lincoln Park).
+
+2. **Router missing sources** — `violations_api` and `business_api` were not included in sources for `property_intelligence` queries. Only `site_due_diligence` had all APIs.
+
+3. **Demographics dataset field mismatch** — The Socrata dataset `t68z-cikk` stores community area as a name string ("LINCOLN PARK") not a number, so `_safe_int()` returned None for every row and the cache was always empty. Additionally, the dataset provides income bracket distributions, not pre-computed median values.
+
+4. **Cook County GIS intermittent failures** — The parcel lookup returns 0 features intermittently for valid coordinates, causing PropertyCard to be absent.
+
+5. **All existing API tests were mocked** — Walk Score and 5 other free API modules had zero live integration tests. Bugs in real API interactions went undetected.
+
+### Fixes Applied
+
+**1. Walk Score always enabled** (`backend/retrieval/neighborhood/__init__.py`)
+- Removed `property_intelligence` workflow exclusion. Walk Score is now fetched for any address query that has coordinates and a resolved address.
+
+**2. Router prompt updated** (`backend/prompts.py`)
+- Broad address queries ("what can you tell me about [address]", "tell me about [address]") now route to `site_due_diligence` instead of `property_intelligence`.
+- `property_intelligence` sources expanded to include `violations_api` and `business_api`.
+- `site_due_diligence` sources explicitly include `violations_api` and `business_api`.
+
+**3. Demographics rebuilt** (`backend/retrieval/neighborhood/demographics.py`)
+- **Name-to-number mapping**: Built reverse lookup from `COMMUNITY_AREAS` to resolve name strings ("LINCOLN PARK" → 7).
+- **Dual-dataset merge**: Now loads both `t68z-cikk` (ACS demographics) and `kn9c-c2s2` (Census socioeconomic indicators) in parallel via `asyncio.gather(return_exceptions=True)`.
+- **Median income estimation**: Interpolates from income bracket distribution (`under_25_000`, `_25_000_to_49_999`, etc.) to find the bracket containing the 50th percentile household.
+- **Median age estimation**: Computes from age/sex bracket distribution.
+- **Poverty/unemployment**: Sourced from `kn9c-c2s2` dataset (`percent_households_below_poverty`, `percent_aged_16_unemployed`).
+- **Resilient cache**: Failed loads no longer poison the module-level cache permanently. Uses `return_exceptions=True` so one dataset failing doesn't kill the other.
+
+**4. Parcel lookup retry** (`backend/retrieval/property/parcels.py`)
+- Added single retry with 0.5s delay when HTTP 200 returns 0 features (Cook County GIS intermittent issue).
+
+**5. Live integration tests** (12 new tests across 6 files)
+- `test_neighborhood_walkscore.py` — 2 tests hitting real Walk Score API
+- `test_regulatory_overlays.py` — 2 tests hitting real ArcGIS overlay service
+- `test_neighborhood_demographics.py` — 1 test hitting real Socrata demographics
+- `test_incentives_tif.py` — 2 tests hitting real Socrata TIF boundaries
+- `test_incentives_ez.py` — 2 tests hitting real Socrata Enterprise Zones
+- `test_neighborhood_transit.py` — 2 tests (local transit data + real ArcGIS TOD overlay)
+
+**6. Updated orchestrator test** (`test_neighborhood_orchestrator.py`)
+- `test_walkscore_skipped_property_intelligence` → `test_walkscore_called_for_property_intelligence`
+
+### New config setting
+
+- `dataset_socioeconomic: str = "kn9c-c2s2"` in `backend/config.py` — Census Selected Socioeconomic Indicators dataset (poverty, unemployment, per capita income, hardship index).
+
+### Verified pipeline output
+
+For "What can you tell me about 443 W WRIGHTWOOD AVE, CHICAGO, IL, 60614":
+- **Walk Score**: 93 (Walker's Paradise), Transit: 79 (Excellent Transit), Bike: 92 (Biker's Paradise)
+- **Demographics**: Population 62,067, Median HH Income ~$153K, Median Age 29.5, Poverty 12.3%, Unemployment 5.1%
+- **Transit**: Diversey (Brown/Purple) 0.63 mi, Clybourn (UP-North) 1.68 mi
+- **Violations**: 50 total, 50 open, by-category breakdown
+- **Business**: 100 active licenses, by-type breakdown
+- **Property**: Intermittently unavailable (Cook County GIS)
+- Router sources: 9 (all APIs + all domains)
+- Workflow: `site_due_diligence`
+
+### Files Changed
+
+**Backend (modified):**
+- `backend/config.py` — added `dataset_socioeconomic`
+- `backend/prompts.py` — router prompt: broad address queries → `site_due_diligence`, expanded source lists
+- `backend/retrieval/neighborhood/__init__.py` — removed Walk Score `property_intelligence` exclusion
+- `backend/retrieval/neighborhood/demographics.py` — full rewrite: dual-dataset merge, median estimation, name-to-number mapping, resilient cache
+- `backend/retrieval/property/parcels.py` — single retry for intermittent empty GIS responses
+
+**Tests (modified/new):**
+- `backend/tests/conftest.py` — added `dataset_socioeconomic` to mock settings
+- `backend/tests/test_neighborhood_orchestrator.py` — updated Walk Score workflow test
+- `backend/tests/test_neighborhood_walkscore.py` — 2 new integration tests
+- `backend/tests/test_neighborhood_demographics.py` — 1 new integration test, fixed cache assertion
+- `backend/tests/test_regulatory_overlays.py` — 2 new integration tests
+- `backend/tests/test_incentives_tif.py` — 2 new integration tests
+- `backend/tests/test_incentives_ez.py` — 2 new integration tests
+- `backend/tests/test_neighborhood_transit.py` — 2 new integration tests
+
+### Test Count
+
+380 tests passing (339 unit + 41 integration, 1 skipped for EZ data quality). Up from 347.

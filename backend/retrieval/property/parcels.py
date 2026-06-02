@@ -1,5 +1,6 @@
 """Cook County GIS parcel lookup — lat/lon to PIN14."""
 
+import asyncio
 import logging
 
 import httpx
@@ -59,10 +60,16 @@ async def lookup_parcel(
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
     try:
-        resp = await client.get(PARCEL_QUERY_URL, params=params)
-        resp.raise_for_status()
-        data = resp.json()
-        features = data.get("features", [])
+        features = []
+        for attempt in range(2):
+            resp = await client.get(PARCEL_QUERY_URL, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            features = data.get("features", [])
+            if features:
+                break
+            if attempt == 0:
+                await asyncio.sleep(0.5)
         if not features:
             _cache.set(key, _NOT_FOUND)
             return None

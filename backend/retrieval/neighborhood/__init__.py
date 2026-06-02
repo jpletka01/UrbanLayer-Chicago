@@ -56,7 +56,7 @@ async def neighborhood_domain(
 
         if has_coords and address:
             settings = get_settings()
-            if settings.walkscore_api_key and workflow not in ("property_intelligence",):
+            if settings.walkscore_api_key:
                 tasks["walkscore"] = asyncio.create_task(
                     fetch_walkscore(lat, lon, address, client=client)
                 )

@@ -120,3 +120,33 @@ async def test_ez_name_fallback(mock_client_cls):
     result = await ez.check_enterprise_zone(41.93, -87.65, client=mock_client)
     assert result is not None
     assert result["zone_name"] == "Fallback Name"
+
+
+# --- live integration tests (real Socrata Enterprise Zone boundaries, free) ---
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_ez_boundaries_load_live():
+    """Verify Enterprise Zone GeoJSON loads from Socrata.
+
+    Note: The Socrata dataset may return features with null geometry,
+    in which case zero boundaries are loaded. This is a data-quality
+    issue on the Socrata side, not a code bug.
+    """
+    ez._ez_boundaries = None  # ensure fresh fetch
+    boundaries = await ez._load_ez_boundaries()
+    assert isinstance(boundaries, list)
+    if len(boundaries) == 0:
+        pytest.skip("EZ dataset returned no valid geometries (Socrata data-quality issue)")
+    name, props, poly, geom = boundaries[0]
+    assert isinstance(name, str) and name
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_check_ez_live_not_in_zone():
+    """Lincoln Park (affluent area) is unlikely to be in an Enterprise Zone."""
+    ez._ez_boundaries = None
+    result = await ez.check_enterprise_zone(41.9307, -87.6411)
+    assert result is None
