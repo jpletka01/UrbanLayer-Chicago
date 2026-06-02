@@ -101,29 +101,38 @@ def _normalize_permit_type(raw: str) -> str:
     return re.sub(r"^PERMIT\s*[-–—]\s*", "", upper).strip() or "OTHER"
 
 
-def _permit_summary(rows: list[dict[str, Any]]) -> PermitSummary | None:
-    if not rows:
+def _permit_summary(data: dict[str, Any]) -> PermitSummary | None:
+    grouped = data.get("grouped", [])
+    detail = data.get("detail", [])
+    if not grouped and not detail:
         return None
     settings = get_settings()
-    descs: Counter[str] = Counter()
-    types: Counter[str] = Counter()
+
+    types: dict[str, int] = {}
     cost_total = 0.0
-    for row in rows:
+    total = 0
+    for row in grouped:
+        ptype = _normalize_permit_type(row.get("permit_type", ""))
+        count = int(row.get("count", 0))
+        types[ptype] = types.get(ptype, 0) + count
+        total += count
+        try:
+            cost_total += float(row.get("total_cost") or 0)
+        except (TypeError, ValueError):
+            pass
+
+    descs: Counter[str] = Counter()
+    for row in detail:
         desc = (row.get("work_description") or "").strip()
         if desc:
             descs[desc[:120]] += 1
-        ptype = _normalize_permit_type(row.get("permit_type", ""))
-        types[ptype] += 1
-        try:
-            cost_total += float(row.get("reported_cost") or row.get("estimated_cost") or 0)
-        except (TypeError, ValueError):
-            pass
+
     return PermitSummary(
-        total=len(rows),
+        total=total,
         total_estimated_cost=round(cost_total, 2),
-        by_type=dict(types.most_common()),
+        by_type=dict(sorted(types.items(), key=lambda kv: kv[1], reverse=True)),
         top_work_descriptions=[d for d, _ in descs.most_common(settings.top_permits)],
-        capped=len(rows) >= settings.limit_permits,
+        capped=False,
     )
 
 
@@ -156,48 +165,68 @@ def _categorize_violation(desc: str) -> str:
     return "Other"
 
 
-def _violation_summary(rows: list[dict[str, Any]]) -> ViolationSummary | None:
-    if not rows:
+def _violation_summary(data: dict[str, Any]) -> ViolationSummary | None:
+    status_counts = data.get("status_counts", [])
+    detail = data.get("detail", [])
+    if not status_counts and not detail:
         return None
     settings = get_settings()
+
+    true_total = 0
+    open_count = 0
+    for row in status_counts:
+        count = int(row.get("count", 0))
+        true_total += count
+        if (row.get("violation_status") or "").upper() == "OPEN":
+            open_count = count
+
     descs: Counter[str] = Counter()
     categories: Counter[str] = Counter()
-    open_count = 0
-    for row in rows:
+    for row in detail:
         desc = (row.get("violation_description") or "").strip()
         if desc:
             descs[desc[:120]] += 1
             categories[_categorize_violation(desc)] += 1
-        if (row.get("violation_status") or "").upper() == "OPEN":
+        if not status_counts and (row.get("violation_status") or "").upper() == "OPEN":
             open_count += 1
+
     return ViolationSummary(
-        total=len(rows),
+        total=true_total if true_total else len(detail),
         open_count=open_count,
         by_category=dict(categories.most_common()),
         top_descriptions=[d for d, _ in descs.most_common(settings.top_violations)],
-        capped=len(rows) >= settings.limit_violations,
+        capped=False,
     )
 
 
-def _business_summary(rows: list[dict[str, Any]]) -> BusinessSummary | None:
-    if not rows:
+def _business_summary(data: dict[str, Any]) -> BusinessSummary | None:
+    grouped = data.get("grouped", [])
+    detail = data.get("detail", [])
+    if not grouped and not detail:
         return None
     settings = get_settings()
+
+    license_types: dict[str, int] = {}
+    total = 0
+    for row in grouped:
+        desc = (row.get("license_description") or "").strip()
+        count = int(row.get("count", 0))
+        if desc:
+            license_types[desc] = count
+        total += count
+
     activities: Counter[str] = Counter()
-    license_types: Counter[str] = Counter()
-    for row in rows:
+    for row in detail:
         activity = (row.get("business_activity") or "").strip()
         if activity:
             primary = activity.split("|")[0].strip()
             activities[primary] += 1
-        license_desc = (row.get("license_description") or "").strip()
-        if license_desc:
-            license_types[license_desc] += 1
+
     return BusinessSummary(
-        total=len(rows),
-        by_license_type=dict(license_types.most_common(settings.top_businesses * 2)),
+        total=total,
+        by_license_type=dict(sorted(license_types.items(), key=lambda kv: kv[1], reverse=True)[:settings.top_businesses * 2]),
         top_activities=[a for a, _ in activities.most_common(settings.top_businesses)],
-        capped=len(rows) >= settings.limit_business,
+        capped=False,
     )
 
 
@@ -207,9 +236,9 @@ def assemble_context(
     crime_rows: list[dict[str, Any]] | None = None,
     three11_rows: list[dict[str, Any]] | None = None,
     three11_oldest: list[dict[str, Any]] | None = None,
-    permit_rows: list[dict[str, Any]] | None = None,
-    violation_rows: list[dict[str, Any]] | None = None,
-    business_rows: list[dict[str, Any]] | None = None,
+    permit_data: dict[str, Any] | None = None,
+    violation_data: dict[str, Any] | None = None,
+    business_data: dict[str, Any] | None = None,
     code_chunks: list[CodeChunk] | None = None,
     zoning_info: dict[str, Any] | None = None,
     regulatory_summary: RegulatorySummary | None = None,
@@ -222,9 +251,9 @@ def assemble_context(
 
     crime = _crime_summary(crime_rows or []) if crime_rows is not None else None
     three11 = _three11_summary(three11_rows or [], three11_oldest) if three11_rows is not None else None
-    permits = _permit_summary(permit_rows or []) if permit_rows is not None else None
-    violations = _violation_summary(violation_rows or []) if violation_rows is not None else None
-    businesses = _business_summary(business_rows or []) if business_rows is not None else None
+    permits = _permit_summary(permit_data) if permit_data is not None else None
+    violations = _violation_summary(violation_data) if violation_data is not None else None
+    businesses = _business_summary(business_data) if business_data is not None else None
     chunks = sorted(code_chunks or [], key=lambda c: c.score, reverse=True)[:settings.top_chunks]
 
     data_as_of = datetime.now(timezone.utc).strftime("%Y-%m-%d")

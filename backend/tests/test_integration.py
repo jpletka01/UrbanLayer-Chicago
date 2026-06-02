@@ -65,9 +65,11 @@ class TestSocrataIntegration:
 
         result = await permits_by_community_area(24, days=365)
 
-        assert isinstance(result, list)
-        if result:
-            assert "work_description" in result[0] or "permit_type" in result[0]
+        assert isinstance(result, dict)
+        assert "grouped" in result and "detail" in result
+        if result["grouped"]:
+            assert "permit_type" in result["grouped"][0]
+            assert "count" in result["grouped"][0]
 
     @pytest.mark.asyncio
     async def test_violations_api_returns_data(self):
@@ -75,9 +77,10 @@ class TestSocrataIntegration:
 
         result = await violations_by_community_area(24, days=365)
 
-        assert isinstance(result, list)
-        assert len(result) > 0, "Expected violations data for West Town"
-        assert "violation_description" in result[0] or "violation_status" in result[0]
+        assert isinstance(result, dict)
+        assert "status_counts" in result and "detail" in result
+        assert len(result["status_counts"]) > 0, "Expected violation status counts for West Town"
+        assert "violation_status" in result["status_counts"][0]
 
     @pytest.mark.asyncio
     async def test_business_api_returns_data(self):
@@ -85,9 +88,10 @@ class TestSocrataIntegration:
 
         result = await businesses_by_community_area(32)  # Loop has lots of businesses
 
-        assert isinstance(result, list)
-        assert len(result) > 0
-        assert "legal_name" in result[0] or "doing_business_as_name" in result[0]
+        assert isinstance(result, dict)
+        assert "grouped" in result and "detail" in result
+        assert len(result["grouped"]) > 0
+        assert "license_description" in result["grouped"][0]
 
 
 class TestCensusGeocoderIntegration:

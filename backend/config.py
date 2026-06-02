@@ -81,10 +81,12 @@ class Settings(BaseSettings):
 
     # Per-source Socrata row caps (every query must carry a $limit guard).
     limit_crime: int = 35
-    limit_311: int = 50
+    limit_311: int = 200
     limit_permits: int = 500
     limit_violations: int = 200
     limit_business: int = 500
+    limit_permits_detail: int = 20
+    limit_business_detail: int = 20
 
     # Map endpoint row caps (higher than chat — individual points, not aggregates).
     # These must be large enough to cover the full time_range_days window so the

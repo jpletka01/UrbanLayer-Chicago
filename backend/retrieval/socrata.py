@@ -100,3 +100,27 @@ async def grouped_count(
         },
         client=client,
     )
+
+
+async def socrata_aggregate(
+    dataset_id: str,
+    *,
+    where: str,
+    group: str,
+    select: str,
+    limit: int,
+    order: str = "count DESC",
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Run a grouped aggregation with caller-defined $select expressions."""
+    return await socrata_get(
+        dataset_id,
+        {
+            "$where": where,
+            "$group": group,
+            "$select": select,
+            "$order": order,
+            "$limit": limit,
+        },
+        client=client,
+    )

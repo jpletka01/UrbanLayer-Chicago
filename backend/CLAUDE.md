@@ -22,12 +22,12 @@
 
 ```
 retrieval/
-├── socrata.py              # Shared async client: socrata_get() with retry/backoff, X-App-Token
+├── socrata.py              # Shared async client: socrata_get(), grouped_count(), socrata_aggregate() with retry/backoff
 ├── cache.py                # TTLCache utility (17 caches across all modules)
 ├── crime.py                # Crime API (aggregated + block-level, parallel arrest counts)
-├── three11.py              # 311 API (open requests + response times, Open-Dup filtered)
-├── buildings.py            # Permits (reported_cost) + violations (open-first ordering, 200 limit)
-├── business.py             # Business licenses (active-only via license_status='AAI', 500 limit)
+├── three11.py              # 311 API (open requests + response times, Open-Dup filtered, 200 grouped limit)
+├── buildings.py            # Permits (grouped by type + detail sample) + violations (status counts + detail sample)
+├── business.py             # Business licenses (grouped by license_description + detail sample for activities)
 ├── map_data.py             # Raw geo-located rows for map (2500/1000/500 row limits)
 ├── vector_search.py        # Async Qdrant search + keyword boost + bge-reranker + per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch

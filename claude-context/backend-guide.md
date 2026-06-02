@@ -17,22 +17,21 @@ Merges raw API results into a `ContextObject` with configurable caps (from `conf
 Key behaviors:
 - `Open - Dup` dedup on 311 data before aggregating.
 - Auto data-lag note for crime (7-day lag).
-- Capped-result detection: sets `capped=True` when row count hits the `$limit` guard, so synthesis says "at least N".
+- Permits, violations, and business use grouped aggregation data (never capped). Crime and 311 use grouped counts with capped detection as a safety net.
 - `partial_failures` field tracks which domain orchestrators returned errors (graceful degradation).
 
 ## Synthesis (`synthesizer.py`)
 
-Streaming Claude call with structured system prompt rules:
-1. `[N]` citation markers render as `§ section` pills in frontend.
-2. `[data:crime]`, `[data:311]`, etc. render as colored data pills.
-3. Surface data freshness (7-day crime lag).
-4. Say "at least N" when data is capped.
-5. Legal disclaimer when `requires_disclaimer: true`.
-6. Weave MoM trends naturally (analytics formatted as text, not JSON).
-7. State zoning classification as definitive fact. Link to official Zoning Map Web.
-8. When property data present: lead with address, PIN, zoning, lot size, building characteristics.
-9. When overlays present: list each with practical implications.
-10. When incentives present: state eligibility with implications.
+Streaming Claude call with structured system prompt rules (26 rules total):
+- `[N]` citation markers render as `§ section` pills in frontend.
+- `[data:crime]`, `[data:311]`, etc. render as colored data pills.
+- Surface data freshness (7-day crime lag).
+- Pre-scan instruction + rule 4a: check each summary's `capped` field, say "at least N" when capped.
+- Legal disclaimer when `requires_disclaimer: true`.
+- Weave MoM trends naturally (analytics formatted as text, not JSON).
+- State zoning classification as definitive fact. Link to official Zoning Map Web.
+- Explicit "When X data is present" rules for all data sources: property (12), regulatory (10), incentives (13), demographics (14/14a), transit (15), tax (17), Walk Score (18), crime (19), 311 (20), permits (21), violations (22 — "always include"), business (23).
+- Use `.total` fields for authoritative counts, not trend data sums.
 
 ## Conversation (`conversation.py`)
 

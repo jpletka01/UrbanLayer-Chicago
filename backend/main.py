@@ -459,7 +459,12 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         for key, value in zip(tasks.keys(), done):
             if isinstance(value, Exception):
                 log.warning("Retrieval %s failed: %s", key, value)
-                results[key] = [] if key not in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood") else None
+                if key in ("permits", "violations", "business"):
+                    results[key] = {}
+                elif key in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood"):
+                    results[key] = None
+                else:
+                    results[key] = []
                 if key in _FAILURE_LABELS:
                     partial_failures.append(_FAILURE_LABELS[key])
             else:
@@ -475,9 +480,9 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         crime_rows=results.get("crime") if "crime" in results else None,
         three11_rows=results.get("311") if "311" in results else None,
         three11_oldest=results.get("311_oldest"),
-        permit_rows=results.get("permits") if "permits" in results else None,
-        violation_rows=results.get("violations") if "violations" in results else None,
-        business_rows=results.get("business") if "business" in results else None,
+        permit_data=results.get("permits") if "permits" in results else None,
+        violation_data=results.get("violations") if "violations" in results else None,
+        business_data=results.get("business") if "business" in results else None,
         code_chunks=code_chunks,
         zoning_info=results.get("zoning_lookup"),
         regulatory_summary=results.get("regulatory"),

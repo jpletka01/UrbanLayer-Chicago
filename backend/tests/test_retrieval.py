@@ -111,60 +111,84 @@ class TestThree11Retrieval:
 
 class TestBuildingsRetrieval:
     @pytest.mark.asyncio
-    async def test_permits_by_community_area_query(self, mock_settings):
+    async def test_permits_by_community_area_runs_two_queries(self, mock_settings):
         with patch("backend.retrieval.buildings.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
-                await permits_by_community_area(24, days=365)
+            with patch("backend.retrieval.buildings.socrata_aggregate", new_callable=AsyncMock) as mock_agg:
+                with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock_get:
+                    mock_agg.return_value = []
+                    mock_get.return_value = []
+                    result = await permits_by_community_area(24, days=365)
 
-        call_args = mock_get.call_args
-        assert call_args[0][0] == "ydr8-5enu"
-        params = call_args[0][1]
-        assert "community_area='24'" in params["$where"]
-        assert "issue_date" in params["$where"]
-        assert "reported_cost" in params["$select"]
+        mock_agg.assert_called_once()
+        agg_kwargs = mock_agg.call_args.kwargs
+        assert "community_area='24'" in agg_kwargs["where"]
+        assert "permit_type" in agg_kwargs["group"]
+        assert "sum(reported_cost)" in agg_kwargs["select"]
+
+        mock_get.assert_called_once()
+        detail_params = mock_get.call_args[0][1]
+        assert "work_description" in detail_params["$select"]
+        assert detail_params["$limit"] == 20
+
+        assert "grouped" in result
+        assert "detail" in result
 
     @pytest.mark.asyncio
-    async def test_violations_by_community_area_uses_bbox(self, mock_settings):
+    async def test_violations_by_community_area_runs_two_queries(self, mock_settings):
         with patch("backend.retrieval.buildings.get_settings", return_value=mock_settings):
             with patch("backend.retrieval.buildings.community_area_bounds") as mock_bounds:
                 mock_bounds.return_value = (41.888, -87.707, 41.916, -87.639)
-                with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock_get:
-                    mock_get.return_value = []
-                    await violations_by_community_area(24, days=365)
+                with patch("backend.retrieval.buildings.socrata_aggregate", new_callable=AsyncMock) as mock_agg:
+                    with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock_get:
+                        mock_agg.return_value = []
+                        mock_get.return_value = []
+                        result = await violations_by_community_area(24, days=365)
 
         mock_bounds.assert_called_once_with(24)
-        call_args = mock_get.call_args
-        assert call_args[0][0] == "22u3-xenr"
-        params = call_args[0][1]
-        assert "latitude between" in params["$where"]
-        assert "longitude between" in params["$where"]
-        assert "violation_status" in params["$select"]
-        assert "violation_description" in params["$select"]
+
+        mock_agg.assert_called_once()
+        agg_kwargs = mock_agg.call_args.kwargs
+        assert "latitude between" in agg_kwargs["where"]
+        assert "violation_status" in agg_kwargs["group"]
+
+        mock_get.assert_called_once()
+        detail_params = mock_get.call_args[0][1]
+        assert "violation_description" in detail_params["$select"]
+        assert detail_params["$limit"] == 200
+
+        assert "status_counts" in result
+        assert "detail" in result
 
     @pytest.mark.asyncio
-    async def test_violations_returns_empty_if_no_bounds(self, mock_settings):
+    async def test_violations_returns_empty_dict_if_no_bounds(self, mock_settings):
         with patch("backend.retrieval.buildings.get_settings", return_value=mock_settings):
             with patch("backend.retrieval.buildings.community_area_bounds") as mock_bounds:
                 mock_bounds.return_value = None
                 result = await violations_by_community_area(999, days=365)
 
-        assert result == []
+        assert result == {"status_counts": [], "detail": []}
 
 
 class TestBusinessRetrieval:
     @pytest.mark.asyncio
-    async def test_businesses_by_community_area_query(self, mock_settings):
+    async def test_businesses_by_community_area_runs_two_queries(self, mock_settings):
         with patch("backend.retrieval.business.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.business.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
-                await businesses_by_community_area(24)
+            with patch("backend.retrieval.business.socrata_aggregate", new_callable=AsyncMock) as mock_agg:
+                with patch("backend.retrieval.business.socrata_get", new_callable=AsyncMock) as mock_get:
+                    mock_agg.return_value = []
+                    mock_get.return_value = []
+                    result = await businesses_by_community_area(24)
 
-        call_args = mock_get.call_args
-        assert call_args[0][0] == "uupf-x98q"
-        params = call_args[0][1]
-        assert "community_area='24'" in params["$where"]
-        assert "license_status='AAI'" in params["$where"]
-        assert "business_activity" in params["$select"]
-        assert params["$order"] == "date_issued DESC"
-        assert params["$limit"] == 500
+        mock_agg.assert_called_once()
+        agg_kwargs = mock_agg.call_args.kwargs
+        assert "community_area='24'" in agg_kwargs["where"]
+        assert "license_status='AAI'" in agg_kwargs["where"]
+        assert "license_description" in agg_kwargs["group"]
+
+        mock_get.assert_called_once()
+        detail_params = mock_get.call_args[0][1]
+        assert "business_activity" in detail_params["$select"]
+        assert detail_params["$limit"] == 20
+
+        assert "grouped" in result
+        assert "detail" in result

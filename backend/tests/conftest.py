@@ -21,10 +21,12 @@ def mock_settings():
     settings.dataset_business = "uupf-x98q"
     settings.crime_lag_days = 7
     settings.limit_crime = 35
-    settings.limit_311 = 50
-    settings.limit_permits = 50
+    settings.limit_311 = 200
+    settings.limit_permits = 500
     settings.limit_violations = 200
     settings.limit_business = 500
+    settings.limit_permits_detail = 20
+    settings.limit_business_detail = 20
     # Cook County / CCAO
     settings.cook_county_socrata_base = "https://datacatalog.cookcountyil.gov/resource"
     settings.cook_county_socrata_token = ""

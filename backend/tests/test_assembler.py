@@ -112,26 +112,40 @@ def test_disclaimer_flag_propagates():
 
 
 def test_permits_aggregate_estimated_cost():
-    rows = [
-        {"work_description": "New construction", "estimated_cost": "100000"},
-        {"work_description": "Renovation", "estimated_cost": "50000"},
-        {"work_description": "Reno", "estimated_cost": None},
-    ]
-    ctx = assemble_context(plan=_plan(), permit_rows=rows)
+    data = {
+        "grouped": [
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "count": "1", "total_cost": "100000"},
+            {"permit_type": "PERMIT - RENOVATION/ALTERATION", "count": "2", "total_cost": "50000"},
+        ],
+        "detail": [
+            {"work_description": "New construction"},
+            {"work_description": "Renovation"},
+            {"work_description": "Reno"},
+        ],
+    }
+    ctx = assemble_context(plan=_plan(), permit_data=data)
     assert ctx.permits is not None
     assert ctx.permits.total == 3
     assert ctx.permits.total_estimated_cost == 150000.0
+    assert ctx.permits.capped is False
 
 
 def test_violations_count_open():
-    rows = [
-        {"violation_description": "Plumbing", "violation_status": "OPEN"},
-        {"violation_description": "Electrical", "violation_status": "COMPLIED"},
-        {"violation_description": "Plumbing", "violation_status": "OPEN"},
-    ]
-    ctx = assemble_context(plan=_plan(), violation_rows=rows)
+    data = {
+        "status_counts": [
+            {"violation_status": "OPEN", "count": "2"},
+            {"violation_status": "COMPLIED", "count": "1"},
+        ],
+        "detail": [
+            {"violation_description": "Plumbing", "violation_status": "OPEN"},
+            {"violation_description": "Electrical", "violation_status": "COMPLIED"},
+            {"violation_description": "Plumbing", "violation_status": "OPEN"},
+        ],
+    }
+    ctx = assemble_context(plan=_plan(), violation_data=data)
     assert ctx.violations.open_count == 2
     assert ctx.violations.total == 3
+    assert ctx.violations.capped is False
 
 
 def test_zoning_info_attached_when_present():

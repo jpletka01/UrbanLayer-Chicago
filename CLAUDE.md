@@ -48,8 +48,6 @@ python -m eval.source_coverage --full http://localhost:8001  # data source cover
 ## Known Issues
 
 - **Cook County GIS parcel lookup intermittent** — ArcGIS spatial index broken, queries can timeout 60s+. Socrata Parcel Universe (`pabr-t5kh`) auto-fallback implemented in `parcels.py` — resolves PIN via bounding-box query, no polygon geometry. Diagnostic test `test_parcel_gis_diagnostic` fails loudly when GIS is down.
-- **Socrata API caps hit 100%** — 311 (50), permits (500), violations (200), business (500) all capped in every query. Synthesis only says "at least" ~60% of the time.
-- Building violations synthesis inconsistency — data present in context but Claude sometimes skips it (not reproduced in latest benchmark).
 - Demographics median values are estimated from bracket distributions, not pre-computed.
 - Violation categories are homegrown keyword-based bucketing (16 custom categories from free-text descriptions).
 

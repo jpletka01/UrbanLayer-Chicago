@@ -4,13 +4,13 @@
 
 Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Token` header.
 
-| Dataset | ID | Key Fields | Use | Limit | Cap Rate |
-|---------|-----|-----------|-----|-------|----------|
-| Crimes 2001–Present | `ijzp-q8t2` | date, primary_type, description, arrest, community_area, lat/lon | Crime trends, safety. 7-day data lag | 35 | 0% |
-| 311 Service Requests | `v6vf-nfxy` | sr_type, status, owner_department, created_date, lat/lon | Quality-of-life. `Open - Dup` filtered | 50 | **100%** |
-| Building Permits | `ydr8-5enu` | permit_type, work_description, issue_date, reported_cost, lat/lon | Development activity | 500 | **100%** |
-| Building Violations | `22u3-xenr` | violation_date, violation_description, violation_status, lat/lon | Property condition. Open-first ordering (status ASC) | 200 | **100%** |
-| Business Licenses | `uupf-x98q` | doing_business_as_name, license_description, business_activity, date_issued, lat/lon | Neighborhood character. Filtered to active only (license_status='AAI') | 500 | **100%** |
+| Dataset | ID | Key Fields | Use | Query Strategy |
+|---------|-----|-----------|-----|----------------|
+| Crimes 2001–Present | `ijzp-q8t2` | date, primary_type, description, arrest, community_area, lat/lon | Crime trends, safety. 7-day data lag | Grouped by primary_type (limit 35, never caps) |
+| 311 Service Requests | `v6vf-nfxy` | sr_type, status, owner_department, created_date, lat/lon | Quality-of-life. `Open - Dup` filtered | Grouped by dept+type (limit 200) |
+| Building Permits | `ydr8-5enu` | permit_type, work_description, issue_date, reported_cost, lat/lon | Development activity | Grouped by permit_type + detail sample (limit 20) for descriptions |
+| Building Violations | `22u3-xenr` | violation_date, violation_description, violation_status, lat/lon | Property condition | Status counts (grouped) + detail sample (limit 200) for categorization |
+| Business Licenses | `uupf-x98q` | doing_business_as_name, license_description, business_activity, date_issued, lat/lon | Neighborhood character. Active only (license_status='AAI') | Grouped by license_description + detail sample (limit 20) for activities |
 | Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area (shapely) |
 | TIF District Boundaries | `eejr-xtfb` | geometry (multipolygon), tif_name | Preloaded at startup for point-in-polygon |
 | TIF Financial Reports | `72uz-ikdv` | tif_name, year, revenue, expenditure | Conditional query when TIF hit |

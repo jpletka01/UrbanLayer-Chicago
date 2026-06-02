@@ -4,12 +4,6 @@
 
 **Cook County GIS parcel lookup is intermittently down**: The ArcGIS endpoint (`gis.cookcountyil.gov/.../MapServer/44/query`) has a broken spatial/attribute index — filtered queries (spatial or by PIN) can timeout at 60s+ while unfiltered queries return data fine. The 2026-06-02 benchmark showed 0/7 successful lookups. **Mitigation**: `parcels.py` now falls back to the Cook County Socrata Parcel Universe dataset (`pabr-t5kh`) via bounding-box query on lat/lon columns. The fallback returns a PIN to unblock the full property pipeline (characteristics, assessments, sales, tax) but provides **no parcel polygon geometry** (only centroids) and no address — both are filled in downstream by CCAO Characteristics. When GIS is up, it's used preferentially (includes polygon + address). A diagnostic integration test (`test_parcel_gis_diagnostic`) fails loudly when GIS is down rather than skipping.
 
-**Capped-source phrasing inconsistency**: When Socrata API results hit the `$limit` guard (`capped: true`), the synthesis should say "at least N" instead of stating N as an exact count. The 2026-06-02 benchmark found the synthesizer only hedges with "at least" **~60% of the time** — 40% of capped results are presented as exact numbers, which is misleading. Affected sources: 311 (limit 50), permits (limit 500), violations (limit 200), business licenses (limit 500). Crime (limit 35) was the only source that never hit its cap.
-
-**Socrata API limits too low for busy community areas**: Four of five Socrata sources hit their row caps in **100% of benchmark queries**: 311 (50 rows), permits (500), violations (200), business licenses (500). Only crime (35 rows) avoided capping. The 311 limit of 50 is especially low — Englewood alone has far more open requests. These caps mean users see truncated data for every query in every neighborhood.
-
-**Building violations synthesis inconsistency**: The `violations_api` source is fetched and `ViolationSummary` is assembled into the `ContextObject`, but the synthesizer inconsistently mentions it in the response. The data IS present in context and the sidebar `ViolationsCard` renders correctly. Likely fix: add violations to the explicit "must-cover" list in the synthesizer prompt for `site_due_diligence` workflows. Note: the 2026-06-02 benchmark did NOT reproduce this bug (3/3 violations queries were covered), so it may be intermittent or partially fixed.
-
 ## Known Limitations
 
 **Demographics median values are estimated**: The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is interpolated from the bracket containing the 50th percentile. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Median home value, rent, owner-occupied %, bachelor's degree %, and vacancy rate remain null.
@@ -57,7 +51,7 @@ The `eval/source_coverage.py` benchmark tests all 24 data sub-sources across 24 
 | WalkScore | walk/transit/bike scores | NOT_TESTED (API key not configured) |
 | Vector search | municipal code chunks | COVERED |
 
-**Cap report**: 311 capped 100%, permits 100%, violations 100%, business 100%, crime 0%. "at least" hedge used only ~60% of the time.
+**Cap report**: Permits, violations, and business now use grouped aggregation queries that never cap. 311 grouped limit increased 50→200. Crime (35 grouped rows) never caps. Re-run benchmark to verify updated cap rates.
 
 Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
