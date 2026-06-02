@@ -16,6 +16,8 @@
 
 **Assessment lag**: CCAO assessments are triennial by township. Recent years may show $0 or stale values. UI shows the most recent non-zero assessment year.
 
+**Neighborhood-level TIF queries: no map layers or financials**: When asking about TIF districts by neighborhood (e.g. "Is Logan Square in a TIF district?"), the response correctly lists all TIF districts covering the community area, but (1) no TIF polygon layers render on the map — `tif_geojson_feature()` only runs for point-based queries with lat/lon, and the neighborhood path uses `comm_area` field matching instead of point-in-polygon, and (2) revenue/total expenditure are empty in the data tab — the orchestrator skips `fetch_tif_financials()` for neighborhood queries because there's no single TIF district to query against (the area may contain multiple). Both would require fetching geometry and financials for all matching TIF districts, not just one.
+
 ## Fragile Heuristics
 
 These work well enough but could break on edge cases:

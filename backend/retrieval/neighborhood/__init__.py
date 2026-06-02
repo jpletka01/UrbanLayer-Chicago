@@ -1,8 +1,7 @@
 """Neighborhood domain orchestrator.
 
-Fetches community area demographics, transit proximity data,
-and Walk Score for a given location. Demographics are keyed on
-community area; transit proximity and Walk Score use lat/lon.
+Fetches community area demographics, census tract demographics,
+transit proximity data, and Walk Score for a given location.
 """
 
 import asyncio
@@ -11,7 +10,9 @@ import logging
 import httpx
 
 from backend.config import get_settings
-from backend.models import NeighborhoodSummary, WalkScoreSummary
+from backend.models import CensusTractDemographics, NeighborhoodSummary, WalkScoreSummary
+from backend.retrieval.geo import resolve_census_tract
+from backend.retrieval.neighborhood.census_tract import fetch_census_tract
 from backend.retrieval.neighborhood.demographics import fetch_demographics
 from backend.retrieval.neighborhood.transit import (
     build_transit_access,
@@ -53,6 +54,9 @@ async def neighborhood_domain(
             tasks["tod"] = asyncio.create_task(
                 check_tod_eligibility(lat, lon, client=client)
             )
+            tasks["census_tract"] = asyncio.create_task(
+                _fetch_census_tract(lat, lon, client=client)
+            )
 
         if has_coords and address:
             settings = get_settings()
@@ -73,6 +77,7 @@ async def neighborhood_domain(
 
         return _build_summary(
             results.get("demographics"),
+            results.get("census_tract"),
             results.get("stations"),
             results.get("tod"),
             results.get("walkscore"),
@@ -82,15 +87,29 @@ async def neighborhood_domain(
             await client.aclose()
 
 
+async def _fetch_census_tract(
+    lat: float,
+    lon: float,
+    *,
+    client: httpx.AsyncClient,
+) -> CensusTractDemographics | None:
+    tract_fips = await resolve_census_tract(lat, lon, client=client)
+    if not tract_fips:
+        return None
+    return await fetch_census_tract(tract_fips, client=client)
+
+
 def _build_summary(
     demographics,
-    station_result: dict | None,
-    tod_result: dict | None,
+    census_tract: CensusTractDemographics | None = None,
+    station_result: dict | None = None,
+    tod_result: dict | None = None,
     walkscore_result: WalkScoreSummary | None = None,
 ) -> NeighborhoodSummary:
     transit = build_transit_access(station_result, tod_result)
     return NeighborhoodSummary(
         demographics=demographics,
+        census_tract=census_tract,
         transit=transit,
         walkscore=walkscore_result,
     )

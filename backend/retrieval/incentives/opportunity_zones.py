@@ -1,18 +1,19 @@
-"""Opportunity Zone lookup via FCC census tract resolution + HUD ArcGIS."""
+"""Opportunity Zone lookup via HUD ArcGIS.
+
+Census tract resolution lives in ``backend.retrieval.geo.resolve_census_tract``.
+"""
 
 import logging
 
 import httpx
 
 from backend.retrieval.cache import TTLCache
+from backend.retrieval.geo import resolve_census_tract  # noqa: F401 – re-export for back-compat
 
 log = logging.getLogger(__name__)
 
-_tract_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="oz_tracts")
 _oz_cache = TTLCache(ttl_seconds=86400, maxsize=256, name="oz_status")
 _NOT_FOUND = object()
-
-FCC_CENSUS_URL = "https://geo.fcc.gov/api/census/area"
 
 # HUD's Opportunity Zones FeatureServer now exposes the tract polygons on
 # layer 13 (was 0), keyed by GEOID10. The layer contains *only* designated
@@ -21,49 +22,6 @@ HUD_OZ_URL = (
     "https://services.arcgis.com/VTyQ9soqVukalItT/arcgis/rest/services"
     "/Opportunity_Zones/FeatureServer/13/query"
 )
-
-
-async def resolve_census_tract(
-    lat: float,
-    lon: float,
-    *,
-    client: httpx.AsyncClient | None = None,
-) -> str | None:
-    """Resolve lat/lon to an 11-character census tract FIPS code via the FCC API."""
-    key = f"tract:{round(lat, 5)}:{round(lon, 5)}"
-    cached = _tract_cache.get(key)
-    if cached is _NOT_FOUND:
-        return None
-    if cached is not None:
-        return cached
-
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
-    try:
-        resp = await client.get(
-            FCC_CENSUS_URL,
-            params={"lat": str(lat), "lon": str(lon), "format": "json"},
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        results = data.get("results", [])
-        if not results:
-            _tract_cache.set(key, _NOT_FOUND)
-            return None
-        fips = results[0].get("block_fips", "")
-        if len(fips) >= 11:
-            result = fips[:11]
-            _tract_cache.set(key, result)
-            return result
-        _tract_cache.set(key, _NOT_FOUND)
-        return None
-    except Exception as exc:
-        log.warning("FCC census tract resolution failed for (%s, %s): %s", lat, lon, exc)
-        return None
-    finally:
-        if owns:
-            await client.aclose()
 
 
 async def check_opportunity_zone(

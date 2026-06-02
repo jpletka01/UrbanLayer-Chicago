@@ -79,6 +79,8 @@ async def check_tif(
 
     point = Point(lon, lat)
     for name, props, poly, _geom in boundaries:
+        if props.get("repealed_d"):
+            continue
         if poly.contains(point):
             return {"tif_name": name, "properties": props}
     return None
@@ -99,6 +101,8 @@ async def tif_geojson_feature(
 
     point = Point(lon, lat)
     for name, props, poly, geom in boundaries:
+        if props.get("repealed_d"):
+            continue
         if poly.contains(point):
             return {
                 "type": "Feature",
@@ -108,16 +112,54 @@ async def tif_geojson_feature(
     return None
 
 
+def _parse_year(dt_str: str | None) -> int | None:
+    if not dt_str:
+        return None
+    try:
+        return int(dt_str[:4])
+    except (ValueError, IndexError):
+        return None
+
+
+async def tif_districts_by_community_area(
+    ca: int,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Return all active (non-repealed) TIF districts overlapping a community area."""
+    try:
+        boundaries = await _load_tif_boundaries(client=client)
+    except Exception as exc:
+        log.warning("Failed to load TIF boundaries for CA lookup: %s", exc)
+        return []
+
+    ca_str = str(ca)
+    results: list[dict[str, Any]] = []
+    for name, props, _poly, _geom in boundaries:
+        if props.get("repealed_d"):
+            continue
+        comm_areas = [c.strip() for c in (props.get("comm_area") or "").split(",")]
+        if ca_str in comm_areas:
+            results.append({
+                "tif_name": name,
+                "start_year": _parse_year(props.get("approval_d")),
+                "end_year": _parse_year(props.get("expiration")),
+                "type": props.get("type"),
+                "tif_ref": props.get("ref"),
+            })
+    return results
+
+
 async def fetch_tif_financials(
     tif_name: str,
     *,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
-    """Fetch TIF financial reports by district name (last N years)."""
+    """Fetch TIF financial project reports by district name."""
     settings = get_settings()
     params = {
-        "$where": f"tif_name='{tif_name.replace(chr(39), chr(39)*2)}'",
-        "$order": "year DESC",
+        "$where": f"tif_district='{tif_name.replace(chr(39), chr(39)*2)}'",
+        "$order": "report_year DESC",
         "$limit": settings.limit_tif_financials,
     }
     try:

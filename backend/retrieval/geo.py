@@ -8,9 +8,15 @@ import httpx
 from shapely.geometry import Point, shape
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 
 
 log = logging.getLogger(__name__)
+
+_tract_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="census_tracts")
+_TRACT_NOT_FOUND = object()
+
+FCC_CENSUS_URL = "https://geo.fcc.gov/api/census/area"
 
 # Official Chicago community areas, integer 1–77.
 COMMUNITY_AREAS: dict[int, str] = {
@@ -197,6 +203,49 @@ async def geocode_address_suggestions(
     except Exception as exc:
         log.warning("Geocode suggestions failed: %s", exc)
         return []
+    finally:
+        if owns:
+            await client.aclose()
+
+
+async def resolve_census_tract(
+    lat: float,
+    lon: float,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> str | None:
+    """Resolve lat/lon to an 11-character census tract FIPS code via the FCC API."""
+    key = f"tract:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _tract_cache.get(key)
+    if cached is _TRACT_NOT_FOUND:
+        return None
+    if cached is not None:
+        return cached
+
+    owns = client is None
+    if owns:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    try:
+        resp = await client.get(
+            FCC_CENSUS_URL,
+            params={"lat": str(lat), "lon": str(lon), "format": "json"},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("results", [])
+        if not results:
+            _tract_cache.set(key, _TRACT_NOT_FOUND)
+            return None
+        fips = results[0].get("block_fips", "")
+        if len(fips) >= 11:
+            result = fips[:11]
+            _tract_cache.set(key, result)
+            return result
+        _tract_cache.set(key, _TRACT_NOT_FOUND)
+        return None
+    except Exception as exc:
+        log.warning("FCC census tract resolution failed for (%s, %s): %s", lat, lon, exc)
+        return None
     finally:
         if owns:
             await client.aclose()

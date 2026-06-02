@@ -12,8 +12,8 @@ Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Tok
 | Building Violations | `22u3-xenr` | violation_date, violation_description, violation_status, lat/lon | Property condition | Status counts (grouped) + detail sample (limit 200) for categorization |
 | Business Licenses | `uupf-x98q` | doing_business_as_name, license_description, business_activity, date_issued, lat/lon | Neighborhood character. Active only (license_status='AAI') | Grouped by license_description + detail sample (limit 20) for activities |
 | Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area (shapely) |
-| TIF District Boundaries | `eejr-xtfb` | geometry (multipolygon), tif_name | Preloaded at startup for point-in-polygon |
-| TIF Financial Reports | `72uz-ikdv` | tif_name, year, revenue, expenditure | Conditional query when TIF hit |
+| TIF District Boundaries | `eejr-xtfb` | geometry (multipolygon), name, approval_d, expiration, comm_area, repealed_d | Preloaded at startup. Point-in-polygon for address queries, comm_area matching for neighborhood queries. Repealed districts filtered out |
+| TIF Annual Report Projects | `72uz-ikdv` | tif_district, report_year, public_funds, current_year_payments, project_name, status | Per-project financial data. Queried by `tif_district` (not tif_name). Conditional query when point-based TIF hit |
 | Enterprise Zone Boundaries | `64xf-pyvh` | geometry, zone_name | Preloaded at startup |
 | ACS 5-Year by Community Area | `t68z-cikk` | population, income brackets, poverty | Demographics (estimated medians) |
 | Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |

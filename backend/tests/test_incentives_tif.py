@@ -17,13 +17,21 @@ def _make_geojson(features):
     return {"type": "FeatureCollection", "features": features}
 
 
-def _make_feature(name, coords):
-    """Build a simple polygon feature (a small square)."""
+def _make_feature(name, coords, *, comm_area="22", repealed_d=None):
+    """Build a simple polygon feature (a small square) with real Socrata fields."""
     lon, lat = coords
     d = 0.01
     return {
         "type": "Feature",
-        "properties": {"tif_name": name, "start_year": "2005", "end_year": "2029"},
+        "properties": {
+            "name": name,
+            "approval_d": "2005-06-01T00:00:00.000",
+            "expiration": "2029-12-31T00:00:00.000",
+            "type": "Existing",
+            "comm_area": comm_area,
+            "repealed_d": repealed_d,
+            "ref": "T-099",
+        },
         "geometry": {
             "type": "Polygon",
             "coordinates": [[
@@ -79,15 +87,33 @@ async def test_check_tif_load_failure():
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.httpx.AsyncClient")
+async def test_check_tif_skips_repealed(mock_client_cls):
+    geojson = _make_geojson([
+        _make_feature("Repealed TIF", (-87.65, 41.93), repealed_d="2020-01-01T00:00:00.000"),
+    ])
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = geojson
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_resp
+
+    result = await tif.check_tif(41.93, -87.65, client=mock_client)
+    assert result is None
+
+
+@pytest.mark.asyncio
 @patch("backend.retrieval.incentives.tif.socrata_get")
 async def test_fetch_financials_success(mock_socrata):
     mock_socrata.return_value = [
-        {"year": "2023", "revenue": "500000", "expenditure": "300000"},
-        {"year": "2022", "revenue": "450000", "expenditure": "250000"},
+        {"report_year": "2024", "tif_district": "Elston/Armstrong", "public_funds": "500000", "current_year_payments": "300000"},
+        {"report_year": "2024", "tif_district": "Elston/Armstrong", "public_funds": "200000", "current_year_payments": "100000"},
     ]
     result = await tif.fetch_tif_financials("Elston/Armstrong", client=AsyncMock())
     assert len(result) == 2
-    assert result[0]["year"] == "2023"
+    assert result[0]["report_year"] == "2024"
 
 
 @pytest.mark.asyncio
@@ -131,7 +157,62 @@ async def test_tif_properties_passed_through(mock_client_cls):
     result = await tif.check_tif(41.93, -87.65, client=mock_client)
     assert result is not None
     assert "properties" in result
-    assert result["properties"]["start_year"] == "2005"
+    assert result["properties"]["approval_d"] == "2005-06-01T00:00:00.000"
+
+
+# --- neighborhood-level TIF lookup ---
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.httpx.AsyncClient")
+async def test_tif_districts_by_community_area(mock_client_cls):
+    geojson = _make_geojson([
+        _make_feature("Fullerton/Milwaukee", (-87.70, 41.93), comm_area="16,21,22"),
+        _make_feature("Pulaski Corridor", (-87.73, 41.92), comm_area="16,20,21,22,23"),
+        _make_feature("Unrelated TIF", (-87.60, 41.80), comm_area="44,45"),
+        _make_feature("Repealed One", (-87.71, 41.93), comm_area="22", repealed_d="2020-01-01T00:00:00.000"),
+    ])
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = geojson
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_resp
+
+    results = await tif.tif_districts_by_community_area(22, client=mock_client)
+    assert len(results) == 2
+    names = {r["tif_name"] for r in results}
+    assert names == {"Fullerton/Milwaukee", "Pulaski Corridor"}
+    assert results[0]["start_year"] == 2005
+    assert results[0]["end_year"] == 2029
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif.httpx.AsyncClient")
+async def test_tif_districts_by_community_area_no_match(mock_client_cls):
+    geojson = _make_geojson([
+        _make_feature("Some TIF", (-87.65, 41.93), comm_area="10,11"),
+    ])
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = geojson
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_resp
+
+    results = await tif.tif_districts_by_community_area(99, client=mock_client)
+    assert results == []
+
+
+# --- _parse_year ---
+
+def test_parse_year():
+    assert tif._parse_year("2005-06-01T00:00:00.000") == 2005
+    assert tif._parse_year("2029-12-31T00:00:00.000") == 2029
+    assert tif._parse_year(None) is None
+    assert tif._parse_year("") is None
 
 
 # --- live integration tests (real Socrata TIF boundaries, free) ---
@@ -156,3 +237,13 @@ async def test_check_tif_live_known_district():
     result = await tif.check_tif(41.856, -87.664)
     # This area has TIF districts; if boundaries changed, just verify the call works
     assert result is None or (result["tif_name"] and "properties" in result)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_tif_by_community_area_live():
+    """Logan Square (CA 22) should have active TIF districts."""
+    tif._tif_boundaries = None
+    results = await tif.tif_districts_by_community_area(22)
+    assert len(results) > 0, "Expected TIF districts in Logan Square"
+    assert all(r.get("tif_name") for r in results)

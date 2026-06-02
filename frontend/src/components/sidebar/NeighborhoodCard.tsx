@@ -1,4 +1,6 @@
-import type { NeighborhoodSummary } from "../../lib/types";
+import { useState } from "react";
+import type { CensusTractDemographics, DistributionBucket, NeighborhoodSummary } from "../../lib/types";
+import { BarChart } from "./BarChart";
 import { CollapsibleCard } from "./CollapsibleCard";
 
 const PeopleIcon = (
@@ -82,6 +84,92 @@ function ScoreBar({ score, description, label }: { score: number; description: s
   );
 }
 
+function DistSection({ title, bars, defaultOpen = false }: { title: string; bars: DistributionBucket[]; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  if (bars.length === 0) return null;
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 w-full text-left group"
+      >
+        <svg
+          className={`w-2.5 h-2.5 text-text-muted transition-transform ${open ? "rotate-90" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-[10px] text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
+          {title}
+        </span>
+      </button>
+      {open && (
+        <div className="mt-1.5 ml-1">
+          <BarChart bars={bars} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
+  const tractNum = ct.tract_name || `Tract ${ct.tract_fips}`;
+  const incomeContext = ct.city_median_income && ct.median_household_income
+    ? ct.median_household_income > ct.city_median_income
+      ? `${Math.round((ct.median_household_income / ct.city_median_income - 1) * 100)}% above Chicago`
+      : ct.median_household_income < ct.city_median_income
+        ? `${Math.round((1 - ct.median_household_income / ct.city_median_income) * 100)}% below Chicago`
+        : "at Chicago median"
+    : null;
+
+  return (
+    <div className="space-y-2 border-t border-dark-border pt-2">
+      <span className="text-[10px] text-text-muted uppercase tracking-wider">{tractNum}</span>
+
+      <div className="grid grid-cols-3 gap-2 py-0.5">
+        <StatBox label="Population" value={fmtNum(ct.population)} />
+        <div className="text-center">
+          <div className="text-sm font-semibold text-text-primary">{fmtDollar(ct.median_household_income)}</div>
+          <div className="text-[10px] text-text-muted mt-0.5">Med. Income</div>
+          {incomeContext && (
+            <div className="text-[9px] text-text-muted">{incomeContext}</div>
+          )}
+        </div>
+        <StatBox label="Poverty" value={fmtPct(ct.poverty_rate)} />
+      </div>
+
+      <div className="space-y-0.5">
+        <KV label="Per Capita Income" value={fmtDollar(ct.per_capita_income)} />
+        <KV label="Home Value" value={fmtDollar(ct.median_home_value)} />
+        <KV label="Bachelor's+" value={fmtPct(ct.bachelors_or_higher_pct)} />
+        <KV label="Foreign Born" value={fmtPct(ct.foreign_born_pct)} />
+      </div>
+
+      <div className="space-y-1.5">
+        <DistSection title="Age Distribution" bars={ct.age_distribution} defaultOpen />
+        <DistSection title="Household Income" bars={ct.income_distribution} />
+        <DistSection title="Race & Ethnicity" bars={ct.race_distribution} />
+        <DistSection title="Education" bars={ct.education_distribution} />
+        <DistSection title="Transportation to Work" bars={ct.transportation_distribution} />
+      </div>
+
+      {ct.census_reporter_url && (
+        <a
+          href={ct.census_reporter_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 underline transition-colors"
+        >
+          View full profile on Census Reporter
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
   const demo = data.demographics;
   const transit = data.transit;
@@ -89,7 +177,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
   return (
     <CollapsibleCard title="Neighborhood" icon={PeopleIcon}>
       <div className="space-y-3">
-        {/* Demographics */}
+        {/* Community Area Demographics */}
         {demo && (
           <>
             {/* Headline stats */}
@@ -111,6 +199,9 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
             </div>
           </>
         )}
+
+        {/* Census Tract Demographics */}
+        {data.census_tract && <CensusTractSection ct={data.census_tract} />}
 
         {/* Transit Access */}
         {transit && (transit.nearest_cta_rail || transit.nearest_metra) && (

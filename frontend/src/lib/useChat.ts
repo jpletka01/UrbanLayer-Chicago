@@ -23,7 +23,7 @@ const SOURCE_LABELS: Record<SourceTag, string> = {
   regulatory_domain: "Checking zoning & regulatory overlays",
   property_domain: "Looking up property records",
   incentives_domain: "Checking TIF & incentive zones",
-  neighborhood_domain: "Loading demographics & transit data",
+  neighborhood_domain: "Loading demographics, census data & transit",
 };
 
 function deriveActivitiesFromPlan(plan: RetrievalPlan): ActivityItem[] {

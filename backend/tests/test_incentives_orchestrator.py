@@ -14,12 +14,15 @@ from backend.retrieval.incentives import incentives_domain
 async def test_full_assembly(mock_tif, mock_ez, mock_tract, mock_fin, mock_oz):
     mock_tif.return_value = {
         "tif_name": "Elston/Armstrong",
-        "properties": {"start_year": "2005", "end_year": "2029"},
+        "properties": {
+            "approval_d": "2005-06-01T00:00:00.000",
+            "expiration": "2029-12-31T00:00:00.000",
+        },
     }
     mock_ez.return_value = {"zone_name": "Chicago Enterprise Zone"}
     mock_tract.return_value = "17031839100"
     mock_fin.return_value = [
-        {"year": "2023", "revenue": "500000", "expenditure": "300000"},
+        {"report_year": "2024", "tif_district": "Elston/Armstrong", "public_funds": "500000", "current_year_payments": "300000"},
     ]
     mock_oz.return_value = {"tract": "17031839100", "designated": True}
 
@@ -70,14 +73,14 @@ async def test_tif_hit_triggers_financials(mock_tif, mock_ez, mock_tract, mock_f
     mock_tif.return_value = {"tif_name": "Test TIF", "properties": {}}
     mock_ez.return_value = None
     mock_tract.return_value = None
-    mock_fin.return_value = [{"year": "2023", "revenue": "100000"}]
+    mock_fin.return_value = [{"report_year": "2024", "public_funds": "100000", "current_year_payments": "50000"}]
     mock_oz.return_value = None
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
     mock_fin.assert_called_once()
     assert result.in_tif_district is True
-    assert result.tif_total_revenue == 100000.0
+    assert result.tif_total_expenditure == 100000.0
 
 
 @pytest.mark.asyncio
@@ -183,10 +186,10 @@ async def test_phase_b_financials_failure(mock_tif, mock_ez, mock_tract, mock_fi
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
 async def test_business_launch_skips_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_oz):
-    mock_tif.return_value = {"tif_name": "Test TIF", "properties": {"start_year": "2010"}}
+    mock_tif.return_value = {"tif_name": "Test TIF", "properties": {"approval_d": "2010-01-01T00:00:00.000"}}
     mock_ez.return_value = None
     mock_tract.return_value = None
-    mock_fin.return_value = [{"year": "2023", "revenue": "5000000"}]
+    mock_fin.return_value = [{"report_year": "2024", "public_funds": "5000000"}]
     mock_oz.return_value = None
 
     result = await incentives_domain(41.93, -87.65, workflow="business_launch", client=AsyncMock())
@@ -207,7 +210,7 @@ async def test_general_workflow_fetches_tif_financials(mock_tif, mock_ez, mock_t
     mock_tif.return_value = {"tif_name": "Test TIF", "properties": {}}
     mock_ez.return_value = None
     mock_tract.return_value = None
-    mock_fin.return_value = [{"year": "2023", "revenue": "5000000"}]
+    mock_fin.return_value = [{"report_year": "2024", "public_funds": "5000000"}]
     mock_oz.return_value = None
 
     result = await incentives_domain(41.93, -87.65, workflow="general", client=AsyncMock())
@@ -215,3 +218,31 @@ async def test_general_workflow_fetches_tif_financials(mock_tif, mock_ez, mock_t
     assert result.in_tif_district is True
     mock_fin.assert_awaited_once()
     assert len(result.tif_financials) == 1
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif_districts_by_community_area")
+async def test_community_area_only_path(mock_tif_ca):
+    mock_tif_ca.return_value = [
+        {"tif_name": "Fullerton/Milwaukee", "start_year": 2000, "end_year": 2027, "type": "Existing", "tif_ref": "T-087"},
+        {"tif_name": "Pulaski Corridor", "start_year": 1999, "end_year": 2035, "type": "Existing", "tif_ref": "T-075"},
+    ]
+
+    result = await incentives_domain(ca=22, client=AsyncMock())
+
+    assert result.in_tif_district is True
+    assert result.tif_districts_in_area is not None
+    assert len(result.tif_districts_in_area) == 2
+    assert result.tif_name is None
+    assert result.tif_financials == []
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.incentives.tif_districts_by_community_area")
+async def test_community_area_no_tifs(mock_tif_ca):
+    mock_tif_ca.return_value = []
+
+    result = await incentives_domain(ca=99, client=AsyncMock())
+
+    assert result.in_tif_district is False
+    assert result.tif_districts_in_area is None

@@ -96,9 +96,12 @@ CREATE TABLE IF NOT EXISTS request_logs (
 CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at);
 """
 
-_SCHEMA_V3 = """\
-ALTER TABLE messages ADD COLUMN summary_json TEXT;
-"""
+async def _migrate_v3(db: aiosqlite.Connection) -> None:
+    """Add summary_json column if it doesn't already exist."""
+    cur = await db.execute("PRAGMA table_info(messages)")
+    cols = {row[1] for row in await cur.fetchall()}
+    if "summary_json" not in cols:
+        await db.execute("ALTER TABLE messages ADD COLUMN summary_json TEXT")
 
 
 async def init_db() -> None:
@@ -120,7 +123,7 @@ async def init_db() -> None:
     if row is None:
         await _db.execute("INSERT INTO schema_version VALUES (?)", (_SCHEMA_VERSION,))
         await _db.executescript(_SCHEMA_V2)
-        await _db.executescript(_SCHEMA_V3)
+        await _migrate_v3(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -128,7 +131,7 @@ async def init_db() -> None:
             await _db.executescript(_SCHEMA_V2)
             version = 2
         if version < 3:
-            await _db.executescript(_SCHEMA_V3)
+            await _migrate_v3(_db)
             version = 3
         if version != _SCHEMA_VERSION:
             await _db.execute(

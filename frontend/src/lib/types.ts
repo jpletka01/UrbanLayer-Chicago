@@ -243,8 +243,35 @@ export interface WalkScoreSummary {
   ws_link: string | null;
 }
 
+export interface DistributionBucket {
+  label: string;
+  value: number;
+}
+
+export interface CensusTractDemographics {
+  tract_fips: string;
+  tract_name: string | null;
+  census_reporter_url: string | null;
+  population: number | null;
+  median_household_income: number | null;
+  per_capita_income: number | null;
+  median_age: number | null;
+  median_home_value: number | null;
+  poverty_rate: number | null;
+  bachelors_or_higher_pct: number | null;
+  foreign_born_pct: number | null;
+  age_distribution: DistributionBucket[];
+  income_distribution: DistributionBucket[];
+  race_distribution: DistributionBucket[];
+  education_distribution: DistributionBucket[];
+  transportation_distribution: DistributionBucket[];
+  county_median_income: number | null;
+  city_median_income: number | null;
+}
+
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
+  census_tract: CensusTractDemographics | null;
   transit: TransitAccess | null;
   walkscore: WalkScoreSummary | null;
 }

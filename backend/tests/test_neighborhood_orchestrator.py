@@ -2,15 +2,24 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from backend.models import DemographicsSummary, TransitAccess, WalkScoreSummary
+from backend.models import (
+    CensusTractDemographics,
+    DemographicsSummary,
+    DistributionBucket,
+    TransitAccess,
+    WalkScoreSummary,
+)
 from backend.retrieval.neighborhood import neighborhood_domain
+
+MOCK_CENSUS_PATCH = "backend.retrieval.neighborhood._fetch_census_tract"
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_full_assembly(mock_demo, mock_stations, mock_tod):
+async def test_full_assembly(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.return_value = DemographicsSummary(
         community_area=24,
         community_area_name="West Town",
@@ -35,10 +44,11 @@ async def test_full_assembly(mock_demo, mock_stations, mock_tod):
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_demographics_only(mock_demo, mock_stations, mock_tod):
+async def test_demographics_only(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.return_value = DemographicsSummary(
         community_area=24, population=87781,
     )
@@ -48,15 +58,18 @@ async def test_demographics_only(mock_demo, mock_stations, mock_tod):
     assert result.demographics is not None
     assert result.demographics.population == 87781
     assert result.transit is None
+    assert result.census_tract is None
     mock_stations.assert_not_called()
     mock_tod.assert_not_called()
+    mock_ct.assert_not_called()
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_transit_only(mock_demo, mock_stations, mock_tod):
+async def test_transit_only(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_stations.return_value = {
         "nearest_cta_rail": {"name": "Clark/Lake", "distance_mi": 0.1, "lines": ["Blue", "Brown"]},
         "nearest_metra": None,
@@ -73,24 +86,28 @@ async def test_transit_only(mock_demo, mock_stations, mock_tod):
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_no_ca_no_coords(mock_demo, mock_stations, mock_tod):
+async def test_no_ca_no_coords(mock_demo, mock_stations, mock_tod, mock_ct):
     result = await neighborhood_domain(0.0, 0.0, community_area=None, client=AsyncMock())
 
     assert result.demographics is None
     assert result.transit is None
+    assert result.census_tract is None
     mock_demo.assert_not_called()
     mock_stations.assert_not_called()
     mock_tod.assert_not_called()
+    mock_ct.assert_not_called()
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_demographics_failure_transit_ok(mock_demo, mock_stations, mock_tod):
+async def test_demographics_failure_transit_ok(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.side_effect = Exception("Socrata down")
     mock_stations.return_value = {
         "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.3, "lines": ["Blue"]},
@@ -106,10 +123,11 @@ async def test_demographics_failure_transit_ok(mock_demo, mock_stations, mock_to
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_transit_failure_demographics_ok(mock_demo, mock_stations, mock_tod):
+async def test_transit_failure_demographics_ok(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.return_value = DemographicsSummary(community_area=24, population=50000)
     mock_stations.side_effect = Exception("File not found")
     mock_tod.side_effect = Exception("ArcGIS down")
@@ -122,25 +140,29 @@ async def test_transit_failure_demographics_ok(mock_demo, mock_stations, mock_to
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_all_fail(mock_demo, mock_stations, mock_tod):
+async def test_all_fail(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.side_effect = Exception("fail")
     mock_stations.side_effect = Exception("fail")
     mock_tod.side_effect = Exception("fail")
+    mock_ct.side_effect = Exception("fail")
 
     result = await neighborhood_domain(41.93, -87.65, community_area=24, client=AsyncMock())
 
     assert result.demographics is None
     assert result.transit is None
+    assert result.census_tract is None
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_tod_cta_eligible(mock_demo, mock_stations, mock_tod):
+async def test_tod_cta_eligible(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_stations.return_value = {
         "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.2, "lines": ["Blue"]},
         "nearest_metra": None,
@@ -154,10 +176,11 @@ async def test_tod_cta_eligible(mock_demo, mock_stations, mock_tod):
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_tod_metra_eligible(mock_demo, mock_stations, mock_tod):
+async def test_tod_metra_eligible(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_stations.return_value = {
         "nearest_cta_rail": None,
         "nearest_metra": {"name": "LaSalle St", "distance_mi": 0.4, "line": "Rock Island"},
@@ -171,10 +194,11 @@ async def test_tod_metra_eligible(mock_demo, mock_stations, mock_tod):
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_property_intelligence_skips_demographics(mock_demo, mock_stations, mock_tod):
+async def test_property_intelligence_skips_demographics(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.return_value = DemographicsSummary(community_area=7, population=65000)
     mock_stations.return_value = {
         "nearest_cta_rail": {"name": "Armitage", "distance_mi": 0.3, "lines": ["Brown", "Purple"]},
@@ -192,10 +216,11 @@ async def test_property_intelligence_skips_demographics(mock_demo, mock_stations
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_general_workflow_fetches_demographics(mock_demo, mock_stations, mock_tod):
+async def test_general_workflow_fetches_demographics(mock_demo, mock_stations, mock_tod, mock_ct):
     mock_demo.return_value = DemographicsSummary(community_area=7, population=65000)
     mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
     mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
@@ -208,11 +233,12 @@ async def test_general_workflow_fetches_demographics(mock_demo, mock_stations, m
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.fetch_walkscore")
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_full_assembly_with_walkscore(mock_demo, mock_stations, mock_tod, mock_ws):
+async def test_full_assembly_with_walkscore(mock_demo, mock_stations, mock_tod, mock_ws, mock_ct):
     mock_demo.return_value = DemographicsSummary(community_area=24, population=87781)
     mock_stations.return_value = {
         "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.3, "lines": ["Blue"]},
@@ -236,11 +262,12 @@ async def test_full_assembly_with_walkscore(mock_demo, mock_stations, mock_tod, 
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.fetch_walkscore")
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_walkscore_skipped_without_address(mock_demo, mock_stations, mock_tod, mock_ws):
+async def test_walkscore_skipped_without_address(mock_demo, mock_stations, mock_tod, mock_ws, mock_ct):
     mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
     mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
 
@@ -251,11 +278,12 @@ async def test_walkscore_skipped_without_address(mock_demo, mock_stations, mock_
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.fetch_walkscore")
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_walkscore_called_for_property_intelligence(mock_demo, mock_stations, mock_tod, mock_ws):
+async def test_walkscore_called_for_property_intelligence(mock_demo, mock_stations, mock_tod, mock_ws, mock_ct):
     mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
     mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
     mock_ws.return_value = WalkScoreSummary(walk_score=85, walk_description="Very Walkable")
@@ -271,11 +299,12 @@ async def test_walkscore_called_for_property_intelligence(mock_demo, mock_statio
 
 
 @pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock, return_value=None)
 @patch("backend.retrieval.neighborhood.fetch_walkscore")
 @patch("backend.retrieval.neighborhood.check_tod_eligibility")
 @patch("backend.retrieval.neighborhood.find_nearest_stations")
 @patch("backend.retrieval.neighborhood.fetch_demographics")
-async def test_walkscore_failure_others_ok(mock_demo, mock_stations, mock_tod, mock_ws):
+async def test_walkscore_failure_others_ok(mock_demo, mock_stations, mock_tod, mock_ws, mock_ct):
     mock_demo.return_value = DemographicsSummary(community_area=24, population=50000)
     mock_stations.return_value = {
         "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.3, "lines": ["Blue"]},
@@ -291,3 +320,48 @@ async def test_walkscore_failure_others_ok(mock_demo, mock_stations, mock_tod, m
     assert result.demographics is not None
     assert result.transit is not None
     assert result.walkscore is None
+
+
+@pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock)
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_census_tract_included_with_coords(mock_demo, mock_stations, mock_tod, mock_ct):
+    mock_ct.return_value = CensusTractDemographics(
+        tract_fips="17031242400",
+        tract_name="Census Tract 2424, Cook, IL",
+        population=3084,
+        median_household_income=110795,
+        age_distribution=[DistributionBucket(label="25-34", value=22.1)],
+    )
+    mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+
+    result = await neighborhood_domain(41.93, -87.65, client=AsyncMock())
+
+    assert result.census_tract is not None
+    assert result.census_tract.tract_fips == "17031242400"
+    assert result.census_tract.population == 3084
+    assert len(result.census_tract.age_distribution) == 1
+
+
+@pytest.mark.asyncio
+@patch(MOCK_CENSUS_PATCH, new_callable=AsyncMock)
+@patch("backend.retrieval.neighborhood.check_tod_eligibility")
+@patch("backend.retrieval.neighborhood.find_nearest_stations")
+@patch("backend.retrieval.neighborhood.fetch_demographics")
+async def test_census_tract_failure_others_ok(mock_demo, mock_stations, mock_tod, mock_ct):
+    mock_ct.side_effect = Exception("Census Reporter down")
+    mock_demo.return_value = DemographicsSummary(community_area=24, population=87781)
+    mock_stations.return_value = {
+        "nearest_cta_rail": {"name": "Damen", "distance_mi": 0.3, "lines": ["Blue"]},
+        "nearest_metra": None,
+    }
+    mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
+
+    result = await neighborhood_domain(41.93, -87.65, community_area=24, client=AsyncMock())
+
+    assert result.census_tract is None
+    assert result.demographics is not None
+    assert result.transit is not None

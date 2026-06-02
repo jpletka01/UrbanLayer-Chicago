@@ -189,6 +189,7 @@ class IncentivesSummary(BaseModel):
     tif_total_revenue: float | None = None
     tif_total_expenditure: float | None = None
     tif_financials: list[dict] = Field(default_factory=list)
+    tif_districts_in_area: list[dict] | None = None
     in_opportunity_zone: bool = False
     oz_tract: str | None = None
     in_enterprise_zone: bool = False
@@ -209,6 +210,35 @@ class DemographicsSummary(BaseModel):
     owner_occupied_pct: float | None = None
     bachelors_degree_pct: float | None = None
     vacancy_rate: float | None = None
+
+
+class DistributionBucket(BaseModel):
+    label: str
+    value: float
+
+
+class CensusTractDemographics(BaseModel):
+    tract_fips: str
+    tract_name: str | None = None
+    census_reporter_url: str | None = None
+
+    population: int | None = None
+    median_household_income: int | None = None
+    per_capita_income: int | None = None
+    median_age: float | None = None
+    median_home_value: int | None = None
+    poverty_rate: float | None = None
+    bachelors_or_higher_pct: float | None = None
+    foreign_born_pct: float | None = None
+
+    age_distribution: list[DistributionBucket] = Field(default_factory=list)
+    income_distribution: list[DistributionBucket] = Field(default_factory=list)
+    race_distribution: list[DistributionBucket] = Field(default_factory=list)
+    education_distribution: list[DistributionBucket] = Field(default_factory=list)
+    transportation_distribution: list[DistributionBucket] = Field(default_factory=list)
+
+    county_median_income: int | None = None
+    city_median_income: int | None = None
 
 
 class TransitAccess(BaseModel):
@@ -234,6 +264,7 @@ class WalkScoreSummary(BaseModel):
 
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
+    census_tract: CensusTractDemographics | None = None
     transit: TransitAccess | None = None
     walkscore: WalkScoreSummary | None = None
 

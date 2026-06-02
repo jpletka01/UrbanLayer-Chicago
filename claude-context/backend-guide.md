@@ -10,6 +10,8 @@ If no location and query requires one: `intent = "clarification_needed"`, emits 
 
 **Source tags**: `crime_api`, `311_api`, `permits_api`, `violations_api`, `business_api`, `vector_search`, `property_domain`, `regulatory_domain`, `incentives_domain`, `neighborhood_domain`.
 
+**Incentives routing**: `incentives_domain` works at two levels — address queries (lat/lon → point-in-polygon TIF check + EZ + OZ) and neighborhood queries (community area → list all TIF districts via `comm_area` field matching). The router prompt allows both. `main.py` dispatches to the appropriate path based on whether lat/lon or only CA is available.
+
 ## Context Assembly (`assembler.py`)
 
 Merges raw API results into a `ContextObject` with configurable caps (from `config.py`): `top_crime_types`, `top_311_types`, `top_chunks`, etc.

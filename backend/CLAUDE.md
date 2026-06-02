@@ -35,7 +35,7 @@ retrieval/
 ├── utils.py                # Shared helpers (cutoff_iso)
 ├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel
-├── incentives/             # Orchestrator: [TIF, enterprise_zones] parallel → conditional [financials, OZ]
+├── incentives/             # Orchestrator: point-based [TIF, EZ] parallel → conditional [financials, OZ]; OR community-area-based TIF district listing
 └── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore] parallel
 ```
 
