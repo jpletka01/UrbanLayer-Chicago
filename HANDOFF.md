@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Walk Score + demographics + sidebar data fixes** — Walk Score now appears in sidebar for all address queries (was excluded for `property_intelligence` workflow); demographics rebuilt to merge two Socrata datasets (ACS `t68z-cikk` + socioeconomic indicators `kn9c-c2s2`) with median income estimation from bracket distributions; router prompt updated so broad address queries ("tell me about [address]") include all data sources (violations, business); Cook County GIS parcel lookup retry for intermittent empty responses; 12 new live integration tests for Walk Score and other free APIs. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. Previous: Sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. 380 tests passing (339 unit + 41 integration).
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Overlay/incentive map interactivity** — regulatory overlay districts and incentive zones now have hover tooltips and click popups with practical implications; multi-pick handles overlapping zones (landmark + TOD + ADU at the same point) in a combined "Regulatory Zones" popup with Base Zoning, Regulatory Overlays, and Incentive Zones sections. Previous: Walk Score + demographics + sidebar data fixes, sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. 380 tests passing (339 unit + 41 integration).
 
 ---
 
@@ -155,6 +155,10 @@ These work well enough but could break on edge cases:
 - **Cross-references** — filter to section IDs only
 - **Keyword boost weight (0.15)** — hand-tuned; too high drowns out semantic similarity, too low has no effect
 - **Reranker weight (0.2)** — hand-tuned; higher values (0.3–0.5) regress `minimum_lot_size` and `setback_single_family`
+
+### ~~Planned: Overlay map interactivity~~ ✅ DONE
+
+Regulatory overlay districts and incentive zones now have hover tooltips and click popups. Multi-pick via `pickMultipleObjects` handles overlapping zones — clicking a point inside multiple overlays (e.g., Landmark District + TOD + ADU) shows a combined "Regulatory Zones" popup with three sections: Base Zoning, Regulatory Overlays (with descriptions and practical implications from `OVERLAY_INFO`), and Incentive Zones. Zoning-only clicks still show the original simpler popup.
 
 ### Known synthesis gaps
 
@@ -2586,3 +2590,57 @@ For "What can you tell me about 443 W WRIGHTWOOD AVE, CHICAGO, IL, 60614":
 ### Test Count
 
 380 tests passing (339 unit + 41 integration, 1 skipped for EZ data quality). Up from 347.
+
+---
+
+## Session Log (2026-06-01 — Overlay/Incentive Map Interactivity)
+
+Added hover tooltips and click popups to regulatory overlay districts and incentive zones on the map, with multi-pick handling for overlapping zones.
+
+### Problem
+
+The overlay districts GeoJsonLayer (`overlay-districts`) and incentive zones GeoJsonLayer (`incentive-zones`) had `pickable: true` but no hover or click handlers. Hovering showed nothing; clicking was ignored. The zoning layer already had both. Multiple overlay types can cover the same geography (e.g., a Landmark District + TOD area + ADU eligible area at the same point), so the click handler needed to find ALL features at the click point, not just the top-most.
+
+### Solution
+
+**Frontend-only change (3 files), no backend modifications.** The overlay GeoJSON already carried `overlay_type`, `overlay_name`, and raw ArcGIS attributes.
+
+### 1. `OVERLAY_INFO` metadata table (`mapColors.ts`)
+
+Added `OVERLAY_INFO` — a 15-entry lookup mapping each overlay type to `{ label, description, implications[] }`, mirroring the existing `ZONE_INFO` pattern for zoning. Descriptions focus on practical impact (e.g., "Commission on Chicago Landmarks review for exterior alterations", "Reduced parking requirements, density bonuses available"). Also added `overlayLabel()` and `incentiveLabel()` helper functions.
+
+### 2. Hover tooltips (`mapTooltip.ts`)
+
+Widened `LayerPickInfo` to include `x`/`y` screen coordinates (deck.gl's `PickingInfo` already provides these; the interface was just too narrow). Added tooltip cases for `"overlay-districts"` (shows overlay type label + feature-specific name from `NAME`/`DIST_NAME`/`PD_NAME` attributes) and `"incentive-zones"` (shows zone type + name). Hover remains single-feature (top-most only) — showing all overlapping labels would be noisy.
+
+### 3. Multi-pick click + combined popup (`MapView.tsx`)
+
+**New types:** `OverlayClickData`, `IncentiveClickData`, and a new `"regulatory"` variant on `SelectedItem` that holds all overlapping zones at once.
+
+**Click handler:** When a click hits any zone layer (zoning/overlay-districts/incentive-zones), calls `overlayRef.current.pickMultipleObjects({ x, y, layerIds, depth: 20 })` — a deck.gl API on `MapboxOverlay` that returns ALL features at a point across specified layers. Results are parsed into `ZoningClickData | null`, `OverlayClickData[]`, `IncentiveClickData[]` with deduplication by type. Falls back to the original zoning popup when only zoning is present.
+
+**Combined popup:** The `"regulatory"` popup has three sections (each shown only if non-empty):
+1. **Base Zoning** — zone class + label + description (reuses existing zoning rendering)
+2. **Regulatory Overlays** — each with color dot, label, feature name, description, practical implications, ordinance
+3. **Incentive Zones** — each with color dot, label, name
+
+Popup widens to `max-w-[320px]` and content scrolls (`max-h-[50vh] overflow-y-auto`) for dense overlap areas.
+
+**Initialization order fix:** `handleMapClick` needs `overlayRef` (from `useMapboxOverlay`), but `useMapboxOverlay` takes `onClick` as input — a circular dependency. Solved by declaring a `onClickRef` that the hook's `onClick` delegates to, then updating `onClickRef.current = handleMapClick` after both are defined. The hook already reads callbacks through a ref internally, so there's no stale closure issue.
+
+### Overlap Scenarios
+
+| Scenario | Behavior |
+|---|---|
+| Single overlay, no zoning | Regulatory popup with overlays section only |
+| Multiple overlapping overlays | Regulatory popup listing all overlays |
+| Overlay + zoning | Regulatory popup with Base Zoning + Overlays sections |
+| Overlay + incentive + zoning | All three sections in one popup |
+| Zoning only (no overlays) | Original zoning popup (backward compatible) |
+| Point layer on top of overlay | Point layer wins (crime/311/permit popup) |
+
+### Files Changed
+
+- `frontend/src/lib/mapColors.ts` — added `OVERLAY_INFO` (15 entries), `overlayLabel()`, `incentiveLabel()`
+- `frontend/src/lib/mapTooltip.ts` — widened `LayerPickInfo` with `x`/`y`; added overlay-districts and incentive-zones tooltip cases
+- `frontend/src/components/sidebar/MapView.tsx` — `OverlayClickData`/`IncentiveClickData` types, `"regulatory"` SelectedItem variant, `pickMultipleObjects` click handler, combined popup rendering, `onClickRef` initialization pattern

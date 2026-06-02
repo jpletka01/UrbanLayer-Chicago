@@ -1,10 +1,13 @@
 import type { TransitStation } from "./types";
 import { formatDate } from "./format";
+import { overlayLabel, incentiveLabel } from "./mapColors";
 
 /** Minimal shape of a deck.gl picking info we read in tooltips/click handlers. */
 export interface LayerPickInfo {
   object?: unknown;
   layer: { id: string } | null;
+  x: number;
+  y: number;
 }
 
 export interface TooltipContent {
@@ -48,6 +51,17 @@ export function buildLayerTooltip(info: LayerPickInfo): TooltipContent | null {
       ? `<br/>${s.lines.join(", ")}`
       : s.line ? `<br/>${s.line}` : "";
     html = `<strong>${s.name}</strong>${lineInfo}<br/><span style="opacity:0.7">${s.type === "cta_rail" ? "CTA Rail" : "Metra"}</span>`;
+  } else if (lid === "overlay-districts") {
+    const props = o.properties as Record<string, unknown> | undefined;
+    const overlayType = (props?.overlay_type as string) ?? "";
+    const label = overlayLabel(overlayType);
+    const featureName = (props?.NAME ?? props?.DIST_NAME ?? props?.PD_NAME ?? "") as string;
+    html = `<strong>${label}</strong>${featureName && featureName !== label ? `<br/>${featureName}` : ""}`;
+  } else if (lid === "incentive-zones") {
+    const props = o.properties as Record<string, unknown> | undefined;
+    const zt = (props?.zone_type as string) ?? "";
+    const name = (props?.name as string) ?? "";
+    html = `<strong>${incentiveLabel(zt)}</strong>${name ? `<br/>${name}` : ""}`;
   } else {
     return null;
   }

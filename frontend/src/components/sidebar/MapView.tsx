@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { PathStyleExtension } from "@deck.gl/extensions";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
@@ -8,7 +8,7 @@ import {
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
   zoneColor, zoneLineColor, zonePrefix, ZONE_INFO,
-  overlayColor, overlayLineColor,
+  overlayColor, overlayLineColor, overlayColorCSS, overlayLabel, incentiveLabel, OVERLAY_INFO,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
@@ -30,11 +30,28 @@ interface ZoningClickData {
   ordinance_num: string | null;
 }
 
+interface OverlayClickData {
+  overlay_type: string;
+  overlay_name: string;
+  feature_name: string | null;
+  ordinance: string | null;
+}
+
+interface IncentiveClickData {
+  zone_type: string;
+  name: string;
+}
+
 type SelectedItem =
   | { type: "crime"; data: MapCrime }
   | { type: "311"; data: MapRequest311 }
   | { type: "permit"; data: MapPermit }
-  | { type: "zoning"; data: ZoningClickData };
+  | { type: "zoning"; data: ZoningClickData }
+  | { type: "regulatory"; zones: {
+      zoning: ZoningClickData | null;
+      overlays: OverlayClickData[];
+      incentives: IncentiveClickData[];
+    }};
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -221,7 +238,19 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     setPermitTypeToggles(prev => soloToggle(prev, id));
   }, [soloToggle]);
 
+  // Initialize Mapbox + deck.gl overlay (shared lifecycle hook).
+  // Declared before handleMapClick so overlayRef is available for multi-pick.
+  // The hook reads onClick through a ref, so late-binding is safe.
+  const onClickRef = useRef<(info: LayerPickInfo) => void>(() => {});
+  const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
+    center: CHICAGO_CENTER,
+    zoom: INITIAL_ZOOM,
+    getTooltip: buildLayerTooltip,
+    onClick: (info: LayerPickInfo) => onClickRef.current(info),
+  });
+
   // Map click → open the detail modal for the picked feature.
+  // For zone layers, multi-pick to find ALL overlapping features at the click point.
   const handleMapClick = useCallback((info: LayerPickInfo) => {
     if (!info.object || !info.layer) {
       setSelectedItem(null);
@@ -229,32 +258,79 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
     const lid = info.layer.id;
     const o = info.object as Record<string, unknown>;
+
     if (lid === "crimes") {
       setSelectedItem({ type: "crime", data: o as unknown as MapCrime });
-    } else if (lid === "requests-311") {
-      setSelectedItem({ type: "311", data: o as unknown as MapRequest311 });
-    } else if (lid === "permits") {
-      setSelectedItem({ type: "permit", data: o as unknown as MapPermit });
-    } else if (lid === "zoning") {
-      const props = o.properties as Record<string, unknown> | undefined;
-      setSelectedItem({
-        type: "zoning",
-        data: {
-          zone_class: (props?.ZONE_CLASS as string) ?? "Unknown",
-          zone_type: (props?.ZONE_TYPE as number) ?? null,
-          ordinance_num: (props?.ORDINANCE_NUM as string) ?? null,
-        },
-      });
+      return;
     }
-  }, []);
+    if (lid === "requests-311") {
+      setSelectedItem({ type: "311", data: o as unknown as MapRequest311 });
+      return;
+    }
+    if (lid === "permits") {
+      setSelectedItem({ type: "permit", data: o as unknown as MapPermit });
+      return;
+    }
 
-  // Initialize Mapbox + deck.gl overlay (shared lifecycle hook).
-  const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
-    center: CHICAGO_CENTER,
-    zoom: INITIAL_ZOOM,
-    getTooltip: buildLayerTooltip,
-    onClick: handleMapClick,
-  });
+    if (lid === "zoning" || lid === "overlay-districts" || lid === "incentive-zones") {
+      const allPicks = overlayRef.current?.pickMultipleObjects({
+        x: info.x,
+        y: info.y,
+        layerIds: ["zoning", "overlay-districts", "incentive-zones"],
+        depth: 20,
+      }) ?? [];
+
+      let zoningData: ZoningClickData | null = null;
+      const overlays: OverlayClickData[] = [];
+      const incentives: IncentiveClickData[] = [];
+
+      for (const pick of allPicks) {
+        if (!pick.object || !pick.layer) continue;
+        const pickObj = pick.object as Record<string, unknown>;
+        const pickProps = (pickObj.properties as Record<string, unknown>) ?? {};
+        const pickLayerId = pick.layer.id;
+
+        if (pickLayerId === "zoning" && !zoningData) {
+          zoningData = {
+            zone_class: (pickProps.ZONE_CLASS as string) ?? "Unknown",
+            zone_type: (pickProps.ZONE_TYPE as number) ?? null,
+            ordinance_num: (pickProps.ORDINANCE_NUM as string) ?? null,
+          };
+        } else if (pickLayerId === "overlay-districts") {
+          const ot = (pickProps.overlay_type as string) ?? "";
+          if (!overlays.some(ov => ov.overlay_type === ot)) {
+            overlays.push({
+              overlay_type: ot,
+              overlay_name: (pickProps.overlay_name as string) ?? "",
+              feature_name: (pickProps.NAME ?? pickProps.DIST_NAME ?? pickProps.PD_NAME ?? null) as string | null,
+              ordinance: (pickProps.ORDINANCE ?? pickProps.ORD_NO ?? null) as string | null,
+            });
+          }
+        } else if (pickLayerId === "incentive-zones") {
+          const zt = (pickProps.zone_type as string) ?? "";
+          if (!incentives.some(inc => inc.zone_type === zt)) {
+            incentives.push({
+              zone_type: zt,
+              name: (pickProps.name as string) ?? "",
+            });
+          }
+        }
+      }
+
+      if (overlays.length > 0 || incentives.length > 0) {
+        setSelectedItem({ type: "regulatory", zones: { zoning: zoningData, overlays, incentives } });
+      } else if (zoningData) {
+        setSelectedItem({ type: "zoning", data: zoningData });
+      } else {
+        setSelectedItem(null);
+      }
+      return;
+    }
+
+    setSelectedItem(null);
+  }, [overlayRef]);
+
+  onClickRef.current = handleMapClick;
 
   // Resize observer
   useEffect(() => {
@@ -786,14 +862,18 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
           onClick={() => setSelectedItem(null)}
         >
           <div
-            className="bg-dark-surface border border-dark-border rounded-xl p-4 max-w-[280px] w-[90%] shadow-2xl"
+            className={`bg-dark-surface border border-dark-border rounded-xl p-4 shadow-2xl ${
+              selectedItem.type === "regulatory" ? "max-w-[320px] w-[92%]" : "max-w-[280px] w-[90%]"
+            }`}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-text-primary">
                 {selectedItem.type === "crime" ? "Crime Incident" :
                  selectedItem.type === "311" ? "311 Request" :
-                 selectedItem.type === "zoning" ? "Zoning District" : "Building Permit"}
+                 selectedItem.type === "zoning" ? "Zoning District" :
+                 selectedItem.type === "regulatory" ? "Regulatory Zones" :
+                 "Building Permit"}
               </h3>
               <button
                 onClick={() => setSelectedItem(null)}
@@ -805,7 +885,9 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                 </svg>
               </button>
             </div>
-            <div className="space-y-2 text-xs">
+            <div className={`space-y-2 text-xs ${
+              selectedItem.type === "regulatory" ? "max-h-[50vh] overflow-y-auto pr-1" : ""
+            }`}>
               {renderDetailFields(selectedItem)}
             </div>
           </div>
@@ -870,6 +952,91 @@ function renderDetailFields(item: SelectedItem) {
         )}
         {d.ordinance_num && <DetailRow label="Ordinance" value={d.ordinance_num} />}
         <DetailRow label="Official Map" value="Chicago Zoning Map" href={ZONING_MAP_URL} />
+      </>
+    );
+  }
+  if (item.type === "regulatory") {
+    const { zoning, overlays, incentives } = item.zones;
+    return (
+      <>
+        {zoning && (
+          <div className={overlays.length > 0 || incentives.length > 0 ? "pb-2 border-b border-dark-border mb-2" : ""}>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Base Zoning</div>
+            <DetailRow label="Zone Class" value={zoning.zone_class} />
+            {(() => {
+              const prefix = zonePrefix(zoning.zone_class);
+              const zInfo = ZONE_INFO[prefix];
+              return zInfo ? (
+                <div className="text-text-muted leading-relaxed mt-1">
+                  <span className="text-text-secondary font-medium">{zInfo.label}</span>
+                  {" — "}{zInfo.description}
+                </div>
+              ) : null;
+            })()}
+          </div>
+        )}
+
+        {overlays.length > 0 && (
+          <div className={incentives.length > 0 ? "pb-2 border-b border-dark-border mb-2" : ""}>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Regulatory Overlays</div>
+            {overlays.map((ov, i) => {
+              const oInfo = OVERLAY_INFO[ov.overlay_type];
+              return (
+                <div key={i} className="mb-2 last:mb-0">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: overlayColorCSS(ov.overlay_type) }}
+                    />
+                    <span className="text-text-primary font-medium">
+                      {overlayLabel(ov.overlay_type)}
+                    </span>
+                  </div>
+                  {ov.feature_name && (
+                    <p className="text-text-secondary text-[11px] ml-3.5">{ov.feature_name}</p>
+                  )}
+                  {oInfo && (
+                    <p className="text-text-muted text-[10px] ml-3.5 mt-0.5">{oInfo.description}</p>
+                  )}
+                  {oInfo && oInfo.implications.length > 0 && (
+                    <ul className="ml-3.5 mt-0.5 space-y-0.5">
+                      {oInfo.implications.map(imp => (
+                        <li key={imp} className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                          <span className="w-1 h-1 rounded-full bg-text-muted shrink-0" />
+                          {imp}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {ov.ordinance && (
+                    <p className="text-[10px] text-text-muted ml-3.5 mt-0.5">Ord. {ov.ordinance}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {incentives.length > 0 && (
+          <div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Incentive Zones</div>
+            {incentives.map((inc, i) => (
+              <div key={i} className="flex items-center gap-1.5 mb-1 last:mb-0">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: inc.zone_type === "tif"
+                      ? "rgb(255,87,34)" : "rgb(76,175,80)"
+                  }}
+                />
+                <span className="text-text-primary font-medium">{incentiveLabel(inc.zone_type)}</span>
+                {inc.name && (
+                  <span className="text-text-muted">— {inc.name}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </>
     );
   }

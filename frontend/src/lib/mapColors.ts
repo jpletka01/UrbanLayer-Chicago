@@ -343,6 +343,94 @@ export function overlayColorCSS(type: string): string {
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
+export const OVERLAY_INFO: Record<string, { label: string; description: string; implications: string[] }> = {
+  planned_development: {
+    label: "Planned Development",
+    description: "Custom zoning with site-specific rules negotiated with the city",
+    implications: ["Special setback/FAR/height rules", "May require aldermanic review for changes"],
+  },
+  lakefront_protection: {
+    label: "Lakefront Protection",
+    description: "Extra design review and density limits near Lake Michigan",
+    implications: ["Dept. of Planning review required", "Height/setback restrictions"],
+  },
+  pedestrian_street: {
+    label: "Pedestrian Street",
+    description: "Street-level retail required; no drive-throughs or parking lot frontage",
+    implications: ["Ground-floor commercial mandatory", "No curb cuts on designated frontage"],
+  },
+  landmark_district: {
+    label: "Landmark District",
+    description: "Commission on Chicago Landmarks review for exterior alterations",
+    implications: ["Permit review by Landmarks Commission", "Demolition restrictions"],
+  },
+  historic_district: {
+    label: "Historic District",
+    description: "State/local historic designation with preservation standards",
+    implications: ["Tax credit eligibility", "Exterior modification review"],
+  },
+  landmark_building: {
+    label: "Individual Landmark",
+    description: "Single building designated as a Chicago Landmark",
+    implications: ["Landmarks Commission permit review", "Demolition delay/prohibition"],
+  },
+  national_register: {
+    label: "National Register District",
+    description: "Listed on the National Register of Historic Places",
+    implications: ["Federal tax credit eligibility (20%)", "Section 106 review for federal projects"],
+  },
+  special_district: {
+    label: "Special District",
+    description: "Additional regulations beyond the base zoning classification",
+    implications: ["May impose design standards", "Additional use restrictions"],
+  },
+  fema_floodplain: {
+    label: "FEMA Floodplain",
+    description: "Federally-mapped flood hazard area",
+    implications: ["Flood insurance required for mortgages", "Elevated construction may be required"],
+  },
+  pmd_subarea: {
+    label: "PMD Subarea",
+    description: "Protected manufacturing district with industrial use protections",
+    implications: ["Residential conversion restricted", "Industrial uses protected"],
+  },
+  tod_cta: {
+    label: "TOD (CTA)",
+    description: "Transit-Oriented Development zone near CTA rail stations",
+    implications: ["Reduced parking requirements", "Density bonuses available"],
+  },
+  tod_metra: {
+    label: "TOD (Metra)",
+    description: "Transit-Oriented Development zone near Metra stations",
+    implications: ["Reduced parking requirements", "Density bonuses available"],
+  },
+  adu_area: {
+    label: "ADU Eligible Area",
+    description: "Eligible for Accessory Dwelling Units under the 2020 ADU ordinance",
+    implications: ["Can add coach house/garden unit", "Converted garage units allowed"],
+  },
+  aro_zone: {
+    label: "ARO Zone",
+    description: "Affordable Requirements Ordinance area requiring affordable set-aside",
+    implications: ["10–20% affordable units in new developments (10+ units)", "In-lieu fee option available"],
+  },
+  ssa: {
+    label: "Special Service Area",
+    description: "Local tax district funding streetscape, marketing, and maintenance",
+    implications: ["Additional property tax levy", "Enhanced neighborhood services"],
+  },
+};
+
+export function overlayLabel(type: string): string {
+  return OVERLAY_INFO[type]?.label ?? type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function incentiveLabel(zoneType: string): string {
+  if (zoneType === "tif") return "TIF District";
+  if (zoneType === "enterprise_zone") return "Enterprise Zone";
+  return zoneType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export function capLabel(raw: string, max = 25): string {
   const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
   return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
