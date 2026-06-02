@@ -70,6 +70,22 @@ Startup preloading: TIF boundaries, Enterprise Zone boundaries, OZ tract list, G
 
 Cache hit/miss stats available via `/api/admin/cache-stats` (if implemented).
 
+## Docker
+
+Multi-stage Dockerfile (`backend/Dockerfile`): builder installs CPU-only PyTorch + deps + pre-downloads HF models; runtime stage copies packages, models, backend code, and two ingestion data files (`community_areas.geojson`, `transit_stations.json`). Runs as non-root `app` user.
+
+`docker-compose.yml` runs Qdrant (health-checked via `/dev/tcp`), backend (health-checked via `/health`, 30s start period for model loading), and frontend (nginx reverse proxy, waits for healthy backend). `backend_data` named volume persists SQLite DBs and uploads.
+
+`docker-compose.override.yml` (auto-loaded in dev): mounts local `./backend` and `./ingestion/data` for hot-reload, exposes port 8001 directly.
+
+```bash
+docker compose up -d                              # dev (hot-reload, no frontend)
+docker compose -f docker-compose.yml up           # production (all 3 services)
+docker compose build backend                      # rebuild after dep changes
+# Optional: seed ptaxsim for tax estimates (9.4GB)
+docker compose cp ./backend/data/ptaxsim.db backend:/app/backend/data/
+```
+
 ## Testing
 
 ~340 unit + integration tests. Mock external APIs in unit tests. Real-API tests marked `@pytest.mark.integration`.

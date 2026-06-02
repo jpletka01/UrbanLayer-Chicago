@@ -35,6 +35,7 @@ User Message
 | Persistence | SQLite via aiosqlite (WAL) | Single user, single writer — simplest correct solution |
 | Map | Mapbox GL JS + deck.gl | WebGL handles thousands of points; deck.gl declarative layers |
 | Geocoding | Census Geocoder + shapely | Free, no API key, deterministic. 77 community areas + 30+ aliases |
+| Containers | Docker Compose (Qdrant + backend + nginx/frontend) | Multi-stage build, CPU-only PyTorch, baked HF models, non-root user |
 
 ## Domain Architecture
 

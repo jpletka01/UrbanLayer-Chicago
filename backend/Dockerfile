@@ -20,17 +20,28 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN useradd -m -r app
+
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy cached models
-COPY --from=builder /root/.cache/huggingface /root/.cache/huggingface
+# Copy cached models (owned by app user)
+COPY --from=builder --chown=app /root/.cache/huggingface /home/app/.cache/huggingface
 
-ENV HF_HOME=/root/.cache/huggingface
-ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
+ENV HF_HOME=/home/app/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/home/app/.cache/huggingface
 
 COPY backend/ /app/backend/
+
+# Runtime data files needed by geo.py and transit.py
+COPY ingestion/data/community_areas.geojson /app/ingestion/data/community_areas.geojson
+COPY ingestion/data/transit_stations.json /app/ingestion/data/transit_stations.json
+
+# Create data + uploads dirs for the SQLite volume mount
+RUN mkdir -p /app/backend/data/uploads && chown -R app:app /app/backend/data
+
+USER app
 
 EXPOSE 8001
 

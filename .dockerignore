@@ -5,6 +5,8 @@ __pycache__
 *.pyc
 backend/data/
 ingestion/data/
+!ingestion/data/community_areas.geojson
+!ingestion/data/transit_stations.json
 chicago-il-codes.html
 eval/
 test-results/

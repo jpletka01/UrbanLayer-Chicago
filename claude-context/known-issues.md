@@ -57,6 +57,6 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
-- **Deployment** — No Dockerfile for FastAPI backend, no CI/CD, no production config. Vite SPA needs static file server with SPA-fallback.
+- **Deployment** — No CI/CD pipeline. Docker setup is complete (backend + frontend + Qdrant via docker-compose) but no cloud hosting configured.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production.
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
