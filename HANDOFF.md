@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Overlay/incentive map interactivity** — regulatory overlay districts and incentive zones now have hover tooltips and click popups with practical implications; multi-pick handles overlapping zones (landmark + TOD + ADU at the same point) in a combined "Regulatory Zones" popup with Base Zoning, Regulatory Overlays, and Incentive Zones sections. Previous: Walk Score + demographics + sidebar data fixes, sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. 380 tests passing (339 unit + 41 integration).
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Claude-style thinking indicator redesign** — thinking bubble simplified to "Thinking" + bouncing dots; API activity tracker moved below the bubble as a clickable dropdown checklist showing real-time status of each data source (green checkmarks for completed, spinners for in-progress). Previous: Overlay/incentive map interactivity, Walk Score + demographics + sidebar data fixes, sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. 380 tests passing (339 unit + 41 integration).
 
 ---
 
@@ -82,7 +82,8 @@ Everything below is in the repo, tested and verified.
 - Components:
   - `HeroSlideshow` (5 Unsplash photos, cross-fade)
   - `ChatInput` (glassmorphism pill, hero + compact variants, address autocomplete)
-  - `MessageBubble` (react-markdown, inline citations, copy button, typewriter, live activity trace during streaming)
+  - `MessageBubble` (react-markdown, inline citations, copy button, typewriter, simplified thinking indicator during streaming)
+  - `ActivityStatus` (below-bubble API call tracker with cycling label, expandable checklist, Motion animations)
   - `CitationPill` (renders a `[N]` marker as the `§ <section>` reference + ordinal; hover tooltip; click opens/expands/flashes the source)
   - `DataPill` (colored `[data:*]` marker → opens Data tab, scrolls to card)
   - `SourceCitation` (card with rank badge, `§` pill, score, prose preview, in-place full-text expansion, clickable cross-refs)
@@ -2644,3 +2645,40 @@ Popup widens to `max-w-[320px]` and content scrolls (`max-h-[50vh] overflow-y-au
 - `frontend/src/lib/mapColors.ts` — added `OVERLAY_INFO` (15 entries), `overlayLabel()`, `incentiveLabel()`
 - `frontend/src/lib/mapTooltip.ts` — widened `LayerPickInfo` with `x`/`y`; added overlay-districts and incentive-zones tooltip cases
 - `frontend/src/components/sidebar/MapView.tsx` — `OverlayClickData`/`IncentiveClickData` types, `"regulatory"` SelectedItem variant, `pickMultipleObjects` click handler, combined popup rendering, `onClickRef` initialization pattern
+
+---
+
+## Session Log (2026-06-01 — Claude-Style Thinking Indicator Redesign)
+
+Redesigned the streaming thinking indicator to follow Claude's UI pattern: a simple bubble with "Thinking" + bouncing dots, and a separate clickable activity tracker below the bubble showing real-time API call status.
+
+### Before
+
+The `ThinkingTrace` component rendered inside the assistant message bubble. It combined bouncing dots with cycling activity labels (e.g., "Searching crime records in Austin") that rotated every 1.2s with a text-glow animation. All activity state was displayed inline within the bubble.
+
+### After
+
+**Inside the bubble:** Static "Thinking" text with 3 bouncing dots (accent color, staggered 200ms). No activity labels — the bubble is clean and minimal.
+
+**Below the bubble:** A new `ActivityStatus` component renders outside/below the message bubble:
+- **Cycling label** — grey text (`text-text-muted`) with the same `animate-text-glow` pulsing animation, cycling through active API calls every 1.2s
+- **Clickable chevron** — click to expand/collapse a checklist of all APIs
+- **Expanded checklist** — `AnimatePresence` + `motion.div` height animation (same pattern as `SourceCitation.tsx`). Each API shows:
+  - Green checkmark circle (`bg-emerald-500/20` + `text-emerald-400`) for completed
+  - Spinning border ring (`border-t-accent animate-spin`) for in-progress
+  - Label text dimmed when done, brighter when active
+- **Left border line** (`border-l border-dark-border`) visually groups the checklist items
+- **Smooth fade-out** — entire component fades out (`opacity-0, -translate-y-1, duration-300`) when response content starts streaming, then removes from DOM after 350ms
+
+### Structural Change in MessageBubble
+
+Added an intermediate wrapper `<div className="max-w-[85%]">` around both the bubble and `ActivityStatus`. Previously `max-w-[85%]` was on the bubble itself — now it's on the shared wrapper so both elements respect the same width constraint. The old fallback dots+Thinking block (lines 262-271) was removed since the simplified `ThinkingTrace` now handles all pre-content states.
+
+### Files Changed/Created
+
+- `frontend/src/components/ThinkingTrace.tsx` — simplified: removed `activities` prop, cycling logic, `cycleIndex`/`activeIdsKey` state. Now just dots + "Thinking" with collapse support (~35 lines, was ~70)
+- `frontend/src/components/ActivityStatus.tsx` — **new**: below-bubble activity tracker with cycling label, expandable checklist, Motion animations (~120 lines)
+- `frontend/src/components/MessageBubble.tsx` — restructured assistant message wrapper, imported `ActivityStatus`, removed fallback thinking block
+- `HANDOFF.md` — updated status, component listing, session log
+
+No backend changes. No changes to `useChat.ts`, `types.ts`, `ChatInterface.tsx`, or `tailwind.config.js`.
