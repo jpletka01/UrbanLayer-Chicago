@@ -23,7 +23,10 @@ import { Footer } from "./components/landing/Footer";
 import { NeighborhoodExplorer } from "./components/landing/NeighborhoodExplorer";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
 import { StorySection } from "./components/landing/StorySection";
-import { ValueProps } from "./components/landing/ValueProps";
+import { IntelligenceStack } from "./components/landing/IntelligenceStack";
+import { DepthShowcase } from "./components/landing/DepthShowcase";
+import { PersonaScenarios } from "./components/landing/PersonaScenarios";
+import { HowItWorks } from "./components/landing/HowItWorks";
 import {
   appendMessages,
   clearAllHistory,
@@ -552,27 +555,36 @@ export function App() {
 
             </div>
 
-            {/* Value props — own background, below the slideshow */}
-            <ValueProps />
+            {/* Intelligence Stack — breadth: 6 domain cards */}
+            <IntelligenceStack />
 
             {/* Story interstitial — business use case */}
             <StorySection
               image="https://images.unsplash.com/photo-1699898064988-9473dc051320?w=1920&q=80"
               title="Open a business with confidence"
-              subtitle="Research zoning regulations, check nearby competition, and understand what permits you'll need — before signing a lease."
+              subtitle="Check zoning compliance and 12 regulatory overlays, find TIF districts and incentive programs, review nearby competition through active business licenses, and understand the neighborhood — all from a single question."
               align="left"
             />
 
-            {/* Interactive explorer */}
+            {/* Depth Showcase — product UI previews */}
+            <DepthShowcase />
+
+            {/* Interactive explorer — proof */}
             <NeighborhoodExplorer />
 
             {/* Story interstitial — move-in use case */}
             <StorySection
               image="https://images.unsplash.com/photo-1654043342878-7491a4c4d098?w=1920&q=80"
               title="Find the right place to live"
-              subtitle="Compare crime trends, check 311 complaint patterns, and see what's being built around your next apartment."
+              subtitle="Compare crime trends and arrest rates, check Walk Score and transit access, review property taxes and assessed values, see building violations and 311 patterns — the neighborhood report no listing gives you."
               align="right"
             />
+
+            {/* Persona Scenarios — customer sees themselves */}
+            <PersonaScenarios onAsk={sendMessage} />
+
+            {/* How It Works — trust / architecture */}
+            <HowItWorks />
 
             <Footer />
           </motion.div>

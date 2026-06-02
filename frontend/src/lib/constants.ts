@@ -3,17 +3,19 @@
 
 export const SUGGESTIONS = [
   "What's going on near 2400 N Milwaukee Ave?",
-  "Crime trends in Wicker Park last 90 days",
-  "Can I open a bar in a residential district?",
-  "Top 311 complaints in Logan Square",
+  "Tell me about the property at 1425 N Wells St",
+  "Can I open a bar at 2200 W Chicago Ave?",
+  "Is Logan Square in a TIF district?",
 ];
 
 // Splash-screen headline stats.
 const commaFmt = (n: number) => n.toLocaleString("en-US");
+const plusFmt = (n: number) => `${n}+`;
 export const SPLASH_STATS = [
-  { value: 14628, label: "Code sections", format: commaFmt },
-  { value: 5, label: "Live datasets" },
+  { value: 25, label: "Data sources", format: plusFmt },
+  { value: 14535, label: "Code sections", format: commaFmt },
   { value: 77, label: "Community areas" },
+  { value: 12, label: "Regulatory layers" },
 ];
 
 // Timings (ms).

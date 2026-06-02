@@ -8,7 +8,7 @@ A snapshot of what's been built, the decisions behind it, and what should come n
 
 A RAG-powered chat interface (branded as **UrbanLayer — Chicago**) for natural-language questions about Chicago. Combines live Chicago Data Portal (Socrata) data with semantic search over the entire Chicago Municipal Code. Single killer query: *"What's going on near 2400 N Milwaukee Ave?"* → a unified response covering crime, 311, building activity, business licenses, and applicable zoning, all from one prompt.
 
-**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Claude-style thinking indicator redesign** — thinking bubble simplified to "Thinking" + bouncing dots; API activity tracker moved below the bubble as a clickable dropdown checklist showing real-time status of each data source (green checkmarks for completed, spinners for in-progress). Previous: Overlay/incentive map interactivity, Walk Score + demographics + sidebar data fixes, sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. 380 tests passing (339 unit + 41 integration).
+**Current status (2026-06-01):** Full pipeline operational. Ingestion complete (14,535 chunks in Qdrant, down from 14,628 after table consolidation). Eval suite passes 26/26 queries (100%), expanded to 39 queries covering new domain workflows. Retrieval quality benchmark: **A=15 B=1 C=2** on 18 user-style queries (up from A=13 B=1 C=4 after Bucket 3 reranker improvements). Most recent work: **Landing page redesign** — replaced the original 3-card ValueProps with a full narrative page: Intelligence Stack (6 domain cards showing all 25+ data sources), Depth Showcase (3 product UI preview cards with static sample data for property/regulatory/neighborhood), Persona Scenarios (3 clickable user archetype cards — Investor, Business Owner, Resident — that pre-fill the chat), How It Works (3-step architecture flow), updated hero stats (25+ Data Sources / 14,535 Code Sections / 77 Community Areas / 12 Regulatory Layers), updated suggestion chips showcasing property + incentive capabilities, updated story section copy reflecting expanded system, and expanded footer with full data source inventory. Previous: Claude-style thinking indicator redesign, overlay/incentive map interactivity, Walk Score + demographics + sidebar data fixes, sidebar data enrichment, multi-turn neighborhood switching fix, live thinking trace, Walk Score API integration, Expansion Phase 7 complete (all stretch items, workflow-based context selection, overlay/incentive map geometry, PTAXSIM tax estimation), Phase 7 core (TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion), Map loading fix + HTML/CSS bug fixes, Breakage fix + map refactor + real-API tests, Expansion Phase 6 (frontend integration), Phase 5 (neighborhood domain), Phase 4 (incentives domain), Phase 2 (property domain), Phase 1+3 (infrastructure + regulatory domain), `/about` page, Bucket 3 (reranker, batched cross-refs, async pipeline), Bucket 2 (admin dashboard, LLM-as-judge eval), Bucket 1 (mobile responsiveness, file upload), URL-based conversation routing, zoning UX overhaul, geocoding fix, zoning map integration, analytics category audit, SQLite persistence, map interactivity. **Known issue:** building violations synthesis inconsistency (see below); Cook County GIS parcel lookup intermittently returns empty results even with retry. 380 tests passing (339 unit + 41 integration).
 
 ---
 
@@ -2682,3 +2682,72 @@ Added an intermediate wrapper `<div className="max-w-[85%]">` around both the bu
 - `HANDOFF.md` — updated status, component listing, session log
 
 No backend changes. No changes to `useChat.ts`, `types.ts`, `ChatInterface.tsx`, or `tailwind.config.js`.
+
+---
+
+## Session Log (2026-06-01 — Landing Page Redesign)
+
+Full redesign of the landing page below the hero section. The page was originally built when the system had 5 Socrata datasets; after the expansion (property domain, regulatory overlays, incentives, demographics, transit, Walk Score), the landing page dramatically undersold the product — hero stats said "5 Live Datasets" when the real number is 25+, and the value props only mentioned crime/311/permits/zoning.
+
+### Design Approach
+
+The new page follows a narrative arc: **Breadth** (look how much we cover) → **Depth** (look how detailed each domain is) → **Proof** (try it yourself) → **Identity** (this is for you specifically) → **Trust** (here's how it works) → **Credibility** (here are our actual sources).
+
+### New Page Structure (below hero)
+
+1. **Intelligence Stack** (replaces ValueProps) — 6 domain cards in a 3×2 grid: Property Intelligence (4 sources), Regulatory & Zoning (12 layers), Incentives & Investment (3 datasets), Neighborhood Context (4 sources), Safety & Activity (5 datasets), Municipal Code (full text). Each card has an icon, data points, and a count badge. Glass-card styling with staggered Framer Motion entrance.
+
+2. **StorySection #1** — "Open a business with confidence" (copy updated to mention 12 regulatory overlays, TIF districts, incentive programs, active business licenses)
+
+3. **Depth Showcase** (NEW) — "Ask one question. Get the full picture." Three cards showing miniature product UI previews with static sample data:
+   - **Property dossier**: PIN, building class, sqft, lot size, 3-year assessment history, estimated annual tax ($8,420)
+   - **Regulatory profile**: Zoning badge (B3-2), overlay badges (Planned Development, Pedestrian Street, TOD Eligible, SSA #26), risk factors (No Flood Zone, No Brownfield)
+   - **Neighborhood snapshot**: Walk/Transit/Bike Score bars (92/87/82), nearest CTA station (Western — Blue Line, 0.3 mi), demographics grid (Population, Median Income, Owner-Occ %, Median Age)
+
+4. **NeighborhoodExplorer** (copy updated to mention live city data, month-over-month trends)
+
+5. **StorySection #2** — "Find the right place to live" (copy updated to mention Walk Score, transit access, property taxes, assessed values, building violations)
+
+6. **Persona Scenarios** (NEW) — "Built for real decisions." Three clickable persona cards:
+   - **The Investor**: "Tell me about the property at 1425 N Wells St" → Property Details, Assessment History, Tax Estimate, TIF Status, Opportunity Zone, Zoning + Overlays. Framing: "Due diligence that used to take a week of FOIA requests."
+   - **The Business Owner**: "Can I open a restaurant at 2200 W Chicago Ave?" → Zoning Classification, Permitted Uses, Regulatory Overlays, Nearby Businesses, Building Permits, Incentive Programs. Framing: "Everything between your idea and your lease agreement."
+   - **The Resident**: "What's it like living near Damen and Division?" → Crime Trends, 311 Patterns, Walk/Transit Score, CTA Access, Demographics, Building Activity. Framing: "The neighborhood report no listing gives you."
+   - Each card has an accent left border, sample question in a styled pill, domain badges, and framing line. Clicking pre-fills the chat input via `onAsk` prop.
+
+7. **How It Works** (NEW) — 3-step horizontal flow with dashed connecting lines:
+   - Step 1 "You ask": chat input mockup with "Can I build a 6-flat at 2100 N..."
+   - Step 2 "We retrieve": animated source badges (Zoning, Overlays, Property, Permits, TIF, Code, Crime, Demographics)
+   - Step 3 "You get answers": response mockup with `RM-5` zoning pill, `§ 17-2-0300` citation, `data:zoning` badge
+
+8. **Footer** (expanded) — Data sources reorganized from 3 items into 4 groups: City of Chicago (Crime, 311, Permits, Violations, Business Licenses, Zoning MapServer with 12 overlay layers), Cook County (Property Characteristics, Assessed Values, Sales History, Tax Estimation), Federal & External (Census Demographics, FEMA Flood Zones, EPA Brownfields, Walk Score), Legal (Chicago Municipal Code, 14,535 sections)
+
+### Hero Updates
+
+- **Stats**: `5 Live datasets` → `25+ Data sources`, `14,628 Code sections` → `14,535 Code sections`, added `12 Regulatory layers` as 4th stat. `CountUp` component handles the `25+` format via a custom `plusFmt` formatter.
+- **Suggestion chips**: Updated to showcase expanded capabilities:
+  - "What's going on near 2400 N Milwaukee Ave?" (neighborhood overview — kept)
+  - "Tell me about the property at 1425 N Wells St" (property intelligence — NEW)
+  - "Can I open a bar at 2200 W Chicago Ave?" (regulatory + business — updated with specific address)
+  - "Is Logan Square in a TIF district?" (incentives — NEW)
+
+### Files Created
+
+- `frontend/src/components/landing/IntelligenceStack.tsx` — 6-card domain grid (replaces ValueProps)
+- `frontend/src/components/landing/DepthShowcase.tsx` — 3 product UI preview cards with static sample data
+- `frontend/src/components/landing/PersonaScenarios.tsx` — 3 clickable persona scenario cards
+- `frontend/src/components/landing/HowItWorks.tsx` — 3-step architecture flow
+
+### Files Modified
+
+- `frontend/src/lib/constants.ts` — `SPLASH_STATS` (4 stats with corrected numbers), `SUGGESTIONS` (4 new prompts)
+- `frontend/src/App.tsx` — replaced `ValueProps` import with 4 new component imports, rewired section assembly, updated StorySection subtitle props
+- `frontend/src/components/landing/Footer.tsx` — expanded data sources into 4 organized groups
+- `frontend/src/components/landing/NeighborhoodExplorer.tsx` — updated header copy
+
+### Design Decisions
+
+- **Static sample data in DepthShowcase over live API calls** — the landing page should load instantly without a backend. Hardcoded sample data mirrors realistic Lincoln Park / West Town values so the preview looks authentic.
+- **PersonaScenarios clickable with `onAsk` prop** — bridges passive browsing to active querying. Clicking a persona card scrolls to the hero and pre-fills the chat input, converting a browser into a user.
+- **6 domain cards over 3 generic value props** — the old "Know your neighborhood" / "Understand what's changing" / "Get answers, not spreadsheets" cards were too abstract to communicate the product's actual capabilities. The new cards enumerate specific data points per domain, making the breadth immediately visible.
+- **25+ as the hero stat, not the exact count** — data source count changes as APIs are added. "25+" is durable and communicates scale without needing updates.
+- **Kept the NeighborhoodExplorer** — it's the strongest section on the page because it's interactive and proves the system works with real data. Enhanced the copy but didn't restructure it.

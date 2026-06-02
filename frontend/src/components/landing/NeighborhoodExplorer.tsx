@@ -56,7 +56,7 @@ export function NeighborhoodExplorer() {
             Explore a neighborhood
           </h2>
           <p className="text-text-secondary text-sm max-w-lg mx-auto">
-            Pick a community area or enter an address to see what's happening — crime, 311 requests, and building permits from the last 30 days.
+            Pick a community area or enter an address to explore live city data — crime patterns, 311 service requests, building permits, and month-over-month trends, updated from the Chicago Data Portal.
           </p>
         </div>
 
