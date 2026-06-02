@@ -3,7 +3,10 @@ from typing import Any
 import httpx
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import socrata_get
+
+_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="business")
 
 
 async def businesses_by_community_area(
@@ -11,6 +14,11 @@ async def businesses_by_community_area(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
+    key = f"business:{community_area}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     params = {
         "$where": f"community_area='{community_area}'",
@@ -20,4 +28,6 @@ async def businesses_by_community_area(
         ),
         "$limit": settings.limit_business,
     }
-    return await socrata_get(settings.dataset_business, params, client=client)
+    result = await socrata_get(settings.dataset_business, params, client=client)
+    _cache.set(key, result)
+    return result

@@ -10,7 +10,7 @@ from backend.retrieval.socrata import socrata_get
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=86400, maxsize=256)
+_cache = TTLCache(ttl_seconds=86400, maxsize=256, name="property_chars")
 _NOT_FOUND = object()
 
 

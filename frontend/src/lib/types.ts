@@ -17,6 +17,7 @@ export interface Message {
   mapData?: MapData;
   mapFetchedAt?: number;
   attachments?: UploadMeta[];
+  turnSummary?: TurnSummary;
 }
 
 export type SourceTag =
@@ -270,13 +271,27 @@ export interface ContextObject {
   partial_failures?: string[];
 }
 
+export interface TurnSummary {
+  turn_index: number;
+  user_question: string;
+  location_community_area: number | null;
+  location_community_area_name: string | null;
+  location_address: string | null;
+  workflow_hint: string;
+  sources_used: string[];
+  key_facts: string[];
+  code_sections_cited: string[];
+  data_as_of: string | null;
+}
+
 export type ChatChunk =
   | { type: "plan"; plan: RetrievalPlan; t_ms?: number }
   | { type: "context"; context: ContextObject; t_ms?: number }
   | { type: "map_data"; map_data: MapData; t_ms?: number }
   | { type: "token"; text: string; t_ms?: number }
   | { type: "error"; error: string; t_ms?: number }
-  | { type: "done"; t_ms?: number };
+  | { type: "done"; t_ms?: number }
+  | { type: "turn_summary"; turn_summary: TurnSummary; t_ms?: number };
 
 export interface PhaseTimings {
   router_ms?: number;
@@ -369,6 +384,7 @@ export interface StoredMessage {
   plan?: RetrievalPlan | null;
   map_data?: MapData | null;
   map_fetched_at?: number | null;
+  summary?: TurnSummary | null;
 }
 
 export interface ConversationDetail {

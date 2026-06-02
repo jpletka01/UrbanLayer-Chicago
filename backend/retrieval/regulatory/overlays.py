@@ -13,7 +13,7 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_cache = TTLCache(ttl_seconds=3600, maxsize=512, name="overlays")
 _NOT_FOUND = object()
 
 ZONING_BASE_URL = (

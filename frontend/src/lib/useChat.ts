@@ -7,6 +7,7 @@ import type {
   Message,
   RetrievalPlan,
   SourceTag,
+  TurnSummary,
   UploadMeta,
 } from "./types";
 
@@ -92,6 +93,7 @@ export function useChat({
   const pendingContextRef = useRef<ContextObject | null>(null);
   const pendingPlanRef = useRef<RetrievalPlan | null>(null);
   const pendingMapDataRef = useRef<MapData | null>(null);
+  const pendingTurnSummaryRef = useRef<TurnSummary | null>(null);
   const hasTokenRef = useRef(false);
 
   const userMessageCount = messages.filter((m) => m.role === "user").length;
@@ -125,6 +127,7 @@ export function useChat({
     pendingContextRef.current = null;
     pendingPlanRef.current = null;
     pendingMapDataRef.current = null;
+    pendingTurnSummaryRef.current = null;
     hasTokenRef.current = false;
 
     setActivities([
@@ -191,6 +194,8 @@ export function useChat({
             }
             return next;
           });
+        } else if (chunk.type === "turn_summary") {
+          pendingTurnSummaryRef.current = chunk.turn_summary;
         } else if (chunk.type === "done") {
           setMessages((m) => {
             const next = [...m];
@@ -202,6 +207,7 @@ export function useChat({
                 plan: pendingPlanRef.current ?? undefined,
                 mapData: pendingMapDataRef.current ?? undefined,
                 mapFetchedAt: pendingMapDataRef.current ? Date.now() : undefined,
+                turnSummary: pendingTurnSummaryRef.current ?? undefined,
               };
             }
             return next;

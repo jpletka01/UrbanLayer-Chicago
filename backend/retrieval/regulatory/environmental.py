@@ -15,7 +15,7 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=3600, maxsize=256)
+_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="environmental")
 
 EPA_BROWNFIELDS_URL = (
     "https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services"

@@ -4,8 +4,11 @@ from typing import Any
 import httpx
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import grouped_count, socrata_get
 from backend.retrieval.utils import cutoff_iso
+
+_cache = TTLCache(ttl_seconds=900, maxsize=256, name="crime")
 
 
 async def crime_by_community_area(
@@ -14,6 +17,11 @@ async def crime_by_community_area(
     days: int = 90,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
+    key = f"crime:{community_area}:{days}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     cutoff = cutoff_iso(days, lag_days=settings.crime_lag_days)
 
@@ -38,6 +46,7 @@ async def crime_by_community_area(
     for row in crimes:
         row["arrests"] = arrest_map.get(row["primary_type"], "0")
 
+    _cache.set(key, crimes)
     return crimes
 
 

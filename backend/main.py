@@ -26,6 +26,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from backend.analytics import compute_analytics
 from backend.assembler import assemble_context
 from backend.config import get_settings
+from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
 from backend import db
 from backend.models import (
@@ -37,6 +38,7 @@ from backend.models import (
     MapDataResponse,
     RetrievalPlan,
     SaveMessagesRequest,
+    TurnSummary,
 )
 from backend.retrieval import buildings, business, crime, three11
 from backend.retrieval.geo import COMMUNITY_AREAS, community_area_by_point, geocode_address_suggestions
@@ -103,6 +105,8 @@ async def _shutdown() -> None:
     await db.close_db()
     from backend.retrieval.property.tax_estimate import close as close_ptaxsim
     await close_ptaxsim()
+    from backend.retrieval.socrata import close_shared_client
+    await close_shared_client()
 
 
 @app.get("/health")
@@ -167,32 +171,31 @@ async def map_data(req: MapDataRequest) -> MapDataResponse:
     settings = get_settings()
     tasks: dict[str, asyncio.Task] = {}
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
-        if "crime_api" in req.sources:
-            tasks["crimes"] = asyncio.create_task(
-                crimes_for_map(req.community_area, days=req.time_range_days, client=client)
-            )
-        if "311_api" in req.sources:
-            tasks["requests_311"] = asyncio.create_task(
-                requests_311_for_map(req.community_area, client=client)
-            )
-        if "permits_api" in req.sources:
-            tasks["building_permits"] = asyncio.create_task(
-                permits_for_map(req.community_area, days=req.time_range_days, client=client)
-            )
-        if settings.enable_zoning_layer:
-            tasks["zoning"] = asyncio.create_task(
-                zoning_for_map(req.community_area, client=client)
-            )
+    if "crime_api" in req.sources:
+        tasks["crimes"] = asyncio.create_task(
+            crimes_for_map(req.community_area, days=req.time_range_days)
+        )
+    if "311_api" in req.sources:
+        tasks["requests_311"] = asyncio.create_task(
+            requests_311_for_map(req.community_area)
+        )
+    if "permits_api" in req.sources:
+        tasks["building_permits"] = asyncio.create_task(
+            permits_for_map(req.community_area, days=req.time_range_days)
+        )
+    if settings.enable_zoning_layer:
+        tasks["zoning"] = asyncio.create_task(
+            zoning_for_map(req.community_area)
+        )
 
-        results: dict[str, Any] = {}
-        done = await asyncio.gather(*tasks.values(), return_exceptions=True)
-        for key, value in zip(tasks.keys(), done):
-            if isinstance(value, Exception):
-                log.warning("Map data %s failed: %s", key, value)
-                results[key] = [] if key != "zoning" else {"type": "FeatureCollection", "features": []}
-            else:
-                results[key] = value
+    results: dict[str, Any] = {}
+    done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    for key, value in zip(tasks.keys(), done):
+        if isinstance(value, Exception):
+            log.warning("Map data %s failed: %s", key, value)
+            results[key] = [] if key != "zoning" else {"type": "FeatureCollection", "features": []}
+        else:
+            results[key] = value
 
     queried_address = None
     if req.address_lat is not None and req.address_lon is not None:
@@ -377,97 +380,90 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
     ca = plan.location.resolved_community_area
     tasks: dict[str, asyncio.Task] = {}
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
-        if ca is not None:
-            if "crime_api" in plan.sources:
-                tasks["crime"] = asyncio.create_task(
-                    crime.crime_by_community_area(ca, days=plan.time_range_days, client=client)
-                )
-            if "311_api" in plan.sources:
-                tasks["311"] = asyncio.create_task(
-                    three11.open_311_by_community_area(ca, client=client)
-                )
-                tasks["311_oldest"] = asyncio.create_task(
-                    three11.open_311_oldest(ca, client=client)
-                )
-            if "permits_api" in plan.sources:
-                tasks["permits"] = asyncio.create_task(
-                    buildings.permits_by_community_area(ca, client=client)
-                )
-            if "violations_api" in plan.sources:
-                tasks["violations"] = asyncio.create_task(
-                    buildings.violations_by_community_area(ca, client=client)
-                )
-            if "business_api" in plan.sources:
-                tasks["business"] = asyncio.create_task(
-                    business.businesses_by_community_area(ca, client=client)
-                )
-
-        # Look up parcel zoning via ArcGIS when the query is zoning/legal-related
-        loc = plan.location
-        if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon:
-            tasks["zoning_lookup"] = asyncio.create_task(
-                lookup_zoning(loc.resolved_lat, loc.resolved_lon, client=client)
+    if ca is not None:
+        if "crime_api" in plan.sources:
+            tasks["crime"] = asyncio.create_task(
+                crime.crime_by_community_area(ca, days=plan.time_range_days)
+            )
+        if "311_api" in plan.sources:
+            tasks["311"] = asyncio.create_task(
+                three11.open_311_by_community_area(ca)
+            )
+            tasks["311_oldest"] = asyncio.create_task(
+                three11.open_311_oldest(ca)
+            )
+        if "permits_api" in plan.sources:
+            tasks["permits"] = asyncio.create_task(
+                buildings.permits_by_community_area(ca)
+            )
+        if "violations_api" in plan.sources:
+            tasks["violations"] = asyncio.create_task(
+                buildings.violations_by_community_area(ca)
+            )
+        if "business_api" in plan.sources:
+            tasks["business"] = asyncio.create_task(
+                business.businesses_by_community_area(ca)
             )
 
-        wf = plan.workflow_hint or "general"
+    loc = plan.location
+    if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon:
+        tasks["zoning_lookup"] = asyncio.create_task(
+            lookup_zoning(loc.resolved_lat, loc.resolved_lon)
+        )
 
-        # Regulatory domain: overlay districts, flood zones, brownfield sites
-        if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-            tasks["regulatory"] = asyncio.create_task(
-                regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
+    wf = plan.workflow_hint or "general"
+
+    if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+        tasks["regulatory"] = asyncio.create_task(
+            regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
+        )
+
+    if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+        tasks["property"] = asyncio.create_task(
+            property_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
+        )
+
+    if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+        tasks["incentives"] = asyncio.create_task(
+            incentives_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
+        )
+
+    if "neighborhood_domain" in plan.sources:
+        tasks["neighborhood"] = asyncio.create_task(
+            neighborhood_domain(
+                loc.resolved_lat or 0.0,
+                loc.resolved_lon or 0.0,
+                community_area=ca,
+                address=loc.resolved_address,
+                workflow=wf,
             )
+        )
 
-        # Property domain: parcel lookup -> PIN -> characteristics/assessments/sales
-        if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-            tasks["property"] = asyncio.create_task(
-                property_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
-            )
+    _FAILURE_LABELS = {
+        "crime": "crime statistics",
+        "311": "311 service requests",
+        "permits": "building permits",
+        "violations": "building violations",
+        "business": "business licenses",
+        "zoning_lookup": "parcel zoning",
+        "regulatory": "regulatory overlays",
+        "property": "property records",
+        "incentives": "incentive zones",
+        "neighborhood": "demographics and transit",
+    }
 
-        # Incentives domain: TIF, Enterprise Zone, Opportunity Zone
-        if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-            tasks["incentives"] = asyncio.create_task(
-                incentives_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf, client=client)
-            )
-
-        # Neighborhood domain: demographics + transit proximity + Walk Score
-        if "neighborhood_domain" in plan.sources:
-            tasks["neighborhood"] = asyncio.create_task(
-                neighborhood_domain(
-                    loc.resolved_lat or 0.0,
-                    loc.resolved_lon or 0.0,
-                    community_area=ca,
-                    address=loc.resolved_address,
-                    workflow=wf,
-                    client=client,
-                )
-            )
-
-        _FAILURE_LABELS = {
-            "crime": "crime statistics",
-            "311": "311 service requests",
-            "permits": "building permits",
-            "violations": "building violations",
-            "business": "business licenses",
-            "zoning_lookup": "parcel zoning",
-            "regulatory": "regulatory overlays",
-            "property": "property records",
-            "incentives": "incentive zones",
-            "neighborhood": "demographics and transit",
-        }
-
-        results: dict[str, Any] = {}
-        partial_failures: list[str] = []
-        if tasks:
-            done = await asyncio.gather(*tasks.values(), return_exceptions=True)
-            for key, value in zip(tasks.keys(), done):
-                if isinstance(value, Exception):
-                    log.warning("Retrieval %s failed: %s", key, value)
-                    results[key] = [] if key not in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood") else None
-                    if key in _FAILURE_LABELS:
-                        partial_failures.append(_FAILURE_LABELS[key])
-                else:
-                    results[key] = value
+    results: dict[str, Any] = {}
+    partial_failures: list[str] = []
+    if tasks:
+        done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+        for key, value in zip(tasks.keys(), done):
+            if isinstance(value, Exception):
+                log.warning("Retrieval %s failed: %s", key, value)
+                results[key] = [] if key not in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood") else None
+                if key in _FAILURE_LABELS:
+                    partial_failures.append(_FAILURE_LABELS[key])
+            else:
+                results[key] = value
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
@@ -493,15 +489,15 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
 
 
 async def _fetch_overlay_geojson(
-    lat: float, lon: float, client: httpx.AsyncClient,
+    lat: float, lon: float,
 ) -> dict | None:
     """Get GeoJSON features for overlays that hit at this point."""
     from backend.retrieval.regulatory.overlays import query_all_overlays, overlay_geojson_features
-    hits = await query_all_overlays(lat, lon, client=client)
+    hits = await query_all_overlays(lat, lon)
     if not hits:
         return None
     layer_ids = [lid for lid, _ in hits]
-    return await overlay_geojson_features(lat, lon, layer_ids, client=client)
+    return await overlay_geojson_features(lat, lon, layer_ids)
 
 
 async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
@@ -511,50 +507,50 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
         return {}
 
     tasks: dict[str, asyncio.Task] = {}
-    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
-        if "crime_api" in plan.sources:
-            tasks["crimes"] = asyncio.create_task(
-                crimes_for_map(ca, days=plan.time_range_days, client=client)
-            )
-        if "311_api" in plan.sources:
-            tasks["requests_311"] = asyncio.create_task(
-                requests_311_for_map(ca, client=client)
-            )
-        if "permits_api" in plan.sources:
-            tasks["building_permits"] = asyncio.create_task(
-                permits_for_map(ca, days=plan.time_range_days, client=client)
-            )
-        if plan.requires_disclaimer:
-            tasks["zoning"] = asyncio.create_task(
-                zoning_for_map(ca, client=client)
-            )
 
-        loc = plan.location
-        if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-            tasks["overlay_geojson"] = asyncio.create_task(
-                _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon, client)
-            )
+    if "crime_api" in plan.sources:
+        tasks["crimes"] = asyncio.create_task(
+            crimes_for_map(ca, days=plan.time_range_days)
+        )
+    if "311_api" in plan.sources:
+        tasks["requests_311"] = asyncio.create_task(
+            requests_311_for_map(ca)
+        )
+    if "permits_api" in plan.sources:
+        tasks["building_permits"] = asyncio.create_task(
+            permits_for_map(ca, days=plan.time_range_days)
+        )
+    if plan.requires_disclaimer:
+        tasks["zoning"] = asyncio.create_task(
+            zoning_for_map(ca)
+        )
 
-        if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-            from backend.retrieval.incentives.tif import tif_geojson_feature
-            from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
-            tasks["tif_geojson"] = asyncio.create_task(
-                tif_geojson_feature(loc.resolved_lat, loc.resolved_lon, client=client)
-            )
-            tasks["ez_geojson"] = asyncio.create_task(
-                ez_geojson_feature(loc.resolved_lat, loc.resolved_lon, client=client)
-            )
+    loc = plan.location
+    if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+        tasks["overlay_geojson"] = asyncio.create_task(
+            _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon)
+        )
 
-        results: dict[str, Any] = {}
-        if tasks:
-            done = await asyncio.gather(*tasks.values(), return_exceptions=True)
-            for key, value in zip(tasks.keys(), done):
-                if isinstance(value, Exception):
-                    log.warning("Map-row fetch %s failed: %s", key, value)
-                    _NONE_ON_FAIL = {"zoning", "tif_geojson", "ez_geojson", "overlay_geojson"}
-                    results[key] = None if key in _NONE_ON_FAIL else []
-                else:
-                    results[key] = value
+    if "incentives_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+        from backend.retrieval.incentives.tif import tif_geojson_feature
+        from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
+        tasks["tif_geojson"] = asyncio.create_task(
+            tif_geojson_feature(loc.resolved_lat, loc.resolved_lon)
+        )
+        tasks["ez_geojson"] = asyncio.create_task(
+            ez_geojson_feature(loc.resolved_lat, loc.resolved_lon)
+        )
+
+    results: dict[str, Any] = {}
+    if tasks:
+        done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+        for key, value in zip(tasks.keys(), done):
+            if isinstance(value, Exception):
+                log.warning("Map-row fetch %s failed: %s", key, value)
+                _NONE_ON_FAIL = {"zoning", "tif_geojson", "ez_geojson", "overlay_geojson"}
+                results[key] = None if key in _NONE_ON_FAIL else []
+            else:
+                results[key] = value
 
     return results
 
@@ -615,6 +611,16 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     request_group = str(uuid.uuid4())
     plan: RetrievalPlan | None = None
     error_msg: str | None = None
+
+    # Load turn summaries for context management
+    turn_summaries: list[TurnSummary] | None = None
+    if req.conversation_id:
+        try:
+            summary_dicts = await db.get_turn_summaries(req.conversation_id)
+            if summary_dicts:
+                turn_summaries = [TurnSummary(**d) for d in summary_dicts]
+        except Exception:
+            pass
 
     # Message limit enforcement
     if req.conversation_id:
@@ -698,6 +704,8 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             context=context,
             user_message=req.message,
             history=req.history,
+            turn_summaries=turn_summaries,
+            plan=plan,
             upload_ids=req.upload_ids or None,
             request_group=request_group,
             conversation_id=req.conversation_id,
@@ -709,6 +717,19 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
         yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+
+    # Generate turn summary for context management (fire-and-forget)
+    if plan and not error_msg:
+        try:
+            turn_idx = len(turn_summaries) if turn_summaries else 0
+            _turn_summary = summarize_turn(turn_idx, req.message, plan, context)
+            yield _sse(ChatChunk(
+                type="turn_summary",
+                turn_summary=_turn_summary.model_dump(),
+                t_ms=elapsed_ms(),
+            ))
+        except Exception:
+            log.warning("Failed to generate turn summary", exc_info=True)
 
     yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
 
@@ -759,6 +780,21 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 # ---------------------------------------------------------------------------
 # Admin API
 # ---------------------------------------------------------------------------
+
+@app.get("/api/admin/cache")
+async def admin_cache() -> dict:
+    from backend.retrieval.cache import TTLCache
+    caches = [c.stats() for c in TTLCache._instances]
+    total_hits = sum(c["hits"] for c in caches)
+    total_misses = sum(c["misses"] for c in caches)
+    total = total_hits + total_misses
+    return {
+        "caches": caches,
+        "total_hits": total_hits,
+        "total_misses": total_misses,
+        "overall_hit_rate": round(total_hits / total, 4) if total > 0 else 0.0,
+    }
+
 
 @app.get("/api/admin/overview")
 async def admin_overview(period: str = "30d") -> dict:

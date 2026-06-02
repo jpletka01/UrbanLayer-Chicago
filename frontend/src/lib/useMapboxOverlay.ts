@@ -47,6 +47,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
       zoom: optsRef.current.zoom,
       attributionControl: false,
       interactive: optsRef.current.interactive ?? true,
+      preserveDrawingBuffer: true,
     });
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");

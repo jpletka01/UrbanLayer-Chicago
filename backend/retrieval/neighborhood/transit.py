@@ -14,7 +14,7 @@ from backend.retrieval.regulatory.overlays import query_overlay
 
 log = logging.getLogger(__name__)
 
-_tod_cache = TTLCache(ttl_seconds=3600, maxsize=256)
+_tod_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="transit_tod")
 
 _stations: list[dict] | None = None
 _stations_lock = asyncio.Lock()

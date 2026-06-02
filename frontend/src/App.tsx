@@ -47,6 +47,8 @@ import type {
 } from "./lib/types";
 import { useChat } from "./lib/useChat";
 import { useConversationRouter } from "./lib/useConversationRouter";
+import { buildReportData, type ReportData } from "./lib/reportBuilder";
+import { ExportReport } from "./components/ExportReport";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -88,6 +90,7 @@ export function App() {
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [dataTabViewed, setDataTabViewed] = useState(true);
   const [sourcesTabViewed, setSourcesTabViewed] = useState(true);
+  const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -481,6 +484,18 @@ export function App() {
     setSectionView({ loading: false, chunk });
   }
 
+  function handleExport() {
+    let mapScreenshot: string | null = null;
+    try {
+      const canvas = document.querySelector(".mapboxgl-canvas") as HTMLCanvasElement | null;
+      if (canvas) mapScreenshot = canvas.toDataURL("image/png");
+    } catch { /* WebGL context lost — skip map */ }
+
+    const title = context?.resolved_address || context?.community_area_name || "Chicago Report";
+    const report = buildReportData(messages, mapScreenshot, title);
+    setExportReport(report);
+  }
+
   if (loadingConversation) {
     return <div className="w-full min-h-screen bg-[#0d0d0d]" />;
   }
@@ -662,6 +677,18 @@ export function App() {
                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent" />
                   )}
                 </button>
+                {!streaming && messages.some((m) => m.role === "assistant" && m.context) && (
+                  <button
+                    onClick={handleExport}
+                    className="hidden md:flex px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center gap-1.5"
+                    title="Download report"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Report
+                  </button>
+                )}
                 <button
                   onClick={reset}
                   className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
@@ -757,6 +784,13 @@ export function App() {
         onClose={() => setSectionView(null)}
         onCrossRefClick={handleCrossRefClick}
       />
+
+      {exportReport && (
+        <ExportReport
+          report={exportReport}
+          onClose={() => setExportReport(null)}
+        />
+      )}
     </main>
   );
 }

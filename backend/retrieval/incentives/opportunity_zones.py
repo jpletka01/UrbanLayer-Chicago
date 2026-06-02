@@ -8,8 +8,8 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-_tract_cache = TTLCache(ttl_seconds=3600, maxsize=256)
-_oz_cache = TTLCache(ttl_seconds=86400, maxsize=256)
+_tract_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="oz_tracts")
+_oz_cache = TTLCache(ttl_seconds=86400, maxsize=256, name="oz_status")
 _NOT_FOUND = object()
 
 FCC_CENSUS_URL = "https://geo.fcc.gov/api/census/area"

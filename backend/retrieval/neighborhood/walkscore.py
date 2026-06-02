@@ -11,7 +11,7 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=172800, maxsize=256)  # 48 hours
+_cache = TTLCache(ttl_seconds=172800, maxsize=256, name="walkscore")
 _NOT_FOUND = object()
 
 WALKSCORE_API_URL = "https://api.walkscore.com/score"

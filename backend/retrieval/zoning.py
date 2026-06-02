@@ -14,7 +14,7 @@ from backend.retrieval.geo import community_area_bounds
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_cache = TTLCache(ttl_seconds=3600, maxsize=512, name="zoning")
 _NOT_FOUND = object()
 
 ZONING_QUERY_URL = (

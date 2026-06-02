@@ -8,7 +8,7 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_cache = TTLCache(ttl_seconds=3600, maxsize=512, name="flood")
 _NOT_FOUND = object()
 
 # FEMA relocated the public NFHL service from /gis/nfhl/rest/services to

@@ -238,6 +238,20 @@ class NeighborhoodSummary(BaseModel):
     walkscore: WalkScoreSummary | None = None
 
 
+class TurnSummary(BaseModel):
+    """Compact summary of one conversation turn (~100-200 tokens)."""
+    turn_index: int
+    user_question: str
+    location_community_area: int | None = None
+    location_community_area_name: str | None = None
+    location_address: str | None = None
+    workflow_hint: str = "general"
+    sources_used: list[str] = Field(default_factory=list)
+    key_facts: list[str] = Field(default_factory=list)
+    code_sections_cited: list[str] = Field(default_factory=list)
+    data_as_of: str | None = None
+
+
 class CodeChunk(BaseModel):
     text: str
     source_document: str
@@ -317,12 +331,13 @@ class ChatRequest(BaseModel):
 
 
 class ChatChunk(BaseModel):
-    type: Literal["plan", "context", "map_data", "token", "error", "done"]
+    type: Literal["plan", "context", "map_data", "token", "error", "done", "turn_summary"]
     plan: RetrievalPlan | None = None
     context: ContextObject | None = None
     map_data: MapDataResponse | None = None
     text: str | None = None
     error: str | None = None
+    turn_summary: dict | None = None
     # Wall-clock milliseconds since the /chat request was received. Set on
     # phase-boundary events (plan, context, done, error) and on the first
     # synthesis token. Lets clients render per-phase latency without holding
@@ -345,6 +360,7 @@ class StoredMessage(BaseModel):
     plan: RetrievalPlan | None = None
     map_data: dict | None = None
     map_fetched_at: int | None = None
+    summary: TurnSummary | None = None
 
 
 class ConversationDetail(BaseModel):

@@ -3,8 +3,11 @@ from typing import Any
 import httpx
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import grouped_count, socrata_get
 from backend.retrieval.utils import cutoff_iso
+
+_cache = TTLCache(ttl_seconds=900, maxsize=256, name="311")
 
 
 async def open_311_by_community_area(
@@ -12,8 +15,13 @@ async def open_311_by_community_area(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
+    key = f"311:{community_area}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
-    return await grouped_count(
+    result = await grouped_count(
         settings.dataset_311,
         where=(
             f"community_area='{community_area}' "
@@ -25,6 +33,8 @@ async def open_311_by_community_area(
         limit=settings.limit_311,
         client=client,
     )
+    _cache.set(key, result)
+    return result
 
 
 async def open_311_oldest(
@@ -33,6 +43,11 @@ async def open_311_oldest(
     limit: int = 1,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
+    key = f"311_oldest:{community_area}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     params = {
         "$where": (
@@ -44,7 +59,9 @@ async def open_311_oldest(
         "$order": "created_date ASC",
         "$limit": limit,
     }
-    return await socrata_get(settings.dataset_311, params, client=client)
+    result = await socrata_get(settings.dataset_311, params, client=client)
+    _cache.set(key, result)
+    return result
 
 
 async def response_times_by_community_area(

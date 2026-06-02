@@ -16,3 +16,8 @@ html, body, #root {
   background: #0d0d0d;
   color: #eeeeee;
 }
+
+@media print {
+  body > #root > *:not(.export-report) { display: none !important; }
+  .export-report { display: block !important; }
+}

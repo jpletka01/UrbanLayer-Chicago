@@ -3,9 +3,13 @@ from typing import Any
 import httpx
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.geo import community_area_bounds
 from backend.retrieval.socrata import socrata_get
 from backend.retrieval.utils import cutoff_iso
+
+_permits_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="permits")
+_violations_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="violations")
 
 
 async def permits_by_community_area(
@@ -14,6 +18,11 @@ async def permits_by_community_area(
     days: int = 365,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
+    key = f"permits:{community_area}:{days}"
+    cached = _permits_cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     params = {
         "$where": (
@@ -27,7 +36,9 @@ async def permits_by_community_area(
         "$order": "issue_date DESC",
         "$limit": settings.limit_permits,
     }
-    return await socrata_get(settings.dataset_permits, params, client=client)
+    result = await socrata_get(settings.dataset_permits, params, client=client)
+    _permits_cache.set(key, result)
+    return result
 
 
 async def violations_by_community_area(
@@ -36,6 +47,11 @@ async def violations_by_community_area(
     days: int = 365,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict[str, Any]]:
+    key = f"violations:{community_area}:{days}"
+    cached = _violations_cache.get(key)
+    if cached is not None:
+        return cached
+
     bounds = community_area_bounds(community_area)
     if not bounds:
         return []
@@ -55,4 +71,6 @@ async def violations_by_community_area(
         "$order": "violation_date DESC",
         "$limit": settings.limit_violations,
     }
-    return await socrata_get(settings.dataset_violations, params, client=client)
+    result = await socrata_get(settings.dataset_violations, params, client=client)
+    _violations_cache.set(key, result)
+    return result

@@ -9,7 +9,7 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
-_cache = TTLCache(ttl_seconds=3600, maxsize=512)
+_cache = TTLCache(ttl_seconds=3600, maxsize=512, name="parcels")
 _NOT_FOUND = object()
 
 def _esri_to_geojson(esri_geom: dict | None) -> dict | None:

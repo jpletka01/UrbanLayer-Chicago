@@ -12,10 +12,15 @@ from typing import Any
 import httpx
 
 from backend.config import get_settings
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import socrata_get
 from backend.retrieval.utils import cutoff_iso
 
 log = logging.getLogger(__name__)
+
+_crime_map_cache = TTLCache(ttl_seconds=900, maxsize=128, name="map_crime")
+_311_map_cache = TTLCache(ttl_seconds=900, maxsize=128, name="map_311")
+_permits_map_cache = TTLCache(ttl_seconds=3600, maxsize=128, name="map_permits")
 
 
 def _float_or_none(val: Any) -> float | None:
@@ -45,6 +50,11 @@ async def crimes_for_map(
     days: int = 90,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict]:
+    key = f"map_crime:{community_area}:{days}"
+    cached = _crime_map_cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     cutoff = cutoff_iso(days, lag_days=settings.crime_lag_days)
     rows = await socrata_get(
@@ -61,7 +71,9 @@ async def crimes_for_map(
         },
         client=client,
     )
-    return _clean_rows(rows)
+    result = _clean_rows(rows)
+    _crime_map_cache.set(key, result)
+    return result
 
 
 async def requests_311_for_map(
@@ -69,6 +81,11 @@ async def requests_311_for_map(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict]:
+    key = f"map_311:{community_area}"
+    cached = _311_map_cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     rows = await socrata_get(
         settings.dataset_311,
@@ -84,7 +101,9 @@ async def requests_311_for_map(
         },
         client=client,
     )
-    return _clean_rows(rows)
+    result = _clean_rows(rows)
+    _311_map_cache.set(key, result)
+    return result
 
 
 async def permits_for_map(
@@ -93,6 +112,11 @@ async def permits_for_map(
     days: int = 365,
     client: httpx.AsyncClient | None = None,
 ) -> list[dict]:
+    key = f"map_permits:{community_area}:{days}"
+    cached = _permits_map_cache.get(key)
+    if cached is not None:
+        return cached
+
     settings = get_settings()
     cutoff = cutoff_iso(days)
     rows = await socrata_get(
@@ -113,6 +137,7 @@ async def permits_for_map(
     for r in cleaned:
         cost = _float_or_none(r.pop("reported_cost", None))
         r["estimated_cost"] = cost or 0
+    _permits_map_cache.set(key, cleaned)
     return cleaned
 
 

@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 3
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -96,6 +96,10 @@ CREATE TABLE IF NOT EXISTS request_logs (
 CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at);
 """
 
+_SCHEMA_V3 = """\
+ALTER TABLE messages ADD COLUMN summary_json TEXT;
+"""
+
 
 async def init_db() -> None:
     """Open the database and create tables if needed."""
@@ -116,16 +120,22 @@ async def init_db() -> None:
     if row is None:
         await _db.execute("INSERT INTO schema_version VALUES (?)", (_SCHEMA_VERSION,))
         await _db.executescript(_SCHEMA_V2)
+        await _db.executescript(_SCHEMA_V3)
         await _db.commit()
     else:
         version = row[0]
         if version < 2:
             await _db.executescript(_SCHEMA_V2)
+            version = 2
+        if version < 3:
+            await _db.executescript(_SCHEMA_V3)
+            version = 3
+        if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
             )
             await _db.commit()
-            log.info("Migrated database schema from v%d to v%d", version, _SCHEMA_VERSION)
+            log.info("Migrated database schema to v%d", _SCHEMA_VERSION)
 
 
 async def close_db() -> None:
@@ -185,7 +195,7 @@ async def get_conversation(conv_id: str) -> dict | None:
         return None
 
     cur = await db.execute(
-        "SELECT role, content, context_json, plan_json, map_data_json, map_fetched_at "
+        "SELECT role, content, context_json, plan_json, map_data_json, map_fetched_at, summary_json "
         "FROM messages WHERE conversation_id = ? ORDER BY position",
         (conv_id,),
     )
@@ -201,6 +211,8 @@ async def get_conversation(conv_id: str) -> dict | None:
             msg["map_data"] = json.loads(r["map_data_json"])
         if r["map_fetched_at"]:
             msg["map_fetched_at"] = r["map_fetched_at"]
+        if r["summary_json"]:
+            msg["summary"] = json.loads(r["summary_json"])
         messages.append(msg)
 
     return {
@@ -239,8 +251,8 @@ async def save_messages(conv_id: str, messages: list[dict]) -> None:
             """
             INSERT INTO messages
               (conversation_id, role, content, context_json, plan_json,
-               map_data_json, map_fetched_at, position, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               map_data_json, map_fetched_at, summary_json, position, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 conv_id,
@@ -250,6 +262,7 @@ async def save_messages(conv_id: str, messages: list[dict]) -> None:
                 json.dumps(msg["plan"]) if msg.get("plan") else None,
                 json.dumps(msg["map_data"]) if msg.get("map_data") else None,
                 msg.get("map_fetched_at"),
+                json.dumps(msg["summary"]) if msg.get("summary") else None,
                 next_pos + i,
                 now,
             ),
@@ -314,6 +327,17 @@ async def clear_all_conversations() -> None:
         pass
     await conn.execute("DELETE FROM conversations")
     await conn.commit()
+
+
+async def get_turn_summaries(conv_id: str) -> list[dict]:
+    """Load all TurnSummary objects for a conversation."""
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT summary_json FROM messages WHERE conversation_id = ? AND summary_json IS NOT NULL ORDER BY position",
+        (conv_id,),
+    )
+    rows = await cur.fetchall()
+    return [json.loads(r["summary_json"]) for r in rows]
 
 
 async def count_user_messages(conv_id: str) -> int:

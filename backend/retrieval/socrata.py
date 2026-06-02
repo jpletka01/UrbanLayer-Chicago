@@ -13,9 +13,29 @@ _DEFAULT_TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=10.0, pool=5.0)
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 0.5
 
+_shared_client: httpx.AsyncClient | None = None
+
 
 class SocrataError(RuntimeError):
     pass
+
+
+def get_shared_client() -> httpx.AsyncClient:
+    global _shared_client
+    if _shared_client is None or _shared_client.is_closed:
+        _shared_client = httpx.AsyncClient(
+            timeout=_DEFAULT_TIMEOUT,
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+            http2=True,
+        )
+    return _shared_client
+
+
+async def close_shared_client() -> None:
+    global _shared_client
+    if _shared_client is not None and not _shared_client.is_closed:
+        await _shared_client.aclose()
+        _shared_client = None
 
 
 async def socrata_get(
@@ -36,30 +56,25 @@ async def socrata_get(
     if token:
         headers["X-App-Token"] = token
 
-    owns_client = client is None
-    if owns_client:
-        client = httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT)
+    if client is None:
+        client = get_shared_client()
 
-    try:
-        for attempt in range(_MAX_RETRIES):
-            try:
-                resp = await client.get(url, params=params, headers=headers)
-                if resp.status_code >= 500:
-                    raise httpx.HTTPStatusError(
-                        f"socrata {resp.status_code}", request=resp.request, response=resp
-                    )
-                resp.raise_for_status()
-                return resp.json()
-            except (httpx.HTTPError, httpx.HTTPStatusError) as exc:
-                if attempt == _MAX_RETRIES - 1:
-                    raise SocrataError(f"Socrata request failed for {dataset_id}: {exc}") from exc
-                wait = _BACKOFF_BASE * (2 ** attempt)
-                log.warning("Socrata retry %d for %s after %.1fs: %s", attempt + 1, dataset_id, wait, exc)
-                await asyncio.sleep(wait)
-        return []
-    finally:
-        if owns_client:
-            await client.aclose()
+    for attempt in range(_MAX_RETRIES):
+        try:
+            resp = await client.get(url, params=params, headers=headers)
+            if resp.status_code >= 500:
+                raise httpx.HTTPStatusError(
+                    f"socrata {resp.status_code}", request=resp.request, response=resp
+                )
+            resp.raise_for_status()
+            return resp.json()
+        except (httpx.HTTPError, httpx.HTTPStatusError) as exc:
+            if attempt == _MAX_RETRIES - 1:
+                raise SocrataError(f"Socrata request failed for {dataset_id}: {exc}") from exc
+            wait = _BACKOFF_BASE * (2 ** attempt)
+            log.warning("Socrata retry %d for %s after %.1fs: %s", attempt + 1, dataset_id, wait, exc)
+            await asyncio.sleep(wait)
+    return []
 
 
 async def grouped_count(

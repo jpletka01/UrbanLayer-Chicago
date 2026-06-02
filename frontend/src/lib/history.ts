@@ -45,6 +45,7 @@ export async function saveConversation(
     ...(m.plan ? { plan: m.plan } : {}),
     ...(m.mapData ? { map_data: m.mapData } : {}),
     ...(m.mapFetchedAt ? { map_fetched_at: m.mapFetchedAt } : {}),
+    ...(m.turnSummary ? { summary: m.turnSummary } : {}),
   }));
 
   await apiSaveMessages(id, stored);
@@ -62,6 +63,7 @@ export async function appendMessages(
     ...(m.plan ? { plan: m.plan } : {}),
     ...(m.mapData ? { map_data: m.mapData } : {}),
     ...(m.mapFetchedAt ? { map_fetched_at: m.mapFetchedAt } : {}),
+    ...(m.turnSummary ? { summary: m.turnSummary } : {}),
   }));
   await apiSaveMessages(conversationId, stored);
 }

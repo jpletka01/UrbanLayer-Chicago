@@ -6,13 +6,16 @@ import logging
 from typing import AsyncIterator
 
 from backend.config import get_settings
+from backend.context_manager import detect_location_switch, format_summaries_for_prompt
 from backend.llm import tracked_stream
-from backend.models import AnalyticsSummary, ContextObject, Message
+from backend.models import AnalyticsSummary, ContextObject, Message, RetrievalPlan, TurnSummary
 from backend.prompts import SYNTHESIZER_SYSTEM
 from backend.vision import prepare_upload_content_blocks
 
 
 log = logging.getLogger(__name__)
+
+SLIDING_WINDOW_PAIRS = 2
 
 
 def _format_analytics(analytics: AnalyticsSummary) -> str:
@@ -82,11 +85,42 @@ def _build_user_content(
     return content
 
 
+def _build_history_with_summaries(
+    turn_summaries: list[TurnSummary],
+    recent_messages: list[Message],
+    current_plan: RetrievalPlan,
+) -> list[dict]:
+    """Build message history using summaries + sliding window instead of full history."""
+    messages: list[dict] = []
+
+    if turn_summaries:
+        current_ca = current_plan.location.resolved_community_area
+        summary_text = format_summaries_for_prompt(turn_summaries, current_ca)
+
+        switched, prior_location = detect_location_switch(current_plan, turn_summaries)
+        if switched and prior_location:
+            summary_text += (
+                f"\n\nNote: The user has switched locations. Prior turn data is for {prior_location} "
+                "and should only be referenced if the user explicitly requests a comparison."
+            )
+
+        messages.append({"role": "user", "content": summary_text})
+        messages.append({"role": "assistant", "content": "Understood. I have the conversation context."})
+
+    window = recent_messages[-(SLIDING_WINDOW_PAIRS * 2):]
+    for m in window:
+        messages.append({"role": m.role, "content": m.content})
+
+    return messages
+
+
 async def stream_answer(
     *,
     context: ContextObject,
     user_message: str,
     history: list[Message],
+    turn_summaries: list[TurnSummary] | None = None,
+    plan: RetrievalPlan | None = None,
     upload_ids: list[str] | None = None,
     request_group: str = "",
     conversation_id: str | None = None,
@@ -97,7 +131,11 @@ async def stream_answer(
     if upload_ids:
         upload_blocks = await prepare_upload_content_blocks(upload_ids) or None
 
-    messages: list[dict] = [{"role": m.role, "content": m.content} for m in history]
+    if turn_summaries and plan:
+        messages = _build_history_with_summaries(turn_summaries, history, plan)
+    else:
+        messages = [{"role": m.role, "content": m.content} for m in history]
+
     messages.append({
         "role": "user",
         "content": _build_user_content(context, user_message, upload_blocks),
