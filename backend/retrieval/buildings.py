@@ -68,7 +68,7 @@ async def violations_by_community_area(
             "violation_date,violation_description,violation_status,"
             "street_number,street_direction,street_name,latitude,longitude"
         ),
-        "$order": "violation_date DESC",
+        "$order": "violation_status ASC,violation_date DESC",
         "$limit": settings.limit_violations,
     }
     result = await socrata_get(settings.dataset_violations, params, client=client)

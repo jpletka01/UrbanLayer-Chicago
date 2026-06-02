@@ -21,11 +21,15 @@ async def businesses_by_community_area(
 
     settings = get_settings()
     params = {
-        "$where": f"community_area='{community_area}'",
+        "$where": (
+            f"community_area='{community_area}' "
+            "AND license_status='AAI'"
+        ),
         "$select": (
             "legal_name,doing_business_as_name,license_description,"
-            "business_activity,address"
+            "business_activity,address,date_issued"
         ),
+        "$order": "date_issued DESC",
         "$limit": settings.limit_business,
     }
     result = await socrata_get(settings.dataset_business, params, client=client)

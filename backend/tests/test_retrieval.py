@@ -164,5 +164,7 @@ class TestBusinessRetrieval:
         assert call_args[0][0] == "uupf-x98q"
         params = call_args[0][1]
         assert "community_area='24'" in params["$where"]
+        assert "license_status='AAI'" in params["$where"]
         assert "business_activity" in params["$select"]
-        assert params["$limit"] == 100
+        assert params["$order"] == "date_issued DESC"
+        assert params["$limit"] == 500

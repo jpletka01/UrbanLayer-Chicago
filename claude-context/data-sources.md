@@ -1,0 +1,106 @@
+# Data Sources — UrbanLayer
+
+## Chicago Data Portal (Socrata)
+
+Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Token` header.
+
+| Dataset | ID | Key Fields | Use |
+|---------|-----|-----------|-----|
+| Crimes 2001–Present | `ijzp-q8t2` | date, primary_type, description, arrest, community_area, lat/lon | Crime trends, safety. 7-day data lag |
+| 311 Service Requests | `v6vf-nfxy` | sr_type, status, owner_department, created_date, lat/lon | Quality-of-life. `Open - Dup` filtered |
+| Building Permits | `ydr8-5enu` | permit_type, work_description, issue_date, reported_cost, lat/lon | Development activity |
+| Building Violations | `22u3-xenr` | violation_date, violation_description, violation_status, lat/lon | Property condition. Open-first ordering (status ASC), limit 200 |
+| Business Licenses | `uupf-x98q` | doing_business_as_name, license_description, business_activity, date_issued, lat/lon | Neighborhood character. Filtered to active only (license_status='AAI'), limit 500 |
+| Community Areas | `igwz-8jzy` | Boundaries GeoJSON | Address → community area (shapely) |
+| TIF District Boundaries | `eejr-xtfb` | geometry (multipolygon), tif_name | Preloaded at startup for point-in-polygon |
+| TIF Financial Reports | `72uz-ikdv` | tif_name, year, revenue, expenditure | Conditional query when TIF hit |
+| Enterprise Zone Boundaries | `64xf-pyvh` | geometry, zone_name | Preloaded at startup |
+| ACS 5-Year by Community Area | `t68z-cikk` | population, income brackets, poverty | Demographics (estimated medians) |
+| Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |
+
+## Cook County Open Data (Socrata)
+
+Base: `https://datacatalog.cookcountyil.gov/resource/{id}.json`. Same SODA 2.1 API.
+
+| Dataset | ID | Key Fields | Join Key |
+|---------|-----|-----------|----------|
+| Parcel Universe (Current) | `pabr-t5kh` | pin, class, township, lat, lon | PIN |
+| Assessed Values | `uzyt-m557` | pin, tax_year, mailed_tot, certified_tot, board_tot | PIN + year |
+| Parcel Sales | `wvhk-k5uv` | pin, sale_date, sale_price, deed_type | PIN |
+| Single/Multi-Family Characteristics | `x54s-btds` | pin, char_bldg_sf, char_land_sf, char_rooms, char_age | PIN |
+| Condo Characteristics | `3r7i-mrz4` | pin, char_bldg_sf, char_rooms | PIN |
+
+## Chicago Zoning MapServer (ArcGIS)
+
+Base: `https://gisapps.chicago.gov/arcgis/rest/services/ExternalApps/Zoning/MapServer`
+
+No auth required. All layers use identical spatial query pattern:
+```
+GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
+  &inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&f=json
+```
+
+| Layer | Name | Status |
+|-------|------|--------|
+| 1 | Zoning Districts (detailed) | Integrated — `zoning.py` |
+| 2 | Planned Developments | Integrated — `regulatory/overlays.py` |
+| 3 | Lakefront Protection | Integrated |
+| 4 | Pedestrian Streets | Integrated |
+| 5 | Landmark Boundaries | Integrated |
+| 6 | Historic Districts | Integrated |
+| 7 | Landmark Buildings | Integrated |
+| 8 | National Register | Integrated |
+| 9 | Special Districts (PMDs) | Integrated |
+| 11 | FEMA Floodplain (local copy) | Integrated |
+| 12 | PMD SubAreas | Integrated |
+| 13 | TSL/CTA Stations (TOD boundaries) | Integrated |
+| 17 | ADU Areas | Integrated |
+| 20 | ARO Zones | Integrated |
+| 23 | SSAs (Special Service Areas) | Integrated |
+| 24 | TSL Metra Stations (TOD boundaries) | Integrated |
+| 10, 14, 18, 19, 21 | Optional layers | Not integrated |
+
+## External ArcGIS Services
+
+| Service | Endpoint | Use |
+|---------|----------|-----|
+| Cook County GIS Parcels | `gis.cookcountyil.gov/.../cookVwrDynmc/MapServer/44/query` | lat/lon → PIN14 (layer 44, max 2000 records) |
+| FEMA Flood Zones | `hazards.fema.gov/.../NFHL/MapServer/28/query` | FLD_ZONE, SFHA_TF |
+| EPA Brownfields | `geopub.epa.gov/.../FRS_INTERESTS/MapServer/5/query` | SITE_NAME, CLEANUP_STATUS (1km radius) |
+| HUD Opportunity Zones | `services.arcgis.com/.../Opportunity_Zones/FeatureServer/0/query` | GEOID match by tract FIPS |
+
+## Other APIs
+
+| API | Auth | Use |
+|-----|------|-----|
+| Census Geocoder | None | Address → lat/lon. Already integrated in `geo.py` |
+| FCC Census Block | None | lat/lon → tract FIPS (~100ms). Used for OZ lookup |
+| Walk Score | API key (free, 5K/day) | Walk/Transit/Bike scores (0-100). 48h TTL cache |
+| CTA GTFS (static) | None | Parsed at startup → transit station locations |
+| Metra GTFS (static) | None | Parsed at startup → station locations |
+
+## Local Data
+
+| Source | Location | Use |
+|--------|----------|-----|
+| Municipal Code | Qdrant (14,535 chunks from 8,615 sections) | Vector search for legal questions |
+| PTAXSIM | `backend/data/ptaxsim.db` (8.8GB SQLite) | Property tax estimation by PIN |
+| Transit Stations | Parsed from GTFS at startup | Nearest station proximity |
+| Community Area Polygons | `ingestion/data/community_areas.geojson` | Point-in-polygon resolution |
+
+## PIN System
+
+The Property Index Number (PIN) is the universal join key for Cook County property data:
+- Format: `TT-SS-BBB-PPP-UUUU` (14 digits). TT=Township, SS=Section, BBB=Block, PPP=Parcel, UUUU=Unit
+- 10-digit = land parcel. 14-digit = specific unit (condos). Always zero-pad to 14 digits.
+- Obtained via Cook County GIS spatial query: lat/lon → parcel → PIN14
+
+## What's Not Programmatically Accessible
+
+| Data | Reason | Workaround |
+|------|--------|-----------|
+| Property ownership/taxpayer names | CAPTCHA-protected, not in open data | Paid: Chicago Cityscape, Regrid |
+| Planned Development applications | PDF-only (Plan Commission agendas) | Monitor agendas manually |
+| Illinois SOS business entities | No API, scraping prohibited | Manual lookup |
+| Cook County Clerk recordings | Web-only, returns 403 programmatically | Manual search |
+| DSIRE energy incentives | Paid API subscription | Link to programs.dsireusa.org |
