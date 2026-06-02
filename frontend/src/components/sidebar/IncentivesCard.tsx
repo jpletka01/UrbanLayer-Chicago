@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { IncentivesSummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
+import { InfoTooltip } from "../InfoTooltip";
 
 const DollarIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -16,7 +17,8 @@ function fmtDollar(n: number | null | undefined): string {
   return `$${n.toLocaleString()}`;
 }
 
-function Badge({ active, label }: { active: boolean; label: string }) {
+function Badge({ active, label, termKey }: { active: boolean; label: string; termKey?: string }) {
+  const labelContent = termKey ? <InfoTooltip term={termKey}>{label}</InfoTooltip> : label;
   return (
     <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] border ${
       active
@@ -24,7 +26,7 @@ function Badge({ active, label }: { active: boolean; label: string }) {
         : "bg-dark-elevated text-text-muted border-dark-border"
     }`}>
       <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-emerald-400" : "bg-text-muted/40"}`} />
-      {label}
+      {labelContent}
     </span>
   );
 }
@@ -49,7 +51,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
       <div className="space-y-3">
         {/* TIF District */}
         <div className="space-y-1.5">
-          <Badge active={data.in_tif_district} label={data.in_tif_district ? "In TIF District" : "Not in TIF"} />
+          <Badge active={data.in_tif_district} label={data.in_tif_district ? "In TIF District" : "Not in TIF"} termKey="tif_district" />
           {data.in_tif_district && (
             <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
               <KV label="TIF Name" value={data.tif_name} />
@@ -115,9 +117,22 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
           <Badge
             active={data.in_opportunity_zone}
             label={data.in_opportunity_zone ? "Opportunity Zone" : "Not in Opportunity Zone"}
+            termKey="opportunity_zone"
           />
           {data.in_opportunity_zone && data.oz_tract && (
-            <p className="text-[10px] text-text-muted ml-5">Tract {data.oz_tract}</p>
+            <p className="text-[10px] text-text-muted ml-5">
+              Tract{" "}
+              {data.oz_tract.length >= 11 ? (
+                <a
+                  href={`https://censusreporter.org/profiles/14000US${data.oz_tract}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
+                  {data.oz_tract}
+                </a>
+              ) : data.oz_tract}
+            </p>
           )}
         </div>
 
@@ -126,6 +141,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
           <Badge
             active={data.in_enterprise_zone}
             label={data.in_enterprise_zone ? "Enterprise Zone" : "Not in Enterprise Zone"}
+            termKey="enterprise_zone"
           />
           {data.in_enterprise_zone && data.enterprise_zone_name && (
             <p className="text-[10px] text-text-muted ml-5">{data.enterprise_zone_name}</p>
@@ -134,7 +150,19 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
 
         {/* Census Tract reference */}
         {data.census_tract && !hasAnyIncentive && (
-          <p className="text-[10px] text-text-muted">Census Tract: {data.census_tract}</p>
+          <p className="text-[10px] text-text-muted">
+            Census Tract:{" "}
+            {data.census_tract.length >= 11 ? (
+              <a
+                href={`https://censusreporter.org/profiles/14000US${data.census_tract}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+              >
+                {data.census_tract}
+              </a>
+            ) : data.census_tract}
+          </p>
         )}
       </div>
     </CollapsibleCard>

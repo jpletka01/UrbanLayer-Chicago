@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ContextObject, MapData, RetrievalPlan } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
 import { zonePrefix, zoneColorCSS, ZONE_PREFIX_LABELS } from "../../lib/mapColors";
+import { InfoTooltip } from "../InfoTooltip";
 import { AnalyticsSection } from "./AnalyticsSection";
 import { PropertyCard } from "./PropertyCard";
 import { RegulatoryCard } from "./RegulatoryCard";
@@ -98,7 +99,9 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
                         style={{ backgroundColor: zoneColorCSS(code) }}
                       />
                     </td>
-                    <td className="px-2 py-1 text-text-primary font-mono">{code}</td>
+                    <td className="px-2 py-1 text-text-primary font-mono">
+                      <InfoTooltip term={`zone:${prefix}`}>{code}</InfoTooltip>
+                    </td>
                     <td className="pl-2 py-1 text-text-muted">{label}</td>
                   </tr>
                 );

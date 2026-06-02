@@ -1,5 +1,6 @@
 import type { RegulatorySummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
+import { InfoTooltip } from "../InfoTooltip";
 
 const ShieldIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -43,7 +44,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
             {data.overlays.map((ov, i) => (
               <div key={i} className="rounded-lg bg-dark-elevated/60 border-l-2 border-accent/60 px-3 py-2">
                 <span className="text-[10px] text-accent/80 uppercase tracking-wider">
-                  {formatLayerType(ov.layer_type)}
+                  <InfoTooltip term={ov.layer_type}>{formatLayerType(ov.layer_type)}</InfoTooltip>
                 </span>
                 {ov.name && (
                   <p className="text-[11px] text-text-primary mt-0.5">{ov.name}</p>
@@ -71,7 +72,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                              border border-emerald-500/30 rounded-md px-2 py-0.5 text-[10px]"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  {FLAG_LABELS[key]}
+                  <InfoTooltip term={key}>{FLAG_LABELS[key]}</InfoTooltip>
                   {key === "in_ssa" && data.ssa_name && (
                     <span className="text-emerald-400/70 ml-0.5">({data.ssa_name})</span>
                   )}
@@ -94,7 +95,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
             }`}>
               <div className="flex items-center gap-2">
                 <span className={`font-mono font-medium ${data.in_special_flood_hazard ? "text-amber-400" : "text-text-primary"}`}>
-                  Zone {data.flood_zone}
+                  <InfoTooltip term={`flood:${data.flood_zone}`}>Zone {data.flood_zone}</InfoTooltip>
                 </span>
                 {data.in_special_flood_hazard && (
                   <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 text-[9px] uppercase font-medium">

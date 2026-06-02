@@ -1,6 +1,6 @@
 import type { TransitStation } from "./types";
 import { formatDate } from "./format";
-import { overlayLabel, incentiveLabel } from "./mapColors";
+import { overlayLabel, incentiveLabel, zonePrefix, ZONE_PREFIX_LABELS } from "./mapColors";
 
 /** Minimal shape of a deck.gl picking info we read in tooltips/click handlers. */
 export interface LayerPickInfo {
@@ -44,7 +44,9 @@ export function buildLayerTooltip(info: LayerPickInfo): TooltipContent | null {
     html = `<strong>${o.permit_type}</strong><br/>${formatDate(o.issue_date as string)}`;
   } else if (lid === "zoning") {
     const props = o.properties as Record<string, unknown> | undefined;
-    html = `<strong>${props?.ZONE_CLASS ?? "Unknown"}</strong>`;
+    const zc = (props?.ZONE_CLASS ?? "Unknown") as string;
+    const catLabel = ZONE_PREFIX_LABELS[zonePrefix(zc)];
+    html = `<strong>${zc}</strong>${catLabel ? `<br/><span style="opacity:0.7">${catLabel}</span>` : ""}`;
   } else if (lid === "transit-stations") {
     const s = o as unknown as TransitStation;
     const lineInfo = s.type === "cta_rail" && s.lines?.length
