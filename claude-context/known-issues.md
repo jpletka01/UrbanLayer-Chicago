@@ -57,7 +57,7 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
-- **DNS + TLS** — Domain (`urbanlayerchicago.com`) purchased via Namecheap. Cloudflare DNS setup not started — Namecheap nameservers need to be pointed to Cloudflare. Server is live on HTTP at `178.105.184.66` but not reachable by domain name.
+- **DNS + TLS** — DONE. `https://urbanlayerchicago.com` live via Cloudflare Full (Strict) + Origin Certificate. Security headers (HSTS, CSP, etc.) verified. HTTP redirects to HTTPS. SSE streaming works through Cloudflare proxy.
 - **Qdrant data on server** — Server Qdrant is running but has no data. Municipal code vector search won't return results until local embeddings are snapshot-transferred. All other data sources work.
 - **CI/CD** — No GitHub Actions pipeline. Manual deploy via SSH + `git pull && docker compose up -d --build`. Pipeline planned (Phase 8).
 - **Monitoring** — No Sentry or uptime monitoring. Planned for Phase 9.
@@ -67,9 +67,9 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Deployment Status (2026-06-03)
 
-Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTP** — all 3 Docker services running (Qdrant, backend, frontend). GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Auth disabled on server (no Google OAuth client yet — all users admin). Qdrant is empty (vector search won't work until snapshot transfer). DNS/HTTPS not configured yet. Full status tracked in `claude-context/deployment-plan.md`.
+Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Auth disabled on server (no Google OAuth client yet — all users admin). Qdrant is empty (vector search won't work until snapshot transfer). Full status tracked in `claude-context/deployment-plan.md`.
 
 **Server deploy command** (from server `/opt/urbanlayer`):
 ```bash
-git fetch origin && git merge origin/main && docker compose up -d --build
+git fetch origin && git merge origin/main && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```

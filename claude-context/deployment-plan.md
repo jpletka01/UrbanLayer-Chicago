@@ -83,39 +83,40 @@ Google OAuth2 Authorization Code flow + self-rolled JWT sessions. Auth is opt-in
 
 ## Remaining Phases
 
-### Phase 2: Domain & TLS — IN PROGRESS
+### Phase 2: Domain & TLS — DONE (2026-06-03)
 
-**Status**: Cloudflare site added, but Universal SSL certificate still propagating (error: "This hostname is not covered by a certificate"). Namecheap nameservers may need to be pointed to Cloudflare.
+- Namecheap nameservers pointed to Cloudflare (`janet.ns.cloudflare.com`, `rajeev.ns.cloudflare.com`)
+- Cloudflare DNS: A record `urbanlayerchicago.com` → `178.105.184.66` (Proxied), CNAME `www` → `urbanlayerchicago.com` (Proxied)
+- SSL/TLS mode: Full (Strict)
+- Origin Certificate (RSA 2048, expires 2041) installed at `/etc/ssl/cloudflare/` on server
+- Production compose overlay deployed: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
+- Server `.env` updated: `CORS_ORIGINS`, `AUTH_COOKIE_SECURE=true`, `FRONTEND_URL=https://urbanlayerchicago.com`
+- nginx `add_header` gotcha fixed: security headers repeated in child location blocks that override parent context
+- SSE proxy directives added: `proxy_http_version 1.1` + `Connection ''` for Cloudflare streaming reliability
 
-**Remaining steps**:
-1. Verify Namecheap nameservers are set to Cloudflare's assigned NS (not Namecheap BasicDNS)
-2. Wait for Cloudflare Universal SSL to provision (can take up to 24h)
-3. In Cloudflare, add DNS records:
-   ```
-   A     urbanlayerchicago.com    → 178.105.184.66         (Proxied)
-   CNAME www                      → urbanlayerchicago.com  (Proxied)
-   ```
-4. Set SSL/TLS mode to "Full (Strict)" in Cloudflare
-5. Generate Origin Certificate from Cloudflare dashboard (SSL/TLS → Origin Server → Create Certificate). Save as `origin.pem` + `origin-key.pem`
-6. On server: `mkdir -p /etc/ssl/cloudflare && scp origin.pem origin-key.pem root@178.105.184.66:/etc/ssl/cloudflare/`
+**Verified**:
+- `curl -I https://urbanlayerchicago.com` → 200 with all 6 security headers (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP)
+- `http://` → 301 redirect to `https://`
+- `/health` → `{"ok":true,"qdrant":true,"db":true}`
+- SSE streaming works through Cloudflare (full chat query with plan/context/tokens)
 
 ### Phase 1 (remaining): Deploy App to Server — DONE (2026-06-03)
 
 - Repo cloned to `/opt/urbanlayer` on server (public GitHub repo: `jpletka01/UrbanLayer-Chicago`)
 - `.env` created with Anthropic, Socrata, Mapbox, WalkScore, Census keys + `DAILY_API_BUDGET_USD=5.00`
 - Auth keys left out (auth disabled = admin mode for all users)
-- All 3 services running on HTTP (port 80): Qdrant (healthy), backend (healthy), frontend (nginx)
-- Health check: `curl http://178.105.184.66/health` → `{"ok":true,"qdrant":true,"db":true}`
-- Frontend accessible at `http://178.105.184.66`
+- All 3 services now running on HTTPS (ports 80+443) via production compose overlay
+- Health check: `curl https://urbanlayerchicago.com/health` → `{"ok":true,"qdrant":true,"db":true}`
+- Frontend accessible at `https://urbanlayerchicago.com`
 
 **Issues resolved during deploy**:
 - `community_areas.geojson` was gitignored — un-gitignored and committed (needed by Dockerfile for `geo.py`)
 - `PyJWT` missing from `requirements.prod.txt` — added (backend crash-looped without it)
 - 3 TypeScript errors in frontend — `BarChart.tsx` was untracked (committed), `InfoTooltip.tsx` useRef init fix, `SidebarPanel.tsx` unused variable fix
 
-**To switch to HTTPS later**:
+**Server deploy command** (from server `/opt/urbanlayer`):
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+git fetch origin && git merge origin/main && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ### Phase 4: Qdrant Data Transfer — NOT STARTED
@@ -198,8 +199,8 @@ DAILY_API_BUDGET_USD=5.00
 | Step | What | Status |
 |------|------|--------|
 | 1 | Provision Hetzner, Docker, harden | **Done** |
-| 1b | Deploy app to server (HTTP) | **Done** — all 3 services running at `http://178.105.184.66` |
-| 2 | DNS + TLS (Cloudflare) | **Not started** — Namecheap NS not yet pointed to Cloudflare |
+| 1b | Deploy app to server | **Done** — all 3 services running at `https://urbanlayerchicago.com` |
+| 2 | DNS + TLS (Cloudflare) | **Done** — Full (Strict) + Origin Certificate, security headers verified |
 | 3 | Production nginx.conf | **Done** |
 | 4 | Transfer Qdrant snapshots | **Not started** — required for municipal code vector search |
 | 5 | Google OAuth + JWT auth | **Done** — code complete, needs Google Cloud OAuth client + `.env` update on server |

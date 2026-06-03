@@ -38,13 +38,12 @@ docker compose up -d                              # dev (backend + qdrant, hot-r
 docker compose -f docker-compose.yml up           # production (all 3 services)
 docker compose build backend                      # rebuild after dep changes
 
-# Production server (178.105.184.66) — live at http://178.105.184.66
+# Production server (178.105.184.66) — live at https://urbanlayerchicago.com
 ssh-add ~/.ssh/id_ed25519                         # load key (has passphrase)
 ssh root@178.105.184.66                           # SSH into server
 # On server: cd /opt/urbanlayer
 git fetch origin && git merge origin/main         # pull latest code
-docker compose up -d --build                      # HTTP mode (current)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build  # HTTPS mode (after Cloudflare)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ## Key Conventions
