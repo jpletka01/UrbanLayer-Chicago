@@ -199,6 +199,13 @@ def verify_csrf(request: Request) -> None:
 # Auth endpoint handlers
 # ---------------------------------------------------------------------------
 
+def _callback_url(request: Request) -> str:
+    s = get_settings()
+    if s.frontend_url:
+        return f"{s.frontend_url.rstrip('/')}/api/auth/google/callback"
+    return str(request.url_for("google_callback"))
+
+
 async def handle_google_login(request: Request) -> RedirectResponse:
     s = get_settings()
     if not _auth_enabled():
@@ -206,7 +213,7 @@ async def handle_google_login(request: Request) -> RedirectResponse:
         raise HTTPException(status_code=404, detail="Auth not configured")
 
     state = secrets.token_urlsafe(32)
-    callback_url = str(request.url_for("google_callback"))
+    callback_url = _callback_url(request)
 
     params = urlencode({
         "client_id": s.google_client_id,
@@ -238,7 +245,7 @@ async def handle_google_callback(request: Request) -> RedirectResponse:
     if not code or not state or state != stored_state:
         raise HTTPException(status_code=400, detail="Invalid OAuth callback")
 
-    callback_url = str(request.url_for("google_callback"))
+    callback_url = _callback_url(request)
     tokens = await exchange_google_code(code, callback_url)
     userinfo = await get_google_userinfo(tokens["access_token"])
 
