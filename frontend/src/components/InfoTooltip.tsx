@@ -12,7 +12,7 @@ export function InfoTooltip({ term, content, children }: Props) {
   const [visible, setVisible] = useState(false);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const hideTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const hideTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const info = content ?? (term ? getTermInfo(term) : null);
 

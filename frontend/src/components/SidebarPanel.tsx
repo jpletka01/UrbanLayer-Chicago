@@ -55,7 +55,7 @@ export function SidebarPanel({
   onViewChange,
   highlightedSourceIndex,
   sourceFlashSignal,
-  sourceCount = 0,
+  sourceCount: _ = 0,
   onSourceClick,
   onCrossRefClick,
   mapData,
