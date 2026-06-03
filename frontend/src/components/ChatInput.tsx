@@ -43,6 +43,7 @@ export function ChatInput({
   const addressStartRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (debounceRef.current) {
@@ -82,14 +83,26 @@ export function ChatInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function submit(e: FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [value]);
+
+  function doSubmit() {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
     onSubmit(trimmed);
     setValue("");
     setSuggestions([]);
     setShowSuggestions(false);
+  }
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    doSubmit();
   }
 
   function selectSuggestion(suggestion: AddressSuggestion) {
@@ -99,20 +112,29 @@ export function ChatInput({
     setShowSuggestions(false);
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (!showSuggestions || suggestions.length === 0) return;
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (showSuggestions && suggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
+        return;
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        return;
+      } else if (e.key === "Enter" && selectedIndex >= 0) {
+        e.preventDefault();
+        selectSuggestion(suggestions[selectedIndex]);
+        return;
+      } else if (e.key === "Escape") {
+        setShowSuggestions(false);
+        return;
+      }
+    }
 
-    if (e.key === "ArrowDown") {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === "Enter" && selectedIndex >= 0) {
-      e.preventDefault();
-      selectSuggestion(suggestions[selectedIndex]);
-    } else if (e.key === "Escape") {
-      setShowSuggestions(false);
+      doSubmit();
     }
   }
 
@@ -130,15 +152,16 @@ export function ChatInput({
               : "bg-transparent border border-white/20 hover:border-white/30"
           }`}
         >
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             disabled={disabled}
             placeholder={placeholder ?? "Ask about Chicago..."}
-            className="w-full bg-transparent px-4 py-3.5 pr-12 rounded-2xl text-base text-white placeholder-white/50 focus:outline-none"
+            rows={1}
+            className="w-full bg-transparent px-4 py-3.5 pr-12 rounded-2xl text-base text-white placeholder-white/50 focus:outline-none resize-none max-h-40 overflow-y-auto"
           />
           <button
             type="submit"
@@ -244,15 +267,16 @@ export function ChatInput({
             </svg>
           </button>
 
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             disabled={disabled}
             placeholder={placeholder ?? "Ask a follow-up..."}
-            className="flex-1 bg-transparent py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none min-w-0"
+            rows={1}
+            className="flex-1 bg-transparent py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none min-w-0 resize-none max-h-40 overflow-y-auto"
           />
 
           <button
