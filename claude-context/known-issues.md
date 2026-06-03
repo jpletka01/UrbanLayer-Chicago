@@ -58,16 +58,16 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 ## Not Yet Built
 
 - **DNS + TLS** — DONE. `https://urbanlayerchicago.com` live via Cloudflare Full (Strict) + Origin Certificate. Security headers (HSTS, CSP, etc.) verified. HTTP redirects to HTTPS. SSE streaming works through Cloudflare proxy.
-- **Qdrant data on server** — Server Qdrant is running but has no data. Municipal code vector search won't return results until local embeddings are snapshot-transferred. All other data sources work.
-- **CI/CD** — No GitHub Actions pipeline. Manual deploy via SSH + `git pull && docker compose up -d --build`. Pipeline planned (Phase 8).
-- **Monitoring** — No Sentry or uptime monitoring. Planned for Phase 9.
+- **Qdrant data on server** — DONE. 14,535 vectors snapshot-transferred from local to server. Municipal code vector search is operational.
+- **CI/CD** — DONE. `.github/workflows/ci.yml` runs pytest + tsc on PRs, SSH deploy on merge to main. Requires `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets.
+- **Monitoring** — Partially done. UptimeRobot configured for `/health` checks. Sentry SDK integrated in backend (`sentry-sdk[fastapi]`) and frontend (`@sentry/react`), both no-op when DSN is unset. Needs Sentry project creation + DSN values added to server `.env`.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production.
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
-- **Google Cloud OAuth app** — OAuth client ID needs to be created in Google Cloud Console with `https://urbanlayerchicago.com/api/auth/google/callback` as authorized redirect URI. Until created, auth is disabled on the server (all users treated as admin).
+- **Google Cloud OAuth app** — DONE. OAuth client configured in Google Cloud Console, credentials in server `.env`. Auth is active — anonymous users get 3 queries/day, signed-in free tier gets 25/day. Jack's account needs to be manually promoted to admin tier in the database.
 
 ## Deployment Status (2026-06-03)
 
-Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Auth disabled on server (no Google OAuth client yet — all users admin). Qdrant is empty (vector search won't work until snapshot transfer). Full status tracked in `claude-context/deployment-plan.md`.
+Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Google OAuth active. Qdrant has 14,535 vectors (municipal code search operational). CI/CD pipeline deployed. UptimeRobot monitoring active. Full status tracked in `claude-context/deployment-plan.md`.
 
 **Server deploy command** (from server `/opt/urbanlayer`):
 ```bash

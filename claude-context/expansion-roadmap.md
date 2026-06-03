@@ -40,8 +40,8 @@ These were identified as "nice to have" and not yet implemented:
 | Production nginx config | Done — `nginx.prod.conf` with HTTPS (Cloudflare Origin Cert), security headers, gzip, CSP for Mapbox |
 | Production compose override | Done — `docker-compose.prod.yml` layers port 443 + SSL volume on base config |
 | Server deployment (HTTP) | Done — all 3 services running at `http://178.105.184.66` |
-| DNS + HTTPS (Cloudflare) | Not started — Namecheap NS not yet pointed to Cloudflare |
-| Qdrant data transfer | Not started — server Qdrant empty, vector search non-functional |
-| Google OAuth setup | Not started — auth disabled on server (all users admin) |
-| CI pipeline (tests + type check) | Not started |
-| Monitoring / alerting | Not started |
+| DNS + HTTPS (Cloudflare) | Done — Full (Strict) + Origin Certificate, security headers verified |
+| Qdrant data transfer | Done — 14,535 vectors snapshot-transferred |
+| Google OAuth setup | Done — OAuth client configured, auth active on server |
+| CI pipeline (tests + type check) | Done — `.github/workflows/ci.yml`, needs GitHub secrets for deploy job |
+| Monitoring / alerting | Partial — UptimeRobot active, Sentry SDK integrated (needs DSN) |

@@ -202,12 +202,12 @@ DAILY_API_BUDGET_USD=5.00
 | 1b | Deploy app to server | **Done** — all 3 services running at `https://urbanlayerchicago.com` |
 | 2 | DNS + TLS (Cloudflare) | **Done** — Full (Strict) + Origin Certificate, security headers verified |
 | 3 | Production nginx.conf | **Done** |
-| 4 | Transfer Qdrant snapshots | **Not started** — required for municipal code vector search |
-| 5 | Google OAuth + JWT auth | **Done** — code complete, needs Google Cloud OAuth client + `.env` update on server |
+| 4 | Transfer Qdrant snapshots | **Done** — 14,535 vectors transferred and verified |
+| 5 | Google OAuth + JWT auth | **Done** — Google Cloud OAuth client configured, credentials in server `.env`, HTTPS callback URL fix deployed |
 | 6 | Rate limiting + budget cap | **Done** |
 | 7 | Security hardening | **Done** |
-| 8 | CI/CD pipeline | **Not started** |
-| 9 | Monitoring (Sentry + UptimeRobot) | **Not started** |
+| 8 | CI/CD pipeline | **Done** — `.github/workflows/ci.yml`: pytest + tsc on PR, SSH deploy on merge. Needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub secrets |
+| 9 | Monitoring (Sentry + UptimeRobot) | **Done** — UptimeRobot configured, Sentry SDK integrated (backend + frontend, no-op without DSN). Needs Sentry projects + DSN values in `.env` |
 
 ## Verification Checklist (post-deploy)
 
