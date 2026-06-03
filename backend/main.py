@@ -59,6 +59,15 @@ from backend.synthesizer import stream_answer
 
 log = logging.getLogger(__name__)
 
+_settings_init = get_settings()
+if _settings_init.sentry_dsn:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=_settings_init.sentry_dsn,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
+
 app = FastAPI(title="Chicago City Intelligence")
 
 _settings = get_settings()

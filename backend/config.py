@@ -142,6 +142,8 @@ class Settings(BaseSettings):
     auth_cookie_secure: bool = False  # True in production (HTTPS)
     frontend_url: str = "http://localhost:5173"
 
+    sentry_dsn: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
