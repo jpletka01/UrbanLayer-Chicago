@@ -44,6 +44,13 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **Charts**: `PieChart` (SVG donut) and `BarChart` (SVG horizontal bars) are custom — no chart library. `BarChart` takes `DistributionBucket[]` and renders labeled horizontal bars with hover state.
 - **Routing**: `/` (splash), `/c/:id` (conversation), `/admin` (dashboard), `/about` (technical deep dive).
 
+## Docker / Nginx
+
+- **Dockerfile**: multi-stage (node build → nginx serve). `NGINX_CONF` build arg selects config (defaults to `nginx.conf` for dev).
+- **`nginx.conf`**: dev config — port 80 only, proxies `/api/`, `/chat`, `/health`, `/autocomplete`, `/section/` to `backend:8001`. SPA fallback for all other routes.
+- **`nginx.prod.conf`**: production config — HTTP→HTTPS redirect on port 80, SSL termination on port 443 (Cloudflare Origin Certificate), security headers (HSTS, CSP tuned for Mapbox/deck.gl, X-Frame-Options DENY), gzip compression. Same proxy locations as dev plus `X-Forwarded-Proto`.
+- **Production deploy**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` — the override adds port 443, SSL cert volume mount, and selects `nginx.prod.conf`.
+
 ## Commands
 
 ```bash
