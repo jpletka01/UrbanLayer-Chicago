@@ -33,10 +33,16 @@ cd frontend && npx tsc --noEmit                   # type check
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark
 
-# Docker
+# Docker (local)
 docker compose up -d                              # dev (backend + qdrant, hot-reload)
 docker compose -f docker-compose.yml up           # production (all 3 services)
 docker compose build backend                      # rebuild after dep changes
+
+# Production server (178.105.184.66)
+ssh-add ~/.ssh/id_ed25519                         # load key (has passphrase)
+ssh root@178.105.184.66                           # SSH into server
+# On server: cd /opt/urbanlayer
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ## Key Conventions

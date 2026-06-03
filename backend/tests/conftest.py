@@ -51,3 +51,12 @@ def _clear_ttl_caches():
     yield
     for instance in TTLCache._instances:
         instance._store.clear()
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limits():
+    """Clear in-memory rate limit counters between tests."""
+    from backend.rate_limit import clear_rate_limits
+    clear_rate_limits()
+    yield
+    clear_rate_limits()

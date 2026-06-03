@@ -360,8 +360,8 @@ class Message(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: str
-    history: list[Message] = Field(default_factory=list)
+    message: str = Field(max_length=2000)
+    history: list[Message] = Field(default_factory=list, max_length=20)
     conversation_id: str | None = None
     upload_ids: list[str] = Field(default_factory=list)
 
@@ -430,3 +430,17 @@ class ImportConversation(BaseModel):
 
 class ImportRequest(BaseModel):
     conversations: list[ImportConversation]
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    picture_url: str | None = None
+    tier: str = "free"
+
+
+class AuthStatusResponse(BaseModel):
+    authenticated: bool
+    auth_required: bool = True
+    user: UserResponse | None = None

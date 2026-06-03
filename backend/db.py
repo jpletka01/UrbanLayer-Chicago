@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -96,6 +96,46 @@ CREATE TABLE IF NOT EXISTS request_logs (
 CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at);
 """
 
+_SCHEMA_V4 = """\
+CREATE TABLE IF NOT EXISTS users (
+    id          TEXT PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE,
+    name        TEXT NOT NULL,
+    picture_url TEXT,
+    google_id   TEXT NOT NULL UNIQUE,
+    tier        TEXT NOT NULL DEFAULT 'free'
+        CHECK(tier IN ('free', 'premium', 'admin')),
+    created_at  INTEGER NOT NULL,
+    updated_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash  TEXT NOT NULL UNIQUE,
+    expires_at  INTEGER NOT NULL,
+    revoked     INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+"""
+
+
+async def _migrate_v4(db: aiosqlite.Connection) -> None:
+    """Add users and refresh_tokens tables; add user_id to request_logs and llm_calls."""
+    await db.executescript(_SCHEMA_V4)
+    for table in ("request_logs", "llm_calls"):
+        cur = await db.execute(f"PRAGMA table_info({table})")
+        cols = {row[1] for row in await cur.fetchall()}
+        if "user_id" not in cols:
+            await db.execute(f"ALTER TABLE {table} ADD COLUMN user_id TEXT")
+
+
 async def _migrate_v3(db: aiosqlite.Connection) -> None:
     """Add summary_json column if it doesn't already exist."""
     cur = await db.execute("PRAGMA table_info(messages)")
@@ -124,6 +164,7 @@ async def init_db() -> None:
         await _db.execute("INSERT INTO schema_version VALUES (?)", (_SCHEMA_VERSION,))
         await _db.executescript(_SCHEMA_V2)
         await _migrate_v3(_db)
+        await _migrate_v4(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -133,6 +174,9 @@ async def init_db() -> None:
         if version < 3:
             await _migrate_v3(_db)
             version = 3
+        if version < 4:
+            await _migrate_v4(_db)
+            version = 4
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -701,6 +745,92 @@ async def get_admin_request_logs(limit: int = 50, offset: int = 0) -> list[dict]
         results.append(entry)
     return results
 
+
+# ---------------------------------------------------------------------------
+# Users & auth
+# ---------------------------------------------------------------------------
+
+async def upsert_user(
+    user_id: str,
+    email: str,
+    name: str,
+    picture_url: str | None,
+    google_id: str,
+) -> dict:
+    db = _get_db()
+    now = _now_ms()
+    await db.execute(
+        """
+        INSERT INTO users (id, email, name, picture_url, google_id, tier, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'free', ?, ?)
+        ON CONFLICT(google_id) DO UPDATE SET
+            email = excluded.email,
+            name = excluded.name,
+            picture_url = excluded.picture_url,
+            updated_at = ?
+        """,
+        (user_id, email, name, picture_url, google_id, now, now, now),
+    )
+    await db.commit()
+    cur = await db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
+    row = await cur.fetchone()
+    return dict(row)
+
+
+async def get_user_by_id(user_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_user_by_google_id(google_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def save_refresh_token(
+    user_id: str, token_hash: str, expires_at: int,
+) -> None:
+    db = _get_db()
+    await db.execute(
+        "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)",
+        (user_id, token_hash, expires_at, _now_ms()),
+    )
+    await db.commit()
+
+
+async def get_refresh_token(token_hash: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT * FROM refresh_tokens WHERE token_hash = ? AND revoked = 0 AND expires_at > ?",
+        (token_hash, _now_ms()),
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def revoke_refresh_token(token_hash: str) -> None:
+    db = _get_db()
+    await db.execute(
+        "UPDATE refresh_tokens SET revoked = 1 WHERE token_hash = ?", (token_hash,),
+    )
+    await db.commit()
+
+
+async def revoke_all_user_refresh_tokens(user_id: str) -> None:
+    db = _get_db()
+    await db.execute(
+        "UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?", (user_id,),
+    )
+    await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Bulk import (localStorage migration)
+# ---------------------------------------------------------------------------
 
 async def import_conversations(conversations: list[dict]) -> int:
     """Import conversations from localStorage export. Returns count imported."""

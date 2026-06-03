@@ -36,6 +36,12 @@ User Message
 | Map | Mapbox GL JS + deck.gl | WebGL handles thousands of points; deck.gl declarative layers |
 | Geocoding | Census Geocoder + shapely | Free, no API key, deterministic. 77 community areas + 30+ aliases |
 | Containers | Docker Compose (Qdrant + backend + nginx/frontend) | Multi-stage build, CPU-only PyTorch, baked HF models, non-root user |
+| Hosting | Hetzner CX22 (Nuremberg) — 2 vCPU, 4GB RAM, 2GB swap | Cheapest x86 tier with enough RAM for PyTorch models + Qdrant |
+| DNS/CDN | Cloudflare Free (planned) | Origin IP hiding, DDoS protection, static asset caching |
+| TLS | Cloudflare Full (Strict) + Origin Certificate (planned) | Zero-maintenance vs Let's Encrypt — no certbot/renewal cron |
+| Auth | Google OAuth2 + self-rolled JWT (PyJWT) | One-click sign-in, no password storage, httpOnly cookies + CSRF double-submit |
+| Rate Limiting | In-memory sliding window + daily budget cap | Tier-based (anon 3/day, free 25/day, admin unlimited) + API cost guard |
+| Domain | `urbanlayerchicago.com` via Namecheap | Registered, NS migration to Cloudflare pending |
 
 ## Domain Architecture
 

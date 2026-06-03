@@ -2,326 +2,239 @@
 
 ## Context
 
-UrbanLayer is currently a local-only Docker Compose app (backend + Qdrant + nginx/frontend). There's no CI/CD, no authentication, no HTTPS, and no cloud hosting. The goal is to deploy it as a live public website at `urbanlayerchicago.com` that serves as an interview portfolio piece — demonstrating not just the RAG pipeline but also production operations skills.
+UrbanLayer is a Docker Compose app (backend + Qdrant + nginx/frontend) being deployed as a live public website at `urbanlayerchicago.com`. The backend is resource-heavy (~2-3GB RAM for PyTorch embedding + reranker models). The primary recurring cost is the Anthropic API (~$0.03-0.10 per query), making rate limiting and auth essential.
 
-The backend is resource-heavy (~2-3GB RAM for PyTorch embedding + reranker models), which eliminates most free tiers. The primary recurring cost is the Anthropic API (~$0.03-0.10 per query), making rate limiting and auth essential before going public.
+**Decisions**: Hetzner CX22 (~$10/mo), Google OAuth + self-rolled JWT sessions, public GitHub repo.
 
-**Decisions**: Hetzner CX22 ($4.15/mo), Google OAuth + self-rolled JWT sessions, public GitHub repo.
-
----
-
-## Phase 1: Hosting & Infrastructure (Hetzner CX22)
-
-**Specs**: 2 vCPU (x86), 4GB RAM, 40GB SSD, 20TB egress — ~$4.15/month
-
-RAM budget: backend ~2.5GB (PyTorch models + FastAPI) + Qdrant ~500MB + nginx ~50MB = ~3GB, leaving ~1GB for OS. Add 2GB swap as insurance.
-
-### Setup
-
-1. Provision CX22 (Ubuntu 22.04) in Hetzner Cloud console
-2. Harden: SSH key-only login, disable password auth, `ufw allow 22,80,443`
-3. Install Docker Engine + Compose plugin
-4. Create 2GB swap: `fallocate -l 2G /swapfile && mkswap /swapfile && swapon /swapfile`
-5. Clone repo, create `.env` with API keys, `docker compose -f docker-compose.yml up -d`
-6. No Dockerfile changes needed — x86 architecture matches existing setup exactly
-
-### docker-compose.yml changes for production
-
-```yaml
-frontend:
-  ports:
-    - "80:80"
-    - "443:443"     # Add HTTPS port
-  volumes:
-    - /etc/ssl/cloudflare:/etc/nginx/ssl:ro  # Origin cert + key
-```
+**Server**: `178.105.184.66` — Hetzner CX22, Nuremberg datacenter, Ubuntu 22.04, provisioned 2026-06-03.
 
 ---
 
-## Phase 2: Domain & TLS
+## Completed Phases
 
-### Domain: Namecheap (already purchased)
+### Phase 1: Hosting & Infrastructure — DONE (2026-06-03)
 
-`urbanlayerchicago.com` registered via Namecheap ($6.99/year, order #204276226). Domain privacy included.
+**Specs**: 2 vCPU (x86), 4GB RAM, 40GB SSD, 20TB egress — ~$10/month
 
-### DNS: Cloudflare Free Tier
+- Provisioned CX22 (Ubuntu 22.04), Nuremberg datacenter
+- Hardened: SSH key-only login, disabled password auth, `ufw allow 22,80,443`
+- Docker 29.5.2, Compose 5.1.4 installed
+- 2GB swap created, persisted in `/etc/fstab`
+- App not yet deployed to server (repo not cloned, `.env` not created)
 
-1. Add `urbanlayerchicago.com` as a site in Cloudflare (free plan)
-2. Cloudflare will assign two nameservers (e.g., `asa.ns.cloudflare.com`, `vin.ns.cloudflare.com`)
-3. In **Namecheap dashboard** → Domain List → `urbanlayerchicago.com` → Nameservers → switch from "Namecheap BasicDNS" to "Custom DNS" → paste the two Cloudflare nameservers
-4. Wait for propagation (usually 15-30 min, up to 24h)
-5. In Cloudflare, add DNS records:
+### Phase 3: Production Nginx — DONE (2026-06-03)
 
-```
-A     urbanlayerchicago.com    → <hetzner-server-ip>   (Proxied)
-CNAME www                      → urbanlayerchicago.com  (Proxied)
-```
+- `frontend/nginx.prod.conf` — HTTPS redirect, SSL termination (Cloudflare Origin Cert), security headers (HSTS, CSP for Mapbox, X-Frame-Options DENY, X-Content-Type-Options), gzip compression
+- `docker-compose.prod.yml` — production compose override (port 443, SSL volume mount, `NGINX_CONF` build arg)
+- `frontend/Dockerfile` — `NGINX_CONF` build arg (defaults to `nginx.conf` for dev), exposes port 443
 
-Free CDN for static assets, DDoS protection, analytics, origin IP hiding.
+### Phase 5: Authentication — DONE (2026-06-03)
 
-### TLS: Cloudflare Full (Strict) + Origin Certificate
+Google OAuth2 Authorization Code flow + self-rolled JWT sessions. Auth is opt-in — when `GOOGLE_CLIENT_ID` is not set in `.env`, the entire auth system is disabled and all requests are treated as admin user. This means local dev works with zero auth config.
 
-- **Browser → Cloudflare**: Universal SSL (automatic, free)
-- **Cloudflare → Origin**: Generate free Origin Certificate (valid 15 years) from Cloudflare dashboard. Install on server at `/etc/ssl/cloudflare/`. Mount into nginx container.
+**Backend (`backend/auth.py`)**:
+- Google OAuth2 flow (3 HTTP calls: redirect → token exchange → userinfo)
+- JWT access tokens (HS256, 15min TTL) in httpOnly cookie
+- Opaque refresh tokens (hashed SHA-256) stored in SQLite, path-scoped to `/api/auth`, 7-day TTL, rotation on each refresh
+- CSRF protection: double-submit cookie pattern (JS-readable `csrf_token` cookie + `X-CSRF-Token` header)
+- FastAPI dependencies: `get_current_user()`, `require_auth()`, `require_admin()`, `verify_csrf()`
+- 5 endpoints: `GET /api/auth/google`, `GET /api/auth/google/callback`, `POST /api/auth/refresh`, `GET /api/auth/me`, `POST /api/auth/logout`
 
-Zero maintenance vs Let's Encrypt (no certbot, no renewal cron).
+**Database (schema v4)**:
+- `users` table: id (UUID), email (unique), name, picture_url, google_id (unique), tier (free/premium/admin), created_at, updated_at
+- `refresh_tokens` table: id, user_id (FK), token_hash (unique), expires_at, revoked, created_at
+- Added nullable `user_id` column to `request_logs` and `llm_calls`
 
-### Production nginx.conf
+**Frontend**:
+- `useAuth.ts` hook — manages auth state, auto-checks `/api/auth/me` on mount, auto-attempts token refresh
+- `AuthContext.tsx` — React context provider wrapping useAuth, available app-wide
+- `AuthModal.tsx` — "Sign in with Google" modal with Google branding, shown when unauth user submits a message
+- `UserMenu.tsx` — Google avatar dropdown in workspace header (shows name, email, sign-out)
+- `ProtectedRoute.tsx` — Route guard for tier-based access (used for `/admin`)
+- `api.ts` — all 23 fetch calls converted to `authFetch()` wrapper with `credentials: 'include'` + CSRF headers on mutations. Auth API functions added.
+- `App.tsx` — auth gate on `sendMessage`, UserMenu in header, admin link only shown for admin tier
+- `main.tsx` — wrapped in `<AuthProvider>`, `/admin` route protected by `<ProtectedRoute tier="admin">`
 
-Create `frontend/nginx.prod.conf` alongside existing `nginx.conf` (dev). Key additions:
+**Config settings added** (`backend/config.py`):
+- `google_client_id`, `google_client_secret`, `jwt_secret` (all empty by default = auth disabled)
+- `jwt_access_token_ttl` (900s), `jwt_refresh_token_ttl` (604800s)
+- `auth_cookie_secure` (False for dev, True in production)
+- `frontend_url` (for OAuth redirect after callback)
 
-- **Port 80**: `return 301 https://$host$request_uri`
-- **Port 443**: SSL termination with Origin Certificate
-- **Security headers**: HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy, CSP (tuned for Mapbox GL JS blob workers + tile URLs)
-- **Gzip**: `gzip on` for text/css/json/javascript, min 1000 bytes
-- **Rate limiting zones**: `limit_req_zone $binary_remote_addr zone=chat:10m rate=2r/s` and `zone=api:10m rate=10r/s`
-- **SSE**: existing `proxy_buffering off` is correct; keep `proxy_read_timeout 120s`
-- `server_name urbanlayerchicago.com www.urbanlayerchicago.com`
+**Tests**: 29 tests in `backend/tests/test_auth.py` covering JWT utils, refresh tokens, user CRUD, dev mode bypass, CSRF, `/me` endpoint.
 
-Frontend Dockerfile gets a build arg to select dev vs prod nginx config.
+### Phase 6: Rate Limiting & Cost Control — DONE (2026-06-03)
 
----
+**Backend (`backend/rate_limit.py`)**:
+- In-memory sliding window counters keyed by `user_id` (or IP for anonymous)
+- Tier limits: anonymous 3/day + 3/hr, free 25/day + 10/hr, premium 100/day + 30/hr, admin unlimited
+- Daily API budget cap: sums today's `llm_calls` via `estimate_cost()`, rejects with 503 if over `DAILY_API_BUDGET_USD` env var (default $5)
+- Applied to `/chat` endpoint only (in `main.py`)
+- `clear_rate_limits()` function for tests; autouse fixture in `conftest.py`
 
-## Phase 3: Authentication (Google OAuth + Self-Rolled JWT Sessions)
+### Phase 7: Security Hardening — DONE (2026-06-03)
 
-Google OAuth as the sole sign-in method. No password storage at all — Google handles identity, we handle sessions with self-rolled JWTs. This is interview-impressive ("I implemented the full OAuth2 authorization code flow with custom JWT session management") and better for users (one-click sign-in, no passwords to remember, harder to create throwaway accounts).
-
-### Backend: New `backend/auth.py`
-
-**Dependencies**: `PyJWT`, `httpx` (already present) — no heavy OAuth library needed, the Google flow is 3 HTTP calls
-
-**Google OAuth2 flow** (Authorization Code):
-1. `GET /api/auth/google` — redirect user to `accounts.google.com/o/oauth2/v2/auth` with `client_id`, `redirect_uri`, `scope=openid email profile`, `state` (CSRF)
-2. Google authenticates user, redirects to `GET /api/auth/google/callback?code=...&state=...`
-3. Backend exchanges `code` for tokens via `POST https://oauth2.googleapis.com/token`
-4. Backend verifies the `id_token` (Google's JWT containing email, name, picture)
-5. Upsert user in SQLite `users` table, issue our own JWT pair
-
-**Google Cloud setup** (free): Create OAuth 2.0 Client ID in Google Cloud Console. Authorized redirect URI: `https://urbanlayerchicago.com/api/auth/google/callback`. Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
-
-**New SQLite tables**:
-- `users`: `id`, `email`, `name`, `picture_url`, `google_id`, `created_at`, `tier` (free/premium/admin)
-- `refresh_tokens`: `id`, `user_id`, `token_hash`, `expires_at`, `revoked`
-
-**Token strategy**:
-- Access token: JWT with `user_id`, `email`, `tier`, `exp` (15 min). Sent as `httpOnly`, `Secure`, `SameSite=Lax` cookie
-- Refresh token: opaque token stored hashed in SQLite with expiry + rotation. Also `httpOnly` cookie
-- CSRF protection: Double-submit cookie — readable CSRF cookie + `X-CSRF-Token` header, backend verifies match
-
-**Endpoints**:
-- `GET /api/auth/google` — initiate OAuth flow (redirect to Google)
-- `GET /api/auth/google/callback` — handle callback, issue JWT pair, redirect to app
-- `POST /api/auth/refresh` — rotate refresh token
-- `GET /api/auth/me` — current user from token
-- `POST /api/auth/logout` — clear cookies, revoke refresh token
-
-**FastAPI dependency**: `get_current_user()` extracts + verifies JWT from cookie, injects `User`. Optional `get_optional_user()` for endpoints that work with or without auth.
-
-**Schema v4 migration**: Add `users`, `refresh_tokens` tables. Add `user_id` column to `request_logs` and `llm_calls`.
-
-### Frontend: Auth UI
-
-**New components**:
-- `AuthModal` — "Sign in with Google" button (modal overlay, not a separate page). Shows when unauthenticated user tries to chat. Clean, minimal — one button, maybe a brief explanation of why sign-in is needed.
-- `UserMenu` — Google profile picture + name dropdown in workspace header, with sign-out option
-
-**State**: `useAuth` hook managing `user` (with Google profile pic/name), `isAuthenticated`, `signIn()` (redirects to `/api/auth/google`), `signOut()`, `refreshToken()`. Cookie-based — httpOnly cookies sent automatically by `fetch` with `credentials: 'include'`.
-
-**Flow**:
-- Landing page is public (splash screen, suggestion chips)
-- First message submission checks auth → if not authenticated, show `AuthModal` with Google sign-in
-- After Google auth, redirect back to the app with cookies set
-- Workspace header shows `UserMenu` with Google avatar when authenticated
-- `/about` page stays fully public
-- `/admin` requires admin tier
-
-**fetch changes**: Add `credentials: 'include'` to all API calls in `api.ts`. Add `X-CSRF-Token` header to mutating requests.
-
-### User Tiers (future-ready)
-
-| Tier | Access | How to get |
-|---|---|---|
-| free | 25 queries/day, standard features | Sign in with Google |
-| premium | Higher limits + site exploration (future) | Stripe payment (future) |
-| admin | Unlimited + `/admin` dashboard | Manual DB flag |
-
-The `tier` column on the `users` table is the extensibility hook for paid features. No Stripe integration in this phase — just the data model.
+- CORS: `allow_credentials=True` (required for cookies). Production origins set via `cors_origins` in `.env`.
+- Input validation: `max_length=2000` on `ChatRequest.message`, `max_length=20` on `ChatRequest.history`
+- Admin endpoints: all 8 `/api/admin/*` endpoints protected with `Depends(require_admin)`
+- Frontend: `/admin` route wrapped in `<ProtectedRoute tier="admin">`
 
 ---
 
-## Phase 4: Rate Limiting & Cost Control
+## Remaining Phases
 
-### Per-User Limits
+### Phase 2: Domain & TLS — IN PROGRESS
 
-| Tier | Queries/day | Queries/hour | Msg limit/conv |
-|---|---|---|---|
-| Anonymous | 3 | 3 | 3 |
-| Free (registered) | 25 | 10 | 10 (existing) |
-| Admin | Unlimited | Unlimited | 10 |
+**Status**: Cloudflare site added, but Universal SSL certificate still propagating (error: "This hostname is not covered by a certificate"). Namecheap nameservers may need to be pointed to Cloudflare.
 
-### New file: `backend/rate_limit.py`
+**Remaining steps**:
+1. Verify Namecheap nameservers are set to Cloudflare's assigned NS (not Namecheap BasicDNS)
+2. Wait for Cloudflare Universal SSL to provision (can take up to 24h)
+3. In Cloudflare, add DNS records:
+   ```
+   A     urbanlayerchicago.com    → 178.105.184.66         (Proxied)
+   CNAME www                      → urbanlayerchicago.com  (Proxied)
+   ```
+4. Set SSL/TLS mode to "Full (Strict)" in Cloudflare
+5. Generate Origin Certificate from Cloudflare dashboard (SSL/TLS → Origin Server → Create Certificate). Save as `origin.pem` + `origin-key.pem`
+6. On server: `mkdir -p /etc/ssl/cloudflare && scp origin.pem origin-key.pem root@178.105.184.66:/etc/ssl/cloudflare/`
 
-- FastAPI middleware with in-memory sliding window counters keyed by `user_id` (or IP for anon)
-- Persist daily aggregates to new `usage_limits` SQLite table
-- Return `429 Too Many Requests` with `Retry-After` header
-- Apply only to `/chat` endpoint
+### Phase 1 (remaining): Deploy App to Server
 
-### Daily API budget cap
+App needs to be deployed (repo clone + `.env` + docker compose up). Can be done on HTTP first while waiting for SSL.
 
-- Env var `DAILY_API_BUDGET_USD=5.00`
-- Wire existing `estimate_cost()` from `llm.py` + `llm_calls` table sum into a pre-request check
-- Return friendly error when cap hit
-
-### Nginx rate limiting (defense in depth)
-
-```nginx
-limit_req_zone $binary_remote_addr zone=chat:10m rate=2r/s;
-limit_req zone=chat burst=5 nodelay;  # on /chat location
-```
-
----
-
-## Phase 5: Security Hardening
-
-### CORS
-```python
-# config.py — set via CORS_ORIGINS env var in production
-cors_origins = ["https://urbanlayerchicago.com", "https://www.urbanlayerchicago.com"]
-```
-
-### Input validation
-- `max_length=2000` on `ChatRequest.message` in `models.py`
-- Cap `ChatRequest.history` at 20 items
-
-### Admin access
-- Gate `/admin` frontend route behind admin-tier auth check
-- Gate `/api/admin/*` endpoints behind `get_current_admin()` dependency
-
-### Secrets
-- `.env` on server with `chmod 600` (already gitignored)
-- GitHub Actions encrypted secrets for CI/CD
-- `JWT_SECRET` generated as a strong random key, stored in `.env`
-
----
-
-## Phase 6: CI/CD Pipeline
-
-### `.github/workflows/deploy.yml`
-
-**On every push/PR — Test**:
-```yaml
-- python -m pytest backend/tests/ -q  # ~380 tests, mocked APIs
-- cd frontend && npx tsc --noEmit     # type check
-```
-
-**On push to `main` — Build + Deploy**:
-```yaml
-- Build backend + frontend Docker images (linux/amd64)
-- Push to GHCR (free for public repos)
-- SSH into Hetzner server
-- docker compose pull && docker compose -f docker-compose.yml up -d --remove-orphans
-- curl -f https://urbanlayerchicago.com/health || exit 1
-```
-
-Tag images as `ghcr.io/<username>/urbanlayer-backend:latest` + `:sha-<short>`. Use GitHub Actions cache for Docker layer caching (the HuggingFace model layer is ~1.5GB, rarely changes).
-
----
-
-## Phase 7: Qdrant Data Transfer
-
-### Snapshot/Restore (one-time)
-
-On local machine with Qdrant running and data loaded:
+**Steps**:
 ```bash
-curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
-# Download snapshot, scp to server
-curl -X PUT http://<server>:6333/collections/chicago_municipal_code/snapshots/recover \
-  -d '{"location": "file:///qdrant/snapshots/<file>"}'
+# On server
+cd /opt && git clone https://github.com/<username>/chicago.git urbanlayer
+cd urbanlayer
+
+# Create .env with required keys
+cat > .env << 'EOF'
+ANTHROPIC_API_KEY=sk-ant-...
+SOCRATA_APP_TOKEN=...
+VITE_MAPBOX_TOKEN=pk.eyJ1...
+
+# Auth (set these when Google OAuth is configured)
+# GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+# GOOGLE_CLIENT_SECRET=GOCSPX-...
+# JWT_SECRET=<generate with: python -c "import secrets; print(secrets.token_urlsafe(64))">
+# AUTH_COOKIE_SECURE=true
+# FRONTEND_URL=https://urbanlayerchicago.com
+
+# Production CORS
+# CORS_ORIGINS=["https://urbanlayerchicago.com","https://www.urbanlayerchicago.com"]
+
+# Budget cap
+DAILY_API_BUDGET_USD=5.00
+EOF
+
+chmod 600 .env
+
+# Start without HTTPS first
+docker compose up -d
+
+# Verify at http://178.105.184.66
+curl http://178.105.184.66/health
+
+# Later, with SSL certs in place:
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-Avoids recomputing 14,535 embeddings. Qdrant Docker volume persists across restarts. Set up weekly snapshot cron for backups.
+### Phase 4 (Qdrant Data Transfer)
 
----
+Transfer municipal code embeddings from local machine to server. One-time operation.
 
-## Phase 8: Monitoring
+```bash
+# On local machine (Qdrant must be running locally)
+curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
+# Note the snapshot filename from the response
+
+# Download snapshot
+curl -o snapshot.tar http://localhost:6333/collections/chicago_municipal_code/snapshots/<snapshot-name>
+
+# Upload to server
+scp snapshot.tar root@178.105.184.66:/tmp/
+
+# On server — restore into Qdrant
+docker cp /tmp/snapshot.tar $(docker compose ps -q qdrant):/qdrant/snapshots/
+curl -X PUT http://localhost:6333/collections/chicago_municipal_code/snapshots/recover \
+  -H 'Content-Type: application/json' \
+  -d '{"location": "file:///qdrant/snapshots/snapshot.tar"}'
+```
+
+### Phase 8: CI/CD Pipeline — NOT STARTED
+
+`.github/workflows/deploy.yml`:
+- On every push/PR: `pytest backend/tests/ -q` + `cd frontend && npx tsc --noEmit`
+- On push to `main`: build Docker images (linux/amd64), push to GHCR, SSH deploy to Hetzner, health check
+- Docker layer caching for HuggingFace model layer (~1.5GB, rarely changes)
+
+### Phase 9: Monitoring — NOT STARTED
 
 - **Sentry** (free, 5K errors/mo): `sentry-sdk[fastapi]` backend + `@sentry/react` frontend
 - **UptimeRobot** (free): HTTP check on `/health` every 5 minutes, email alerts
-- **Cost monitoring**: Already built into `/admin` dashboard. Add daily budget alert script.
+
+### Google Cloud OAuth Setup — NOT STARTED
+
+Required before auth works in production:
+1. Go to Google Cloud Console → APIs & Services → Credentials
+2. Create OAuth 2.0 Client ID (Web application)
+3. Authorized redirect URI: `https://urbanlayerchicago.com/api/auth/google/callback`
+4. For local testing, also add: `http://localhost:8001/api/auth/google/callback`
+5. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to server `.env`
+6. Generate JWT_SECRET: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
 
 ---
 
-## Database Scaling Path (future)
+## Production .env Template
 
-SQLite is not a bottleneck for <100 concurrent users. The Anthropic API latency (3-8s/query) is the real constraint.
+```bash
+# Required
+ANTHROPIC_API_KEY=sk-ant-...
+VITE_MAPBOX_TOKEN=pk.eyJ1...
 
-**When to migrate**: Multiple backend processes, >50 writes/sec sustained, or >10GB database size.
+# Optional data sources
+SOCRATA_APP_TOKEN=...
+WALKSCORE_API_KEY=...
 
-**How to migrate**: Swap `aiosqlite` for `asyncpg` in `db.py` only (~2-4 hours). Use Supabase or Neon free tier for hosted PostgreSQL.
+# Auth (leave empty to disable auth — all users treated as admin)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+JWT_SECRET=
+AUTH_COOKIE_SECURE=true
+FRONTEND_URL=https://urbanlayerchicago.com
 
----
+# Production CORS (JSON array string)
+CORS_ORIGINS=["https://urbanlayerchicago.com","https://www.urbanlayerchicago.com"]
 
-## Future: Premium Tier & Site Exploration (not in scope, but architected for)
-
-The auth system includes a `tier` column (`free`/`premium`/`admin`) specifically to support a paid tier later. The motivating feature:
-
-**Site Exploration** — criteria-based search across the entire city (e.g., "show me all RS-3 lots near transit with no flood risk and low crime"). Returns a heatmap/overlay view, not a single-address response. This is essentially a second product mode requiring:
-- City-wide spatial queries across multiple datasets
-- Spatial indexing and results ranking
-- Different UX (criteria builder → map overlay, not chat)
-- Stripe integration for payments
-
-This would justify charging ($10-20/mo?) and is the natural next evolution of the platform. The auth + tier infrastructure built in Phase 3 is the prerequisite. Tackle only after validating demand.
-
----
-
-## Execution Order
-
-| Step | What | Outcome |
-|------|------|---------|
-| 1 | Provision Hetzner, Docker, deploy existing stack | App running on server IP |
-| 2 | Point Namecheap NS → Cloudflare, set up DNS + Origin Cert | `https://urbanlayerchicago.com` live |
-| 3 | ~~Production nginx.conf (HTTPS, headers, gzip, rate limits)~~ | **Done** — `nginx.prod.conf`, Dockerfile build arg, `docker-compose.prod.yml` |
-| 4 | Transfer Qdrant snapshots | Vector search working |
-| 5 | Google OAuth + JWT auth (backend + frontend) | User sign-in via Google |
-| 6 | Rate limiting + budget cap | Protected from cost abuse |
-| 7 | Security hardening (CORS, input caps, admin gate) | Locked down |
-| 8 | GitHub Actions CI/CD | Automated test + deploy |
-| 9 | Sentry + UptimeRobot | Observable |
+# Cost control
+DAILY_API_BUDGET_USD=5.00
+```
 
 ---
 
-## Files to Create/Modify
+## Execution Summary
 
-| File | Changes |
-|------|---------|
-| ~~`frontend/nginx.prod.conf`~~ | **Done** — HTTPS, security headers (HSTS, CSP for Mapbox, X-Frame-Options), gzip. Nginx-level rate limiting deferred to Phase 6 (needs `http`-context directives) |
-| New: `backend/auth.py` | Google OAuth2 flow, JWT session management, refresh rotation, CSRF, FastAPI dependencies |
-| New: `backend/rate_limit.py` | Per-user rate limiting middleware + budget cap |
-| New: `.github/workflows/deploy.yml` | CI/CD pipeline |
-| ~~`docker-compose.prod.yml`~~ | **Done** — production compose override (port 443, SSL volume, `NGINX_CONF` build arg). Base `docker-compose.yml` unchanged |
-| `backend/config.py` | Auth settings (JWT_SECRET, GOOGLE_CLIENT_ID/SECRET, token TTLs), rate limit settings, budget cap, prod CORS |
-| `backend/main.py` | Mount auth routes, add rate limit + auth middleware, Sentry init |
-| `backend/models.py` | `max_length=2000` on message, cap history at 20 |
-| `backend/db.py` | Schema v4: `users`, `refresh_tokens`, `usage_limits` tables; `user_id` on existing tables |
-| `requirements.prod.txt` | Add `PyJWT`, `sentry-sdk[fastapi]` |
-| ~~`frontend/Dockerfile`~~ | **Done** — `NGINX_CONF` build arg (defaults to `nginx.conf` for dev), exposes port 443 |
-| `frontend/package.json` | Add `@sentry/react` |
-| `frontend/src/lib/api.ts` | `credentials: 'include'` on all fetches, CSRF header |
-| `frontend/src/lib/useAuth.ts` | New hook: user state, login/register/logout/refresh |
-| `frontend/src/components/AuthModal.tsx` | Google sign-in modal |
-| `frontend/src/components/UserMenu.tsx` | Header user dropdown with Google avatar |
-| `frontend/src/App.tsx` | Auth gate on first message, UserMenu in header |
-| `frontend/src/main.tsx` | Sentry init + ErrorBoundary |
+| Step | What | Status |
+|------|------|--------|
+| 1 | Provision Hetzner, Docker, harden | **Done** |
+| 2 | DNS + TLS (Cloudflare) | **In progress** — SSL cert propagating |
+| 3 | Production nginx.conf | **Done** |
+| 4 | Transfer Qdrant snapshots | **Not started** |
+| 5 | Google OAuth + JWT auth | **Done** — code complete, needs Google Cloud OAuth client + server deploy |
+| 6 | Rate limiting + budget cap | **Done** |
+| 7 | Security hardening | **Done** |
+| 8 | CI/CD pipeline | **Not started** |
+| 9 | Monitoring (Sentry + UptimeRobot) | **Not started** |
 
-## Verification
+## Verification Checklist (post-deploy)
 
 1. `curl -I https://urbanlayerchicago.com` → 200 with HSTS + security headers
-2. Unauthenticated `/chat` request → 401
-3. Google sign-in → chat works → tokens refresh correctly
-4. 4th anonymous query → 429 with Retry-After
+2. Chat without auth → 3 queries work, 4th returns 429
+3. Google sign-in → chat works → UserMenu shows avatar → tokens refresh
+4. Non-admin user → `/admin` redirects, `/api/admin/*` returns 403
 5. Set `DAILY_API_BUDGET_USD=0.01` → budget cap after 1 query
-6. Push to main → GitHub Actions build → deploy → health check green
-7. Full chat query streams tokens correctly through Cloudflare → nginx → backend SSE
-8. Vector search returns municipal code results
-9. Trigger error → appears in Sentry
+6. Full chat query streams tokens correctly through Cloudflare → nginx → backend SSE
+7. Vector search returns municipal code results (after Qdrant snapshot transfer)
+8. Dev mode (no `GOOGLE_CLIENT_ID`): no auth UI, everything works as before

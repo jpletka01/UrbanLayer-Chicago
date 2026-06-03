@@ -133,6 +133,15 @@ class Settings(BaseSettings):
 
     enable_request_logging: bool = True
 
+    # Auth (disabled when google_client_id is empty — local dev works without OAuth)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    jwt_secret: str = ""
+    jwt_access_token_ttl: int = 900  # 15 minutes
+    jwt_refresh_token_ttl: int = 604_800  # 7 days
+    auth_cookie_secure: bool = False  # True in production (HTTPS)
+    frontend_url: str = "http://localhost:5173"
+
 
 @lru_cache
 def get_settings() -> Settings:

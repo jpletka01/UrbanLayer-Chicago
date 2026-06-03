@@ -19,6 +19,67 @@ import type {
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
+function getCsrfToken(): string {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+  return match?.[1] ?? "";
+}
+
+function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const method = (options.method ?? "GET").toUpperCase();
+  const csrfHeaders: Record<string, string> =
+    method !== "GET" && method !== "HEAD"
+      ? { "X-CSRF-Token": getCsrfToken() }
+      : {};
+  return fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: { ...csrfHeaders, ...(options.headers as Record<string, string>) },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Auth API
+// ---------------------------------------------------------------------------
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  picture_url: string | null;
+  tier: "free" | "premium" | "admin";
+}
+
+export interface AuthStatus {
+  authenticated: boolean;
+  auth_required: boolean;
+  user: AuthUser | null;
+}
+
+export async function getAuthStatus(): Promise<AuthStatus> {
+  const resp = await authFetch(`${API_BASE}/api/auth/me`);
+  if (!resp.ok) return { authenticated: false, auth_required: true, user: null };
+  return await resp.json();
+}
+
+export async function refreshAuthToken(): Promise<AuthStatus | null> {
+  const resp = await authFetch(`${API_BASE}/api/auth/refresh`, { method: "POST" });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return {
+    authenticated: true,
+    auth_required: true,
+    user: data.user,
+  };
+}
+
+export async function logout(): Promise<void> {
+  await authFetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
+}
+
+export function getSignInUrl(): string {
+  return `${API_BASE}/api/auth/google`;
+}
+
 // Sections are immutable, so cache by ID — lets hover-prefetch and the
 // subsequent click share one request. Failed lookups are evicted so they retry.
 const sectionCache = new Map<string, Promise<CodeChunk | null>>();
@@ -29,7 +90,7 @@ export function fetchSection(sectionId: string): Promise<CodeChunk | null> {
   if (hit) return hit;
   const p = (async () => {
     try {
-      const resp = await fetch(`${API_BASE}/section/${encodeURIComponent(key)}`);
+      const resp = await authFetch(`${API_BASE}/section/${encodeURIComponent(key)}`);
       if (!resp.ok) return null;
       return (await resp.json()) as CodeChunk;
     } catch {
@@ -46,7 +107,7 @@ export function fetchSection(sectionId: string): Promise<CodeChunk | null> {
 export async function getAutocomplete(query: string): Promise<AddressSuggestion[]> {
   if (query.length < 3) return [];
   try {
-    const resp = await fetch(`${API_BASE}/autocomplete?q=${encodeURIComponent(query)}`);
+    const resp = await authFetch(`${API_BASE}/autocomplete?q=${encodeURIComponent(query)}`);
     if (!resp.ok) return [];
     return await resp.json();
   } catch {
@@ -63,7 +124,7 @@ export async function fetchMapData(params: {
   address_label?: string;
 }): Promise<MapData | null> {
   try {
-    const resp = await fetch(`${API_BASE}/api/map-data`, {
+    const resp = await authFetch(`${API_BASE}/api/map-data`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -80,7 +141,7 @@ export async function getCommunityAreaByPoint(
   lon: number,
 ): Promise<{ community_area: number; name: string } | null> {
   try {
-    const resp = await fetch(
+    const resp = await authFetch(
       `${API_BASE}/api/community-area?lat=${lat}&lon=${lon}`,
     );
     if (!resp.ok) return null;
@@ -101,7 +162,7 @@ export async function* chatStream(
   if (conversationId) body.conversation_id = conversationId;
   if (uploadIds?.length) body.upload_ids = uploadIds;
 
-  const resp = await fetch(`${API_BASE}/chat`, {
+  const resp = await authFetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -120,7 +181,7 @@ export async function* chatStream(
 // ---------------------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
-  const resp = await fetch(`${API_BASE}/api/conversations`);
+  const resp = await authFetch(`${API_BASE}/api/conversations`);
   if (!resp.ok) return [];
   const data = await resp.json();
   return data.map((c: Record<string, unknown>) => ({
@@ -133,13 +194,13 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<ConversationDetail | null> {
-  const resp = await fetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`);
+  const resp = await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`);
   if (!resp.ok) return null;
   return await resp.json();
 }
 
 export async function createConversation(id: string, title: string): Promise<void> {
-  await fetch(`${API_BASE}/api/conversations`, {
+  await authFetch(`${API_BASE}/api/conversations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, title }),
@@ -147,7 +208,7 @@ export async function createConversation(id: string, title: string): Promise<voi
 }
 
 export async function deleteConversationAPI(id: string): Promise<void> {
-  await fetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`, {
+  await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 }
@@ -156,7 +217,7 @@ export async function saveMessages(
   conversationId: string,
   messages: Record<string, unknown>[],
 ): Promise<void> {
-  await fetch(
+  await authFetch(
     `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "PUT",
@@ -171,7 +232,7 @@ export async function updateMessageMapData(
   position: number,
   mapData: MapData,
 ): Promise<void> {
-  await fetch(
+  await authFetch(
     `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages/${position}`,
     {
       method: "PATCH",
@@ -184,7 +245,7 @@ export async function updateMessageMapData(
 export async function importConversations(
   conversations: Record<string, unknown>[],
 ): Promise<number> {
-  const resp = await fetch(`${API_BASE}/api/conversations/import`, {
+  const resp = await authFetch(`${API_BASE}/api/conversations/import`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ conversations }),
@@ -195,7 +256,7 @@ export async function importConversations(
 }
 
 export async function clearAllConversations(): Promise<void> {
-  await fetch(`${API_BASE}/api/conversations`, { method: "DELETE" });
+  await authFetch(`${API_BASE}/api/conversations`, { method: "DELETE" });
 }
 
 // ---------------------------------------------------------------------------
@@ -210,7 +271,7 @@ export async function uploadFiles(
   for (const file of files) {
     formData.append("files", file);
   }
-  const resp = await fetch(
+  const resp = await authFetch(
     `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/uploads`,
     { method: "POST", body: formData },
   );
@@ -224,7 +285,7 @@ export function getUploadUrl(uploadId: string): string {
 }
 
 export async function deleteUpload(uploadId: string): Promise<void> {
-  await fetch(`${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}`, {
+  await authFetch(`${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}`, {
     method: "DELETE",
   });
 }
@@ -235,7 +296,7 @@ export async function deleteUpload(uploadId: string): Promise<void> {
 
 export async function fetchAdminOverview(period: string): Promise<AdminOverview | null> {
   try {
-    const resp = await fetch(`${API_BASE}/api/admin/overview?period=${period}`);
+    const resp = await authFetch(`${API_BASE}/api/admin/overview?period=${period}`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
@@ -245,7 +306,7 @@ export async function fetchAdminTimeseries(
   period: string, bucket = "day",
 ): Promise<TimeseriesBucket[]> {
   try {
-    const resp = await fetch(
+    const resp = await authFetch(
       `${API_BASE}/api/admin/timeseries?period=${period}&bucket=${bucket}`,
     );
     if (!resp.ok) return [];
@@ -255,7 +316,7 @@ export async function fetchAdminTimeseries(
 
 export async function fetchAdminLatency(period: string): Promise<LatencyPercentiles[]> {
   try {
-    const resp = await fetch(`${API_BASE}/api/admin/latency?period=${period}`);
+    const resp = await authFetch(`${API_BASE}/api/admin/latency?period=${period}`);
     if (!resp.ok) return [];
     return await resp.json();
   } catch { return []; }
@@ -263,7 +324,7 @@ export async function fetchAdminLatency(period: string): Promise<LatencyPercenti
 
 export async function fetchConversationStats(): Promise<ConversationStats | null> {
   try {
-    const resp = await fetch(`${API_BASE}/api/admin/conversations`);
+    const resp = await authFetch(`${API_BASE}/api/admin/conversations`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
@@ -273,7 +334,7 @@ export async function fetchRequestLogs(
   limit = 50, offset = 0,
 ): Promise<RequestLogEntry[]> {
   try {
-    const resp = await fetch(
+    const resp = await authFetch(
       `${API_BASE}/api/admin/requests?limit=${limit}&offset=${offset}`,
     );
     if (!resp.ok) return [];
@@ -283,7 +344,7 @@ export async function fetchRequestLogs(
 
 export async function fetchBenchmarkResults(): Promise<BenchmarkResults | null> {
   try {
-    const resp = await fetch(`${API_BASE}/api/admin/benchmark`);
+    const resp = await authFetch(`${API_BASE}/api/admin/benchmark`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
@@ -291,7 +352,7 @@ export async function fetchBenchmarkResults(): Promise<BenchmarkResults | null> 
 
 export async function fetchJudgeResults(): Promise<JudgeResults | null> {
   try {
-    const resp = await fetch(`${API_BASE}/api/admin/judge`);
+    const resp = await authFetch(`${API_BASE}/api/admin/judge`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
@@ -302,7 +363,7 @@ let _transitStationsCache: import("./types").TransitStation[] | null = null;
 export async function fetchTransitStations(): Promise<import("./types").TransitStation[]> {
   if (_transitStationsCache && _transitStationsCache.length > 0) return _transitStationsCache;
   try {
-    const resp = await fetch(`${API_BASE}/api/transit-stations`);
+    const resp = await authFetch(`${API_BASE}/api/transit-stations`);
     if (!resp.ok) return [];
     _transitStationsCache = await resp.json();
     return _transitStationsCache!;

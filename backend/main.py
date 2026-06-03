@@ -19,7 +19,7 @@ import httpx
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
@@ -66,7 +66,7 @@ if _settings.cors_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_settings.cors_origins,
-        allow_credentials=False,
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -135,6 +135,59 @@ async def health() -> dict:
         from fastapi.responses import JSONResponse
         return JSONResponse(content=result, status_code=503)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
+
+from backend.auth import (
+    get_current_user,
+    handle_google_callback,
+    handle_google_login,
+    handle_logout,
+    handle_me,
+    handle_refresh,
+    require_admin,
+    set_auth_cookies,
+    clear_auth_cookies,
+)
+
+
+@app.get("/api/auth/google")
+async def google_login(request: Request):
+    return await handle_google_login(request)
+
+
+@app.get("/api/auth/google/callback", name="google_callback")
+async def google_callback(request: Request):
+    return await handle_google_callback(request)
+
+
+@app.post("/api/auth/refresh")
+async def refresh_token(request: Request):
+    result = await handle_refresh(request)
+    response = StreamingResponse(content=iter([]), media_type="application/json")
+    from fastapi.responses import JSONResponse
+    resp = JSONResponse(content={"user": result["user"]})
+    set_auth_cookies(
+        resp, result["access_token"], result["refresh_token"], result["csrf_token"],
+    )
+    return resp
+
+
+@app.get("/api/auth/me")
+async def auth_me(request: Request):
+    return await handle_me(request)
+
+
+@app.post("/api/auth/logout")
+async def logout(request: Request):
+    result = await handle_logout(request)
+    from fastapi.responses import JSONResponse
+    resp = JSONResponse(content=result)
+    clear_auth_cookies(resp)
+    return resp
 
 
 @app.get("/autocomplete")
@@ -787,7 +840,10 @@ async def _save_request_log(
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest) -> StreamingResponse:
+async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
+    from backend.rate_limit import check_rate_limit, check_daily_budget
+    await check_rate_limit(request)
+    await check_daily_budget()
     return StreamingResponse(
         _event_stream(req),
         media_type="text/event-stream",
@@ -800,7 +856,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 # ---------------------------------------------------------------------------
 
 @app.get("/api/admin/cache")
-async def admin_cache() -> dict:
+async def admin_cache(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     from backend.retrieval.cache import TTLCache
     caches = [c.stats() for c in TTLCache._instances]
     total_hits = sum(c["hits"] for c in caches)
@@ -815,7 +871,7 @@ async def admin_cache() -> dict:
 
 
 @app.get("/api/admin/overview")
-async def admin_overview(period: str = "30d") -> dict:
+async def admin_overview(request: Request, period: str = "30d", _admin: dict = Depends(require_admin)) -> dict:
     from backend.llm import estimate_cost
     overview = await db.get_admin_overview(period)
     # Compute estimated costs
@@ -832,7 +888,7 @@ async def admin_overview(period: str = "30d") -> dict:
 
 
 @app.get("/api/admin/timeseries")
-async def admin_timeseries(period: str = "30d", bucket: str = "day") -> list[dict]:
+async def admin_timeseries(request: Request, period: str = "30d", bucket: str = "day", _admin: dict = Depends(require_admin)) -> list[dict]:
     from backend.llm import estimate_cost, COST_PER_MTOK
     rows = await db.get_admin_timeseries(period, bucket)
     for row in rows:
@@ -845,22 +901,22 @@ async def admin_timeseries(period: str = "30d", bucket: str = "day") -> list[dic
 
 
 @app.get("/api/admin/latency")
-async def admin_latency(period: str = "30d") -> list[dict]:
+async def admin_latency(request: Request, period: str = "30d", _admin: dict = Depends(require_admin)) -> list[dict]:
     return await db.get_admin_latency(period)
 
 
 @app.get("/api/admin/conversations")
-async def admin_conversations() -> dict:
+async def admin_conversations(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     return await db.get_admin_conversation_stats()
 
 
 @app.get("/api/admin/requests")
-async def admin_requests(limit: int = 50, offset: int = 0) -> list[dict]:
+async def admin_requests(request: Request, limit: int = 50, offset: int = 0, _admin: dict = Depends(require_admin)) -> list[dict]:
     return await db.get_admin_request_logs(limit, offset)
 
 
 @app.get("/api/admin/benchmark")
-async def admin_benchmark() -> dict:
+async def admin_benchmark(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     import json as json_mod
     benchmark_path = Path(__file__).resolve().parent.parent / "eval" / "benchmark_results.json"
     if not benchmark_path.exists():
@@ -915,7 +971,7 @@ _EMPTY_JUDGE = {
 
 
 @app.get("/api/admin/judge")
-async def admin_judge() -> dict:
+async def admin_judge(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     import json as json_mod
     judge_path = Path(__file__).resolve().parent.parent / "eval" / "judge_results.json"
     if not judge_path.exists():

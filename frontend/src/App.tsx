@@ -49,6 +49,9 @@ import { useChat } from "./lib/useChat";
 import { useConversationRouter } from "./lib/useConversationRouter";
 import { buildReportData, type ReportData } from "./lib/reportBuilder";
 import { ExportReport } from "./components/ExportReport";
+import { useAuthContext } from "./contexts/AuthContext";
+import AuthModal from "./components/AuthModal";
+import UserMenu from "./components/UserMenu";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -91,6 +94,8 @@ export function App() {
   const [dataTabViewed, setDataTabViewed] = useState(true);
   const [sourcesTabViewed, setSourcesTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user, isAuthenticated, authRequired, signIn, signOut } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -246,6 +251,10 @@ export function App() {
   const active = messages.length > 0 || streaming;
 
   async function sendMessage(text: string) {
+    if (authRequired && !isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     setHistoryOpen(false);
     let cid = conversationId;
     if (!cid) {
@@ -698,15 +707,18 @@ export function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                 </button>
-                <Link
-                  to="/admin"
-                  className="hidden md:flex px-2 py-1.5 text-text-muted hover:text-text-secondary transition-colors"
-                  title="Admin dashboard"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                  </svg>
-                </Link>
+                {user?.tier === "admin" && (
+                  <Link
+                    to="/admin"
+                    className="hidden md:flex px-2 py-1.5 text-text-muted hover:text-text-secondary transition-colors"
+                    title="Admin dashboard"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                    </svg>
+                  </Link>
+                )}
+                {user && <UserMenu user={user} onSignOut={signOut} />}
               </div>
             </header>
 
@@ -789,6 +801,13 @@ export function App() {
         <ExportReport
           report={exportReport}
           onClose={() => setExportReport(null)}
+        />
+      )}
+
+      {showAuthModal && (
+        <AuthModal
+          onSignIn={signIn}
+          onClose={() => setShowAuthModal(false)}
         />
       )}
     </main>

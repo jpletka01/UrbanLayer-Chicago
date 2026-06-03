@@ -6,16 +6,24 @@ import './index.css'
 import { App } from './App.tsx'
 import { AboutPage } from './components/AboutPage.tsx'
 import { AdminDashboard } from './components/AdminDashboard.tsx'
+import { AuthProvider } from './contexts/AuthContext.tsx'
+import ProtectedRoute from './components/ProtectedRoute.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/c/:id" element={<App />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/c/:id" element={<App />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/admin" element={
+            <ProtectedRoute tier="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )

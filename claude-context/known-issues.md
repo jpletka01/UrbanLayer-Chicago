@@ -57,6 +57,13 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
-- **Deployment** — No CI/CD pipeline. Docker setup is complete (backend + frontend + Qdrant via docker-compose) but no cloud hosting configured.
+- **DNS + TLS** — Domain (`urbanlayerchicago.com`) purchased via Namecheap. Cloudflare DNS setup in progress, SSL certificate propagating. Server is live but not reachable by domain name yet.
+- **CI/CD** — No GitHub Actions pipeline. Manual deploy via SSH + `docker compose up`. Pipeline planned (Phase 6).
+- **Monitoring** — No Sentry or uptime monitoring. Planned for Phase 8.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production.
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
+- **Google Cloud OAuth app** — OAuth client ID needs to be created in Google Cloud Console with `https://urbanlayerchicago.com/api/auth/google/callback` as authorized redirect URI.
+
+## Deployment Status (2026-06-03)
+
+Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). Docker installed. Auth system (Google OAuth + JWT), rate limiting, and security hardening code is complete but not yet deployed to server. App not yet running on server (repo not cloned). Cloudflare DNS setup in progress (SSL cert propagating). Full status tracked in `claude-context/deployment-plan.md`.
