@@ -57,13 +57,19 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
-- **DNS + TLS** — Domain (`urbanlayerchicago.com`) purchased via Namecheap. Cloudflare DNS setup in progress, SSL certificate propagating. Server is live but not reachable by domain name yet.
-- **CI/CD** — No GitHub Actions pipeline. Manual deploy via SSH + `docker compose up`. Pipeline planned (Phase 6).
-- **Monitoring** — No Sentry or uptime monitoring. Planned for Phase 8.
+- **DNS + TLS** — Domain (`urbanlayerchicago.com`) purchased via Namecheap. Cloudflare DNS setup not started — Namecheap nameservers need to be pointed to Cloudflare. Server is live on HTTP at `178.105.184.66` but not reachable by domain name.
+- **Qdrant data on server** — Server Qdrant is running but has no data. Municipal code vector search won't return results until local embeddings are snapshot-transferred. All other data sources work.
+- **CI/CD** — No GitHub Actions pipeline. Manual deploy via SSH + `git pull && docker compose up -d --build`. Pipeline planned (Phase 8).
+- **Monitoring** — No Sentry or uptime monitoring. Planned for Phase 9.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production.
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
-- **Google Cloud OAuth app** — OAuth client ID needs to be created in Google Cloud Console with `https://urbanlayerchicago.com/api/auth/google/callback` as authorized redirect URI.
+- **Google Cloud OAuth app** — OAuth client ID needs to be created in Google Cloud Console with `https://urbanlayerchicago.com/api/auth/google/callback` as authorized redirect URI. Until created, auth is disabled on the server (all users treated as admin).
 
 ## Deployment Status (2026-06-03)
 
-Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). Docker installed. Auth system (Google OAuth + JWT), rate limiting, and security hardening code is complete but not yet deployed to server. App not yet running on server (repo not cloned). Cloudflare DNS setup in progress (SSL cert propagating). Full status tracked in `claude-context/deployment-plan.md`.
+Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTP** — all 3 Docker services running (Qdrant, backend, frontend). GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Auth disabled on server (no Google OAuth client yet — all users admin). Qdrant is empty (vector search won't work until snapshot transfer). DNS/HTTPS not configured yet. Full status tracked in `claude-context/deployment-plan.md`.
+
+**Server deploy command** (from server `/opt/urbanlayer`):
+```bash
+git fetch origin && git merge origin/main && docker compose up -d --build
+```

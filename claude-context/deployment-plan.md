@@ -99,68 +99,47 @@ Google OAuth2 Authorization Code flow + self-rolled JWT sessions. Auth is opt-in
 5. Generate Origin Certificate from Cloudflare dashboard (SSL/TLS → Origin Server → Create Certificate). Save as `origin.pem` + `origin-key.pem`
 6. On server: `mkdir -p /etc/ssl/cloudflare && scp origin.pem origin-key.pem root@178.105.184.66:/etc/ssl/cloudflare/`
 
-### Phase 1 (remaining): Deploy App to Server
+### Phase 1 (remaining): Deploy App to Server — DONE (2026-06-03)
 
-App needs to be deployed (repo clone + `.env` + docker compose up). Can be done on HTTP first while waiting for SSL.
+- Repo cloned to `/opt/urbanlayer` on server (public GitHub repo: `jpletka01/UrbanLayer-Chicago`)
+- `.env` created with Anthropic, Socrata, Mapbox, WalkScore, Census keys + `DAILY_API_BUDGET_USD=5.00`
+- Auth keys left out (auth disabled = admin mode for all users)
+- All 3 services running on HTTP (port 80): Qdrant (healthy), backend (healthy), frontend (nginx)
+- Health check: `curl http://178.105.184.66/health` → `{"ok":true,"qdrant":true,"db":true}`
+- Frontend accessible at `http://178.105.184.66`
 
-**Steps**:
+**Issues resolved during deploy**:
+- `community_areas.geojson` was gitignored — un-gitignored and committed (needed by Dockerfile for `geo.py`)
+- `PyJWT` missing from `requirements.prod.txt` — added (backend crash-looped without it)
+- 3 TypeScript errors in frontend — `BarChart.tsx` was untracked (committed), `InfoTooltip.tsx` useRef init fix, `SidebarPanel.tsx` unused variable fix
+
+**To switch to HTTPS later**:
 ```bash
-# On server
-cd /opt && git clone https://github.com/<username>/chicago.git urbanlayer
-cd urbanlayer
-
-# Create .env with required keys
-cat > .env << 'EOF'
-ANTHROPIC_API_KEY=sk-ant-...
-SOCRATA_APP_TOKEN=...
-VITE_MAPBOX_TOKEN=pk.eyJ1...
-
-# Auth (set these when Google OAuth is configured)
-# GOOGLE_CLIENT_ID=...apps.googleusercontent.com
-# GOOGLE_CLIENT_SECRET=GOCSPX-...
-# JWT_SECRET=<generate with: python -c "import secrets; print(secrets.token_urlsafe(64))">
-# AUTH_COOKIE_SECURE=true
-# FRONTEND_URL=https://urbanlayerchicago.com
-
-# Production CORS
-# CORS_ORIGINS=["https://urbanlayerchicago.com","https://www.urbanlayerchicago.com"]
-
-# Budget cap
-DAILY_API_BUDGET_USD=5.00
-EOF
-
-chmod 600 .env
-
-# Start without HTTPS first
-docker compose up -d
-
-# Verify at http://178.105.184.66
-curl http://178.105.184.66/health
-
-# Later, with SSL certs in place:
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-### Phase 4 (Qdrant Data Transfer)
+### Phase 4: Qdrant Data Transfer — NOT STARTED
 
-Transfer municipal code embeddings from local machine to server. One-time operation.
+Transfer municipal code embeddings from local machine to server. One-time operation. **Without this, vector search (municipal code queries) returns no results.** All other data sources (Socrata APIs, ArcGIS, property domain, etc.) work without Qdrant data.
+
+**Prerequisite**: Local Qdrant must be running (`docker compose up -d qdrant`).
 
 ```bash
-# On local machine (Qdrant must be running locally)
+# On local machine
 curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
 # Note the snapshot filename from the response
 
 # Download snapshot
-curl -o snapshot.tar http://localhost:6333/collections/chicago_municipal_code/snapshots/<snapshot-name>
+curl -o qdrant-snapshot.tar http://localhost:6333/collections/chicago_municipal_code/snapshots/<name>
 
 # Upload to server
-scp snapshot.tar root@178.105.184.66:/tmp/
+scp qdrant-snapshot.tar root@178.105.184.66:/tmp/
 
 # On server — restore into Qdrant
-docker cp /tmp/snapshot.tar $(docker compose ps -q qdrant):/qdrant/snapshots/
+docker cp /tmp/qdrant-snapshot.tar $(docker compose ps -q qdrant):/qdrant/snapshots/
 curl -X PUT http://localhost:6333/collections/chicago_municipal_code/snapshots/recover \
   -H 'Content-Type: application/json' \
-  -d '{"location": "file:///qdrant/snapshots/snapshot.tar"}'
+  -d '{"location": "file:///qdrant/snapshots/qdrant-snapshot.tar"}'
 ```
 
 ### Phase 8: CI/CD Pipeline — NOT STARTED
@@ -219,10 +198,11 @@ DAILY_API_BUDGET_USD=5.00
 | Step | What | Status |
 |------|------|--------|
 | 1 | Provision Hetzner, Docker, harden | **Done** |
-| 2 | DNS + TLS (Cloudflare) | **In progress** — SSL cert propagating |
+| 1b | Deploy app to server (HTTP) | **Done** — all 3 services running at `http://178.105.184.66` |
+| 2 | DNS + TLS (Cloudflare) | **Not started** — Namecheap NS not yet pointed to Cloudflare |
 | 3 | Production nginx.conf | **Done** |
-| 4 | Transfer Qdrant snapshots | **Not started** |
-| 5 | Google OAuth + JWT auth | **Done** — code complete, needs Google Cloud OAuth client + server deploy |
+| 4 | Transfer Qdrant snapshots | **Not started** — required for municipal code vector search |
+| 5 | Google OAuth + JWT auth | **Done** — code complete, needs Google Cloud OAuth client + `.env` update on server |
 | 6 | Rate limiting + budget cap | **Done** |
 | 7 | Security hardening | **Done** |
 | 8 | CI/CD pipeline | **Not started** |
