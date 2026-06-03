@@ -9,6 +9,7 @@ import {
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
   zoneColor, zoneLineColor, zonePrefix, ZONE_INFO,
   overlayColor, overlayLineColor, overlayColorCSS, overlayLabel, incentiveLabel, OVERLAY_INFO,
+  incentiveZoneColor, incentiveZoneLineColor, incentiveZoneColorCSS,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
@@ -171,6 +172,12 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
 
   const hasZoning = !!(mapData?.zoning && (mapData.zoning as Record<string, unknown>)?.features &&
     ((mapData.zoning as Record<string, unknown>).features as unknown[]).length > 0);
+  const hasIncentiveZones = !!(mapData?.incentive_zones &&
+    (mapData.incentive_zones as Record<string, unknown>).features &&
+    ((mapData.incentive_zones as Record<string, unknown>).features as unknown[]).length > 0);
+  const hasOverlayDistricts = !!(mapData?.overlay_districts &&
+    (mapData.overlay_districts as Record<string, unknown>).features &&
+    ((mapData.overlay_districts as Record<string, unknown>).features as unknown[]).length > 0);
 
   // Reset sub-type filters when data changes
   useEffect(() => {
@@ -385,9 +392,6 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
 
     // Incentive zone boundary polygons (dashed outlines)
-    const hasIncentiveZones = mapData?.incentive_zones &&
-      (mapData.incentive_zones as Record<string, unknown>).features &&
-      ((mapData.incentive_zones as Record<string, unknown>).features as unknown[]).length > 0;
     if (showIncentives && hasIncentiveZones) {
       layers.push(
         new GeoJsonLayer({
@@ -395,13 +399,13 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
           data: mapData!.incentive_zones as unknown as GeoJSON.FeatureCollection,
           getFillColor: (f: unknown) => {
             const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
-            const zt = (props?.zone_type as string) ?? "";
-            return zt === "tif" ? [255, 87, 34, 25] as [number, number, number, number] : [76, 175, 80, 25] as [number, number, number, number];
+            const name = (props?.name as string) ?? (props?.zone_type as string) ?? "";
+            return incentiveZoneColor(name);
           },
           getLineColor: (f: unknown) => {
             const props = (f as Record<string, unknown>).properties as Record<string, unknown> | undefined;
-            const zt = (props?.zone_type as string) ?? "";
-            return zt === "tif" ? [255, 87, 34, 200] as [number, number, number, number] : [76, 175, 80, 200] as [number, number, number, number];
+            const name = (props?.name as string) ?? (props?.zone_type as string) ?? "";
+            return incentiveZoneLineColor(name);
           },
           lineWidthMinPixels: 2,
           getDashArray: [8, 4],
@@ -413,9 +417,6 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
 
     // Overlay district polygons (regulatory overlays)
-    const hasOverlayDistricts = mapData?.overlay_districts &&
-      (mapData.overlay_districts as Record<string, unknown>).features &&
-      ((mapData.overlay_districts as Record<string, unknown>).features as unknown[]).length > 0;
     if (showOverlays && hasOverlayDistricts) {
       layers.push(
         new GeoJsonLayer({
@@ -543,7 +544,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, showTransit, showIncentives, showOverlays, transitStations, parcelGeometry, overlayRef, contextRestored]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, hasIncentiveZones, hasOverlayDistricts, showTransit, showIncentives, showOverlays, transitStations, parcelGeometry, overlayRef, contextRestored]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -839,7 +840,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
         </div>
       )}
 
-      {!loading && !hasData && !hasZoning && mapReady && (
+      {!loading && !hasData && !hasZoning && !hasIncentiveZones && !hasOverlayDistricts && mapReady && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <span className="text-text-muted text-xs bg-dark-surface/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
             Ask a question to see data on the map
@@ -1025,8 +1026,7 @@ function renderDetailFields(item: SelectedItem) {
                 <span
                   className="w-2 h-2 rounded-full shrink-0"
                   style={{
-                    backgroundColor: inc.zone_type === "tif"
-                      ? "rgb(255,87,34)" : "rgb(76,175,80)"
+                    backgroundColor: incentiveZoneColorCSS(inc.name || inc.zone_type)
                   }}
                 />
                 <span className="text-text-primary font-medium">{incentiveLabel(inc.zone_type)}</span>

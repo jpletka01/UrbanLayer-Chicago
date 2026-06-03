@@ -12,7 +12,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/useChat.ts` | SSE consumption, message limit (10), activity tracking, plan/context/mapData attachment |
 | `src/lib/types.ts` | TypeScript types matching backend Pydantic models |
 | `src/lib/api.ts` | SSE streaming, conversation CRUD, map data, admin endpoints, fetchSection cache |
-| `src/lib/mapColors.ts` | Shared colors for map + charts + zone categories + OVERLAY_INFO/ZONE_INFO definitions |
+| `src/lib/mapColors.ts` | Shared colors for map + charts + zone categories + OVERLAY_INFO/ZONE_INFO definitions + hash-based incentive zone colors |
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
 | `src/components/InfoTooltip.tsx` | Hover/tap popover for domain terms (dotted underline trigger, portal-based) |
 | `src/lib/analytics.ts` | Client-side trend/pie computation from map data |

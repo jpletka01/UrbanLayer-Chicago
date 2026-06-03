@@ -425,6 +425,40 @@ export function overlayLabel(type: string): string {
   return OVERLAY_INFO[type]?.label ?? type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
+function nameToRgb(name: string): [number, number, number] {
+  const hue = hashStr(name) % 360;
+  return hslToRgb(hue, 0.65, 0.55);
+}
+
+export function incentiveZoneColor(name: string): [number, number, number, number] {
+  const rgb = nameToRgb(name);
+  return [rgb[0], rgb[1], rgb[2], 30];
+}
+
+export function incentiveZoneLineColor(name: string): [number, number, number, number] {
+  const rgb = nameToRgb(name);
+  return [rgb[0], rgb[1], rgb[2], 200];
+}
+
+export function incentiveZoneColorCSS(name: string): string {
+  const rgb = nameToRgb(name);
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
 export function incentiveLabel(zoneType: string): string {
   if (zoneType === "tif") return "TIF District";
   if (zoneType === "enterprise_zone") return "Enterprise Zone";

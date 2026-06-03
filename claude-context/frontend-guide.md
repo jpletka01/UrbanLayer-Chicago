@@ -98,6 +98,10 @@ Each assistant message stores the full context/plan/mapData from its turn, enabl
 
 Layer order (bottom → top): zoning polygons → overlay districts (semi-transparent fills) → incentive zones (dashed outlines) → parcel boundary (blue outline) → data dots (ScatterplotLayer) → transit stations (star markers) → address pin.
 
+Color assignment: zoning uses prefix-based palette (`ZONE_PREFIX_COLORS`), overlays use type-based palette (`OVERLAY_TYPE_COLORS`), incentive zones use deterministic hash-to-HSL per district name (`incentiveZoneColor` in `mapColors.ts`) so each TIF/EZ district gets a unique color automatically.
+
+Empty-state label ("Ask a question to see data on the map") hides when any renderable data is present: point data (crimes, 311, permits), zoning polygons, incentive zones, or overlay districts.
+
 Zoning/Points toggle (top-left): Points off hides scatter dots, shows zoning category legend.
 
 Click popups use `pickMultipleObjects` for overlapping features. Multi-zone clicks show combined popup with Base Zoning + Regulatory Overlays + Incentive Zones sections.
