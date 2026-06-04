@@ -76,6 +76,36 @@
       ]
     },
     {
+      "id": "vacant_buildings_coverage",
+      "question": "Are there reported vacant or abandoned buildings in Englewood?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "vacant_buildings_api",
+          "context_fields": ["vacant_buildings.total", "vacant_buildings.by_department"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*(?:vacant|abandoned|building|case|report)"],
+            "any_of_groups": [["POLICE", "BUILDINGS", "department", "violation", "fine", "secure"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "food_inspections_coverage",
+      "question": "How do restaurants fare in health inspections in Wicker Park?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "food_inspections_api",
+          "context_fields": ["food_inspections.total", "food_inspections.by_result", "food_inspections.fail_rate"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*(?:inspection|food|restaurant|establishment)"],
+            "any_of_groups": [["pass", "fail", "risk", "condition"]]
+          }
+        }
+      ]
+    },
+    {
       "id": "property_pin_characteristics",
       "question": "What property is at 443 W Wrightwood Ave, Chicago?",
       "category": "property_domain",

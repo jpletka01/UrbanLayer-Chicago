@@ -37,23 +37,23 @@ These work well enough but could break on edge cases:
 
 **PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist.
 
-## Source Coverage Benchmark Results (2026-06-02)
+## Source Coverage Benchmark Results (2026-06-04)
 
-The `eval/source_coverage.py` benchmark tests all 24 data sub-sources across 24 targeted queries. Results from the initial run:
+The `eval/source_coverage.py` benchmark tests 26 data sub-sources across 26 targeted queries. **27/37 sub-source checks covered** (73%).
 
 | Category | Sources | Result |
 |----------|---------|--------|
-| Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED (data in context + mentioned in synthesis) |
-| Property domain | PIN, characteristics, assessments, sales, tax | PIN FAILED via GIS (0/7) — now mitigated by Socrata Parcel Universe fallback. Re-run benchmark to verify. |
-| Regulatory domain | zoning, overlays, flood, brownfields | All COVERED |
-| Incentives domain | TIF, OZ, Enterprise Zone | All COVERED (including negative results) |
-| Neighborhood domain | demographics, census tract, transit | All COVERED |
-| WalkScore | walk/transit/bike scores | NOT_TESTED (API key not configured) |
-| Vector search | municipal code chunks | COVERED |
+| Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED |
+| Property domain | PIN, sales | COVERED. Characteristics/assessments show HALLUCINATION (synthesis mentions data not in context) |
+| Regulatory domain | flood | COVERED. Overlays, TOD, historic, brownfields: RETRIEVAL_GAP on specific test addresses |
+| Incentives domain | TIF, OZ, Enterprise Zone | All COVERED |
+| Neighborhood domain | demographics, census tract, transit | COVERED (transit has 1 gap on specific address) |
+| WalkScore | walk/transit/bike scores | SYNTHESIS_GAP (data retrieved but synthesis doesn't mention "score" format) |
+| Vector search | municipal code chunks | RETRIEVAL_GAP (Qdrant returned empty for test query) |
 
-**Cap report**: Permits, violations, and business now use grouped aggregation queries that never cap. 311 grouped limit increased 50→200. Crime (35 grouped rows) never caps. Re-run benchmark to verify updated cap rates.
+**Cap report**: No capped sources detected across all 26 queries. Grouped aggregation queries never cap.
 
-Run with: `python -m eval.source_coverage --full http://localhost:8001`
+Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
