@@ -140,14 +140,22 @@ async def geocode_address(
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        resp = await client.get(url, params=params)
-        resp.raise_for_status()
-        data = resp.json()
-        matches = data.get("result", {}).get("addressMatches") or []
-        if not matches:
-            return None
-        coords = matches[0]["coordinates"]
-        return float(coords["y"]), float(coords["x"])
+        for attempt in range(2):
+            try:
+                resp = await client.get(url, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                matches = data.get("result", {}).get("addressMatches") or []
+                if not matches:
+                    return None
+                coords = matches[0]["coordinates"]
+                return float(coords["y"]), float(coords["x"])
+            except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+                if attempt == 0:
+                    log.warning("Geocoder attempt 1 failed for %s: %s, retrying", address, exc)
+                    continue
+                log.warning("Geocoder failed after retry for %s: %s", address, exc)
+                return None
     finally:
         if owns:
             await client.aclose()

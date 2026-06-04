@@ -80,11 +80,14 @@ async def route(
     # even when the community area is already known from the LLM or alias table.
     if (location.get("resolved_address") or loc_type == "address") and raw_loc:
         geocode_input = location.get("resolved_address") or raw_loc
-        resolved_ca, coords = await resolve_address_to_community_area(geocode_input)
-        if ca is None:
-            ca = resolved_ca
-        if coords:
-            resolved_lat, resolved_lon = coords
+        try:
+            resolved_ca, coords = await resolve_address_to_community_area(geocode_input)
+            if ca is None:
+                ca = resolved_ca
+            if coords:
+                resolved_lat, resolved_lon = coords
+        except Exception:
+            log.warning("Geocoding failed for %s, continuing without lat/lon", geocode_input)
     if ca is not None:
         ca_name = COMMUNITY_AREAS.get(int(ca))
 

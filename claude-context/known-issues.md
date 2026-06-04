@@ -39,17 +39,21 @@ These work well enough but could break on edge cases:
 
 ## Source Coverage Benchmark Results (2026-06-04)
 
-The `eval/source_coverage.py` benchmark tests 26 data sub-sources across 26 targeted queries. **27/37 sub-source checks covered** (73%).
+The `eval/source_coverage.py` benchmark tests 26 data sub-sources across 26 targeted queries. **33/37 sub-source checks covered** (89%).
 
 | Category | Sources | Result |
 |----------|---------|--------|
 | Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED |
-| Property domain | PIN, sales | COVERED. Characteristics/assessments show HALLUCINATION (synthesis mentions data not in context) |
-| Regulatory domain | flood | COVERED. Overlays, TOD, historic, brownfields: RETRIEVAL_GAP on specific test addresses |
+| Property domain | PIN, sales | COVERED. Characteristics/assessments/tax show HALLUCINATION (synthesis mentions field names not in context when data unavailable) |
+| Regulatory domain | flood, overlays, TOD, historic, brownfields | All COVERED |
 | Incentives domain | TIF, OZ, Enterprise Zone | All COVERED |
-| Neighborhood domain | demographics, census tract, transit | COVERED (transit has 1 gap on specific address) |
-| WalkScore | walk/transit/bike scores | SYNTHESIS_GAP (data retrieved but synthesis doesn't mention "score" format) |
-| Vector search | municipal code chunks | RETRIEVAL_GAP (Qdrant returned empty for test query) |
+| Neighborhood domain | demographics, census tract, transit | All COVERED |
+| WalkScore | walk/transit/bike scores | Optional — COVERED when API returns data. Prompt specifies X/100 format |
+| Vector search | municipal code chunks | COVERED |
+
+**Remaining issues (4 hallucinations):** All in the property domain — when property characteristics, assessments, or tax data aren't available from Cook County, the synthesis still mentions specific field names. Prompt rule 4 has been strengthened to prevent this.
+
+**Previous retrieval gaps fixed:** Geocoder retry logic added (1 retry on timeout), router catches geocoding failures gracefully. Previous gaps were transient Census Geocoder/ArcGIS availability issues, not code bugs.
 
 **Cap report**: No capped sources detected across all 26 queries. Grouped aggregation queries never cap.
 

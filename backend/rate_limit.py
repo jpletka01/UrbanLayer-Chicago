@@ -7,6 +7,7 @@ window counters keyed by user_id (or IP for anonymous users).
 from __future__ import annotations
 
 import logging
+import os
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -17,13 +18,17 @@ from backend.auth import get_current_user
 
 log = logging.getLogger(__name__)
 
-# Tier limits: (queries_per_day, queries_per_hour)
-_TIER_LIMITS: dict[str, tuple[int, int]] = {
-    "anonymous": (3, 3),
-    "free": (25, 10),
-    "premium": (100, 30),
-    "admin": (0, 0),  # 0 = unlimited
-}
+
+def _tier_limits() -> dict[str, tuple[int, int]]:
+    return {
+        "anonymous": (
+            int(os.environ.get("RATE_LIMIT_ANON_DAY", "3")),
+            int(os.environ.get("RATE_LIMIT_ANON_HOUR", "3")),
+        ),
+        "free": (25, 10),
+        "premium": (100, 30),
+        "admin": (0, 0),
+    }
 
 
 @dataclass
@@ -70,7 +75,7 @@ async def check_rate_limit(request: Request) -> dict | None:
     except RuntimeError:
         user = None
     tier = _get_tier(user)
-    day_limit, hour_limit = _TIER_LIMITS.get(tier, (3, 3))
+    day_limit, hour_limit = _tier_limits().get(tier, (3, 3))
 
     if day_limit == 0 and hour_limit == 0:
         return user

@@ -184,6 +184,16 @@ DAILY_API_BUDGET_USD=5.00
 | 8 | CI/CD pipeline | **Done** — `.github/workflows/ci.yml`: pytest + tsc on PR, SSH deploy on merge. Needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub secrets |
 | 9 | Monitoring (Sentry + UptimeRobot) | **Done** — UptimeRobot configured, Sentry active (EU region, DSN values in server `.env`) |
 
+## Database Backups
+
+SQLite backup script at `scripts/backup_db.sh` — uses `sqlite3 .backup` for WAL-safe copies, retains 7 days.
+
+**Server cron setup** (run once on server):
+```bash
+crontab -e
+# Add: 0 3 * * * /opt/urbanlayer/scripts/backup_db.sh /opt/urbanlayer/backend/data/urbanlayer.db /opt/urbanlayer/backups 7
+```
+
 ## Verification Checklist (post-deploy)
 
 1. `curl -I https://urbanlayerchicago.com` → 200 with HSTS + security headers

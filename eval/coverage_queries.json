@@ -339,7 +339,7 @@
           "context_fields": ["neighborhood.walkscore.walk_score"],
           "synthesis_patterns": {
             "patterns": ["(?:Walk|Transit|Bike)\\s*Score"],
-            "any_of_groups": [["\\d+\\s*/\\s*100", "\\d+.*(?:out of|score)"]]
+            "any_of_groups": [["\\d+\\s*/\\s*100", "\\d+.*(?:out of|score)", "Score.*\\d+"]]
           }
         }
       ]

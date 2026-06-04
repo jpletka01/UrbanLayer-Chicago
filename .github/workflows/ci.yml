@@ -35,6 +35,9 @@ jobs:
       - name: TypeScript type check
         run: cd frontend && npx tsc --noEmit
 
+      - name: Frontend build
+        run: cd frontend && npm run build
+
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
