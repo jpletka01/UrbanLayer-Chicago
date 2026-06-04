@@ -464,6 +464,48 @@
           }
         }
       ]
+    },
+    {
+      "id": "grant_programs_coverage",
+      "question": "What city grant programs have funded projects in Pilsen?",
+      "category": "incentives_domain",
+      "checks": [
+        {
+          "sub_source": "incentives_grants",
+          "context_fields": ["incentives.grant_programs.total_projects|incentives.grant_programs.total_funding"],
+          "synthesis_patterns": {
+            "any_of_groups": [["SBIF", "Small Business Improvement", "Neighborhood Opportunity", "NOF", "grant", "no grant", "no city grant"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "aro_housing_coverage",
+      "question": "What affordable housing projects exist under the ARO in Logan Square?",
+      "category": "regulatory_domain",
+      "checks": [
+        {
+          "sub_source": "regulatory_aro_housing",
+          "context_fields": ["regulatory.aro_housing.total_projects|regulatory.aro_housing.total_units"],
+          "synthesis_patterns": {
+            "any_of_groups": [["ARO", "Affordable Requirements", "affordable housing", "affordable unit", "no ARO", "no affordable"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tax_incentive_class_coverage",
+      "question": "What tax incentive classification applies to the property at 5600 W Chicago Ave, Chicago?",
+      "category": "incentives_domain",
+      "checks": [
+        {
+          "sub_source": "incentives_tax_class",
+          "context_fields": ["incentives.property_tax_class|incentives.tax_incentive_description"],
+          "synthesis_patterns": {
+            "any_of_groups": [["class 6", "class 7", "class 8", "6b", "7a", "7b", "7c", "incentive class", "tax incentive", "no special", "standard class", "no tax incentive"]]
+          }
+        }
+      ]
     }
   ]
 }
