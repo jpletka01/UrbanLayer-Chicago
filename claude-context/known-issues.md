@@ -57,12 +57,17 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 
 ## Not Yet Built
 
-- **Sentry** — Active on production (EU region, `ingest.de.sentry.io`). Backend (FastAPI) and frontend (React) both reporting.
 - **CI/CD deploy secrets** — Pipeline runs tests on PRs but deploy job needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
 
-## Deployment Status (2026-06-03)
+## Operational Status
+
+- **Sentry** — Active on production (EU region, `ingest.de.sentry.io`). Backend (FastAPI) and frontend (React) both reporting.
+- **UptimeRobot** — Configured for `/health` checks.
+- **Vacant buildings dataset** — Chicago Data Portal dataset `kc9i-wq85` is sparsely updated (only 8 records in 2025). Query has no date filter — returns all historical cases for the community area.
+
+## Deployment Status (2026-06-04)
 
 Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Google OAuth active. Qdrant has 14,535 vectors (municipal code search operational). CI/CD pipeline deployed. UptimeRobot monitoring active. Full status tracked in `claude-context/deployment-plan.md`.
 

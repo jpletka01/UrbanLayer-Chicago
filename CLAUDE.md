@@ -28,7 +28,7 @@ cd frontend && npm run dev                        # :5173
 kill $(lsof -ti:8001) 2>/dev/null; uvicorn backend.main:app --reload --port 8001
 kill $(lsof -ti:5173) 2>/dev/null; cd frontend && npm run dev
 
-python -m pytest backend/tests/ -q                # 380 tests
+python -m pytest backend/tests/ -q                # ~430 tests
 cd frontend && npx tsc --noEmit                   # type check
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark

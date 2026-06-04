@@ -14,7 +14,7 @@ All expansion phases from the original `chicago_expansion_plan.md` are complete:
 | Phase 6 | Frontend Integration | Done — PropertyCard, RegulatoryCard, IncentivesCard, NeighborhoodCard, map overlay/incentive polygons |
 | Phase 7 | Polish & Optimization | Done — TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion (39 queries), overlay/incentive map geometry |
 
-Original Buckets 1-3 also complete: mobile responsiveness, file upload, admin dashboard, LLM-as-judge eval, legal-domain reranker, data source coverage benchmark (24 queries across all 24 sub-sources).
+Original Buckets 1-3 also complete: mobile responsiveness, file upload, admin dashboard, LLM-as-judge eval, legal-domain reranker, data source coverage benchmark (26 queries across 26 sub-sources, 73% coverage rate).
 
 ## Remaining Opportunities (Tier 3)
 
@@ -44,4 +44,4 @@ These were identified as "nice to have" and not yet implemented:
 | Qdrant data transfer | Done — 14,535 vectors snapshot-transferred |
 | Google OAuth setup | Done — OAuth client configured, auth active on server |
 | CI pipeline (tests + type check) | Done — `.github/workflows/ci.yml`, needs GitHub secrets for deploy job |
-| Monitoring / alerting | Partial — UptimeRobot active, Sentry SDK integrated (needs DSN) |
+| Monitoring / alerting | Done — UptimeRobot active, Sentry active (EU region DSNs configured) |
