@@ -18,6 +18,10 @@ Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Tok
 | TIF Annual Report Projects | `72uz-ikdv` | tif_district, report_year, public_funds, current_year_payments, project_name, status | Per-project financial data. Queried by `tif_district` (not tif_name). Conditional query when point-based TIF hit |
 | TIF Fund Analysis | `qm7s-3ctt` | tif_district, report_year, property_tax_increment_current/cumulative, total_expenditure, fund_balance, net_income | District-level annual financials. Primary source for TIF revenue/expenditure/balance headlines |
 | Enterprise Zone Boundaries | `64xf-pyvh` | geometry, zone_name | Preloaded at startup |
+| SBIF Projects | `etqr-sz5x` | project_name, community_area, incentive_amount, total_project_cost, property_type, project_description, completion_date, tif_district | 2,152 records. Small Business Improvement Fund grants in TIF districts | Queried by community_area name match (limit 15) |
+| NOF Large Grants | `j7ew-b73u` | project_name, community_area, incentive_amount, total_project_cost, property_type, project_description, completion_date | 6 records. Neighborhood Opportunity Fund large grants | Queried by community_area (limit 15) |
+| NOF Small Grants | `rym7-49n8` | Same schema as NOF Large | 126 records. Neighborhood Opportunity Fund small grants | Queried by community_area (limit 15) |
+| ARO Housing | `s6ha-ppgi` | property_name, address, units, property_type, community_area, community_area_number, management_company, lat/lon | 598 records. Affordable Requirements Ordinance housing projects | Queried by community_area_number (limit 20) |
 | ACS 5-Year by Community Area | `t68z-cikk` | population, income brackets, poverty | Demographics (estimated medians) |
 | Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |
 

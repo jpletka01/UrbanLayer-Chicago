@@ -25,7 +25,7 @@
 ```
 retrieval/
 ├── socrata.py              # Shared async client: socrata_get(), grouped_count(), socrata_aggregate() with retry/backoff
-├── cache.py                # TTLCache utility (17 caches across all modules)
+├── cache.py                # TTLCache utility (25 caches across all modules)
 ├── crime.py                # Crime API (aggregated + block-level, parallel arrest counts)
 ├── three11.py              # 311 API (open requests + response times, Open-Dup filtered, 200 grouped limit)
 ├── buildings.py            # Permits (grouped by type + detail sample) + violations (status counts + detail sample)
@@ -38,8 +38,8 @@ retrieval/
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
 ├── utils.py                # Shared helpers (cutoff_iso)
 ├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel
-├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel
-├── incentives/             # Orchestrator: point-based [TIF, EZ] parallel → conditional [financials, OZ]; OR community-area-based TIF district listing
+├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA)
+├── incentives/             # Orchestrator: point-based [TIF, EZ, grants] parallel → conditional [financials, OZ]; OR community-area-based TIF + grants. grant_programs.py queries SBIF + NOF
 └── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore] parallel
 ```
 

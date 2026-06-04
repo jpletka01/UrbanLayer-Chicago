@@ -10,10 +10,10 @@ User Message
   ├─ LLM Router (Sonnet) ─── produces RetrievalPlan JSON
   │
   ├─ Parallel Retrieval (asyncio.gather)
-  │   ├─ Socrata APIs ─── crime, 311, permits, violations, business
+  │   ├─ Socrata APIs ─── crime, 311, permits, violations, business, vacant, food inspections
   │   ├─ Vector Search ─── Qdrant semantic search + cross-ref expansion
   │   ├─ ArcGIS Zoning ─── point lookup (zone class) + polygon fetch (map overlay)
-  │   ├─ Domain Orchestrators ─── property, regulatory, incentives, neighborhood
+  │   ├─ Domain Orchestrators ─── property, regulatory (+ARO housing), incentives (+grants), neighborhood
   │   └─ Map Data ─── raw geo-located rows for map + analytics
   │
   ├─ Context Assembly ─── merges results into ContextObject
@@ -53,17 +53,19 @@ Address → lat/lon → Cook County GIS Parcel (primary) or Socrata Parcel Unive
   → [Characteristics, Assessments, Sales, Tax Estimate] in parallel
 ```
 
-**Regulatory** (keyed on lat/lon, fully parallel):
+**Regulatory** (keyed on lat/lon, fully parallel + ARO enrichment):
 ```
 lat/lon → [Zoning Layers 1-24, FEMA Flood, EPA Brownfields] all in parallel
+community_area → ARO Housing projects (parallel with overlays, enriches RegulatorySummary)
 ```
 
-**Incentives** (keyed on lat/lon or community area, two-phase):
+**Incentives** (keyed on lat/lon or community area, two-phase + grants):
 ```
-lat/lon → [TIF boundary, Enterprise Zone] in parallel
+lat/lon → [TIF boundary, Enterprise Zone, Grant Programs (SBIF+NOF)] in parallel
   → conditional: TIF fund analysis + project financials (if TIF hit), Opportunity Zone (needs tract)
-community_area → all active TIF districts via comm_area matching
+community_area → [all active TIF districts via comm_area matching, Grant Programs]
   → fund analysis for each district in parallel
+Post-retrieval: assembler checks property class code for tax incentive classification (6b/7a/7b/8)
 ```
 
 **Neighborhood** (keyed on community area + lat/lon):

@@ -149,6 +149,19 @@ class OverlayDistrict(BaseModel):
     description: str | None = None
 
 
+class AROHousingProject(BaseModel):
+    name: str
+    address: str | None = None
+    units: int | None = None
+    property_type: str | None = None
+
+
+class AROHousingSummary(BaseModel):
+    total_projects: int = 0
+    total_units: int = 0
+    projects: list[AROHousingProject] = Field(default_factory=list)
+
+
 class RegulatorySummary(BaseModel):
     overlays: list[OverlayDistrict] = Field(default_factory=list)
     in_planned_development: bool = False
@@ -169,6 +182,7 @@ class RegulatorySummary(BaseModel):
     flood_zone_subtype: str | None = None
     in_special_flood_hazard: bool = False
     brownfield_sites: list[dict] = Field(default_factory=list)
+    aro_housing: AROHousingSummary | None = None
 
 
 class AssessmentRecord(BaseModel):
@@ -213,6 +227,23 @@ class PropertySummary(BaseModel):
     parcel_geometry: dict | None = None
 
 
+class GrantProject(BaseModel):
+    name: str
+    program: str
+    incentive_amount: float | None = None
+    total_cost: float | None = None
+    property_type: str | None = None
+    description: str | None = None
+    date: str | None = None
+
+
+class GrantProgramSummary(BaseModel):
+    total_projects: int = 0
+    total_funding: float = 0.0
+    by_program: dict[str, int] = Field(default_factory=dict)
+    recent_projects: list[GrantProject] = Field(default_factory=list)
+
+
 class IncentivesSummary(BaseModel):
     in_tif_district: bool = False
     tif_name: str | None = None
@@ -232,6 +263,9 @@ class IncentivesSummary(BaseModel):
     in_enterprise_zone: bool = False
     enterprise_zone_name: str | None = None
     census_tract: str | None = None
+    property_tax_class: str | None = None
+    tax_incentive_description: str | None = None
+    grant_programs: GrantProgramSummary | None = None
 
 
 class DemographicsSummary(BaseModel):

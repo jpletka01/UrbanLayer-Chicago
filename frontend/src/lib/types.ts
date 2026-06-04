@@ -180,6 +180,20 @@ export interface RegulatorySummary {
   flood_zone_subtype: string | null;
   in_special_flood_hazard: boolean;
   brownfield_sites: Record<string, unknown>[];
+  aro_housing: AROHousingSummary | null;
+}
+
+export interface AROHousingProject {
+  name: string;
+  address: string | null;
+  units: number | null;
+  property_type: string | null;
+}
+
+export interface AROHousingSummary {
+  total_projects: number;
+  total_units: number;
+  projects: AROHousingProject[];
 }
 
 export interface AssessmentRecord {
@@ -243,6 +257,26 @@ export interface IncentivesSummary {
   in_enterprise_zone: boolean;
   enterprise_zone_name: string | null;
   census_tract: string | null;
+  property_tax_class: string | null;
+  tax_incentive_description: string | null;
+  grant_programs: GrantProgramSummary | null;
+}
+
+export interface GrantProject {
+  name: string;
+  program: string;
+  incentive_amount: number | null;
+  total_cost: number | null;
+  property_type: string | null;
+  description: string | null;
+  date: string | null;
+}
+
+export interface GrantProgramSummary {
+  total_projects: number;
+  total_funding: number;
+  by_program: Record<string, number>;
+  recent_projects: GrantProject[];
 }
 
 export interface DemographicsSummary {

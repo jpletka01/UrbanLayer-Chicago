@@ -8,7 +8,7 @@
 
 **Demographics median values are estimated**: The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is interpolated from the bracket containing the 50th percentile. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Census tract-level demographics (via Census Reporter API) now provide all housing fields: median home value (B25077), median gross rent (B25064), owner-occupied % (B25003), vacancy rate (B25002), and bachelor's degree % (B15003).
 
-**Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. Our `_categorize_violation()` does first-match keyword bucketing into 16 custom categories. The dataset also has a `violation_code` numeric field we're not using, which might give more reliable groupings.
+**Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. Our `_categorize_violation()` does first-match keyword bucketing into 18 custom categories, supplemented by code-prefix mapping (EV→Elevator, BR→Boiler) using the `violation_code` field. The code prefixes are heterogeneous alphanumeric strings, so full code-to-category mapping isn't practical — keyword matching remains the primary strategy.
 
 **FEMA endpoint flakiness**: The FEMA NFHL MapServer occasionally returns 500 errors or empty results. Graceful degradation handles this (flood zone shows as "Unknown" rather than failing the whole request).
 
@@ -51,7 +51,7 @@ The `eval/source_coverage.py` benchmark tests 26 data sub-sources across 26 targ
 | WalkScore | walk/transit/bike scores | Optional — COVERED when API returns data. Prompt specifies X/100 format |
 | Vector search | municipal code chunks | COVERED |
 
-**Remaining issues (4 hallucinations):** All in the property domain — when property characteristics, assessments, or tax data aren't available from Cook County, the synthesis still mentions specific field names. Prompt rule 4 has been strengthened to prevent this.
+**Remaining issues (4 hallucinations):** All in the property domain — when property characteristics, assessments, or tax data aren't available from Cook County, the synthesis still mentions specific field names. Prompt rules 4 and 12 have been significantly strengthened: rule 4 now requires verifying non-null values in context JSON before mentioning any property field; rule 12 instructs to skip null fields entirely rather than noting them as unavailable. Needs re-verification with `source_coverage` benchmark.
 
 **Previous retrieval gaps fixed:** Geocoder retry logic added (1 retry on timeout), router catches geocoding failures gracefully. Previous gaps were transient Census Geocoder/ArcGIS availability issues, not code bugs.
 
@@ -61,15 +61,25 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 
 ## Not Yet Built
 
-- **CI/CD deploy secrets** — Pipeline runs tests on PRs but deploy job needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets.
+- ~~**Automated code review**~~ — **Done** — `.github/workflows/code-review.yml` uses `anthropics/claude-code-action@v1` to review PRs on open/synchronize. Requires `ANTHROPIC_API_KEY` in GitHub Secrets.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
+
+## Outstanding Work
+
+- **Re-run source coverage benchmark** — Prompt rules 4 and 12 were strengthened to fix property domain hallucinations, but the benchmark hasn't been re-run to verify the fix. Run: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.source_coverage --full http://localhost:8001`
+- **Add coverage eval queries for new sources** — Grant programs (SBIF/NOF), ARO housing, and tax incentive classes need coverage queries added to `eval/coverage_queries.json` to be tracked in the benchmark.
+- **Deploy Tier 3 to production** — All new integrations need to be pushed and deployed to the server.
+- **Verify code-review GitHub Action** — `.github/workflows/code-review.yml` needs `ANTHROPIC_API_KEY` in GitHub Secrets (should already be there from CI). Test by opening a PR.
 
 ## Operational Status
 
 - **Sentry** — Active on production (EU region, `ingest.de.sentry.io`). Backend (FastAPI) and frontend (React) both reporting.
 - **UptimeRobot** — Configured for `/health` checks.
+- **CI/CD** — Tests + type check + auto-deploy on push to main. Claude Code review on PR open/synchronize.
 - **Vacant buildings dataset** — Chicago Data Portal dataset `kc9i-wq85` is sparsely updated (only 8 records in 2025). Query has no date filter — returns all historical cases for the community area.
+- **Grant programs datasets** — SBIF (`etqr-sz5x`, 2,152 records) is historical and complete. NOF large (`j7ew-b73u`, 6 records) and small (`rym7-49n8`, 126 records) are small but meaningful.
+- **ARO housing dataset** — `s6ha-ppgi` (598 records). Relatively stable, not frequently updated.
 
 ## Deployment Status (2026-06-04)
 
