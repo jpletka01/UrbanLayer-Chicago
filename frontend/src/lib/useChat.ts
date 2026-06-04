@@ -19,6 +19,8 @@ const SOURCE_LABELS: Record<SourceTag, string> = {
   permits_api: "Checking building permits",
   violations_api: "Pulling building violations",
   business_api: "Searching business licenses",
+  vacant_buildings_api: "Checking vacant building reports",
+  food_inspections_api: "Loading food inspection records",
   vector_search: "Searching municipal code",
   regulatory_domain: "Checking zoning & regulatory overlays",
   property_domain: "Looking up property records",
