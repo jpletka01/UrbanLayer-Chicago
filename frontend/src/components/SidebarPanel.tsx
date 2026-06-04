@@ -17,6 +17,8 @@ function countDataCategories(ctx: ContextObject | null): number {
   if (ctx.permits) count++;
   if (ctx.violations) count++;
   if (ctx.businesses) count++;
+  if (ctx.vacant_buildings) count++;
+  if (ctx.food_inspections) count++;
   if (ctx.parcel_zoning) count++;
   if (ctx.regulatory) count++;
   if (ctx.property) count++;

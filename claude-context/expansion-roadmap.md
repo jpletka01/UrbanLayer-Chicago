@@ -26,8 +26,8 @@ These were identified as "nice to have" and not yet implemented:
 | SBIF Projects | Low-Medium | Low | Historical grant data on Socrata |
 | Neighborhood Opportunity Fund | Low-Medium | Low | Grant data on Socrata |
 | ARO Housing Data | Low-Medium | Low | Affordable housing datasets |
-| Food Inspections | Low | Low | Useful for restaurant/food business queries |
-| Vacant Buildings | Low-Medium | Low | Investment opportunity signal |
+| ~~Food Inspections~~ | ~~Low~~ | ~~Low~~ | **Done** — `food_inspections_api`, pass/fail/risk breakdown, recent inspections |
+| ~~Vacant Buildings~~ | ~~Low-Medium~~ | ~~Low~~ | **Done** — `vacant_buildings_api`, by-department counts, recent reports with fines |
 | Illinois Professional Licenses | Low | Medium | Different Socrata portal (data.illinois.gov) |
 
 ## Production Readiness

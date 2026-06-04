@@ -16,6 +16,10 @@ from backend.models import (
     RegulatorySummary,
     RetrievalPlan,
     ThreeOneOneSummary,
+    FoodInspectionDetail,
+    FoodInspectionSummary,
+    VacantBuildingReport,
+    VacantBuildingSummary,
     ViolationSummary,
     ZoningSummary,
 )
@@ -230,6 +234,96 @@ def _business_summary(data: dict[str, Any]) -> BusinessSummary | None:
     )
 
 
+def _vacant_building_summary(data: dict[str, Any]) -> VacantBuildingSummary | None:
+    grouped = data.get("grouped", [])
+    detail = data.get("detail", [])
+    if not grouped and not detail:
+        return None
+
+    by_dept: dict[str, int] = {}
+    total = 0
+    for row in grouped:
+        dept = (row.get("issuing_department") or "").strip()
+        count = int(row.get("count", 0))
+        if dept:
+            by_dept[dept] = count
+        total += count
+
+    recent: list[VacantBuildingReport] = []
+    for row in detail[:10]:
+        addr = (row.get("property_address") or "").strip()
+        if not addr:
+            continue
+        due = None
+        raw_due = row.get("current_amount_due")
+        if raw_due:
+            try:
+                due = float(raw_due)
+            except (TypeError, ValueError):
+                pass
+        recent.append(VacantBuildingReport(
+            address=addr,
+            date=row.get("issued_date", "")[:10] or None,
+            violation_type=(row.get("violation_type") or "")[:200] or None,
+            responsible_entity=(row.get("entity_or_person_s_") or "").strip() or None,
+            amount_due=due if due and due > 0 else None,
+        ))
+
+    return VacantBuildingSummary(
+        total=total,
+        by_department=dict(sorted(by_dept.items(), key=lambda kv: kv[1], reverse=True)),
+        recent_reports=recent,
+    )
+
+
+def _food_inspection_summary(data: dict[str, Any]) -> FoodInspectionSummary | None:
+    by_result_rows = data.get("by_result", [])
+    by_risk_rows = data.get("by_risk", [])
+    detail = data.get("detail", [])
+    if not by_result_rows and not by_risk_rows and not detail:
+        return None
+
+    by_result: dict[str, int] = {}
+    total = 0
+    for row in by_result_rows:
+        res = (row.get("results") or "").strip()
+        count = int(row.get("count", 0))
+        if res:
+            by_result[res] = count
+        total += count
+
+    by_risk: dict[str, int] = {}
+    for row in by_risk_rows:
+        risk = (row.get("risk") or "").strip()
+        count = int(row.get("count", 0))
+        if risk:
+            by_risk[risk] = count
+
+    fail_count = by_result.get("Fail", 0)
+    fail_rate = round(fail_count / total * 100, 1) if total > 0 else None
+
+    recent: list[FoodInspectionDetail] = []
+    for row in detail[:10]:
+        name = (row.get("dba_name") or "").strip()
+        if not name:
+            continue
+        recent.append(FoodInspectionDetail(
+            name=name,
+            facility_type=(row.get("facility_type") or "").strip() or None,
+            risk=(row.get("risk") or "").strip() or None,
+            result=(row.get("results") or "").strip() or None,
+            date=row.get("inspection_date", "")[:10] or None,
+        ))
+
+    return FoodInspectionSummary(
+        total=total,
+        by_result=dict(sorted(by_result.items(), key=lambda kv: kv[1], reverse=True)),
+        by_risk=dict(sorted(by_risk.items(), key=lambda kv: kv[1], reverse=True)),
+        fail_rate=fail_rate,
+        recent_inspections=recent,
+    )
+
+
 def assemble_context(
     *,
     plan: RetrievalPlan,
@@ -239,6 +333,8 @@ def assemble_context(
     permit_data: dict[str, Any] | None = None,
     violation_data: dict[str, Any] | None = None,
     business_data: dict[str, Any] | None = None,
+    vacant_data: dict[str, Any] | None = None,
+    food_inspection_data: dict[str, Any] | None = None,
     code_chunks: list[CodeChunk] | None = None,
     zoning_info: dict[str, Any] | None = None,
     regulatory_summary: RegulatorySummary | None = None,
@@ -254,6 +350,8 @@ def assemble_context(
     permits = _permit_summary(permit_data) if permit_data is not None else None
     violations = _violation_summary(violation_data) if violation_data is not None else None
     businesses = _business_summary(business_data) if business_data is not None else None
+    vacant = _vacant_building_summary(vacant_data) if vacant_data is not None else None
+    food = _food_inspection_summary(food_inspection_data) if food_inspection_data is not None else None
     chunks = sorted(code_chunks or [], key=lambda c: c.score, reverse=True)[:settings.top_chunks]
 
     data_as_of = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -282,6 +380,8 @@ def assemble_context(
         permits=permits,
         violations=violations,
         businesses=businesses,
+        vacant_buildings=vacant,
+        food_inspections=food,
         code_chunks=chunks,
         parcel_zoning=parcel_zoning,
         regulatory=regulatory_summary,

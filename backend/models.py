@@ -9,6 +9,8 @@ SourceTag = Literal[
     "permits_api",
     "violations_api",
     "business_api",
+    "vacant_buildings_api",
+    "food_inspections_api",
     "vector_search",
     "regulatory_domain",
     "property_domain",
@@ -101,6 +103,36 @@ class BusinessSummary(BaseModel):
     by_license_type: dict[str, int] = Field(default_factory=dict)
     top_activities: list[str]
     capped: bool = False
+
+
+class VacantBuildingReport(BaseModel):
+    address: str
+    date: str | None = None
+    violation_type: str | None = None
+    responsible_entity: str | None = None
+    amount_due: float | None = None
+
+
+class VacantBuildingSummary(BaseModel):
+    total: int
+    by_department: dict[str, int] = Field(default_factory=dict)
+    recent_reports: list[VacantBuildingReport] = Field(default_factory=list)
+
+
+class FoodInspectionDetail(BaseModel):
+    name: str
+    facility_type: str | None = None
+    risk: str | None = None
+    result: str | None = None
+    date: str | None = None
+
+
+class FoodInspectionSummary(BaseModel):
+    total: int
+    by_result: dict[str, int] = Field(default_factory=dict)
+    by_risk: dict[str, int] = Field(default_factory=dict)
+    fail_rate: float | None = None
+    recent_inspections: list[FoodInspectionDetail] = Field(default_factory=list)
 
 
 class ZoningSummary(BaseModel):
@@ -232,6 +264,9 @@ class CensusTractDemographics(BaseModel):
     per_capita_income: int | None = None
     median_age: float | None = None
     median_home_value: int | None = None
+    median_gross_rent: int | None = None
+    owner_occupied_pct: float | None = None
+    vacancy_rate: float | None = None
     poverty_rate: float | None = None
     bachelors_or_higher_pct: float | None = None
     foreign_born_pct: float | None = None
@@ -323,6 +358,8 @@ class ContextObject(BaseModel):
     permits: PermitSummary | None = None
     violations: ViolationSummary | None = None
     businesses: BusinessSummary | None = None
+    vacant_buildings: VacantBuildingSummary | None = None
+    food_inspections: FoodInspectionSummary | None = None
     code_chunks: list[CodeChunk] = Field(default_factory=list)
     parcel_zoning: ZoningSummary | None = None
     regulatory: RegulatorySummary | None = None

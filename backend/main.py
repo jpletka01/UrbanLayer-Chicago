@@ -40,7 +40,7 @@ from backend.models import (
     SaveMessagesRequest,
     TurnSummary,
 )
-from backend.retrieval import buildings, business, crime, three11
+from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
 from backend.retrieval.geo import COMMUNITY_AREAS, community_area_by_point, geocode_address_suggestions
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.incentives import incentives_domain
@@ -466,6 +466,14 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
             tasks["business"] = asyncio.create_task(
                 business.businesses_by_community_area(ca)
             )
+        if "vacant_buildings_api" in plan.sources:
+            tasks["vacant"] = asyncio.create_task(
+                vacant.vacant_buildings_by_community_area(ca)
+            )
+        if "food_inspections_api" in plan.sources:
+            tasks["food_inspections"] = asyncio.create_task(
+                food_inspections.food_inspections_by_community_area(ca)
+            )
 
     loc = plan.location
     if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon:
@@ -512,6 +520,8 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         "permits": "building permits",
         "violations": "building violations",
         "business": "business licenses",
+        "vacant": "vacant buildings",
+        "food_inspections": "food inspections",
         "zoning_lookup": "parcel zoning",
         "regulatory": "regulatory overlays",
         "property": "property records",
@@ -526,7 +536,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         for key, value in zip(tasks.keys(), done):
             if isinstance(value, Exception):
                 log.warning("Retrieval %s failed: %s", key, value)
-                if key in ("permits", "violations", "business"):
+                if key in ("permits", "violations", "business", "vacant", "food_inspections"):
                     results[key] = {}
                 elif key in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood"):
                     results[key] = None
@@ -550,6 +560,8 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         permit_data=results.get("permits") if "permits" in results else None,
         violation_data=results.get("violations") if "violations" in results else None,
         business_data=results.get("business") if "business" in results else None,
+        vacant_data=results.get("vacant") if "vacant" in results else None,
+        food_inspection_data=results.get("food_inspections") if "food_inspections" in results else None,
         code_chunks=code_chunks,
         zoning_info=results.get("zoning_lookup"),
         regulatory_summary=results.get("regulatory"),

@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="census_tract_demographics")
 
-TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B25077,B05002"
+TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B25077,B05002,B25064,B25003,B25002"
 
 # Chicago (place) and Cook County geo IDs for comparison medians
 CHICAGO_GEO = "16000US1714000"
@@ -270,6 +270,16 @@ async def fetch_census_tract(
         per_capita = _safe_int(_est(tract_data, "B19301", "B19301001"))
         home_value = _safe_int(_est(tract_data, "B25077", "B25077001"))
 
+        median_rent = _safe_int(_est(tract_data, "B25064", "B25064001"))
+
+        tenure_total = _est(tract_data, "B25003", "B25003001")
+        owner_occ = _est(tract_data, "B25003", "B25003002")
+        owner_occ_pct = _pct(owner_occ, tenure_total)
+
+        occ_total = _est(tract_data, "B25002", "B25002001")
+        vacant = _est(tract_data, "B25002", "B25002003")
+        vacancy_rate = _pct(vacant, occ_total)
+
         poverty_total = _est(tract_data, "B17001", "B17001001")
         poverty_below = _est(tract_data, "B17001", "B17001002")
         poverty_rate = _pct(poverty_below, poverty_total)
@@ -293,6 +303,9 @@ async def fetch_census_tract(
             per_capita_income=per_capita,
             median_age=None,
             median_home_value=home_value,
+            median_gross_rent=median_rent,
+            owner_occupied_pct=owner_occ_pct,
+            vacancy_rate=vacancy_rate,
             poverty_rate=poverty_rate,
             bachelors_or_higher_pct=bach_pct,
             foreign_born_pct=foreign_pct,

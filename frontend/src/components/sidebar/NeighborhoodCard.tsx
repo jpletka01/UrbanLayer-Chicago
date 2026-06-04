@@ -141,6 +141,9 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
       <div className="space-y-0.5">
         <KV label="Per Capita Income" value={fmtDollar(ct.per_capita_income)} />
         <KV label="Home Value" value={fmtDollar(ct.median_home_value)} />
+        <KV label="Median Rent" value={fmtDollar(ct.median_gross_rent)} />
+        <KV label="Owner-Occupied" value={fmtPct(ct.owner_occupied_pct)} />
+        <KV label="Vacancy Rate" value={fmtPct(ct.vacancy_rate)} />
         <KV label="Bachelor's+" value={fmtPct(ct.bachelors_or_higher_pct)} />
         <KV label="Foreign Born" value={fmtPct(ct.foreign_born_pct)} />
       </div>

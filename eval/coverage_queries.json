@@ -1,0 +1,439 @@
+{
+  "queries": [
+    {
+      "id": "crime_coverage",
+      "question": "What crimes have been reported in West Town in the last 90 days?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "crime_api",
+          "context_fields": ["crime_last_90d.total", "crime_last_90d.arrest_rate", "crime_last_90d.by_type"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*(?:crime|incident|offense|report)"],
+            "any_of_groups": [["theft", "battery", "assault", "burglary", "robbery", "motor vehicle", "narcotics", "criminal"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "311_coverage",
+      "question": "What are the open 311 complaints in Englewood?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "311_api",
+          "context_fields": ["open_311_requests.total", "open_311_requests.top_types"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*(?:311|request|complaint|service)"],
+            "any_of_groups": [["street light", "pothole", "garbage", "rodent", "graffiti", "water", "weed", "tree", "vacant", "abandoned"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "permits_coverage",
+      "question": "What building permits have been issued in the West Loop recently?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "permits_api",
+          "context_fields": ["permits.total", "permits.total_estimated_cost", "permits.by_type"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*permit"],
+            "any_of_groups": [["\\$[\\d,]+", "cost", "investment", "value"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "violations_coverage",
+      "question": "Are there building violations in Pilsen?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "violations_api",
+          "context_fields": ["violations.total", "violations.open_count", "violations.by_category"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*violation"],
+            "any_of_groups": [["open", "closed", "compliance"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "business_coverage",
+      "question": "What businesses are licensed in Logan Square?",
+      "category": "socrata_flat",
+      "checks": [
+        {
+          "sub_source": "business_api",
+          "context_fields": ["businesses.total", "businesses.by_license_type", "businesses.top_activities"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*(?:business|license)"],
+            "any_of_groups": [["retail", "food", "restaurant", "tavern", "salon", "limited", "package"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "property_pin_characteristics",
+      "question": "What property is at 443 W Wrightwood Ave, Chicago?",
+      "category": "property_domain",
+      "checks": [
+        {
+          "sub_source": "property_pin",
+          "context_fields": ["property.pin14"],
+          "synthesis_patterns": {
+            "any_of_groups": [["\\d{2}-\\d{2}-\\d{3}", "PIN"]]
+          }
+        },
+        {
+          "sub_source": "property_characteristics",
+          "context_fields": ["property.bldg_sqft|property.land_sqft|property.stories"],
+          "synthesis_patterns": {
+            "any_of_groups": [["sqft", "square feet", "sq ft", "stories", "story", "floor", "units", "unit", "bedroom", "room"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "property_assessments_sales",
+      "question": "What is the assessed value and sale history of 150 N Michigan Ave, Chicago?",
+      "category": "property_domain",
+      "checks": [
+        {
+          "sub_source": "property_pin",
+          "context_fields": ["property.pin14"],
+          "synthesis_patterns": {
+            "any_of_groups": [["\\d{2}-\\d{2}-\\d{3}", "PIN"]]
+          }
+        },
+        {
+          "sub_source": "property_assessments",
+          "context_fields": ["property.total_assessed_value|property.assessment_history"],
+          "synthesis_patterns": {
+            "any_of_groups": [["assess", "valuation"]]
+          }
+        },
+        {
+          "sub_source": "property_sales",
+          "context_fields": ["property.sales_history"],
+          "synthesis_patterns": {
+            "any_of_groups": [["sale", "sold", "purchase", "deed", "transfer"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "property_tax_estimate",
+      "question": "What are the estimated property taxes at 2400 N Milwaukee Ave, Chicago?",
+      "category": "property_domain",
+      "optional": true,
+      "checks": [
+        {
+          "sub_source": "property_tax",
+          "optional": true,
+          "context_fields": ["property.estimated_annual_tax"],
+          "synthesis_patterns": {
+            "patterns": ["\\$[\\d,]+"],
+            "any_of_groups": [["tax", "levy", "bill"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "zoning_class_lookup",
+      "question": "What is the zoning at 150 N Michigan Ave, Chicago?",
+      "category": "regulatory_domain",
+      "checks": [
+        {
+          "sub_source": "parcel_zoning",
+          "context_fields": ["parcel_zoning.zone_class"],
+          "synthesis_patterns": {
+            "any_of_groups": [["[A-Z]{1,3}-?\\d", "PD \\d+", "Planned Development", "zoned"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "overlays_downtown",
+      "question": "What zoning overlays and regulatory designations apply to 111 N State St, Chicago?",
+      "category": "regulatory_domain",
+      "checks": [
+        {
+          "sub_source": "regulatory_overlays",
+          "context_fields": ["regulatory.overlays"],
+          "synthesis_patterns": {
+            "any_of_groups": [["overlay", "pedestrian", "SSA", "Special Service", "landmark", "planned development", "ARO", "ADU", "TOD", "historic", "designation", "district"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "historic_landmark_coverage",
+      "question": "Are there any landmark or historic district designations at 11111 S Forrestville Ave, Chicago?",
+      "category": "regulatory_domain",
+      "checks": [
+        {
+          "sub_source": "regulatory_overlays_historic",
+          "context_fields": ["regulatory.in_historic_district|regulatory.in_landmark_district|regulatory.on_national_register"],
+          "synthesis_patterns": {
+            "any_of_groups": [["historic", "landmark", "Pullman", "national register", "preservation", "heritage"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "flood_zone_coverage",
+      "question": "Is 2800 S Lawndale Ave, Chicago in a flood zone?",
+      "category": "regulatory_domain",
+      "checks": [
+        {
+          "sub_source": "regulatory_flood",
+          "context_fields": ["regulatory.flood_zone"],
+          "synthesis_patterns": {
+            "any_of_groups": [["flood", "FEMA", "zone X", "zone A", "floodplain", "Special Flood Hazard", "not in a flood", "no flood"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tif_coverage",
+      "question": "Is 4700 S Halsted St, Chicago in a TIF district? What are the financials?",
+      "category": "incentives_domain",
+      "checks": [
+        {
+          "sub_source": "incentives_tif",
+          "context_fields": ["incentives.in_tif_district|incentives.tif_name"],
+          "synthesis_patterns": {
+            "any_of_groups": [["TIF", "Tax Increment"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "opportunity_zone_coverage",
+      "question": "Is 6300 S Cottage Grove Ave, Chicago in an Opportunity Zone?",
+      "category": "incentives_domain",
+      "checks": [
+        {
+          "sub_source": "incentives_oz",
+          "context_fields": ["incentives.in_opportunity_zone"],
+          "synthesis_patterns": {
+            "any_of_groups": [["Opportunity Zone", "OZ", "capital gains", "qualified", "not in an Opportunity Zone", "not an Opportunity Zone", "not located in an Opportunity Zone"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "enterprise_zone_coverage",
+      "question": "What tax incentives are available at 3500 S Michigan Ave, Chicago?",
+      "category": "incentives_domain",
+      "checks": [
+        {
+          "sub_source": "incentives_tif",
+          "context_fields": ["incentives.in_tif_district"],
+          "synthesis_patterns": {
+            "any_of_groups": [["TIF", "Tax Increment", "not in a TIF", "no TIF"]]
+          }
+        },
+        {
+          "sub_source": "incentives_oz",
+          "context_fields": ["incentives.in_opportunity_zone"],
+          "synthesis_patterns": {
+            "any_of_groups": [["Opportunity Zone", "OZ", "not in an Opportunity", "no Opportunity Zone"]]
+          }
+        },
+        {
+          "sub_source": "incentives_ez",
+          "context_fields": ["incentives.in_enterprise_zone"],
+          "synthesis_patterns": {
+            "any_of_groups": [["Enterprise Zone", "not in an Enterprise", "no Enterprise Zone"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "demographics_coverage",
+      "question": "What are the demographics of Humboldt Park?",
+      "category": "neighborhood_domain",
+      "checks": [
+        {
+          "sub_source": "neighborhood_demographics",
+          "context_fields": ["neighborhood.demographics.population"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*(?:population|people|resident)"],
+            "any_of_groups": [["income", "poverty", "median"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "census_tract_coverage",
+      "question": "Tell me about the demographics near 1200 W Washington Blvd, Chicago",
+      "category": "neighborhood_domain",
+      "checks": [
+        {
+          "sub_source": "neighborhood_census_tract",
+          "context_fields": ["neighborhood.census_tract.tract_fips|neighborhood.census_tract.population"],
+          "synthesis_patterns": {
+            "any_of_groups": [["income", "population", "age", "education", "race", "demographic"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "transit_coverage",
+      "question": "How far is 1640 N Damen Ave, Chicago from public transit?",
+      "category": "neighborhood_domain",
+      "checks": [
+        {
+          "sub_source": "neighborhood_transit",
+          "context_fields": ["neighborhood.transit.nearest_cta_rail"],
+          "synthesis_patterns": {
+            "any_of_groups": [["CTA", "station", "rail", "Blue Line", "Damen", "train", "L "]],
+            "patterns": ["(?:mile|mi|walk|distance|block|minute|min)"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "walkscore_coverage",
+      "question": "What are the Walk Score and transit scores for 2400 N Milwaukee Ave, Chicago?",
+      "category": "neighborhood_domain",
+      "optional": true,
+      "checks": [
+        {
+          "sub_source": "neighborhood_walkscore",
+          "optional": true,
+          "context_fields": ["neighborhood.walkscore.walk_score"],
+          "synthesis_patterns": {
+            "patterns": ["(?:Walk|Transit|Bike)\\s*Score"],
+            "any_of_groups": [["\\d+\\s*/\\s*100", "\\d+.*(?:out of|score)"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "municipal_code_coverage",
+      "question": "Is a daycare allowed in an RT-4 zoning district?",
+      "category": "vector_search",
+      "checks": [
+        {
+          "sub_source": "vector_search",
+          "context_fields": ["code_chunks"],
+          "synthesis_patterns": {
+            "patterns": ["\\[\\d+\\]"],
+            "any_of_groups": [["permitted", "special use", "use table", "17-2", "allowed", "conditional"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "due_diligence_full",
+      "question": "Do a full site due diligence report for 5600 W Chicago Ave, Chicago",
+      "category": "compound_due_diligence",
+      "checks": [
+        {
+          "sub_source": "property_pin",
+          "context_fields": ["property.pin14"],
+          "synthesis_patterns": {
+            "any_of_groups": [["PIN", "property", "parcel", "\\d{2}-\\d{2}-\\d{3}"]]
+          }
+        },
+        {
+          "sub_source": "parcel_zoning",
+          "context_fields": ["parcel_zoning.zone_class"],
+          "synthesis_patterns": {
+            "any_of_groups": [["zoning", "zone", "zoned"]]
+          }
+        },
+        {
+          "sub_source": "crime_api",
+          "context_fields": ["crime_last_90d.total"],
+          "synthesis_patterns": {
+            "any_of_groups": [["crime", "incident", "safety", "offense"]]
+          }
+        },
+        {
+          "sub_source": "permits_api",
+          "context_fields": ["permits.total"],
+          "synthesis_patterns": {
+            "any_of_groups": [["permit", "construction", "development"]]
+          }
+        },
+        {
+          "sub_source": "violations_api",
+          "context_fields": ["violations.total"],
+          "synthesis_patterns": {
+            "any_of_groups": [["violation", "code enforcement", "building condition"]]
+          }
+        },
+        {
+          "sub_source": "incentives_tif",
+          "context_fields": ["incentives.in_tif_district"],
+          "synthesis_patterns": {
+            "any_of_groups": [["TIF", "Tax Increment", "incentive", "no TIF", "not in a TIF"]]
+          }
+        },
+        {
+          "sub_source": "neighborhood_demographics",
+          "context_fields": ["neighborhood.demographics.population|neighborhood.census_tract.population"],
+          "synthesis_patterns": {
+            "any_of_groups": [["population", "income", "demographic", "resident", "community"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "due_diligence_violations_synthesis",
+      "question": "I'm looking at buying a property at 1640 N Damen Ave, Chicago. What should I know about building violations in the area?",
+      "category": "compound_due_diligence",
+      "checks": [
+        {
+          "sub_source": "violations_api",
+          "context_fields": ["violations.total", "violations.open_count"],
+          "synthesis_patterns": {
+            "patterns": ["\\d+.*violation"],
+            "any_of_groups": [["open", "closed", "compliance", "category", "type"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tod_transit_cross",
+      "question": "Can I get transit-oriented development bonuses at 5000 N Sheridan Rd, Chicago?",
+      "category": "compound_due_diligence",
+      "checks": [
+        {
+          "sub_source": "regulatory_overlays_tod",
+          "context_fields": ["regulatory.in_tod_area"],
+          "synthesis_patterns": {
+            "any_of_groups": [["TOD", "transit-oriented", "Connected Communities", "density bonus", "transit", "not in a TOD", "not eligible for TOD"]]
+          }
+        },
+        {
+          "sub_source": "neighborhood_transit",
+          "context_fields": ["neighborhood.transit.nearest_cta_rail|neighborhood.transit.nearest_metra"],
+          "synthesis_patterns": {
+            "any_of_groups": [["CTA", "station", "Metra", "Red Line", "Argyle", "Berwyn", "rail"]]
+          }
+        }
+      ]
+    },
+    {
+      "id": "brownfield_coverage",
+      "question": "Are there any environmental concerns near 3200 S Ashland Ave, Chicago?",
+      "category": "compound_due_diligence",
+      "checks": [
+        {
+          "sub_source": "regulatory_environmental",
+          "context_fields": ["regulatory.brownfield_sites"],
+          "synthesis_patterns": {
+            "any_of_groups": [["brownfield", "environmental", "EPA", "superfund", "contamination", "cleanup", "no brownfield", "no environmental", "no known"]]
+          }
+        }
+      ]
+    }
+  ]
+}

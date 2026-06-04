@@ -10,6 +10,8 @@ import { IncentivesCard } from "./IncentivesCard";
 import { NeighborhoodCard } from "./NeighborhoodCard";
 import { ViolationsCard } from "./ViolationsCard";
 import { BusinessCard } from "./BusinessCard";
+import { VacantBuildingsCard } from "./VacantBuildingsCard";
+import { FoodInspectionCard } from "./FoodInspectionCard";
 
 interface Props {
   plan: RetrievalPlan | null;
@@ -167,6 +169,8 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
       )}
 
       {context?.businesses && <BusinessCard data={context.businesses} />}
+      {context?.vacant_buildings && <VacantBuildingsCard data={context.vacant_buildings} />}
+      {context?.food_inspections && <FoodInspectionCard data={context.food_inspections} />}
 
       {hasZoning && <ZoningCodesTable mapData={mapData!} />}
     </div>

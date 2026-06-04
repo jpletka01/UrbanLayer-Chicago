@@ -49,7 +49,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ## Key Conventions
 
 - Backend port 8001, frontend dev port 5173.
-- All Socrata modules use shared `socrata_get()` with retry/backoff from `retrieval/socrata.py`.
+- All Socrata modules (crime, 311, permits, violations, business, vacant, food_inspections) use shared `socrata_get()` with retry/backoff from `retrieval/socrata.py`.
 - All ArcGIS modules follow the same spatial query pattern as `zoning.py`.
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.

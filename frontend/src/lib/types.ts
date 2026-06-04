@@ -26,6 +26,8 @@ export type SourceTag =
   | "permits_api"
   | "violations_api"
   | "business_api"
+  | "vacant_buildings_api"
+  | "food_inspections_api"
   | "vector_search"
   | "regulatory_domain"
   | "property_domain"
@@ -88,6 +90,36 @@ export interface BusinessSummary {
   by_license_type: Record<string, number>;
   top_activities: string[];
   capped?: boolean;
+}
+
+export interface VacantBuildingReport {
+  address: string;
+  date: string | null;
+  violation_type: string | null;
+  responsible_entity: string | null;
+  amount_due: number | null;
+}
+
+export interface VacantBuildingSummary {
+  total: number;
+  by_department: Record<string, number>;
+  recent_reports: VacantBuildingReport[];
+}
+
+export interface FoodInspectionDetail {
+  name: string;
+  facility_type: string | null;
+  risk: string | null;
+  result: string | null;
+  date: string | null;
+}
+
+export interface FoodInspectionSummary {
+  total: number;
+  by_result: Record<string, number>;
+  by_risk: Record<string, number>;
+  fail_rate: number | null;
+  recent_inspections: FoodInspectionDetail[];
 }
 
 export interface CodeChunk {
@@ -263,6 +295,9 @@ export interface CensusTractDemographics {
   per_capita_income: number | null;
   median_age: number | null;
   median_home_value: number | null;
+  median_gross_rent: number | null;
+  owner_occupied_pct: number | null;
+  vacancy_rate: number | null;
   poverty_rate: number | null;
   bachelors_or_higher_pct: number | null;
   foreign_born_pct: number | null;
@@ -293,6 +328,8 @@ export interface ContextObject {
   permits: PermitSummary | null;
   violations: ViolationSummary | null;
   businesses: BusinessSummary | null;
+  vacant_buildings: VacantBuildingSummary | null;
+  food_inspections: FoodInspectionSummary | null;
   code_chunks: CodeChunk[];
   parcel_zoning?: ZoningSummary | null;
   regulatory?: RegulatorySummary | null;

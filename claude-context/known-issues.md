@@ -6,7 +6,7 @@
 
 ## Known Limitations
 
-**Demographics median values are estimated**: The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is interpolated from the bracket containing the 50th percentile. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Median home value, rent, owner-occupied %, bachelor's degree %, and vacancy rate remain null.
+**Demographics median values are estimated**: The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is interpolated from the bracket containing the 50th percentile. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Census tract-level demographics (via Census Reporter API) now provide all housing fields: median home value (B25077), median gross rent (B25064), owner-occupied % (B25003), vacancy rate (B25002), and bachelor's degree % (B15003).
 
 **Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. Our `_categorize_violation()` does first-match keyword bucketing into 16 custom categories. The dataset also has a `violation_code` numeric field we're not using, which might give more reliable groupings.
 
@@ -43,7 +43,7 @@ The `eval/source_coverage.py` benchmark tests all 24 data sub-sources across 24 
 
 | Category | Sources | Result |
 |----------|---------|--------|
-| Socrata APIs | crime, 311, permits, violations, business | All COVERED (data in context + mentioned in synthesis) |
+| Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED (data in context + mentioned in synthesis) |
 | Property domain | PIN, characteristics, assessments, sales, tax | PIN FAILED via GIS (0/7) — now mitigated by Socrata Parcel Universe fallback. Re-run benchmark to verify. |
 | Regulatory domain | zoning, overlays, flood, brownfields | All COVERED |
 | Incentives domain | TIF, OZ, Enterprise Zone | All COVERED (including negative results) |
@@ -57,13 +57,10 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
-- **DNS + TLS** — DONE. `https://urbanlayerchicago.com` live via Cloudflare Full (Strict) + Origin Certificate. Security headers (HSTS, CSP, etc.) verified. HTTP redirects to HTTPS. SSE streaming works through Cloudflare proxy.
-- **Qdrant data on server** — DONE. 14,535 vectors snapshot-transferred from local to server. Municipal code vector search is operational.
-- **CI/CD** — DONE. `.github/workflows/ci.yml` runs pytest + tsc on PRs, SSH deploy on merge to main. Requires `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets.
-- **Monitoring** — Partially done. UptimeRobot configured for `/health` checks. Sentry SDK integrated in backend (`sentry-sdk[fastapi]`) and frontend (`@sentry/react`), both no-op when DSN is unset. Needs Sentry project creation + DSN values added to server `.env`.
-- **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production.
+- **Sentry DSN** — SDK is integrated (backend + frontend) but runs in no-op mode. Need to create Sentry projects and add DSN values to server `.env`.
+- **CI/CD deploy secrets** — Pipeline runs tests on PRs but deploy job needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets.
+- **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
-- **Google Cloud OAuth app** — DONE. OAuth client configured in Google Cloud Console, credentials in server `.env`. Auth is active — anonymous users get 3 queries/day, signed-in free tier gets 25/day. Jack's account needs to be manually promoted to admin tier in the database.
 
 ## Deployment Status (2026-06-03)
 

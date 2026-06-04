@@ -30,6 +30,8 @@ retrieval/
 ├── three11.py              # 311 API (open requests + response times, Open-Dup filtered, 200 grouped limit)
 ├── buildings.py            # Permits (grouped by type + detail sample) + violations (status counts + detail sample)
 ├── business.py             # Business licenses (grouped by license_description + detail sample for activities)
+├── vacant.py               # Vacant buildings (bounding-box filter, grouped by department + detail sample)
+├── food_inspections.py     # Food inspections (bounding-box filter, grouped by result/risk + detail sample)
 ├── map_data.py             # Raw geo-located rows for map (2500/1000/500 row limits)
 ├── vector_search.py        # Async Qdrant search + keyword boost + bge-reranker + per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch

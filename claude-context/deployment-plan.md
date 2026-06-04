@@ -119,51 +119,22 @@ Google OAuth2 Authorization Code flow + self-rolled JWT sessions. Auth is opt-in
 git fetch origin && git merge origin/main && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-### Phase 4: Qdrant Data Transfer — NOT STARTED
+### Phase 4: Qdrant Data Transfer — DONE (2026-06-03)
 
-Transfer municipal code embeddings from local machine to server. One-time operation. **Without this, vector search (municipal code queries) returns no results.** All other data sources (Socrata APIs, ArcGIS, property domain, etc.) work without Qdrant data.
+14,535 vectors snapshot-transferred from local to server. Municipal code vector search operational.
 
-**Prerequisite**: Local Qdrant must be running (`docker compose up -d qdrant`).
+### Phase 8: CI/CD Pipeline — DONE (2026-06-03)
 
-```bash
-# On local machine
-curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
-# Note the snapshot filename from the response
+`.github/workflows/ci.yml`: pytest + tsc on PRs, SSH deploy on merge to main. Requires `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets for deploy job.
 
-# Download snapshot
-curl -o qdrant-snapshot.tar http://localhost:6333/collections/chicago_municipal_code/snapshots/<name>
+### Phase 9: Monitoring — DONE (2026-06-03)
 
-# Upload to server
-scp qdrant-snapshot.tar root@178.105.184.66:/tmp/
+- **UptimeRobot**: Configured for `/health` checks
+- **Sentry**: SDK integrated in backend (`sentry-sdk[fastapi]`) and frontend (`@sentry/react`), both no-op when DSN is unset. Needs Sentry project creation + DSN values in server `.env`.
 
-# On server — restore into Qdrant
-docker cp /tmp/qdrant-snapshot.tar $(docker compose ps -q qdrant):/qdrant/snapshots/
-curl -X PUT http://localhost:6333/collections/chicago_municipal_code/snapshots/recover \
-  -H 'Content-Type: application/json' \
-  -d '{"location": "file:///qdrant/snapshots/qdrant-snapshot.tar"}'
-```
+### Google Cloud OAuth Setup — DONE (2026-06-03)
 
-### Phase 8: CI/CD Pipeline — NOT STARTED
-
-`.github/workflows/deploy.yml`:
-- On every push/PR: `pytest backend/tests/ -q` + `cd frontend && npx tsc --noEmit`
-- On push to `main`: build Docker images (linux/amd64), push to GHCR, SSH deploy to Hetzner, health check
-- Docker layer caching for HuggingFace model layer (~1.5GB, rarely changes)
-
-### Phase 9: Monitoring — NOT STARTED
-
-- **Sentry** (free, 5K errors/mo): `sentry-sdk[fastapi]` backend + `@sentry/react` frontend
-- **UptimeRobot** (free): HTTP check on `/health` every 5 minutes, email alerts
-
-### Google Cloud OAuth Setup — NOT STARTED
-
-Required before auth works in production:
-1. Go to Google Cloud Console → APIs & Services → Credentials
-2. Create OAuth 2.0 Client ID (Web application)
-3. Authorized redirect URI: `https://urbanlayerchicago.com/api/auth/google/callback`
-4. For local testing, also add: `http://localhost:8001/api/auth/google/callback`
-5. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to server `.env`
-6. Generate JWT_SECRET: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+OAuth client configured in Google Cloud Console. Credentials in server `.env`. Auth active — anonymous 3/day, free tier 25/day, admin unlimited.
 
 ---
 

@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     dataset_permits: str = "ydr8-5enu"
     dataset_violations: str = "22u3-xenr"
     dataset_business: str = "uupf-x98q"
+    dataset_vacant_buildings: str = "kc9i-wq85"
+    dataset_food_inspections: str = "4ijn-s7e5"
     dataset_community_areas: str = "igwz-8jzy"
     dataset_iucr: str = "c7ck-438e"
     dataset_zoning: str = "p8va-airx"
@@ -89,6 +91,8 @@ class Settings(BaseSettings):
     limit_business: int = 500
     limit_permits_detail: int = 20
     limit_business_detail: int = 20
+    limit_vacant_buildings_detail: int = 20
+    limit_food_inspections_detail: int = 20
 
     # Map endpoint row caps (higher than chat — individual points, not aggregates).
     # These must be large enough to cover the full time_range_days window so the

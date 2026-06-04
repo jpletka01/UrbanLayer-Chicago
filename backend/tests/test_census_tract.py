@@ -117,6 +117,22 @@ SAMPLE_RESPONSE = {
                 },
                 "error": {},
             },
+            "B25064": {
+                "estimate": {"B25064001": 1850},
+                "error": {},
+            },
+            "B25003": {
+                "estimate": {
+                    "B25003001": 1450, "B25003002": 725, "B25003003": 725,
+                },
+                "error": {},
+            },
+            "B25002": {
+                "estimate": {
+                    "B25002001": 1600, "B25002002": 1450, "B25002003": 150,
+                },
+                "error": {},
+            },
         },
         "16000US1714000": {
             "B19013": {"estimate": {"B19013001": 77902}, "error": {}},
@@ -198,6 +214,10 @@ class TestFetchCensusTract:
         assert result.median_household_income == 110795
         assert result.per_capita_income == 71733
         assert result.median_home_value == 628300
+        assert result.median_gross_rent == 1850
+        assert result.owner_occupied_pct == 50.0
+        assert result.vacancy_rate is not None
+        assert result.vacancy_rate > 0
         assert result.poverty_rate is not None
         assert result.poverty_rate > 0
         assert result.census_reporter_url == "https://censusreporter.org/profiles/14000US17031242400/"
