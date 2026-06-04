@@ -57,7 +57,7 @@ Run with: `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
-- **Sentry DSN** — SDK is integrated (backend + frontend) but runs in no-op mode. Need to create Sentry projects and add DSN values to server `.env`.
+- **Sentry** — Active on production (EU region, `ingest.de.sentry.io`). Backend (FastAPI) and frontend (React) both reporting.
 - **CI/CD deploy secrets** — Pipeline runs tests on PRs but deploy job needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub repo secrets.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.

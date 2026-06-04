@@ -130,7 +130,7 @@ git fetch origin && git merge origin/main && docker compose -f docker-compose.ym
 ### Phase 9: Monitoring — DONE (2026-06-03)
 
 - **UptimeRobot**: Configured for `/health` checks
-- **Sentry**: SDK integrated in backend (`sentry-sdk[fastapi]`) and frontend (`@sentry/react`), both no-op when DSN is unset. Needs Sentry project creation + DSN values in server `.env`.
+- **Sentry**: Active — backend (`sentry-sdk[fastapi]`) and frontend (`@sentry/react`) reporting to EU region (`ingest.de.sentry.io`). DSN values in server `.env`.
 
 ### Google Cloud OAuth Setup — DONE (2026-06-03)
 
@@ -159,6 +159,10 @@ FRONTEND_URL=https://urbanlayerchicago.com
 # Production CORS (JSON array string)
 CORS_ORIGINS=["https://urbanlayerchicago.com","https://www.urbanlayerchicago.com"]
 
+# Sentry error tracking (EU region)
+SENTRY_DSN=https://...@....ingest.de.sentry.io/...
+VITE_SENTRY_DSN=https://...@....ingest.de.sentry.io/...
+
 # Cost control
 DAILY_API_BUDGET_USD=5.00
 ```
@@ -178,7 +182,7 @@ DAILY_API_BUDGET_USD=5.00
 | 6 | Rate limiting + budget cap | **Done** |
 | 7 | Security hardening | **Done** |
 | 8 | CI/CD pipeline | **Done** — `.github/workflows/ci.yml`: pytest + tsc on PR, SSH deploy on merge. Needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub secrets |
-| 9 | Monitoring (Sentry + UptimeRobot) | **Done** — UptimeRobot configured, Sentry SDK integrated (backend + frontend, no-op without DSN). Needs Sentry projects + DSN values in `.env` |
+| 9 | Monitoring (Sentry + UptimeRobot) | **Done** — UptimeRobot configured, Sentry active (EU region, DSN values in server `.env`) |
 
 ## Verification Checklist (post-deploy)
 
