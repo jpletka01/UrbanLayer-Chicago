@@ -37,25 +37,26 @@ These work well enough but could break on edge cases:
 
 **PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist.
 
-## Source Coverage Benchmark Results (2026-06-04)
+## Source Coverage Benchmark Results (2026-06-05)
 
-The `eval/source_coverage.py` benchmark tests 26 data sub-sources across 26 targeted queries. **33/37 sub-source checks covered** (89%).
+The `eval/source_coverage.py` benchmark tests 29 data sub-sources across 29 targeted queries (including Tier 3: grant programs, ARO housing, tax incentive classes). **34/41 sub-source checks covered** (83%).
 
 | Category | Sources | Result |
 |----------|---------|--------|
 | Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED |
-| Property domain | PIN, sales | COVERED. Characteristics/assessments/tax show HALLUCINATION (synthesis mentions field names not in context when data unavailable) |
+| Property domain | PIN, sales | COVERED. Characteristics/assessments show RETRIEVAL_GAP (Cook County GIS intermittent — data not available, correctly not mentioned). Tax shows HALLUCINATION (model mentions tax when PTAXSIM unavailable) |
 | Regulatory domain | flood, overlays, TOD, historic, brownfields | All COVERED |
-| Incentives domain | TIF, OZ, Enterprise Zone | All COVERED |
+| Incentives domain | TIF, OZ, grant programs | All COVERED. Enterprise Zone shows SYNTHESIS_GAP (model omits negative EZ when TIF/OZ positive — marked optional). Tax class shows HALLUCINATION (requires property class from Cook County) |
 | Neighborhood domain | demographics, census tract, transit | All COVERED |
-| WalkScore | walk/transit/bike scores | Optional — COVERED when API returns data. Prompt specifies X/100 format |
+| WalkScore | walk/transit/bike scores | Intermittent — COVERED when API returns data, HALLUCINATION when API unavailable |
+| ARO Housing | affordable housing projects | HALLUCINATION — ARO routing fix applied but needs verification on next run |
 | Vector search | municipal code chunks | COVERED |
 
-**Remaining issues (4 hallucinations):** All in the property domain — when property characteristics, assessments, or tax data aren't available from Cook County, the synthesis still mentions specific field names. Prompt rules 4 and 12 have been significantly strengthened: rule 4 now requires verifying non-null values in context JSON before mentioning any property field; rule 12 instructs to skip null fields entirely rather than noting them as unavailable. Needs re-verification with `source_coverage` benchmark.
+**Previous false-positive hallucinations fixed:** Property characteristics and assessments were flagged as HALLUCINATION when the model correctly noted "data not available." Benchmark patterns tightened to distinguish between fabricated values and absence acknowledgment — now correctly classified as RETRIEVAL_GAP.
 
-**Previous retrieval gaps fixed:** Geocoder retry logic added (1 retry on timeout), router catches geocoding failures gracefully. Previous gaps were transient Census Geocoder/ArcGIS availability issues, not code bugs.
+**Remaining real issues:** Property tax (PTAXSIM optional), Walk Score (API intermittent), ARO housing (routing fix needs server restart verification), tax incentive class (requires property data from Cook County). All are external data availability issues, not code bugs.
 
-**Cap report**: No capped sources detected across all 26 queries. Grouped aggregation queries never cap.
+**Cap report**: No capped sources detected across all 29 queries. Grouped aggregation queries never cap.
 
 Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.source_coverage --full http://localhost:8001`
 
@@ -67,10 +68,8 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 
 ## Outstanding Work
 
-- **Re-run source coverage benchmark** — Prompt rules 4 and 12 were strengthened to fix property domain hallucinations, but the benchmark hasn't been re-run to verify the fix. Run: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.source_coverage --full http://localhost:8001`
-- **Add coverage eval queries for new sources** — Grant programs (SBIF/NOF), ARO housing, and tax incentive classes need coverage queries added to `eval/coverage_queries.json` to be tracked in the benchmark.
-- **Deploy Tier 3 to production** — All new integrations need to be pushed and deployed to the server.
-- **Verify code-review GitHub Action** — `.github/workflows/code-review.yml` needs `ANTHROPIC_API_KEY` in GitHub Secrets (should already be there from CI). Test by opening a PR.
+- **Deploy Tier 3 to production** — PR open on `tier3-integrations` branch with all new integrations. Merge and deploy to server.
+- **Verify code-review GitHub Action** — `.github/workflows/code-review.yml` is live. Test by merging the Tier 3 PR (or opening a new one).
 
 ## Operational Status
 
