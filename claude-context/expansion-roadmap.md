@@ -71,4 +71,4 @@ Evaluated the 5 unintegrated Chicago Zoning MapServer layers. None warranted int
 | AI code review on PRs | Done — `.github/workflows/code-review.yml`, `anthropics/claude-code-action@v1`, Claude Code GitHub App installed |
 | Tier 3 production deploy | Done — PR #1 merged (2026-06-05), all integrations live on production |
 | CI fixes | Done — `anthropic_api_key` default, Walk Score test mocking, `id-token: write` permission, `ANTHROPIC_API_KEY` secret |
-| CI deploy key | Pending verification — passphrase-free ed25519 key uploaded, needs next push to main to confirm |
+| CI deploy key | Done — passphrase-free ed25519 key, verified end-to-end (2026-06-05) |

@@ -71,7 +71,7 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 
 ## Outstanding Work
 
-- **CI/CD deploy key** — `SERVER_SSH_KEY` GitHub secret updated with passphrase-free ed25519 key (2026-06-05). Public key added to server `authorized_keys`. Not yet verified end-to-end — the next push to main will confirm the auto-deploy works.
+- ~~**CI/CD deploy key**~~ — **Done** (2026-06-05). Passphrase-free ed25519 key verified end-to-end: push to main → tests pass → SSH deploy → health check.
 - **Re-run source coverage benchmark on production** — Tier 3 integrations deployed; ARO housing routing fix needs verification via live benchmark run.
 - **Database backup cron on server** — Script exists (`scripts/backup_db.sh`) but cron job may not be set up on the server yet.
 - **Tier 2 improvements** — Context management, latency reduction, and export features (designed 2026-06-02, not yet implemented).
