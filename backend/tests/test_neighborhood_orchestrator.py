@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -12,6 +12,16 @@ from backend.models import (
 from backend.retrieval.neighborhood import neighborhood_domain
 
 MOCK_CENSUS_PATCH = "backend.retrieval.neighborhood._fetch_census_tract"
+
+
+@pytest.fixture(autouse=True)
+def _mock_neighborhood_settings(monkeypatch):
+    mock_settings = MagicMock()
+    mock_settings.walkscore_api_key = "fake-key-for-tests"
+    monkeypatch.setattr(
+        "backend.retrieval.neighborhood.get_settings",
+        lambda: mock_settings,
+    )
 
 
 @pytest.mark.asyncio

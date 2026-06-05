@@ -44,7 +44,7 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
 export function IncentivesCard({ data }: { data: IncentivesSummary }) {
   const [showFinancials, setShowFinancials] = useState(false);
 
-  const hasAnyIncentive = data.in_tif_district || data.in_opportunity_zone || data.in_enterprise_zone;
+  const hasAnyIncentive = data.in_tif_district || data.in_opportunity_zone || data.in_enterprise_zone || !!data.property_tax_class;
 
   return (
     <CollapsibleCard title="Incentives" icon={DollarIcon}>
@@ -168,6 +168,54 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
             <p className="text-[10px] text-text-muted ml-5">{data.enterprise_zone_name}</p>
           )}
         </div>
+
+        {/* City Grant Programs */}
+        {data.grant_programs && data.grant_programs.total_projects > 0 && (
+          <div className="space-y-1.5">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+              City Grant Programs
+            </span>
+            <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
+              <KV label="Total Projects" value={String(data.grant_programs.total_projects)} />
+              <KV label="Total Funding" value={fmtDollar(data.grant_programs.total_funding)} />
+              {Object.entries(data.grant_programs.by_program).map(([prog, count]) => (
+                <KV key={prog} label={prog} value={`${count} projects`} />
+              ))}
+            </div>
+            {data.grant_programs.recent_projects.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-text-muted uppercase tracking-wider">
+                  Recent Projects
+                </span>
+                {data.grant_programs.recent_projects.slice(0, 5).map((proj, i) => (
+                  <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border">
+                    <p className="text-text-primary">{proj.name}</p>
+                    <div className="flex gap-2 text-text-muted">
+                      {proj.date && <span>{proj.date}</span>}
+                      <span className="text-emerald-400">{proj.program}</span>
+                      {proj.incentive_amount != null && (
+                        <span>{fmtDollar(proj.incentive_amount)}</span>
+                      )}
+                    </div>
+                    {proj.description && (
+                      <p className="text-text-muted truncate max-w-[240px]">{proj.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tax Incentive Class */}
+        {data.property_tax_class && (
+          <div className="space-y-1">
+            <Badge active label={`Tax Class ${data.property_tax_class}`} />
+            {data.tax_incentive_description && (
+              <p className="text-[10px] text-text-muted ml-5">{data.tax_incentive_description}</p>
+            )}
+          </div>
+        )}
 
         {/* Census Tract reference */}
         {data.census_tract && !hasAnyIncentive && (

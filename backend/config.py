@@ -14,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    anthropic_api_key: str
+    anthropic_api_key: str = ""
     socrata_app_token: str = ""
     qdrant_url: str = "http://localhost:6333"
 
@@ -78,8 +78,15 @@ class Settings(BaseSettings):
     dataset_tif_financials: str = "72uz-ikdv"
     dataset_tif_fund_analysis: str = "qm7s-3ctt"
     dataset_enterprise_zones: str = "64xf-pyvh"
+    dataset_sbif: str = "etqr-sz5x"
+    dataset_nof_large: str = "j7ew-b73u"
+    dataset_nof_small: str = "rym7-49n8"
     limit_tif_financials: int = 5
     limit_tif_fund_analysis: int = 5
+    limit_grant_programs_detail: int = 15
+
+    dataset_aro_housing: str = "s6ha-ppgi"
+    limit_aro_housing: int = 20
 
     crime_lag_days: int = 7
 

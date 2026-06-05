@@ -46,8 +46,8 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 | `TrendTable` | MoM trend rows with sortable columns, colored arrows |
 | `CollapsibleCard` | Reusable pattern for sidebar data cards |
 | `PropertyCard` | Parcel info, assessment history, sales |
-| `RegulatoryCard` | Zoning overlays, status badges, flood zone — all with InfoTooltip hover definitions |
-| `IncentivesCard` | TIF/OZ/EZ status with fund analysis financials (revenue, balance, expenditure), per-district cards for neighborhood queries, expandable annual history table, InfoTooltip definitions, census tract links |
+| `RegulatoryCard` | Zoning overlays, status badges, flood zone, ARO housing projects (count + units + project list) — all with InfoTooltip hover definitions |
+| `IncentivesCard` | TIF/OZ/EZ status with fund analysis financials, city grant programs (SBIF/NOF total + recent projects), tax incentive class badge (6b/7a/etc.), per-district cards for neighborhood queries, expandable annual history table, InfoTooltip definitions, census tract links |
 | `InfoTooltip` | Dotted-underline hover/tap popover for domain terms. Wraps children, looks up `termDefinitions.ts` |
 | `NeighborhoodCard` | Demographics, transit, Walk Score |
 | `ViolationsCard` | Building violations |

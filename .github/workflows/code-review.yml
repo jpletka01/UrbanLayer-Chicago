@@ -1,0 +1,28 @@
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this PR for correctness bugs, security issues, and code quality.
+            Focus on: logic errors, missing error handling at system boundaries,
+            potential regressions, and adherence to existing patterns.
+            This is a RAG-powered urban intelligence platform (Python/FastAPI backend,
+            React/TypeScript frontend). Check that new Socrata integrations follow
+            the established socrata_get() + assembler + synthesis pattern.

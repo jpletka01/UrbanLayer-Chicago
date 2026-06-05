@@ -85,7 +85,7 @@ SQLite via aiosqlite, WAL mode, singleton connection, schema versioning.
 
 ## Caching (`retrieval/cache.py`)
 
-`TTLCache` utility used by all external query modules. 17 caches across the codebase.
+`TTLCache` utility used by all external query modules. 25 caches across the codebase.
 
 Cache key patterns:
 - Spatial: `f"{source}:{round(lat,5)}:{round(lon,5)}"`
@@ -145,7 +145,7 @@ curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
 
 ## Testing
 
-~340 unit + integration tests. Mock external APIs in unit tests. Real-API tests marked `@pytest.mark.integration`.
+~444 unit + integration tests. Mock external APIs in unit tests. Real-API tests marked `@pytest.mark.integration`.
 
 Key test patterns:
 - `conftest.py` has autouse fixture that clears all TTLCaches between tests.
@@ -164,3 +164,5 @@ Three eval tools in `eval/`:
 | **Source coverage** | `python -m eval.source_coverage --full URL` | Per-sub-source data presence in context AND synthesis (24 queries, 36 checks across 24 sub-sources) |
 
 Source coverage benchmark produces a coverage matrix with four statuses per sub-source: COVERED, SYNTHESIS_GAP (data in context but not mentioned), RETRIEVAL_GAP (data not fetched), HALLUCINATION (mentioned but not in context). Also tracks API cap hits and whether the synthesis correctly hedges with "at least" phrasing. Results written to `eval/coverage_results.json` and optionally `--out coverage_report.md`.
+
+**Note (2026-06-04):** Coverage queries for the new Tier 3 sources (grant programs, ARO housing, tax incentive classes) have not yet been added to `eval/coverage_queries.json`. The benchmark currently covers 26 sub-sources; the new integrations should be added before the next full run.

@@ -110,6 +110,34 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
           </div>
         )}
 
+        {/* ARO Housing */}
+        {data.aro_housing && data.aro_housing.total_projects > 0 && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+              Affordable Housing (ARO)
+            </span>
+            <div className="rounded-lg bg-dark-elevated/60 border border-dark-border px-3 py-2 space-y-1">
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-text-muted text-[11px]">Projects</span>
+                <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_projects}</span>
+              </div>
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-text-muted text-[11px]">Total Units</span>
+                <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_units.toLocaleString()}</span>
+              </div>
+              {data.aro_housing.projects.slice(0, 5).map((proj, i) => (
+                <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border mt-1">
+                  <p className="text-text-primary">{proj.name}</p>
+                  <div className="flex gap-2 text-text-muted">
+                    {proj.units != null && <span>{proj.units} units</span>}
+                    {proj.property_type && <span>{proj.property_type}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Brownfield Sites */}
         {data.brownfield_sites.length > 0 && (
           <div className="space-y-1">

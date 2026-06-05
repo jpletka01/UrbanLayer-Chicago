@@ -23,6 +23,16 @@ def _clear_cache():
     _cache._store.clear()
 
 
+@pytest.fixture(autouse=True)
+def _mock_api_key(monkeypatch):
+    mock_settings = MagicMock()
+    mock_settings.walkscore_api_key = "fake-key-for-tests"
+    monkeypatch.setattr(
+        "backend.retrieval.neighborhood.walkscore.get_settings",
+        lambda: mock_settings,
+    )
+
+
 def _mock_response(data, status_code=200):
     resp = MagicMock(spec=httpx.Response)
     resp.status_code = status_code

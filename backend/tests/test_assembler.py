@@ -1,10 +1,12 @@
-from backend.assembler import assemble_context
+from backend.assembler import assemble_context, _categorize_violation, _interpret_tax_class
 from backend.config import get_settings
 from backend.models import (
     CodeChunk,
     DemographicsSummary,
+    IncentivesSummary,
     Location,
     NeighborhoodSummary,
+    PropertySummary,
     RegulatorySummary,
     RetrievalPlan,
     TransitAccess,
@@ -203,3 +205,103 @@ def test_neighborhood_summary_attached_when_provided():
 def test_neighborhood_summary_none_when_absent():
     ctx = assemble_context(plan=_plan())
     assert ctx.neighborhood is None
+
+
+class TestTaxIncentiveClassInterpretation:
+    def test_class_6b(self):
+        code, desc = _interpret_tax_class("6b")
+        assert code == "6B"
+        assert "rehabilitation" in desc.lower()
+
+    def test_class_7a(self):
+        code, desc = _interpret_tax_class("7a")
+        assert code == "7A"
+        assert "economically disadvantaged" in desc.lower()
+
+    def test_class_8(self):
+        code, desc = _interpret_tax_class("8")
+        assert code == "8"
+        assert "industrial" in desc.lower()
+
+    def test_standard_class_returns_none(self):
+        code, desc = _interpret_tax_class("2-99")
+        assert code is None
+        assert desc is None
+
+    def test_none_input(self):
+        code, desc = _interpret_tax_class(None)
+        assert code is None
+        assert desc is None
+
+    def test_empty_string(self):
+        code, desc = _interpret_tax_class("")
+        assert code is None
+        assert desc is None
+
+    def test_case_insensitive(self):
+        code, _ = _interpret_tax_class("6B")
+        assert code == "6B"
+
+
+def test_tax_incentive_enriches_incentives_summary():
+    prop = PropertySummary(pin14="12345678901234", bldg_class="6b")
+    inc = IncentivesSummary(in_tif_district=True, tif_name="Test TIF")
+    ctx = assemble_context(
+        plan=_plan(),
+        property_summary=prop,
+        incentives_summary=inc,
+    )
+    assert ctx.incentives is not None
+    assert ctx.incentives.property_tax_class == "6B"
+    assert ctx.incentives.tax_incentive_description is not None
+    assert ctx.incentives.in_tif_district is True
+
+
+def test_tax_incentive_creates_summary_when_no_incentives():
+    prop = PropertySummary(pin14="12345678901234", bldg_class="7a")
+    ctx = assemble_context(plan=_plan(), property_summary=prop)
+    assert ctx.incentives is not None
+    assert ctx.incentives.property_tax_class == "7A"
+
+
+def test_no_tax_incentive_for_standard_class():
+    prop = PropertySummary(pin14="12345678901234", bldg_class="2-99")
+    ctx = assemble_context(plan=_plan(), property_summary=prop)
+    assert ctx.incentives is None
+
+
+class TestViolationCategorization:
+    def test_keyword_match(self):
+        assert _categorize_violation("REPAIR EXTERIOR WALL") == "Exterior Structure"
+
+    def test_elevator_abbreviation(self):
+        assert _categorize_violation("MAINTAIN OR REPAIR ELECT ELEVA") == "Elevator/Escalator"
+
+    def test_code_prefix_elevator(self):
+        assert _categorize_violation("SOME DESCRIPTION", "EV1110") == "Elevator/Escalator"
+
+    def test_code_prefix_boiler(self):
+        assert _categorize_violation("SOME DESCRIPTION", "BR1010") == "Boiler/Mechanical"
+
+    def test_keyword_overrides_when_no_code(self):
+        assert _categorize_violation("REPAIR PORCH SYSTEM") == "Porch/Deck"
+
+    def test_unknown_falls_to_other(self):
+        assert _categorize_violation("MISCELLANEOUS VIOLATION") == "Other"
+
+    def test_fire_escape(self):
+        assert _categorize_violation("FIRE ESCAPE REPAIR") == "Fire Safety"
+
+    def test_code_used_with_violation_data(self):
+        data = {
+            "status_counts": [{"violation_status": "OPEN", "count": "1"}],
+            "detail": [
+                {
+                    "violation_description": "MAINTAIN OR REPAIR ELECT ELEVA",
+                    "violation_code": "EV1110",
+                    "violation_status": "OPEN",
+                },
+            ],
+        }
+        ctx = assemble_context(plan=_plan(), violation_data=data)
+        assert "Elevator/Escalator" in ctx.violations.by_category

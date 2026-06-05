@@ -91,7 +91,8 @@ async def violations_by_community_area(
         {
             "$where": where,
             "$select": (
-                "violation_date,violation_description,violation_status,"
+                "violation_date,violation_code,violation_description,"
+                "violation_status,"
                 "street_number,street_direction,street_name,latitude,longitude"
             ),
             "$order": "violation_status ASC,violation_date DESC",

@@ -5,10 +5,14 @@ from typing import Any
 
 from backend.config import get_settings
 from backend.models import (
+    AROHousingProject,
+    AROHousingSummary,
     BusinessSummary,
     CodeChunk,
     ContextObject,
     CrimeSummary,
+    GrantProgramSummary,
+    GrantProject,
     IncentivesSummary,
     NeighborhoodSummary,
     PermitSummary,
@@ -23,6 +27,111 @@ from backend.models import (
     ViolationSummary,
     ZoningSummary,
 )
+
+
+def _aro_housing_summary(rows: list[dict[str, Any]]) -> AROHousingSummary | None:
+    """Build a summary from ARO housing project data."""
+    if not rows:
+        return None
+    total_units = 0
+    projects: list[AROHousingProject] = []
+    for row in rows:
+        units = None
+        if row.get("units"):
+            try:
+                units = int(row["units"])
+                total_units += units
+            except (TypeError, ValueError):
+                pass
+        projects.append(AROHousingProject(
+            name=(row.get("property_name") or "").strip() or "Unnamed",
+            address=(row.get("address") or "").strip() or None,
+            units=units,
+            property_type=(row.get("property_type") or "").strip() or None,
+        ))
+    return AROHousingSummary(
+        total_projects=len(projects),
+        total_units=total_units,
+        projects=projects,
+    )
+
+
+def _grant_program_summary(data: dict[str, Any]) -> GrantProgramSummary | None:
+    """Build a summary from SBIF + NOF grant program data."""
+    all_rows: list[dict] = []
+    for key in ("sbif", "nof_large", "nof_small"):
+        all_rows.extend(data.get(key, []))
+    if not all_rows:
+        return None
+
+    by_program: dict[str, int] = {}
+    total_funding = 0.0
+    for row in all_rows:
+        prog = row.get("_program", "Unknown")
+        by_program[prog] = by_program.get(prog, 0) + 1
+        amt = row.get("incentive_amount")
+        if amt:
+            try:
+                total_funding += float(amt)
+            except (TypeError, ValueError):
+                pass
+
+    recent: list[GrantProject] = []
+    sorted_rows = sorted(
+        all_rows,
+        key=lambda r: r.get("completion_date") or "",
+        reverse=True,
+    )
+    for row in sorted_rows[:10]:
+        amt = None
+        if row.get("incentive_amount"):
+            try:
+                amt = float(row["incentive_amount"])
+            except (TypeError, ValueError):
+                pass
+        cost = None
+        if row.get("total_project_cost"):
+            try:
+                cost = float(row["total_project_cost"])
+            except (TypeError, ValueError):
+                pass
+        recent.append(GrantProject(
+            name=(row.get("project_name") or "").strip() or "Unnamed",
+            program=row.get("_program", "Unknown"),
+            incentive_amount=amt,
+            total_cost=cost,
+            property_type=(row.get("property_type") or "").strip() or None,
+            description=(row.get("project_description") or "").strip() or None,
+            date=(row.get("completion_date") or "")[:10] or None,
+        ))
+
+    return GrantProgramSummary(
+        total_projects=len(all_rows),
+        total_funding=total_funding,
+        by_program=by_program,
+        recent_projects=recent,
+    )
+
+
+_TAX_INCENTIVE_CLASSES: dict[str, str] = {
+    "6b": "Class 6b — Reduced assessment for industrial/commercial rehabilitation",
+    "6c": "Class 6c — Reduced assessment for industrial brownfield redevelopment",
+    "7a": "Class 7a — Reduced assessment for commercial/industrial in economically disadvantaged areas",
+    "7b": "Class 7b — Reduced assessment for large-scale commercial/industrial projects",
+    "7c": "Class 7c — Reduced assessment for long-term commercial/industrial investment",
+    "8":  "Class 8 — Reduced assessment for industrial property and pollution control",
+}
+
+
+def _interpret_tax_class(bldg_class: str | None) -> tuple[str | None, str | None]:
+    """Return (normalized_class, description) if the property class is a tax incentive."""
+    if not bldg_class:
+        return None, None
+    code = bldg_class.strip().lower()
+    for prefix, desc in _TAX_INCENTIVE_CLASSES.items():
+        if code == prefix or code.startswith(prefix + "-") or code.startswith(prefix + " "):
+            return prefix.upper(), desc
+    return None, None
 
 
 def _crime_summary(rows: list[dict[str, Any]]) -> CrimeSummary | None:
@@ -140,27 +249,39 @@ def _permit_summary(data: dict[str, Any]) -> PermitSummary | None:
     )
 
 
+_VIOLATION_CODE_PREFIXES: dict[str, str] = {
+    "EV": "Elevator/Escalator",
+    "BR": "Boiler/Mechanical",
+}
+
 _VIOLATION_CATEGORIES = [
-    (["ELEVA"], "Elevator/Escalator"),
-    (["EXTERIOR WALL", "EAVES", "LINTELS", "WINDOW SILLS", "PARAPET", "CHIMNEY", "EXTERIOR DOOR", "EXTERIOR STAIR"], "Exterior Structure"),
+    (["ELEVA", "ESCALAT"], "Elevator/Escalator"),
+    (["BOILER", "BREECHING", "PRESSURE GAUGE", "SAFETY VALVE"], "Boiler/Mechanical"),
+    (["ELECTRICAL", "WIRING", "VOLTAGE", "FIXTURE", "ELECT "], "Electrical"),
+    (["EXTERIOR WALL", "EAVES", "LINTELS", "WINDOW SILLS", "PARAPET", "CHIMNEY", "EXTERIOR DOOR", "EXTERIOR STAIR", "FACADE", "BRICK", "TUCKPOINT", "MASONRY", "SIDING"], "Exterior Structure"),
     (["INTERIOR WALL", "CEILING", "INTERIOR STAIR", "FLOOR"], "Interior Structure"),
-    (["PORCH"], "Porch/Deck"),
+    (["PORCH", "DECK", "BALCON", "RAILING", "STEP"], "Porch/Deck"),
     (["ROOF"], "Roof"),
     (["FENCE"], "Fencing"),
     (["GARAGE", "SHED"], "Garage/Shed"),
     (["WINDOW", "SCREEN", "PLEXGLAS"], "Windows/Screens"),
-    (["SMOKE DETECT", "CARB MONOX", "FIRE EXT"], "Fire Safety"),
-    (["OBSTRUCTION", "EXIT WAY"], "Egress/Safety"),
-    (["NUISANCE", "WEED", "DEBRIS", "EXCESSIVE"], "Nuisance/Cleanup"),
-    (["MICE", "RODENT"], "Pest Control"),
+    (["SMOKE DETECT", "CARB MONOX", "FIRE EXT", "FIRE ESCAPE", "FIRE ALARM"], "Fire Safety"),
+    (["OBSTRUCTION", "EXIT WAY", "EGRESS", "HANDRAIL"], "Egress/Safety"),
+    (["NUISANCE", "WEED", "DEBRIS", "EXCESSIVE", "REFUSE"], "Nuisance/Cleanup"),
+    (["MICE", "RODENT", "PEST", "VERMIN"], "Pest Control"),
     (["PERMIT", "PLANS", "CONTRACTOR", "LICENSED"], "Permits/Contractor"),
     (["INSPECT", "REINSPECT", "ARRANGE"], "Inspection Required"),
-    (["PLUMB"], "Plumbing"),
-    (["HEAT"], "Heating"),
+    (["PLUMB", "DRAIN", "SEWER", "WATER SUPPLY"], "Plumbing"),
+    (["HEAT", "FURNACE", "HVAC"], "Heating"),
 ]
 
 
-def _categorize_violation(desc: str) -> str:
+def _categorize_violation(desc: str, code: str | None = None) -> str:
+    if code:
+        code_upper = code.strip().upper()
+        for prefix, category in _VIOLATION_CODE_PREFIXES.items():
+            if code_upper.startswith(prefix):
+                return category
     upper = (desc or "").upper()
     for keywords, category in _VIOLATION_CATEGORIES:
         for kw in keywords:
@@ -190,7 +311,8 @@ def _violation_summary(data: dict[str, Any]) -> ViolationSummary | None:
         desc = (row.get("violation_description") or "").strip()
         if desc:
             descs[desc[:120]] += 1
-            categories[_categorize_violation(desc)] += 1
+            code = row.get("violation_code")
+            categories[_categorize_violation(desc, code)] += 1
         if not status_counts and (row.get("violation_status") or "").upper() == "OPEN":
             open_count += 1
 
@@ -341,6 +463,7 @@ def assemble_context(
     property_summary: PropertySummary | None = None,
     incentives_summary: IncentivesSummary | None = None,
     neighborhood_summary: NeighborhoodSummary | None = None,
+    aro_housing_rows: list[dict[str, Any]] | None = None,
     partial_failures: list[str] | None = None,
 ) -> ContextObject:
     settings = get_settings()
@@ -368,6 +491,23 @@ def assemble_context(
             zone_type=zoning_info.get("zone_type"),
             ordinance_num=zoning_info.get("ordinance_num"),
         )
+
+    if aro_housing_rows and regulatory_summary:
+        aro_summary = _aro_housing_summary(aro_housing_rows)
+        if aro_summary:
+            regulatory_summary = regulatory_summary.model_copy(update={
+                "aro_housing": aro_summary,
+            })
+
+    if property_summary and property_summary.bldg_class:
+        tax_class, tax_desc = _interpret_tax_class(property_summary.bldg_class)
+        if tax_class:
+            if incentives_summary is None:
+                incentives_summary = IncentivesSummary()
+            incentives_summary = incentives_summary.model_copy(update={
+                "property_tax_class": tax_class,
+                "tax_incentive_description": tax_desc,
+            })
 
     return ContextObject(
         community_area=plan.location.resolved_community_area,

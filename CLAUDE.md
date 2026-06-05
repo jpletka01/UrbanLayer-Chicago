@@ -28,7 +28,7 @@ cd frontend && npm run dev                        # :5173
 kill $(lsof -ti:8001) 2>/dev/null; uvicorn backend.main:app --reload --port 8001
 kill $(lsof -ti:5173) 2>/dev/null; cd frontend && npm run dev
 
-python -m pytest backend/tests/ -q                # ~430 tests
+python -m pytest backend/tests/ -q                # ~444 tests
 cd frontend && npx tsc --noEmit                   # type check
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark
@@ -49,7 +49,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ## Key Conventions
 
 - Backend port 8001, frontend dev port 5173.
-- All Socrata modules (crime, 311, permits, violations, business, vacant, food_inspections) use shared `socrata_get()` with retry/backoff from `retrieval/socrata.py`.
+- All Socrata modules (crime, 311, permits, violations, business, vacant, food_inspections, grant_programs, aro_housing) use shared `socrata_get()` with retry/backoff from `retrieval/socrata.py`.
 - All ArcGIS modules follow the same spatial query pattern as `zoning.py`.
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.

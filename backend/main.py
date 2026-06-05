@@ -47,6 +47,7 @@ from backend.retrieval.incentives import incentives_domain
 from backend.retrieval.neighborhood import neighborhood_domain
 from backend.retrieval.property import property_domain
 from backend.retrieval.regulatory import regulatory_domain
+from backend.retrieval.regulatory.aro_housing import aro_housing_by_community_area
 from backend.retrieval.zoning import lookup_zoning
 from backend.retrieval.vector_search import (
     expand_cross_references,
@@ -488,19 +489,28 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
             regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
         )
 
+    if "regulatory_domain" in plan.sources and ca is not None:
+        tasks["aro_housing"] = asyncio.create_task(
+            aro_housing_by_community_area(ca)
+        )
+
     if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
         tasks["property"] = asyncio.create_task(
             property_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
         )
 
     if "incentives_domain" in plan.sources:
+        ca_name = loc.resolved_community_area_name
         if loc.resolved_lat and loc.resolved_lon:
             tasks["incentives"] = asyncio.create_task(
-                incentives_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
+                incentives_domain(
+                    loc.resolved_lat, loc.resolved_lon,
+                    ca_name=ca_name, workflow=wf,
+                )
             )
         elif ca is not None:
             tasks["incentives"] = asyncio.create_task(
-                incentives_domain(ca=ca, workflow=wf)
+                incentives_domain(ca=ca, ca_name=ca_name, workflow=wf)
             )
 
     if "neighborhood_domain" in plan.sources:
@@ -522,6 +532,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         "business": "business licenses",
         "vacant": "vacant buildings",
         "food_inspections": "food inspections",
+        "aro_housing": "affordable housing data",
         "zoning_lookup": "parcel zoning",
         "regulatory": "regulatory overlays",
         "property": "property records",
@@ -568,6 +579,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         property_summary=results.get("property"),
         incentives_summary=results.get("incentives"),
         neighborhood_summary=results.get("neighborhood"),
+        aro_housing_rows=results.get("aro_housing") if "aro_housing" in results else None,
         partial_failures=partial_failures,
     )
 
