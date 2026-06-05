@@ -14,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    anthropic_api_key: str
+    anthropic_api_key: str = ""
     socrata_app_token: str = ""
     qdrant_url: str = "http://localhost:6333"
 
