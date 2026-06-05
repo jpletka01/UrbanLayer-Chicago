@@ -14,7 +14,7 @@ All expansion phases from the original `chicago_expansion_plan.md` are complete:
 | Phase 6 | Frontend Integration | Done — PropertyCard, RegulatoryCard, IncentivesCard, NeighborhoodCard, map overlay/incentive polygons |
 | Phase 7 | Polish & Optimization | Done — TTL caching, startup preloading, graceful degradation, workflow_hint, eval expansion (39 queries), overlay/incentive map geometry |
 
-Original Buckets 1-3 also complete: mobile responsiveness, file upload, admin dashboard, LLM-as-judge eval, legal-domain reranker, data source coverage benchmark (26 queries across 26 sub-sources, 73% coverage rate).
+Original Buckets 1-3 also complete: mobile responsiveness, file upload, admin dashboard, LLM-as-judge eval, legal-domain reranker, data source coverage benchmark (29 queries across 29 sub-sources, 83% coverage rate).
 
 ## Remaining Opportunities (Tier 3)
 
@@ -68,4 +68,7 @@ Evaluated the 5 unintegrated Chicago Zoning MapServer layers. None warranted int
 | CI pipeline (tests + type check) | Done — `.github/workflows/ci.yml`, auto-deploy on push to main |
 | CI/CD deploy secrets | Done — `SERVER_SSH_KEY` + `SERVER_HOST` configured in GitHub repo secrets |
 | Monitoring / alerting | Done — UptimeRobot active, Sentry active (EU region DSNs configured) |
-| AI code review on PRs | Done — `.github/workflows/code-review.yml`, `anthropics/claude-code-action@v1` |
+| AI code review on PRs | Done — `.github/workflows/code-review.yml`, `anthropics/claude-code-action@v1`, Claude Code GitHub App installed |
+| Tier 3 production deploy | Done — PR #1 merged (2026-06-05), all integrations live on production |
+| CI fixes | Done — `anthropic_api_key` default, Walk Score test mocking, `id-token: write` permission, `ANTHROPIC_API_KEY` secret |
+| CI deploy key | Pending verification — passphrase-free ed25519 key uploaded, needs next push to main to confirm |

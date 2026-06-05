@@ -181,7 +181,7 @@ DAILY_API_BUDGET_USD=5.00
 | 5 | Google OAuth + JWT auth | **Done** — Google Cloud OAuth client configured, credentials in server `.env`, HTTPS callback URL fix deployed |
 | 6 | Rate limiting + budget cap | **Done** |
 | 7 | Security hardening | **Done** |
-| 8 | CI/CD pipeline | **Done** — `.github/workflows/ci.yml`: pytest + tsc on PR, SSH deploy on merge. Needs `SERVER_SSH_KEY` + `SERVER_HOST` GitHub secrets |
+| 8 | CI/CD pipeline | **Done** — `.github/workflows/ci.yml`: pytest + tsc on PR, SSH deploy on merge. Secrets: `SERVER_SSH_KEY` (passphrase-free deploy key, updated 2026-06-05), `SERVER_HOST`, `ANTHROPIC_API_KEY`. Deploy key pending verification on next push to main |
 | 9 | Monitoring (Sentry + UptimeRobot) | **Done** — UptimeRobot configured, Sentry active (EU region, DSN values in server `.env`) |
 
 ## Database Backups

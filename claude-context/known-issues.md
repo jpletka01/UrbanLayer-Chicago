@@ -62,14 +62,19 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 
 ## Not Yet Built
 
-- ~~**Automated code review**~~ — **Done** — `.github/workflows/code-review.yml` uses `anthropics/claude-code-action@v1` to review PRs on open/synchronize. Requires `ANTHROPIC_API_KEY` in GitHub Secrets.
+- ~~**Automated code review**~~ — **Done** — `.github/workflows/code-review.yml` uses `anthropics/claude-code-action@v1` to review PRs on open/synchronize. Requires `ANTHROPIC_API_KEY` + Claude Code GitHub App installed on repo.
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
+- **Context management improvements** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
+- **Latency reduction** — Synthesis currently takes 3-8s. Optimization opportunities identified but not implemented.
+- **Export features** — No way to export/share conversation results (PDF, link sharing, etc.).
 
 ## Outstanding Work
 
-- **Deploy Tier 3 to production** — PR open on `tier3-integrations` branch with all new integrations. Merge and deploy to server.
-- **Verify code-review GitHub Action** — `.github/workflows/code-review.yml` is live. Test by merging the Tier 3 PR (or opening a new one).
+- **CI/CD deploy key** — `SERVER_SSH_KEY` GitHub secret updated with passphrase-free ed25519 key (2026-06-05). Public key added to server `authorized_keys`. Not yet verified end-to-end — the next push to main will confirm the auto-deploy works.
+- **Re-run source coverage benchmark on production** — Tier 3 integrations deployed; ARO housing routing fix needs verification via live benchmark run.
+- **Database backup cron on server** — Script exists (`scripts/backup_db.sh`) but cron job may not be set up on the server yet.
+- **Tier 2 improvements** — Context management, latency reduction, and export features (designed 2026-06-02, not yet implemented).
 
 ## Operational Status
 
@@ -80,9 +85,11 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 - **Grant programs datasets** — SBIF (`etqr-sz5x`, 2,152 records) is historical and complete. NOF large (`j7ew-b73u`, 6 records) and small (`rym7-49n8`, 126 records) are small but meaningful.
 - **ARO housing dataset** — `s6ha-ppgi` (598 records). Relatively stable, not frequently updated.
 
-## Deployment Status (2026-06-04)
+## Deployment Status (2026-06-05)
 
-Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Google OAuth active. Qdrant has 14,535 vectors (municipal code search operational). CI/CD pipeline deployed. UptimeRobot monitoring active. Full status tracked in `claude-context/deployment-plan.md`.
+Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Google OAuth active. Qdrant has 14,535 vectors (municipal code search operational). CI/CD pipeline deployed (tests + type check pass, auto-deploy key pending verification). UptimeRobot + Sentry monitoring active. Claude Code GitHub App installed for AI code review on PRs. Full status tracked in `claude-context/deployment-plan.md`.
+
+**Tier 3 integrations deployed to production** (2026-06-05): Grant programs, ARO housing, tax incentive classes merged via PR #1 and deployed.
 
 **Server deploy command** (from server `/opt/urbanlayer`):
 ```bash

@@ -148,10 +148,14 @@ curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
 ~444 unit + integration tests. Mock external APIs in unit tests. Real-API tests marked `@pytest.mark.integration`.
 
 Key test patterns:
-- `conftest.py` has autouse fixture that clears all TTLCaches between tests.
+- `conftest.py` has autouse fixture that clears all TTLCaches between tests + rate limit counters.
 - Socrata mocks: `httpx` response fixtures.
 - ArcGIS mocks: JSON response fixtures matching real API shape.
 - Domain orchestrator tests: mock individual sub-modules, verify parallel execution + graceful degradation.
+- Walk Score tests: autouse `_mock_api_key` fixture provides a fake `walkscore_api_key` via `monkeypatch` (the real key defaults to empty string, which would cause early returns before mock clients are used).
+- Neighborhood orchestrator tests: autouse `_mock_neighborhood_settings` fixture provides `walkscore_api_key` so the orchestrator dispatches Walk Score tasks.
+
+**CI note**: `anthropic_api_key` defaults to `""` in `config.py` so tests can run without the secret (all LLM calls are mocked). The `ANTHROPIC_API_KEY` GitHub secret is only needed for the code review action, not tests.
 
 ## Evaluation & Benchmarks
 
@@ -161,8 +165,8 @@ Three eval tools in `eval/`:
 |------|---------|---------------|
 | Router eval | `python -m eval.run_eval` | Source tag routing, intent, location resolution (39 queries) |
 | Full eval + judge | `python -m eval.run_eval --full URL --judge` | End-to-end retrieval + LLM-as-judge synthesis grading (4 dimensions) |
-| **Source coverage** | `python -m eval.source_coverage --full URL` | Per-sub-source data presence in context AND synthesis (24 queries, 36 checks across 24 sub-sources) |
+| **Source coverage** | `python -m eval.source_coverage --full URL` | Per-sub-source data presence in context AND synthesis (29 queries, 41 checks across 29 sub-sources) |
 
 Source coverage benchmark produces a coverage matrix with four statuses per sub-source: COVERED, SYNTHESIS_GAP (data in context but not mentioned), RETRIEVAL_GAP (data not fetched), HALLUCINATION (mentioned but not in context). Also tracks API cap hits and whether the synthesis correctly hedges with "at least" phrasing. Results written to `eval/coverage_results.json` and optionally `--out coverage_report.md`.
 
-**Note (2026-06-04):** Coverage queries for the new Tier 3 sources (grant programs, ARO housing, tax incentive classes) have not yet been added to `eval/coverage_queries.json`. The benchmark currently covers 26 sub-sources; the new integrations should be added before the next full run.
+Tier 3 coverage queries (grant programs, ARO housing, tax incentive classes) added to `eval/coverage_queries.json` as of 2026-06-05. Current benchmark: 34/41 sub-source checks covered (83%).
