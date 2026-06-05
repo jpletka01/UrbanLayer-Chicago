@@ -2,10 +2,11 @@ import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export function useConversationRouter() {
-  const { id } = useParams<{ id: string }>();
+  const { id, shareToken } = useParams<{ id?: string; shareToken?: string }>();
   const navigate = useNavigate();
 
   const conversationIdFromUrl = id ?? null;
+  const shareTokenFromUrl = shareToken ?? null;
 
   const navigateToConversation = useCallback(
     (convId: string) => navigate(`/c/${convId}`),
@@ -24,6 +25,7 @@ export function useConversationRouter() {
 
   return {
     conversationIdFromUrl,
+    shareTokenFromUrl,
     navigateToConversation,
     navigateToSplash,
     navigateReplace,

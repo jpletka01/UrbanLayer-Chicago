@@ -159,6 +159,7 @@ from backend.auth import (
     handle_me,
     handle_refresh,
     require_admin,
+    require_auth,
     set_auth_cookies,
     clear_auth_cookies,
 )
@@ -375,6 +376,57 @@ async def clear_conversations(
 ) -> dict:
     await db.clear_all_conversations(_user_id(user))
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Conversation sharing
+# ---------------------------------------------------------------------------
+
+@app.post("/api/conversations/{conv_id}/share", status_code=201)
+async def create_share(
+    conv_id: str, user: dict = Depends(require_auth),
+) -> dict:
+    result = await db.create_share_token(conv_id, user["id"])
+    if not result:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    settings = get_settings()
+    base_url = settings.frontend_url or ""
+    return {"token": result["token"], "url": f"{base_url}/s/{result['token']}"}
+
+
+@app.get("/api/conversations/{conv_id}/share")
+async def get_share_status(
+    conv_id: str, user: dict | None = Depends(get_current_user),
+) -> dict:
+    share = await db.get_conversation_share(conv_id)
+    if not share:
+        return {"shared": False}
+    settings = get_settings()
+    base_url = settings.frontend_url or ""
+    return {
+        "shared": True,
+        "token": share["token"],
+        "url": f"{base_url}/s/{share['token']}",
+        "created_at": share["created_at"],
+    }
+
+
+@app.delete("/api/conversations/{conv_id}/share")
+async def revoke_share(
+    conv_id: str, user: dict = Depends(require_auth),
+) -> dict:
+    revoked = await db.revoke_share(conv_id, user["id"])
+    if not revoked:
+        raise HTTPException(status_code=404, detail="Share not found")
+    return {"ok": True}
+
+
+@app.get("/api/share/{token}")
+async def get_shared_conversation(token: str) -> dict:
+    conv = await db.get_shared_conversation(token)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Shared conversation not found")
+    return conv
 
 
 # ---------------------------------------------------------------------------

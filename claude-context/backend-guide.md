@@ -75,9 +75,18 @@ SQLite via aiosqlite, WAL mode, singleton connection, schema versioning.
 - `request_logs` — per-chat-turn summary (intent, location, sources, duration). Has nullable `user_id` column.
 - `users` — id, email, name, picture_url, google_id, tier. Google OAuth user records.
 - `refresh_tokens` — user_id, token_hash, expires_at, revoked. Refresh token rotation tracking.
-- `schema_version` — migration tracking (currently v4)
+- `conversation_shares` — share tokens for public read-only conversation links (CASCADE on conversation delete)
+- `schema_version` — migration tracking (currently v6)
 
 **Conversation API** (7 CRUD endpoints): list, create, get (full with messages), delete (CASCADE), append messages, update map data, bulk import.
+
+**Share API** (4 endpoints):
+- `POST /api/conversations/{id}/share` — create share link (requires auth, replaces existing)
+- `GET /api/conversations/{id}/share` — check share status
+- `DELETE /api/conversations/{id}/share` — revoke share link (requires auth)
+- `GET /api/share/{token}` — public endpoint, loads conversation without auth
+
+Share tokens are 132-bit URL-safe (`secrets.token_urlsafe(22)`). Live links, not snapshots — CASCADE delete cleans up when conversation is deleted. Ownership checks use `user_id = ? OR user_id IS NULL` to match legacy conversations created before auth was added.
 
 **Admin API** (8 endpoints, all protected by `require_admin`): cache stats, overview (tokens/cost/errors by model/phase), timeseries (bucketed for charts), latency (p50/p90/p99), conversations, paginated request log, benchmark results, judge results.
 

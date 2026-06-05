@@ -8,6 +8,8 @@ Two global UI states:
 
 **Split-Screen Workspace** (`/c/:id`): Chat (left, ~60%) + collapsible sidebar (right, ~40%). Sidebar starts closed (44px rail with document icon + source count badge). Auto-opens when context data arrives. Drag-to-resize left edge handle; snap-close at <200px, max 60% viewport.
 
+**Shared View** (`/s/:shareToken`): Read-only conversation view. Reuses `<App />` with `isSharedView` flag. Header shows "UrbanLayer — Shared" + "Try UrbanLayer" CTA instead of new-chat/auth controls. Chat input replaced with "shared conversation — read only" banner. Sidebar loads normally with map + data cards.
+
 Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 
 ## Component Reference
@@ -22,6 +24,7 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 | `CitationPill` | `[N]` → `§ section` reference with hover tooltip, click opens/expands source |
 | `DataPill` | `[data:*]` → colored marker, click opens Data tab |
 | `CrossRefPill` | Clickable cross-reference with hover preview of target section |
+| `ShareModal` | Create/copy/revoke share links. Checks existing share status on open |
 | `DisclaimerBanner` | Amber legal disclaimer |
 | `HeroSlideshow` | Landing page photo carousel |
 | `CountUp` | Animated stat counter (Framer Motion `useMotionValue`) |
@@ -72,7 +75,8 @@ useChat hook:
 
 App.tsx state:
   conversationId (synced with URL), sidebarOpen, sidebarView ('data'|'sources'),
-  mapData, selectedMessageIndex (per-question toggling), historyOpen, loadingConversation
+  mapData, selectedMessageIndex (per-question toggling), historyOpen, loadingConversation,
+  isSharedView (read-only mode for /s/:token), shareModalOpen
 ```
 
 **Auto-behaviors:**

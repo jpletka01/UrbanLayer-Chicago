@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import secrets
 import time
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 5
+_SCHEMA_VERSION = 6
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -126,6 +127,25 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 """
 
 
+_SCHEMA_V6 = """\
+CREATE TABLE IF NOT EXISTS conversation_shares (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    token           TEXT NOT NULL UNIQUE,
+    created_by      TEXT,
+    created_at      INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_shares_token ON conversation_shares(token);
+CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_id);
+"""
+
+
+async def _migrate_v6(db: aiosqlite.Connection) -> None:
+    """Add conversation_shares table for shareable links."""
+    await db.executescript(_SCHEMA_V6)
+
+
 async def _migrate_v4(db: aiosqlite.Connection) -> None:
     """Add users and refresh_tokens tables; add user_id to request_logs and llm_calls."""
     await db.executescript(_SCHEMA_V4)
@@ -177,6 +197,7 @@ async def init_db() -> None:
         await _migrate_v3(_db)
         await _migrate_v4(_db)
         await _migrate_v5(_db)
+        await _migrate_v6(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -192,6 +213,9 @@ async def init_db() -> None:
         if version < 5:
             await _migrate_v5(_db)
             version = 5
+        if version < 6:
+            await _migrate_v6(_db)
+            version = 6
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -452,8 +476,74 @@ async def count_user_messages(conv_id: str) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Bulk import (localStorage migration)
+# Conversation sharing
 # ---------------------------------------------------------------------------
+
+
+async def create_share_token(
+    conv_id: str, user_id: str,
+) -> dict:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT id FROM conversations WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+        (conv_id, user_id),
+    )
+    if not await cur.fetchone():
+        return {}
+    await db.execute(
+        "DELETE FROM conversation_shares WHERE conversation_id = ?",
+        (conv_id,),
+    )
+    token = secrets.token_urlsafe(22)
+    now = _now_ms()
+    await db.execute(
+        "INSERT INTO conversation_shares (conversation_id, token, created_by, created_at) VALUES (?, ?, ?, ?)",
+        (conv_id, token, user_id, now),
+    )
+    await db.commit()
+    return {"token": token, "conversation_id": conv_id, "created_at": now}
+
+
+async def get_share(token: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT conversation_id, token, created_by, created_at FROM conversation_shares WHERE token = ?",
+        (token,),
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_conversation_share(conv_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT token, created_by, created_at FROM conversation_shares WHERE conversation_id = ?",
+        (conv_id,),
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def revoke_share(conv_id: str, user_id: str) -> bool:
+    db = _get_db()
+    cur = await db.execute(
+        """
+        DELETE FROM conversation_shares
+        WHERE conversation_id = ?
+          AND conversation_id IN (SELECT id FROM conversations WHERE user_id = ? OR user_id IS NULL)
+        """,
+        (conv_id, user_id),
+    )
+    await db.commit()
+    return cur.rowcount > 0
+
+
+async def get_shared_conversation(token: str) -> dict | None:
+    share = await get_share(token)
+    if not share:
+        return None
+    return await get_conversation(share["conversation_id"])
+
 
 # ---------------------------------------------------------------------------
 # Uploads

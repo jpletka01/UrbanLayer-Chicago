@@ -25,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/c/:id" element={<App />} />
+          <Route path="/s/:shareToken" element={<App />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={
             <ProtectedRoute tier="admin">

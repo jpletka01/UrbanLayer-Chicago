@@ -266,6 +266,47 @@ export async function clearAllConversations(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Conversation sharing
+// ---------------------------------------------------------------------------
+
+export async function createShareLink(
+  conversationId: string,
+): Promise<{ token: string; url: string } | null> {
+  const resp = await authFetch(
+    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/share`,
+    { method: "POST" },
+  );
+  if (!resp.ok) return null;
+  return await resp.json();
+}
+
+export async function revokeShareLink(conversationId: string): Promise<boolean> {
+  const resp = await authFetch(
+    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/share`,
+    { method: "DELETE" },
+  );
+  return resp.ok;
+}
+
+export async function getShareStatus(
+  conversationId: string,
+): Promise<{ shared: boolean; token?: string; url?: string; created_at?: number }> {
+  const resp = await authFetch(
+    `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/share`,
+  );
+  if (!resp.ok) return { shared: false };
+  return await resp.json();
+}
+
+export async function getSharedConversation(
+  token: string,
+): Promise<ConversationDetail | null> {
+  const resp = await fetch(`${API_BASE}/api/share/${encodeURIComponent(token)}`);
+  if (!resp.ok) return null;
+  return await resp.json();
+}
+
+// ---------------------------------------------------------------------------
 // File uploads
 // ---------------------------------------------------------------------------
 

@@ -29,6 +29,8 @@ These work well enough but could break on edge cases:
 
 ## Gotchas
 
+**Legacy `user_id IS NULL` conversations**: Conversations created before auth was added (schema v5) have `user_id = NULL`. Any ownership check must use `WHERE user_id = ? OR user_id IS NULL` — not just `WHERE user_id = ?`. This applies to share creation/revocation, conversation loading, and any future user-scoped operations. In dev mode (no GOOGLE_CLIENT_ID), the auth bypass creates a user with `id: "dev"`, but pre-auth conversations still have NULL.
+
 **Port must be 8001**: Frontend proxy config and API URLs assume backend on 8001. Changing it requires updating `vite.config.ts` proxy + frontend API base URL.
 
 **Tailwind color-name collisions**: Custom tokens (`bg-dark-bg`, `text-accent`) must not collide with Tailwind built-ins. An earlier incident used `bg-dark` which is a valid Tailwind class with a different meaning. Always use the full prefixed name.
@@ -70,7 +72,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
 - **Context management improvements** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
 - **Latency reduction** — Synthesis currently takes 3-8s. Optimization opportunities identified but not implemented.
-- **Shareable links** — PDF export exists (`ExportReport.tsx`). Link sharing not yet built.
+- ~~**Shareable links**~~ — **Done** — `/s/:token` share routes with `conversation_shares` table (schema v6). ShareModal UI for create/copy/revoke.
 
 ## Outstanding Work
 
@@ -79,7 +81,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - ~~**Database backup cron on server**~~ — **Done** (2026-06-05). Cron runs daily at 3am UTC, 7 rolling backups at `/opt/urbanlayer/backups/`. DB path: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
 - **Synthesis latency reduction** — 3-8s first-hit synthesis. Optimization opportunities: model routing for simple queries, prompt trimming, partial streaming.
 - **Mobile experience** — Sidebar/map hidden on mobile (`hidden md:flex`). Needs bottom sheet or swipe-to-reveal for map access.
-- **Shareable conversation links** — PDF export exists, but no way to share a conversation via URL.
+- ~~**Shareable conversation links**~~ — **Done** — Share button in workspace header creates a public read-only link (`/s/:token`). ShareModal shows URL with copy/revoke. Schema v6 `conversation_shares` table with CASCADE delete.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window.
 - **ARO housing routing gap** — Benchmark shows HALLUCINATION; ARO query not dispatched for ARO-specific questions that don't trigger `regulatory_domain` routing.
 - **Vector search gap** — RT-4 daycare query returned no code chunks. Investigate query formulation or Qdrant index state.

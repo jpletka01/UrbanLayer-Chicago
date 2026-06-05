@@ -47,7 +47,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **Tooltip**: `position: fixed` via `createPortal` to `document.body`, viewport-clamped with `useLayoutEffect`.
 - **InfoTooltip**: Wrap term text in `<InfoTooltip term="key">{text}</InfoTooltip>` for hover/tap definitions. Uses `termDefinitions.ts` for lookups across overlays, zones, incentives, flood zones. Dotted underline trigger, 150ms hover persistence, click-away dismiss on mobile.
 - **Charts**: `PieChart` (SVG donut) and `BarChart` (SVG horizontal bars) are custom — no chart library. `BarChart` takes `DistributionBucket[]` and renders labeled horizontal bars with hover state.
-- **Routing**: `/` (splash), `/c/:id` (conversation), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
+- **Routing**: `/` (splash), `/c/:id` (conversation), `/s/:shareToken` (shared read-only view), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
 - **Auth**: `AuthProvider` wraps the app in `main.tsx`. Auth gate on `sendMessage` in `App.tsx` — shows `AuthModal` if `authRequired && !isAuthenticated`. `UserMenu` in workspace header shows avatar + sign-out. Admin link only visible when `user.tier === "admin"`. In dev mode (`GOOGLE_CLIENT_ID` not set), auth is fully bypassed — no sign-in UI shown.
 
 ## Docker / Nginx

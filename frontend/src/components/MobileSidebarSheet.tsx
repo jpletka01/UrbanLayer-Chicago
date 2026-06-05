@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type { ContextObject, MapData, RetrievalPlan, SidebarView, SourceTag } from "../lib/types";
+import type { ContextObject, MapData, SidebarView, SourceTag } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataMapLayout } from "./sidebar/DataMapLayout";
 import { SourcesView } from "./sidebar/SourcesView";
@@ -8,7 +8,6 @@ import { SourcesView } from "./sidebar/SourcesView";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
   activeView: SidebarView;
@@ -29,7 +28,6 @@ interface Props {
 export function MobileSidebarSheet({
   isOpen,
   onClose,
-  plan,
   context,
   loading,
   activeView,
@@ -128,7 +126,6 @@ export function MobileSidebarSheet({
                 mapData={mapData ?? null}
                 mapLoading={mapLoading}
                 mapSources={mapSources}
-                plan={plan}
                 context={context}
                 loading={loading}
               />

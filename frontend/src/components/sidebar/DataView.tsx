@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { ContextObject, MapData, RetrievalPlan } from "../../lib/types";
+import type { ContextObject, MapData } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
 import { zonePrefix, zoneColorCSS, ZONE_PREFIX_LABELS } from "../../lib/mapColors";
 import { InfoTooltip } from "../InfoTooltip";
@@ -14,7 +14,6 @@ import { VacantBuildingsCard } from "./VacantBuildingsCard";
 import { FoodInspectionCard } from "./FoodInspectionCard";
 
 interface Props {
-  plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
   mapData?: MapData | null;

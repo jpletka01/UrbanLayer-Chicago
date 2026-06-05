@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ContextObject, MapData, RetrievalPlan, SidebarView, SourceTag } from "../lib/types";
+import type { ContextObject, MapData, SidebarView, SourceTag } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataMapLayout } from "./sidebar/DataMapLayout";
 import { SourcesView } from "./sidebar/SourcesView";
@@ -28,7 +28,6 @@ function countDataCategories(ctx: ContextObject | null): number {
 }
 
 interface Props {
-  plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
   isOpen: boolean;
@@ -48,7 +47,6 @@ interface Props {
 }
 
 export function SidebarPanel({
-  plan,
   context,
   loading,
   isOpen,
@@ -232,7 +230,6 @@ export function SidebarPanel({
           mapData={mapData ?? null}
           mapLoading={mapLoading}
           mapSources={mapSources}
-          plan={plan}
           context={context}
           loading={loading}
         />

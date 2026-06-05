@@ -19,6 +19,7 @@ interface Props {
   onAttach?: (files: File[]) => void;
   onRemoveAttachment?: (index: number) => void;
   activities?: ActivityItem[];
+  readOnly?: boolean;
 }
 
 export function ChatInterface({
@@ -37,6 +38,7 @@ export function ChatInterface({
   onAttach,
   onRemoveAttachment,
   activities,
+  readOnly,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +78,11 @@ export function ChatInterface({
 
       <div className="shrink-0 bg-dark-bg">
         <div className="max-w-3xl mx-auto px-3 md:px-6 py-3 md:py-4">
-          {atMessageLimit ? (
+          {readOnly ? (
+            <div className="text-center py-3 text-text-muted text-sm">
+              This is a shared conversation — read only
+            </div>
+          ) : atMessageLimit ? (
             <div className="text-center py-3 text-text-muted text-sm">
               You've reached the 10-message limit for this conversation.{" "}
               <button

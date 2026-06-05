@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ContextObject, MapData, RetrievalPlan, SourceTag } from "../../lib/types";
+import type { ContextObject, MapData, SourceTag } from "../../lib/types";
 import { deriveFilterMode } from "../../lib/mapColors";
 import { DataView } from "./DataView";
 import { MapView } from "./MapView";
@@ -12,7 +12,6 @@ export interface DataMapLayoutProps {
   mapData: MapData | null;
   mapLoading: boolean;
   mapSources: SourceTag[];
-  plan: RetrievalPlan | null;
   context: ContextObject | null;
   loading: boolean;
 }
@@ -21,7 +20,6 @@ export function DataMapLayout({
   mapData,
   mapLoading,
   mapSources,
-  plan,
   context,
   loading,
 }: DataMapLayoutProps) {
@@ -147,7 +145,6 @@ export function DataMapLayout({
           {!dataCollapsed && (
             <div className="overflow-y-auto px-4 pb-4" style={{ height: effectiveDataHeight - COLLAPSED_DATA_HEIGHT }}>
               <DataView
-                plan={plan}
                 context={context}
                 loading={loading}
                 mapData={mapData}

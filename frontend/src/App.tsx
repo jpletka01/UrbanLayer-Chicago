@@ -15,6 +15,7 @@ import {
   fetchMapData,
   fetchSection,
   getConversation,
+  getSharedConversation,
   updateMessageMapData,
   uploadFiles,
 } from "./lib/api";
@@ -49,6 +50,7 @@ import { useChat } from "./lib/useChat";
 import { useConversationRouter } from "./lib/useConversationRouter";
 import { buildReportData, type ReportData } from "./lib/reportBuilder";
 import { ExportReport } from "./components/ExportReport";
+import { ShareModal } from "./components/ShareModal";
 import { useAuthContext } from "./contexts/AuthContext";
 import AuthModal from "./components/AuthModal";
 import UserMenu from "./components/UserMenu";
@@ -72,7 +74,7 @@ function countDataCategories(ctx: ContextObject | null): number {
 }
 
 export function App() {
-  const { conversationIdFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
+  const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
     useConversationRouter();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -96,6 +98,8 @@ export function App() {
   const [sourcesTabViewed, setSourcesTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSharedView, setIsSharedView] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const { user, isAuthenticated, authRequired, signIn, signOut } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
@@ -154,6 +158,40 @@ export function App() {
       setLoadingConversation(false);
     }
   }, [conversationIdFromUrl]);
+
+  // Load shared conversation when navigating to /s/:token
+  useEffect(() => {
+    if (!shareTokenFromUrl) {
+      if (isSharedView) setIsSharedView(false);
+      return;
+    }
+    setLoadingConversation(true);
+    (async () => {
+      const detail = await getSharedConversation(shareTokenFromUrl);
+      if (!detail) {
+        navigateReplace("/");
+        setLoadingConversation(false);
+        return;
+      }
+      const loaded = detail.messages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        context: m.context ?? undefined,
+        plan: m.plan ?? undefined,
+        mapData: m.map_data ?? undefined,
+        mapFetchedAt: m.map_fetched_at ?? undefined,
+      }));
+      setMessages(loaded);
+      setIsSharedView(true);
+      setHistoryOpen(false);
+      clearTurnState();
+      const lastUserIdx = loaded.length - 2;
+      if (lastUserIdx >= 0) {
+        handleMessageClick(lastUserIdx, loaded);
+      }
+      setLoadingConversation(false);
+    })();
+  }, [shareTokenFromUrl]);
 
   function handleContext(ctx: ContextObject) {
     setActiveSidebarContext(ctx);
@@ -664,13 +702,20 @@ export function App() {
           >
             <header className="h-14 px-3 md:px-6 flex items-center justify-between bg-dark-bg shrink-0">
               <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                <button
-                  onClick={reset}
-                  className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
-                >
-                  <span className="hidden md:inline">UrbanLayer — Chicago</span>
-                  <span className="md:hidden">UrbanLayer</span>
-                </button>
+                {isSharedView ? (
+                  <span className="text-sm font-medium text-text-secondary shrink-0">
+                    <span className="hidden md:inline">UrbanLayer — Shared</span>
+                    <span className="md:hidden">Shared</span>
+                  </span>
+                ) : (
+                  <button
+                    onClick={reset}
+                    className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
+                  >
+                    <span className="hidden md:inline">UrbanLayer — Chicago</span>
+                    <span className="md:hidden">UrbanLayer</span>
+                  </button>
+                )}
                 {context?.community_area_name && (
                   <div className="flex items-center gap-2 text-sm min-w-0">
                     <span className="text-text-muted">/</span>
@@ -704,27 +749,50 @@ export function App() {
                     Report
                   </button>
                 )}
-                <button
-                  onClick={reset}
-                  className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
-                >
-                  <span className="hidden md:inline">New chat</span>
-                  <svg className="w-4 h-4 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                </button>
-                {user?.tier === "admin" && (
-                  <Link
-                    to="/admin"
-                    className="hidden md:flex px-2 py-1.5 text-text-muted hover:text-text-secondary transition-colors"
-                    title="Admin dashboard"
+                {!isSharedView && !streaming && isAuthenticated && conversationId && messages.some((m) => m.role === "assistant" && m.context) && (
+                  <button
+                    onClick={() => setShareModalOpen(true)}
+                    className="hidden md:flex px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center gap-1.5"
+                    title="Share conversation"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
-                  </Link>
+                    Share
+                  </button>
                 )}
-                {user && <UserMenu user={user} onSignOut={signOut} />}
+                {isSharedView ? (
+                  <Link
+                    to="/"
+                    className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
+                  >
+                    Try UrbanLayer
+                  </Link>
+                ) : (
+                  <>
+                    <button
+                      onClick={reset}
+                      className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
+                    >
+                      <span className="hidden md:inline">New chat</span>
+                      <svg className="w-4 h-4 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                    </button>
+                    {user?.tier === "admin" && (
+                      <Link
+                        to="/admin"
+                        className="hidden md:flex px-2 py-1.5 text-text-muted hover:text-text-secondary transition-colors"
+                        title="Admin dashboard"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                        </svg>
+                      </Link>
+                    )}
+                    {user && <UserMenu user={user} onSignOut={signOut} />}
+                  </>
+                )}
               </div>
             </header>
 
@@ -759,9 +827,9 @@ export function App() {
                 onAttach={handleAttach}
                 onRemoveAttachment={handleRemoveAttachment}
                 activities={activities}
+                readOnly={isSharedView}
               />
               <SidebarPanel
-                plan={plan}
                 context={activeSidebarContext}
                 loading={streaming}
                 isOpen={sidebarOpen}
@@ -784,7 +852,6 @@ export function App() {
             <MobileSidebarSheet
               isOpen={mobileSidebarOpen}
               onClose={() => setMobileSidebarOpen(false)}
-              plan={plan}
               context={activeSidebarContext}
               loading={streaming}
               activeView={sidebarView}
@@ -822,6 +889,13 @@ export function App() {
         <AuthModal
           onSignIn={signIn}
           onClose={() => setShowAuthModal(false)}
+        />
+      )}
+
+      {shareModalOpen && conversationId && (
+        <ShareModal
+          conversationId={conversationId}
+          onClose={() => setShareModalOpen(false)}
         />
       )}
     </main>
