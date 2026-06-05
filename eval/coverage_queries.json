@@ -121,7 +121,7 @@
           "sub_source": "property_characteristics",
           "context_fields": ["property.bldg_sqft|property.land_sqft|property.stories"],
           "synthesis_patterns": {
-            "any_of_groups": [["sqft", "square feet", "sq ft", "stories", "story", "floor", "units", "unit", "bedroom", "room"]]
+            "any_of_groups": [["sqft", "square feet", "sq ft", "\\d+[- ]stor", "\\d+ room", "\\d+ bedroom", "\\d+,?\\d* sq"]]
           }
         }
       ]
@@ -142,6 +142,7 @@
           "sub_source": "property_assessments",
           "context_fields": ["property.total_assessed_value|property.assessment_history"],
           "synthesis_patterns": {
+            "patterns": ["\\$[\\d,]+.*(?:assess|valuat)|(?:assess|valuat).*\\$[\\d,]+"],
             "any_of_groups": [["assess", "valuation"]]
           }
         },
@@ -276,6 +277,7 @@
         },
         {
           "sub_source": "incentives_ez",
+          "optional": true,
           "context_fields": ["incentives.in_enterprise_zone"],
           "synthesis_patterns": {
             "any_of_groups": [["Enterprise Zone", "not in an Enterprise", "no Enterprise Zone"]]

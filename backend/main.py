@@ -488,10 +488,11 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         tasks["regulatory"] = asyncio.create_task(
             regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
         )
-        if ca is not None:
-            tasks["aro_housing"] = asyncio.create_task(
-                aro_housing_by_community_area(ca)
-            )
+
+    if "regulatory_domain" in plan.sources and ca is not None:
+        tasks["aro_housing"] = asyncio.create_task(
+            aro_housing_by_community_area(ca)
+        )
 
     if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
         tasks["property"] = asyncio.create_task(
