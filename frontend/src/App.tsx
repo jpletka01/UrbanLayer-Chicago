@@ -77,6 +77,7 @@ export function App() {
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loadingConversation, setLoadingConversation] = useState(!!conversationIdFromUrl);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -317,12 +318,17 @@ export function App() {
     setSelectedMessageIndex(null);
     setDataTabViewed(true);
     setSourcesTabViewed(true);
+    setLoadError(null);
     navigateToSplash();
   }
 
   async function loadConv(conv: Conversation) {
+    setLoadError(null);
     const detail = await getConversation(conv.id);
-    if (!detail) return;
+    if (!detail) {
+      setLoadError("Couldn't load conversation. It may have been deleted or you may not have access.");
+      return;
+    }
 
     const loaded = detail.messages.map((m) => ({
       role: m.role as "user" | "assistant",
@@ -725,6 +731,14 @@ export function App() {
             {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
               <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm">
                 {errorMsg}
+              </div>
+            )}
+            {loadError && (
+              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm flex items-center justify-between">
+                <span>{loadError}</span>
+                <button onClick={() => setLoadError(null)} className="ml-4 text-rose-400/60 hover:text-rose-400">
+                  &times;
+                </button>
               </div>
             )}
 

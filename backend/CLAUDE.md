@@ -13,7 +13,7 @@
 | `analytics.py` | Server-side MoM trend computation from raw Socrata rows |
 | `auth.py` | Google OAuth2 + JWT sessions. Dev-mode bypass when `GOOGLE_CLIENT_ID` empty. Dependencies: `get_current_user`, `require_admin` |
 | `rate_limit.py` | Per-user sliding window rate limiting + daily API budget cap. Applied to `/chat` only |
-| `db.py` | SQLite persistence (aiosqlite, WAL, schema v4). Tables: conversations, messages, uploads, llm_calls, request_logs, users, refresh_tokens |
+| `db.py` | SQLite persistence (aiosqlite, WAL, schema v5). Tables: conversations (user-scoped), messages, uploads, llm_calls, request_logs, users, refresh_tokens |
 | `llm.py` | Shared Anthropic client + `tracked_create()`/`tracked_stream()` wrappers (token/cost/latency logging) |
 | `prompts.py` | System prompts: ROUTER_SYSTEM_TEMPLATE, SYNTHESIZER_SYSTEM, CONVERSATION_SYNTHESIS |
 | `models.py` | All Pydantic types: RetrievalPlan, ContextObject, domain summaries, SSE event types |

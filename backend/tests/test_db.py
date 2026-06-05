@@ -60,6 +60,46 @@ class TestConversations:
         convos = await db.list_conversations()
         assert convos[0]["id"] == "conv_new"
 
+    async def test_user_scoped_create_and_list(self, test_db):
+        await db.create_conversation("conv_a", "User A conv", user_id="user_a")
+        await db.create_conversation("conv_b", "User B conv", user_id="user_b")
+        a_convos = await db.list_conversations(user_id="user_a")
+        b_convos = await db.list_conversations(user_id="user_b")
+        assert len(a_convos) == 1
+        assert a_convos[0]["id"] == "conv_a"
+        assert len(b_convos) == 1
+        assert b_convos[0]["id"] == "conv_b"
+
+    async def test_user_scoped_get(self, test_db):
+        await db.create_conversation("conv_a", "User A", user_id="user_a")
+        assert await db.get_conversation("conv_a", user_id="user_a") is not None
+        assert await db.get_conversation("conv_a", user_id="user_b") is None
+
+    async def test_user_scoped_delete(self, test_db):
+        await db.create_conversation("conv_a", "User A", user_id="user_a")
+        assert await db.delete_conversation("conv_a", user_id="user_b") is False
+        assert await db.delete_conversation("conv_a", user_id="user_a") is True
+
+    async def test_legacy_null_user_visible_to_all(self, test_db):
+        await db.create_conversation("conv_legacy", "Legacy")
+        assert await db.get_conversation("conv_legacy", user_id="any_user") is not None
+        convos = await db.list_conversations(user_id="any_user")
+        assert any(c["id"] == "conv_legacy" for c in convos)
+
+    async def test_no_user_id_returns_all(self, test_db):
+        await db.create_conversation("conv_a", "A", user_id="user_a")
+        await db.create_conversation("conv_b", "B", user_id="user_b")
+        all_convos = await db.list_conversations()
+        assert len(all_convos) == 2
+
+    async def test_clear_scoped_to_user(self, test_db):
+        await db.create_conversation("conv_a", "A", user_id="user_a")
+        await db.create_conversation("conv_b", "B", user_id="user_b")
+        await db.clear_all_conversations(user_id="user_a")
+        remaining = await db.list_conversations()
+        assert len(remaining) == 1
+        assert remaining[0]["id"] == "conv_b"
+
 
 @pytest.mark.asyncio
 class TestMessages:

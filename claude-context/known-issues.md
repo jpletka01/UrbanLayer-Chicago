@@ -2,6 +2,8 @@
 
 ## Open Bugs
 
+~~**Conversation history click-to-load is broken**~~: **Fixed** — Schema v5 migration adds `user_id` to `conversations` table. All conversation CRUD endpoints now use `Depends(get_current_user)` for per-user scoping. Legacy conversations (null user_id) are visible to all users. Frontend `getConversation`/`listConversations` now log errors on failure, and `loadConv` shows an error banner when a conversation can't be loaded.
+
 **Cook County GIS parcel lookup is intermittently down**: The ArcGIS endpoint (`gis.cookcountyil.gov/.../MapServer/44/query`) has a broken spatial/attribute index — filtered queries (spatial or by PIN) can timeout at 60s+ while unfiltered queries return data fine. The 2026-06-02 benchmark showed 0/7 successful lookups. **Mitigation**: `parcels.py` now falls back to the Cook County Socrata Parcel Universe dataset (`pabr-t5kh`) via bounding-box query on lat/lon columns. The fallback returns a PIN to unblock the full property pipeline (characteristics, assessments, sales, tax) but provides **no parcel polygon geometry** (only centroids) and no address — both are filled in downstream by CCAO Characteristics. When GIS is up, it's used preferentially (includes polygon + address). A diagnostic integration test (`test_parcel_gis_diagnostic`) fails loudly when GIS is down rather than skipping.
 
 ## Known Limitations
@@ -37,28 +39,29 @@ These work well enough but could break on edge cases:
 
 **PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist.
 
-## Source Coverage Benchmark Results (2026-06-05)
+## Source Coverage Benchmark Results (2026-06-05, run 2)
 
-The `eval/source_coverage.py` benchmark tests 29 data sub-sources across 29 targeted queries (including Tier 3: grant programs, ARO housing, tax incentive classes). **34/41 sub-source checks covered** (83%).
+The `eval/source_coverage.py` benchmark tests 29 data sub-sources across 29 targeted queries (including Tier 3: grant programs, ARO housing, tax incentive classes). **34/40 sub-source checks covered** (85%). Property tax is NOT_TESTED (PTAXSIM optional, DB not present).
 
 | Category | Sources | Result |
 |----------|---------|--------|
 | Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED |
-| Property domain | PIN, sales | COVERED. Characteristics/assessments show RETRIEVAL_GAP (Cook County GIS intermittent — data not available, correctly not mentioned). Tax shows HALLUCINATION (model mentions tax when PTAXSIM unavailable) |
+| Property domain | PIN, sales | COVERED. Characteristics/assessments show RETRIEVAL_GAP (Cook County GIS intermittent — data not available). Tax NOT_TESTED (PTAXSIM optional) |
 | Regulatory domain | flood, overlays, TOD, historic, brownfields | All COVERED |
-| Incentives domain | TIF, OZ, grant programs | All COVERED. Enterprise Zone shows SYNTHESIS_GAP (model omits negative EZ when TIF/OZ positive — marked optional). Tax class shows HALLUCINATION (requires property class from Cook County) |
-| Neighborhood domain | demographics, census tract, transit | All COVERED |
-| WalkScore | walk/transit/bike scores | Intermittent — COVERED when API returns data, HALLUCINATION when API unavailable |
-| ARO Housing | affordable housing projects | HALLUCINATION — ARO routing fix applied but needs verification on next run |
-| Vector search | municipal code chunks | COVERED |
+| Incentives domain | TIF, OZ, grant programs | All COVERED. Enterprise Zone shows SYNTHESIS_GAP (model omits negative EZ when TIF/OZ positive — marked optional). Tax class shows HALLUCINATION (requires property class from Cook County — not retrieved when GIS is down) |
+| Neighborhood domain | demographics, census tract, transit, Walk Score | All COVERED |
+| ARO Housing | affordable housing projects | HALLUCINATION — ARO data not in context but model mentions it. Likely routing issue: ARO query may not be dispatched for this query type |
+| Vector search | municipal code chunks | RETRIEVAL_GAP — RT-4 daycare query did not return code chunks |
 
-**Previous false-positive hallucinations fixed:** Property characteristics and assessments were flagged as HALLUCINATION when the model correctly noted "data not available." Benchmark patterns tightened to distinguish between fabricated values and absence acknowledgment — now correctly classified as RETRIEVAL_GAP.
+**Remaining real issues:**
+- **ARO housing HALLUCINATION** — Model fabricates ARO data when the retrieval doesn't include it. Root cause: ARO runs only when `regulatory_domain` is active, but the ARO-specific query may not trigger regulatory routing.
+- **Tax incentive class HALLUCINATION** — Requires property class code from Cook County parcel data; when GIS is down, no class code is available for the assembler to interpret.
+- **Vector search gap** — Qdrant returned no chunks for the RT-4 daycare query. May be a query formulation issue or Qdrant index state.
+- **Property characteristics/assessments** — Cook County GIS intermittent (known, fallback provides PIN but not building details).
 
-**Remaining real issues:** Property tax (PTAXSIM optional), Walk Score (API intermittent), ARO housing (routing fix needs server restart verification), tax incentive class (requires property data from Cook County). All are external data availability issues, not code bugs.
+**Cap report**: No capped sources detected across all 29 queries.
 
-**Cap report**: No capped sources detected across all 29 queries. Grouped aggregation queries never cap.
-
-Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.source_coverage --full http://localhost:8001`
+Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`, then `python -m eval.source_coverage --full http://localhost:8001`
 
 ## Not Yet Built
 
@@ -67,14 +70,19 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200 python -m eval.sourc
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
 - **Context management improvements** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
 - **Latency reduction** — Synthesis currently takes 3-8s. Optimization opportunities identified but not implemented.
-- **Export features** — No way to export/share conversation results (PDF, link sharing, etc.).
+- **Shareable links** — PDF export exists (`ExportReport.tsx`). Link sharing not yet built.
 
 ## Outstanding Work
 
-- ~~**CI/CD deploy key**~~ — **Done** (2026-06-05). Passphrase-free ed25519 key verified end-to-end: push to main → tests pass → SSH deploy → health check.
-- **Re-run source coverage benchmark on production** — Tier 3 integrations deployed; ARO housing routing fix needs verification via live benchmark run.
-- **Database backup cron on server** — Script exists (`scripts/backup_db.sh`) but cron job may not be set up on the server yet.
-- **Tier 2 improvements** — Context management, latency reduction, and export features (designed 2026-06-02, not yet implemented).
+- ~~**CI/CD deploy key**~~ — **Done** (2026-06-05).
+- ~~**Re-run source coverage benchmark**~~ — **Done** (2026-06-05). 34/40 covered (85%). Remaining gaps are external data availability.
+- ~~**Database backup cron on server**~~ — **Done** (2026-06-05). Cron runs daily at 3am UTC, 7 rolling backups at `/opt/urbanlayer/backups/`. DB path: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
+- **Synthesis latency reduction** — 3-8s first-hit synthesis. Optimization opportunities: model routing for simple queries, prompt trimming, partial streaming.
+- **Mobile experience** — Sidebar/map hidden on mobile (`hidden md:flex`). Needs bottom sheet or swipe-to-reveal for map access.
+- **Shareable conversation links** — PDF export exists, but no way to share a conversation via URL.
+- **Advanced context management** — Beyond existing TurnSummary + sliding window.
+- **ARO housing routing gap** — Benchmark shows HALLUCINATION; ARO query not dispatched for ARO-specific questions that don't trigger `regulatory_domain` routing.
+- **Vector search gap** — RT-4 daycare query returned no code chunks. Investigate query formulation or Qdrant index state.
 
 ## Operational Status
 

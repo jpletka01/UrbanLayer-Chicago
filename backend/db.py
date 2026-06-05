@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 4
+_SCHEMA_VERSION = 5
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -136,6 +136,17 @@ async def _migrate_v4(db: aiosqlite.Connection) -> None:
             await db.execute(f"ALTER TABLE {table} ADD COLUMN user_id TEXT")
 
 
+async def _migrate_v5(db: aiosqlite.Connection) -> None:
+    """Add user_id to conversations table for per-user scoping."""
+    cur = await db.execute("PRAGMA table_info(conversations)")
+    cols = {row[1] for row in await cur.fetchall()}
+    if "user_id" not in cols:
+        await db.execute("ALTER TABLE conversations ADD COLUMN user_id TEXT")
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id)"
+        )
+
+
 async def _migrate_v3(db: aiosqlite.Connection) -> None:
     """Add summary_json column if it doesn't already exist."""
     cur = await db.execute("PRAGMA table_info(messages)")
@@ -165,6 +176,7 @@ async def init_db() -> None:
         await _db.executescript(_SCHEMA_V2)
         await _migrate_v3(_db)
         await _migrate_v4(_db)
+        await _migrate_v5(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -177,6 +189,9 @@ async def init_db() -> None:
         if version < 4:
             await _migrate_v4(_db)
             version = 4
+        if version < 5:
+            await _migrate_v5(_db)
+            version = 5
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -206,18 +221,32 @@ def _now_ms() -> int:
 # Conversations
 # ---------------------------------------------------------------------------
 
-async def list_conversations() -> list[dict]:
+async def list_conversations(user_id: str | None = None) -> list[dict]:
     db = _get_db()
-    cur = await db.execute(
-        """
-        SELECT c.id, c.title, c.created_at, c.updated_at,
-               COUNT(CASE WHEN m.role = 'user' THEN 1 END) as message_count
-        FROM conversations c
-        LEFT JOIN messages m ON m.conversation_id = c.id
-        GROUP BY c.id
-        ORDER BY c.updated_at DESC
-        """
-    )
+    if user_id:
+        cur = await db.execute(
+            """
+            SELECT c.id, c.title, c.created_at, c.updated_at,
+                   COUNT(CASE WHEN m.role = 'user' THEN 1 END) as message_count
+            FROM conversations c
+            LEFT JOIN messages m ON m.conversation_id = c.id
+            WHERE c.user_id = ? OR c.user_id IS NULL
+            GROUP BY c.id
+            ORDER BY c.updated_at DESC
+            """,
+            (user_id,),
+        )
+    else:
+        cur = await db.execute(
+            """
+            SELECT c.id, c.title, c.created_at, c.updated_at,
+                   COUNT(CASE WHEN m.role = 'user' THEN 1 END) as message_count
+            FROM conversations c
+            LEFT JOIN messages m ON m.conversation_id = c.id
+            GROUP BY c.id
+            ORDER BY c.updated_at DESC
+            """
+        )
     rows = await cur.fetchall()
     return [
         {
@@ -231,12 +260,21 @@ async def list_conversations() -> list[dict]:
     ]
 
 
-async def get_conversation(conv_id: str) -> dict | None:
+async def get_conversation(
+    conv_id: str, user_id: str | None = None,
+) -> dict | None:
     db = _get_db()
-    cur = await db.execute(
-        "SELECT id, title, created_at, updated_at FROM conversations WHERE id = ?",
-        (conv_id,),
-    )
+    if user_id:
+        cur = await db.execute(
+            "SELECT id, title, created_at, updated_at FROM conversations "
+            "WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+            (conv_id, user_id),
+        )
+    else:
+        cur = await db.execute(
+            "SELECT id, title, created_at, updated_at FROM conversations WHERE id = ?",
+            (conv_id,),
+        )
     conv = await cur.fetchone()
     if conv is None:
         return None
@@ -271,12 +309,14 @@ async def get_conversation(conv_id: str) -> dict | None:
     }
 
 
-async def create_conversation(conv_id: str, title: str) -> dict:
+async def create_conversation(
+    conv_id: str, title: str, user_id: str | None = None,
+) -> dict:
     db = _get_db()
     now = _now_ms()
     await db.execute(
-        "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-        (conv_id, title, now, now),
+        "INSERT INTO conversations (id, title, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+        (conv_id, title, user_id, now, now),
     )
     await db.commit()
     return {"id": conv_id, "title": title, "created_at": now, "updated_at": now}
@@ -346,7 +386,9 @@ async def update_message_map_data(
     await db.commit()
 
 
-async def delete_conversation(conv_id: str) -> bool:
+async def delete_conversation(
+    conv_id: str, user_id: str | None = None,
+) -> bool:
     conn = _get_db()
     # CASCADE handles DB rows; clean up files on disk
     try:
@@ -357,12 +399,18 @@ async def delete_conversation(conv_id: str) -> bool:
             shutil.rmtree(upload_dir)
     except Exception:
         pass
-    cur = await conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
+    if user_id:
+        cur = await conn.execute(
+            "DELETE FROM conversations WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+            (conv_id, user_id),
+        )
+    else:
+        cur = await conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
     await conn.commit()
     return cur.rowcount > 0
 
 
-async def clear_all_conversations() -> None:
+async def clear_all_conversations(user_id: str | None = None) -> None:
     conn = _get_db()
     try:
         import shutil
@@ -372,7 +420,13 @@ async def clear_all_conversations() -> None:
             settings.upload_dir.mkdir(parents=True, exist_ok=True)
     except Exception:
         pass
-    await conn.execute("DELETE FROM conversations")
+    if user_id:
+        await conn.execute(
+            "DELETE FROM conversations WHERE user_id = ? OR user_id IS NULL",
+            (user_id,),
+        )
+    else:
+        await conn.execute("DELETE FROM conversations")
     await conn.commit()
 
 
@@ -832,7 +886,9 @@ async def revoke_all_user_refresh_tokens(user_id: str) -> None:
 # Bulk import (localStorage migration)
 # ---------------------------------------------------------------------------
 
-async def import_conversations(conversations: list[dict]) -> int:
+async def import_conversations(
+    conversations: list[dict], user_id: str | None = None,
+) -> int:
     """Import conversations from localStorage export. Returns count imported."""
     db = _get_db()
     imported = 0
@@ -845,8 +901,8 @@ async def import_conversations(conversations: list[dict]) -> int:
             continue
 
         await db.execute(
-            "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            (conv["id"], conv.get("title", "Imported"), conv.get("createdAt", _now_ms()), conv.get("updatedAt", _now_ms())),
+            "INSERT INTO conversations (id, title, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (conv["id"], conv.get("title", "Imported"), user_id, conv.get("createdAt", _now_ms()), conv.get("updatedAt", _now_ms())),
         )
 
         for i, msg in enumerate(conv.get("messages", [])):

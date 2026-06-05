@@ -182,7 +182,10 @@ export async function* chatStream(
 
 export async function listConversations(): Promise<Conversation[]> {
   const resp = await authFetch(`${API_BASE}/api/conversations`);
-  if (!resp.ok) return [];
+  if (!resp.ok) {
+    console.error(`Failed to list conversations: ${resp.status} ${resp.statusText}`);
+    return [];
+  }
   const data = await resp.json();
   return data.map((c: Record<string, unknown>) => ({
     id: c.id,
@@ -195,7 +198,10 @@ export async function listConversations(): Promise<Conversation[]> {
 
 export async function getConversation(id: string): Promise<ConversationDetail | null> {
   const resp = await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`);
-  if (!resp.ok) return null;
+  if (!resp.ok) {
+    console.error(`Failed to load conversation ${id}: ${resp.status} ${resp.statusText}`);
+    return null;
+  }
   return await resp.json();
 }
 

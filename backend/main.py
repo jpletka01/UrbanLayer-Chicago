@@ -294,37 +294,52 @@ async def map_data(req: MapDataRequest) -> MapDataResponse:
 # Conversation CRUD
 # ---------------------------------------------------------------------------
 
+def _user_id(user: dict | None) -> str | None:
+    return user["id"] if user else None
+
+
 @app.get("/api/conversations")
-async def list_conversations() -> list[dict]:
-    return await db.list_conversations()
+async def list_conversations_endpoint(
+    user: dict | None = Depends(get_current_user),
+) -> list[dict]:
+    return await db.list_conversations(_user_id(user))
 
 
 @app.post("/api/conversations", status_code=201)
-async def create_conversation(body: dict) -> dict:
+async def create_conversation(
+    body: dict, user: dict | None = Depends(get_current_user),
+) -> dict:
     conv_id = body.get("id", f"conv_{int(time.time() * 1000)}")
     title = body.get("title", "New conversation")
-    return await db.create_conversation(conv_id, title)
+    return await db.create_conversation(conv_id, title, _user_id(user))
 
 
 @app.get("/api/conversations/{conv_id}")
-async def get_conversation(conv_id: str) -> dict:
-    conv = await db.get_conversation(conv_id)
+async def get_conversation(
+    conv_id: str, user: dict | None = Depends(get_current_user),
+) -> dict:
+    conv = await db.get_conversation(conv_id, _user_id(user))
     if conv is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conv
 
 
 @app.delete("/api/conversations/{conv_id}")
-async def delete_conversation(conv_id: str) -> dict:
-    deleted = await db.delete_conversation(conv_id)
+async def delete_conversation(
+    conv_id: str, user: dict | None = Depends(get_current_user),
+) -> dict:
+    deleted = await db.delete_conversation(conv_id, _user_id(user))
     if not deleted:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return {"ok": True}
 
 
 @app.put("/api/conversations/{conv_id}/messages")
-async def append_messages(conv_id: str, req: SaveMessagesRequest) -> dict:
-    conv = await db.get_conversation(conv_id)
+async def append_messages(
+    conv_id: str, req: SaveMessagesRequest,
+    user: dict | None = Depends(get_current_user),
+) -> dict:
+    conv = await db.get_conversation(conv_id, _user_id(user))
     if conv is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     messages = [m.model_dump(exclude_none=True) for m in req.messages]
@@ -333,7 +348,10 @@ async def append_messages(conv_id: str, req: SaveMessagesRequest) -> dict:
 
 
 @app.patch("/api/conversations/{conv_id}/messages/{position}")
-async def update_message(conv_id: str, position: int, body: dict) -> dict:
+async def update_message(
+    conv_id: str, position: int, body: dict,
+    user: dict | None = Depends(get_current_user),
+) -> dict:
     if "map_data" in body:
         await db.update_message_map_data(
             conv_id, position, body["map_data"], body.get("map_fetched_at"),
@@ -342,16 +360,20 @@ async def update_message(conv_id: str, position: int, body: dict) -> dict:
 
 
 @app.post("/api/conversations/import")
-async def import_conversations(req: ImportRequest) -> dict:
+async def import_conversations(
+    req: ImportRequest, user: dict | None = Depends(get_current_user),
+) -> dict:
     count = await db.import_conversations(
-        [c.model_dump() for c in req.conversations]
+        [c.model_dump() for c in req.conversations], _user_id(user),
     )
     return {"imported": count}
 
 
 @app.delete("/api/conversations")
-async def clear_conversations() -> dict:
-    await db.clear_all_conversations()
+async def clear_conversations(
+    user: dict | None = Depends(get_current_user),
+) -> dict:
+    await db.clear_all_conversations(_user_id(user))
     return {"ok": True}
 
 
@@ -360,10 +382,13 @@ async def clear_conversations() -> dict:
 # ---------------------------------------------------------------------------
 
 @app.post("/api/conversations/{conv_id}/uploads", status_code=201)
-async def upload_files(conv_id: str, files: list[UploadFile] = File(...)) -> dict:
+async def upload_files(
+    conv_id: str, files: list[UploadFile] = File(...),
+    user: dict | None = Depends(get_current_user),
+) -> dict:
     settings = get_settings()
 
-    conv = await db.get_conversation(conv_id)
+    conv = await db.get_conversation(conv_id, _user_id(user))
     if not conv:
         raise HTTPException(404, "Conversation not found")
 
@@ -427,7 +452,12 @@ async def delete_upload_endpoint(upload_id: str) -> dict:
 
 
 @app.get("/api/conversations/{conv_id}/uploads")
-async def list_uploads(conv_id: str) -> list[dict]:
+async def list_uploads(
+    conv_id: str, user: dict | None = Depends(get_current_user),
+) -> list[dict]:
+    conv = await db.get_conversation(conv_id, _user_id(user))
+    if not conv:
+        raise HTTPException(404, "Conversation not found")
     return await db.get_uploads_for_conversation(conv_id)
 
 

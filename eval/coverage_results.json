@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-06-05T00:48:31.089995+00:00",
+  "timestamp": "2026-06-05T14:57:01.799103+00:00",
   "total_queries": 29,
-  "total_checks": 41,
+  "total_checks": 40,
   "summary": {
     "covered": 34,
     "synthesis_gap": 1,
-    "retrieval_gap": 2,
-    "hallucination": 4,
-    "coverage_rate": 0.8293
+    "retrieval_gap": 3,
+    "hallucination": 2,
+    "coverage_rate": 0.85
   },
   "per_source": {
     "crime_api": {
@@ -103,8 +103,8 @@
       "covered": 0,
       "synthesis_gap": 0,
       "retrieval_gap": 0,
-      "hallucination": 1,
-      "not_tested": 0
+      "hallucination": 0,
+      "not_tested": 1
     },
     "parcel_zoning": {
       "tested": 2,
@@ -188,17 +188,17 @@
     },
     "neighborhood_walkscore": {
       "tested": 1,
-      "covered": 0,
+      "covered": 1,
       "synthesis_gap": 0,
       "retrieval_gap": 0,
-      "hallucination": 1,
+      "hallucination": 0,
       "not_tested": 0
     },
     "vector_search": {
       "tested": 1,
-      "covered": 1,
+      "covered": 0,
       "synthesis_gap": 0,
-      "retrieval_gap": 0,
+      "retrieval_gap": 1,
       "hallucination": 0,
       "not_tested": 0
     },
@@ -245,31 +245,31 @@
   },
   "caps": {
     "crime_api": {
-      "times_tested": 4,
+      "times_tested": 5,
       "times_capped": 0,
       "limit": 35,
       "at_least_used": 0
     },
     "311_api": {
-      "times_tested": 6,
+      "times_tested": 7,
       "times_capped": 0,
       "limit": 50,
       "at_least_used": 0
     },
     "permits_api": {
-      "times_tested": 5,
+      "times_tested": 6,
       "times_capped": 0,
       "limit": 500,
       "at_least_used": 0
     },
     "violations_api": {
-      "times_tested": 5,
+      "times_tested": 6,
       "times_capped": 0,
       "limit": 200,
       "at_least_used": 0
     },
     "business_api": {
-      "times_tested": 4,
+      "times_tested": 5,
       "times_capped": 0,
       "limit": 500,
       "at_least_used": 0
@@ -281,10 +281,10 @@
       "question": "What crimes have been reported in West Town in the last 90 days?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 3167,
-        "retrieval_ms": 4085,
-        "first_token_ms": 5176,
-        "total_ms": 10309
+        "router_ms": 2443,
+        "retrieval_ms": 2935,
+        "first_token_ms": 5715,
+        "total_ms": 10516
       },
       "checks": [
         {
@@ -294,7 +294,7 @@
             {
               "path": "crime_last_90d.total",
               "present": true,
-              "preview": "1780"
+              "preview": "1803"
             },
             {
               "path": "crime_last_90d.arrest_rate",
@@ -304,7 +304,7 @@
             {
               "path": "crime_last_90d.by_type",
               "present": true,
-              "preview": "{'THEFT': 487, 'BURGLARY': 292, 'CRIMINAL DAMAGE': 207, 'BATTERY': 197, 'MOTOR V"
+              "preview": "{'THEFT': 494, 'BURGLARY': 294, 'CRIMINAL DAMAGE': 208, 'BATTERY': 203, 'MOTOR V"
             }
           ],
           "synthesis_matches": [
@@ -321,7 +321,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Crime in West Town \u2014 Last 90 Days\n\nOver the past 90 days, **1,780 crimes** were reported in West Town, with an overall arrest rate of just **6.5%** [data:crime]. Here's a breakdown of the top crime types:\n\n- **Theft** \u2014 487 incidents (most common)\n- **Burglary** \u2014 292 incidents\n- **Criminal Damage** \u2014 207 incidents\n- **Battery** \u2014 197 incidents\n- **Motor Vehicle Theft** \u2014 176 incidents\n\n### Notable Month-over-Month Trends (May vs. April 2026)\n\nThe most striking shift is in **burglary, which s",
+      "synthesis_excerpt": "## Crime in West Town \u2014 Last 90 Days\n\nOver the past 90 days, **1,803 crimes** were reported in the West Town community area, with an overall arrest rate of just **6.5%** [data:crime]. Here's how the top categories break down:\n\n| Crime Type | Reports |\n|---|---|\n| Theft | 494 |\n| Burglary | 294 |\n| Criminal Damage | 208 |\n| Battery | 203 |\n| Motor Vehicle Theft | 179 |\n\n**Theft** is by far the most common offense, accounting for more than a quarter of all reported incidents. **Burglary** is the m",
       "caps": [
         {
           "source": "crime_api",
@@ -336,10 +336,10 @@
       "question": "What are the open 311 complaints in Englewood?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 3059,
-        "retrieval_ms": 9723,
-        "first_token_ms": 10734,
-        "total_ms": 18517
+        "router_ms": 2472,
+        "retrieval_ms": 24598,
+        "first_token_ms": 25757,
+        "total_ms": 33606
       },
       "checks": [
         {
@@ -349,7 +349,7 @@
             {
               "path": "open_311_requests.total",
               "present": true,
-              "preview": "2012"
+              "preview": "2015"
             },
             {
               "path": "open_311_requests.top_types",
@@ -371,7 +371,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Open 311 Service Requests in Englewood\n\nThere are currently **2,012 open 311 service requests** in the Englewood community area [data:311], with the oldest dating back **2,716 days** \u2014 roughly 7.5 years \u2014 indicating some long-standing unresolved issues.\n\n### Top Departments with Open Requests\n\n| Department | Open Requests |\n|---|---|\n| Streets & Sanitation | 729 |\n| Dept. of Water Management | 635 |\n| CDOT (Transportation) | 451 |\n| Dept. of Buildings | 163 |\n| Animal Care & Control | 22 |\n\n#",
+      "synthesis_excerpt": "## Open 311 Service Requests in Englewood\n\nThere are currently **2,015 open 311 service requests** in Englewood [data:311], with the oldest dating back **2,717 days** \u2014 nearly 7.5 years \u2014 signaling long-standing unresolved issues in the neighborhood.\n\n### Requests by Department\n\n| Department | Open Requests |\n|---|---|\n| Streets and Sanitation | 732 |\n| Dept. of Water Management | 638 |\n| CDOT (Transportation) | 452 |\n| Dept. of Buildings | 161 |\n| Animal Care and Control | 22 |\n| Business Affai",
       "caps": [
         {
           "source": "311_api",
@@ -386,10 +386,10 @@
       "question": "What building permits have been issued in the West Loop recently?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 3104,
-        "retrieval_ms": 4586,
-        "first_token_ms": 5422,
-        "total_ms": 13808
+        "router_ms": 2717,
+        "retrieval_ms": 3165,
+        "first_token_ms": 4766,
+        "total_ms": 14503
       },
       "checks": [
         {
@@ -399,17 +399,17 @@
             {
               "path": "permits.total",
               "present": true,
-              "preview": "1573"
+              "preview": "1579"
             },
             {
               "path": "permits.total_estimated_cost",
               "present": true,
-              "preview": "853794220.03"
+              "preview": "856124720.03"
             },
             {
               "path": "permits.by_type",
               "present": true,
-              "preview": "{'EXPRESS PERMIT': 863, 'RENOVATION/ALTERATION': 284, 'SIGNS': 214, 'NEW CONSTRU"
+              "preview": "{'EXPRESS PERMIT': 868, 'RENOVATION/ALTERATION': 285, 'SIGNS': 214, 'NEW CONSTRU"
             }
           ],
           "synthesis_matches": [
@@ -426,7 +426,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Building Permits \u2013 Near West Side / West Loop\n\nThe Near West Side community area has seen significant construction activity, with **1,573 total permits** issued [data:permits], representing an estimated **$853.8 million** in construction value [data:permits].\n\n### Permit Breakdown by Type\n\n| Permit Type | Count |\n|---|---|\n| Express Permit | 863 |\n| Renovation/Alteration | 284 |\n| Signs | 214 |\n| New Construction | 100 |\n| Elevator Equipment | 86 |\n| Wrecking/Demolition | 13 |\n| Reinstate Rev",
+      "synthesis_excerpt": "## Building Permits in the Near West Side / West Loop\n\nThe Near West Side community area (which encompasses the West Loop) has seen **1,579 permits issued** in the recent period, representing a total estimated construction value of **$856.1 million** [data:permits].\n\n### Permit Breakdown by Type\n\n| Permit Type | Count |\n|---|---|\n| Express Permit | 868 |\n| Renovation/Alteration | 285 |\n| Signs | 214 |\n| New Construction | 100 |\n| Elevator Equipment | 86 |\n| Wrecking/Demolition | 13 |\n| Reinstate",
       "caps": [
         {
           "source": "permits_api",
@@ -441,10 +441,10 @@
       "question": "Are there building violations in Pilsen?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 3287,
-        "retrieval_ms": 5557,
-        "first_token_ms": 6589,
-        "total_ms": 11681
+        "router_ms": 4592,
+        "retrieval_ms": 7355,
+        "first_token_ms": 8483,
+        "total_ms": 15580
       },
       "checks": [
         {
@@ -481,7 +481,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "Yes, there are significant building violations in the **Lower West Side** community area (which includes Pilsen). Here's what the data shows:\n\n## Building Violations Overview\n\nThere are **1,009 total building violations** [data:violations] recorded for the area, with a notable **870 currently open** \u2014 meaning roughly **86% of violations remain unresolved**. This is a substantial code compliance concern.\n\n### Top Violation Categories\n- **Other** \u2013 43 violations\n- **Exterior Structure** \u2013 35 viola",
+      "synthesis_excerpt": "Yes, there are significant building violations in the Lower West Side community area, which includes the Pilsen neighborhood.\n\n## Building Violations Overview\n\nThere are **1,009 total building violations** [data:violations] on record, with **870 currently open** \u2014 meaning roughly **86% of all violations remain unresolved**. This is a notable code compliance concern for the area.\n\n### Top Violation Categories\n- **Other** \u2014 43 violations\n- **Exterior Structure** \u2014 35 violations\n- **Elevator/Escala",
       "caps": [
         {
           "source": "violations_api",
@@ -496,10 +496,10 @@
       "question": "What businesses are licensed in Logan Square?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 2984,
-        "retrieval_ms": 3400,
-        "first_token_ms": 4595,
-        "total_ms": 12202
+        "router_ms": 2283,
+        "retrieval_ms": 4160,
+        "first_token_ms": 5389,
+        "total_ms": 11063
       },
       "checks": [
         {
@@ -519,7 +519,7 @@
             {
               "path": "businesses.top_activities",
               "present": true,
-              "preview": "['Street Performer, Moving Along the Public Way', 'Preparation of Food and Dinin"
+              "preview": "['Preparation of Food and Dining on Premises With Seating', 'Street Performer, M"
             }
           ],
           "synthesis_matches": [
@@ -536,7 +536,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Licensed Businesses in Logan Square\n\nLogan Square has **1,589 active business licenses** [data:business] across a wide range of commercial activities. Here's a breakdown of the top license types and what's happening on the ground:\n\n### Top License Types\n| License Type | Count |\n|---|---|\n| Limited Business License | 397 |\n| Retail Food Establishment | 373 |\n| Regulated Business License | 193 |\n| Consumption on Premises \u2013 Incidental Activity | 138 |\n| Tobacco | 59 |\n| Outdoor Patio | 52 |\n| Pa",
+      "synthesis_excerpt": "## Licensed Businesses in Logan Square\n\nLogan Square has **1,589 active business licenses** across a wide range of industries [data:business].\n\n### Top License Types\n| License Type | Count |\n|---|---|\n| Limited Business License | 397 |\n| Retail Food Establishment | 373 |\n| Regulated Business License | 193 |\n| Consumption on Premises \u2013 Incidental Activity | 138 |\n| Tobacco | 59 |\n| Outdoor Patio | 52 |\n| Package Goods | 49 |\n| Tavern | 46 |\n| Motor Vehicle Services | 40 |\n| Public Place of Amusem",
       "caps": [
         {
           "source": "business_api",
@@ -551,10 +551,10 @@
       "question": "Are there reported vacant or abandoned buildings in Englewood?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 3111,
-        "retrieval_ms": 3461,
-        "first_token_ms": 4578,
-        "total_ms": 16104
+        "router_ms": 2517,
+        "retrieval_ms": 4254,
+        "first_token_ms": 5588,
+        "total_ms": 15111
       },
       "checks": [
         {
@@ -586,7 +586,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Vacant & Abandoned Buildings in Englewood\n\nYes \u2014 Englewood has **332 vacant building cases** on record [data:vacant_buildings], making it one of the more significant vacant property challenges in the city. All cases are tracked through the Chicago Police Department.\n\n### Notable Recent Cases\n\nSeveral major financial institutions appear as responsible entities for long-standing vacant properties:\n\n- **6630 S. Lowe Ave.** \u2014 Cited multiple times for failure to secure and maintain a vacant buildi",
+      "synthesis_excerpt": "Yes \u2014 Englewood has a significant vacant building problem. There are **332 vacant building cases** on record in the neighborhood [data:vacant_buildings], all reported through the Chicago Police Department.\n\n## Notable Cases\n\nSeveral cases involve major financial institutions as the responsible parties, suggesting bank-owned (REO) properties:\n\n- **6630 S. Lowe** \u2014 Wells Fargo Bank NA has been cited multiple times, most recently in **August 2025**, with **$6,040 in outstanding fines** for failing ",
       "caps": [
         {
           "source": "311_api",
@@ -601,10 +601,10 @@
       "question": "How do restaurants fare in health inspections in Wicker Park?",
       "category": "socrata_flat",
       "timings": {
-        "router_ms": 3633,
-        "retrieval_ms": 4388,
-        "first_token_ms": 5574,
-        "total_ms": 17849
+        "router_ms": 2864,
+        "retrieval_ms": 4087,
+        "first_token_ms": 5218,
+        "total_ms": 15462
       },
       "checks": [
         {
@@ -641,7 +641,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Restaurant Health Inspections in West Town / Wicker Park\n\nWicker Park sits within **Community Area 24 (West Town)**, and the inspection data paints a mixed picture for the neighborhood's food establishments.\n\n### Overall Results\nAcross **1,236 total inspections** [data:food_inspections], the breakdown is:\n\n- \u2705 **Pass**: 523 (42.3%)\n- \u26a0\ufe0f **Pass w/ Conditions**: 191 (15.5%)\n- \u274c **Fail**: 232 (18.8% fail rate)\n- \ud83d\udeaa **No Entry**: 144 \u2014 inspectors were unable to gain access\n- \ud83c\udfda\ufe0f **Out of Business**",
+      "synthesis_excerpt": "## Restaurant Health Inspections in West Town / Wicker Park\n\nAcross West Town (which includes Wicker Park), inspectors completed **1,236 food inspections** in the city's records [data:food_inspections]. Here's how establishments fared:\n\n- **Pass:** 523 (42.3%)\n- **Pass w/ Conditions:** 191 (15.5%)\n- **Fail:** 232 (18.8% fail rate)\n- **No Entry:** 144 (11.7%)\n- **Out of Business:** 91\n- **Not Ready:** 55\n\nThe **18.8% outright fail rate** is a notable figure \u2014 roughly 1 in 5 inspected establishmen",
       "caps": []
     },
     {
@@ -649,10 +649,10 @@
       "question": "What property is at 443 W Wrightwood Ave, Chicago?",
       "category": "property_domain",
       "timings": {
-        "router_ms": 3766,
-        "retrieval_ms": 5677,
-        "first_token_ms": 6929,
-        "total_ms": 22950
+        "router_ms": 3521,
+        "retrieval_ms": 49249,
+        "first_token_ms": 50582,
+        "total_ms": 66859
       },
       "checks": [
         {
@@ -692,7 +692,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## 443 W Wrightwood Ave, Chicago \u2014 Lincoln Park\n\nThe parcel at this address is identified by PIN **14283190070000** (Cook County's 14-digit Property Index Number, useful for referencing county records). The building class is recorded as **\"EX\"**, but detailed property records were not available for this parcel \u2014 physical characteristics, assessed value, and sales history are not on file for this PIN in the current dataset.\n\n### Neighborhood Context\n\nThis address sits in **Lincoln Park** (Communi",
+      "synthesis_excerpt": "## 443 W Wrightwood Ave, Chicago \u2014 Lincoln Park\n\nDetailed property records were not available for this parcel (PIN: **14-28-319-007-0000**). The building class code on file is **EX**, but no physical characteristics, assessment history, or sales history are recorded in the Cook County data for this parcel.\n\n---\n\n### Regulatory Overlays\n\nThis address sits within several notable designations:\n\n- **Lakefront Protection District** \u2014 development near the lakefront is subject to additional review and ",
       "caps": [
         {
           "source": "crime_api",
@@ -731,10 +731,10 @@
       "question": "What is the assessed value and sale history of 150 N Michigan Ave, Chicago?",
       "category": "property_domain",
       "timings": {
-        "router_ms": 3808,
-        "retrieval_ms": 9495,
-        "first_token_ms": 10823,
-        "total_ms": 17897
+        "router_ms": 3389,
+        "retrieval_ms": 65518,
+        "first_token_ms": 66761,
+        "total_ms": 71885
       },
       "checks": [
         {
@@ -797,23 +797,54 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Property Records: 150 N Michigan Ave, Chicago\n\n**PIN:** 17103090161001 (Cook County Property Index Number \u2014 use this to look up full records at the Cook County Assessor's office).\n\nDetailed property records were not available for this parcel \u2014 the assessed value, building characteristics, and tax data fields are all absent from the current county records snapshot.\n\n**Sale History**\n\nThere is one recorded transaction on file:\n\n- **September 12, 2017** \u2014 Sale price of **$1.00** via **Quit Claim",
-      "caps": []
+      "synthesis_excerpt": "The parcel at **150 N Michigan Ave** (PIN: **17103090161001**) has no assessed value data on record \u2014 the assessment history is empty and no total assessed value is available in the Cook County records retrieved for this parcel.\n\nFor **sale history**, there is one recorded transaction:\n\n- **September 12, 2017** \u2014 Sale price: **$1.00** via a **Quit Claim deed**\n\nA $1 quit claim deed is typically a non-market transfer (e.g., between related entities, a trust conveyance, or a legal restructuring) r",
+      "caps": [
+        {
+          "source": "crime_api",
+          "capped": false,
+          "limit": 35,
+          "at_least_used": false
+        },
+        {
+          "source": "311_api",
+          "capped": false,
+          "limit": 50,
+          "at_least_used": false
+        },
+        {
+          "source": "permits_api",
+          "capped": false,
+          "limit": 500,
+          "at_least_used": false
+        },
+        {
+          "source": "violations_api",
+          "capped": false,
+          "limit": 200,
+          "at_least_used": false
+        },
+        {
+          "source": "business_api",
+          "capped": false,
+          "limit": 500,
+          "at_least_used": false
+        }
+      ]
     },
     {
       "id": "property_tax_estimate",
       "question": "What are the estimated property taxes at 2400 N Milwaukee Ave, Chicago?",
       "category": "property_domain",
       "timings": {
-        "router_ms": 3475,
-        "retrieval_ms": 8825,
-        "first_token_ms": 9978,
-        "total_ms": 15349
+        "router_ms": 3216,
+        "retrieval_ms": 10743,
+        "first_token_ms": 15121,
+        "total_ms": 18404
       },
       "checks": [
         {
           "sub_source": "property_tax",
-          "status": "HALLUCINATION",
+          "status": "NOT_TESTED",
           "context_fields": [
             {
               "path": "property.estimated_annual_tax",
@@ -824,7 +855,7 @@
           "synthesis_matches": [
             {
               "pattern": "\\$[\\d,]+",
-              "matched": true,
+              "matched": false,
               "type": "required"
             },
             {
@@ -835,7 +866,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "Based on the available data for the parcel at **2400 N Milwaukee Ave** (PIN: 13361070150000), **estimated annual property tax information is not available** in the current records.\n\nThe context does include some property details \u2014 the building is **1,176 sq ft** on a **3,576 sq ft lot**, with 3 bedrooms, 2 full baths, and 8 rooms. The most recent sale was in **May 2022 for $690,000**, up from $468,500 in 2015 and $310,000 in 2011, reflecting significant Logan Square appreciation over the past de",
+      "synthesis_excerpt": "Property tax data is not available for this parcel (PIN 13361070150000). The assessed value and estimated annual tax fields are not populated in the Cook County records returned for this address, so I'm unable to provide a tax estimate.\n\nFor accurate property tax information, you can look up this PIN directly through the **Cook County Assessor's Office** at [cookcountyassessor.com](https://www.cookcountyassessor.com) or the **Cook County Treasurer's Office** at [cookcountytreasurer.com](https://",
       "caps": []
     },
     {
@@ -843,10 +874,10 @@
       "question": "What is the zoning at 150 N Michigan Ave, Chicago?",
       "category": "regulatory_domain",
       "timings": {
-        "router_ms": 3967,
-        "retrieval_ms": 20195,
-        "first_token_ms": 21244,
-        "total_ms": 36503
+        "router_ms": 3727,
+        "retrieval_ms": 10193,
+        "first_token_ms": 11804,
+        "total_ms": 25458
       },
       "checks": [
         {
@@ -868,7 +899,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Zoning at 150 N Michigan Ave, Chicago\n\nThis parcel is zoned **PD 263** \u2014 a **Planned Development** designation. Planned Developments are a special zoning category in Chicago where a specific ordinance governs the site's uses, bulk, and density rather than standard \"D\" district rules directly.\n\n### Key Regulatory Context\n\nBecause this is a Planned Development, [2] requires strict compliance with the floor area ratio standards of the underlying zoning district, and the project must be in substa",
+      "synthesis_excerpt": "## Zoning at 150 N Michigan Ave, Chicago\n\nThis parcel is zoned **PD 263** (Planned Development No. 263), a site-specific zoning designation meaning development on this property is governed by a customized planned development ordinance rather than standard base zoning districts. You can verify this on the [official Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\n### Regulatory Overlays\n\nThis parcel carries several significant overlay designations, each with i",
       "caps": []
     },
     {
@@ -876,10 +907,10 @@
       "question": "What zoning overlays and regulatory designations apply to 111 N State St, Chicago?",
       "category": "regulatory_domain",
       "timings": {
-        "router_ms": 4092,
-        "retrieval_ms": 17914,
-        "first_token_ms": 19104,
-        "total_ms": 39177
+        "router_ms": 3579,
+        "retrieval_ms": 8907,
+        "first_token_ms": 10182,
+        "total_ms": 29433
       },
       "checks": [
         {
@@ -901,7 +932,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Zoning & Regulatory Designations \u2014 111 N State St, Chicago\n\n**Base Zoning: DX-16** (Downtown Mixed-Use, Floor Area Ratio 16) \u2014 one of Chicago's highest-intensity downtown zoning classifications, permitting a dense mix of commercial, residential, and institutional uses.\n\n---\n\n### Overlay Districts & Regulatory Designations\n\n**1. Pedestrian Street** [5]\nThis parcel fronts a designated downtown pedestrian street, meaning development must maintain active ground-floor uses, storefronts built to th",
+      "synthesis_excerpt": "## Zoning & Regulatory Overview: 111 N State St, Chicago\n\n**Base Zoning:** This parcel is zoned **DX-16** (Downtown Mixed-Use, Floor Area Ratio 16) \u2014 one of Chicago's highest-density downtown districts, permitting a broad mix of commercial, residential, and institutional uses. You can verify this on the [official Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\n---\n\n### Regulatory Overlays\n\nThis address carries a notably rich set of overlays:\n\n- **\ud83c\udfdb National ",
       "caps": []
     },
     {
@@ -909,10 +940,10 @@
       "question": "Are there any landmark or historic district designations at 11111 S Forrestville Ave, Chicago?",
       "category": "regulatory_domain",
       "timings": {
-        "router_ms": 3778,
-        "retrieval_ms": 18674,
-        "first_token_ms": 19856,
-        "total_ms": 31936
+        "router_ms": 3619,
+        "retrieval_ms": 9752,
+        "first_token_ms": 10952,
+        "total_ms": 22140
       },
       "checks": [
         {
@@ -934,7 +965,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Historic & Landmark Designations at 11111 S Forrestville Ave\n\nYes \u2014 this parcel carries significant historic designations, though it is **not** an official Chicago Landmark building or within a City of Chicago Landmark District. Here's the breakdown:\n\n### Applicable Historic Overlays\n\n- **Pullman Historic District** \u2014 This parcel falls within the locally recognized Pullman Historic District [data:regulatory]. While the city data confirms `in_landmark_district: false`, the historic district ov",
+      "synthesis_excerpt": "Yes \u2014 this parcel carries both a **local historic district** designation and a **National Register listing**, making it one of the more historically significant addresses in the area.\n\nHere's a breakdown of the applicable designations:\n\n- **Pullman Historic District (Local)** \u2014 This parcel falls within Chicago's locally designated Pullman Historic District. Local historic district status typically means exterior alterations may be subject to review to preserve the district's historic character.\n",
       "caps": []
     },
     {
@@ -942,10 +973,10 @@
       "question": "Is 2800 S Lawndale Ave, Chicago in a flood zone?",
       "category": "regulatory_domain",
       "timings": {
-        "router_ms": 3585,
-        "retrieval_ms": 4319,
-        "first_token_ms": 5310,
-        "total_ms": 10536
+        "router_ms": 3275,
+        "retrieval_ms": 4360,
+        "first_token_ms": 5703,
+        "total_ms": 10504
       },
       "checks": [
         {
@@ -967,7 +998,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "**2800 S Lawndale Ave is not in a flood hazard zone.** The parcel falls within **FEMA Flood Zone X**, designated as an \"Area of Minimal Flood Hazard\" \u2014 meaning it is outside the Special Flood Hazard Area (SFHA). Flood insurance is not federally required here, though it may still be advisable as an optional precaution.\n\nOne nearby environmental note worth flagging: there is a brownfield site \u2014 **BNSF Little Village Paseo Segment 3** (EPA ID: 110071982540) \u2014 located in the general vicinity. If you",
+      "synthesis_excerpt": "**2800 S Lawndale Ave is not in a flood hazard zone.** The parcel falls within FEMA Flood Zone X \u2014 designated as an \"Area of Minimal Flood Hazard\" \u2014 meaning it lies outside the Special Flood Hazard Area (SFHA). Flood insurance is not federally required here, though it may still be advisable as optional coverage.\n\nOne nearby environmental note worth mentioning: the **BNSF Little Village Paseo Segment 3** brownfield site (EPA ID: 110071982540) is located in the general vicinity. If you are conside",
       "caps": []
     },
     {
@@ -975,10 +1006,10 @@
       "question": "Is 4700 S Halsted St, Chicago in a TIF district? What are the financials?",
       "category": "incentives_domain",
       "timings": {
-        "router_ms": 3808,
-        "retrieval_ms": 10171,
-        "first_token_ms": 11357,
-        "total_ms": 23952
+        "router_ms": 4279,
+        "retrieval_ms": 9470,
+        "first_token_ms": 10657,
+        "total_ms": 23838
       },
       "checks": [
         {
@@ -1000,7 +1031,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## TIF District: 47th/Halsted\n\nYes, 4700 S Halsted St is within the **47th/Halsted TIF District** (T-T-121), established in 2002 and set to expire in **2026**.\n\n---\n\n### Financial Snapshot\n\n| Metric | Amount |\n|---|---|\n| Cumulative Revenue (all years) | $61,466,103 |\n| Current Fund Balance | $17,877,473 |\n| 2024 Property Tax Revenue | $4,098,894 |\n| 2024 Expenditures | $12,045,766 |\n| 2024 Net Income | \u2212$6,986,747 |\n\nThe district ran a **significant deficit in 2024**, drawing down the fund bala",
+      "synthesis_excerpt": "## TIF District: 47th/Halsted\n\nYes, **4700 S Halsted St** is within the **47th/Halsted TIF District** (District No. T-T-121), established in 2002 and set to expire in **2026**. Here's a breakdown of the financials:\n\n### Current Snapshot (2024)\n| Metric | Amount |\n|---|---|\n| Annual Property Tax Revenue | $4,098,894 |\n| Annual Expenditure | $12,045,766 |\n| Fund Balance | $17,877,473 |\n| Cumulative Revenue (lifetime) | $61,466,103 |\n| Net Income (2024) | **-$6,986,747** |\n\nThe 2024 fiscal year sho",
       "caps": []
     },
     {
@@ -1008,10 +1039,10 @@
       "question": "Is 6300 S Cottage Grove Ave, Chicago in an Opportunity Zone?",
       "category": "incentives_domain",
       "timings": {
-        "router_ms": 4521,
-        "retrieval_ms": 9176,
-        "first_token_ms": 10433,
-        "total_ms": 20208
+        "router_ms": 3132,
+        "retrieval_ms": 8058,
+        "first_token_ms": 10060,
+        "total_ms": 18553
       },
       "checks": [
         {
@@ -1033,7 +1064,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "Yes \u2014 **6300 S Cottage Grove Ave is located in a federally designated Opportunity Zone**, specifically census tract **17031420700** in the Woodlawn neighborhood. This designation enables investors to receive capital gains tax benefits for qualified investments made in the area.\n\nA few additional highlights for this location:\n\n- **TIF District:** The parcel falls within the **Woodlawn TIF district** (established 1999, active through **2035**), which carries a current fund balance of approximately",
+      "synthesis_excerpt": "Yes \u2014 **6300 S Cottage Grove Ave is in a federal Opportunity Zone**, designated within census tract **17031420700** in the Woodlawn neighborhood. This designation enables capital gains tax benefits for qualified investments made in the area.\n\n**Additional investment context worth noting:**\n\n- **TIF District:** The parcel is also within the **Woodlawn TIF District** (established 1999, expires 2035), which has a current fund balance of approximately **$28.7 million** and cumulative revenue of over",
       "caps": []
     },
     {
@@ -1041,10 +1072,10 @@
       "question": "What tax incentives are available at 3500 S Michigan Ave, Chicago?",
       "category": "incentives_domain",
       "timings": {
-        "router_ms": 4065,
-        "retrieval_ms": 9109,
-        "first_token_ms": 10718,
-        "total_ms": 27776
+        "router_ms": 3708,
+        "retrieval_ms": 8979,
+        "first_token_ms": 10242,
+        "total_ms": 27526
       },
       "checks": [
         {
@@ -1102,7 +1133,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Tax Incentives at 3500 S Michigan Ave (Douglas/Bronzeville)\n\nThis parcel sits at the intersection of several significant tax incentive programs, making it a strong candidate for development investment.\n\n---\n\n### \ud83c\udfd7\ufe0f TIF District \u2014 Bronzeville (Active through 2034)\nThis property is within the **Bronzeville TIF District** (established 1998, expiring 2034), which means Tax Increment Financing may be available to support eligible development projects. The district is financially robust:\n\n- **2024 ",
+      "synthesis_excerpt": "## Tax Incentives at 3500 S Michigan Ave, Chicago\n\nThis parcel sits in the **Bronzeville TIF District** and an **Opportunity Zone**, making it eligible for two major tax incentive programs. Here's a breakdown:\n\n---\n\n### \ud83c\udfd7\ufe0f Bronzeville TIF District\n- **Active through 2034** (established 1998), the Bronzeville TIF has generated a cumulative **$95.2 million** in revenue since inception.\n- The current fund balance stands at approximately **$48.8 million**, with $7.76 million in property tax revenue ",
       "caps": []
     },
     {
@@ -1110,10 +1141,10 @@
       "question": "What are the demographics of Humboldt Park?",
       "category": "neighborhood_domain",
       "timings": {
-        "router_ms": 2908,
-        "retrieval_ms": 2921,
-        "first_token_ms": 3928,
-        "total_ms": 7865
+        "router_ms": 2576,
+        "retrieval_ms": 2586,
+        "first_token_ms": 4316,
+        "total_ms": 9331
       },
       "checks": [
         {
@@ -1140,7 +1171,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Humboldt Park Demographics\n\nHumboldt Park is a vibrant West Side neighborhood with a population of **55,015** and a median household income of **$57,171**. The community skews notably young, with a median age of just **29.5 years**.\n\n### Economic Indicators\n\nThe neighborhood faces significant economic challenges:\n\n- **Poverty rate: 33.9%** \u2014 roughly one in three residents lives below the poverty line\n- **Unemployment rate: 17.3%** \u2014 more than three times the typical national average\n\nThese fi",
+      "synthesis_excerpt": "## Humboldt Park Demographics\n\nHumboldt Park is a large, predominantly working-class neighborhood on Chicago's West Side, with a population of **55,015** and a median household income of **$57,171**.\n\nThe neighborhood skews notably young \u2014 the **median age is just 29.5 years**, reflecting a vibrant but economically challenged community. The poverty rate stands at **33.9%**, well above the Chicago citywide average, and the unemployment rate is a significant **17.3%**, signaling substantial econom",
       "caps": []
     },
     {
@@ -1148,10 +1179,10 @@
       "question": "Tell me about the demographics near 1200 W Washington Blvd, Chicago",
       "category": "neighborhood_domain",
       "timings": {
-        "router_ms": 3696,
-        "retrieval_ms": 8473,
-        "first_token_ms": 9511,
-        "total_ms": 25083
+        "router_ms": 2930,
+        "retrieval_ms": 8915,
+        "first_token_ms": 10345,
+        "total_ms": 25640
       },
       "checks": [
         {
@@ -1173,7 +1204,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Demographics Near 1200 W Washington Blvd, Chicago (Near West Side)\n\nThis address sits in **Census Tract 8330** within the broader **Near West Side** community area \u2014 a highly affluent, well-educated pocket of the city. Here's what the data shows:\n\n---\n\n### \ud83d\udccd Census Tract 8330 (Hyper-Local)\n*This is the most precise view of your immediate neighborhood.*\n\n- **Population:** 6,109 residents\n- **Median Household Income:** $192,016 \u2014 more than **2.4\u00d7 the Chicago median** of $77,902 and **2.3\u00d7 the C",
+      "synthesis_excerpt": "## Demographics Near 1200 W Washington Blvd (Near West Side)\n\nThis address sits in **Census Tract 8330** within the Near West Side community area \u2014 one of Chicago's most affluent and highly educated neighborhoods. Here's what the data shows:\n\n---\n\n### Tract-Level Snapshot (Census Tract 8330)\nThe tract has a population of **6,109** with a median household income of **$192,016** \u2014 more than **2.4\u00d7 the Chicago median of $77,902** and more than **2.3\u00d7 the Cook County median of $83,498**. The per cap",
       "caps": []
     },
     {
@@ -1181,10 +1212,10 @@
       "question": "How far is 1640 N Damen Ave, Chicago from public transit?",
       "category": "neighborhood_domain",
       "timings": {
-        "router_ms": 3539,
-        "retrieval_ms": 4334,
-        "first_token_ms": 5479,
-        "total_ms": 10524
+        "router_ms": 3152,
+        "retrieval_ms": 3792,
+        "first_token_ms": 5072,
+        "total_ms": 9316
       },
       "checks": [
         {
@@ -1211,7 +1242,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Transit Access at 1640 N Damen Ave, Chicago\n\nThis address has **exceptional** transit access \u2014 it's essentially steps from the CTA Blue Line.\n\n- \ud83d\ude87 **Damen (Blue Line)** station is just **0.12 miles away** \u2014 roughly a 2-minute walk\n- \ud83d\ude86 **Clybourn Metra station** (Union Pacific North line) is **0.61 miles away** \u2014 about a 12-minute walk\n\nThe location is **TOD-eligible** (Transit-Oriented Development) under the Connected Communities Ordinance, meaning developments here may qualify for density an",
+      "synthesis_excerpt": "## Transit Access at 1640 N Damen Ave, Chicago\n\nThis address has **exceptional transit access**, sitting just steps from the **Damen Blue Line station** \u2014 only **0.12 miles away** (about a 2-minute walk). The nearest Metra station is **Clybourn** on the Union Pacific North line, approximately **0.61 miles** away.\n\nThis location is also **TOD-eligible** (Transit-Oriented Development via CTA rail), meaning the Connected Communities Ordinance may allow density and parking bonuses for qualifying dev",
       "caps": []
     },
     {
@@ -1219,19 +1250,20 @@
       "question": "What are the Walk Score and transit scores for 2400 N Milwaukee Ave, Chicago?",
       "category": "neighborhood_domain",
       "timings": {
-        "router_ms": 4901,
-        "first_token_ms": 4901,
-        "total_ms": 4901
+        "router_ms": 3575,
+        "retrieval_ms": 3638,
+        "first_token_ms": 4661,
+        "total_ms": 8335
       },
       "checks": [
         {
           "sub_source": "neighborhood_walkscore",
-          "status": "HALLUCINATION",
+          "status": "COVERED",
           "context_fields": [
             {
               "path": "neighborhood.walkscore.walk_score",
-              "present": false,
-              "preview": ""
+              "present": true,
+              "preview": "97"
             }
           ],
           "synthesis_matches": [
@@ -1248,7 +1280,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "Walk Score and Transit Score data aren't available in my data sources \u2014 I can provide nearby CTA/Metra station proximity, transit-oriented development eligibility, and neighborhood demographics for 2400 N Milwaukee Ave. Would that be helpful?",
+      "synthesis_excerpt": "**2400 N Milwaukee Ave** is an exceptionally walkable and bikeable location in Logan Square:\n\n- **Walk Score: 97/100 (Walker's Paradise)** \u2014 nearly everything is accessible on foot\n- **Transit Score: 74/100 (Excellent Transit)**\n- **Bike Score: 98/100 (Biker's Paradise)**\n\nThe strong transit score is backed by real infrastructure: the **California Blue Line station** is just 0.25 miles away, and the **Healy Metra station** (Milwaukee North line) is about 1.4 miles out. The location is also **TOD",
       "caps": []
     },
     {
@@ -1256,26 +1288,26 @@
       "question": "Is a daycare allowed in an RT-4 zoning district?",
       "category": "vector_search",
       "timings": {
-        "router_ms": 3665,
-        "retrieval_ms": 10242,
-        "first_token_ms": 11423,
-        "total_ms": 20402
+        "router_ms": 2875,
+        "retrieval_ms": 2950,
+        "first_token_ms": 4109,
+        "total_ms": 13633
       },
       "checks": [
         {
           "sub_source": "vector_search",
-          "status": "COVERED",
+          "status": "RETRIEVAL_GAP",
           "context_fields": [
             {
               "path": "code_chunks",
-              "present": true,
-              "preview": "[{'text': 'CHICAGO MUNICIPAL CODE\\nTitle 17 \u2014 CHICAGO ZONING ORDINANCE\\nChapter "
+              "present": false,
+              "preview": "[]"
             }
           ],
           "synthesis_matches": [
             {
               "pattern": "\\[\\d+\\]",
-              "matched": true,
+              "matched": false,
               "type": "required"
             },
             {
@@ -1286,7 +1318,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Daycare Use in an RT-4 Zoning District\n\nThe context data includes the general framework for how uses are permitted, reviewed as special uses, or prohibited across Chicago's zoning districts [4], but it does **not** contain the specific RT-4 use table entry for daycare/child care facilities. The RT-4 district use table \u2014 which would show whether daycare is listed as a **P** (permitted by-right), **S** (special use requiring approval), **PD** (planned development), or **\u2013** (prohibited) \u2014 was n",
+      "synthesis_excerpt": "## Daycare Uses in RT-4 Zoning Districts\n\nThe context data retrieved does not include any Municipal Code chunks or zoning ordinance text for this query, so I cannot confirm the specific use allowances for RT-4 districts from the data provided.\n\nHowever, here is what I can share based on general knowledge of Chicago's Zoning Ordinance (Chicago Zoning Ordinance Title 17):\n\n**RT-4** is a **Residential Two-Flat, Townhouse and Multi-Unit District**. In Chicago's zoning framework, daycare uses (both h",
       "caps": []
     },
     {
@@ -1294,10 +1326,10 @@
       "question": "Do a full site due diligence report for 5600 W Chicago Ave, Chicago",
       "category": "compound_due_diligence",
       "timings": {
-        "router_ms": 4302,
-        "retrieval_ms": 32392,
-        "first_token_ms": 33512,
-        "total_ms": 81270
+        "router_ms": 3804,
+        "retrieval_ms": 11802,
+        "first_token_ms": 13098,
+        "total_ms": 59571
       },
       "checks": [
         {
@@ -1307,7 +1339,7 @@
             {
               "path": "property.pin14",
               "present": true,
-              "preview": "16043240060000"
+              "preview": "16082070270000"
             }
           ],
           "synthesis_matches": [
@@ -1343,7 +1375,7 @@
             {
               "path": "crime_last_90d.total",
               "present": true,
-              "preview": "2800"
+              "preview": "2839"
             }
           ],
           "synthesis_matches": [
@@ -1361,7 +1393,7 @@
             {
               "path": "permits.total",
               "present": true,
-              "preview": "896"
+              "preview": "901"
             }
           ],
           "synthesis_matches": [
@@ -1427,7 +1459,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "# Full Site Due Diligence Report\n## 5600 W Chicago Ave, Chicago, IL \u2014 Austin (Community Area 25)\n**PIN:** 16-04-324-006-0000 | **Report Date:** June 5, 2026\n\n---\n\n## 1. PARCEL & ZONING\n\nThis parcel is zoned **B1-2** (Neighborhood Shopping District, 2nd density tier), suitable for ground-floor retail with residential above. It is not in a Planned Development, Landmark District, Historic District, or on the National Register of Historic Places. The parcel does not sit on a designated Pedestrian St",
+      "synthesis_excerpt": "# Full Site Due Diligence Report\n## 5600 W Chicago Ave, Chicago, IL \u2014 Austin (Community Area 25)\n**PIN:** 16082070270000 | **Report Date:** June 5, 2026\n\n---\n\n## 1. PROPERTY OVERVIEW\n\nThe parcel at 5600 W Chicago Ave carries PIN **16082070270000** with a building class of 211 and a building size of **5,605 sq ft** on a **6,050 sq ft lot**. The building contains 22 rooms, 10 bedrooms, and 4 full bathrooms. The most recent arms-length sale on record was in **July 2001 for $275,000**; a subsequent ",
       "caps": [
         {
           "source": "crime_api",
@@ -1466,10 +1498,10 @@
       "question": "I'm looking at buying a property at 1640 N Damen Ave, Chicago. What should I know about building violations in the area?",
       "category": "compound_due_diligence",
       "timings": {
-        "router_ms": 4346,
-        "retrieval_ms": 9174,
-        "first_token_ms": 10251,
-        "total_ms": 29552
+        "router_ms": 5366,
+        "retrieval_ms": 27588,
+        "first_token_ms": 28885,
+        "total_ms": 45322
       },
       "checks": [
         {
@@ -1501,7 +1533,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Building Violations \u2014 West Town / 1640 N Damen Ave Area\n\n**Bottom line:** The West Town community area has 1,585 total building violations on record, with **1,249 currently open** \u2014 meaning roughly 79% remain unresolved. That's a significant code compliance concern worth factoring into your purchase decision. [data:violations]\n\n---\n\n### Violation Breakdown\n\nThe dominant violation categories are:\n\n- **Elevator/Escalator** \u2014 114 violations (by far the largest category), primarily for failure to",
+      "synthesis_excerpt": "## Building Violations Near 1640 N Damen Ave (West Town)\n\n**Bottom line:** The West Town community area has 1,585 total building violations on record, with **1,249 currently open** \u2014 meaning nearly 79% remain unresolved. That's a significant code compliance concern worth factoring into your purchase decision. [data:violations]\n\n---\n\n### Violation Breakdown\n\nThe dominant violation category is **Elevator/Escalator** (114 violations), with the most common issues being failure to maintain or repair ",
       "caps": [
         {
           "source": "crime_api",
@@ -1540,10 +1572,10 @@
       "question": "Can I get transit-oriented development bonuses at 5000 N Sheridan Rd, Chicago?",
       "category": "compound_due_diligence",
       "timings": {
-        "router_ms": 4410,
-        "retrieval_ms": 13741,
-        "first_token_ms": 15596,
-        "total_ms": 32959
+        "router_ms": 3568,
+        "retrieval_ms": 5128,
+        "first_token_ms": 6389,
+        "total_ms": 20117
       },
       "checks": [
         {
@@ -1583,7 +1615,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "**Yes \u2014 5000 N Sheridan Rd is eligible for Transit-Oriented Development (TOD) bonuses** under the Connected Communities Ordinance. The parcel sits within a designated CTA rail TOD area, which unlocks density and parking reduction bonuses for qualifying projects.\n\n## Key TOD Facts for This Location\n\n- **Zoning:** This parcel is zoned **B3-2** (Community Shopping District). TOD eligibility applies to B, C, and other zoning districts \u2014 though the specific bonus parameters depend on the district cla",
+      "synthesis_excerpt": "## Transit-Oriented Development Bonuses at 5000 N Sheridan Rd\n\n**Yes \u2014 this parcel is TOD-eligible.** The site qualifies for Transit-Oriented Development bonuses under the CTA rail designation, meaning the **Connected Communities Ordinance** allows density increases and parking reductions for developments at this location.\n\n### Why It Qualifies\n\n- **CTA Rail Proximity:** The nearest CTA station is **Argyle (Red Line)**, just **0.18 miles away** \u2014 well within the TOD proximity threshold. [data:31",
       "caps": []
     },
     {
@@ -1591,10 +1623,10 @@
       "question": "Are there any environmental concerns near 3200 S Ashland Ave, Chicago?",
       "category": "compound_due_diligence",
       "timings": {
-        "router_ms": 4222,
-        "retrieval_ms": 10160,
-        "first_token_ms": 11121,
-        "total_ms": 29440
+        "router_ms": 4417,
+        "retrieval_ms": 60169,
+        "first_token_ms": 61420,
+        "total_ms": 75069
       },
       "checks": [
         {
@@ -1616,7 +1648,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Environmental Overview: 3200 S Ashland Ave, Bridgeport\n\nThere are no major acute environmental hazards at this specific location \u2014 the parcel is in **FEMA Flood Zone X** (Area of Minimal Flood Hazard), meaning it is not in a Special Flood Hazard Area and flood insurance is not typically required. No brownfield sites are recorded nearby. That said, several environmental and code-compliance signals from city data are worth noting.\n\n---\n\n### Radiation & Hazardous Materials (Municipal Code Contex",
+      "synthesis_excerpt": "## Environmental Concerns Near 3200 S Ashland Ave, Bridgeport\n\n**The good news: this location has minimal environmental risk on the major indicators.** Here's a full breakdown:\n\n---\n\n### \ud83c\udf0a Flood Risk\nThis parcel falls within **FEMA Flood Zone X** \u2014 an area of minimal flood hazard. It is **not** in a Special Flood Hazard Area (SFHA), so federally mandated flood insurance is not required here.\n\n---\n\n### \ud83c\udfed Brownfield Sites\nThere are **no brownfield sites** identified in the immediate vicinity. No e",
       "caps": [
         {
           "source": "311_api",
@@ -1637,10 +1669,10 @@
       "question": "What city grant programs have funded projects in Pilsen?",
       "category": "incentives_domain",
       "timings": {
-        "router_ms": 3820,
-        "retrieval_ms": 10615,
-        "first_token_ms": 13438,
-        "total_ms": 26989
+        "router_ms": 3200,
+        "retrieval_ms": 4327,
+        "first_token_ms": 6100,
+        "total_ms": 16445
       },
       "checks": [
         {
@@ -1662,7 +1694,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## City Grant Programs in the Lower West Side / Pilsen Area\n\nTwo city grant programs have funded projects in this community area: the **Small Business Improvement Fund (SBIF)** and the **Neighborhood Opportunity Fund (NOF)**.\n\nAcross both programs, **17 total projects** have been funded, totaling approximately **$1.82 million in city incentive dollars** [data:business]. The breakdown:\n\n- **SBIF** \u2014 15 projects\n- **NOF** \u2014 2 projects\n\n---\n\n### About the Programs\n\n**SBIF (Small Business Improvemen",
+      "synthesis_excerpt": "## City Grant Programs in the Lower West Side / Pilsen Area\n\nTwo city grant programs have funded projects in this community area: the **Small Business Improvement Fund (SBIF)** and the **Neighborhood Opportunity Fund (NOF)**. [data:business]\n\nAcross both programs, **17 total projects** have received **$1,824,190 in city grant funding** [data:business], supporting a wide range of commercial, industrial, and mixed-use improvements.\n\n---\n\n### Program Breakdown\n\n- **SBIF** \u2014 15 projects funded, cove",
       "caps": []
     },
     {
@@ -1670,10 +1702,10 @@
       "question": "What affordable housing projects exist under the ARO in Logan Square?",
       "category": "regulatory_domain",
       "timings": {
-        "router_ms": 4261,
-        "retrieval_ms": 10223,
-        "first_token_ms": 11262,
-        "total_ms": 25420
+        "router_ms": 3274,
+        "retrieval_ms": 6173,
+        "first_token_ms": 7676,
+        "total_ms": 15253
       },
       "checks": [
         {
@@ -1695,7 +1727,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "## Affordable Housing & ARO Activity in Logan Square\n\nLogan Square sits at the heart of several overlapping affordable housing frameworks under Chicago's Affordable Requirements Ordinance (ARO).\n\n---\n\n### Milwaukee Corridor ARO Pilot Area\n\nThe most significant ARO overlay directly relevant to Logan Square is the **Milwaukee Corridor Pilot**, established under [3]. This special ordinance was created specifically because neighborhoods along the Milwaukee Avenue corridor adjacent to the CTA Blue Li",
+      "synthesis_excerpt": "The context data does not include any ARO (Affordable Requirements Ordinance) housing data for Logan Square. The regulatory and neighborhood data fields that would contain ARO project counts and unit totals were not returned for this query, so I cannot provide specifics on ARO projects in the community area.\n\nWhat I can tell you is that Logan Square has several active **TIF districts** that can be used to fund affordable housing and community development:\n\n- **Fullerton/Milwaukee TIF** (T-87, ex",
       "caps": [
         {
           "source": "permits_api",
@@ -1710,10 +1742,10 @@
       "question": "What tax incentive classification applies to the property at 5600 W Chicago Ave, Chicago?",
       "category": "incentives_domain",
       "timings": {
-        "router_ms": 4874,
-        "retrieval_ms": 12130,
-        "first_token_ms": 13239,
-        "total_ms": 22477
+        "router_ms": 3631,
+        "retrieval_ms": 5591,
+        "first_token_ms": 7365,
+        "total_ms": 19078
       },
       "checks": [
         {
@@ -1735,7 +1767,7 @@
           ]
         }
       ],
-      "synthesis_excerpt": "Based on the context data, **no Cook County property tax incentive classification** (such as Class 6b, 7a, 7b, 8, etc.) currently applies to the property at 5600 W Chicago Ave (PIN 16043240060000). The `property_tax_class` field is null, and there is no `tax_incentive_description` recorded for this parcel.\n\nHowever, the property does benefit from other significant economic incentives worth noting:\n\n- **TIF District:** This parcel sits within the **Austin Commercial TIF District** (T-T-156), acti",
+      "synthesis_excerpt": "## Property Tax Incentive Classification \u2014 5600 W Chicago Ave\n\nNo Cook County property tax incentive classification (such as a Class 6b, 7a, or 8 designation) applies to this parcel (PIN: 16082070270000). The `property_tax_class` field is absent for this property, meaning no special reduced-assessment incentive classification is on record.\n\n---\n\n### Relevant Incentive Programs That Do Apply\n\nWhile there is no special tax class, this parcel benefits from several other significant incentive progra",
       "caps": []
     }
   ]
