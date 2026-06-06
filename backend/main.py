@@ -60,6 +60,14 @@ from backend.synthesizer import stream_answer
 
 log = logging.getLogger(__name__)
 
+_RETRIEVAL_SEM = asyncio.Semaphore(4)
+
+
+async def _limited(coro):
+    async with _RETRIEVAL_SEM:
+        return await coro
+
+
 _settings_init = get_settings()
 if _settings_init.sentry_dsn:
     import sentry_sdk
@@ -527,76 +535,76 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
 
     if ca is not None:
         if "crime_api" in plan.sources:
-            tasks["crime"] = asyncio.create_task(
+            tasks["crime"] = asyncio.create_task(_limited(
                 crime.crime_by_community_area(ca, days=plan.time_range_days)
-            )
+            ))
         if "311_api" in plan.sources:
-            tasks["311"] = asyncio.create_task(
+            tasks["311"] = asyncio.create_task(_limited(
                 three11.open_311_by_community_area(ca)
-            )
-            tasks["311_oldest"] = asyncio.create_task(
+            ))
+            tasks["311_oldest"] = asyncio.create_task(_limited(
                 three11.open_311_oldest(ca)
-            )
+            ))
         if "permits_api" in plan.sources:
-            tasks["permits"] = asyncio.create_task(
+            tasks["permits"] = asyncio.create_task(_limited(
                 buildings.permits_by_community_area(ca)
-            )
+            ))
         if "violations_api" in plan.sources:
-            tasks["violations"] = asyncio.create_task(
+            tasks["violations"] = asyncio.create_task(_limited(
                 buildings.violations_by_community_area(ca)
-            )
+            ))
         if "business_api" in plan.sources:
-            tasks["business"] = asyncio.create_task(
+            tasks["business"] = asyncio.create_task(_limited(
                 business.businesses_by_community_area(ca)
-            )
+            ))
         if "vacant_buildings_api" in plan.sources:
-            tasks["vacant"] = asyncio.create_task(
+            tasks["vacant"] = asyncio.create_task(_limited(
                 vacant.vacant_buildings_by_community_area(ca)
-            )
+            ))
         if "food_inspections_api" in plan.sources:
-            tasks["food_inspections"] = asyncio.create_task(
+            tasks["food_inspections"] = asyncio.create_task(_limited(
                 food_inspections.food_inspections_by_community_area(ca)
-            )
+            ))
 
     loc = plan.location
     if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon:
-        tasks["zoning_lookup"] = asyncio.create_task(
+        tasks["zoning_lookup"] = asyncio.create_task(_limited(
             lookup_zoning(loc.resolved_lat, loc.resolved_lon)
-        )
+        ))
 
     wf = plan.workflow_hint or "general"
 
     if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-        tasks["regulatory"] = asyncio.create_task(
+        tasks["regulatory"] = asyncio.create_task(_limited(
             regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
-        )
+        ))
 
     if "regulatory_domain" in plan.sources and ca is not None:
-        tasks["aro_housing"] = asyncio.create_task(
+        tasks["aro_housing"] = asyncio.create_task(_limited(
             aro_housing_by_community_area(ca)
-        )
+        ))
 
     if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-        tasks["property"] = asyncio.create_task(
+        tasks["property"] = asyncio.create_task(_limited(
             property_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
-        )
+        ))
 
     if "incentives_domain" in plan.sources:
         ca_name = loc.resolved_community_area_name
         if loc.resolved_lat and loc.resolved_lon:
-            tasks["incentives"] = asyncio.create_task(
+            tasks["incentives"] = asyncio.create_task(_limited(
                 incentives_domain(
                     loc.resolved_lat, loc.resolved_lon,
                     ca_name=ca_name, workflow=wf,
                 )
-            )
+            ))
         elif ca is not None:
-            tasks["incentives"] = asyncio.create_task(
+            tasks["incentives"] = asyncio.create_task(_limited(
                 incentives_domain(ca=ca, ca_name=ca_name, workflow=wf)
-            )
+            ))
 
     if "neighborhood_domain" in plan.sources:
-        tasks["neighborhood"] = asyncio.create_task(
+        tasks["neighborhood"] = asyncio.create_task(_limited(
             neighborhood_domain(
                 loc.resolved_lat or 0.0,
                 loc.resolved_lon or 0.0,
@@ -604,7 +612,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 address=loc.resolved_address,
                 workflow=wf,
             )
-        )
+        ))
 
     _FAILURE_LABELS = {
         "crime": "crime statistics",
@@ -687,43 +695,43 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
     tasks: dict[str, asyncio.Task] = {}
 
     if "crime_api" in plan.sources:
-        tasks["crimes"] = asyncio.create_task(
+        tasks["crimes"] = asyncio.create_task(_limited(
             crimes_for_map(ca, days=plan.time_range_days)
-        )
+        ))
     if "311_api" in plan.sources:
-        tasks["requests_311"] = asyncio.create_task(
+        tasks["requests_311"] = asyncio.create_task(_limited(
             requests_311_for_map(ca)
-        )
+        ))
     if "permits_api" in plan.sources:
-        tasks["building_permits"] = asyncio.create_task(
+        tasks["building_permits"] = asyncio.create_task(_limited(
             permits_for_map(ca, days=plan.time_range_days)
-        )
+        ))
     if plan.requires_disclaimer:
-        tasks["zoning"] = asyncio.create_task(
+        tasks["zoning"] = asyncio.create_task(_limited(
             zoning_for_map(ca)
-        )
+        ))
 
     loc = plan.location
     if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-        tasks["overlay_geojson"] = asyncio.create_task(
+        tasks["overlay_geojson"] = asyncio.create_task(_limited(
             _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon)
-        )
+        ))
 
     if "incentives_domain" in plan.sources:
         if loc.resolved_lat and loc.resolved_lon:
             from backend.retrieval.incentives.tif import tif_geojson_feature
             from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
-            tasks["tif_geojson"] = asyncio.create_task(
+            tasks["tif_geojson"] = asyncio.create_task(_limited(
                 tif_geojson_feature(loc.resolved_lat, loc.resolved_lon)
-            )
-            tasks["ez_geojson"] = asyncio.create_task(
+            ))
+            tasks["ez_geojson"] = asyncio.create_task(_limited(
                 ez_geojson_feature(loc.resolved_lat, loc.resolved_lon)
-            )
+            ))
         elif ca is not None:
             from backend.retrieval.incentives.tif import tif_geojson_by_community_area
-            tasks["tif_geojson_list"] = asyncio.create_task(
+            tasks["tif_geojson_list"] = asyncio.create_task(_limited(
                 tif_geojson_by_community_area(ca)
-            )
+            ))
 
     results: dict[str, Any] = {}
     if tasks:
