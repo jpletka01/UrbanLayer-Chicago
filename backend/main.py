@@ -594,7 +594,8 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
             regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
         ))
 
-    if "regulatory_domain" in plan.sources and ca is not None:
+    _aro_triggers = {"regulatory_domain", "property_domain", "neighborhood_domain", "incentives_domain"}
+    if _aro_triggers & set(plan.sources) and ca is not None:
         tasks["aro_housing"] = asyncio.create_task(_limited(
             aro_housing_by_community_area(ca)
         ))

@@ -47,25 +47,25 @@ These work well enough but could break on edge cases:
 
 **PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist.
 
-## Source Coverage Benchmark Results (2026-06-05, run 2)
+## Source Coverage Benchmark Results (2026-06-06, run 3)
 
-The `eval/source_coverage.py` benchmark tests 29 data sub-sources across 29 targeted queries (including Tier 3: grant programs, ARO housing, tax incentive classes). **34/40 sub-source checks covered** (85%). Property tax is NOT_TESTED (PTAXSIM optional, DB not present).
+The `eval/source_coverage.py` benchmark tests 28 data sub-sources across 29 targeted queries (including Tier 3: grant programs, ARO housing, tax incentive classes). **38/41 sub-source checks covered** (93%, up from 85% on run 2). Property tax is NOT_TESTED (PTAXSIM optional, DB not present).
 
 | Category | Sources | Result |
 |----------|---------|--------|
 | Socrata APIs | crime, 311, permits, violations, business, vacant buildings, food inspections | All COVERED |
-| Property domain | PIN, sales | COVERED. Characteristics/assessments show RETRIEVAL_GAP (Cook County GIS intermittent — data not available). Tax NOT_TESTED (PTAXSIM optional) |
+| Property domain | PIN, sales | COVERED. Characteristics show RETRIEVAL_GAP (Cook County GIS intermittent). Assessments show intermittent HALLUCINATION (model fabricates when CCAO returns 400). Tax shows intermittent HALLUCINATION (PTAXSIM not present) |
 | Regulatory domain | flood, overlays, TOD, historic, brownfields | All COVERED |
-| Incentives domain | TIF, OZ, grant programs | All COVERED. Enterprise Zone shows SYNTHESIS_GAP (model omits negative EZ when TIF/OZ positive — marked optional). Tax class shows HALLUCINATION (requires property class from Cook County — not retrieved when GIS is down) |
+| Incentives domain | TIF, OZ, EZ, grant programs, tax class | All COVERED (tax class fixed 2026-06-06) |
 | Neighborhood domain | demographics, census tract, transit, Walk Score | All COVERED |
-| ARO Housing | affordable housing projects | HALLUCINATION — ARO data not in context but model mentions it. Likely routing issue: ARO query may not be dispatched for this query type |
-| Vector search | municipal code chunks | RETRIEVAL_GAP — RT-4 daycare query did not return code chunks |
+| ARO Housing | affordable housing projects | COVERED (fixed 2026-06-06) |
+| Vector search | municipal code chunks | COVERED (fixed 2026-06-06) |
 
-**Remaining real issues:**
-- **ARO housing HALLUCINATION** — Model fabricates ARO data when the retrieval doesn't include it. Root cause: ARO runs only when `regulatory_domain` is active, but the ARO-specific query may not trigger regulatory routing.
-- **Tax incentive class HALLUCINATION** — Requires property class code from Cook County parcel data; when GIS is down, no class code is available for the assembler to interpret.
-- **Vector search gap** — Qdrant returned no chunks for the RT-4 daycare query. May be a query formulation issue or Qdrant index state.
-- **Property characteristics/assessments** — Cook County GIS intermittent (known, fallback provides PIN but not building details).
+**Remaining issues:**
+- **Property characteristics RETRIEVAL_GAP** — Cook County GIS intermittent (known, Socrata fallback provides PIN but not building details). Not fixable on our side.
+- **Property assessments HALLUCINATION (intermittent)** — When CCAO API returns HTTP 400 for a PIN, assessment fields are null but model may fabricate values. Synthesizer prompt strengthened (2026-06-06) to say "not available" instead of fabricating for direct questions.
+- **Property tax HALLUCINATION (intermittent)** — PTAXSIM DB not present locally; `estimated_annual_tax` is null. Same prompt-level fix applied. Will resolve when PTAXSIM is installed or skipped.
+- **Parcel zoning HALLUCINATION (intermittent)** — Due diligence query at 5600 W Chicago Ave sometimes fails to return zoning (geocoding or ArcGIS intermittent). Passes on retry.
 
 **Cap report**: No capped sources detected across all 29 queries.
 
@@ -91,8 +91,10 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - **Mobile experience** — Sidebar/map hidden on mobile (`hidden md:flex`). Needs bottom sheet or swipe-to-reveal for map access.
 - ~~**Shareable conversation links**~~ — **Done** — Share button in workspace header creates a public read-only link (`/s/:token`). ShareModal shows URL with copy/revoke. Schema v6 `conversation_shares` table with CASCADE delete.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window.
-- **ARO housing routing gap** — Benchmark shows HALLUCINATION; ARO query not dispatched for ARO-specific questions that don't trigger `regulatory_domain` routing.
-- **Vector search gap** — RT-4 daycare query returned no code chunks. Investigate query formulation or Qdrant index state.
+- ~~**ARO housing routing gap**~~ — **Fixed** (2026-06-06). ARO now triggers on any domain (regulatory, property, neighborhood, incentives) when community area is resolved, not just regulatory_domain. Router prompt expanded with explicit affordable housing triggers. Assembler creates RegulatorySummary if needed to hold ARO data. Verified COVERED in benchmark run 3.
+- ~~**Vector search gap**~~ — **Fixed** (2026-06-06). Router prompt search guidance strengthened with concrete examples for zoning use queries (e.g., "RT-4 use table allowed uses"). CRITICAL instruction to never include specific use names in zoning search queries. Verified COVERED in benchmark run 3.
+- ~~**Tax incentive class hallucination**~~ — **Fixed** (2026-06-06). Assembler now emits "standard" (class exists but not an incentive) or "unavailable" (class missing) signals. Synthesizer prompt updated to handle both. Verified COVERED in benchmark run 3.
+- **Property assessment/tax hallucination (intermittent)** — When CCAO API returns 400 or PTAXSIM absent, model may fabricate values. Synthesizer prompt strengthened to say "not available" for directly-asked null fields. Deeper fix: property domain should report sub-source failures via partial_failures.
 
 ## Operational Status
 

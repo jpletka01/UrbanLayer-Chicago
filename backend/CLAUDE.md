@@ -9,7 +9,7 @@
 | `synthesizer.py` | Claude streaming synthesis with `[N]` citation markers + `[data:*]` data markers + analytics |
 | `conversation.py` | Multi-turn query expansion (Haiku). Deterministic neighborhood switch detection |
 | `context_manager.py` | TurnSummary generation for sliding-window context management |
-| `assembler.py` | Context assembly with configurable caps + capped-result detection + partial_failures |
+| `assembler.py` | Context assembly with configurable caps + capped-result detection + partial_failures + tax class interpretation + negative signals for missing data |
 | `analytics.py` | Server-side MoM trend computation from raw Socrata rows |
 | `auth.py` | Google OAuth2 + JWT sessions. Dev-mode bypass when `GOOGLE_CLIENT_ID` empty. Dependencies: `get_current_user`, `require_admin` |
 | `rate_limit.py` | Per-user sliding window rate limiting + daily API budget cap. Applied to `/chat` only |
@@ -38,7 +38,7 @@ retrieval/
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
 ├── utils.py                # Shared helpers (cutoff_iso)
 ├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel
-├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA)
+├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA, triggered by any domain not just regulatory)
 ├── incentives/             # Orchestrator: point-based [TIF, EZ, grants] parallel → conditional [financials, OZ]; OR community-area-based TIF + grants. grant_programs.py queries SBIF + NOF
 └── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore] parallel
 ```

@@ -492,9 +492,11 @@ def assemble_context(
             ordinance_num=zoning_info.get("ordinance_num"),
         )
 
-    if aro_housing_rows and regulatory_summary:
+    if aro_housing_rows:
         aro_summary = _aro_housing_summary(aro_housing_rows)
         if aro_summary:
+            if regulatory_summary is None:
+                regulatory_summary = RegulatorySummary()
             regulatory_summary = regulatory_summary.model_copy(update={
                 "aro_housing": aro_summary,
             })
@@ -508,6 +510,20 @@ def assemble_context(
                 "property_tax_class": tax_class,
                 "tax_incentive_description": tax_desc,
             })
+        elif "incentives_domain" in plan.sources:
+            if incentives_summary is None:
+                incentives_summary = IncentivesSummary()
+            incentives_summary = incentives_summary.model_copy(update={
+                "property_tax_class": "standard",
+                "tax_incentive_description": f"Property class {property_summary.bldg_class} is a standard classification — no tax incentive reduction applies.",
+            })
+    elif "incentives_domain" in plan.sources and "property_domain" in plan.sources:
+        if incentives_summary is None:
+            incentives_summary = IncentivesSummary()
+        incentives_summary = incentives_summary.model_copy(update={
+            "property_tax_class": "unavailable",
+            "tax_incentive_description": "Property class code not available from Cook County — tax incentive classification cannot be determined.",
+        })
 
     return ContextObject(
         community_area=plan.location.resolved_community_area,
