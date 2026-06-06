@@ -141,7 +141,7 @@ export function useChat({
       content: text,
       attachments: attachments?.length ? attachments : undefined,
     };
-    const historySnapshot = [...messages];
+    const historySnapshot = messages.map((m) => ({ role: m.role, content: m.content }));
     setMessages((m) => [...m, userMessage, { role: "assistant", content: "" }]);
     setStreaming(true);
 
