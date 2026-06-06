@@ -1,7 +1,7 @@
 services:
   backend:
     environment:
-      - RERANKER_ENABLED=false
+      - RERANKER_ENABLED=true
 
   frontend:
     build:

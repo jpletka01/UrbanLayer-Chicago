@@ -14,7 +14,7 @@
 | `auth.py` | Google OAuth2 + JWT sessions. Dev-mode bypass when `GOOGLE_CLIENT_ID` empty. Dependencies: `get_current_user`, `require_admin` |
 | `rate_limit.py` | Per-user sliding window rate limiting + daily API budget cap. Applied to `/chat` only |
 | `db.py` | SQLite persistence (aiosqlite, WAL, schema v6). Tables: conversations (user-scoped), messages, uploads, llm_calls, request_logs, users, refresh_tokens, conversation_shares |
-| `llm.py` | Shared Anthropic client + `tracked_create()`/`tracked_stream()` wrappers (token/cost/latency logging) |
+| `llm.py` | Shared Anthropic client + `tracked_create()`/`tracked_stream()` wrappers (token/cost/latency logging) + automatic prompt caching via `_enable_prompt_caching()` |
 | `prompts.py` | System prompts: ROUTER_SYSTEM_TEMPLATE, SYNTHESIZER_SYSTEM, CONVERSATION_SYNTHESIS |
 | `models.py` | All Pydantic types: RetrievalPlan, ContextObject, domain summaries, SSE event types |
 | `config.py` | Settings via pydantic-settings: API keys, model IDs, query limits, assembler caps |
@@ -50,6 +50,13 @@ retrieval/
 - **Domain orchestrator**: `asyncio.gather(return_exceptions=True)` → build summary → graceful degradation on failures.
 - **External queries**: always use TTLCache, `httpx.AsyncClient`, return `None` on failure.
 - **Tests**: mock external APIs in unit tests, `@pytest.mark.integration` for real-API tests. Cache-clearing autouse fixture in `conftest.py`.
+
+## Production Configuration
+
+- **Retrieval concurrency**: `_RETRIEVAL_SEM = asyncio.Semaphore(8)` in `main.py` limits concurrent retrieval tasks in `_retrieve()` and `_fetch_map_rows()`. Increased from 4→8 after server upgrade to 8GB RAM (2026-06-06).
+- **ML model preloading**: Embedding model (`bge-base-en-v1.5`, ~500MB) is preloaded at startup via `run_in_executor` in the `lifespan` handler. Startup is **blocking** (not `create_task`) so health checks don't pass before models are loaded.
+- **Reranker**: Enabled in production via `RERANKER_ENABLED=true` (set in `docker-compose.prod.yml`). Re-enabled after server upgrade to 8GB RAM (2026-06-06). Full vector search pipeline with cross-encoder reranking active.
+- **SSE error handling**: `_event_stream()` wraps fatal calls (`db.count_user_messages()`, `synthesize_query()`) and non-fatal calls (`compute_analytics()`, `_build_map_response()`) in separate try-except blocks to prevent generator crashes before any SSE chunk is yielded.
 
 ## Testing
 

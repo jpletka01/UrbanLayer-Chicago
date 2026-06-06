@@ -12,7 +12,13 @@
 
 **Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. Our `_categorize_violation()` does first-match keyword bucketing into 18 custom categories, supplemented by code-prefix mapping (EV→Elevator, BR→Boiler) using the `violation_code` field. The code prefixes are heterogeneous alphanumeric strings, so full code-to-category mapping isn't practical — keyword matching remains the primary strategy.
 
-**FEMA endpoint flakiness**: The FEMA NFHL MapServer occasionally returns 500 errors or empty results. Graceful degradation handles this (flood zone shows as "Unknown" rather than failing the whole request).
+~~**Reranker disabled in production**~~: **Re-enabled** (2026-06-06) — Server upgraded from CX22 (4GB) to CX32 (8GB). `RERANKER_ENABLED=true` in `docker-compose.prod.yml`. Full vector search pipeline with cross-encoder reranking now active in production.
+
+**FEMA endpoint flakiness**: The FEMA NFHL MapServer occasionally returns 500 errors or empty results. Graceful degradation handles this (flood zone shows as "Unknown" rather than failing the whole request). Observed intermittently during production testing (2026-06-05).
+
+**CCAO assessment 400 errors**: Some PINs return HTTP 400 from the Cook County Assessor API. Graceful degradation shows assessments as unavailable. Root cause unknown — may be invalid PIN format or stale PIN data from the Socrata parcel fallback.
+
+**Cloudflare Insights beacon CORS**: Cloudflare injects a beacon script (`static.cloudflareinsights.com`) that intermittently fails with CORS and subresource integrity hash mismatches. Cloudflare-side issue, not fixable by us. Harmless console noise.
 
 **Census data vintage**: ACS 5-year estimates have a ~2-year lag (2023 data = 2019-2023 period). Labeled as estimates in the UI.
 
@@ -71,7 +77,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
 - **Context management improvements** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
-- **Latency reduction** — Synthesis currently takes 3-8s. Optimization opportunities identified but not implemented.
+- **Latency reduction** — Prompt caching implemented (2026-06-06). Phase timing instrumentation added. Remaining: model routing for simple queries.
 - ~~**Shareable links**~~ — **Done** — `/s/:token` share routes with `conversation_shares` table (schema v6). ShareModal UI for create/copy/revoke.
 
 ## Outstanding Work
@@ -79,7 +85,9 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - ~~**CI/CD deploy key**~~ — **Done** (2026-06-05).
 - ~~**Re-run source coverage benchmark**~~ — **Done** (2026-06-05). 34/40 covered (85%). Remaining gaps are external data availability.
 - ~~**Database backup cron on server**~~ — **Done** (2026-06-05). Cron runs daily at 3am UTC, 7 rolling backups at `/opt/urbanlayer/backups/`. DB path: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
-- **Synthesis latency reduction** — 3-8s first-hit synthesis. Optimization opportunities: model routing for simple queries, prompt trimming, partial streaming.
+- ~~**Conversation persistence fix**~~ — **Done** (2026-06-05). 401-interceptor, auth race condition fix, error handling on write functions, CSP fixes, SSE resilience, nginx body size, OOM mitigation. See `claude-context/conversations.md`.
+- ~~**Re-enable reranker**~~ — **Done** (2026-06-06). Server upgraded to CX32 (8GB). `RERANKER_ENABLED=true`, retrieval semaphore increased from 4→8.
+- **Synthesis latency reduction** — 3-8s first-hit synthesis. Prompt caching added (2026-06-06) — system prompts cached via Anthropic `cache_control` for ~80% latency reduction on cache hits. Pipeline phase timing instrumentation added to `done` SSE event. Remaining opportunities: model routing for simple queries, prompt trimming.
 - **Mobile experience** — Sidebar/map hidden on mobile (`hidden md:flex`). Needs bottom sheet or swipe-to-reveal for map access.
 - ~~**Shareable conversation links**~~ — **Done** — Share button in workspace header creates a public read-only link (`/s/:token`). ShareModal shows URL with copy/revoke. Schema v6 `conversation_shares` table with CASCADE delete.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window.
@@ -97,7 +105,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 
 ## Deployment Status (2026-06-05)
 
-Production server provisioned and hardened (Hetzner CX22, `178.105.184.66`, Nuremberg). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Google OAuth active. Qdrant has 14,535 vectors (municipal code search operational). CI/CD pipeline deployed (tests + type check pass, auto-deploy key pending verification). UptimeRobot + Sentry monitoring active. Claude Code GitHub App installed for AI code review on PRs. Full status tracked in `claude-context/deployment-plan.md`.
+Production server provisioned and hardened (Hetzner CX32 8GB, `178.105.184.66`, Nuremberg — upgraded from CX22 4GB on 2026-06-06). **App is live on HTTPS at `https://urbanlayerchicago.com`** — all 3 Docker services running (Qdrant, backend, frontend) via production compose overlay. Cloudflare Full (Strict) + Origin Certificate. GitHub repo is public (`jpletka01/UrbanLayer-Chicago`). Google OAuth active. Qdrant has 14,535 vectors (municipal code search operational). CI/CD pipeline deployed. UptimeRobot + Sentry monitoring active. Claude Code GitHub App installed for AI code review on PRs. Reranker re-enabled, retrieval concurrency increased to 8. Prompt caching active on all LLM calls.
 
 **Tier 3 integrations deployed to production** (2026-06-05): Grant programs, ARO housing, tax incentive classes merged via PR #1 and deployed.
 

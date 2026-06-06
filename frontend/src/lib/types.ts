@@ -394,14 +394,15 @@ export type ChatChunk =
   | { type: "map_data"; map_data: MapData; t_ms?: number }
   | { type: "token"; text: string; t_ms?: number }
   | { type: "error"; error: string; t_ms?: number }
-  | { type: "done"; t_ms?: number }
+  | { type: "done"; t_ms?: number; timings?: PhaseTimings }
   | { type: "turn_summary"; turn_summary: TurnSummary; t_ms?: number };
 
 export interface PhaseTimings {
-  router_ms?: number;
-  retrieval_ms?: number;
-  first_token_ms?: number;
-  total_ms?: number;
+  conv_synth?: number;
+  router?: number;
+  retrieval?: number;
+  first_token?: number;
+  total?: number;
 }
 
 export interface TransitStation {

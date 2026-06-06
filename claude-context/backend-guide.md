@@ -101,9 +101,28 @@ Cache key patterns:
 - PIN-based: `f"{source}:{pin14}"`
 - Tract-based: `f"{source}:{tract_fips}"`
 
-Startup preloading: TIF boundaries, Enterprise Zone boundaries, OZ tract list, GTFS stations, ACS demographics, community area polygons.
+Startup preloading: TIF boundaries, Enterprise Zone boundaries, OZ tract list, GTFS stations, ACS demographics, community area polygons, ML embedding model (blocking).
 
 Cache hit/miss stats available via `/api/admin/cache-stats` (if implemented).
+
+## Concurrency & Memory Management
+
+**Retrieval semaphore**: `_RETRIEVAL_SEM = asyncio.Semaphore(8)` in `main.py` wraps all retrieval tasks in `_retrieve()` and `_fetch_map_rows()` via a `_limited()` helper. Increased from 4→8 after server upgrade to 8GB RAM (2026-06-06). Prevents 10+ concurrent external API calls from spiking memory on complex queries.
+
+**ML model lifecycle**: Embedding model (`bge-base-en-v1.5`, ~500MB) and optional reranker (`bge-reranker-v2-m3`, ~1.3GB) are loaded via `@lru_cache` in `vector_search.py`. At startup, the `lifespan` handler preloads models via `run_in_executor` — **blocking** (not `create_task`) so health checks don't pass before models are ready. This prevents mid-request memory spikes from lazy loading.
+
+```python
+# Startup preload (in lifespan handler)
+from backend.retrieval.vector_search import _model, _reranker
+loop = asyncio.get_event_loop()
+await loop.run_in_executor(None, _model)  # always
+if settings.reranker_enabled:
+    await loop.run_in_executor(None, _reranker)  # conditional
+```
+
+**Production memory budget** (8GB CX32 server): ~500MB embedding model + ~1.3GB reranker + ~500MB Python/PyTorch + Qdrant + nginx ≈ 4GB, leaving ~4GB headroom for request processing. Server upgraded from CX22 (4GB) on 2026-06-06; reranker re-enabled (`RERANKER_ENABLED=true`).
+
+**SSE error handling**: `_event_stream()` generator wraps async calls in two tiers of try-except: (1) fatal calls (`db.count_user_messages()`, `synthesize_query()`) — yield error event and return, (2) non-fatal calls (`compute_analytics()`, `_build_map_response()`) — log warning, continue with partial response. This prevents unhandled exceptions from crashing the generator before any SSE chunk reaches the client.
 
 ## Docker
 
@@ -113,7 +132,7 @@ Multi-stage Dockerfile (`backend/Dockerfile`): builder installs CPU-only PyTorch
 
 `docker-compose.override.yml` (auto-loaded in dev): mounts local `./backend` and `./ingestion/data` for hot-reload, exposes port 8001 directly.
 
-`docker-compose.prod.yml`: production override — builds frontend with `nginx.prod.conf` (HTTPS, security headers, gzip), exposes ports 80+443, mounts Cloudflare Origin Certificate from `/etc/ssl/cloudflare`.
+`docker-compose.prod.yml`: production override — builds frontend with `nginx.prod.conf` (HTTPS, security headers, gzip), exposes ports 80+443, mounts Cloudflare Origin Certificate from `/etc/ssl/cloudflare`. Sets `RERANKER_ENABLED=true` for backend.
 
 ```bash
 docker compose up -d                              # dev (hot-reload, no frontend)
@@ -126,7 +145,7 @@ docker compose cp ./backend/data/ptaxsim.db backend:/app/backend/data/
 
 ## Production Server
 
-Hetzner CX22 at `178.105.184.66` (Nuremberg datacenter). Ubuntu 22.04, 2 vCPU, 4GB RAM, 40GB SSD, 2GB swap.
+Hetzner CX32 at `178.105.184.66` (Nuremberg datacenter). Ubuntu 22.04, 2 vCPU, 8GB RAM, 80GB SSD. Upgraded from CX22 (4GB) on 2026-06-06.
 
 **SSH access**: `ssh -i ~/.ssh/id_ed25519 root@178.105.184.66` (key has passphrase — run `ssh-add ~/.ssh/id_ed25519` first).
 
@@ -151,6 +170,18 @@ curl -X POST http://localhost:6333/collections/chicago_municipal_code/snapshots
 ```
 
 **Installed software**: Docker 29.5.2, Docker Compose 5.1.4. Firewall (ufw): ports 22, 80, 443 open. SSH password auth disabled.
+
+**Production debugging**:
+```bash
+# Check for OOM kills (exit code 137 = 128 + SIGKILL)
+dmesg | grep -i -E 'oom|kill|memory'
+docker compose logs backend 2>&1 | grep -E 'exit|kill|error'
+
+# Cloudflare error codes to know:
+# 521 = Web Server Down (can't establish TCP to origin)
+# 525 = SSL Handshake Failed (origin unreachable)
+# Both mean the backend container is down — check OOM
+```
 
 ## Testing
 

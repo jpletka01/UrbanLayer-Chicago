@@ -37,7 +37,7 @@ User Message
 | Map | Mapbox GL JS + deck.gl | WebGL handles thousands of points; deck.gl declarative layers |
 | Geocoding | Census Geocoder + shapely | Free, no API key, deterministic. 77 community areas + 30+ aliases |
 | Containers | Docker Compose (Qdrant + backend + nginx/frontend) | Multi-stage build, CPU-only PyTorch, baked HF models, non-root user |
-| Hosting | Hetzner CX22 (Nuremberg) — 2 vCPU, 4GB RAM, 2GB swap. Live at `http://178.105.184.66` | Cheapest x86 tier with enough RAM for PyTorch models + Qdrant |
+| Hosting | Hetzner CX32 (Nuremberg) — 2 vCPU, 8GB RAM. Live at `https://urbanlayerchicago.com` | Upgraded from CX22 (4GB) on 2026-06-06; reranker re-enabled |
 | DNS/CDN | Cloudflare Free | Origin IP hiding, DDoS protection, static asset caching |
 | TLS | Cloudflare Full (Strict) + Origin Certificate (expires 2041) | Zero-maintenance vs Let's Encrypt — no certbot/renewal cron |
 | Auth | Google OAuth2 + self-rolled JWT (PyJWT) | One-click sign-in, no password storage, httpOnly cookies + CSRF double-submit |
@@ -102,6 +102,8 @@ query
 ```
 
 Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then reranked — the reranker was stuck with whatever chunk the dense embedding liked most. v4 reranks all ~60 candidates first, so dedup picks the best-scoring chunk per section after blending. This fixed lot_size and liquor_school_distance queries (C→A).
+
+**Note**: Reranker is enabled in production (`RERANKER_ENABLED=true`) after server upgrade to 8GB RAM (2026-06-06). Full pipeline with cross-encoder reranking and blended scoring is active.
 
 ## Context Management
 

@@ -60,7 +60,7 @@ from backend.synthesizer import stream_answer
 
 log = logging.getLogger(__name__)
 
-_RETRIEVAL_SEM = asyncio.Semaphore(4)
+_RETRIEVAL_SEM = asyncio.Semaphore(8)
 
 
 async def _limited(coro):
@@ -820,6 +820,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     request_group = str(uuid.uuid4())
     plan: RetrievalPlan | None = None
     error_msg: str | None = None
+    timings: dict[str, int] = {}
 
     # Load turn summaries for context management
     turn_summaries: list[TurnSummary] | None = None
@@ -845,11 +846,13 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
                 yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
                 return
 
+        t0 = time.monotonic()
         query = await synthesize_query(
             req.message, req.history,
             request_group=request_group,
             conversation_id=req.conversation_id,
         )
+        timings["conv_synth"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
         log.exception("Pre-routing failed")
         error_msg = f"Failed to process query: {exc}"
@@ -861,11 +864,13 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         return
 
     try:
+        t0 = time.monotonic()
         plan = await route(
             query,
             request_group=request_group,
             conversation_id=req.conversation_id,
         )
+        timings["router"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
         log.exception("Router failed")
         error_msg = f"Router failed: {exc}"
@@ -880,7 +885,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
 
     if plan.intent == "clarification_needed" and plan.clarification:
         yield _sse(ChatChunk(type="token", text=plan.clarification, t_ms=elapsed_ms()))
-        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "ok", None,
         ))
@@ -888,15 +893,17 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
 
     # Run retrieval and map-data fetch concurrently
     try:
+        t0 = time.monotonic()
         context, map_rows = await asyncio.gather(
             _retrieve(plan),
             _fetch_map_rows(plan),
         )
+        timings["retrieval"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
         log.exception("Retrieval failed")
         error_msg = f"Retrieval failed: {exc}"
         yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
-        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
         ))
@@ -924,6 +931,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         log.warning("Map response build failed", exc_info=True)
 
     first_token = True
+    t_first_token: int | None = None
     try:
         async for token in stream_answer(
             context=context,
@@ -936,12 +944,17 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             conversation_id=req.conversation_id,
         ):
             chunk_t = elapsed_ms() if first_token else None
+            if first_token:
+                t_first_token = chunk_t
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
             first_token = False
     except Exception as exc:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
         yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+
+    if t_first_token is not None:
+        timings["first_token"] = t_first_token
 
     # Generate turn summary for context management (fire-and-forget)
     if plan and not error_msg:
@@ -956,7 +969,8 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         except Exception:
             log.warning("Failed to generate turn summary", exc_info=True)
 
-    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+    timings["total"] = elapsed_ms()
+    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
 
     asyncio.create_task(_save_request_log(
         request_group, req, plan, elapsed_ms(),

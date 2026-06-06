@@ -450,6 +450,7 @@ class ChatChunk(BaseModel):
     # synthesis token. Lets clients render per-phase latency without holding
     # their own timer, and lets the eval harness compute p50/p95 offline.
     t_ms: int | None = None
+    timings: dict[str, int] | None = None
 
 
 class ConversationSummary(BaseModel):

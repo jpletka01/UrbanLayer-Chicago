@@ -36,6 +36,16 @@ def get_anthropic_client() -> AsyncAnthropic:
     return AsyncAnthropic(api_key=get_settings().anthropic_api_key)
 
 
+def _enable_prompt_caching(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Convert a string system prompt into a cacheable content block."""
+    system = kwargs.get("system")
+    if isinstance(system, str):
+        kwargs["system"] = [
+            {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}},
+        ]
+    return kwargs
+
+
 async def tracked_create(
     *,
     request_group: str,
@@ -48,6 +58,7 @@ async def tracked_create(
     from backend import db
 
     client = get_anthropic_client()
+    kwargs = _enable_prompt_caching(kwargs)
     start = time.monotonic()
     try:
         resp = await client.messages.create(model=model, **kwargs)
@@ -109,6 +120,7 @@ async def tracked_stream(
     status = "ok"
     error_msg = None
 
+    kwargs = _enable_prompt_caching(kwargs)
     try:
         async with client.messages.stream(model=model, **kwargs) as stream:
             yield stream
