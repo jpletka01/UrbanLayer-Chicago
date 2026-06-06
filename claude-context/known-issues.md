@@ -61,11 +61,19 @@ The `eval/source_coverage.py` benchmark tests 28 data sub-sources across 29 targ
 | ARO Housing | affordable housing projects | COVERED (fixed 2026-06-06) |
 | Vector search | municipal code chunks | COVERED (fixed 2026-06-06) |
 
-**Remaining issues:**
-- **Property characteristics RETRIEVAL_GAP** — Cook County GIS intermittent (known, Socrata fallback provides PIN but not building details). Not fixable on our side.
-- **Property assessments HALLUCINATION (intermittent)** — When CCAO API returns HTTP 400 for a PIN, assessment fields are null but model may fabricate values. Synthesizer prompt strengthened (2026-06-06) to say "not available" instead of fabricating for direct questions.
-- **Property tax HALLUCINATION (intermittent)** — PTAXSIM DB not present locally; `estimated_annual_tax` is null. Same prompt-level fix applied. Will resolve when PTAXSIM is installed or skipped.
-- **Parcel zoning HALLUCINATION (intermittent)** — Due diligence query at 5600 W Chicago Ave sometimes fails to return zoning (geocoding or ArcGIS intermittent). Passes on retry.
+**Failing checks (3/41, all external-data-dependent):**
+
+| Query ID | Sub-source check | Status | Root cause |
+|----------|-----------------|--------|------------|
+| `property_pin_characteristics` | `property_characteristics` | RETRIEVAL_GAP | Cook County GIS intermittent — Socrata fallback returns PIN but no `bldg_sqft`, `land_sqft`, or `stories`. Context missing, synthesis correctly omits. Not fixable on our side. |
+| `property_assessments_sales` | `property_assessments` | HALLUCINATION (intermittent) | CCAO Assessor API returns HTTP 400 for some PINs → `total_assessed_value` and `assessment_history` are null. Model fabricates values despite prompt rule 4. Prompt strengthened (2026-06-06) but still intermittent. Deeper fix: property domain should report assessment failure via `partial_failures`. |
+| `property_tax_estimate` | `property_tax` | HALLUCINATION (intermittent) | PTAXSIM database not installed locally (8.8GB, optional). `estimated_annual_tax` is null. Model fabricates a tax number. Same prompt fix applied. Will not recur once PTAXSIM is installed, or if benchmark marks it NOT_TESTED when null. |
+
+**Intermittent (passes on some runs, fails on others):**
+
+| Query ID | Sub-source check | Status | Root cause |
+|----------|-----------------|--------|------------|
+| `due_diligence_full` | `parcel_zoning` | HALLUCINATION (intermittent) | Zoning lookup for 5600 W Chicago Ave occasionally returns no `zone_class` (geocoding or ArcGIS flaky). Model then fabricates zoning. Passes on retry — appeared in run 2 but not run 3. |
 
 **Cap report**: No capped sources detected across all 29 queries.
 
