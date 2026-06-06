@@ -18,6 +18,8 @@
 
 **CCAO assessment 400 errors**: Some PINs return HTTP 400 from the Cook County Assessor API. Graceful degradation shows assessments as unavailable. Root cause unknown — may be invalid PIN format or stale PIN data from the Socrata parcel fallback.
 
+**iPhone 12 Pro black space on right side**: Reported during mobile UX testing (2026-06-06) — a black strip appears on the right edge of the screen on iPhone 12 Pro (390x844 logical). Not reproducible on iPhone 14+ or Samsung. Added `viewport-fit=cover` to `index.html` viewport meta as a precaution. Root cause unclear — may be a DevTools emulation artifact (iPhone 12 Pro and 14 have the same 390px logical width). Needs real-device testing on production.
+
 **Cloudflare Insights beacon CORS**: Cloudflare injects a beacon script (`static.cloudflareinsights.com`) that intermittently fails with CORS and subresource integrity hash mismatches. Cloudflare-side issue, not fixable by us. Harmless console noise.
 
 **Census data vintage**: ACS 5-year estimates have a ~2-year lag (2023 data = 2019-2023 period). Labeled as estimates in the UI.
@@ -102,6 +104,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - ~~**Vector search gap**~~ — **Fixed** (2026-06-06). Router prompt search guidance strengthened with concrete examples for zoning use queries (e.g., "RT-4 use table allowed uses"). CRITICAL instruction to never include specific use names in zoning search queries. Verified COVERED in benchmark run 3.
 - ~~**Tax incentive class hallucination**~~ — **Fixed** (2026-06-06). Assembler now emits "standard" (class exists but not an incentive) or "unavailable" (class missing) signals. Synthesizer prompt updated to handle both. Verified COVERED in benchmark run 3.
 - **Property assessment/tax hallucination (intermittent)** — When CCAO API returns 400 or PTAXSIM absent, model may fabricate values. Synthesizer prompt strengthened to say "not available" for directly-asked null fields. Deeper fix: property domain should report sub-source failures via partial_failures.
+- ~~**Mobile UX overhaul**~~ — **Done** (2026-06-06). `MobileSidebarSheet` rewritten with adjustable snap heights (20/70/90vh), 3-tab layout (Map/Data/Sources), MapView GL context preservation, smart default tab, compact mobile map controls with filter popover. Desktop behavior untouched.
 
 ## Operational Status
 

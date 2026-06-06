@@ -32,12 +32,13 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 ### Sidebar
 | Component | Purpose |
 |-----------|---------|
-| `SidebarPanel` | Drag-to-resize container with collapsed rail, Data/Sources tab toggle |
+| `SidebarPanel` | Desktop: drag-to-resize container with collapsed rail, Data/Sources tab toggle |
+| `MobileSidebarSheet` | Mobile: bottom sheet with snap heights (20/70/90vh), 3-tab Map/Data/Sources, touch drag, GL context preservation |
 | `DataView` | Data lag note + analytics (map above data cards with vertical drag divider) |
 | `SourcesView` | Ranked code chunks with citations |
 | `SourceCitation` | Source card: rank badge, § pill, score, expandable text, cross-refs |
 | `SourceDetailDrawer` | Full-section viewer for cross-referenced sections |
-| `MapView` | Mapbox + deck.gl with click popups (Google Street View links), flyTo, zoning overlay, overlay/incentive polygons |
+| `MapView` | Mapbox + deck.gl with click popups (Google Street View links), flyTo, zoning overlay, overlay/incentive polygons. `isMobile` prop: compact layer toggles + filter popover |
 | `MapLayerToggles` | Dynamic toggle pills (crime types / 311 departments / source-level) |
 | `MapLegend` | Compact legend, zoning category legend in points-off mode |
 | `ArrestFilter` | Arrest status segmented control (crime mode) |
@@ -74,16 +75,18 @@ useChat hook:
   messages, plan, context, streaming, showDisclaimer, errorMsg, atMessageLimit
 
 App.tsx state:
-  conversationId (synced with URL), sidebarOpen, sidebarView ('data'|'sources'),
+  conversationId (synced with URL), sidebarOpen, sidebarView ('data'|'sources'|'map'),
   mapData, selectedMessageIndex (per-question toggling), historyOpen, loadingConversation,
-  isSharedView (read-only mode for /s/:token), shareModalOpen
+  isSharedView (read-only mode for /s/:token), shareModalOpen,
+  mapTabViewed (mobile badge tracking)
 ```
 
 **Auto-behaviors:**
 - Sidebar auto-opens when `context` arrives
 - Conversations auto-persist to SQLite via API
 - Scroll auto-follows new messages
-- Sources tab default when code chunks exist; Data tab when zoning data present
+- Smart default tab (mobile): Map for spatial queries, Data for domain queries, Sources for legal questions
+- Desktop: Sources tab default when code chunks exist; Data tab when zoning data present
 - URL auto-syncs with conversation ID
 
 ## SSE Event Types
@@ -126,7 +129,7 @@ Framer Motion used for splash animations and CountUp stats. Sidebar uses CSS pix
 
 ## Responsive
 
-- **Mobile** (default): Single-column, sidebar `hidden md:flex`.
-- **md (768px+)**: Dual-pane, sidebar visible.
+- **Mobile** (<768px): Single-column chat. Sidebar is `MobileSidebarSheet` — bottom sheet with 3 snap heights (20vh peek / 70vh default / 90vh full). Touch-drag handle with direct DOM manipulation during drag. 3-tab layout (Map / Data / Sources) bypasses `DataMapLayout`, rendering `MapView` and `DataView` independently at full height. MapView stays mounted (`display: none/block` toggle) to preserve GL context across tab switches. Smart default tab based on query type. `MapView isMobile={true}` activates compact layer toggles and filter popover (vs inline desktop controls). `MapLegend` hidden on mobile.
+- **Desktop** (768px+): Dual-pane, `SidebarPanel` with `hidden md:flex`. 2-tab Data/Sources with `DataMapLayout` stacking map + data cards. Drag-to-resize sidebar.
 - Hero title: `text-4xl md:text-5xl`.
 - Chat: `w-full` mobile, `w-[60%]` desktop (sidebar open).
