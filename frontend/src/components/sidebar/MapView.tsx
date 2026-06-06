@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { PathStyleExtension } from "@deck.gl/extensions";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
@@ -129,9 +130,10 @@ interface Props {
   sources: SourceTag[];
   parcelGeometry?: Record<string, unknown> | null;
   hasTransitContext?: boolean;
+  isMobile?: boolean;
 }
 
-export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitContext }: Props) {
+export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitContext, isMobile = false }: Props) {
   const rawFilterMode = deriveFilterMode(sources);
 
   type SourceTab = "crime" | "311" | "permits";
@@ -169,6 +171,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   const [showIncentives, setShowIncentives] = useState(true);
   const [showOverlays, setShowOverlays] = useState(true);
   const [transitStations, setTransitStations] = useState<TransitStation[]>([]);
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
 
   const hasZoning = !!(mapData?.zoning && (mapData.zoning as Record<string, unknown>)?.features &&
     ((mapData.zoning as Record<string, unknown>).features as unknown[]).length > 0);
@@ -647,7 +650,8 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
 
-      {mapReady && showPoints && (
+      {/* Desktop: right-side filters (DateRangeSlider + MapLayerToggles) */}
+      {!isMobile && mapReady && showPoints && (
         <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end w-1/2 max-w-[200px] max-h-[calc(100%-16px)] overflow-y-auto">
           {dateBounds && dateRange && hasData && (
             <DateRangeSlider
@@ -664,7 +668,134 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
         </div>
       )}
 
-      {mapReady && (
+      {/* Mobile: filter button (top-right) */}
+      {isMobile && mapReady && showPoints && hasData && (
+        <button
+          onClick={() => setFilterPopoverOpen(o => !o)}
+          className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium
+                     rounded-md backdrop-blur-sm bg-dark-surface/90 border border-dark-border shadow-sm
+                     text-text-primary transition-colors duration-150"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+          </svg>
+          Filters
+        </button>
+      )}
+
+      {/* Mobile: filter popover */}
+      <AnimatePresence>
+        {isMobile && filterPopoverOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 z-20 bg-black/20"
+              onClick={() => setFilterPopoverOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-10 right-2 z-30 w-[240px] max-h-[60vh] overflow-y-auto
+                         bg-dark-surface border border-dark-border rounded-xl p-3 shadow-2xl space-y-2.5"
+            >
+              {isMultiSource && availableTabs.length > 1 && (
+                <div className="flex w-full bg-dark-bg rounded-md overflow-hidden">
+                  {availableTabs.map((tab) => {
+                    const label = tab === "crime" ? "Crime" : tab === "311" ? "311" : "Permits";
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`flex-1 px-2 py-1 text-[11px] font-medium transition-colors duration-150
+                          ${filterMode === tab
+                            ? "bg-dark-elevated text-text-primary"
+                            : "text-text-muted hover:text-text-secondary"
+                          }
+                          ${tab !== availableTabs[0] ? "border-l border-dark-border" : ""}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {toggleConfigs.length > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Type Filters</div>
+                  <MapLayerToggles layers={toggleConfigs} onToggle={onToggle} />
+                </div>
+              )}
+
+              {filterMode === "crime" && crimeTotal > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Arrest Status</div>
+                  <ToggleGroup<ArrestFilterValue>
+                    value={arrestFilter}
+                    onChange={setArrestFilter}
+                    options={[
+                      { value: "all", label: `All (${crimeTotal})` },
+                      { value: "arrested", label: `Arrested (${arrestCount})` },
+                      { value: "not-arrested", label: `No Arrest (${crimeTotal - arrestCount})` },
+                    ]}
+                  />
+                </div>
+              )}
+
+              {filterMode === "311" && requests311Total > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Status</div>
+                  <ToggleGroup<StatusFilterValue>
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    options={[
+                      { value: "all", label: `All (${requests311Total})` },
+                      { value: "closed", label: `Closed (${closedCount})` },
+                      { value: "open", label: `Open (${requests311Total - closedCount})` },
+                    ]}
+                  />
+                </div>
+              )}
+
+              {filterMode === "permits" && permitsTotal > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cost Range</div>
+                  <ToggleGroup<CostFilterValue>
+                    value={costFilter}
+                    onChange={setCostFilter}
+                    options={[
+                      { value: "all", label: `All (${permitsTotal})` },
+                      { value: "under25k", label: `<$25K (${permitCostCounts.under25k})` },
+                      { value: "25k-250k", label: `$25K–$250K (${permitCostCounts["25k-250k"]})` },
+                      { value: "over250k", label: `>$250K (${permitCostCounts.over250k})` },
+                    ]}
+                  />
+                </div>
+              )}
+
+              {dateBounds && dateRange && hasData && (
+                <div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Date Range</div>
+                  <DateRangeSlider
+                    minDate={dateBounds.min}
+                    maxDate={dateBounds.max}
+                    startDate={dateRange[0]}
+                    endDate={dateRange[1]}
+                    onChange={(s, e) => setDateRange([s, e])}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {!isMobile && mapReady && (
         <MapLegend
           activeLayers={activeToggles}
           filterMode={filterMode}
@@ -675,19 +806,19 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
       )}
 
       {mapReady && (hasZoning || hasData || true) && (
-        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[calc(50%-8px)]">
+        <div className={`absolute top-2 left-2 z-10 flex flex-col gap-1.5 ${isMobile ? "max-w-[calc(70%-8px)]" : "max-w-[calc(50%-8px)]"}`}>
           <div className="flex gap-1 flex-wrap">
             {hasZoning && (
               <button
                 onClick={() => setShowZoning(s => !s)}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showZoning
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
                   }`}
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-sm inline-block border"
+                  className={`${isMobile ? "w-2 h-2" : "w-2.5 h-2.5"} rounded-sm inline-block border`}
                   style={{
                     backgroundColor: showZoning ? "rgba(66,133,244,0.5)" : "transparent",
                     borderColor: showZoning ? "rgba(66,133,244,0.8)" : "#555",
@@ -699,7 +830,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
             {hasData && (
               <button
                 onClick={() => setShowPoints(s => !s)}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showPoints
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
@@ -714,14 +845,14 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
             )}
             <button
               onClick={() => setShowTransit(s => !s)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+              className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                 ${showTransit
                   ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                   : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
                 }`}
             >
               <span
-                className="w-2 h-2 rounded-sm inline-block"
+                className={`${isMobile ? "w-1.5 h-1.5" : "w-2 h-2"} rounded-sm inline-block`}
                 style={{
                   backgroundColor: showTransit ? "rgba(0,161,222,0.5)" : "transparent",
                   border: showTransit ? "1px solid rgba(0,161,222,0.8)" : "1px solid #555",
@@ -732,14 +863,14 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
             {mapData?.incentive_zones && (
               <button
                 onClick={() => setShowIncentives(s => !s)}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showIncentives
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
                   }`}
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-sm inline-block"
+                  className={`${isMobile ? "w-2 h-2" : "w-2.5 h-2.5"} rounded-sm inline-block`}
                   style={{
                     backgroundColor: showIncentives ? "rgba(255,87,34,0.5)" : "transparent",
                     border: showIncentives ? "1px solid rgba(255,87,34,0.8)" : "1px solid #555",
@@ -751,14 +882,14 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
             {mapData?.overlay_districts && (
               <button
                 onClick={() => setShowOverlays(s => !s)}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showOverlays
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
                   }`}
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-sm inline-block"
+                  className={`${isMobile ? "w-2 h-2" : "w-2.5 h-2.5"} rounded-sm inline-block`}
                   style={{
                     backgroundColor: showOverlays ? "rgba(156,39,176,0.5)" : "transparent",
                     border: showOverlays ? "1px solid rgba(156,39,176,0.8)" : "1px solid #555",
@@ -769,7 +900,8 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
             )}
           </div>
 
-          {showPoints && hasData && (
+          {/* Desktop: inline source tabs + filters */}
+          {!isMobile && showPoints && hasData && (
             <>
               {isMultiSource && availableTabs.length > 1 && (
                 <div className="flex w-full bg-dark-surface/90 backdrop-blur-sm rounded-md border border-dark-border shadow-sm overflow-hidden">

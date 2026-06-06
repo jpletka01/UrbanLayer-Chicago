@@ -414,7 +414,7 @@ export interface TransitStation {
   line?: string;
 }
 
-export type SidebarView = "data" | "sources";
+export type SidebarView = "data" | "sources" | "map";
 
 export interface MapCrime {
   latitude: number;

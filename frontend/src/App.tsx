@@ -96,6 +96,7 @@ export function App() {
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [dataTabViewed, setDataTabViewed] = useState(true);
   const [sourcesTabViewed, setSourcesTabViewed] = useState(true);
+  const [mapTabViewed, setMapTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
@@ -154,6 +155,7 @@ export function App() {
       setSelectedMessageIndex(null);
       setDataTabViewed(true);
       setSourcesTabViewed(true);
+      setMapTabViewed(true);
     } else if (!conversationIdFromUrl) {
       setLoadingConversation(false);
     }
@@ -197,10 +199,18 @@ export function App() {
     setActiveSidebarContext(ctx);
     openSidebarResponsive();
     const hasDomain = ctx.parcel_zoning || ctx.property || ctx.regulatory || ctx.incentives || ctx.neighborhood;
-    const autoView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
+    const isMobile = window.innerWidth < 768;
+
+    let autoView: SidebarView;
+    if (isMobile) {
+      autoView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
+    } else {
+      autoView = hasDomain ? "data" : ctx.code_chunks?.length ? "sources" : "data";
+    }
     setSidebarView(autoView);
     setDataTabViewed(autoView === "data");
     setSourcesTabViewed(autoView === "sources");
+    setMapTabViewed(autoView === "map");
   }
 
   function handleMapData(data: MapData) {
@@ -215,6 +225,13 @@ export function App() {
         ? relevantSources
         : (["crime_api", "311_api", "permits_api"] as SourceTag[]),
     );
+    const hasSpatialData = data.crimes.length > 0 || data.requests_311.length > 0 ||
+      data.building_permits.length > 0 ||
+      !!(data.zoning && ((data.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
+    if (hasSpatialData && window.innerWidth < 768) {
+      setSidebarView("map");
+      setMapTabViewed(true);
+    }
   }
 
   function handlePlan(p: RetrievalPlan) {
@@ -363,6 +380,7 @@ export function App() {
     setSelectedMessageIndex(null);
     setDataTabViewed(true);
     setSourcesTabViewed(true);
+    setMapTabViewed(true);
     setLoadError(null);
     navigateToSplash();
   }
@@ -428,10 +446,22 @@ export function App() {
         openSidebarResponsive();
         const hasDomain = assistantMsg.context.parcel_zoning || assistantMsg.context.property ||
           assistantMsg.context.regulatory || assistantMsg.context.incentives || assistantMsg.context.neighborhood;
-        const autoView = hasDomain ? "data" : assistantMsg.context.code_chunks?.length ? "sources" : "data";
+        const isMobile = window.innerWidth < 768;
+        const hasSpatialData = assistantMsg.mapData && (
+          assistantMsg.mapData.crimes.length > 0 || assistantMsg.mapData.requests_311.length > 0 ||
+          assistantMsg.mapData.building_permits.length > 0 ||
+          !!(assistantMsg.mapData.zoning && ((assistantMsg.mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length)
+        );
+        let autoView: SidebarView;
+        if (isMobile && hasSpatialData) {
+          autoView = "map";
+        } else {
+          autoView = hasDomain ? "data" : assistantMsg.context.code_chunks?.length ? "sources" : "data";
+        }
         setSidebarView(autoView);
         setDataTabViewed(autoView === "data");
         setSourcesTabViewed(autoView === "sources");
+        setMapTabViewed(autoView === "map");
       }
 
       // Load plan
@@ -515,6 +545,7 @@ export function App() {
     setSidebarView(view);
     if (view === "data") setDataTabViewed(true);
     if (view === "sources") setSourcesTabViewed(true);
+    if (view === "map") setMapTabViewed(true);
   }
 
   function handleCitationClick(index: number, messageContext?: ContextObject) {
@@ -776,7 +807,7 @@ export function App() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                   </svg>
-                  {((!dataTabViewed && countDataCategories(activeSidebarContext) > 0) || (!sourcesTabViewed && (activeSidebarContext?.code_chunks?.length ?? 0) > 0)) && (
+                  {((!dataTabViewed && countDataCategories(activeSidebarContext) > 0) || (!sourcesTabViewed && (activeSidebarContext?.code_chunks?.length ?? 0) > 0) || (!mapTabViewed && mapData)) && (
                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent" />
                   )}
                 </button>
@@ -908,6 +939,7 @@ export function App() {
               mapSources={mapSources}
               showDataBadge={!dataTabViewed}
               showSourcesBadge={!sourcesTabViewed}
+              showMapBadge={!mapTabViewed}
               dataCount={countDataCategories(activeSidebarContext)}
               sourceCount={activeSidebarContext?.code_chunks?.length ?? 0}
             />

@@ -40,7 +40,8 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 ## Patterns
 
 - **Per-message context**: each assistant message stores its own `context`, `plan`, `mapData`, `mapFetchedAt`. Citations survive multi-turn. Clicking a past user message loads that turn's data into the sidebar.
-- **Sidebar**: drag-to-resize, collapsed rail (44px). Data tab (map + analytics) / Sources tab (code chunks). Auto-opens when context arrives.
+- **Sidebar (desktop)**: drag-to-resize, collapsed rail (44px). Data tab (map + analytics) / Sources tab (code chunks). Auto-opens when context arrives.
+- **Sidebar (mobile)**: `MobileSidebarSheet` bottom sheet with 3 snap heights (20vh peek / 70vh default / 90vh full). 3-tab layout: Map / Data / Sources (bypasses `DataMapLayout`, renders `MapView` and `DataView` independently at full height). MapView stays mounted when switching tabs to preserve GL context. Smart default tab: Map for spatial queries, Data for domain queries, Sources for legal questions. Map controls use compact layer toggles + filter popover (vs inline desktop controls). `isMobile` prop on `MapView` drives mobile-specific rendering.
 - **New sidebar card**: use `CollapsibleCard` pattern from `sidebar/CollapsibleCard.tsx`.
 - **Citations**: `[N]` → `CitationPill` (§ section reference), `[data:X]` → `DataPill` (opens Data tab).
 - **Map layer order** (bottom → top): zoning polygons → overlay districts → incentive zones → parcel boundary → data dots (crime/311/permits) → transit stations → address pin.
@@ -61,6 +62,13 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **`nginx.prod.conf`**: production config — HTTP→HTTPS redirect on port 80, SSL termination on port 443 (Cloudflare Origin Certificate), security headers (HSTS, CSP tuned for Mapbox/deck.gl, X-Frame-Options DENY), gzip compression. Same proxy locations as dev plus `X-Forwarded-Proto`. `client_max_body_size 16m` on `/api/` and `/chat` location blocks.
 - **CSP domains**: `script-src` allows `static.cloudflareinsights.com`; `style-src` allows `fonts.googleapis.com`; `font-src` allows `fonts.gstatic.com`; `img-src` allows `lh3.googleusercontent.com` (Google avatars); `connect-src` allows `*.ingest.de.sentry.io` (Sentry). CSP is defined in two places (lines 26 and 54) — both must be updated together.
 - **Production deploy**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` — the override adds port 443, SSL cert volume mount, and selects `nginx.prod.conf`.
+
+## Responsive
+
+- **Mobile** (<768px): Single-column chat. Sidebar is `MobileSidebarSheet` (bottom sheet with snap heights 20/70/90vh). 3-tab Map/Data/Sources layout with `MapView isMobile={true}` (compact layer toggles, filter popover). `SidebarView "map"` only set on mobile.
+- **Desktop** (768px+): Dual-pane, `SidebarPanel` with `hidden md:flex`. 2-tab Data/Sources with `DataMapLayout` stacking map + data cards.
+- Hero title: `text-4xl md:text-5xl`.
+- Chat: `w-full` mobile, `w-[60%]` desktop (sidebar open).
 
 ## Commands
 
