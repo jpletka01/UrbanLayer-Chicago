@@ -101,9 +101,22 @@ Cache key patterns:
 - PIN-based: `f"{source}:{pin14}"`
 - Tract-based: `f"{source}:{tract_fips}"`
 
+**Known cache gaps** (planned fixes in `claude-context/latency-reduction.md`):
+- `zoning.py:zoning_polygons_for_map()` — No cache. Fetches ~1MB GeoJSON per community area from ArcGIS on every request (1-2s). Point-lookup `lookup_zoning()` IS cached.
+- `overlays.py:query_overlay_with_geometry()` / `overlay_geojson_features()` — No cache on geometry fetches. Fires 13 ArcGIS requests per point (1-3s). Attribute-only `query_all_overlays()` IS cached.
+- `geo.py:geocode_address()` — No cache. Census Geocoder API call on every address (0.5-3s). Same address in multi-turn conversations pays full latency each time.
+
 Startup preloading: TIF boundaries, Enterprise Zone boundaries, OZ tract list, GTFS stations, ACS demographics, community area polygons, ML embedding model (blocking).
 
-Cache hit/miss stats available via `/api/admin/cache-stats` (if implemented).
+Cache hit/miss stats available via `/api/admin/cache-stats`.
+
+**Prompt caching**: All LLM calls use Anthropic server-side prompt caching via `_enable_prompt_caching()` in `llm.py`. String system prompts are auto-converted to content blocks with `cache_control: {"type": "ephemeral"}` (5-minute TTL). Cache hit/miss tracked in `llm_calls` table (`cache_read_tokens`, `cache_create_tokens`).
+
+## HTTP Client Patterns
+
+**Shared client (preferred):** `socrata.py:get_shared_client()` creates a process-lifetime `httpx.AsyncClient` with connection pooling (`max_connections=20`, `max_keepalive_connections=10`, `http2=True`). All Socrata modules use this, avoiding per-call TCP/TLS overhead.
+
+**Per-call client (legacy, needs migration):** Most non-Socrata modules (`vector_search.py`, `zoning.py`, `overlays.py`, `flood.py`, `environmental.py`, `geo.py`) create a new `httpx.AsyncClient` in a context manager per function call. Each already accepts an optional `client` parameter — the shared client pattern can be adopted by adding a module-level shared client and using it as the default. See `latency-reduction.md` item 4 for the full migration plan.
 
 ## Concurrency & Memory Management
 

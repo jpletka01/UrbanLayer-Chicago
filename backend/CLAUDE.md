@@ -48,7 +48,7 @@ retrieval/
 - **New Socrata module**: copy `business.py` — same `socrata_get()` pattern with `community_area` filter.
 - **New ArcGIS module**: copy `zoning.py` — same spatial query pattern, change endpoint + layer ID.
 - **Domain orchestrator**: `asyncio.gather(return_exceptions=True)` → build summary → graceful degradation on failures.
-- **External queries**: always use TTLCache, `httpx.AsyncClient`, return `None` on failure.
+- **External queries**: always use TTLCache, `httpx.AsyncClient`, return `None` on failure. Prefer shared HTTP clients (see `socrata.py:get_shared_client()` pattern) over per-call clients. Non-Socrata modules still use per-call clients — migration plan in `claude-context/latency-reduction.md`.
 - **Tests**: mock external APIs in unit tests, `@pytest.mark.integration` for real-API tests. Cache-clearing autouse fixture in `conftest.py`.
 
 ## Production Configuration

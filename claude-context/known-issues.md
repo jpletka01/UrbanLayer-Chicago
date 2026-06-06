@@ -77,7 +77,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS (Apple Silicon) acceleration available but not configured for production server (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset exists.
 - **Context management improvements** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
-- **Latency reduction** — Prompt caching implemented (2026-06-06). Phase timing instrumentation added. Remaining: model routing for simple queries.
+- **Latency reduction** — Prompt caching implemented (2026-06-06). Phase timing instrumentation added. Full plan in `claude-context/latency-reduction.md`.
 - ~~**Shareable links**~~ — **Done** — `/s/:token` share routes with `conversation_shares` table (schema v6). ShareModal UI for create/copy/revoke.
 
 ## Outstanding Work
@@ -87,7 +87,7 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - ~~**Database backup cron on server**~~ — **Done** (2026-06-05). Cron runs daily at 3am UTC, 7 rolling backups at `/opt/urbanlayer/backups/`. DB path: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
 - ~~**Conversation persistence fix**~~ — **Done** (2026-06-05). 401-interceptor, auth race condition fix, error handling on write functions, CSP fixes, SSE resilience, nginx body size, OOM mitigation. See `claude-context/conversations.md`.
 - ~~**Re-enable reranker**~~ — **Done** (2026-06-06). Server upgraded to CX32 (8GB). `RERANKER_ENABLED=true`, retrieval semaphore increased from 4→8.
-- **Synthesis latency reduction** — 3-8s first-hit synthesis. Prompt caching added (2026-06-06) — system prompts cached via Anthropic `cache_control` for ~80% latency reduction on cache hits. Pipeline phase timing instrumentation added to `done` SSE event. Remaining opportunities: model routing for simple queries, prompt trimming.
+- **Synthesis latency reduction** — 3-8s first-hit synthesis. Prompt caching added (2026-06-06) — system prompts cached via Anthropic `cache_control` for ~80% latency reduction on cache hits. Pipeline phase timing instrumentation added to `done` SSE event. **Full plan with 4 ready-to-implement items + 4 forward-thinking items in `claude-context/latency-reduction.md`** — covers zoning polygon cache, overlay geometry cache, geocoding cache, shared HTTP clients, client-side map caching, geometry simplification, vector tiles, model routing.
 - **Mobile experience** — Sidebar/map hidden on mobile (`hidden md:flex`). Needs bottom sheet or swipe-to-reveal for map access.
 - ~~**Shareable conversation links**~~ — **Done** — Share button in workspace header creates a public read-only link (`/s/:token`). ShareModal shows URL with copy/revoke. Schema v6 `conversation_shares` table with CASCADE delete.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window.

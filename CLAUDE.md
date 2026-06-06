@@ -78,3 +78,4 @@ Read from `claude-context/` on demand when you need deeper information:
 - `known-issues.md` — Bugs, fragile heuristics, synthesis gaps, gotchas, deferred work
 - `expansion-roadmap.md` — Completed expansion phases + remaining Tier 3 opportunities
 - `conversations.md` — Conversation persistence architecture, auth integration, known production issue + fix plan
+- `latency-reduction.md` — Completed and planned performance optimizations, pipeline timing reference, caching gaps

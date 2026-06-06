@@ -52,6 +52,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **401-interceptor**: `authFetch()` in `api.ts` intercepts 401 responses, attempts `POST /api/auth/refresh` via raw `fetch` (not `authFetch` to avoid recursion), coalesces concurrent refreshes with a module-level `_refreshPromise`, re-reads CSRF cookie after refresh, retries original request once.
 - **History stripping**: `useChat.ts` sends only `{role, content}` in chat POST history (strips `context`/`plan`/`mapData` blobs) to avoid HTTP 413 from nginx's `client_max_body_size`.
 - **Stream close detection**: `useChat.ts` tracks `receivedDone` flag — if the SSE stream ends without a `done` event and wasn't user-aborted, shows "Connection lost — please try again."
+- **Pipeline timing**: The `done` SSE event includes a `timings` dict (`PhaseTimings` in `types.ts`) with `conv_synth`, `router`, `retrieval`, `first_token`, `total` (all in ms). Logged to console via `[perf] pipeline timings (ms):` in `useChat.ts`.
 
 ## Docker / Nginx
 
