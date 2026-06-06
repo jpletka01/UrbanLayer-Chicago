@@ -77,3 +77,4 @@ Read from `claude-context/` on demand when you need deeper information:
 - `frontend-guide.md` — Components, design tokens, state management, layout, map system
 - `known-issues.md` — Bugs, fragile heuristics, synthesis gaps, gotchas, deferred work
 - `expansion-roadmap.md` — Completed expansion phases + remaining Tier 3 opportunities
+- `conversations.md` — Conversation persistence architecture, auth integration, known production issue + fix plan

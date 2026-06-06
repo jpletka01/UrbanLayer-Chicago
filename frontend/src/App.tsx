@@ -587,20 +587,36 @@ export function App() {
 
               {/* Hero section — full viewport */}
               <div className="relative z-10 min-h-screen flex flex-col">
-                {conversations.length > 0 && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    onClick={() => setHistoryOpen(true)}
-                    className="absolute top-4 left-4 z-20 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
-                    title="View history"
+                {/* Top header bar */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex items-center justify-between px-4 pt-4"
+                >
+                  <a
+                    href="/"
+                    onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className="flex items-center gap-2.5 group"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </motion.button>
-                )}
+                    <img src="/logo.png" alt="UrbanLayer" className="w-8 h-8 rounded-full group-hover:scale-105 transition-transform" />
+                    <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
+                      <span className="hidden md:inline">UrbanLayer — Chicago</span>
+                      <span className="md:hidden">UrbanLayer</span>
+                    </span>
+                  </a>
+                  {conversations.length > 0 && (
+                    <button
+                      onClick={() => setHistoryOpen(true)}
+                      className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
+                      title="View history"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                  )}
+                </motion.div>
 
                 <div className="flex-1 flex flex-col justify-center items-center px-4 py-20">
                   <div className="text-center max-w-2xl space-y-8">
@@ -709,16 +725,29 @@ export function App() {
           >
             <header className="h-14 px-3 md:px-6 flex items-center justify-between bg-dark-bg shrink-0">
               <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                {!isSharedView && conversations.length > 0 && (
+                  <button
+                    onClick={() => setHistoryOpen(true)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors shrink-0"
+                    title="Chat history"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                )}
                 {isSharedView ? (
-                  <span className="text-sm font-medium text-text-secondary shrink-0">
+                  <span className="flex items-center gap-2 text-sm font-medium text-text-secondary shrink-0">
+                    <img src="/logo.png" alt="" className="w-6 h-6 rounded-full" />
                     <span className="hidden md:inline">UrbanLayer — Shared</span>
                     <span className="md:hidden">Shared</span>
                   </span>
                 ) : (
                   <button
                     onClick={reset}
-                    className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
+                    className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
                   >
+                    <img src="/logo.png" alt="" className="w-6 h-6 rounded-full" />
                     <span className="hidden md:inline">UrbanLayer — Chicago</span>
                     <span className="md:hidden">UrbanLayer</span>
                   </button>

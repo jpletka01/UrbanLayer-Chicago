@@ -49,12 +49,16 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **Charts**: `PieChart` (SVG donut) and `BarChart` (SVG horizontal bars) are custom — no chart library. `BarChart` takes `DistributionBucket[]` and renders labeled horizontal bars with hover state.
 - **Routing**: `/` (splash), `/c/:id` (conversation), `/s/:shareToken` (shared read-only view), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
 - **Auth**: `AuthProvider` wraps the app in `main.tsx`. Auth gate on `sendMessage` in `App.tsx` — shows `AuthModal` if `authRequired && !isAuthenticated`. `UserMenu` in workspace header shows avatar + sign-out. Admin link only visible when `user.tier === "admin"`. In dev mode (`GOOGLE_CLIENT_ID` not set), auth is fully bypassed — no sign-in UI shown.
+- **401-interceptor**: `authFetch()` in `api.ts` intercepts 401 responses, attempts `POST /api/auth/refresh` via raw `fetch` (not `authFetch` to avoid recursion), coalesces concurrent refreshes with a module-level `_refreshPromise`, re-reads CSRF cookie after refresh, retries original request once.
+- **History stripping**: `useChat.ts` sends only `{role, content}` in chat POST history (strips `context`/`plan`/`mapData` blobs) to avoid HTTP 413 from nginx's `client_max_body_size`.
+- **Stream close detection**: `useChat.ts` tracks `receivedDone` flag — if the SSE stream ends without a `done` event and wasn't user-aborted, shows "Connection lost — please try again."
 
 ## Docker / Nginx
 
 - **Dockerfile**: multi-stage (node build → nginx serve). `NGINX_CONF` build arg selects config (defaults to `nginx.conf` for dev).
 - **`nginx.conf`**: dev config — port 80 only, proxies `/api/`, `/chat`, `/health`, `/autocomplete`, `/section/` to `backend:8001`. SPA fallback for all other routes.
-- **`nginx.prod.conf`**: production config — HTTP→HTTPS redirect on port 80, SSL termination on port 443 (Cloudflare Origin Certificate), security headers (HSTS, CSP tuned for Mapbox/deck.gl, X-Frame-Options DENY), gzip compression. Same proxy locations as dev plus `X-Forwarded-Proto`.
+- **`nginx.prod.conf`**: production config — HTTP→HTTPS redirect on port 80, SSL termination on port 443 (Cloudflare Origin Certificate), security headers (HSTS, CSP tuned for Mapbox/deck.gl, X-Frame-Options DENY), gzip compression. Same proxy locations as dev plus `X-Forwarded-Proto`. `client_max_body_size 16m` on `/api/` and `/chat` location blocks.
+- **CSP domains**: `script-src` allows `static.cloudflareinsights.com`; `style-src` allows `fonts.googleapis.com`; `font-src` allows `fonts.gstatic.com`; `img-src` allows `lh3.googleusercontent.com` (Google avatars); `connect-src` allows `*.ingest.de.sentry.io` (Sentry). CSP is defined in two places (lines 26 and 54) — both must be updated together.
 - **Production deploy**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` — the override adds port 443, SSL cert volume mount, and selects `nginx.prod.conf`.
 
 ## Commands
