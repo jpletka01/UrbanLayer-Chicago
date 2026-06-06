@@ -599,7 +599,7 @@ export function App() {
                     onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     className="flex items-center gap-2.5 group"
                   >
-                    <img src="/logo.png" alt="UrbanLayer" className="w-8 h-8 rounded-full group-hover:scale-105 transition-transform" />
+                    <img src="/logo.jpg" alt="UrbanLayer" className="w-8 h-8 rounded-full group-hover:scale-105 transition-transform" />
                     <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
                       <span className="hidden md:inline">UrbanLayer — Chicago</span>
                       <span className="md:hidden">UrbanLayer</span>
@@ -738,7 +738,7 @@ export function App() {
                 )}
                 {isSharedView ? (
                   <span className="flex items-center gap-2 text-sm font-medium text-text-secondary shrink-0">
-                    <img src="/logo.png" alt="" className="w-6 h-6 rounded-full" />
+                    <img src="/logo.jpg" alt="" className="w-6 h-6 rounded-full" />
                     <span className="hidden md:inline">UrbanLayer — Shared</span>
                     <span className="md:hidden">Shared</span>
                   </span>
@@ -747,7 +747,7 @@ export function App() {
                     onClick={reset}
                     className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
                   >
-                    <img src="/logo.png" alt="" className="w-6 h-6 rounded-full" />
+                    <img src="/logo.jpg" alt="" className="w-6 h-6 rounded-full" />
                     <span className="hidden md:inline">UrbanLayer — Chicago</span>
                     <span className="md:hidden">UrbanLayer</span>
                   </button>
