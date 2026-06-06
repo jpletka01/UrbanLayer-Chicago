@@ -13,7 +13,21 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
+_arcgis_client: httpx.AsyncClient | None = None
+
+
+def _get_arcgis_client() -> httpx.AsyncClient:
+    global _arcgis_client
+    if _arcgis_client is None or _arcgis_client.is_closed:
+        _arcgis_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0),
+            limits=httpx.Limits(max_connections=15, max_keepalive_connections=10),
+        )
+    return _arcgis_client
+
+
 _cache = TTLCache(ttl_seconds=3600, maxsize=512, name="overlays")
+_geojson_cache = TTLCache(ttl_seconds=3600, maxsize=512, name="overlay_geojson")
 _NOT_FOUND = object()
 
 ZONING_BASE_URL = (
@@ -61,9 +75,8 @@ async def query_overlay(
         "returnGeometry": "false",
         "f": "json",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    if client is None:
+        client = _get_arcgis_client()
     try:
         resp = await client.get(url, params=params)
         resp.raise_for_status()
@@ -75,9 +88,6 @@ async def query_overlay(
     except Exception as exc:
         log.warning("Overlay query layer %d failed for (%s, %s): %s", layer_id, lat, lon, exc)
         return None
-    finally:
-        if owns:
-            await client.aclose()
 
 
 async def query_overlay_with_geometry(
@@ -99,9 +109,8 @@ async def query_overlay_with_geometry(
         "outSR": "4326",
         "f": "geojson",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    if client is None:
+        client = _get_arcgis_client()
     try:
         resp = await client.get(url, params=params)
         resp.raise_for_status()
@@ -113,9 +122,6 @@ async def query_overlay_with_geometry(
     except Exception as exc:
         log.warning("Overlay geometry query layer %d failed for (%s, %s): %s", layer_id, lat, lon, exc)
         return None
-    finally:
-        if owns:
-            await client.aclose()
 
 
 async def overlay_geojson_features(
@@ -133,31 +139,34 @@ async def overlay_geojson_features(
     if not layer_ids:
         return {"type": "FeatureCollection", "features": []}
 
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
-    try:
-        coros = [
-            query_overlay_with_geometry(lat, lon, lid, client=client)
-            for lid in layer_ids
-        ]
-        results = await asyncio.gather(*coros, return_exceptions=True)
+    key = f"overlay_geo:{round(lat, 5)}:{round(lon, 5)}"
+    cached = _geojson_cache.get(key)
+    if cached is not None:
+        return cached
 
-        features = []
-        for lid, result in zip(layer_ids, results):
-            if isinstance(result, Exception) or result is None:
-                continue
-            meta = OVERLAY_LAYERS.get(lid, {})
-            props = result.get("properties", {})
-            props["overlay_type"] = meta.get("type", f"layer_{lid}")
-            props["overlay_name"] = meta.get("name", f"Layer {lid}")
-            result["properties"] = props
-            features.append(result)
+    if client is None:
+        client = _get_arcgis_client()
 
-        return {"type": "FeatureCollection", "features": features}
-    finally:
-        if owns:
-            await client.aclose()
+    coros = [
+        query_overlay_with_geometry(lat, lon, lid, client=client)
+        for lid in layer_ids
+    ]
+    results = await asyncio.gather(*coros, return_exceptions=True)
+
+    features = []
+    for lid, result in zip(layer_ids, results):
+        if isinstance(result, Exception) or result is None:
+            continue
+        meta = OVERLAY_LAYERS.get(lid, {})
+        props = result.get("properties", {})
+        props["overlay_type"] = meta.get("type", f"layer_{lid}")
+        props["overlay_name"] = meta.get("name", f"Layer {lid}")
+        result["properties"] = props
+        features.append(result)
+
+    fc = {"type": "FeatureCollection", "features": features}
+    _geojson_cache.set(key, fc)
+    return fc
 
 
 async def query_all_overlays(
@@ -177,24 +186,20 @@ async def query_all_overlays(
     if cached is not None:
         return cached
 
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
-    try:
-        tasks = {
-            lid: asyncio.create_task(query_overlay(lat, lon, lid, client=client))
-            for lid in OVERLAY_LAYERS
-        }
-        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    if client is None:
+        client = _get_arcgis_client()
 
-        hits: list[tuple[int, dict]] = []
-        for lid, result in zip(tasks.keys(), results):
-            if isinstance(result, Exception):
-                log.warning("Overlay layer %d raised: %s", lid, result)
-            elif result is not None:
-                hits.append((lid, result))
-        _cache.set(key, hits if hits else _NOT_FOUND)
-        return hits
-    finally:
-        if owns:
-            await client.aclose()
+    tasks = {
+        lid: asyncio.create_task(query_overlay(lat, lon, lid, client=client))
+        for lid in OVERLAY_LAYERS
+    }
+    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+
+    hits: list[tuple[int, dict]] = []
+    for lid, result in zip(tasks.keys(), results):
+        if isinstance(result, Exception):
+            log.warning("Overlay layer %d raised: %s", lid, result)
+        elif result is not None:
+            hits.append((lid, result))
+    _cache.set(key, hits if hits else _NOT_FOUND)
+    return hits

@@ -8,6 +8,19 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
+_fema_client: httpx.AsyncClient | None = None
+
+
+def _get_fema_client() -> httpx.AsyncClient:
+    global _fema_client
+    if _fema_client is None or _fema_client.is_closed:
+        _fema_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(15.0),
+            limits=httpx.Limits(max_connections=5, max_keepalive_connections=3),
+        )
+    return _fema_client
+
+
 _cache = TTLCache(ttl_seconds=3600, maxsize=512, name="flood")
 _NOT_FOUND = object()
 
@@ -46,9 +59,8 @@ async def query_flood_zone(
         "returnGeometry": "false",
         "f": "json",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    if client is None:
+        client = _get_fema_client()
     try:
         resp = await client.get(FEMA_NFHL_URL, params=params)
         resp.raise_for_status()
@@ -72,6 +84,3 @@ async def query_flood_zone(
     except Exception as exc:
         log.warning("FEMA flood zone query failed for (%s, %s): %s", lat, lon, exc)
         return None
-    finally:
-        if owns:
-            await client.aclose()

@@ -15,6 +15,19 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
+_epa_client: httpx.AsyncClient | None = None
+
+
+def _get_epa_client() -> httpx.AsyncClient:
+    global _epa_client
+    if _epa_client is None or _epa_client.is_closed:
+        _epa_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(15.0),
+            limits=httpx.Limits(max_connections=5, max_keepalive_connections=3),
+        )
+    return _epa_client
+
+
 _cache = TTLCache(ttl_seconds=3600, maxsize=256, name="environmental")
 
 EPA_BROWNFIELDS_URL = (
@@ -51,9 +64,8 @@ async def query_brownfield_sites(
         "resultRecordCount": "10",
         "f": "json",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    if client is None:
+        client = _get_epa_client()
     try:
         resp = await client.get(EPA_BROWNFIELDS_URL, params=params)
         resp.raise_for_status()
@@ -77,6 +89,3 @@ async def query_brownfield_sites(
     except Exception as exc:
         log.warning("EPA brownfield query failed for (%s, %s): %s", lat, lon, exc)
         return []
-    finally:
-        if owns:
-            await client.aclose()

@@ -101,10 +101,10 @@ Cache key patterns:
 - PIN-based: `f"{source}:{pin14}"`
 - Tract-based: `f"{source}:{tract_fips}"`
 
-**Known cache gaps** (planned fixes in `claude-context/latency-reduction.md`):
-- `zoning.py:zoning_polygons_for_map()` — No cache. Fetches ~1MB GeoJSON per community area from ArcGIS on every request (1-2s). Point-lookup `lookup_zoning()` IS cached.
-- `overlays.py:query_overlay_with_geometry()` / `overlay_geojson_features()` — No cache on geometry fetches. Fires 13 ArcGIS requests per point (1-3s). Attribute-only `query_all_overlays()` IS cached.
-- `geo.py:geocode_address()` — No cache. Census Geocoder API call on every address (0.5-3s). Same address in multi-turn conversations pays full latency each time.
+All retrieval functions are now cached. Notable caches added in the latency reduction work:
+- `zoning.py:_polygon_cache` — 1h TTL, 77 entries (one per community area). Caches ~1MB GeoJSON polygon data.
+- `overlays.py:_geojson_cache` — 1h TTL, 512 entries. Caches assembled overlay FeatureCollection, eliminating 13 per-layer fetches on hit.
+- `geo.py:_geocode_cache` — 1h TTL, 256 entries. Caches geocoded address → (lat, lon) results.
 
 Startup preloading: TIF boundaries, Enterprise Zone boundaries, OZ tract list, GTFS stations, ACS demographics, community area polygons, ML embedding model (blocking).
 
@@ -114,9 +114,14 @@ Cache hit/miss stats available via `/api/admin/cache-stats`.
 
 ## HTTP Client Patterns
 
-**Shared client (preferred):** `socrata.py:get_shared_client()` creates a process-lifetime `httpx.AsyncClient` with connection pooling (`max_connections=20`, `max_keepalive_connections=10`, `http2=True`). All Socrata modules use this, avoiding per-call TCP/TLS overhead.
-
-**Per-call client (legacy, needs migration):** Most non-Socrata modules (`vector_search.py`, `zoning.py`, `overlays.py`, `flood.py`, `environmental.py`, `geo.py`) create a new `httpx.AsyncClient` in a context manager per function call. Each already accepts an optional `client` parameter — the shared client pattern can be adopted by adding a module-level shared client and using it as the default. See `latency-reduction.md` item 4 for the full migration plan.
+**Shared client (all modules):** Every retrieval module uses a process-lifetime `httpx.AsyncClient` with connection pooling. Pattern: `_get_X_client()` lazily creates the singleton, checks `is_closed`. All functions accept an optional `client` parameter for testing.
+- `socrata.py:get_shared_client()` — 20 connections, HTTP/2
+- `vector_search.py:_get_qdrant_client()` — 10 connections
+- `zoning.py:_get_arcgis_client()` — 10 connections
+- `overlays.py:_get_arcgis_client()` — 15 connections (handles 13 parallel layer queries)
+- `flood.py:_get_fema_client()` — 5 connections
+- `environmental.py:_get_epa_client()` — 5 connections
+- `geo.py:_get_geocoder_client()` — 5 connections
 
 ## Concurrency & Memory Management
 

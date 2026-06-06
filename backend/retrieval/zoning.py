@@ -14,7 +14,21 @@ from backend.retrieval.geo import community_area_bounds
 
 log = logging.getLogger(__name__)
 
+_arcgis_client: httpx.AsyncClient | None = None
+
+
+def _get_arcgis_client() -> httpx.AsyncClient:
+    global _arcgis_client
+    if _arcgis_client is None or _arcgis_client.is_closed:
+        _arcgis_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(20.0),
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
+    return _arcgis_client
+
+
 _cache = TTLCache(ttl_seconds=3600, maxsize=512, name="zoning")
+_polygon_cache = TTLCache(ttl_seconds=3600, maxsize=77, name="zoning_polygons")
 _NOT_FOUND = object()
 
 ZONING_QUERY_URL = (
@@ -51,9 +65,8 @@ async def lookup_zoning(
         "returnGeometry": "false",
         "f": "json",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    if client is None:
+        client = _get_arcgis_client()
     try:
         resp = await client.get(ZONING_QUERY_URL, params=params)
         resp.raise_for_status()
@@ -77,9 +90,6 @@ async def lookup_zoning(
     except Exception as exc:
         log.warning("Zoning lookup failed for (%s, %s): %s", lat, lon, exc)
         return None
-    finally:
-        if owns:
-            await client.aclose()
 
 
 _EMPTY_FC: dict = {"type": "FeatureCollection", "features": []}
@@ -95,6 +105,11 @@ async def zoning_polygons_for_map(
     Returns a GeoJSON FeatureCollection with ZONE_CLASS, ZONE_TYPE, and
     ORDINANCE_NUM on each feature. Typically 200-600 polygons, ~1 MB.
     """
+    key = f"zoning_poly:{community_area}"
+    cached = _polygon_cache.get(key)
+    if cached is not None:
+        return cached
+
     bounds = community_area_bounds(community_area)
     if bounds is None:
         log.warning("No bounds for community area %s", community_area)
@@ -111,19 +126,16 @@ async def zoning_polygons_for_map(
         "outSR": "4326",
         "f": "geojson",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(20.0))
+    if client is None:
+        client = _get_arcgis_client()
     try:
         resp = await client.get(ZONING_QUERY_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
         if data.get("exceededTransferLimit"):
             log.warning("Zoning query exceeded transfer limit for CA %s", community_area)
+        _polygon_cache.set(key, data)
         return data
     except Exception as exc:
         log.warning("Zoning polygon fetch failed for CA %s: %s", community_area, exc)
         return _EMPTY_FC
-    finally:
-        if owns:
-            await client.aclose()

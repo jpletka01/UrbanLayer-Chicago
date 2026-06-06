@@ -13,7 +13,21 @@ from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
+_geocoder_client: httpx.AsyncClient | None = None
+
+
+def _get_geocoder_client() -> httpx.AsyncClient:
+    global _geocoder_client
+    if _geocoder_client is None or _geocoder_client.is_closed:
+        _geocoder_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(15.0),
+            limits=httpx.Limits(max_connections=5, max_keepalive_connections=3),
+        )
+    return _geocoder_client
+
+
 _tract_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="census_tracts")
+_geocode_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="geocoded_addresses")
 _TRACT_NOT_FOUND = object()
 
 FCC_CENSUS_URL = "https://geo.fcc.gov/api/census/area"
@@ -130,35 +144,38 @@ async def geocode_address(
     client: httpx.AsyncClient | None = None,
 ) -> tuple[float, float] | None:
     """Use the free Census Geocoder to resolve a Chicago address to lat/lon."""
+    normalized = address.strip().lower()
+    cached = _geocode_cache.get(normalized)
+    if cached is not None:
+        return cached if cached != _TRACT_NOT_FOUND else None
+
     url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
     params = {
         "address": f"{address}, Chicago, IL",
         "benchmark": "Public_AR_Current",
         "format": "json",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
-    try:
-        for attempt in range(2):
-            try:
-                resp = await client.get(url, params=params)
-                resp.raise_for_status()
-                data = resp.json()
-                matches = data.get("result", {}).get("addressMatches") or []
-                if not matches:
-                    return None
-                coords = matches[0]["coordinates"]
-                return float(coords["y"]), float(coords["x"])
-            except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
-                if attempt == 0:
-                    log.warning("Geocoder attempt 1 failed for %s: %s, retrying", address, exc)
-                    continue
-                log.warning("Geocoder failed after retry for %s: %s", address, exc)
+    if client is None:
+        client = _get_geocoder_client()
+    for attempt in range(2):
+        try:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            matches = data.get("result", {}).get("addressMatches") or []
+            if not matches:
+                _geocode_cache.set(normalized, _TRACT_NOT_FOUND)
                 return None
-    finally:
-        if owns:
-            await client.aclose()
+            coords = matches[0]["coordinates"]
+            result = float(coords["y"]), float(coords["x"])
+            _geocode_cache.set(normalized, result)
+            return result
+        except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+            if attempt == 0:
+                log.warning("Geocoder attempt 1 failed for %s: %s, retrying", address, exc)
+                continue
+            log.warning("Geocoder failed after retry for %s: %s", address, exc)
+            return None
 
 
 async def resolve_address_to_community_area(
@@ -191,9 +208,8 @@ async def geocode_address_suggestions(
         "benchmark": "Public_AR_Current",
         "format": "json",
     }
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    if client is None:
+        client = _get_geocoder_client()
     try:
         resp = await client.get(url, params=params)
         resp.raise_for_status()
@@ -211,9 +227,6 @@ async def geocode_address_suggestions(
     except Exception as exc:
         log.warning("Geocode suggestions failed: %s", exc)
         return []
-    finally:
-        if owns:
-            await client.aclose()
 
 
 async def resolve_census_tract(
@@ -230,9 +243,8 @@ async def resolve_census_tract(
     if cached is not None:
         return cached
 
-    owns = client is None
-    if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+    if client is None:
+        client = _get_geocoder_client()
     try:
         resp = await client.get(
             FCC_CENSUS_URL,
@@ -254,6 +266,3 @@ async def resolve_census_tract(
     except Exception as exc:
         log.warning("FCC census tract resolution failed for (%s, %s): %s", lat, lon, exc)
         return None
-    finally:
-        if owns:
-            await client.aclose()

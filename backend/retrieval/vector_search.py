@@ -30,6 +30,18 @@ log = logging.getLogger(__name__)
 MAX_CROSS_REF_HOPS = 1
 MAX_CROSS_REF_PER_CHUNK = 3
 
+_qdrant_client: httpx.AsyncClient | None = None
+
+
+def _get_qdrant_client() -> httpx.AsyncClient:
+    global _qdrant_client
+    if _qdrant_client is None or _qdrant_client.is_closed:
+        _qdrant_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0),
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
+    return _qdrant_client
+
 _known_sections_cache: frozenset[str] | None = None
 _known_sections_lock = asyncio.Lock()
 
@@ -45,31 +57,31 @@ async def _get_known_sections() -> frozenset[str]:
         settings = get_settings()
         sections: set[str] = set()
         offset = None
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            while True:
-                body: dict[str, Any] = {
-                    "limit": 1000,
-                    "with_payload": {"include": ["section"]},
-                }
-                if offset is not None:
-                    body["offset"] = offset
-                try:
-                    resp = await client.post(
-                        f"{settings.qdrant_url}/collections/{settings.qdrant_code_collection}/points/scroll",
-                        json=body,
-                    )
-                    resp.raise_for_status()
-                    result = resp.json().get("result", {})
-                except Exception as exc:
-                    log.warning("Failed to build section index: %s", exc)
-                    return frozenset()
-                for point in result.get("points", []):
-                    s = point.get("payload", {}).get("section", "")
-                    if s:
-                        sections.add(s)
-                offset = result.get("next_page_offset")
-                if offset is None:
-                    break
+        client = _get_qdrant_client()
+        while True:
+            body: dict[str, Any] = {
+                "limit": 1000,
+                "with_payload": {"include": ["section"]},
+            }
+            if offset is not None:
+                body["offset"] = offset
+            try:
+                resp = await client.post(
+                    f"{settings.qdrant_url}/collections/{settings.qdrant_code_collection}/points/scroll",
+                    json=body,
+                )
+                resp.raise_for_status()
+                result = resp.json().get("result", {})
+            except Exception as exc:
+                log.warning("Failed to build section index: %s", exc)
+                return frozenset()
+            for point in result.get("points", []):
+                s = point.get("payload", {}).get("section", "")
+                if s:
+                    sections.add(s)
+            offset = result.get("next_page_offset")
+            if offset is None:
+                break
         _known_sections_cache = frozenset(sections)
         log.info("Section index built: %d unique sections", len(_known_sections_cache))
         return _known_sections_cache
@@ -197,17 +209,17 @@ async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = Fal
     candidate_count = settings.reranker_candidate_count if rerank else top_k
     fetch_limit = max(top_k * 5, candidate_count * 3)
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            resp = await client.post(
-                f"{_qdrant_url()}/collections/{collection}/points/search",
-                json={"vector": vec, "limit": fetch_limit, "with_payload": True},
-            )
-            resp.raise_for_status()
-            hits = resp.json().get("result", [])
-        except Exception as exc:
-            log.warning("Qdrant query failed against %s: %s", collection, exc)
-            return []
+    client = _get_qdrant_client()
+    try:
+        resp = await client.post(
+            f"{_qdrant_url()}/collections/{collection}/points/search",
+            json={"vector": vec, "limit": fetch_limit, "with_payload": True},
+        )
+        resp.raise_for_status()
+        hits = resp.json().get("result", [])
+    except Exception as exc:
+        log.warning("Qdrant query failed against %s: %s", collection, exc)
+        return []
 
     kw_weight = settings.keyword_boost_weight
     scored_hits = []
@@ -247,21 +259,21 @@ async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = Fal
 
 async def get_by_section_id(section_id: str) -> CodeChunk | None:
     settings = get_settings()
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            resp = await client.post(
-                f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
-                json={
-                    "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
-                    "limit": 1,
-                    "with_payload": True,
-                },
-            )
-            resp.raise_for_status()
-            points = resp.json().get("result", {}).get("points", [])
-        except Exception as exc:
-            log.warning("Qdrant scroll failed for %s: %s", section_id, exc)
-            return None
+    client = _get_qdrant_client()
+    try:
+        resp = await client.post(
+            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+            json={
+                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
+                "limit": 1,
+                "with_payload": True,
+            },
+        )
+        resp.raise_for_status()
+        points = resp.json().get("result", {}).get("points", [])
+    except Exception as exc:
+        log.warning("Qdrant scroll failed for %s: %s", section_id, exc)
+        return None
     if not points:
         return None
     known = await _get_known_sections()
@@ -280,21 +292,21 @@ async def get_full_section(section_id: str) -> CodeChunk | None:
     the redundant header off parts 2+, and union their cross-references.
     """
     settings = get_settings()
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            resp = await client.post(
-                f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
-                json={
-                    "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
-                    "limit": 64,
-                    "with_payload": True,
-                },
-            )
-            resp.raise_for_status()
-            points = resp.json().get("result", {}).get("points", [])
-        except Exception as exc:
-            log.warning("Qdrant scroll failed for full section %s: %s", section_id, exc)
-            return None
+    client = _get_qdrant_client()
+    try:
+        resp = await client.post(
+            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+            json={
+                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
+                "limit": 64,
+                "with_payload": True,
+            },
+        )
+        resp.raise_for_status()
+        points = resp.json().get("result", {}).get("points", [])
+    except Exception as exc:
+        log.warning("Qdrant scroll failed for full section %s: %s", section_id, exc)
+        return None
     if not points:
         return None
 
@@ -344,21 +356,21 @@ async def get_by_section_ids_batch(section_ids: list[str]) -> dict[str, CodeChun
             for sid in section_ids
         ]
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            resp = await client.post(
-                f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
-                json={
-                    "filter": filter_body,
-                    "limit": len(section_ids),
-                    "with_payload": True,
-                },
-            )
-            resp.raise_for_status()
-            points = resp.json().get("result", {}).get("points", [])
-        except Exception as exc:
-            log.warning("Qdrant batch scroll failed: %s", exc)
-            return {}
+    client = _get_qdrant_client()
+    try:
+        resp = await client.post(
+            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
+            json={
+                "filter": filter_body,
+                "limit": len(section_ids),
+                "with_payload": True,
+            },
+        )
+        resp.raise_for_status()
+        points = resp.json().get("result", {}).get("points", [])
+    except Exception as exc:
+        log.warning("Qdrant batch scroll failed: %s", exc)
+        return {}
     known = await _get_known_sections()
     result: dict[str, CodeChunk] = {}
     for point in points:
