@@ -80,6 +80,41 @@ export function DataMapLayout({
     [effectiveDataHeight],
   );
 
+  const handleDividerTouchDrag = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      setDividerDragging(true);
+
+      const startY = e.touches[0].clientY;
+      const startHeight = effectiveDataHeight;
+      const container = containerRef.current;
+      if (!container) return;
+
+      function onMove(ev: TouchEvent) {
+        ev.preventDefault();
+        const delta = startY - ev.touches[0].clientY;
+        const maxH = (container?.clientHeight ?? 600) - 100;
+        const next = Math.max(COLLAPSED_DATA_HEIGHT, Math.min(startHeight + delta, maxH));
+        setDataHeight(next);
+        if (next <= COLLAPSED_DATA_HEIGHT + 10) {
+          setDataCollapsed(true);
+        } else {
+          setDataCollapsed(false);
+        }
+      }
+
+      function onUp() {
+        setDividerDragging(false);
+        window.removeEventListener("touchmove", onMove);
+        window.removeEventListener("touchend", onUp);
+      }
+
+      window.addEventListener("touchmove", onMove, { passive: false });
+      window.addEventListener("touchend", onUp);
+    },
+    [effectiveDataHeight],
+  );
+
   useEffect(() => {
     if (dividerDragging) {
       document.body.style.cursor = "row-resize";
@@ -107,6 +142,7 @@ export function DataMapLayout({
           className="shrink-0 h-1.5 cursor-row-resize group/divider relative
                      hover:bg-accent/20 active:bg-accent/30 transition-colors duration-100"
           onMouseDown={handleDividerDrag}
+          onTouchStart={handleDividerTouchDrag}
           onDoubleClick={() => setDataCollapsed((c) => !c)}
           title="Drag to resize · Double-click to collapse"
         >
