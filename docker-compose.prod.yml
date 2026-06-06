@@ -1,4 +1,8 @@
 services:
+  backend:
+    environment:
+      - RERANKER_ENABLED=false
+
   frontend:
     build:
       context: frontend

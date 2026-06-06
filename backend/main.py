@@ -94,7 +94,7 @@ if _settings.cors_origins:
 async def _startup() -> None:
     get_settings()
     await db.init_db()
-    asyncio.create_task(_preload_datasets())
+    await _preload_datasets()
 
 
 async def _preload_datasets() -> None:
@@ -120,11 +120,15 @@ async def _preload_datasets() -> None:
     # Pre-load ML models so the first query doesn't cause a memory spike
     try:
         from backend.retrieval.vector_search import _model, _reranker
+        settings = get_settings()
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, _model)
         log.info("Preloaded embedding model")
-        await loop.run_in_executor(None, _reranker)
-        log.info("Preloaded reranker model")
+        if settings.reranker_enabled:
+            await loop.run_in_executor(None, _reranker)
+            log.info("Preloaded reranker model")
+        else:
+            log.info("Reranker disabled, skipping preload")
     except Exception as exc:
         log.warning("ML model preload failed: %s", exc)
 
