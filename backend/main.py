@@ -117,6 +117,17 @@ async def _preload_datasets() -> None:
             else:
                 log.info("Preloaded %s", label)
 
+    # Pre-load ML models so the first query doesn't cause a memory spike
+    try:
+        from backend.retrieval.vector_search import _model, _reranker
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _model)
+        log.info("Preloaded embedding model")
+        await loop.run_in_executor(None, _reranker)
+        log.info("Preloaded reranker model")
+    except Exception as exc:
+        log.warning("ML model preload failed: %s", exc)
+
 
 @app.on_event("shutdown")
 async def _shutdown() -> None:

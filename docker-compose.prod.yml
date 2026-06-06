@@ -1,7 +1,4 @@
 services:
-  backend:
-    mem_limit: 3g
-
   frontend:
     build:
       context: frontend
