@@ -24,17 +24,55 @@ function getCsrfToken(): string {
   return match?.[1] ?? "";
 }
 
-function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+let _refreshPromise: Promise<boolean> | null = null;
+
+async function _tryRefresh(): Promise<boolean> {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    try {
+      const resp = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-CSRF-Token": getCsrfToken() },
+      });
+      return resp.ok;
+    } catch {
+      return false;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+  return _refreshPromise;
+}
+
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const method = (options.method ?? "GET").toUpperCase();
-  const csrfHeaders: Record<string, string> =
-    method !== "GET" && method !== "HEAD"
-      ? { "X-CSRF-Token": getCsrfToken() }
-      : {};
-  return fetch(url, {
+  const buildHeaders = () => {
+    const csrfHeaders: Record<string, string> =
+      method !== "GET" && method !== "HEAD"
+        ? { "X-CSRF-Token": getCsrfToken() }
+        : {};
+    return { ...csrfHeaders, ...(options.headers as Record<string, string>) };
+  };
+
+  const resp = await fetch(url, {
     ...options,
     credentials: "include",
-    headers: { ...csrfHeaders, ...(options.headers as Record<string, string>) },
+    headers: buildHeaders(),
   });
+
+  if (resp.status === 401) {
+    const refreshed = await _tryRefresh();
+    if (refreshed) {
+      return fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: buildHeaders(),
+      });
+    }
+  }
+
+  return resp;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,24 +244,26 @@ export async function getConversation(id: string): Promise<ConversationDetail | 
 }
 
 export async function createConversation(id: string, title: string): Promise<void> {
-  await authFetch(`${API_BASE}/api/conversations`, {
+  const resp = await authFetch(`${API_BASE}/api/conversations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, title }),
   });
+  if (!resp.ok) throw new Error(`Failed to create conversation: ${resp.status}`);
 }
 
 export async function deleteConversationAPI(id: string): Promise<void> {
-  await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`, {
+  const resp = await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+  if (!resp.ok) throw new Error(`Failed to delete conversation: ${resp.status}`);
 }
 
 export async function saveMessages(
   conversationId: string,
   messages: Record<string, unknown>[],
 ): Promise<void> {
-  await authFetch(
+  const resp = await authFetch(
     `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "PUT",
@@ -231,6 +271,7 @@ export async function saveMessages(
       body: JSON.stringify({ messages }),
     },
   );
+  if (!resp.ok) throw new Error(`Failed to save messages: ${resp.status}`);
 }
 
 export async function updateMessageMapData(
@@ -238,7 +279,7 @@ export async function updateMessageMapData(
   position: number,
   mapData: MapData,
 ): Promise<void> {
-  await authFetch(
+  const resp = await authFetch(
     `${API_BASE}/api/conversations/${encodeURIComponent(conversationId)}/messages/${position}`,
     {
       method: "PATCH",
@@ -246,6 +287,7 @@ export async function updateMessageMapData(
       body: JSON.stringify({ map_data: mapData, map_fetched_at: Date.now() }),
     },
   );
+  if (!resp.ok) throw new Error(`Failed to update map data: ${resp.status}`);
 }
 
 export async function importConversations(
@@ -262,7 +304,8 @@ export async function importConversations(
 }
 
 export async function clearAllConversations(): Promise<void> {
-  await authFetch(`${API_BASE}/api/conversations`, { method: "DELETE" });
+  const resp = await authFetch(`${API_BASE}/api/conversations`, { method: "DELETE" });
+  if (!resp.ok) throw new Error(`Failed to clear conversations: ${resp.status}`);
 }
 
 // ---------------------------------------------------------------------------

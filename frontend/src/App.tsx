@@ -100,7 +100,7 @@ export function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const { user, isAuthenticated, authRequired, signIn, signOut } = useAuthContext();
+  const { user, isAuthenticated, authRequired, loading: authLoading, signIn, signOut } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -247,14 +247,15 @@ export function App() {
     planRef.current = plan;
   }, [plan]);
 
-  // Init: migrate localStorage, load conversations
+  // Init: migrate localStorage, load conversations (wait for auth to resolve first)
   useEffect(() => {
+    if (authLoading) return;
     (async () => {
       await migrateLocalStorageToSQLite();
       const convos = await loadConversations();
       setConversations(convos);
     })();
-  }, []);
+  }, [authLoading]);
 
   // Save messages to SQLite after stream completes
   useEffect(() => {
@@ -265,9 +266,9 @@ export function App() {
         if (lastTwo[0]?.role === "user" && lastTwo[1]?.role === "assistant") {
           const cid = conversationIdRef.current;
           if (cid) {
-            appendMessages(cid, lastTwo).then(() => {
-              loadConversations().then(setConversations);
-            });
+            appendMessages(cid, lastTwo)
+              .then(() => loadConversations().then(setConversations))
+              .catch((err) => console.error("Failed to save messages:", err));
           }
           setSelectedMessageIndex(messages.length - 2);
         }
@@ -299,7 +300,13 @@ export function App() {
     if (!cid) {
       cid = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
-      await createConversation(cid, title);
+      try {
+        await createConversation(cid, title);
+      } catch (err) {
+        console.error("Failed to create conversation:", err);
+        setShowAuthModal(true);
+        return;
+      }
       setConversationId(cid);
       conversationIdRef.current = cid;
       navigateToConversation(cid);
