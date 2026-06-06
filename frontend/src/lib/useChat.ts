@@ -150,6 +150,8 @@ export function useChat({
 
     const uploadIds = attachments?.map((a) => a.id);
 
+    let receivedDone = false;
+
     try {
       for await (const chunk of chatStream(
         text,
@@ -199,6 +201,7 @@ export function useChat({
         } else if (chunk.type === "turn_summary") {
           pendingTurnSummaryRef.current = chunk.turn_summary;
         } else if (chunk.type === "done") {
+          receivedDone = true;
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
@@ -224,6 +227,9 @@ export function useChat({
         setErrorMsg((err as Error).message);
       }
     } finally {
+      if (!receivedDone && !controller.signal.aborted) {
+        setErrorMsg("Connection lost — please try again.");
+      }
       setStreaming(false);
       abortRef.current = null;
     }

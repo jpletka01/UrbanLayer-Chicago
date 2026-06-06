@@ -808,24 +808,34 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         except Exception:
             pass
 
-    # Message limit enforcement
-    if req.conversation_id:
-        settings = get_settings()
-        count = await db.count_user_messages(req.conversation_id)
-        if count >= settings.message_limit:
-            yield _sse(ChatChunk(
-                type="error",
-                error="MESSAGE_LIMIT_REACHED",
-                t_ms=elapsed_ms(),
-            ))
-            yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
-            return
+    # Message limit enforcement + query synthesis
+    try:
+        if req.conversation_id:
+            settings = get_settings()
+            count = await db.count_user_messages(req.conversation_id)
+            if count >= settings.message_limit:
+                yield _sse(ChatChunk(
+                    type="error",
+                    error="MESSAGE_LIMIT_REACHED",
+                    t_ms=elapsed_ms(),
+                ))
+                yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+                return
 
-    query = await synthesize_query(
-        req.message, req.history,
-        request_group=request_group,
-        conversation_id=req.conversation_id,
-    )
+        query = await synthesize_query(
+            req.message, req.history,
+            request_group=request_group,
+            conversation_id=req.conversation_id,
+        )
+    except Exception as exc:
+        log.exception("Pre-routing failed")
+        error_msg = f"Failed to process query: {exc}"
+        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
+        asyncio.create_task(_save_request_log(
+            request_group, req, plan, elapsed_ms(), "error", error_msg,
+        ))
+        return
 
     try:
         plan = await route(
@@ -870,19 +880,25 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         return
 
     # Compute analytics from map rows and attach to context
-    analytics = compute_analytics(
-        crime_rows=map_rows.get("crimes"),
-        three11_rows=map_rows.get("requests_311"),
-        permit_rows=map_rows.get("building_permits"),
-    )
-    context.analytics = analytics
+    try:
+        analytics = compute_analytics(
+            crime_rows=map_rows.get("crimes"),
+            three11_rows=map_rows.get("requests_311"),
+            permit_rows=map_rows.get("building_permits"),
+        )
+        context.analytics = analytics
+    except Exception:
+        log.warning("Analytics computation failed", exc_info=True)
 
     yield _sse(ChatChunk(type="context", context=context, t_ms=elapsed_ms()))
 
     # Emit map data so the frontend doesn't need a separate fetch
-    map_response = _build_map_response(map_rows, plan)
-    if map_response:
-        yield _sse(ChatChunk(type="map_data", map_data=map_response, t_ms=elapsed_ms()))
+    try:
+        map_response = _build_map_response(map_rows, plan)
+        if map_response:
+            yield _sse(ChatChunk(type="map_data", map_data=map_response, t_ms=elapsed_ms()))
+    except Exception:
+        log.warning("Map response build failed", exc_info=True)
 
     first_token = True
     try:
