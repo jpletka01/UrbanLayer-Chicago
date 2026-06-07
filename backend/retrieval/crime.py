@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -48,6 +49,59 @@ async def crime_by_community_area(
 
     _cache.set(key, crimes)
     return crimes
+
+
+async def crime_yoy_by_community_area(
+    community_area: int,
+    *,
+    days: int = 90,
+    client: httpx.AsyncClient | None = None,
+) -> dict[str, Any]:
+    """Fetch crime counts for the same date range in the current and prior year."""
+    key = f"crime_yoy:{community_area}:{days}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
+    settings = get_settings()
+    lag = settings.crime_lag_days
+    now = datetime.now(timezone.utc)
+    end = now - timedelta(days=lag)
+    start = end - timedelta(days=days)
+    prior_end = end.replace(year=end.year - 1)
+    prior_start = start.replace(year=start.year - 1)
+
+    fmt = "%Y-%m-%dT00:00:00.000"
+
+    async def _counts(after: str, before: str) -> list[dict[str, Any]]:
+        return await grouped_count(
+            settings.dataset_crime,
+            where=(
+                f"community_area='{community_area}'"
+                f" AND date > '{after}' AND date < '{before}'"
+            ),
+            group="primary_type",
+            select="primary_type",
+            limit=settings.limit_crime,
+            client=client,
+        )
+
+    current, prior = await asyncio.gather(
+        _counts(start.strftime(fmt), end.strftime(fmt)),
+        _counts(prior_start.strftime(fmt), prior_end.strftime(fmt)),
+    )
+
+    current_month = f"{start.strftime('%b')}–{end.strftime('%b %Y')}"
+    prior_month = f"{prior_start.strftime('%b')}–{prior_end.strftime('%b %Y')}"
+
+    result = {
+        "current": current,
+        "prior": prior,
+        "current_label": current_month,
+        "prior_label": prior_month,
+    }
+    _cache.set(key, result)
+    return result
 
 
 async def crime_recent_by_block(

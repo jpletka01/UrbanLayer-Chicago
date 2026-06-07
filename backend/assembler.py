@@ -5,12 +5,14 @@ from typing import Any
 
 from backend.config import get_settings
 from backend.models import (
+    Address311Summary,
     AROHousingProject,
     AROHousingSummary,
     BusinessSummary,
     CodeChunk,
     ContextObject,
     CrimeSummary,
+    CrimeYoYItem,
     GrantProgramSummary,
     GrantProject,
     IncentivesSummary,
@@ -134,7 +136,10 @@ def _interpret_tax_class(bldg_class: str | None) -> tuple[str | None, str | None
     return None, None
 
 
-def _crime_summary(rows: list[dict[str, Any]]) -> CrimeSummary | None:
+def _crime_summary(
+    rows: list[dict[str, Any]],
+    yoy_data: dict[str, Any] | None = None,
+) -> CrimeSummary | None:
     if not rows:
         return None
     settings = get_settings()
@@ -147,10 +152,35 @@ def _crime_summary(rows: list[dict[str, Any]]) -> CrimeSummary | None:
         arrests += int(row.get("arrests", 0))
         by_type[row.get("primary_type", "UNKNOWN")] = count
     top = dict(sorted(by_type.items(), key=lambda kv: kv[1], reverse=True)[:settings.top_crime_types])
+
+    yoy_items: list[CrimeYoYItem] | None = None
+    yoy_period: str | None = None
+    if yoy_data:
+        current_map = {r["primary_type"]: int(r.get("count", 0)) for r in yoy_data.get("current", [])}
+        prior_map = {r["primary_type"]: int(r.get("count", 0)) for r in yoy_data.get("prior", [])}
+        all_types = set(current_map) | set(prior_map)
+        items = []
+        for cat in all_types:
+            curr = current_map.get(cat, 0)
+            prev = prior_map.get(cat, 0)
+            if prev == 0:
+                pct = 100 if curr > 0 else 0
+            else:
+                pct = round(((curr - prev) / prev) * 100)
+            items.append(CrimeYoYItem(
+                category=cat, current_count=curr,
+                prior_year_count=prev, change_pct=pct,
+            ))
+        items.sort(key=lambda i: i.current_count, reverse=True)
+        yoy_items = items[:settings.top_crime_types]
+        yoy_period = f"{yoy_data.get('current_label', '')} vs {yoy_data.get('prior_label', '')}"
+
     return CrimeSummary(
         total=total,
         arrest_rate=round(arrests / total, 3) if total else 0.0,
         by_type=top,
+        yoy=yoy_items,
+        yoy_period=yoy_period,
         capped=len(rows) >= settings.limit_crime,
     )
 
@@ -235,16 +265,23 @@ def _permit_summary(data: dict[str, Any]) -> PermitSummary | None:
             pass
 
     descs: Counter[str] = Counter()
+    contractors: Counter[str] = Counter()
     for row in detail:
         desc = (row.get("work_description") or "").strip()
         if desc:
             descs[desc[:120]] += 1
+        for i in range(1, 4):
+            ctype = (row.get(f"contact_{i}_type") or "").upper()
+            cname = (row.get(f"contact_{i}_name") or "").strip()
+            if cname and ctype in ("CONTRACTOR-GENERAL CONTRACTOR", "CONTRACTOR"):
+                contractors[cname] += 1
 
     return PermitSummary(
         total=total,
         total_estimated_cost=round(cost_total, 2),
         by_type=dict(sorted(types.items(), key=lambda kv: kv[1], reverse=True)),
         top_work_descriptions=[d for d, _ in descs.most_common(settings.top_permits)],
+        recent_contractors=[name for name, _ in contractors.most_common(5)],
         capped=False,
     )
 
@@ -450,6 +487,7 @@ def assemble_context(
     *,
     plan: RetrievalPlan,
     crime_rows: list[dict[str, Any]] | None = None,
+    crime_yoy_data: dict[str, Any] | None = None,
     three11_rows: list[dict[str, Any]] | None = None,
     three11_oldest: list[dict[str, Any]] | None = None,
     permit_data: dict[str, Any] | None = None,
@@ -464,12 +502,21 @@ def assemble_context(
     incentives_summary: IncentivesSummary | None = None,
     neighborhood_summary: NeighborhoodSummary | None = None,
     aro_housing_rows: list[dict[str, Any]] | None = None,
+    address_311_data: dict[str, Any] | None = None,
     partial_failures: list[str] | None = None,
 ) -> ContextObject:
     settings = get_settings()
 
-    crime = _crime_summary(crime_rows or []) if crime_rows is not None else None
+    crime = _crime_summary(crime_rows or [], crime_yoy_data) if crime_rows is not None else None
     three11 = _three11_summary(three11_rows or [], three11_oldest) if three11_rows is not None else None
+    addr_311 = None
+    if address_311_data and address_311_data.get("total", 0) > 0:
+        addr_311 = Address311Summary(
+            total=address_311_data["total"],
+            open_count=address_311_data.get("open_count", 0),
+            by_type=address_311_data.get("by_type", {}),
+            high_risk_flags=address_311_data.get("high_risk_flags", []),
+        )
     permits = _permit_summary(permit_data) if permit_data is not None else None
     violations = _violation_summary(violation_data) if violation_data is not None else None
     businesses = _business_summary(business_data) if business_data is not None else None
@@ -533,6 +580,7 @@ def assemble_context(
         data_lag_note=lag_note,
         crime_last_90d=crime,
         open_311_requests=three11,
+        address_311=addr_311,
         permits=permits,
         violations=violations,
         businesses=businesses,

@@ -5,6 +5,7 @@ import type {
   BenchmarkResults,
   ChatChunk,
   CodeChunk,
+  ContextObject,
   Conversation,
   ConversationDetail,
   ConversationStats,
@@ -116,6 +117,32 @@ export async function logout(): Promise<void> {
 
 export function getSignInUrl(): string {
   return `${API_BASE}/api/auth/google`;
+}
+
+// ---------------------------------------------------------------------------
+// Payments API
+// ---------------------------------------------------------------------------
+
+export async function createCheckoutSession(): Promise<{ url: string }> {
+  const resp = await authFetch(`${API_BASE}/api/checkout`, { method: "POST" });
+  if (!resp.ok) throw new Error("Failed to create checkout session");
+  return resp.json();
+}
+
+export async function getSubscription(): Promise<{
+  tier: string;
+  stripe_customer_id: string | null;
+  subscription_active: boolean;
+}> {
+  const resp = await authFetch(`${API_BASE}/api/subscription`);
+  if (!resp.ok) throw new Error("Failed to get subscription");
+  return resp.json();
+}
+
+export async function createBillingPortal(): Promise<{ url: string }> {
+  const resp = await authFetch(`${API_BASE}/api/billing/portal`, { method: "POST" });
+  if (!resp.ok) throw new Error("Failed to create billing portal session");
+  return resp.json();
 }
 
 // Sections are immutable, so cache by ID — lets hover-prefetch and the
@@ -445,6 +472,55 @@ export async function fetchJudgeResults(): Promise<JudgeResults | null> {
     const resp = await authFetch(`${API_BASE}/api/admin/judge`);
     if (!resp.ok) return null;
     return await resp.json();
+  } catch { return null; }
+}
+
+export interface ScorecardResponse {
+  address: string | null;
+  lat: number;
+  lon: number;
+  community_area: number | null;
+  community_area_name: string | null;
+  context: ContextObject;
+  partial_failures: string[];
+}
+
+export async function fetchScorecard(params: {
+  address?: string;
+  lat?: number;
+  lon?: number;
+  pin?: string;
+}): Promise<ScorecardResponse | null> {
+  const qs = new URLSearchParams();
+  if (params.address) qs.set("address", params.address);
+  if (params.lat != null) qs.set("lat", String(params.lat));
+  if (params.lon != null) qs.set("lon", String(params.lon));
+  if (params.pin) qs.set("pin", params.pin);
+  try {
+    const resp = await authFetch(`${API_BASE}/api/scorecard?${qs}`);
+    if (!resp.ok) {
+      if (resp.status === 422) return null;
+      return null;
+    }
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchReport(params: {
+  address?: string;
+  lat?: number;
+  lon?: number;
+  pin?: string;
+}): Promise<Blob | null> {
+  const qs = new URLSearchParams();
+  if (params.address) qs.set("address", params.address);
+  if (params.lat != null) qs.set("lat", String(params.lat));
+  if (params.lon != null) qs.set("lon", String(params.lon));
+  if (params.pin) qs.set("pin", params.pin);
+  try {
+    const resp = await authFetch(`${API_BASE}/api/report?${qs}`);
+    if (!resp.ok) return null;
+    return await resp.blob();
   } catch { return null; }
 }
 

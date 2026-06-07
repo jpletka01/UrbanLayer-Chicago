@@ -129,6 +129,14 @@ def community_area_by_point(lat: float, lon: float) -> int | None:
     return None
 
 
+def community_area_name(ca: int) -> str | None:
+    """Return the community area name for a given integer id."""
+    for ca_id, name, _poly in _polygon_index():
+        if ca_id == ca:
+            return name
+    return None
+
+
 def community_area_bounds(ca: int) -> tuple[float, float, float, float] | None:
     """Return bounding box (min_lat, min_lon, max_lat, max_lon) for a community area."""
     for ca_id, _name, poly in _polygon_index():

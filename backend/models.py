@@ -67,10 +67,19 @@ class RetrievalPlan(BaseModel):
     workflow_hint: WorkflowHint = "general"
 
 
+class CrimeYoYItem(BaseModel):
+    category: str
+    current_count: int
+    prior_year_count: int
+    change_pct: int
+
+
 class CrimeSummary(BaseModel):
     total: int
     arrest_rate: float
     by_type: dict[str, int]
+    yoy: list[CrimeYoYItem] | None = None
+    yoy_period: str | None = None
     capped: bool = False
 
 
@@ -82,11 +91,19 @@ class ThreeOneOneSummary(BaseModel):
     capped: bool = False
 
 
+class Address311Summary(BaseModel):
+    total: int
+    open_count: int
+    by_type: dict[str, int]
+    high_risk_flags: list[str] = Field(default_factory=list)
+
+
 class PermitSummary(BaseModel):
     total: int
     total_estimated_cost: float
     by_type: dict[str, int] = Field(default_factory=dict)
     top_work_descriptions: list[str]
+    recent_contractors: list[str] = Field(default_factory=list)
     capped: bool = False
 
 
@@ -389,6 +406,7 @@ class ContextObject(BaseModel):
     data_lag_note: str | None = None
     crime_last_90d: CrimeSummary | None = None
     open_311_requests: ThreeOneOneSummary | None = None
+    address_311: Address311Summary | None = None
     permits: PermitSummary | None = None
     violations: ViolationSummary | None = None
     businesses: BusinessSummary | None = None

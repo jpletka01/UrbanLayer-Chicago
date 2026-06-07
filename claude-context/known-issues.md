@@ -89,6 +89,9 @@ Run with: start backend with `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`,
 - **Context management improvements** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
 - **Latency reduction** — Prompt caching implemented (2026-06-06). Phase timing instrumentation added. Full plan in `claude-context/latency-reduction.md`.
 - ~~**Shareable links**~~ — **Done** — `/s/:token` share routes with `conversation_shares` table (schema v6). ShareModal UI for create/copy/revoke.
+- **Property Scorecard** — **Done** (2026-06-07). Non-AI instant-load property dashboard at `/api/scorecard?address=...`. Zero LLM cost. Frontend at `/scorecard`. Includes 3 data upgrades: crime YoY comparison, permit contractor names, address-level 311 complaints with high-risk flagging.
+- **PDF Zoning Reports** — **Done** (2026-06-07). Server-side PDF via WeasyPrint at `/api/report?address=...`. 5-section report (Cover, Property, Zoning & Regulatory with bulk standards from vector search, Incentives & Neighborhood, Data Sources & Disclaimers). Download button on Scorecard page. **Gated behind Pro tier** (2026-06-07).
+- **Stripe Payment System** — **Done** (2026-06-07). `backend/payments.py` handles Stripe Checkout sessions, webhook events (checkout.session.completed, subscription.updated/deleted), and billing portal. Schema v7 adds `stripe_customer_id` + `stripe_subscription_id` to users table. `require_tier("premium")` dependency gates premium endpoints. Frontend: `/pricing` page (Free vs Pro $99/mo), `UpgradePrompt` modal on gated features, tier badge in `UserMenu`.
 
 ## Outstanding Work
 

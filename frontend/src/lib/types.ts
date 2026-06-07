@@ -54,10 +54,19 @@ export interface RetrievalPlan {
   clarification: string | null;
 }
 
+export interface CrimeYoYItem {
+  category: string;
+  current_count: number;
+  prior_year_count: number;
+  change_pct: number;
+}
+
 export interface CrimeSummary {
   total: number;
   arrest_rate: number;
   by_type: Record<string, number>;
+  yoy?: CrimeYoYItem[] | null;
+  yoy_period?: string | null;
   capped?: boolean;
 }
 
@@ -69,11 +78,19 @@ export interface ThreeOneOneSummary {
   capped?: boolean;
 }
 
+export interface Address311Summary {
+  total: number;
+  open_count: number;
+  by_type: Record<string, number>;
+  high_risk_flags: string[];
+}
+
 export interface PermitSummary {
   total: number;
   total_estimated_cost: number;
   by_type: Record<string, number>;
   top_work_descriptions: string[];
+  recent_contractors?: string[];
   capped?: boolean;
 }
 
@@ -359,6 +376,7 @@ export interface ContextObject {
   data_lag_note: string | null;
   crime_last_90d: CrimeSummary | null;
   open_311_requests: ThreeOneOneSummary | null;
+  address_311?: Address311Summary | null;
   permits: PermitSummary | null;
   violations: ViolationSummary | null;
   businesses: BusinessSummary | null;

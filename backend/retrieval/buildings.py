@@ -42,7 +42,12 @@ async def permits_by_community_area(
         settings.dataset_permits,
         {
             "$where": where,
-            "$select": "work_description,issue_date",
+            "$select": (
+                "work_description,issue_date,"
+                "contact_1_type,contact_1_name,"
+                "contact_2_type,contact_2_name,"
+                "contact_3_type,contact_3_name"
+            ),
             "$order": "issue_date DESC",
             "$limit": settings.limit_permits_detail,
         },

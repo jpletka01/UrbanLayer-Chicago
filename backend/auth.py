@@ -183,6 +183,22 @@ async def require_admin(request: Request) -> dict:
     return user
 
 
+_TIER_ORDER = {"free": 0, "premium": 1, "admin": 2}
+
+
+def require_tier(minimum: str):
+    async def _check(request: Request) -> dict:
+        from fastapi import HTTPException
+        user = await require_auth(request)
+        if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER[minimum]:
+            raise HTTPException(
+                status_code=403,
+                detail={"error": "upgrade_required", "required_tier": minimum},
+            )
+        return user
+    return _check
+
+
 def verify_csrf(request: Request) -> None:
     if not _auth_enabled():
         return

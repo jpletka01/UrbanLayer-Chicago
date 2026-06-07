@@ -32,7 +32,8 @@ User Message
 | Embeddings | bge-base-en-v1.5 (768-dim, local) | Better semantic discrimination than bge-small on legal text; no external API |
 | Reranker | bge-reranker-v2-m3, 20% weight | MS MARCO over-indexed on keyword overlap, hurt legal text (A=9 D=2 F=2). bge-reranker at 0.2 weight was the sweet spot (higher values regress lot_size and setback queries) |
 | Streaming | SSE (text/event-stream) | Synthesis is slow (3-8s); streaming TTFT is critical UX |
-| Persistence | SQLite via aiosqlite (WAL), schema v6 | Single user, single writer — simplest correct solution |
+| Persistence | SQLite via aiosqlite (WAL), schema v6 (v7 planned for i18n) | Single user, single writer — simplest correct solution |
+| i18n (planned) | Synthesizer-level translation + react-i18next | Backend stays English; synthesizer outputs in target language. See `language-plan.md` |
 | Sharing | Live links via unique token (`/s/:token`) | No snapshot duplication; CASCADE delete auto-revokes |
 | Map | Mapbox GL JS + deck.gl | WebGL handles thousands of points; deck.gl declarative layers |
 | Geocoding | Census Geocoder + shapely | Free, no API key, deterministic. 77 community areas + 30+ aliases |

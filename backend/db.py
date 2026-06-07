@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 6
+_SCHEMA_VERSION = 7
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -141,6 +141,16 @@ CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_i
 """
 
 
+async def _migrate_v7(db: aiosqlite.Connection) -> None:
+    """Add Stripe columns to users table."""
+    cur = await db.execute("PRAGMA table_info(users)")
+    cols = {row[1] for row in await cur.fetchall()}
+    if "stripe_customer_id" not in cols:
+        await db.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT")
+    if "stripe_subscription_id" not in cols:
+        await db.execute("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT")
+
+
 async def _migrate_v6(db: aiosqlite.Connection) -> None:
     """Add conversation_shares table for shareable links."""
     await db.executescript(_SCHEMA_V6)
@@ -198,6 +208,7 @@ async def init_db() -> None:
         await _migrate_v4(_db)
         await _migrate_v5(_db)
         await _migrate_v6(_db)
+        await _migrate_v7(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -216,6 +227,9 @@ async def init_db() -> None:
         if version < 6:
             await _migrate_v6(_db)
             version = 6
+        if version < 7:
+            await _migrate_v7(_db)
+            version = 7
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -933,6 +947,35 @@ async def get_user_by_google_id(google_id: str) -> dict | None:
     cur = await db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
     row = await cur.fetchone()
     return dict(row) if row else None
+
+
+async def get_user_by_stripe_customer(customer_id: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT * FROM users WHERE stripe_customer_id = ?", (customer_id,)
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def update_user_tier(user_id: str, tier: str) -> None:
+    db = _get_db()
+    await db.execute(
+        "UPDATE users SET tier = ?, updated_at = ? WHERE id = ?",
+        (tier, _now_ms(), user_id),
+    )
+    await db.commit()
+
+
+async def update_user_stripe(
+    user_id: str, customer_id: str, subscription_id: str | None
+) -> None:
+    db = _get_db()
+    await db.execute(
+        "UPDATE users SET stripe_customer_id = ?, stripe_subscription_id = ?, updated_at = ? WHERE id = ?",
+        (customer_id, subscription_id, _now_ms(), user_id),
+    )
+    await db.commit()
 
 
 async def save_refresh_token(

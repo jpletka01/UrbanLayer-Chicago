@@ -155,6 +155,12 @@ class Settings(BaseSettings):
 
     sentry_dsn: str = ""
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_public_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id_pro_monthly: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -21,7 +21,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 
 from backend.analytics import compute_analytics
 from backend.assembler import assemble_context
@@ -41,7 +41,13 @@ from backend.models import (
     TurnSummary,
 )
 from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
-from backend.retrieval.geo import COMMUNITY_AREAS, community_area_by_point, geocode_address_suggestions
+from backend.retrieval.geo import (
+    COMMUNITY_AREAS,
+    community_area_by_point,
+    community_area_name,
+    geocode_address,
+    geocode_address_suggestions,
+)
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.incentives import incentives_domain
 from backend.retrieval.neighborhood import neighborhood_domain
@@ -183,6 +189,7 @@ from backend.auth import (
     handle_refresh,
     require_admin,
     require_auth,
+    require_tier,
     set_auth_cookies,
     clear_auth_cookies,
 )
@@ -553,6 +560,9 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
             tasks["crime"] = asyncio.create_task(_limited(
                 crime.crime_by_community_area(ca, days=plan.time_range_days)
             ))
+            tasks["crime_yoy"] = asyncio.create_task(_limited(
+                crime.crime_yoy_by_community_area(ca, days=plan.time_range_days)
+            ))
         if "311_api" in plan.sources:
             tasks["311"] = asyncio.create_task(_limited(
                 three11.open_311_by_community_area(ca)
@@ -632,6 +642,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
 
     _FAILURE_LABELS = {
         "crime": "crime statistics",
+        "crime_yoy": "crime year-over-year comparison",
         "311": "311 service requests",
         "permits": "building permits",
         "violations": "building violations",
@@ -655,7 +666,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
                 log.warning("Retrieval %s failed: %s", key, value)
                 if key in ("permits", "violations", "business", "vacant", "food_inspections"):
                     results[key] = {}
-                elif key in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood"):
+                elif key in ("zoning_lookup", "regulatory", "property", "incentives", "neighborhood", "crime_yoy"):
                     results[key] = None
                 else:
                     results[key] = []
@@ -672,6 +683,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
     return assemble_context(
         plan=plan,
         crime_rows=results.get("crime") if "crime" in results else None,
+        crime_yoy_data=results.get("crime_yoy"),
         three11_rows=results.get("311") if "311" in results else None,
         three11_oldest=results.get("311_oldest"),
         permit_data=results.get("permits") if "permits" in results else None,
@@ -1008,6 +1020,268 @@ async def _save_request_log(
         log.warning("Failed to save request log")
 
 
+# ---------------------------------------------------------------------------
+# Scorecard API
+# ---------------------------------------------------------------------------
+
+
+async def _resolve_location(
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+) -> tuple[float, float, str | None]:
+    """Resolve input to (lat, lon, address). Raises HTTPException on failure."""
+    resolved_lat: float | None = None
+    resolved_lon: float | None = None
+    resolved_address: str | None = address
+
+    if lat is not None and lon is not None:
+        resolved_lat, resolved_lon = lat, lon
+    elif address:
+        coords = await geocode_address(address)
+        if coords:
+            resolved_lat, resolved_lon = coords
+    elif pin:
+        from backend.retrieval.socrata import socrata_get
+        settings = get_settings()
+        rows = await socrata_get(
+            settings.dataset_ccao_parcels,
+            {"$where": f"pin='{pin}'", "$select": "latitude,longitude", "$limit": 1},
+            base_url=settings.cook_county_socrata_base,
+        )
+        if rows and rows[0].get("latitude") and rows[0].get("longitude"):
+            resolved_lat = float(rows[0]["latitude"])
+            resolved_lon = float(rows[0]["longitude"])
+
+    if resolved_lat is None or resolved_lon is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Could not geocode address. Try a different format or provide lat/lon coordinates.",
+        )
+    return resolved_lat, resolved_lon, resolved_address
+
+
+async def _fetch_scorecard_data(
+    resolved_lat: float,
+    resolved_lon: float,
+    resolved_address: str | None,
+) -> dict:
+    """Fetch all domain data for a location. Returns dict with context, metadata, and failures."""
+    ca = community_area_by_point(resolved_lat, resolved_lon)
+    ca_name = community_area_name(ca) if ca else None
+
+    tasks: dict[str, asyncio.Task] = {}
+    wf = "property_intelligence"
+
+    tasks["property"] = asyncio.create_task(_limited(
+        property_domain(resolved_lat, resolved_lon, workflow=wf)
+    ))
+    tasks["regulatory"] = asyncio.create_task(_limited(
+        regulatory_domain(resolved_lat, resolved_lon, workflow="site_due_diligence")
+    ))
+    tasks["zoning"] = asyncio.create_task(_limited(
+        lookup_zoning(resolved_lat, resolved_lon)
+    ))
+
+    if ca is not None:
+        tasks["incentives"] = asyncio.create_task(_limited(
+            incentives_domain(
+                resolved_lat, resolved_lon,
+                ca_name=ca_name, workflow="site_due_diligence",
+            )
+        ))
+        tasks["neighborhood"] = asyncio.create_task(_limited(
+            neighborhood_domain(
+                resolved_lat, resolved_lon,
+                community_area=ca,
+                address=resolved_address,
+                workflow=wf,
+            )
+        ))
+        tasks["aro_housing"] = asyncio.create_task(_limited(
+            aro_housing_by_community_area(ca)
+        ))
+        tasks["crime"] = asyncio.create_task(_limited(
+            crime.crime_by_community_area(ca)
+        ))
+        tasks["crime_yoy"] = asyncio.create_task(_limited(
+            crime.crime_yoy_by_community_area(ca)
+        ))
+        tasks["violations"] = asyncio.create_task(_limited(
+            buildings.violations_by_community_area(ca)
+        ))
+
+    tasks["address_311"] = asyncio.create_task(_limited(
+        three11.address_311_complaints(resolved_lat, resolved_lon)
+    ))
+
+    results: dict[str, Any] = {}
+    partial_failures: list[str] = []
+    _FAILURE_MAP = {
+        "property": "property records",
+        "regulatory": "regulatory overlays",
+        "zoning": "parcel zoning",
+        "incentives": "incentive zones",
+        "neighborhood": "demographics and transit",
+        "aro_housing": "affordable housing data",
+        "crime": "crime statistics",
+        "crime_yoy": "crime year-over-year comparison",
+        "violations": "building violations",
+        "address_311": "address 311 complaints",
+    }
+
+    done = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    for key, value in zip(tasks.keys(), done):
+        if isinstance(value, Exception):
+            log.warning("Scorecard retrieval %s failed: %s", key, value)
+            results[key] = None
+            if key in _FAILURE_MAP:
+                partial_failures.append(_FAILURE_MAP[key])
+        else:
+            results[key] = value
+
+    from backend.models import RetrievalPlan, Location
+    _source_tags = [
+        "crime_api", "violations_api", "regulatory_domain",
+        "property_domain", "incentives_domain", "neighborhood_domain",
+    ]
+    dummy_plan = RetrievalPlan(
+        sources=_source_tags,
+        location=Location(
+            raw=resolved_address or "",
+            resolved_lat=resolved_lat,
+            resolved_lon=resolved_lon,
+            resolved_community_area=ca,
+            resolved_community_area_name=ca_name,
+            resolved_address=resolved_address,
+        ),
+        intent="neighborhood_overview",
+        requires_disclaimer=True,
+    )
+
+    from backend.assembler import assemble_context as _assemble
+    ctx = _assemble(
+        plan=dummy_plan,
+        crime_rows=results.get("crime"),
+        crime_yoy_data=results.get("crime_yoy"),
+        address_311_data=results.get("address_311"),
+        violation_data=results.get("violations") if results.get("violations") else None,
+        zoning_info=results.get("zoning"),
+        regulatory_summary=results.get("regulatory"),
+        property_summary=results.get("property"),
+        incentives_summary=results.get("incentives"),
+        neighborhood_summary=results.get("neighborhood"),
+        aro_housing_rows=results.get("aro_housing"),
+        partial_failures=partial_failures,
+    )
+
+    return {
+        "address": resolved_address,
+        "lat": resolved_lat,
+        "lon": resolved_lon,
+        "community_area": ca,
+        "community_area_name": ca_name,
+        "context": ctx,
+        "partial_failures": partial_failures,
+    }
+
+
+@app.get("/api/scorecard")
+async def scorecard(
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+) -> dict:
+    """Non-AI instant-load property dashboard. Zero LLM cost."""
+    resolved_lat, resolved_lon, resolved_address = await _resolve_location(
+        address, lat, lon, pin
+    )
+    data = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
+    data["context"] = data["context"].model_dump(exclude_none=True)
+    return data
+
+
+@app.get("/api/report")
+async def report(
+    request: Request,
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+    _user: dict = Depends(require_tier("premium")),
+) -> Response:
+    """Generate a 5-page PDF zoning report for a property."""
+    import re
+    from datetime import date
+    from pathlib import Path
+
+    from jinja2 import Environment, FileSystemLoader
+    from weasyprint import HTML
+
+    resolved_lat, resolved_lon, resolved_address = await _resolve_location(
+        address, lat, lon, pin
+    )
+    data = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
+    ctx = data["context"]
+
+    # Fetch zoning bulk standards via vector search
+    bulk_standards_text = ""
+    zone_class = ""
+    if ctx.parcel_zoning and ctx.parcel_zoning.zone_class:
+        zone_class = ctx.parcel_zoning.zone_class
+        try:
+            chunks = await _limited(
+                semantic_search(
+                    f"{zone_class} bulk standards floor area ratio height setback lot coverage",
+                    top_k=5,
+                )
+            )
+            if chunks:
+                bulk_standards_text = "\n\n".join(
+                    f"[{c.section_title}]\n{c.text}" for c in chunks[:3]
+                )
+        except Exception as e:
+            log.warning("Vector search for bulk standards failed: %s", e)
+
+    # Render HTML template
+    template_dir = Path(__file__).parent / "templates"
+    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
+    env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
+    template = env.get_template("zoning_report.html")
+
+    html_content = template.render(
+        address=resolved_address,
+        lat=resolved_lat,
+        lon=resolved_lon,
+        community_area_name=data.get("community_area_name"),
+        report_date=date.today().strftime("%B %d, %Y"),
+        property=ctx.property,
+        zoning=ctx.parcel_zoning,
+        regulatory=ctx.regulatory,
+        incentives=ctx.incentives,
+        neighborhood=ctx.neighborhood,
+        crime=ctx.crime_last_90d,
+        permits=ctx.permits,
+        address_311=ctx.address_311,
+        bulk_standards=bulk_standards_text,
+    )
+
+    # Generate PDF
+    pdf_bytes = HTML(string=html_content).write_pdf()
+
+    # Build filename
+    slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
+    filename = f"{slug}_{date.today().isoformat()}_zoning_report.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.post("/chat")
 async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
     from backend.rate_limit import check_rate_limit, check_daily_budget
@@ -1018,6 +1292,39 @@ async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Payments API
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/checkout")
+async def checkout(request: Request, user: dict = Depends(require_auth)) -> dict:
+    from backend.payments import create_checkout_session
+    url = await create_checkout_session(user)
+    return {"url": url}
+
+
+@app.post("/api/webhook/stripe")
+async def stripe_webhook(request: Request) -> dict:
+    from backend.payments import handle_webhook
+    return await handle_webhook(request)
+
+
+@app.get("/api/subscription")
+async def subscription_status(
+    request: Request, user: dict = Depends(require_auth),
+) -> dict:
+    from backend.payments import get_subscription_status
+    return await get_subscription_status(user)
+
+
+@app.post("/api/billing/portal")
+async def billing_portal(request: Request, user: dict = Depends(require_auth)) -> dict:
+    from backend.payments import create_billing_portal_session
+    url = await create_billing_portal_session(user)
+    return {"url": url}
 
 
 # ---------------------------------------------------------------------------

@@ -3,6 +3,11 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
+# System libs needed by WeasyPrint (build + runtime)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install CPU-only PyTorch first (avoids pulling CUDA ~2GB)
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
@@ -19,6 +24,11 @@ CrossEncoder('BAAI/bge-reranker-v2-m3')"
 FROM python:3.11-slim
 
 WORKDIR /app
+
+# System libs needed by WeasyPrint at runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -r app
 

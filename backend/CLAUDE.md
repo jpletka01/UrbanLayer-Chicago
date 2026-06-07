@@ -4,16 +4,17 @@
 
 | File | Purpose |
 |------|---------|
-| `main.py` | FastAPI app: `/chat` SSE, `/api/conversations/*`, `/api/admin/*`, `/api/map-data`, `/api/transit-stations` |
+| `main.py` | FastAPI app: `/chat` SSE, `/api/scorecard`, `/api/report` (PDF, premium-gated), `/api/checkout`, `/api/webhook/stripe`, `/api/subscription`, `/api/billing/portal`, `/api/conversations/*`, `/api/admin/*`, `/api/map-data`, `/api/transit-stations` |
 | `router.py` | Claude router → `RetrievalPlan` JSON (sources, location, intent, workflow_hint, search_query) |
 | `synthesizer.py` | Claude streaming synthesis with `[N]` citation markers + `[data:*]` data markers + analytics |
 | `conversation.py` | Multi-turn query expansion (Haiku). Deterministic neighborhood switch detection |
 | `context_manager.py` | TurnSummary generation for sliding-window context management |
 | `assembler.py` | Context assembly with configurable caps + capped-result detection + partial_failures + tax class interpretation + negative signals for missing data |
 | `analytics.py` | Server-side MoM trend computation from raw Socrata rows |
-| `auth.py` | Google OAuth2 + JWT sessions. Dev-mode bypass when `GOOGLE_CLIENT_ID` empty. Dependencies: `get_current_user`, `require_admin` |
+| `auth.py` | Google OAuth2 + JWT sessions. Dev-mode bypass when `GOOGLE_CLIENT_ID` empty. Dependencies: `get_current_user`, `require_admin`, `require_tier(minimum)` |
+| `payments.py` | Stripe integration: Checkout sessions, webhook handler (checkout.session.completed, subscription.updated/deleted), billing portal, subscription status |
 | `rate_limit.py` | Per-user sliding window rate limiting + daily API budget cap. Applied to `/chat` only |
-| `db.py` | SQLite persistence (aiosqlite, WAL, schema v6). Tables: conversations (user-scoped), messages, uploads, llm_calls, request_logs, users, refresh_tokens, conversation_shares |
+| `db.py` | SQLite persistence (aiosqlite, WAL, schema v7). Tables: conversations (user-scoped), messages, uploads, llm_calls, request_logs, users (with stripe_customer_id, stripe_subscription_id), refresh_tokens, conversation_shares |
 | `llm.py` | Shared Anthropic client + `tracked_create()`/`tracked_stream()` wrappers (token/cost/latency logging) + automatic prompt caching via `_enable_prompt_caching()` |
 | `prompts.py` | System prompts: ROUTER_SYSTEM_TEMPLATE, SYNTHESIZER_SYSTEM, CONVERSATION_SYNTHESIS |
 | `models.py` | All Pydantic types: RetrievalPlan, ContextObject, domain summaries, SSE event types |

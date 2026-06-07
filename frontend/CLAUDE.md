@@ -15,7 +15,9 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/useAuth.ts` | Auth state hook: user, isAuthenticated, authRequired, signIn/signOut/checkAuth |
 | `src/contexts/AuthContext.tsx` | React context provider wrapping `useAuth`, available app-wide |
 | `src/components/AuthModal.tsx` | "Sign in with Google" modal, shown when unauth user tries to chat |
-| `src/components/UserMenu.tsx` | Google avatar dropdown in workspace header (sign out) |
+| `src/components/UserMenu.tsx` | Google avatar dropdown in workspace header (sign out, tier badge, manage subscription/upgrade link) |
+| `src/components/PricingPage.tsx` | Free vs Pro ($99/mo) pricing comparison page at `/pricing` |
+| `src/components/UpgradePrompt.tsx` | Modal shown when free user hits premium-gated feature (PDF reports, etc.) |
 | `src/components/ProtectedRoute.tsx` | Route guard for auth + tier checks (used for `/admin`) |
 | `src/lib/mapColors.ts` | Shared colors for map + charts + zone categories + OVERLAY_INFO/ZONE_INFO definitions + hash-based incentive zone colors |
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
@@ -48,7 +50,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **Tooltip**: `position: fixed` via `createPortal` to `document.body`, viewport-clamped with `useLayoutEffect`.
 - **InfoTooltip**: Wrap term text in `<InfoTooltip term="key">{text}</InfoTooltip>` for hover/tap definitions. Uses `termDefinitions.ts` for lookups across overlays, zones, incentives, flood zones. Dotted underline trigger, 150ms hover persistence, click-away dismiss on mobile.
 - **Charts**: `PieChart` (SVG donut) and `BarChart` (SVG horizontal bars) are custom — no chart library. `BarChart` takes `DistributionBucket[]` and renders labeled horizontal bars with hover state.
-- **Routing**: `/` (splash), `/c/:id` (conversation), `/s/:shareToken` (shared read-only view), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
+- **Routing**: `/` (splash), `/c/:id` (conversation), `/s/:shareToken` (shared read-only view), `/scorecard` (property scorecard, non-AI), `/pricing` (Free vs Pro plan comparison), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
 - **Auth**: `AuthProvider` wraps the app in `main.tsx`. Auth gate on `sendMessage` in `App.tsx` — shows `AuthModal` if `authRequired && !isAuthenticated`. `UserMenu` in workspace header shows avatar + sign-out. Admin link only visible when `user.tier === "admin"`. In dev mode (`GOOGLE_CLIENT_ID` not set), auth is fully bypassed — no sign-in UI shown.
 - **401-interceptor**: `authFetch()` in `api.ts` intercepts 401 responses, attempts `POST /api/auth/refresh` via raw `fetch` (not `authFetch` to avoid recursion), coalesces concurrent refreshes with a module-level `_refreshPromise`, re-reads CSRF cookie after refresh, retries original request once.
 - **History stripping**: `useChat.ts` sends only `{role, content}` in chat POST history (strips `context`/`plan`/`mapData` blobs) to avoid HTTP 413 from nginx's `client_max_body_size`.
