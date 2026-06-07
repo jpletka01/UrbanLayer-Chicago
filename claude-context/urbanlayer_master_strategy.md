@@ -258,7 +258,7 @@ UrbanLayer is not a "ChatGPT wrapper for city data." It is an **AI-powered urban
 | Days | Feature | Why This Order |
 |------|---------|----------------|
 | 1-4 | Property Scorecard + Data Upgrades | Creates the backend endpoint everything else depends on. Data upgrades (YoY crime, address-level 311, permit contacts) ship with it so premium surfaces launch with premium data. |
-| 5-8 | Site Explorer | Most complex UI feature, gets 4 days. Important to build before PDF reports because the Explorer showcases the map interaction design. |
+| 5-8 | Site Explorer ✅ | Most complex UI feature, gets 4 days. Important to build before PDF reports because the Explorer showcases the map interaction design. |
 | 9-11 | PDF Zoning Reports (v1, scoped) | Server-side PDF via WeasyPrint. 5 focused pages, no html2canvas risk. Uses scorecard data + optional zoning RAG for bulk standards. |
 | 12-14 | Payment System (Stripe) | Gates Scorecard, PDF, and Explorer behind paid tier. Free tier with 3 lookups/day → Pro at $99/mo. |
 
@@ -311,9 +311,9 @@ Wrap all orchestrators in `_RETRIEVAL_SEM` and `return_exceptions=True` for grac
 
 Implementation: `onInvestigate?: (question: string) => void` prop on each card → navigates to `/?q={question}`.
 
-### 7.3 Feature 2: Site Explorer / Property Finder
+### 7.3 Feature 2: Site Explorer / Property Finder ✅ DONE (2026-06-07)
 
-**Concept:** Map-based bulk parcel filtering by community area and property class. Cityscape's highest-value paid feature ($125/mo tier).
+**Concept:** Map-based bulk parcel filtering by community area and property class. Cityscape's highest-value paid feature ($125/mo tier). **Implemented** as `backend/retrieval/explore.py` + `/api/explore` (paginated) + `/api/explore/map` (5000 cap). Frontend at `/explore` with split-screen layout, class-colored deck.gl dots, paginated table, click-to-Scorecard via lat/lon. Premium-gated.
 
 **Backend — New endpoint in `main.py`:**
 ```

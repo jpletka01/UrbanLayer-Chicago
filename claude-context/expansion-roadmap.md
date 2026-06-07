@@ -74,7 +74,7 @@ Full implementation plan in `language-plan.md`. Target languages: English (defau
 | Feature | Status | Notes |
 |---------|--------|-------|
 | **Property Scorecard + Data Upgrades** | Done | `GET /api/scorecard?address=...`, crime YoY, permit contacts, address-level 311. Frontend at `/scorecard` |
-| **Site Explorer / Property Finder** | Planned | Bulk parcel filtering by community area + property class |
+| **Site Explorer / Property Finder** | Done | `GET /api/explore` + `/api/explore/map`, Cook County Parcel Universe (`pabr-t5kh`) by community area + property class. Frontend at `/explore` with Mapbox/deck.gl map (5K parcel cap), paginated table, class-colored dots. Premium-gated. |
 | **PDF Zoning Reports v1** | Done | `GET /api/report?address=...`, 5-section WeasyPrint PDF (Cover, Property, Zoning/Regulatory, Incentives/Neighborhood, Disclaimers). Vector search for bulk standards. Frontend download button on Scorecard. |
 | **PDF Zoning Reports v2** | Planned | Premium development feasibility report. 8-section professional layout, 5 targeted vector searches + Haiku extraction, calculated development potential, comparable sales, address-specific permits, adjacent zoning. Full spec in §8 below. |
 | **Stripe Payment System** | Done | Free/Pro tiers, Stripe Checkout, webhook lifecycle, billing portal, `require_tier()` gating on `/api/report` |

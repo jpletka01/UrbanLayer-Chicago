@@ -4,7 +4,7 @@
 
 | File | Purpose |
 |------|---------|
-| `main.py` | FastAPI app: `/chat` SSE, `/api/scorecard`, `/api/report` (PDF, premium-gated), `/api/checkout`, `/api/webhook/stripe`, `/api/subscription`, `/api/billing/portal`, `/api/conversations/*`, `/api/admin/*`, `/api/map-data`, `/api/transit-stations` |
+| `main.py` | FastAPI app: `/chat` SSE, `/api/scorecard`, `/api/explore` + `/api/explore/map` (premium-gated), `/api/report` (PDF, premium-gated), `/api/checkout`, `/api/webhook/stripe`, `/api/subscription`, `/api/billing/portal`, `/api/conversations/*`, `/api/admin/*`, `/api/map-data`, `/api/transit-stations` |
 | `router.py` | Claude router → `RetrievalPlan` JSON (sources, location, intent, workflow_hint, search_query) |
 | `synthesizer.py` | Claude streaming synthesis with `[N]` citation markers + `[data:*]` data markers + analytics |
 | `conversation.py` | Multi-turn query expansion (Haiku). Deterministic neighborhood switch detection |
@@ -37,6 +37,7 @@ retrieval/
 ├── vector_search.py        # Async Qdrant search + keyword boost + bge-reranker + per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
+├── explore.py              # Site Explorer: bulk parcel query by community area + class prefix (Cook County Parcel Universe)
 ├── utils.py                # Shared helpers (cutoff_iso)
 ├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA, triggered by any domain not just regulatory)
