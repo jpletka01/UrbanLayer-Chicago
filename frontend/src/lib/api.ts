@@ -524,6 +524,65 @@ export async function fetchReport(params: {
   } catch { return null; }
 }
 
+// --- Site Explorer ---
+
+export interface ExploreParcel {
+  pin: string;
+  class: string;
+  class_description: string;
+  lat: number;
+  lon: number;
+}
+
+export interface ExploreResponse {
+  community_area: number;
+  community_area_name: string;
+  bounds: [number, number, number, number] | null;
+  parcels: ExploreParcel[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ExploreMapResponse {
+  parcels: ExploreParcel[];
+  total: number;
+}
+
+export async function fetchExploreParcels(params: {
+  community_area: number;
+  class_prefix?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ExploreResponse | null> {
+  const qs = new URLSearchParams();
+  qs.set("community_area", String(params.community_area));
+  if (params.class_prefix) qs.set("class_prefix", params.class_prefix);
+  if (params.limit != null) qs.set("limit", String(params.limit));
+  if (params.offset != null) qs.set("offset", String(params.offset));
+  try {
+    const resp = await authFetch(`${API_BASE}/api/explore?${qs}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchExploreMap(params: {
+  community_area: number;
+  class_prefix?: string;
+}): Promise<ExploreMapResponse | null> {
+  const qs = new URLSearchParams();
+  qs.set("community_area", String(params.community_area));
+  if (params.class_prefix) qs.set("class_prefix", params.class_prefix);
+  try {
+    const resp = await authFetch(`${API_BASE}/api/explore/map?${qs}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// --- Transit Stations ---
+
 let _transitStationsCache: import("./types").TransitStation[] | null = null;
 
 export async function fetchTransitStations(): Promise<import("./types").TransitStation[]> {

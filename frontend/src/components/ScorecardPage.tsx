@@ -172,11 +172,30 @@ export default function ScorecardPage() {
     setLoading(false);
   }, []);
 
+  const doSearchByCoords = useCallback(async (lat: number, lon: number) => {
+    setLoading(true);
+    setError(null);
+    setSearched(true);
+    const result = await fetchScorecard({ lat, lon });
+    if (result) {
+      setData(result);
+      if (result.address) setAddress(result.address);
+    } else {
+      setError("Could not load property data for this location.");
+      setData(null);
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     const q = searchParams.get("address");
+    const lat = searchParams.get("lat");
+    const lon = searchParams.get("lon");
     if (q) {
       setAddress(q);
       doSearch(q);
+    } else if (lat && lon) {
+      doSearchByCoords(parseFloat(lat), parseFloat(lon));
     }
   }, []);
 
@@ -200,6 +219,7 @@ export default function ScorecardPage() {
           <nav className="flex items-center gap-4 text-[11px] text-text-muted">
             <Link to="/" className="hover:text-text-primary transition-colors">Chat</Link>
             <span className="text-accent">Scorecard</span>
+            <Link to="/explore" className="hover:text-text-primary transition-colors">Explore</Link>
             <Link to="/about" className="hover:text-text-primary transition-colors">About</Link>
           </nav>
         </div>
@@ -242,7 +262,7 @@ export default function ScorecardPage() {
             {/* Address header */}
             <div className="mb-6 pb-4 border-b border-dark-border">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <h2 className="text-lg font-semibold">{data.address || "Unknown Address"}</h2>
+                <h2 className="text-lg font-semibold">{data.address || ctx.property?.address || "Unknown Address"}</h2>
                 {data.community_area_name && (
                   <span className="text-sm text-text-muted">{data.community_area_name}</span>
                 )}

@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10
     limit_ccao_parcels: int = 20
+    limit_explore_parcels: int = 200
+    limit_explore_max: int = 500
+    limit_explore_map: int = 5000
 
     # Census Reporter API (tract-level ACS demographics)
     census_reporter_base: str = "https://api.censusreporter.org/1.0"

@@ -17,6 +17,7 @@ import { AboutPage } from './components/AboutPage.tsx'
 import { AdminDashboard } from './components/AdminDashboard.tsx'
 import PricingPage from './components/PricingPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
+import ExplorePage from './components/ExplorePage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/c/:id" element={<App />} />
           <Route path="/s/:shareToken" element={<App />} />
           <Route path="/scorecard" element={<ScorecardPage />} />
+          <Route path="/explore" element={<ExplorePage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={
