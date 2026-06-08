@@ -214,7 +214,7 @@ export function App() {
     setSidebarView(autoView);
     setDataTabViewed(autoView === "data");
     setSourcesTabViewed(autoView === "sources");
-    setMapTabViewed(autoView === "map");
+    setMapTabViewed((autoView as string) === "map");
   }
 
   function handleMapData(data: MapData) {
