@@ -14,14 +14,14 @@ function escapeCell(value: unknown): string {
   return str;
 }
 
-export function toCSV<T extends Record<string, unknown>>(
+export function toCSV<T extends object>(
   rows: T[],
   columns?: CSVColumn<T>[],
 ): string {
   if (rows.length === 0) return "";
-  const cols = columns ?? (Object.keys(rows[0]) as (keyof T & string)[]).map((k) => ({ key: k, header: k }));
+  const cols = columns ?? (Object.keys(rows[0] as Record<string, unknown>) as (keyof T & string)[]).map((k) => ({ key: k, header: k }));
   const header = cols.map((c) => escapeCell(c.header)).join(",");
-  const body = rows.map((row) => cols.map((c) => escapeCell(row[c.key])).join(",")).join("\n");
+  const body = rows.map((row) => cols.map((c) => escapeCell((row as Record<string, unknown>)[c.key])).join(",")).join("\n");
   return `${header}\n${body}`;
 }
 
@@ -37,7 +37,7 @@ export function downloadCSV(csv: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function exportCSV<T extends Record<string, unknown>>(
+export function exportCSV<T extends object>(
   rows: T[],
   filename: string,
   columns?: CSVColumn<T>[],

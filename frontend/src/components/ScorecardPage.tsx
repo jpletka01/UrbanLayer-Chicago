@@ -301,7 +301,7 @@ export default function ScorecardPage() {
                   onClick={() => {
                     const slug = buildFilenameSlug(data.address || "property");
                     const date = new Date().toISOString().slice(0, 10);
-                    downloadCSV(buildScorecardCSV(ctx, data.address), `${slug}_scorecard_${date}.csv`);
+                    downloadCSV(buildScorecardCSV(ctx, data.address ?? ""), `${slug}_scorecard_${date}.csv`);
                   }}
                   className="inline-flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover transition-colors"
                 >
