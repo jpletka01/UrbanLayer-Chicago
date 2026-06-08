@@ -483,6 +483,10 @@ export function capLabel(raw: string, max = 25): string {
   if (crimeLabel) return crimeLabel.length > max ? crimeLabel.slice(0, max - 1) + "…" : crimeLabel;
   const permitLabel = i18n.t(`permitLabels.${upper}`, { ns: "map", defaultValue: "" });
   if (permitLabel) return permitLabel.length > max ? permitLabel.slice(0, max - 1) + "…" : permitLabel;
+  const srLabel = i18n.t(`srTypeLabels.${raw}`, { ns: "map", defaultValue: "" });
+  if (srLabel) return srLabel.length > max ? srLabel.slice(0, max - 1) + "…" : srLabel;
+  const deptLabel = i18n.t(`deptLabels.${raw}`, { ns: "map", defaultValue: "" });
+  if (deptLabel) return deptLabel.length > max ? deptLabel.slice(0, max - 1) + "…" : deptLabel;
   const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
   return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
 }

@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import i18n from "../../lib/i18n";
 
 interface Props {
   minDate: number;
@@ -8,8 +9,11 @@ interface Props {
   onChange: (start: number, end: number) => void;
 }
 
+const LOCALE_MAP: Record<string, string> = { en: "en-US", es: "es-MX" };
+
 function formatShort(epoch: number): string {
-  return new Date(epoch).toLocaleDateString("en-US", {
+  const locale = LOCALE_MAP[i18n.language] ?? "en-US";
+  return new Date(epoch).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
   });

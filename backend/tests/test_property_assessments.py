@@ -36,3 +36,16 @@ async def test_handles_socrata_error(mock_socrata):
     mock_socrata.side_effect = Exception("Socrata error")
     result = await get_assessments("14241020170000")
     assert result == []
+
+
+@pytest.mark.asyncio
+async def test_negative_cache_prevents_retry(mock_socrata):
+    mock_socrata.side_effect = Exception("Socrata error")
+    result1 = await get_assessments("99999999999999")
+    assert result1 == []
+    assert mock_socrata.call_count == 1
+
+    mock_socrata.reset_mock()
+    result2 = await get_assessments("99999999999999")
+    assert result2 == []
+    assert mock_socrata.call_count == 0

@@ -12,15 +12,15 @@ function PropertyCard({ t }: { t: (key: string) => string }) {
         </div>
         <div>
           <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.class")}</div>
-          <div className="text-text-primary">2-11 Two-Story Residence</div>
+          <div className="text-text-primary">{t("depth.sampleClass")}</div>
         </div>
         <div>
           <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.building")}</div>
-          <div className="text-text-primary">2,450 sq ft &middot; 2 stories</div>
+          <div className="text-text-primary">{t("depth.sampleBuilding")}</div>
         </div>
         <div>
           <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.lot")}</div>
-          <div className="text-text-primary">3,125 sq ft</div>
+          <div className="text-text-primary">{t("depth.sampleLot")}</div>
         </div>
       </div>
       <div className="border-t border-dark-border pt-2 space-y-1.5">
@@ -54,7 +54,7 @@ function RegulatoryCard({ t }: { t: (key: string) => string }) {
         <div className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-400 px-2.5 py-1 rounded-md font-mono text-sm font-medium">
           B3-2
         </div>
-        <span className="text-text-secondary ml-2">Community Shopping District</span>
+        <span className="text-text-secondary ml-2">{t("depth.sampleZoneDesc")}</span>
       </div>
       <div className="border-t border-dark-border pt-2">
         <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.activeOverlays")}</div>

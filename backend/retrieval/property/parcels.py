@@ -114,6 +114,10 @@ async def _lookup_parcel_gis(
             "total_value": attrs.get("TotalValue"),
             "address": attrs.get("Address"),
             "geometry": geometry,
+            "zip_code": attrs.get("ZipCode"),
+            "township_name": attrs.get("Township"),
+            "nbhd_code": None,
+            "tax_code": None,
         }
     except Exception as exc:
         log.warning("GIS parcel lookup failed for (%s, %s): %s", lat, lon, exc)
@@ -136,7 +140,7 @@ async def _lookup_parcel_socrata(
             f"lat between '{lat - _BBOX_DELTA}' and '{lat + _BBOX_DELTA}' "
             f"and lon between '{lon - _BBOX_DELTA}' and '{lon + _BBOX_DELTA}'"
         ),
-        "$select": "pin,pin10,class,lat,lon",
+        "$select": "pin,pin10,class,lat,lon,zip_code,township_name,nbhd_code,tax_code",
         "$limit": settings.limit_ccao_parcels,
     }
     try:
@@ -162,6 +166,10 @@ async def _lookup_parcel_socrata(
             "total_value": None,
             "address": None,
             "geometry": None,
+            "zip_code": closest.get("zip_code"),
+            "township_name": closest.get("township_name"),
+            "nbhd_code": closest.get("nbhd_code"),
+            "tax_code": closest.get("tax_code"),
         }
     except Exception as exc:
         log.warning("Socrata parcel fallback failed for (%s, %s): %s", lat, lon, exc)

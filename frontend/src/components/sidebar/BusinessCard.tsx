@@ -36,7 +36,7 @@ export function BusinessCard({ data }: { data: BusinessSummary }) {
           <div className="space-y-0.5">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("business.byLicenseType")}</span>
             {licenseTypes.map(([type, count]) => (
-              <KV key={type} label={type} value={String(count)} />
+              <KV key={type} label={t(`business.licenseTypeLabels.${type}`, { defaultValue: type })} value={String(count)} />
             ))}
           </div>
         )}

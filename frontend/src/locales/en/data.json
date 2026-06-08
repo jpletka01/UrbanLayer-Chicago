@@ -154,7 +154,52 @@
     "householdIncome": "Household Income",
     "raceEthnicity": "Race & Ethnicity",
     "education": "Education",
-    "transportationToWork": "Transportation to Work"
+    "transportationToWork": "Transportation to Work",
+    "buckets": {
+      "age": {
+        "Under 18": "Under 18",
+        "18-24": "18-24",
+        "25-34": "25-34",
+        "35-44": "35-44",
+        "45-54": "45-54",
+        "55-64": "55-64",
+        "65-74": "65-74",
+        "75+": "75+"
+      },
+      "income": {
+        "Under $25K": "Under $25K",
+        "$25-50K": "$25-50K",
+        "$50-75K": "$50-75K",
+        "$75-100K": "$75-100K",
+        "$100-150K": "$100-150K",
+        "$150-200K": "$150-200K",
+        "$200K+": "$200K+"
+      },
+      "race": {
+        "White": "White",
+        "Black": "Black",
+        "Asian": "Asian",
+        "Two+": "Two+",
+        "Other": "Other",
+        "Hispanic": "Hispanic"
+      },
+      "education": {
+        "No degree": "No degree",
+        "High school": "High school",
+        "Some college": "Some college",
+        "Bachelor's": "Bachelor's",
+        "Graduate+": "Graduate+"
+      },
+      "transportation": {
+        "Drove alone": "Drove alone",
+        "Carpooled": "Carpooled",
+        "Public transit": "Public transit",
+        "Walked": "Walked",
+        "Bicycle": "Bicycle",
+        "Work from home": "Work from home",
+        "Other": "Other"
+      }
+    }
   },
   "violations": {
     "title": "Violations",
@@ -162,14 +207,54 @@
     "open": "Open",
     "byCategory": "By Category",
     "topDescriptions": "Top Descriptions",
-    "showingFirst": "Showing first {{count}} — more may exist."
+    "showingFirst": "Showing first {{count}} — more may exist.",
+    "categoryLabels": {
+      "Elevator/Escalator": "Elevator/Escalator",
+      "Boiler/Mechanical": "Boiler/Mechanical",
+      "Electrical": "Electrical",
+      "Exterior Structure": "Exterior Structure",
+      "Interior Structure": "Interior Structure",
+      "Porch/Deck": "Porch/Deck",
+      "Roof": "Roof",
+      "Fencing": "Fencing",
+      "Garage/Shed": "Garage/Shed",
+      "Windows/Screens": "Windows/Screens",
+      "Fire Safety": "Fire Safety",
+      "Egress/Safety": "Egress/Safety",
+      "Nuisance/Cleanup": "Nuisance/Cleanup",
+      "Pest Control": "Pest Control",
+      "Permits/Contractor": "Permits/Contractor",
+      "Inspection Required": "Inspection Required",
+      "Plumbing": "Plumbing",
+      "Heating": "Heating",
+      "Other": "Other"
+    }
   },
   "business": {
     "title": "Business Licenses",
     "activeLicenses": "Active Licenses",
     "byLicenseType": "By License Type",
     "topActivities": "Top Activities",
-    "showingFirst": "Showing first {{count}} — more may exist."
+    "showingFirst": "Showing first {{count}} — more may exist.",
+    "licenseTypeLabels": {
+      "Retail Food Establishment": "Retail Food Establishment",
+      "Limited Business License": "Limited Business License",
+      "Regulated Business License": "Regulated Business License",
+      "Tobacco": "Tobacco",
+      "Peddler License": "Peddler License",
+      "Motor Vehicle Services License": "Motor Vehicle Services License",
+      "Package Goods": "Package Goods",
+      "Tavern": "Tavern",
+      "Public Place of Amusement": "Public Place of Amusement",
+      "Day Care": "Day Care",
+      "Outdoor Patio": "Outdoor Patio",
+      "Children's Services Facility License": "Children's Services Facility License",
+      "Not-For-Profit Club": "Not-For-Profit Club",
+      "Massage Establishment": "Massage Establishment",
+      "Expediter - Class B": "Expediter - Class B",
+      "Shared Housing Unit Registration": "Shared Housing Unit Registration",
+      "Filling Station": "Filling Station"
+    }
   },
   "foodInspections": {
     "title": "Food Inspections",

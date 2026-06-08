@@ -20,6 +20,14 @@ class SocrataError(RuntimeError):
     pass
 
 
+class SocrataClientError(SocrataError):
+    """Non-retryable client error (4xx) from the Socrata API."""
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def get_shared_client() -> httpx.AsyncClient:
     global _shared_client
     if _shared_client is None or _shared_client.is_closed:
@@ -69,6 +77,11 @@ async def socrata_get(
             resp.raise_for_status()
             return resp.json()
         except (httpx.HTTPError, httpx.HTTPStatusError) as exc:
+            if isinstance(exc, httpx.HTTPStatusError) and 400 <= exc.response.status_code < 500:
+                raise SocrataClientError(
+                    f"Socrata client error {exc.response.status_code} for {dataset_id}: {exc}",
+                    status_code=exc.response.status_code,
+                ) from exc
             if attempt == _MAX_RETRIES - 1:
                 raise SocrataError(f"Socrata request failed for {dataset_id}: {exc}") from exc
             wait = _BACKOFF_BASE * (2 ** attempt)

@@ -118,9 +118,12 @@ async def test_pin_with_dashes_stripped():
 async def test_socrata_fallback_picks_closest_pin():
     """When multiple parcels returned, pick the one nearest the query point."""
     rows = [
-        {"pin": "14283180220000", "class": "2-11", "lat": "41.9300", "lon": "-87.6415"},
-        {"pin": "14241020170000", "class": "2-05", "lat": "41.9307", "lon": "-87.6411"},
-        {"pin": "14283180360000", "class": "2-99", "lat": "41.9310", "lon": "-87.6400"},
+        {"pin": "14283180220000", "class": "2-11", "lat": "41.9300", "lon": "-87.6415",
+         "zip_code": "60614", "township_name": "North", "nbhd_code": "71120", "tax_code": "71164"},
+        {"pin": "14241020170000", "class": "2-05", "lat": "41.9307", "lon": "-87.6411",
+         "zip_code": "60614", "township_name": "North", "nbhd_code": "71121", "tax_code": "71165"},
+        {"pin": "14283180360000", "class": "2-99", "lat": "41.9310", "lon": "-87.6400",
+         "zip_code": "60614", "township_name": "North", "nbhd_code": "71122", "tax_code": "71166"},
     ]
     with patch("backend.retrieval.property.parcels.socrata_get", return_value=rows):
         result = await _lookup_parcel_socrata(41.9307, -87.6411)
@@ -130,6 +133,10 @@ async def test_socrata_fallback_picks_closest_pin():
     assert result["bldg_sqft"] is None
     assert result["address"] is None
     assert result["geometry"] is None
+    assert result["zip_code"] == "60614"
+    assert result["township_name"] == "North"
+    assert result["nbhd_code"] == "71121"
+    assert result["tax_code"] == "71165"
 
 
 @pytest.mark.asyncio
@@ -172,6 +179,8 @@ async def test_gis_down_falls_back_to_socrata():
             "pin14": "14241020170000", "bldg_class": "2-05",
             "bldg_sqft": None, "land_sqft": None, "total_value": None,
             "address": None, "geometry": None,
+            "zip_code": "60614", "township_name": "North",
+            "nbhd_code": "71121", "tax_code": "71165",
         }
         result = await lookup_parcel(41.9307, -87.6411)
     assert result is not None

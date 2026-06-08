@@ -95,7 +95,11 @@
     "population": "Population",
     "medIncome": "Med. Income",
     "ownerOcc": "Owner-Occ.",
-    "medAge": "Med. Age"
+    "medAge": "Med. Age",
+    "sampleClass": "2-11 Two-Story Residence",
+    "sampleBuilding": "2,450 sq ft · 2 stories",
+    "sampleLot": "3,125 sq ft",
+    "sampleZoneDesc": "Community Shopping District"
   },
   "explorer": {
     "heading": "Explore a neighborhood",
@@ -159,7 +163,10 @@
         "title": "You get answers",
         "description": "A sourced, cited answer with interactive maps, trend analysis, and linked code references. Not a spreadsheet."
       }
-    ]
+    ],
+    "sourceTags": ["Zoning", "Overlays", "Property", "Permits", "TIF", "Code", "Crime", "Demographics"],
+    "sampleResponse": "The parcel at 2100 N Damen Ave is zoned",
+    "sampleResponseTail": ", which permits multi-unit residential..."
   },
   "valueProps": {
     "knowTitle": "Know your neighborhood",

@@ -63,19 +63,13 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 - Demographics median values are estimated from bracket distributions, not pre-computed.
 - Violation categories are homegrown keyword-based bucketing (16 custom categories from free-text descriptions).
 
-## Keeping Docs Current
+## Workflow Rules
 
-After completing work, update the relevant `claude-context/` files and subdirectory CLAUDE.md files to reflect what changed — new modules, modified schemas, changed patterns, new known issues, etc. If you added or renamed backend modules, update `backend/CLAUDE.md`. If you changed frontend components or design tokens, update `frontend/CLAUDE.md`. If you added data sources or API integrations, update `claude-context/data-sources.md`. Keep these docs accurate so the next conversation starts with a correct picture of the codebase.
+- **Commit + push freely** — commit and push to remote without asking. Use clear, conventional commit messages.
+- **Deploy requires confirmation** — always ask before deploying to production (SSH to server, docker compose up, etc.). Show the deploy command and wait for approval.
+- **Archive completed work** — when a feature ships, follow the archivation rules in `claude-context/README.md`. Strip completed items from active docs, create archive entry, keep active files lean.
 
 ## Context Docs
 
-Read from `claude-context/` on demand when you need deeper information:
-
-- `architecture.md` — RAG pipeline, retrieval flow, domain orchestrators, key design decisions
-- `data-sources.md` — All datasets, APIs, GIS layers, endpoint reference
-- `backend-guide.md` — Backend modules, router/synthesizer/assembler patterns, persistence, caching
-- `frontend-guide.md` — Components, design tokens, state management, layout, map system
-- `known-issues.md` — Bugs, fragile heuristics, synthesis gaps, gotchas, deferred work
-- `expansion-roadmap.md` — Completed expansion phases + remaining Tier 3 opportunities
-- `conversations.md` — Conversation persistence architecture, auth integration, known production issue + fix plan
-- `latency-reduction.md` — Completed and planned performance optimizations, pipeline timing reference, caching gaps
+Deep context lives in `claude-context/`. Read `claude-context/README.md` for a manifest
+of available docs — load only what's relevant to the current task. Don't read everything.

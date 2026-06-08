@@ -154,7 +154,52 @@
     "householdIncome": "Ingreso del hogar",
     "raceEthnicity": "Raza y etnicidad",
     "education": "Educación",
-    "transportationToWork": "Transporte al trabajo"
+    "transportationToWork": "Transporte al trabajo",
+    "buckets": {
+      "age": {
+        "Under 18": "Menor de 18",
+        "18-24": "18-24",
+        "25-34": "25-34",
+        "35-44": "35-44",
+        "45-54": "45-54",
+        "55-64": "55-64",
+        "65-74": "65-74",
+        "75+": "75+"
+      },
+      "income": {
+        "Under $25K": "Menos de $25K",
+        "$25-50K": "$25-50K",
+        "$50-75K": "$50-75K",
+        "$75-100K": "$75-100K",
+        "$100-150K": "$100-150K",
+        "$150-200K": "$150-200K",
+        "$200K+": "$200K+"
+      },
+      "race": {
+        "White": "Blanco",
+        "Black": "Negro",
+        "Asian": "Asiático",
+        "Two+": "Dos+",
+        "Other": "Otro",
+        "Hispanic": "Hispano"
+      },
+      "education": {
+        "No degree": "Sin título",
+        "High school": "Secundaria",
+        "Some college": "Algo de universidad",
+        "Bachelor's": "Licenciatura",
+        "Graduate+": "Posgrado+"
+      },
+      "transportation": {
+        "Drove alone": "Condujo solo",
+        "Carpooled": "Compartió auto",
+        "Public transit": "Transporte público",
+        "Walked": "Caminó",
+        "Bicycle": "Bicicleta",
+        "Work from home": "Trabajo desde casa",
+        "Other": "Otro"
+      }
+    }
   },
   "violations": {
     "title": "Infracciones",
@@ -162,14 +207,54 @@
     "open": "Abiertas",
     "byCategory": "Por categoría",
     "topDescriptions": "Descripciones principales",
-    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más."
+    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más.",
+    "categoryLabels": {
+      "Elevator/Escalator": "Elevador/Escalera mecánica",
+      "Boiler/Mechanical": "Caldera/Mecánico",
+      "Electrical": "Eléctrico",
+      "Exterior Structure": "Estructura exterior",
+      "Interior Structure": "Estructura interior",
+      "Porch/Deck": "Porche/Terraza",
+      "Roof": "Techo",
+      "Fencing": "Cercas",
+      "Garage/Shed": "Garaje/Cobertizo",
+      "Windows/Screens": "Ventanas/Mallas",
+      "Fire Safety": "Seguridad contra incendios",
+      "Egress/Safety": "Salidas/Seguridad",
+      "Nuisance/Cleanup": "Molestia/Limpieza",
+      "Pest Control": "Control de plagas",
+      "Permits/Contractor": "Permisos/Contratista",
+      "Inspection Required": "Inspección requerida",
+      "Plumbing": "Plomería",
+      "Heating": "Calefacción",
+      "Other": "Otro"
+    }
   },
   "business": {
     "title": "Licencias comerciales",
     "activeLicenses": "Licencias activas",
     "byLicenseType": "Por tipo de licencia",
     "topActivities": "Actividades principales",
-    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más."
+    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más.",
+    "licenseTypeLabels": {
+      "Retail Food Establishment": "Establecimiento de alimentos",
+      "Limited Business License": "Licencia comercial limitada",
+      "Regulated Business License": "Licencia comercial regulada",
+      "Tobacco": "Tabaco",
+      "Peddler License": "Licencia de vendedor ambulante",
+      "Motor Vehicle Services License": "Licencia de servicios automotrices",
+      "Package Goods": "Venta de licor empaquetado",
+      "Tavern": "Taberna",
+      "Public Place of Amusement": "Lugar público de entretenimiento",
+      "Day Care": "Guardería",
+      "Outdoor Patio": "Terraza al aire libre",
+      "Children's Services Facility License": "Licencia de servicios infantiles",
+      "Not-For-Profit Club": "Club sin fines de lucro",
+      "Massage Establishment": "Establecimiento de masajes",
+      "Expediter - Class B": "Gestor - Clase B",
+      "Shared Housing Unit Registration": "Registro de vivienda compartida",
+      "Filling Station": "Gasolinera"
+    }
   },
   "foodInspections": {
     "title": "Inspecciones de alimentos",

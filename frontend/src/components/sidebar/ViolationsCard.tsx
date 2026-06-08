@@ -45,7 +45,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
           <div className="space-y-0.5">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("violations.byCategory")}</span>
             {categories.map(([cat, count]) => (
-              <KV key={cat} label={cat} value={String(count)} />
+              <KV key={cat} label={t(`violations.categoryLabels.${cat}`, { defaultValue: cat })} value={String(count)} />
             ))}
           </div>
         )}

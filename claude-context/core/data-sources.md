@@ -106,7 +106,7 @@ The Property Index Number (PIN) is the universal join key for Cook County proper
 ## What's Not Programmatically Accessible
 
 | Data | Reason | Workaround |
-|------|--------|-----------|
+|------|--------|------------|
 | Property ownership/taxpayer names | CAPTCHA-protected, not in open data | Paid: Chicago Cityscape, Regrid |
 | Planned Development applications | PDF-only (Plan Commission agendas) | Monitor agendas manually |
 | Illinois SOS business entities | No API, scraping prohibited | Manual lookup |

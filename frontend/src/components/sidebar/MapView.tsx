@@ -1197,9 +1197,9 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
     const d = item.data;
     return (
       <>
-        <DetailRow label={t("detail.type")} value={d.sr_type} />
-        <DetailRow label={t("detail.status")} value={d.status} />
-        <DetailRow label={t("detail.department")} value={d.owner_department} />
+        <DetailRow label={t("detail.type")} value={t(`srTypeLabels.${d.sr_type}`, { defaultValue: d.sr_type })} />
+        <DetailRow label={t("detail.status")} value={t(`srStatusLabels.${d.status}`, { defaultValue: d.status })} />
+        <DetailRow label={t("detail.department")} value={t(`deptLabels.${d.owner_department}`, { defaultValue: d.owner_department })} />
         <DetailRow label={t("detail.date")} value={formatDate(d.created_date)} />
         <DetailRow label={t("detail.location")} value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
           href={streetViewUrl(d.latitude, d.longitude)} />

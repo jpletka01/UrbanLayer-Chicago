@@ -12,6 +12,7 @@ from backend.retrieval.socrata import socrata_get
 log = logging.getLogger(__name__)
 
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="assessments")
+_NOT_FOUND = object()
 
 
 async def get_assessments(
@@ -22,6 +23,8 @@ async def get_assessments(
     """Fetch assessment history for a PIN (most recent 5 years)."""
     key = f"assessments:{pin14}"
     cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return []
     if cached is not None:
         return cached
 
@@ -43,4 +46,5 @@ async def get_assessments(
         return result
     except Exception as exc:
         log.warning("CCAO assessments failed for PIN %s: %s", pin14, exc)
+        _cache.set(key, _NOT_FOUND)
         return []

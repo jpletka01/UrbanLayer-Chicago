@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
+import { formatDate } from "../../lib/format";
 import { CollapsibleCard } from "./CollapsibleCard";
 
 const BuildingIcon = (
@@ -135,7 +136,7 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
                 <MiniTable
                   headers={[t("property.date"), t("property.price"), t("property.deed")]}
                   rows={data.sales_history.map(s => [
-                    s.date ? new Date(s.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null,
+                    s.date ? formatDate(s.date) : null,
                     fmtDollar(s.price),
                     s.deed_type,
                   ])}

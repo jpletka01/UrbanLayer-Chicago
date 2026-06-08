@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="property_sales")
 _comps_cache = TTLCache(ttl_seconds=3600, maxsize=128, name="comparable_sales")
+_NOT_FOUND = object()
 
 
 async def get_sales(
@@ -27,6 +28,8 @@ async def get_sales(
     """Fetch sales history for a PIN (most recent 10 sales)."""
     key = f"sales:{pin14}"
     cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return []
     if cached is not None:
         return cached
 
@@ -48,6 +51,7 @@ async def get_sales(
         return result
     except Exception as exc:
         log.warning("CCAO sales failed for PIN %s: %s", pin14, exc)
+        _cache.set(key, _NOT_FOUND)
         return []
 
 
@@ -91,15 +95,15 @@ async def nearby_comparable_sales(
     try:
         # Hop 1: Nearby PINs from Parcel Universe
         parcel_where = (
-            f"latitude between '{lat - radius_deg}' and '{lat + radius_deg}' "
-            f"AND longitude between '{lon - radius_deg}' and '{lon + radius_deg}' "
+            f"lat between '{lat - radius_deg}' and '{lat + radius_deg}' "
+            f"AND lon between '{lon - radius_deg}' and '{lon + radius_deg}' "
             f"AND class LIKE '{class_prefix}%'"
         )
         parcels = await socrata_get(
             settings.dataset_ccao_parcels,
             {
                 "$where": parcel_where,
-                "$select": "pin,class,latitude,longitude",
+                "$select": "pin,class,lat,lon",
                 "$limit": 100,
             },
             client=client,
@@ -112,7 +116,7 @@ async def nearby_comparable_sales(
 
         pin_list = list({p["pin"] for p in parcels if p.get("pin")})
         pin_coords = {
-            p["pin"]: (float(p.get("latitude", 0)), float(p.get("longitude", 0)))
+            p["pin"]: (float(p.get("lat", 0)), float(p.get("lon", 0)))
             for p in parcels
             if p.get("pin")
         }

@@ -95,7 +95,11 @@
     "population": "Población",
     "medIncome": "Ingreso Med.",
     "ownerOcc": "Prop. Ocup.",
-    "medAge": "Edad Med."
+    "medAge": "Edad Med.",
+    "sampleClass": "2-11 Residencia de dos pisos",
+    "sampleBuilding": "2,450 pies² · 2 pisos",
+    "sampleLot": "3,125 pies²",
+    "sampleZoneDesc": "Distrito comercial comunitario"
   },
   "explorer": {
     "heading": "Explora un vecindario",
@@ -159,7 +163,10 @@
         "title": "Tú obtienes respuestas",
         "description": "Una respuesta con fuentes y citas, mapas interactivos, análisis de tendencias y referencias al código vinculadas. No una hoja de cálculo."
       }
-    ]
+    ],
+    "sourceTags": ["Zonificación", "Regulaciones", "Propiedad", "Permisos", "TIF", "Código", "Crimen", "Demografía"],
+    "sampleResponse": "La parcela en 2100 N Damen Ave está zonificada",
+    "sampleResponseTail": ", que permite uso residencial multifamiliar..."
   },
   "valueProps": {
     "knowTitle": "Conoce tu vecindario",

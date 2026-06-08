@@ -85,6 +85,13 @@ function ScoreBar({ score, description, label }: { score: number; description: s
   );
 }
 
+function translateBars(bars: DistributionBucket[], category: string, t: (key: string, opts?: Record<string, unknown>) => string): DistributionBucket[] {
+  return bars.map(b => ({
+    ...b,
+    label: t(`neighborhood.buckets.${category}.${b.label}`, { defaultValue: b.label }) as string,
+  }));
+}
+
 function DistSection({ title, bars, defaultOpen = false }: { title: string; bars: DistributionBucket[]; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   if (bars.length === 0) return null;
@@ -151,11 +158,11 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
       </div>
 
       <div className="space-y-1.5">
-        <DistSection title={t("neighborhood.ageDistribution")} bars={ct.age_distribution} defaultOpen />
-        <DistSection title={t("neighborhood.householdIncome")} bars={ct.income_distribution} />
-        <DistSection title={t("neighborhood.raceEthnicity")} bars={ct.race_distribution} />
-        <DistSection title={t("neighborhood.education")} bars={ct.education_distribution} />
-        <DistSection title={t("neighborhood.transportationToWork")} bars={ct.transportation_distribution} />
+        <DistSection title={t("neighborhood.ageDistribution")} bars={translateBars(ct.age_distribution, "age", t)} defaultOpen />
+        <DistSection title={t("neighborhood.householdIncome")} bars={translateBars(ct.income_distribution, "income", t)} />
+        <DistSection title={t("neighborhood.raceEthnicity")} bars={translateBars(ct.race_distribution, "race", t)} />
+        <DistSection title={t("neighborhood.education")} bars={translateBars(ct.education_distribution, "education", t)} />
+        <DistSection title={t("neighborhood.transportationToWork")} bars={translateBars(ct.transportation_distribution, "transportation", t)} />
       </div>
 
       {ct.census_reporter_url && (

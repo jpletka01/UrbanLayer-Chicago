@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
 
-from backend.retrieval.socrata import socrata_get, SocrataError
+from backend.retrieval.socrata import socrata_get, SocrataError, SocrataClientError
 
 
 class TestSocrataGet:
@@ -82,6 +82,52 @@ class TestSocrataGet:
                     )
 
         assert mock_client.get.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_does_not_retry_on_400_client_error(self, mock_settings):
+        error_response = MagicMock()
+        error_response.status_code = 400
+        error_response.request = MagicMock()
+        error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "400 Bad Request", request=error_response.request, response=error_response
+        )
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=error_response)
+
+        with patch("backend.retrieval.socrata.get_settings", return_value=mock_settings):
+            with pytest.raises(SocrataClientError) as exc_info:
+                await socrata_get(
+                    "test-dataset",
+                    {"$limit": 10},
+                    client=mock_client,
+                )
+
+        assert exc_info.value.status_code == 400
+        assert mock_client.get.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_does_not_retry_on_404_client_error(self, mock_settings):
+        error_response = MagicMock()
+        error_response.status_code = 404
+        error_response.request = MagicMock()
+        error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "404 Not Found", request=error_response.request, response=error_response
+        )
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=error_response)
+
+        with patch("backend.retrieval.socrata.get_settings", return_value=mock_settings):
+            with pytest.raises(SocrataClientError) as exc_info:
+                await socrata_get(
+                    "test-dataset",
+                    {"$limit": 10},
+                    client=mock_client,
+                )
+
+        assert exc_info.value.status_code == 404
+        assert mock_client.get.call_count == 1
 
     @pytest.mark.asyncio
     async def test_no_app_token_header_when_not_configured(self, mock_settings):

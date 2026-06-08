@@ -2,7 +2,7 @@ import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-function StepVisual({ index, query }: { index: number; query?: string }) {
+function StepVisual({ index, query, t }: { index: number; query?: string; t: (key: string, opts?: Record<string, unknown>) => string }) {
   if (index === 0) {
     return (
       <div className="bg-dark-bg rounded-lg px-4 py-3 border border-white/10">
@@ -21,12 +21,10 @@ function StepVisual({ index, query }: { index: number; query?: string }) {
   }
 
   if (index === 1) {
+    const tags = t("howItWorks.sourceTags", { returnObjects: true }) as string[];
     return (
       <div className="flex flex-wrap justify-center gap-1.5">
-        {[
-          "Zoning", "Overlays", "Property", "Permits",
-          "TIF", "Code", "Crime", "Demographics",
-        ].map((s, i) => (
+        {tags.map((s, i) => (
           <motion.span
             key={s}
             initial={{ opacity: 0, scale: 0.8 }}
@@ -45,9 +43,9 @@ function StepVisual({ index, query }: { index: number; query?: string }) {
   return (
     <div className="bg-dark-bg rounded-lg px-4 py-3 border border-white/10 space-y-2">
       <div className="text-xs text-text-secondary leading-relaxed">
-        The parcel at 2100 N Damen Ave is zoned{" "}
+        {t("howItWorks.sampleResponse")}{" "}
         <span className="font-mono text-accent bg-accent/10 px-1 rounded">RM-5</span>
-        , which permits multi-unit residential...
+        {t("howItWorks.sampleResponseTail")}
       </div>
       <div className="flex gap-1.5">
         <span className="text-[10px] font-mono bg-dark-elevated text-text-muted px-1.5 py-0.5 rounded">
@@ -104,7 +102,7 @@ export function HowItWorks() {
               <h3 className="text-lg font-semibold text-text-primary">{step.title}</h3>
 
               <div className="max-w-[280px] mx-auto">
-                <StepVisual index={i} query={step.query} />
+                <StepVisual index={i} query={step.query} t={t} />
               </div>
 
               <p className="text-sm text-text-secondary leading-relaxed max-w-[280px] mx-auto">
