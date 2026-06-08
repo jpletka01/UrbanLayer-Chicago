@@ -21,7 +21,7 @@ function StepVisual({ index, query, t }: { index: number; query?: string; t: (ke
   }
 
   if (index === 1) {
-    const tags = t("howItWorks.sourceTags", { returnObjects: true }) as string[];
+    const tags = t("howItWorks.sourceTags", { returnObjects: true }) as unknown as string[];
     return (
       <div className="flex flex-wrap justify-center gap-1.5">
         {tags.map((s, i) => (
