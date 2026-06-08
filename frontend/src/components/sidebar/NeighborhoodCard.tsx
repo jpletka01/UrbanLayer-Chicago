@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { CensusTractDemographics, DistributionBucket, NeighborhoodSummary } from "../../lib/types";
 import { BarChart } from "./BarChart";
 import { CollapsibleCard } from "./CollapsibleCard";
@@ -113,13 +114,14 @@ function DistSection({ title, bars, defaultOpen = false }: { title: string; bars
 }
 
 function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
+  const { t } = useTranslation("data");
   const tractNum = ct.tract_name || `Tract ${ct.tract_fips}`;
   const incomeContext = ct.city_median_income && ct.median_household_income
     ? ct.median_household_income > ct.city_median_income
-      ? `${Math.round((ct.median_household_income / ct.city_median_income - 1) * 100)}% above Chicago`
+      ? t("neighborhood.aboveChicago", { pct: Math.round((ct.median_household_income / ct.city_median_income - 1) * 100) })
       : ct.median_household_income < ct.city_median_income
-        ? `${Math.round((1 - ct.median_household_income / ct.city_median_income) * 100)}% below Chicago`
-        : "at Chicago median"
+        ? t("neighborhood.belowChicago", { pct: Math.round((1 - ct.median_household_income / ct.city_median_income) * 100) })
+        : t("neighborhood.atChicagoMedian")
     : null;
 
   return (
@@ -127,33 +129,33 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
       <span className="text-[10px] text-text-muted uppercase tracking-wider">{tractNum}</span>
 
       <div className="grid grid-cols-3 gap-2 py-0.5">
-        <StatBox label="Population" value={fmtNum(ct.population)} />
+        <StatBox label={t("neighborhood.population")} value={fmtNum(ct.population)} />
         <div className="text-center">
           <div className="text-sm font-semibold text-text-primary">{fmtDollar(ct.median_household_income)}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">Med. Income</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{t("neighborhood.medIncome")}</div>
           {incomeContext && (
             <div className="text-[9px] text-text-muted">{incomeContext}</div>
           )}
         </div>
-        <StatBox label="Poverty" value={fmtPct(ct.poverty_rate)} />
+        <StatBox label={t("neighborhood.poverty")} value={fmtPct(ct.poverty_rate)} />
       </div>
 
       <div className="space-y-0.5">
-        <KV label="Per Capita Income" value={fmtDollar(ct.per_capita_income)} />
-        <KV label="Home Value" value={fmtDollar(ct.median_home_value)} />
-        <KV label="Median Rent" value={fmtDollar(ct.median_gross_rent)} />
-        <KV label="Owner-Occupied" value={fmtPct(ct.owner_occupied_pct)} />
-        <KV label="Vacancy Rate" value={fmtPct(ct.vacancy_rate)} />
-        <KV label="Bachelor's+" value={fmtPct(ct.bachelors_or_higher_pct)} />
-        <KV label="Foreign Born" value={fmtPct(ct.foreign_born_pct)} />
+        <KV label={t("neighborhood.perCapitaIncome")} value={fmtDollar(ct.per_capita_income)} />
+        <KV label={t("neighborhood.homeValue")} value={fmtDollar(ct.median_home_value)} />
+        <KV label={t("neighborhood.medianRent")} value={fmtDollar(ct.median_gross_rent)} />
+        <KV label={t("neighborhood.ownerOccupied")} value={fmtPct(ct.owner_occupied_pct)} />
+        <KV label={t("neighborhood.vacancyRate")} value={fmtPct(ct.vacancy_rate)} />
+        <KV label={t("neighborhood.bachelorsPlus")} value={fmtPct(ct.bachelors_or_higher_pct)} />
+        <KV label={t("neighborhood.foreignBorn")} value={fmtPct(ct.foreign_born_pct)} />
       </div>
 
       <div className="space-y-1.5">
-        <DistSection title="Age Distribution" bars={ct.age_distribution} defaultOpen />
-        <DistSection title="Household Income" bars={ct.income_distribution} />
-        <DistSection title="Race & Ethnicity" bars={ct.race_distribution} />
-        <DistSection title="Education" bars={ct.education_distribution} />
-        <DistSection title="Transportation to Work" bars={ct.transportation_distribution} />
+        <DistSection title={t("neighborhood.ageDistribution")} bars={ct.age_distribution} defaultOpen />
+        <DistSection title={t("neighborhood.householdIncome")} bars={ct.income_distribution} />
+        <DistSection title={t("neighborhood.raceEthnicity")} bars={ct.race_distribution} />
+        <DistSection title={t("neighborhood.education")} bars={ct.education_distribution} />
+        <DistSection title={t("neighborhood.transportationToWork")} bars={ct.transportation_distribution} />
       </div>
 
       {ct.census_reporter_url && (
@@ -163,7 +165,7 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 underline transition-colors"
         >
-          View full profile on Census Reporter
+          {t("neighborhood.viewCensusReporter")}
           <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
@@ -174,44 +176,39 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
 }
 
 export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
+  const { t } = useTranslation("data");
   const demo = data.demographics;
   const transit = data.transit;
 
   return (
-    <CollapsibleCard title="Neighborhood" icon={PeopleIcon}>
+    <CollapsibleCard title={t("neighborhood.title")} icon={PeopleIcon}>
       <div className="space-y-3">
-        {/* Community Area Demographics */}
         {demo && (
           <>
-            {/* Headline stats */}
             <div className="grid grid-cols-3 gap-2 py-1">
-              <StatBox label="Population" value={fmtNum(demo.population)} />
-              <StatBox label="Med. Income" value={fmtDollar(demo.median_household_income)} />
-              <StatBox label="Home Value" value={fmtDollar(demo.median_home_value)} />
+              <StatBox label={t("neighborhood.population")} value={fmtNum(demo.population)} />
+              <StatBox label={t("neighborhood.medIncome")} value={fmtDollar(demo.median_household_income)} />
+              <StatBox label={t("neighborhood.homeValue")} value={fmtDollar(demo.median_home_value)} />
             </div>
 
-            {/* Secondary stats */}
             <div className="space-y-0.5">
-              <KV label="Median Rent" value={fmtDollar(demo.median_gross_rent)} />
-              <KV label="Median Age" value={demo.median_age != null ? String(demo.median_age) : null} />
-              <KV label="Poverty Rate" value={fmtPct(demo.poverty_rate)} />
-              <KV label="Unemployment" value={fmtPct(demo.unemployment_rate)} />
-              <KV label="Owner-Occupied" value={fmtPct(demo.owner_occupied_pct)} />
-              <KV label="Bachelor's Degree" value={fmtPct(demo.bachelors_degree_pct)} />
-              <KV label="Vacancy Rate" value={fmtPct(demo.vacancy_rate)} />
+              <KV label={t("neighborhood.medianRent")} value={fmtDollar(demo.median_gross_rent)} />
+              <KV label={t("neighborhood.medianAge")} value={demo.median_age != null ? String(demo.median_age) : null} />
+              <KV label={t("neighborhood.povertyRate")} value={fmtPct(demo.poverty_rate)} />
+              <KV label={t("neighborhood.unemployment")} value={fmtPct(demo.unemployment_rate)} />
+              <KV label={t("neighborhood.ownerOccupied")} value={fmtPct(demo.owner_occupied_pct)} />
+              <KV label={t("neighborhood.bachelorsDegree")} value={fmtPct(demo.bachelors_degree_pct)} />
+              <KV label={t("neighborhood.vacancyRate")} value={fmtPct(demo.vacancy_rate)} />
             </div>
           </>
         )}
 
-        {/* Census Tract Demographics */}
         {data.census_tract && <CensusTractSection ct={data.census_tract} />}
 
-        {/* Transit Access */}
         {transit && (transit.nearest_cta_rail || transit.nearest_metra) && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Transit</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("neighborhood.transit")}</span>
 
-            {/* CTA Rail */}
             {transit.nearest_cta_rail && (
               <div className="rounded-lg bg-dark-elevated/60 px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
@@ -242,7 +239,6 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
               </div>
             )}
 
-            {/* Metra */}
             {transit.nearest_metra && (
               <div className="rounded-lg bg-dark-elevated/60 px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
@@ -259,30 +255,28 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
               </div>
             )}
 
-            {/* TOD Eligibility */}
             {transit.tod_eligible && (
               <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400
                              border border-emerald-500/30 rounded-md px-2 py-0.5 text-[10px]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                TOD Eligible
+                {t("neighborhood.todEligible")}
                 {transit.tod_type && <span className="text-emerald-400/70">({transit.tod_type})</span>}
               </span>
             )}
           </div>
         )}
 
-        {/* Walk Score */}
         {data.walkscore && (data.walkscore.walk_score != null || data.walkscore.transit_score != null || data.walkscore.bike_score != null) && (
           <div className="space-y-2">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Walk Score</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("neighborhood.walkScore")}</span>
             {data.walkscore.walk_score != null && (
-              <ScoreBar score={data.walkscore.walk_score} description={data.walkscore.walk_description} label="Walk" />
+              <ScoreBar score={data.walkscore.walk_score} description={data.walkscore.walk_description} label={t("neighborhood.walk")} />
             )}
             {data.walkscore.transit_score != null && (
-              <ScoreBar score={data.walkscore.transit_score} description={data.walkscore.transit_description} label="Transit" />
+              <ScoreBar score={data.walkscore.transit_score} description={data.walkscore.transit_description} label={t("neighborhood.transitScore")} />
             )}
             {data.walkscore.bike_score != null && (
-              <ScoreBar score={data.walkscore.bike_score} description={data.walkscore.bike_description} label="Bike" />
+              <ScoreBar score={data.walkscore.bike_score} description={data.walkscore.bike_description} label={t("neighborhood.bike")} />
             )}
             <a
               href={data.walkscore.ws_link || "https://www.walkscore.com"}
@@ -290,14 +284,13 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
               rel="noopener noreferrer"
               className="text-[9px] text-text-muted hover:text-text-secondary transition-colors underline"
             >
-              Walk Score®
+              {t("neighborhood.walkScoreTM")}
             </a>
           </div>
         )}
 
-        {/* No data state */}
         {!demo && !transit && !data.walkscore && (
-          <p className="text-[11px] text-text-muted">No neighborhood data available.</p>
+          <p className="text-[11px] text-text-muted">{t("neighborhood.noData")}</p>
         )}
       </div>
     </CollapsibleCard>

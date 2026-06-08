@@ -56,6 +56,7 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 | `NeighborhoodCard` | Demographics, transit, Walk Score |
 | `ViolationsCard` | Building violations |
 | `BusinessCard` | Nearby business licenses |
+| `InvestigateButton` | Shared `<Link to="/?q=...">` component — navigates to chat with pre-populated question. Used on Scorecard cards |
 
 ### Admin
 | Component | Purpose |

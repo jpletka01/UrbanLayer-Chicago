@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { TrendRow } from "../../lib/analytics";
 import { capLabel } from "../../lib/mapColors";
 
@@ -13,6 +14,7 @@ interface Props {
 
 
 export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
+  const { t } = useTranslation("data");
   const [sortKey, setSortKey] = useState<SortKey>("current");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -52,7 +54,7 @@ export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
               className="text-left font-medium py-1.5 pr-2 cursor-pointer hover:text-text-secondary"
               onClick={() => toggleSort("category")}
             >
-              Type{arrow("category")}
+              {t("analytics.type")}{arrow("category")}
             </th>
             <th
               className="text-right font-medium py-1.5 px-1 cursor-pointer hover:text-text-secondary whitespace-nowrap"
@@ -70,7 +72,7 @@ export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
               className="text-right font-medium py-1.5 pl-1 cursor-pointer hover:text-text-secondary"
               onClick={() => toggleSort("change")}
             >
-              Trend{arrow("change")}
+              {t("analytics.trend")}{arrow("change")}
             </th>
           </tr>
         </thead>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ViolationSummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 
@@ -19,6 +20,7 @@ function KV({ label, value }: { label: string; value: string }) {
 }
 
 export function ViolationsCard({ data }: { data: ViolationSummary }) {
+  const { t } = useTranslation("data");
   const [showDescriptions, setShowDescriptions] = useState(false);
 
   const categories = Object.entries(data.by_category ?? {})
@@ -26,22 +28,22 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
     .slice(0, 8);
 
   return (
-    <CollapsibleCard title="Violations" icon={AlertIcon}>
+    <CollapsibleCard title={t("violations.title")} icon={AlertIcon}>
       <div className="space-y-2.5">
         <div className="grid grid-cols-2 gap-2 py-1">
           <div className="text-center">
             <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted mt-0.5">Total</div>
+            <div className="text-[10px] text-text-muted mt-0.5">{t("violations.total")}</div>
           </div>
           <div className="text-center">
             <div className="text-sm font-semibold text-amber-400">{data.open_count.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted mt-0.5">Open</div>
+            <div className="text-[10px] text-text-muted mt-0.5">{t("violations.open")}</div>
           </div>
         </div>
 
         {categories.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">By Category</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("violations.byCategory")}</span>
             {categories.map(([cat, count]) => (
               <KV key={cat} label={cat} value={String(count)} />
             ))}
@@ -60,7 +62,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-              Top Descriptions
+              {t("violations.topDescriptions")}
             </button>
             {showDescriptions && (
               <ul className="mt-1 space-y-1">
@@ -76,7 +78,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
 
         {data.capped && (
           <p className="text-[10px] text-text-muted italic">
-            Showing first {data.total.toLocaleString()} — more may exist.
+            {t("violations.showingFirst", { count: data.total.toLocaleString() })}
           </p>
         )}
       </div>

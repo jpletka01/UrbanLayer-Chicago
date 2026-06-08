@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 import { InfoTooltip } from "../InfoTooltip";
@@ -9,38 +10,27 @@ const ShieldIcon = (
   </svg>
 );
 
-const FLAG_LABELS: Record<string, string> = {
-  in_planned_development: "Planned Development",
-  in_landmark_district: "Landmark District",
-  is_landmark_building: "Landmark Building",
-  in_historic_district: "Historic District",
-  on_national_register: "National Register",
-  in_lakefront_protection: "Lakefront Protection",
-  on_pedestrian_street: "Pedestrian Street",
-  in_special_district: "Special District",
-  in_pmd: "Planned Mfg. District",
-  in_tod_area: "TOD Area",
-  in_adu_area: "ADU Area",
-  in_aro_zone: "ARO Zone",
-  in_ssa: "Special Service Area",
-};
-
-const FLAG_KEYS = Object.keys(FLAG_LABELS) as (keyof typeof FLAG_LABELS)[];
+const FLAG_KEYS = [
+  "in_planned_development", "in_landmark_district", "is_landmark_building",
+  "in_historic_district", "on_national_register", "in_lakefront_protection",
+  "on_pedestrian_street", "in_special_district", "in_pmd",
+  "in_tod_area", "in_adu_area", "in_aro_zone", "in_ssa",
+];
 
 function formatLayerType(t: string): string {
   return t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
+  const { t } = useTranslation("data");
   const activeFlags = FLAG_KEYS.filter(k => data[k as keyof RegulatorySummary] === true);
 
   return (
-    <CollapsibleCard title="Regulatory" icon={ShieldIcon}>
+    <CollapsibleCard title={t("regulatory.title")} icon={ShieldIcon}>
       <div className="space-y-3">
-        {/* Active Overlays */}
         {data.overlays.length > 0 && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Overlays</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.overlays")}</span>
             {data.overlays.map((ov, i) => (
               <div key={i} className="rounded-lg bg-dark-elevated/60 border-l-2 border-accent/60 px-3 py-2">
                 <span className="text-[10px] text-accent/80 uppercase tracking-wider">
@@ -53,17 +43,16 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                   <p className="text-[10px] text-text-muted mt-0.5">{ov.description}</p>
                 )}
                 {ov.ordinance && (
-                  <p className="text-[10px] text-text-muted mt-0.5">Ord. {ov.ordinance}</p>
+                  <p className="text-[10px] text-text-muted mt-0.5">{t("regulatory.ord")} {ov.ordinance}</p>
                 )}
               </div>
             ))}
           </div>
         )}
 
-        {/* Regulatory Status Badges */}
         {activeFlags.length > 0 ? (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Status</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.status")}</span>
             <div className="flex flex-wrap gap-1.5">
               {activeFlags.map(key => (
                 <span
@@ -72,7 +61,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                              border border-emerald-500/30 rounded-md px-2 py-0.5 text-[10px]"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <InfoTooltip term={key}>{FLAG_LABELS[key]}</InfoTooltip>
+                  <InfoTooltip term={key}>{t(`regulatory.flags.${key}`)}</InfoTooltip>
                   {key === "in_ssa" && data.ssa_name && (
                     <span className="text-emerald-400/70 ml-0.5">({data.ssa_name})</span>
                   )}
@@ -81,13 +70,12 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
             </div>
           </div>
         ) : data.overlays.length === 0 ? (
-          <p className="text-[11px] text-text-muted">No regulatory overlays apply to this location.</p>
+          <p className="text-[11px] text-text-muted">{t("regulatory.noOverlays")}</p>
         ) : null}
 
-        {/* Flood Zone */}
         {data.flood_zone && (
           <div className="space-y-1">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Flood Zone</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.floodZone")}</span>
             <div className={`rounded-lg px-3 py-2 text-[11px] ${
               data.in_special_flood_hazard
                 ? "bg-amber-500/10 border border-amber-500/20"
@@ -95,11 +83,11 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
             }`}>
               <div className="flex items-center gap-2">
                 <span className={`font-mono font-medium ${data.in_special_flood_hazard ? "text-amber-400" : "text-text-primary"}`}>
-                  <InfoTooltip term={`flood:${data.flood_zone}`}>Zone {data.flood_zone}</InfoTooltip>
+                  <InfoTooltip term={`flood:${data.flood_zone}`}>{t("regulatory.zone", { code: data.flood_zone })}</InfoTooltip>
                 </span>
                 {data.in_special_flood_hazard && (
                   <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 text-[9px] uppercase font-medium">
-                    Special Flood Hazard
+                    {t("regulatory.specialFloodHazard")}
                   </span>
                 )}
               </div>
@@ -110,26 +98,25 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
           </div>
         )}
 
-        {/* ARO Housing */}
         {data.aro_housing && data.aro_housing.total_projects > 0 && (
           <div className="space-y-1">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">
-              Affordable Housing (ARO)
+              {t("regulatory.affordableHousing")}
             </span>
             <div className="rounded-lg bg-dark-elevated/60 border border-dark-border px-3 py-2 space-y-1">
               <div className="flex justify-between items-baseline gap-2">
-                <span className="text-text-muted text-[11px]">Projects</span>
+                <span className="text-text-muted text-[11px]">{t("regulatory.projects")}</span>
                 <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_projects}</span>
               </div>
               <div className="flex justify-between items-baseline gap-2">
-                <span className="text-text-muted text-[11px]">Total Units</span>
+                <span className="text-text-muted text-[11px]">{t("regulatory.totalUnits")}</span>
                 <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_units.toLocaleString()}</span>
               </div>
               {data.aro_housing.projects.slice(0, 5).map((proj, i) => (
                 <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border mt-1">
                   <p className="text-text-primary">{proj.name}</p>
                   <div className="flex gap-2 text-text-muted">
-                    {proj.units != null && <span>{proj.units} units</span>}
+                    {proj.units != null && <span>{proj.units} {t("regulatory.units")}</span>}
                     {proj.property_type && <span>{proj.property_type}</span>}
                   </div>
                 </div>
@@ -138,15 +125,14 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
           </div>
         )}
 
-        {/* Brownfield Sites */}
         {data.brownfield_sites.length > 0 && (
           <div className="space-y-1">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">
-              Nearby Brownfield Sites ({data.brownfield_sites.length})
+              {t("regulatory.nearbyBrownfield", { count: data.brownfield_sites.length })}
             </span>
             {data.brownfield_sites.map((site, i) => (
               <div key={i} className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-2 text-[11px]">
-                <p className="text-text-primary">{(site as Record<string, string>).site_name ?? "Unknown site"}</p>
+                <p className="text-text-primary">{(site as Record<string, string>).site_name ?? t("regulatory.unknownSite")}</p>
                 {(site as Record<string, string>).interest_type && (
                   <p className="text-text-muted text-[10px] mt-0.5">{(site as Record<string, string>).interest_type}</p>
                 )}

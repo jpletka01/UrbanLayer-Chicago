@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { BusinessSummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 
@@ -18,21 +19,22 @@ function KV({ label, value }: { label: string; value: string }) {
 }
 
 export function BusinessCard({ data }: { data: BusinessSummary }) {
+  const { t } = useTranslation("data");
   const licenseTypes = Object.entries(data.by_license_type ?? {})
     .sort(([, a], [, b]) => b - a)
     .slice(0, 8);
 
   return (
-    <CollapsibleCard title="Business Licenses" icon={BriefcaseIcon}>
+    <CollapsibleCard title={t("business.title")} icon={BriefcaseIcon}>
       <div className="space-y-2.5">
         <div className="text-center py-1">
           <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">Active Licenses</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{t("business.activeLicenses")}</div>
         </div>
 
         {licenseTypes.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">By License Type</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("business.byLicenseType")}</span>
             {licenseTypes.map(([type, count]) => (
               <KV key={type} label={type} value={String(count)} />
             ))}
@@ -41,7 +43,7 @@ export function BusinessCard({ data }: { data: BusinessSummary }) {
 
         {data.top_activities?.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Top Activities</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("business.topActivities")}</span>
             {data.top_activities.map((activity, i) => (
               <p key={i} className="text-[10px] text-text-muted leading-tight pl-1">
                 {activity}
@@ -52,7 +54,7 @@ export function BusinessCard({ data }: { data: BusinessSummary }) {
 
         {data.capped && (
           <p className="text-[10px] text-text-muted italic">
-            Showing first {data.total.toLocaleString()} — more may exist.
+            {t("business.showingFirst", { count: data.total.toLocaleString() })}
           </p>
         )}
       </div>

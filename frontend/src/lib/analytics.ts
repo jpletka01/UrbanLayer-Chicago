@@ -1,3 +1,5 @@
+import i18n from "./i18n";
+
 export interface TrendRow {
   category: string;
   currentCount: number;
@@ -127,7 +129,8 @@ export function getTrendMonthLabels<T>(
   const fmt = (ym: string) => {
     const [y, m] = ym.split("-");
     const date = new Date(Number(y), Number(m) - 1);
-    return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+    const locale = i18n.language === "es" ? "es-US" : "en-US";
+    return date.toLocaleDateString(locale, { month: "short", year: "2-digit" });
   };
 
   return { current: fmt(currentMonth), prior: fmt(priorMonth) };

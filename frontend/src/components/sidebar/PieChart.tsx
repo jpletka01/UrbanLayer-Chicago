@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { PieSlice } from "../../lib/analytics";
 import { capLabel } from "../../lib/mapColors";
 
@@ -52,6 +53,7 @@ export function PieChart({
   innerRadiusRatio = 0.6,
   thinThreshold = 0.02,
 }: Props) {
+  const { t } = useTranslation("data");
   const [hoveredMain, setHoveredMain] = useState<number | null>(null);
   const [hoveredRing, setHoveredRing] = useState<number | null>(null);
   const [ringVisible, setRingVisible] = useState(false);
@@ -315,7 +317,7 @@ export function PieChart({
                   {sliceTotal.toLocaleString()}
                 </div>
                 <div className="text-[9px] text-text-muted uppercase tracking-wide">
-                  Total
+                  {t("analytics.total")}
                 </div>
               </>
             )}
@@ -348,8 +350,8 @@ export function PieChart({
                        transition-colors col-span-2 text-left"
           >
             {legendExpanded
-              ? "Show less"
-              : `+${slices.length - 8} more`}
+              ? t("analytics.showLess")
+              : t("analytics.moreCount", { count: slices.length - 8 })}
           </button>
         )}
       </div>

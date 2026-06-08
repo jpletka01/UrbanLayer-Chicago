@@ -1,4 +1,5 @@
 import type { SourceTag } from "./types";
+import i18n from "./i18n";
 
 export const CRIME_TYPE_COLORS: Record<string, [number, number, number, number]> = {
   // Violent — hot reds
@@ -422,6 +423,9 @@ export const OVERLAY_INFO: Record<string, { label: string; description: string; 
 };
 
 export function overlayLabel(type: string): string {
+  const key = `map:overlays.${type}.label`;
+  const translated = i18n.t(key);
+  if (translated !== key) return translated;
   return OVERLAY_INFO[type]?.label ?? type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
@@ -460,12 +464,25 @@ export function incentiveZoneColorCSS(name: string): string {
 }
 
 export function incentiveLabel(zoneType: string): string {
-  if (zoneType === "tif") return "TIF District";
-  if (zoneType === "enterprise_zone") return "Enterprise Zone";
+  const key = `map:incentiveLabels.${zoneType}`;
+  const translated = i18n.t(key);
+  if (translated !== key) return translated;
   return zoneType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+export function zonePrefixLabel(prefix: string): string {
+  const key = `map:zonePrefixLabels.${prefix}`;
+  const translated = i18n.t(key);
+  if (translated !== key) return translated;
+  return ZONE_PREFIX_LABELS[prefix] ?? prefix;
+}
+
 export function capLabel(raw: string, max = 25): string {
+  const upper = raw.toUpperCase();
+  const crimeLabel = i18n.t(`crimeLabels.${upper}`, { ns: "map", defaultValue: "" });
+  if (crimeLabel) return crimeLabel.length > max ? crimeLabel.slice(0, max - 1) + "…" : crimeLabel;
+  const permitLabel = i18n.t(`permitLabels.${upper}`, { ns: "map", defaultValue: "" });
+  if (permitLabel) return permitLabel.length > max ? permitLabel.slice(0, max - 1) + "…" : permitLabel;
   const clean = raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
   return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
 }

@@ -1,6 +1,16 @@
 import type { TransitStation } from "./types";
 import { formatDate } from "./format";
-import { overlayLabel, incentiveLabel, zonePrefix, ZONE_PREFIX_LABELS } from "./mapColors";
+import { overlayLabel, incentiveLabel, zonePrefix, zonePrefixLabel } from "./mapColors";
+import i18n from "./i18n";
+
+function crimeLabel(type: string): string {
+  return i18n.t(`crimeLabels.${(type || "").toUpperCase()}`, { ns: "map", defaultValue: type });
+}
+
+function permitLabel(type: string): string {
+  const upper = (type || "").toUpperCase();
+  return i18n.t(`permitLabels.${upper}`, { ns: "map", defaultValue: type });
+}
 
 /** Minimal shape of a deck.gl picking info we read in tooltips/click handlers. */
 export interface LayerPickInfo {
@@ -37,22 +47,22 @@ export function buildLayerTooltip(info: LayerPickInfo): TooltipContent | null {
   let html: string;
 
   if (lid === "crimes" || lid.startsWith("crime-")) {
-    html = `<strong>${o.primary_type}</strong><br/>${formatDate(o.date as string)}`;
+    html = `<strong>${crimeLabel(o.primary_type as string)}</strong><br/>${formatDate(o.date as string)}`;
   } else if (lid === "requests-311" || lid.startsWith("dept-")) {
     html = `<strong>${o.sr_type}</strong><br/>${formatDate(o.created_date as string)}`;
   } else if (lid === "permits") {
-    html = `<strong>${o.permit_type}</strong><br/>${formatDate(o.issue_date as string)}`;
+    html = `<strong>${permitLabel(o.permit_type as string)}</strong><br/>${formatDate(o.issue_date as string)}`;
   } else if (lid === "zoning") {
     const props = o.properties as Record<string, unknown> | undefined;
     const zc = (props?.ZONE_CLASS ?? "Unknown") as string;
-    const catLabel = ZONE_PREFIX_LABELS[zonePrefix(zc)];
+    const catLabel = zonePrefixLabel(zonePrefix(zc));
     html = `<strong>${zc}</strong>${catLabel ? `<br/><span style="opacity:0.7">${catLabel}</span>` : ""}`;
   } else if (lid === "transit-stations") {
     const s = o as unknown as TransitStation;
     const lineInfo = s.type === "cta_rail" && s.lines?.length
       ? `<br/>${s.lines.join(", ")}`
       : s.line ? `<br/>${s.line}` : "";
-    html = `<strong>${s.name}</strong>${lineInfo}<br/><span style="opacity:0.7">${s.type === "cta_rail" ? "CTA Rail" : "Metra"}</span>`;
+    html = `<strong>${s.name}</strong>${lineInfo}<br/><span style="opacity:0.7">${s.type === "cta_rail" ? i18n.t("map:tooltip.ctaRail") : i18n.t("map:tooltip.metra")}</span>`;
   } else if (lid === "overlay-districts") {
     const props = o.properties as Record<string, unknown> | undefined;
     const overlayType = (props?.overlay_type as string) ?? "";

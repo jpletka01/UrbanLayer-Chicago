@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useMapboxOverlay } from "../lib/useMapboxOverlay";
@@ -39,27 +40,29 @@ const SORTED_CAS = Object.entries(COMMUNITY_AREAS)
   .sort(([, a], [, b]) => a.localeCompare(b))
   .map(([id, name]) => ({ id: Number(id), name }));
 
-const CLASS_FILTERS = [
-  { key: "", label: "All" },
-  { key: "residential", label: "Residential" },
-  { key: "multi-family", label: "Multi-family" },
-  { key: "commercial", label: "Commercial" },
-  { key: "industrial", label: "Industrial" },
-  { key: "vacant", label: "Vacant" },
-] as const;
+const CLASS_FILTER_KEYS = ["", "residential", "multi-family", "commercial", "industrial", "vacant"] as const;
 
 function classColor(cls: string): [number, number, number, number] {
   const prefix = cls.charAt(0);
   switch (prefix) {
-    case "2": return [79, 195, 247, 200]; // residential — light blue
-    case "3": return [126, 87, 194, 200]; // multi-family — purple
-    case "5": return [255, 213, 79, 200]; // commercial — amber
-    case "6": return [239, 83, 80, 200];  // industrial — red
+    case "2": return [79, 195, 247, 200];
+    case "3": return [126, 87, 194, 200];
+    case "5": return [255, 213, 79, 200];
+    case "6": return [239, 83, 80, 200];
     case "0":
-    case "1": return [120, 144, 156, 180]; // vacant — gray
+    case "1": return [120, 144, 156, 180];
     default: return [160, 160, 160, 180];
   }
 }
+
+const CLASS_LABEL_KEYS: Record<string, string> = {
+  "": "explore.all",
+  "residential": "explore.residential",
+  "multi-family": "explore.multiFamily",
+  "commercial": "explore.commercial",
+  "industrial": "explore.industrial",
+  "vacant": "explore.vacant",
+};
 
 const PAGE_SIZE = 200;
 
@@ -70,6 +73,7 @@ const StarIcon = (
 );
 
 export default function ExplorePage() {
+  const { t } = useTranslation("pages");
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,7 +98,6 @@ export default function ExplorePage() {
     zoom: 10,
   });
 
-  // Sync URL params
   useEffect(() => {
     const params: Record<string, string> = {};
     if (selectedCA) params.ca = String(selectedCA);
@@ -102,7 +105,6 @@ export default function ExplorePage() {
     setSearchParams(params, { replace: true });
   }, [selectedCA, classFilter, setSearchParams]);
 
-  // Fetch table data
   const fetchTable = useCallback(async (ca: number, cls: string, off: number) => {
     if (!isPro) {
       setShowUpgrade(true);
@@ -119,7 +121,6 @@ export default function ExplorePage() {
     setLoading(false);
   }, [isPro]);
 
-  // Fetch map data (all parcels up to 5000)
   const fetchMap = useCallback(async (ca: number, cls: string) => {
     if (!isPro) return;
     setMapLoading(true);
@@ -134,7 +135,6 @@ export default function ExplorePage() {
     setMapLoading(false);
   }, [isPro]);
 
-  // On CA or class change, reset offset and fetch
   useEffect(() => {
     if (!selectedCA) return;
     setOffset(0);
@@ -142,13 +142,11 @@ export default function ExplorePage() {
     fetchMap(selectedCA, classFilter);
   }, [selectedCA, classFilter, fetchTable, fetchMap]);
 
-  // On pagination change
   useEffect(() => {
     if (!selectedCA || offset === 0) return;
     fetchTable(selectedCA, classFilter, offset);
   }, [offset, selectedCA, classFilter, fetchTable]);
 
-  // Fit bounds when CA changes
   useEffect(() => {
     if (!mapRef.current || !mapReady || !tableData?.bounds) return;
     const [minLat, minLon, maxLat, maxLon] = tableData.bounds;
@@ -158,7 +156,6 @@ export default function ExplorePage() {
     );
   }, [tableData?.bounds, mapReady, mapRef]);
 
-  // Deck.gl layer
   const scatterLayer = useMemo(() => {
     if (!mapParcels.length) return null;
     return new ScatterplotLayer({
@@ -184,7 +181,6 @@ export default function ExplorePage() {
     });
   }, [mapParcels, navigate]);
 
-  // Update deck.gl overlay
   useEffect(() => {
     if (!overlayRef.current) return;
     overlayRef.current.setProps({ layers: scatterLayer ? [scatterLayer] : [] });
@@ -205,10 +201,10 @@ export default function ExplorePage() {
             <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
           </Link>
           <nav className="flex items-center gap-4 text-[11px] text-text-muted">
-            <Link to="/" className="hover:text-text-primary transition-colors">Chat</Link>
-            <Link to="/scorecard" className="hover:text-text-primary transition-colors">Scorecard</Link>
-            <span className="text-accent">Explore</span>
-            <Link to="/about" className="hover:text-text-primary transition-colors">About</Link>
+            <Link to="/" className="hover:text-text-primary transition-colors">{t("nav.chat")}</Link>
+            <Link to="/scorecard" className="hover:text-text-primary transition-colors">{t("nav.scorecard")}</Link>
+            <span className="text-accent">{t("nav.explore")}</span>
+            <Link to="/about" className="hover:text-text-primary transition-colors">{t("nav.about")}</Link>
           </nav>
         </div>
       </header>
@@ -219,20 +215,20 @@ export default function ExplorePage() {
         <div className="w-full md:w-[400px] lg:w-[440px] flex-shrink-0 flex flex-col border-r border-dark-border overflow-hidden">
           {/* Filters */}
           <div className="p-4 border-b border-dark-border space-y-3 flex-shrink-0">
-            <h1 className="text-lg font-semibold tracking-tight">Site Explorer</h1>
+            <h1 className="text-lg font-semibold tracking-tight">{t("explore.title")}</h1>
             <p className="text-[11px] text-text-muted">
-              Browse parcels by community area and property class.
+              {t("explore.subtitle")}
             </p>
 
             {/* Community area dropdown */}
             <div>
-              <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">Community Area</label>
+              <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("explore.communityArea")}</label>
               <select
                 value={selectedCA ?? ""}
                 onChange={(e) => setSelectedCA(e.target.value ? Number(e.target.value) : null)}
                 className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
               >
-                <option value="">Select a community area...</option>
+                <option value="">{t("explore.selectCA")}</option>
                 {SORTED_CAS.map((ca) => (
                   <option key={ca.id} value={ca.id}>{ca.name}</option>
                 ))}
@@ -241,19 +237,19 @@ export default function ExplorePage() {
 
             {/* Class filter */}
             <div>
-              <label className="block text-[10px] text-text-muted mb-1.5 uppercase tracking-wider">Property Class</label>
+              <label className="block text-[10px] text-text-muted mb-1.5 uppercase tracking-wider">{t("explore.propertyClass")}</label>
               <div className="flex flex-wrap gap-1.5">
-                {CLASS_FILTERS.map((f) => (
+                {CLASS_FILTER_KEYS.map((key) => (
                   <button
-                    key={f.key}
-                    onClick={() => setClassFilter(f.key)}
+                    key={key}
+                    onClick={() => setClassFilter(key)}
                     className={`px-2.5 py-1 text-[11px] rounded-md border transition-colors ${
-                      classFilter === f.key
+                      classFilter === key
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-dark-elevated border-dark-border text-text-secondary hover:border-text-muted"
                     }`}
                   >
-                    {f.label}
+                    {t(CLASS_LABEL_KEYS[key])}
                   </button>
                 ))}
               </div>
@@ -264,7 +260,7 @@ export default function ExplorePage() {
           <div className="flex-1 overflow-y-auto">
             {!selectedCA && (
               <div className="flex items-center justify-center h-full text-text-muted text-sm px-4 text-center">
-                Select a community area to explore parcels
+                {t("explore.selectCAPrompt")}
               </div>
             )}
 
@@ -281,11 +277,11 @@ export default function ExplorePage() {
                 {/* Count header */}
                 <div className="px-4 py-2.5 border-b border-dark-border flex items-center justify-between">
                   <span className="text-[11px] text-text-secondary">
-                    <span className="text-text-primary font-medium">{tableData.total.toLocaleString()}</span> parcels
-                    {tableData.community_area_name && <> in <span className="text-text-primary">{tableData.community_area_name}</span></>}
+                    <span className="text-text-primary font-medium">{tableData.total.toLocaleString()}</span> {t("explore.parcels")}
+                    {tableData.community_area_name && <> {t("explore.in")} <span className="text-text-primary">{tableData.community_area_name}</span></>}
                   </span>
                   {mapTotal > 5000 && (
-                    <span className="text-[10px] text-text-muted">Map: {mapParcels.length.toLocaleString()} shown</span>
+                    <span className="text-[10px] text-text-muted">{t("explore.mapShown", { count: mapParcels.length.toLocaleString() })}</span>
                   )}
                 </div>
 
@@ -293,9 +289,9 @@ export default function ExplorePage() {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-dark-elevated/60 sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider">PIN</th>
-                      <th className="px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Class</th>
-                      <th className="px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider hidden sm:table-cell">Description</th>
+                      <th className="px-4 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider">{t("explore.pin")}</th>
+                      <th className="px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider">{t("explore.class")}</th>
+                      <th className="px-3 py-2 text-[10px] font-semibold text-text-muted uppercase tracking-wider hidden sm:table-cell">{t("explore.description")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -325,17 +321,17 @@ export default function ExplorePage() {
                       disabled={offset === 0}
                       className="px-3 py-1.5 text-[11px] bg-dark-elevated border border-dark-border rounded-md disabled:opacity-30 hover:border-text-muted transition-colors"
                     >
-                      Previous
+                      {t("explore.previous")}
                     </button>
                     <span className="text-[11px] text-text-muted">
-                      Page {currentPage} of {totalPages}
+                      {t("explore.pageOf", { current: currentPage, total: totalPages })}
                     </span>
                     <button
                       onClick={() => setOffset(offset + PAGE_SIZE)}
                       disabled={currentPage >= totalPages}
                       className="px-3 py-1.5 text-[11px] bg-dark-elevated border border-dark-border rounded-md disabled:opacity-30 hover:border-text-muted transition-colors"
                     >
-                      Next
+                      {t("explore.next")}
                     </button>
                   </div>
                 )}
@@ -349,7 +345,7 @@ export default function ExplorePage() {
           <div ref={containerRef} className="absolute inset-0" />
           {mapLoading && (
             <div className="absolute top-3 left-3 z-10 bg-dark-surface/90 border border-dark-border rounded-lg px-3 py-1.5 text-[11px] text-text-secondary">
-              Loading parcels...
+              {t("explore.loadingParcels")}
             </div>
           )}
           {hoveredParcel && (
@@ -361,8 +357,8 @@ export default function ExplorePage() {
           {!selectedCA && mapReady && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="bg-dark-surface/90 border border-dark-border rounded-xl px-6 py-4 text-center">
-                <div className="text-sm text-text-secondary mb-1">Select a community area</div>
-                <div className="text-[11px] text-text-muted">Parcels will appear on the map</div>
+                <div className="text-sm text-text-secondary mb-1">{t("explore.selectCAMap")}</div>
+                <div className="text-[11px] text-text-muted">{t("explore.parcelsOnMap")}</div>
               </div>
             </div>
           )}
@@ -370,17 +366,17 @@ export default function ExplorePage() {
           {/* Legend */}
           {mapParcels.length > 0 && (
             <div className="absolute bottom-6 left-3 z-10 bg-dark-surface/95 border border-dark-border rounded-lg px-3 py-2 space-y-1">
-              <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1">Property Class</div>
+              <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1">{t("explore.propertyClass")}</div>
               {[
-                { label: "Residential", color: "#4fc3f7" },
-                { label: "Multi-family", color: "#7e57c2" },
-                { label: "Commercial", color: "#ffd54f" },
-                { label: "Industrial", color: "#ef5350" },
-                { label: "Vacant", color: "#78909c" },
+                { key: "explore.residential", color: "#4fc3f7" },
+                { key: "explore.multiFamily", color: "#7e57c2" },
+                { key: "explore.commercial", color: "#ffd54f" },
+                { key: "explore.industrial", color: "#ef5350" },
+                { key: "explore.vacant", color: "#78909c" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center gap-2 text-[10px] text-text-secondary">
+                <div key={item.key} className="flex items-center gap-2 text-[10px] text-text-secondary">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                  {item.label}
+                  {t(item.key)}
                 </div>
               ))}
             </div>

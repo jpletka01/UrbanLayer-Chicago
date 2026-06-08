@@ -160,6 +160,14 @@
       }
     ]
   },
+  "valueProps": {
+    "knowTitle": "Conoce tu vecindario",
+    "knowBody": "Mira lo que está pasando cerca de cualquier dirección de Chicago — patrones de crimen, solicitudes 311 abiertas, permisos de construcción y zonificación, todo en un solo lugar.",
+    "changingTitle": "Entiende lo que está cambiando",
+    "changingBody": "Las tendencias mensuales te muestran si el crimen está aumentando, la construcción está en auge o las quejas se están resolviendo.",
+    "answersTitle": "Obtén respuestas, no hojas de cálculo",
+    "answersBody": "Haz preguntas en español. Nuestra IA busca más de 14,000 secciones del código municipal y 5 conjuntos de datos de la ciudad en vivo para construir tu respuesta."
+  },
   "footer": {
     "tagline": "Datos públicos de Chicago, explorados a través de conversación.",
     "copyright": "© 2026 UrbanLayer",

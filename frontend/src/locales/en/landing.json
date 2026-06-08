@@ -160,6 +160,14 @@
       }
     ]
   },
+  "valueProps": {
+    "knowTitle": "Know your neighborhood",
+    "knowBody": "See what's happening around any Chicago address — crime patterns, open 311 requests, building permits, and zoning, all in one place.",
+    "changingTitle": "Understand what's changing",
+    "changingBody": "Month-over-month trends show you whether crime is rising, construction is booming, or complaints are being resolved.",
+    "answersTitle": "Get answers, not spreadsheets",
+    "answersBody": "Ask questions in plain English. Our AI searches 14,000+ municipal code sections and 5 live city datasets to build your answer."
+  },
   "footer": {
     "tagline": "Chicago public data, explored through conversation.",
     "copyright": "© 2026 UrbanLayer",

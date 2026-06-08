@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
@@ -79,6 +79,7 @@ export function App() {
   const { t } = useTranslation("landing");
   const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
     useConversationRouter();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loadingConversation, setLoadingConversation] = useState(!!conversationIdFromUrl);
@@ -349,6 +350,18 @@ export function App() {
 
     sendChat(text, uploadMetas);
   }
+
+  // Auto-send ?q= query parameter (from Investigate buttons on Scorecard)
+  const qConsumedRef = useRef(false);
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (!q || qConsumedRef.current) return;
+    if (authLoading || conversationIdFromUrl || shareTokenFromUrl) return;
+    if (messages.length > 0 || streaming) return;
+    qConsumedRef.current = true;
+    setSearchParams({}, { replace: true });
+    sendMessage(q);
+  }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
 
   function handleAttach(files: File[]) {
     const remaining = 3 - pendingAttachments.length;

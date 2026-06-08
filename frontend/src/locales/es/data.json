@@ -1,0 +1,253 @@
+{
+  "property": {
+    "title": "Propiedad",
+    "address": "Dirección",
+    "pin": "PIN",
+    "class": "Clase",
+    "buildingSqft": "Área construida",
+    "landSqft": "Área del terreno",
+    "stories": "Pisos",
+    "units": "Unidades",
+    "rooms": "Habitaciones",
+    "bedrooms": "Dormitorios",
+    "baths": "Baños",
+    "buildingAge": "Antigüedad",
+    "yrs": "años",
+    "assessedValue": "Valor tasado",
+    "assessmentHistory": "Historial de tasación",
+    "yrsCount": "{{count}} años",
+    "year": "Año",
+    "land": "Terreno",
+    "building": "Edificio",
+    "total": "Total",
+    "salesHistory": "Historial de ventas",
+    "date": "Fecha",
+    "price": "Precio",
+    "deed": "Escritura",
+    "estAnnualTax": "Impuesto anual est.",
+    "taxBreakdown": "Desglose de impuestos",
+    "agencies": "{{count}} agencias",
+    "agency": "Agencia",
+    "rate": "Tasa",
+    "amount": "Monto"
+  },
+  "regulatory": {
+    "title": "Regulatorio",
+    "overlays": "Regulaciones",
+    "status": "Estado",
+    "noOverlays": "No se aplican regulaciones superpuestas a esta ubicación.",
+    "floodZone": "Zona inundable",
+    "zone": "Zona {{code}}",
+    "specialFloodHazard": "Riesgo especial de inundación",
+    "affordableHousing": "Vivienda asequible (ARO)",
+    "projects": "Proyectos",
+    "totalUnits": "Total de unidades",
+    "units": "unidades",
+    "nearbyBrownfield": "Sitios contaminados cercanos ({{count}})",
+    "unknownSite": "Sitio desconocido",
+    "ord": "Ord.",
+    "flags": {
+      "in_planned_development": "Desarrollo planificado",
+      "in_landmark_district": "Distrito histórico",
+      "is_landmark_building": "Edificio histórico",
+      "in_historic_district": "Distrito histórico estatal",
+      "on_national_register": "Registro Nacional",
+      "in_lakefront_protection": "Protección del lago",
+      "on_pedestrian_street": "Calle peatonal",
+      "in_special_district": "Distrito especial",
+      "in_pmd": "Distrito industrial planif.",
+      "in_tod_area": "Área TOD",
+      "in_adu_area": "Área ADU",
+      "in_aro_zone": "Zona ARO",
+      "in_ssa": "Área de servicio especial"
+    }
+  },
+  "incentives": {
+    "title": "Incentivos",
+    "inTif": "En distrito TIF",
+    "notInTif": "No en TIF",
+    "tifName": "Nombre TIF",
+    "period": "Período",
+    "propertyTaxRevenue": "Ingresos por impuesto predial",
+    "cumulativeRevenue": "Ingresos acumulados",
+    "fundBalance": "Saldo del fondo",
+    "annualExpenditure": "Gasto anual",
+    "district": "Distrito",
+    "taxRevenue": "Ingreso fiscal",
+    "annualFinancials": "Finanzas anuales",
+    "yrsCount": "{{count}} años",
+    "revenue": "Ingresos",
+    "expenditure": "Gastos",
+    "opportunityZone": "Zona de oportunidad",
+    "notInOpportunityZone": "No en zona de oportunidad",
+    "tract": "Tramo censal",
+    "enterpriseZone": "Zona empresarial",
+    "notInEnterpriseZone": "No en zona empresarial",
+    "cityGrantPrograms": "Programas de subsidios municipales",
+    "totalProjects": "Total de proyectos",
+    "totalFunding": "Financiamiento total",
+    "projects": "proyectos",
+    "recentProjects": "Proyectos recientes",
+    "taxClass": "Clase fiscal {{code}}",
+    "censusTract": "Tramo censal:"
+  },
+  "neighborhood": {
+    "title": "Vecindario",
+    "population": "Población",
+    "medIncome": "Ingreso med.",
+    "homeValue": "Valor de vivienda",
+    "medianRent": "Renta mediana",
+    "medianAge": "Edad mediana",
+    "povertyRate": "Tasa de pobreza",
+    "poverty": "Pobreza",
+    "unemployment": "Desempleo",
+    "ownerOccupied": "Propietarios",
+    "bachelorsDegree": "Licenciatura",
+    "bachelorsPlus": "Licenciatura+",
+    "vacancyRate": "Tasa de vacantes",
+    "perCapitaIncome": "Ingreso per cápita",
+    "foreignBorn": "Nacidos en el extranjero",
+    "transit": "Transporte",
+    "todEligible": "Elegible TOD",
+    "walkScore": "Walk Score",
+    "walk": "Caminata",
+    "transitScore": "Transporte",
+    "bike": "Bicicleta",
+    "walkScoreTM": "Walk Score®",
+    "noData": "No hay datos del vecindario disponibles.",
+    "aboveChicago": "{{pct}}% sobre Chicago",
+    "belowChicago": "{{pct}}% bajo Chicago",
+    "atChicagoMedian": "en la mediana de Chicago",
+    "viewCensusReporter": "Ver perfil completo en Census Reporter",
+    "ageDistribution": "Distribución por edad",
+    "householdIncome": "Ingreso del hogar",
+    "raceEthnicity": "Raza y etnicidad",
+    "education": "Educación",
+    "transportationToWork": "Transporte al trabajo"
+  },
+  "violations": {
+    "title": "Violaciones",
+    "total": "Total",
+    "open": "Abiertas",
+    "byCategory": "Por categoría",
+    "topDescriptions": "Descripciones principales",
+    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más."
+  },
+  "business": {
+    "title": "Licencias comerciales",
+    "activeLicenses": "Licencias activas",
+    "byLicenseType": "Por tipo de licencia",
+    "topActivities": "Actividades principales",
+    "showingFirst": "Mostrando las primeras {{count}} — pueden existir más."
+  },
+  "foodInspections": {
+    "title": "Inspecciones de alimentos",
+    "inspections1yr": "Inspecciones (1 año)",
+    "failRate": "Tasa de fallo",
+    "byResult": "Por resultado",
+    "byRiskLevel": "Por nivel de riesgo",
+    "recentInspections": "Inspecciones recientes"
+  },
+  "vacantBuildings": {
+    "title": "Edificios vacantes",
+    "reportedCases": "Casos reportados",
+    "byDepartment": "Por departamento",
+    "recentReports": "Reportes recientes",
+    "due": "${{amount}} adeudado"
+  },
+  "analytics": {
+    "title": "Analíticas",
+    "crime": "Delitos",
+    "311Requests": "Solicitudes 311",
+    "buildingPermits": "Permisos de construcción",
+    "totalStat": "Total",
+    "arrestRate": "Tasa de arresto",
+    "openStat": "Abiertas",
+    "oldest": "Más antigua",
+    "estCost": "Costo est.",
+    "notEnoughData": "No hay suficientes datos para tendencias mensuales.",
+    "cappedCrime": "Datos limitados — pueden existir más incidentes.",
+    "capped311": "Datos limitados — pueden existir más solicitudes.",
+    "cappedPermits": "Datos limitados — pueden existir más permisos.",
+    "type": "Tipo",
+    "dept": "Depto",
+    "trend": "Tendencia",
+    "year": "Año",
+    "total": "Total",
+    "showLess": "Ver menos",
+    "moreCount": "+{{count}} más"
+  },
+  "terms": {
+    "incentives": {
+      "tif_district": {
+        "label": "Distrito TIF",
+        "description": "Distrito de Financiamiento por Incremento de Impuestos que captura el crecimiento del impuesto a la propiedad para financiar mejoras locales como infraestructura, paisajismo urbano e incentivos de desarrollo.",
+        "bullets": [
+          "Vida útil de 23 años desde la fecha de creación",
+          "No aumenta su tasa impositiva individual",
+          "Financia infraestructura y desarrollo del vecindario",
+          "Los TIF que expiran devuelven el incremento a todos los organismos tributarios"
+        ]
+      },
+      "opportunity_zone": {
+        "label": "Zona de oportunidad",
+        "description": "Incentivo fiscal federal (Ley de Recortes de Impuestos y Empleos de 2017) que fomenta la inversión de capital a largo plazo en sectores censales de bajos ingresos.",
+        "bullets": [
+          "Diferimiento del impuesto sobre ganancias de capital en inversiones calificadas",
+          "Mantener 10 años puede eliminar ganancias en nueva inversión",
+          "Inversiones realizadas a través de Fondos de Oportunidad Calificados (QOFs)",
+          "Designado hasta 2028"
+        ]
+      },
+      "enterprise_zone": {
+        "label": "Zona empresarial",
+        "description": "Área designada por el estado de Illinois que ofrece incentivos fiscales a empresas que invierten y crean empleos en comunidades económicamente desfavorecidas.",
+        "bullets": [
+          "Exención de impuesto sobre ventas en materiales de construcción",
+          "Créditos fiscales estatales por inversión",
+          "Exenciones de impuestos de servicios públicos disponibles",
+          "Debe crear o retener empleos para calificar"
+        ]
+      }
+    },
+    "floodZones": {
+      "X": {
+        "label": "Zona X — Riesgo mínimo",
+        "description": "Área fuera de las llanuras de inundación de 100 y 500 años. Designación de menor riesgo de inundación.",
+        "bullets": ["Seguro contra inundaciones no requerido (pero disponible)", "Sin requisitos especiales de construcción"]
+      },
+      "A": {
+        "label": "Zona A — Alto riesgo",
+        "description": "Dentro de la llanura de inundación de 100 años. 1% de probabilidad anual de inundación, 26% de probabilidad en una hipoteca de 30 años.",
+        "bullets": ["Seguro contra inundaciones requerido para hipotecas federales", "Elevación Base de Inundación (BFE) no determinada"]
+      },
+      "AE": {
+        "label": "Zona AE — Alto riesgo (detallado)",
+        "description": "Dentro de la llanura de inundación de 100 años con elevaciones base detalladas determinadas por estudio de ingeniería.",
+        "bullets": ["Seguro contra inundaciones requerido", "Construcción elevada requerida sobre BFE", "Análisis detallado de zona de inundación disponible"]
+      },
+      "AH": {
+        "label": "Zona AH — Inundación superficial",
+        "description": "Área de inundación superficial de 100 años con profundidades de 1–3 pies, típicamente áreas de acumulación.",
+        "bullets": ["Seguro contra inundaciones requerido", "Profundidades de inundación de 1–3 pies", "Consideraciones especiales de drenaje"]
+      },
+      "AO": {
+        "label": "Zona AO — Flujo laminar",
+        "description": "Área de inundación superficial de 100 años con flujo laminar en terreno inclinado, profundidades de 1–3 pies.",
+        "bullets": ["Seguro contra inundaciones requerido", "Flujo laminar en lugar de acumulación", "Consideraciones de ruta de drenaje"]
+      },
+      "VE": {
+        "label": "Zona VE — Alto riesgo costero",
+        "description": "Área costera con riesgo de inundación de 100 años incluyendo acción de oleaje. Designación de mayor riesgo.",
+        "bullets": ["Seguro contra inundaciones requerido", "Estándares de construcción más estrictos", "Elevación sobre pilotes requerida"]
+      }
+    },
+    "extraOverlays": {
+      "tod_combined": {
+        "label": "Desarrollo orientado al tránsito (TOD)",
+        "description": "Zona cerca de estaciones de CTA o Metra que fomenta desarrollo denso de uso mixto con estacionamiento reducido.",
+        "bullets": ["Requisitos de estacionamiento reducidos", "Bonificaciones de densidad disponibles", "Estándares de diseño orientados al peatón"]
+      }
+    }
+  }
+}

@@ -27,7 +27,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/analytics.ts` | Client-side trend/pie computation from map data |
 | `src/lib/history.ts` | Async API-backed persistence + localStorage→SQLite migration |
 | `src/lib/i18n.ts` | i18next initialization, bundled resources, localStorage language persistence |
-| `src/locales/{en,es}/` | Translation JSON files: common, chat, sidebar, landing namespaces |
+| `src/locales/{en,es}/` | Translation JSON files: common, chat, sidebar, landing, map, data, pages namespaces |
 | `src/components/LanguageSelector.tsx` | Globe icon dropdown for language switching (English/Español) |
 
 ## Design Tokens
@@ -60,7 +60,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **401-interceptor**: `authFetch()` in `api.ts` intercepts 401 responses, attempts `POST /api/auth/refresh` via raw `fetch` (not `authFetch` to avoid recursion), coalesces concurrent refreshes with a module-level `_refreshPromise`, re-reads CSRF cookie after refresh, retries original request once.
 - **History stripping**: `useChat.ts` sends only `{role, content}` in chat POST history (strips `context`/`plan`/`mapData` blobs) to avoid HTTP 413 from nginx's `client_max_body_size`.
 - **Stream close detection**: `useChat.ts` tracks `receivedDone` flag — if the SSE stream ends without a `done` event and wasn't user-aborted, shows "Connection lost — please try again."
-- **i18n**: `react-i18next` with 4 namespaces (`common`, `chat`, `sidebar`, `landing`). Languages: English (default) + Spanish. Bundled JSON resources in `src/locales/{en,es}/`. Language persisted in localStorage as `urbanlayer-language`. `LanguageSelector` component in splash and workspace headers. Backend synthesizer responds in target language via `LANGUAGE_INSTRUCTION` prompt append — English path is +0ms latency. Adding a new language: create `src/locales/{code}/` JSON files + add option to `LanguageSelector.tsx` + add entry to `LANGUAGE_NAMES` dict in `backend/synthesizer.py`. **Not yet localized**: map UI (layer toggles, legend, filter popover, category names on markers/tooltips), sidebar data cards (DataView headers, analytics labels, CollapsibleCard titles), term definitions (~300 entries in `termDefinitions.ts`), About/Pricing/Scorecard/Explorer/Admin pages.
+- **i18n**: `react-i18next` with 7 namespaces (`common`, `chat`, `sidebar`, `landing`, `map`, `data`, `pages`). Languages: English (default) + Spanish. Bundled JSON resources in `src/locales/{en,es}/`. Language persisted in localStorage as `urbanlayer-language`. `LanguageSelector` component in splash and workspace headers. Backend synthesizer responds in target language via `LANGUAGE_INSTRUCTION` prompt append — English path is +0ms latency. Adding a new language: create `src/locales/{code}/` with 7 JSON files + add option to `LanguageSelector.tsx` + add entry to `LANGUAGE_NAMES` dict in `backend/synthesizer.py`. Non-React code (mapColors.ts, mapTooltip.ts, termDefinitions.ts) uses `i18n.t()` directly. **Not yet localized**: Admin dashboard, About page (excluded by design).
 - **Pipeline timing**: The `done` SSE event includes a `timings` dict (`PhaseTimings` in `types.ts`) with `conv_synth`, `router`, `retrieval`, `first_token`, `total` (all in ms). Logged to console via `[perf] pipeline timings (ms):` in `useChat.ts`.
 
 ## Docker / Nginx

@@ -13,7 +13,7 @@ interface Props {
   source: LandingSource;
 }
 
-const commaFmt = (n: number) => n.toLocaleString("en-US");
+const commaFmt = (n: number) => n.toLocaleString();
 
 export function LandingAnalytics({ mapData, source }: Props) {
   const { t } = useTranslation("landing");

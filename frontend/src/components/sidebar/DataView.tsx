@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ContextObject, MapData } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
-import { zonePrefix, zoneColorCSS, ZONE_PREFIX_LABELS } from "../../lib/mapColors";
+import { zonePrefix, zoneColorCSS, zonePrefixLabel } from "../../lib/mapColors";
 import { InfoTooltip } from "../InfoTooltip";
 import { AnalyticsSection } from "./AnalyticsSection";
 import { PropertyCard } from "./PropertyCard";
@@ -35,6 +36,7 @@ const ZONE_CATEGORY_ORDER = [
 ];
 
 function ZoningCodesTable({ mapData }: { mapData: MapData }) {
+  const { t } = useTranslation("map");
   const [collapsed, setCollapsed] = useState(false);
 
   const zoneCodes = useMemo(() => {
@@ -75,7 +77,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
-        Zoning Codes on Map
+        {t("states.zoningCodesOnMap")}
       </button>
 
       {!collapsed && (
@@ -84,14 +86,14 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
             <thead>
               <tr className="text-text-muted border-b border-dark-border">
                 <th className="text-left pr-2 pb-1.5 font-medium w-8"></th>
-                <th className="text-left px-2 pb-1.5 font-medium">Code</th>
-                <th className="text-left pl-2 pb-1.5 font-medium">Category</th>
+                <th className="text-left px-2 pb-1.5 font-medium">{t("states.code")}</th>
+                <th className="text-left pl-2 pb-1.5 font-medium">{t("states.category")}</th>
               </tr>
             </thead>
             <tbody>
               {zoneCodes.map((code) => {
                 const prefix = zonePrefix(code);
-                const label = ZONE_PREFIX_LABELS[prefix] ?? "Other";
+                const label = zonePrefixLabel(prefix) || t("filters.other");
                 return (
                   <tr key={code} className="border-t border-dark-border/50">
                     <td className="pr-2 py-1">
@@ -116,6 +118,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
 }
 
 export function DataView({ context, loading, mapData, filterMode }: Props) {
+  const { t } = useTranslation("map");
   const hasMapData = mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
   const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
   const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood
@@ -131,18 +134,17 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
 
       {hasZoning ? (
         <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400/90 text-xs leading-relaxed">
-          <strong className="text-amber-400">Zoning data notice:</strong>{" "}
-          This map is a good reference but may not reflect the most recent City Council votes.
-          Check the{" "}
+          <strong className="text-amber-400">{t("states.zoningNotice")}</strong>{" "}
+          {t("states.zoningNoticeText")}{" "}
           <a
             href="https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-amber-300 transition-colors"
           >
-            official Chicago Zoning Map
+            {t("states.zoningNoticeLink")}
           </a>{" "}
-          for completely up-to-date data.
+          {t("states.zoningNoticeAfter")}
         </div>
       ) : null}
 
@@ -154,7 +156,7 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
       )}
 
       {context && !hasMapData && !hasZoning && !hasDomainData && !loading && (
-        <p className="text-sm text-text-muted">No live datasets were queried for this answer.</p>
+        <p className="text-sm text-text-muted">{t("states.noDatasets")}</p>
       )}
 
       {context?.property && <PropertyCard data={context.property} />}

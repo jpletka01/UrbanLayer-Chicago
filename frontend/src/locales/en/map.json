@@ -1,0 +1,320 @@
+{
+  "layers": {
+    "zoning": "Zoning",
+    "points": "Points",
+    "transit": "Transit",
+    "incentives": "Incentives",
+    "overlays": "Overlays"
+  },
+  "filters": {
+    "filters": "Filters",
+    "typeFilters": "Type Filters",
+    "arrestStatus": "Arrest Status",
+    "status": "Status",
+    "costRange": "Cost Range",
+    "dateRange": "Date Range",
+    "all": "All",
+    "arrested": "Arrested",
+    "noArrest": "No Arrest",
+    "closed": "Closed",
+    "open": "Open",
+    "crime": "Crime",
+    "311": "311",
+    "permits": "Permits",
+    "under25k": "<$25K",
+    "25k250k": "$25K–$250K",
+    "over250k": ">$250K",
+    "other": "Other"
+  },
+  "legend": {
+    "zoningDistricts": "Zoning Districts",
+    "crimeTypes": "Crime Types",
+    "311RequestTypes": "311 Request Types",
+    "permitTypes": "Permit Types",
+    "crimeIncidents": "Crime incidents",
+    "311Requests": "311 requests",
+    "buildingPermits": "Building permits",
+    "filtersActive_one": "{{count}} filter active",
+    "filtersActive_other": "{{count}} filters active",
+    "residential": "Residential",
+    "business": "Business",
+    "commercial": "Commercial",
+    "manufacturing": "Manufacturing",
+    "plannedDev": "Planned Dev.",
+    "downtown": "Downtown",
+    "transportation": "Transportation",
+    "parksOpenSpace": "Parks/Open Space"
+  },
+  "detail": {
+    "crimeIncident": "Crime Incident",
+    "311Request": "311 Request",
+    "zoningDistrict": "Zoning District",
+    "regulatoryZones": "Regulatory Zones",
+    "buildingPermit": "Building Permit",
+    "zoneClass": "Zone Class",
+    "allowedUses": "Allowed uses",
+    "ordinance": "Ordinance",
+    "officialMap": "Official Map",
+    "chicagoZoningMap": "Chicago Zoning Map",
+    "baseZoning": "Base Zoning",
+    "regulatoryOverlays": "Regulatory Overlays",
+    "incentiveZones": "Incentive Zones",
+    "type": "Type",
+    "description": "Description",
+    "date": "Date",
+    "arrest": "Arrest",
+    "yes": "Yes",
+    "no": "No",
+    "location": "Location",
+    "department": "Department",
+    "work": "Work",
+    "na": "N/A",
+    "estCost": "Est. Cost",
+    "issueDate": "Issue Date",
+    "ord": "Ord."
+  },
+  "states": {
+    "loadingMapData": "Loading map data...",
+    "askQuestion": "Ask a question to see data on the map",
+    "showingResults": "Showing most recent {{count}} results",
+    "setMapboxToken": "Set VITE_MAPBOX_TOKEN in your environment to enable the map.",
+    "noDatasets": "No live datasets were queried for this answer.",
+    "zoningNotice": "Zoning data notice:",
+    "zoningNoticeText": "This map is a good reference but may not reflect the most recent City Council votes. Check the",
+    "zoningNoticeLink": "official Chicago Zoning Map",
+    "zoningNoticeAfter": "for completely up-to-date data.",
+    "zoningCodesOnMap": "Zoning Codes on Map",
+    "code": "Code",
+    "category": "Category"
+  },
+  "zonePrefixLabels": {
+    "RS": "Residential Single-Unit",
+    "RT": "Residential Two-Flat",
+    "RM": "Residential Multi-Unit",
+    "B": "Business",
+    "C": "Commercial",
+    "M": "Manufacturing",
+    "PD": "Planned Development",
+    "PMD": "Planned Manufacturing",
+    "D": "Downtown Core",
+    "DC": "Downtown Core",
+    "DX": "Downtown Mixed-Use",
+    "DR": "Downtown Residential",
+    "DS": "Downtown Service",
+    "T": "Transportation",
+    "P": "Parks",
+    "POS": "Public Open Space"
+  },
+  "zones": {
+    "RS": {
+      "label": "Residential Single-Unit",
+      "description": "Detached single-family homes on individual lots",
+      "examples": ["Single-family house", "Home office", "Accessory garage"]
+    },
+    "RT": {
+      "label": "Residential Two-Flat",
+      "description": "Two-unit residential buildings and townhouses",
+      "examples": ["Two-flat building", "Townhouse", "Coach house"]
+    },
+    "RM": {
+      "label": "Residential Multi-Unit",
+      "description": "Apartment buildings and multi-unit residential",
+      "examples": ["Apartment building", "Condo building", "Senior housing"]
+    },
+    "B": {
+      "label": "Business",
+      "description": "Neighborhood retail, offices, and mixed-use",
+      "examples": ["Retail store", "Restaurant", "Office space"]
+    },
+    "C": {
+      "label": "Commercial",
+      "description": "Larger commercial and auto-oriented uses",
+      "examples": ["Auto repair shop", "Shopping center", "Gas station"]
+    },
+    "M": {
+      "label": "Manufacturing",
+      "description": "Industrial and manufacturing uses",
+      "examples": ["Warehouse", "Factory", "Distribution center"]
+    },
+    "PD": {
+      "label": "Planned Development",
+      "description": "Custom site-specific development with negotiated terms",
+      "examples": ["Mixed-use complex", "Large residential development"]
+    },
+    "PMD": {
+      "label": "Planned Manufacturing",
+      "description": "Protected industrial corridors",
+      "examples": ["Industrial campus", "Manufacturing facility"]
+    },
+    "D": {
+      "label": "Downtown Core",
+      "description": "High-density downtown offices and retail",
+      "examples": ["Office tower", "Department store", "Hotel"]
+    },
+    "DC": {
+      "label": "Downtown Core",
+      "description": "High-density downtown offices and retail",
+      "examples": ["Office tower", "Department store", "Hotel"]
+    },
+    "DX": {
+      "label": "Downtown Mixed-Use",
+      "description": "Mixed residential, office, and retail in the Loop",
+      "examples": ["Mixed-use tower", "Residential high-rise"]
+    },
+    "DR": {
+      "label": "Downtown Residential",
+      "description": "Residential towers in downtown Chicago",
+      "examples": ["Condo tower", "Apartment high-rise"]
+    },
+    "DS": {
+      "label": "Downtown Service",
+      "description": "Service and support uses in downtown",
+      "examples": ["Parking structure", "Utility facility"]
+    },
+    "T": {
+      "label": "Transportation",
+      "description": "Transit-related corridors and facilities",
+      "examples": ["Transit station", "Rail corridor"]
+    },
+    "P": {
+      "label": "Parks & Open Space",
+      "description": "Public parks, recreation areas, and open space",
+      "examples": ["Public park", "Playground", "Nature preserve"]
+    },
+    "POS": {
+      "label": "Parks & Open Space",
+      "description": "Public parks, recreation areas, and open space",
+      "examples": ["Public park", "Playground", "Nature preserve"]
+    }
+  },
+  "overlays": {
+    "planned_development": {
+      "label": "Planned Development",
+      "description": "Custom zoning with site-specific rules negotiated with the city",
+      "implications": ["Special setback/FAR/height rules", "May require aldermanic review for changes"]
+    },
+    "lakefront_protection": {
+      "label": "Lakefront Protection",
+      "description": "Extra design review and density limits near Lake Michigan",
+      "implications": ["Dept. of Planning review required", "Height/setback restrictions"]
+    },
+    "pedestrian_street": {
+      "label": "Pedestrian Street",
+      "description": "Street-level retail required; no drive-throughs or parking lot frontage",
+      "implications": ["Ground-floor commercial mandatory", "No curb cuts on designated frontage"]
+    },
+    "landmark_district": {
+      "label": "Landmark District",
+      "description": "Commission on Chicago Landmarks review for exterior alterations",
+      "implications": ["Permit review by Landmarks Commission", "Demolition restrictions"]
+    },
+    "historic_district": {
+      "label": "Historic District",
+      "description": "State/local historic designation with preservation standards",
+      "implications": ["Tax credit eligibility", "Exterior modification review"]
+    },
+    "landmark_building": {
+      "label": "Individual Landmark",
+      "description": "Single building designated as a Chicago Landmark",
+      "implications": ["Landmarks Commission permit review", "Demolition delay/prohibition"]
+    },
+    "national_register": {
+      "label": "National Register District",
+      "description": "Listed on the National Register of Historic Places",
+      "implications": ["Federal tax credit eligibility (20%)", "Section 106 review for federal projects"]
+    },
+    "special_district": {
+      "label": "Special District",
+      "description": "Additional regulations beyond the base zoning classification",
+      "implications": ["May impose design standards", "Additional use restrictions"]
+    },
+    "fema_floodplain": {
+      "label": "FEMA Floodplain",
+      "description": "Federally-mapped flood hazard area",
+      "implications": ["Flood insurance required for mortgages", "Elevated construction may be required"]
+    },
+    "pmd_subarea": {
+      "label": "PMD Subarea",
+      "description": "Protected manufacturing district with industrial use protections",
+      "implications": ["Residential conversion restricted", "Industrial uses protected"]
+    },
+    "tod_cta": {
+      "label": "TOD (CTA)",
+      "description": "Transit-Oriented Development zone near CTA rail stations",
+      "implications": ["Reduced parking requirements", "Density bonuses available"]
+    },
+    "tod_metra": {
+      "label": "TOD (Metra)",
+      "description": "Transit-Oriented Development zone near Metra stations",
+      "implications": ["Reduced parking requirements", "Density bonuses available"]
+    },
+    "adu_area": {
+      "label": "ADU Eligible Area",
+      "description": "Eligible for Accessory Dwelling Units under the 2020 ADU ordinance",
+      "implications": ["Can add coach house/garden unit", "Converted garage units allowed"]
+    },
+    "aro_zone": {
+      "label": "ARO Zone",
+      "description": "Affordable Requirements Ordinance area requiring affordable set-aside",
+      "implications": ["10–20% affordable units in new developments (10+ units)", "In-lieu fee option available"]
+    },
+    "ssa": {
+      "label": "Special Service Area",
+      "description": "Local tax district funding streetscape, marketing, and maintenance",
+      "implications": ["Additional property tax levy", "Enhanced neighborhood services"]
+    }
+  },
+  "crimeLabels": {
+    "HOMICIDE": "Homicide",
+    "CRIMINAL SEXUAL ASSAULT": "Criminal sexual assault",
+    "KIDNAPPING": "Kidnapping",
+    "ASSAULT": "Assault",
+    "BATTERY": "Battery",
+    "ROBBERY": "Robbery",
+    "HUMAN TRAFFICKING": "Human trafficking",
+    "OFFENSE INVOLVING CHILDREN": "Offense involving children",
+    "SEX OFFENSE": "Sex offense",
+    "ARSON": "Arson",
+    "WEAPONS VIOLATION": "Weapons violation",
+    "INTIMIDATION": "Intimidation",
+    "STALKING": "Stalking",
+    "THEFT": "Theft",
+    "BURGLARY": "Burglary",
+    "MOTOR VEHICLE THEFT": "Motor vehicle theft",
+    "CRIMINAL DAMAGE": "Criminal damage",
+    "CRIMINAL TRESPASS": "Criminal trespass",
+    "NARCOTICS": "Narcotics",
+    "PROSTITUTION": "Prostitution",
+    "OTHER NARCOTIC VIOLATION": "Other narcotic violation",
+    "DECEPTIVE PRACTICE": "Deceptive practice",
+    "PUBLIC PEACE VIOLATION": "Public peace violation",
+    "INTERFERENCE WITH PUBLIC OFFICER": "Interference with public officer",
+    "LIQUOR LAW VIOLATION": "Liquor law violation",
+    "GAMBLING": "Gambling",
+    "CONCEALED CARRY LICENSE VIOLATION": "Concealed carry license violation",
+    "NON-CRIMINAL": "Non-criminal",
+    "NON-CRIMINAL (SUBJECT SPECIFIED)": "Non-criminal (subject specified)",
+    "OBSCENITY": "Obscenity",
+    "PUBLIC INDECENCY": "Public indecency",
+    "OTHER OFFENSE": "Other offense"
+  },
+  "permitLabels": {
+    "EXPRESS PERMIT": "Express permit",
+    "RENOVATION/ALTERATION": "Renovation/alteration",
+    "SIGNS": "Signs",
+    "NEW CONSTRUCTION": "New construction",
+    "ELEVATOR EQUIPMENT": "Elevator equipment",
+    "WRECKING/DEMOLITION": "Wrecking/demolition",
+    "REINSTATE REVOKED PMT": "Reinstate revoked permit",
+    "EASY PERMIT PROCESS": "Easy permit process",
+    "OTHER": "Other"
+  },
+  "incentiveLabels": {
+    "tif": "TIF District",
+    "enterprise_zone": "Enterprise Zone"
+  },
+  "tooltip": {
+    "ctaRail": "CTA Rail",
+    "metra": "Metra"
+  }
+}

@@ -65,17 +65,18 @@ Implemented Spanish as first non-English language. Full architecture plan was in
 - Router + conversation synthesis prompts reinforced: queries always rewritten in English
 - Clarification translation via inline Haiku call when `language != "en"`
 - `LanguageSelector` component (globe icon dropdown) in splash and workspace headers
-- ~150+ strings extracted to 4 i18n namespaces: `common`, `chat`, `sidebar`, `landing`
+- ~600+ strings extracted to 7 i18n namespaces: `common`, `chat`, `sidebar`, `landing`, `map`, `data`, `pages`
 - Chat components localized: ChatInput, ChatInterface, DisclaimerBanner, SidebarHeader, MobileSidebarSheet, SourceDetailDrawer, HistorySidebar, AuthModal, ShareModal, UserMenu
 - Full landing page localized: IntelligenceStack, DepthShowcase, PersonaScenarios, HowItWorks, NeighborhoodExplorer, NeighborhoodSelector, DataSourceTabs, LandingAnalytics, StorySection (via App.tsx props), Footer, hero subtitle + suggestions + stats
+- Map UI fully localized: MapView (layer toggles, filters, detail modal, zone/overlay info), MapLegend, mapTooltip.ts, mapColors.ts (overlayLabel, incentiveLabel, zonePrefixLabel)
+- All sidebar data cards localized: PropertyCard, RegulatoryCard, IncentivesCard, NeighborhoodCard, ViolationsCard, BusinessCard, FoodInspectionCard, VacantBuildingsCard, AnalyticsSection, TrendTable, DataView
+- Term definitions localized: termDefinitions.ts uses i18n.t() for all zone/overlay/incentive/flood lookups
+- Pages localized: PricingPage, ScorecardPage, ExplorePage
 
 **Not yet localized**:
-- **Map UI and categories** — map layer toggle labels, legend text, filter popover labels, deck.gl tooltip content, crime/311/permit category names displayed on map markers and in map-related UI. These are high-visibility when using Spanish and should be a priority for the next i18n session.
-- **Sidebar data cards** — DataView section headers, analytics labels (trend table headers like "Type"/"Trend", pie chart labels), CollapsibleCard titles
-- **Term definitions** (~300 entries in `termDefinitions.ts`) — overlay/zone/incentive/flood zone hover tooltips
-- Admin dashboard, About page, Pricing page, Scorecard page, Explorer page
+- Admin dashboard, About page (excluded by design — not customer-facing priority)
 
-**Adding a new language**: (1) create `src/locales/{code}/` with 4 JSON files, (2) add option to `LanguageSelector.tsx`, (3) optionally add to `LANGUAGE_NAMES` dict in `backend/synthesizer.py` for a friendly name.
+**Adding a new language**: (1) create `src/locales/{code}/` with 7 JSON files (common, chat, sidebar, landing, map, data, pages), (2) add option to `LanguageSelector.tsx`, (3) optionally add to `LANGUAGE_NAMES` dict in `backend/synthesizer.py` for a friendly name.
 
 **Latency**: +0ms for English path; non-English adds forced synthesis (~300ms) + language instruction overhead.
 
@@ -86,7 +87,8 @@ Implemented Spanish as first non-English language. Full architecture plan was in
 | **Property Scorecard + Data Upgrades** | Done | `GET /api/scorecard?address=...`, crime YoY, permit contacts, address-level 311. Frontend at `/scorecard` |
 | **Site Explorer / Property Finder** | Done | `GET /api/explore` + `/api/explore/map`, Cook County Parcel Universe (`pabr-t5kh`) by community area + property class. Frontend at `/explore` with Mapbox/deck.gl map (5K parcel cap), paginated table, class-colored dots. Premium-gated. |
 | **PDF Zoning Reports v1** | Done | `GET /api/report?address=...`, 5-section WeasyPrint PDF (Cover, Property, Zoning/Regulatory, Incentives/Neighborhood, Disclaimers). Vector search for bulk standards. Frontend download button on Scorecard. |
-| **PDF Zoning Reports v2** | Planned | Premium development feasibility report. 8-section professional layout, 5 targeted vector searches + Haiku extraction, calculated development potential, comparable sales, address-specific permits, adjacent zoning. Full spec in §8 below. |
+| **PDF Zoning Reports v2/v3** | Done | v3 shipped (2026-06-08). Premium development feasibility report with Haiku zoning extraction, comparable sales, address-specific permits, traffic-light indicators, professional styling. |
+| **Investigate Buttons** | Done | Contextual "Investigate" links below each Scorecard data card. Shared `InvestigateButton` component navigates to `/?q=...`. App.tsx reads `?q=` param and auto-sends to chat. 8 card-level buttons + 2 header buttons. i18n (en/es). |
 | **Stripe Payment System** | Done | Free/Pro tiers, Stripe Checkout, webhook lifecycle, billing portal, `require_tier()` gating on `/api/report` |
 
 Full sprint plan in `urbanlayer_master_strategy.md` section 7.

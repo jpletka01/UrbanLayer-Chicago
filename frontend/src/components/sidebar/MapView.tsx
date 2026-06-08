@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "motion/react";
 import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { PathStyleExtension } from "@deck.gl/extensions";
@@ -8,8 +9,8 @@ import {
   CRIME_TYPE_COLORS, crimeColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
-  zoneColor, zoneLineColor, zonePrefix, ZONE_INFO,
-  overlayColor, overlayLineColor, overlayColorCSS, overlayLabel, incentiveLabel, OVERLAY_INFO,
+  zoneColor, zoneLineColor, zonePrefix,
+  overlayColor, overlayLineColor, overlayColorCSS, overlayLabel, incentiveLabel,
   incentiveZoneColor, incentiveZoneLineColor, incentiveZoneColorCSS,
 } from "../../lib/mapColors";
 import type { FilterMode } from "../../lib/mapColors";
@@ -134,6 +135,7 @@ interface Props {
 }
 
 export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitContext, isMobile = false }: Props) {
+  const { t } = useTranslation("map");
   const rawFilterMode = deriveFilterMode(sources);
 
   type SourceTab = "crime" | "311" | "permits";
@@ -579,7 +581,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   if (!MAPBOX_TOKEN) {
     return (
       <div className="flex items-center justify-center h-full text-text-muted text-sm p-4 text-center">
-        Set <code className="text-text-secondary mx-1">VITE_MAPBOX_TOKEN</code> in your environment to enable the map.
+        {t("states.setMapboxToken")}
       </div>
     );
   }
@@ -606,7 +608,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   } else if (filterMode === "311") {
     toggleConfigs = Object.keys(srTypeToggles).map(type => ({
       id: type,
-      label: type === "OTHER" ? "Other" : capLabel(type),
+      label: capLabel(type),
       color: type === "OTHER" ? "rgb(158,158,158)" : srTypeMapColorCSS(type),
       active: srTypeToggles[type],
     }));
@@ -615,7 +617,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   } else if (filterMode === "permits") {
     toggleConfigs = Object.keys(permitTypeToggles).map(type => ({
       id: type,
-      label: type === "OTHER" ? "Other" : capLabel(type),
+      label: capLabel(type),
       color: type === "OTHER" ? "rgb(136,135,128)" : (permitColorCSS(type)),
       active: permitTypeToggles[type],
     }));
@@ -679,7 +681,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
           </svg>
-          Filters
+          {t("filters.filters")}
         </button>
       )}
 
@@ -706,7 +708,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
               {isMultiSource && availableTabs.length > 1 && (
                 <div className="flex w-full bg-dark-bg rounded-md overflow-hidden">
                   {availableTabs.map((tab) => {
-                    const label = tab === "crime" ? "Crime" : tab === "311" ? "311" : "Permits";
+                    const label = tab === "311" ? "311" : t(`filters.${tab}`);
                     return (
                       <button
                         key={tab}
@@ -727,21 +729,21 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
 
               {toggleConfigs.length > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Type Filters</div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.typeFilters")}</div>
                   <MapLayerToggles layers={toggleConfigs} onToggle={onToggle} />
                 </div>
               )}
 
               {filterMode === "crime" && crimeTotal > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Arrest Status</div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.arrestStatus")}</div>
                   <ToggleGroup<ArrestFilterValue>
                     value={arrestFilter}
                     onChange={setArrestFilter}
                     options={[
-                      { value: "all", label: `All (${crimeTotal})` },
-                      { value: "arrested", label: `Arrested (${arrestCount})` },
-                      { value: "not-arrested", label: `No Arrest (${crimeTotal - arrestCount})` },
+                      { value: "all", label: `${t("filters.all")} (${crimeTotal})` },
+                      { value: "arrested", label: `${t("filters.arrested")} (${arrestCount})` },
+                      { value: "not-arrested", label: `${t("filters.noArrest")} (${crimeTotal - arrestCount})` },
                     ]}
                   />
                 </div>
@@ -749,14 +751,14 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
 
               {filterMode === "311" && requests311Total > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Status</div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.status")}</div>
                   <ToggleGroup<StatusFilterValue>
                     value={statusFilter}
                     onChange={setStatusFilter}
                     options={[
-                      { value: "all", label: `All (${requests311Total})` },
-                      { value: "closed", label: `Closed (${closedCount})` },
-                      { value: "open", label: `Open (${requests311Total - closedCount})` },
+                      { value: "all", label: `${t("filters.all")} (${requests311Total})` },
+                      { value: "closed", label: `${t("filters.closed")} (${closedCount})` },
+                      { value: "open", label: `${t("filters.open")} (${requests311Total - closedCount})` },
                     ]}
                   />
                 </div>
@@ -764,15 +766,15 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
 
               {filterMode === "permits" && permitsTotal > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cost Range</div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.costRange")}</div>
                   <ToggleGroup<CostFilterValue>
                     value={costFilter}
                     onChange={setCostFilter}
                     options={[
-                      { value: "all", label: `All (${permitsTotal})` },
-                      { value: "under25k", label: `<$25K (${permitCostCounts.under25k})` },
-                      { value: "25k-250k", label: `$25K–$250K (${permitCostCounts["25k-250k"]})` },
-                      { value: "over250k", label: `>$250K (${permitCostCounts.over250k})` },
+                      { value: "all", label: `${t("filters.all")} (${permitsTotal})` },
+                      { value: "under25k", label: `${t("filters.under25k")} (${permitCostCounts.under25k})` },
+                      { value: "25k-250k", label: `${t("filters.25k250k")} (${permitCostCounts["25k-250k"]})` },
+                      { value: "over250k", label: `${t("filters.over250k")} (${permitCostCounts.over250k})` },
                     ]}
                   />
                 </div>
@@ -780,7 +782,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
 
               {dateBounds && dateRange && hasData && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Date Range</div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.dateRange")}</div>
                   <DateRangeSlider
                     minDate={dateBounds.min}
                     maxDate={dateBounds.max}
@@ -824,7 +826,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                     borderColor: showZoning ? "rgba(66,133,244,0.8)" : "#555",
                   }}
                 />
-                Zoning
+                {t("layers.zoning")}
               </button>
             )}
             {hasData && (
@@ -840,7 +842,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                   className="w-2 h-2 rounded-full inline-block"
                   style={{ backgroundColor: showPoints ? "#eee" : "#555" }}
                 />
-                Points
+                {t("layers.points")}
               </button>
             )}
             <button
@@ -858,7 +860,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                   border: showTransit ? "1px solid rgba(0,161,222,0.8)" : "1px solid #555",
                 }}
               />
-              Transit
+              {t("layers.transit")}
             </button>
             {mapData?.incentive_zones && (
               <button
@@ -876,7 +878,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                     border: showIncentives ? "1px solid rgba(255,87,34,0.8)" : "1px solid #555",
                   }}
                 />
-                Incentives
+                {t("layers.incentives")}
               </button>
             )}
             {mapData?.overlay_districts && (
@@ -895,7 +897,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                     border: showOverlays ? "1px solid rgba(156,39,176,0.8)" : "1px solid #555",
                   }}
                 />
-                Overlays
+                {t("layers.overlays")}
               </button>
             )}
           </div>
@@ -906,7 +908,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
               {isMultiSource && availableTabs.length > 1 && (
                 <div className="flex w-full bg-dark-surface/90 backdrop-blur-sm rounded-md border border-dark-border shadow-sm overflow-hidden">
                   {availableTabs.map((tab) => {
-                    const label = tab === "crime" ? "Crime" : tab === "311" ? "311" : "Permits";
+                    const label = tab === "311" ? "311" : t(`filters.${tab}`);
                     return (
                       <button
                         key={tab}
@@ -930,9 +932,9 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                   value={arrestFilter}
                   onChange={setArrestFilter}
                   options={[
-                    { value: "all", label: `All (${crimeTotal})` },
-                    { value: "arrested", label: `Arrested (${arrestCount})` },
-                    { value: "not-arrested", label: `No Arrest (${crimeTotal - arrestCount})` },
+                    { value: "all", label: `${t("filters.all")} (${crimeTotal})` },
+                    { value: "arrested", label: `${t("filters.arrested")} (${arrestCount})` },
+                    { value: "not-arrested", label: `${t("filters.noArrest")} (${crimeTotal - arrestCount})` },
                   ]}
                 />
               )}
@@ -942,9 +944,9 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                   value={statusFilter}
                   onChange={setStatusFilter}
                   options={[
-                    { value: "all", label: `All (${requests311Total})` },
-                    { value: "closed", label: `Closed (${closedCount})` },
-                    { value: "open", label: `Open (${requests311Total - closedCount})` },
+                    { value: "all", label: `${t("filters.all")} (${requests311Total})` },
+                    { value: "closed", label: `${t("filters.closed")} (${closedCount})` },
+                    { value: "open", label: `${t("filters.open")} (${requests311Total - closedCount})` },
                   ]}
                 />
               )}
@@ -954,10 +956,10 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
                   value={costFilter}
                   onChange={setCostFilter}
                   options={[
-                    { value: "all", label: `All (${permitsTotal})` },
-                    { value: "under25k", label: `<$25K (${permitCostCounts.under25k})` },
-                    { value: "25k-250k", label: `$25K–$250K (${permitCostCounts["25k-250k"]})` },
-                    { value: "over250k", label: `>$250K (${permitCostCounts.over250k})` },
+                    { value: "all", label: `${t("filters.all")} (${permitsTotal})` },
+                    { value: "under25k", label: `${t("filters.under25k")} (${permitCostCounts.under25k})` },
+                    { value: "25k-250k", label: `${t("filters.25k250k")} (${permitCostCounts["25k-250k"]})` },
+                    { value: "over250k", label: `${t("filters.over250k")} (${permitCostCounts.over250k})` },
                   ]}
                 />
               )}
@@ -968,14 +970,14 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
 
       {loading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-dark-bg/60 backdrop-blur-sm">
-          <div className="text-text-muted text-sm animate-pulse">Loading map data...</div>
+          <div className="text-text-muted text-sm animate-pulse">{t("states.loadingMapData")}</div>
         </div>
       )}
 
       {!loading && !hasData && !hasZoning && !hasIncentiveZones && !hasOverlayDistricts && mapReady && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <span className="text-text-muted text-xs bg-dark-surface/80 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-            Ask a question to see data on the map
+            {t("states.askQuestion")}
           </span>
         </div>
       )}
@@ -984,7 +986,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
         <div className="absolute bottom-2 right-2 z-10">
           <span className="text-[10px] text-amber-400/80 bg-dark-surface/90 backdrop-blur-sm
                            border border-amber-500/20 rounded-md px-2 py-1">
-            Showing most recent {cappedCount.toLocaleString()} results
+            {t("states.showingResults", { count: cappedCount.toLocaleString() })}
           </span>
         </div>
       )}
@@ -1002,11 +1004,11 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-text-primary">
-                {selectedItem.type === "crime" ? "Crime Incident" :
-                 selectedItem.type === "311" ? "311 Request" :
-                 selectedItem.type === "zoning" ? "Zoning District" :
-                 selectedItem.type === "regulatory" ? "Regulatory Zones" :
-                 "Building Permit"}
+                {selectedItem.type === "crime" ? t("detail.crimeIncident") :
+                 selectedItem.type === "311" ? t("detail.311Request") :
+                 selectedItem.type === "zoning" ? t("detail.zoningDistrict") :
+                 selectedItem.type === "regulatory" ? t("detail.regulatoryZones") :
+                 t("detail.buildingPermit")}
               </h3>
               <button
                 onClick={() => setSelectedItem(null)}
@@ -1021,7 +1023,7 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
             <div className={`space-y-2 text-xs ${
               selectedItem.type === "regulatory" ? "max-h-[50vh] overflow-y-auto pr-1" : ""
             }`}>
-              {renderDetailFields(selectedItem)}
+              {renderDetailFields(selectedItem, t)}
             </div>
           </div>
         </div>
@@ -1056,25 +1058,28 @@ function streetViewUrl(lat: number, lng: number): string {
 
 const ZONING_MAP_URL = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning";
 
-function renderDetailFields(item: SelectedItem) {
+function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<string, unknown>) => string) {
   if (item.type === "zoning") {
     const d = item.data;
     const prefix = zonePrefix(d.zone_class);
-    const info = ZONE_INFO[prefix];
+    const zoneLabel = t(`zones.${prefix}.label`, { defaultValue: "" });
+    const zoneDesc = t(`zones.${prefix}.description`, { defaultValue: "" });
+    const zoneExamples = t(`zones.${prefix}.examples`, { returnObjects: true }) as string[] | string;
+    const examples = Array.isArray(zoneExamples) ? zoneExamples : [];
     return (
       <>
-        <DetailRow label="Zone Class" value={d.zone_class} />
-        {info && (
+        <DetailRow label={t("detail.zoneClass")} value={d.zone_class} />
+        {zoneLabel && (
           <div className="text-text-muted leading-relaxed">
-            <span className="text-text-secondary font-medium">{info.label}</span>
-            {" — "}{info.description}
+            <span className="text-text-secondary font-medium">{zoneLabel}</span>
+            {zoneDesc && <>{" — "}{zoneDesc}</>}
           </div>
         )}
-        {info && info.examples.length > 0 && (
+        {examples.length > 0 && (
           <div>
-            <span className="text-text-muted text-[10px] uppercase tracking-wide">Allowed uses</span>
+            <span className="text-text-muted text-[10px] uppercase tracking-wide">{t("detail.allowedUses")}</span>
             <ul className="mt-0.5 space-y-0.5">
-              {info.examples.map(ex => (
+              {examples.map(ex => (
                 <li key={ex} className="flex items-center gap-1.5 text-text-primary">
                   <span className="w-1 h-1 rounded-full bg-text-muted shrink-0" />
                   {ex}
@@ -1083,8 +1088,8 @@ function renderDetailFields(item: SelectedItem) {
             </ul>
           </div>
         )}
-        {d.ordinance_num && <DetailRow label="Ordinance" value={d.ordinance_num} />}
-        <DetailRow label="Official Map" value="Chicago Zoning Map" href={ZONING_MAP_URL} />
+        {d.ordinance_num && <DetailRow label={t("detail.ordinance")} value={d.ordinance_num} />}
+        <DetailRow label={t("detail.officialMap")} value={t("detail.chicagoZoningMap")} href={ZONING_MAP_URL} />
       </>
     );
   }
@@ -1094,15 +1099,16 @@ function renderDetailFields(item: SelectedItem) {
       <>
         {zoning && (
           <div className={overlays.length > 0 || incentives.length > 0 ? "pb-2 border-b border-dark-border mb-2" : ""}>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Base Zoning</div>
-            <DetailRow label="Zone Class" value={zoning.zone_class} />
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{t("detail.baseZoning")}</div>
+            <DetailRow label={t("detail.zoneClass")} value={zoning.zone_class} />
             {(() => {
               const prefix = zonePrefix(zoning.zone_class);
-              const zInfo = ZONE_INFO[prefix];
-              return zInfo ? (
+              const label = t(`zones.${prefix}.label`, { defaultValue: "" });
+              const desc = t(`zones.${prefix}.description`, { defaultValue: "" });
+              return label ? (
                 <div className="text-text-muted leading-relaxed mt-1">
-                  <span className="text-text-secondary font-medium">{zInfo.label}</span>
-                  {" — "}{zInfo.description}
+                  <span className="text-text-secondary font-medium">{label}</span>
+                  {desc && <>{" — "}{desc}</>}
                 </div>
               ) : null;
             })()}
@@ -1111,9 +1117,11 @@ function renderDetailFields(item: SelectedItem) {
 
         {overlays.length > 0 && (
           <div className={incentives.length > 0 ? "pb-2 border-b border-dark-border mb-2" : ""}>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Regulatory Overlays</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{t("detail.regulatoryOverlays")}</div>
             {overlays.map((ov, i) => {
-              const oInfo = OVERLAY_INFO[ov.overlay_type];
+              const ovDesc = t(`overlays.${ov.overlay_type}.description`, { defaultValue: "" });
+              const ovImplications = t(`overlays.${ov.overlay_type}.implications`, { returnObjects: true }) as string[] | string;
+              const implications = Array.isArray(ovImplications) ? ovImplications : [];
               return (
                 <div key={i} className="mb-2 last:mb-0">
                   <div className="flex items-center gap-1.5">
@@ -1128,12 +1136,12 @@ function renderDetailFields(item: SelectedItem) {
                   {ov.feature_name && (
                     <p className="text-text-secondary text-[11px] ml-3.5">{ov.feature_name}</p>
                   )}
-                  {oInfo && (
-                    <p className="text-text-muted text-[10px] ml-3.5 mt-0.5">{oInfo.description}</p>
+                  {ovDesc && (
+                    <p className="text-text-muted text-[10px] ml-3.5 mt-0.5">{ovDesc}</p>
                   )}
-                  {oInfo && oInfo.implications.length > 0 && (
+                  {implications.length > 0 && (
                     <ul className="ml-3.5 mt-0.5 space-y-0.5">
-                      {oInfo.implications.map(imp => (
+                      {implications.map(imp => (
                         <li key={imp} className="flex items-center gap-1.5 text-[10px] text-text-muted">
                           <span className="w-1 h-1 rounded-full bg-text-muted shrink-0" />
                           {imp}
@@ -1142,7 +1150,7 @@ function renderDetailFields(item: SelectedItem) {
                     </ul>
                   )}
                   {ov.ordinance && (
-                    <p className="text-[10px] text-text-muted ml-3.5 mt-0.5">Ord. {ov.ordinance}</p>
+                    <p className="text-[10px] text-text-muted ml-3.5 mt-0.5">{t("detail.ord")} {ov.ordinance}</p>
                   )}
                 </div>
               );
@@ -1152,7 +1160,7 @@ function renderDetailFields(item: SelectedItem) {
 
         {incentives.length > 0 && (
           <div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Incentive Zones</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{t("detail.incentiveZones")}</div>
             {incentives.map((inc, i) => (
               <div key={i} className="flex items-center gap-1.5 mb-1 last:mb-0">
                 <span
@@ -1176,11 +1184,11 @@ function renderDetailFields(item: SelectedItem) {
     const d = item.data;
     return (
       <>
-        <DetailRow label="Type" value={d.primary_type} />
-        <DetailRow label="Description" value={d.description} />
-        <DetailRow label="Date" value={formatDate(d.date)} />
-        <DetailRow label="Arrest" value={isArrested(d.arrest) ? "Yes" : "No"} />
-        <DetailRow label="Location" value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
+        <DetailRow label={t("detail.type")} value={t(`crimeLabels.${d.primary_type.toUpperCase()}`, { defaultValue: d.primary_type })} />
+        <DetailRow label={t("detail.description")} value={d.description} />
+        <DetailRow label={t("detail.date")} value={formatDate(d.date)} />
+        <DetailRow label={t("detail.arrest")} value={isArrested(d.arrest) ? t("detail.yes") : t("detail.no")} />
+        <DetailRow label={t("detail.location")} value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
           href={streetViewUrl(d.latitude, d.longitude)} />
       </>
     );
@@ -1189,11 +1197,11 @@ function renderDetailFields(item: SelectedItem) {
     const d = item.data;
     return (
       <>
-        <DetailRow label="Type" value={d.sr_type} />
-        <DetailRow label="Status" value={d.status} />
-        <DetailRow label="Department" value={d.owner_department} />
-        <DetailRow label="Date" value={formatDate(d.created_date)} />
-        <DetailRow label="Location" value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
+        <DetailRow label={t("detail.type")} value={d.sr_type} />
+        <DetailRow label={t("detail.status")} value={d.status} />
+        <DetailRow label={t("detail.department")} value={d.owner_department} />
+        <DetailRow label={t("detail.date")} value={formatDate(d.created_date)} />
+        <DetailRow label={t("detail.location")} value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
           href={streetViewUrl(d.latitude, d.longitude)} />
       </>
     );
@@ -1201,11 +1209,11 @@ function renderDetailFields(item: SelectedItem) {
   const d = item.data;
   return (
     <>
-      <DetailRow label="Type" value={d.permit_type} />
-      <DetailRow label="Work" value={d.work_description || "N/A"} />
-      <DetailRow label="Est. Cost" value={`$${Number(d.estimated_cost).toLocaleString()}`} />
-      <DetailRow label="Issue Date" value={formatDate(d.issue_date)} />
-      <DetailRow label="Location" value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
+      <DetailRow label={t("detail.type")} value={t(`permitLabels.${normalizePermitType(d.permit_type)}`, { defaultValue: d.permit_type })} />
+      <DetailRow label={t("detail.work")} value={d.work_description || t("detail.na")} />
+      <DetailRow label={t("detail.estCost")} value={`$${Number(d.estimated_cost).toLocaleString()}`} />
+      <DetailRow label={t("detail.issueDate")} value={formatDate(d.issue_date)} />
+      <DetailRow label={t("detail.location")} value={`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`}
         href={streetViewUrl(d.latitude, d.longitude)} />
     </>
   );

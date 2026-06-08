@@ -1,0 +1,253 @@
+{
+  "property": {
+    "title": "Property",
+    "address": "Address",
+    "pin": "PIN",
+    "class": "Class",
+    "buildingSqft": "Building Sqft",
+    "landSqft": "Land Sqft",
+    "stories": "Stories",
+    "units": "Units",
+    "rooms": "Rooms",
+    "bedrooms": "Bedrooms",
+    "baths": "Baths",
+    "buildingAge": "Building Age",
+    "yrs": "yrs",
+    "assessedValue": "Assessed Value",
+    "assessmentHistory": "Assessment History",
+    "yrsCount": "{{count}} yrs",
+    "year": "Year",
+    "land": "Land",
+    "building": "Building",
+    "total": "Total",
+    "salesHistory": "Sales History",
+    "date": "Date",
+    "price": "Price",
+    "deed": "Deed",
+    "estAnnualTax": "Est. Annual Tax",
+    "taxBreakdown": "Tax Breakdown",
+    "agencies": "{{count}} agencies",
+    "agency": "Agency",
+    "rate": "Rate",
+    "amount": "Amount"
+  },
+  "regulatory": {
+    "title": "Regulatory",
+    "overlays": "Overlays",
+    "status": "Status",
+    "noOverlays": "No regulatory overlays apply to this location.",
+    "floodZone": "Flood Zone",
+    "zone": "Zone {{code}}",
+    "specialFloodHazard": "Special Flood Hazard",
+    "affordableHousing": "Affordable Housing (ARO)",
+    "projects": "Projects",
+    "totalUnits": "Total Units",
+    "units": "units",
+    "nearbyBrownfield": "Nearby Brownfield Sites ({{count}})",
+    "unknownSite": "Unknown site",
+    "ord": "Ord.",
+    "flags": {
+      "in_planned_development": "Planned Development",
+      "in_landmark_district": "Landmark District",
+      "is_landmark_building": "Landmark Building",
+      "in_historic_district": "Historic District",
+      "on_national_register": "National Register",
+      "in_lakefront_protection": "Lakefront Protection",
+      "on_pedestrian_street": "Pedestrian Street",
+      "in_special_district": "Special District",
+      "in_pmd": "Planned Mfg. District",
+      "in_tod_area": "TOD Area",
+      "in_adu_area": "ADU Area",
+      "in_aro_zone": "ARO Zone",
+      "in_ssa": "Special Service Area"
+    }
+  },
+  "incentives": {
+    "title": "Incentives",
+    "inTif": "In TIF District",
+    "notInTif": "Not in TIF",
+    "tifName": "TIF Name",
+    "period": "Period",
+    "propertyTaxRevenue": "Property Tax Revenue",
+    "cumulativeRevenue": "Cumulative Revenue",
+    "fundBalance": "Fund Balance",
+    "annualExpenditure": "Annual Expenditure",
+    "district": "District",
+    "taxRevenue": "Tax Revenue",
+    "annualFinancials": "Annual Financials",
+    "yrsCount": "{{count}} yrs",
+    "revenue": "Revenue",
+    "expenditure": "Expenditure",
+    "opportunityZone": "Opportunity Zone",
+    "notInOpportunityZone": "Not in Opportunity Zone",
+    "tract": "Tract",
+    "enterpriseZone": "Enterprise Zone",
+    "notInEnterpriseZone": "Not in Enterprise Zone",
+    "cityGrantPrograms": "City Grant Programs",
+    "totalProjects": "Total Projects",
+    "totalFunding": "Total Funding",
+    "projects": "projects",
+    "recentProjects": "Recent Projects",
+    "taxClass": "Tax Class {{code}}",
+    "censusTract": "Census Tract:"
+  },
+  "neighborhood": {
+    "title": "Neighborhood",
+    "population": "Population",
+    "medIncome": "Med. Income",
+    "homeValue": "Home Value",
+    "medianRent": "Median Rent",
+    "medianAge": "Median Age",
+    "povertyRate": "Poverty Rate",
+    "poverty": "Poverty",
+    "unemployment": "Unemployment",
+    "ownerOccupied": "Owner-Occupied",
+    "bachelorsDegree": "Bachelor's Degree",
+    "bachelorsPlus": "Bachelor's+",
+    "vacancyRate": "Vacancy Rate",
+    "perCapitaIncome": "Per Capita Income",
+    "foreignBorn": "Foreign Born",
+    "transit": "Transit",
+    "todEligible": "TOD Eligible",
+    "walkScore": "Walk Score",
+    "walk": "Walk",
+    "transitScore": "Transit",
+    "bike": "Bike",
+    "walkScoreTM": "Walk Score®",
+    "noData": "No neighborhood data available.",
+    "aboveChicago": "{{pct}}% above Chicago",
+    "belowChicago": "{{pct}}% below Chicago",
+    "atChicagoMedian": "at Chicago median",
+    "viewCensusReporter": "View full profile on Census Reporter",
+    "ageDistribution": "Age Distribution",
+    "householdIncome": "Household Income",
+    "raceEthnicity": "Race & Ethnicity",
+    "education": "Education",
+    "transportationToWork": "Transportation to Work"
+  },
+  "violations": {
+    "title": "Violations",
+    "total": "Total",
+    "open": "Open",
+    "byCategory": "By Category",
+    "topDescriptions": "Top Descriptions",
+    "showingFirst": "Showing first {{count}} — more may exist."
+  },
+  "business": {
+    "title": "Business Licenses",
+    "activeLicenses": "Active Licenses",
+    "byLicenseType": "By License Type",
+    "topActivities": "Top Activities",
+    "showingFirst": "Showing first {{count}} — more may exist."
+  },
+  "foodInspections": {
+    "title": "Food Inspections",
+    "inspections1yr": "Inspections (1yr)",
+    "failRate": "Fail Rate",
+    "byResult": "By Result",
+    "byRiskLevel": "By Risk Level",
+    "recentInspections": "Recent Inspections"
+  },
+  "vacantBuildings": {
+    "title": "Vacant Buildings",
+    "reportedCases": "Reported Cases",
+    "byDepartment": "By Department",
+    "recentReports": "Recent Reports",
+    "due": "${{amount}} due"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "crime": "Crime",
+    "311Requests": "311 Requests",
+    "buildingPermits": "Building Permits",
+    "totalStat": "Total",
+    "arrestRate": "Arrest Rate",
+    "openStat": "Open",
+    "oldest": "Oldest",
+    "estCost": "Est. Cost",
+    "notEnoughData": "Not enough data for month-over-month trends.",
+    "cappedCrime": "Data capped — more incidents may exist.",
+    "capped311": "Data capped — more requests may exist.",
+    "cappedPermits": "Data capped — more permits may exist.",
+    "type": "Type",
+    "dept": "Dept",
+    "trend": "Trend",
+    "year": "Year",
+    "total": "Total",
+    "showLess": "Show less",
+    "moreCount": "+{{count}} more"
+  },
+  "terms": {
+    "incentives": {
+      "tif_district": {
+        "label": "TIF District",
+        "description": "Tax Increment Financing district that captures property tax growth to fund local improvements like infrastructure, streetscape, and development incentives.",
+        "bullets": [
+          "23-year lifespan from creation date",
+          "Does not increase your individual tax rate",
+          "Funds neighborhood infrastructure and development",
+          "Expiring TIFs return increment to all taxing bodies"
+        ]
+      },
+      "opportunity_zone": {
+        "label": "Opportunity Zone",
+        "description": "Federal tax incentive (2017 Tax Cuts & Jobs Act) encouraging long-term capital investment in low-income census tracts.",
+        "bullets": [
+          "Capital gains tax deferral on qualified investments",
+          "10-year hold can eliminate gains on new investment",
+          "Investments made through Qualified Opportunity Funds (QOFs)",
+          "Designated through 2028"
+        ]
+      },
+      "enterprise_zone": {
+        "label": "Enterprise Zone",
+        "description": "State of Illinois designated area offering tax incentives to businesses that invest and create jobs in economically distressed communities.",
+        "bullets": [
+          "Sales tax exemption on building materials",
+          "State investment tax credits",
+          "Utility tax exemptions available",
+          "Must create or retain jobs to qualify"
+        ]
+      }
+    },
+    "floodZones": {
+      "X": {
+        "label": "Zone X — Minimal Risk",
+        "description": "Area outside the 100-year and 500-year floodplains. Lowest flood risk designation.",
+        "bullets": ["Flood insurance not required (but available)", "No special construction requirements"]
+      },
+      "A": {
+        "label": "Zone A — High Risk",
+        "description": "Within the 100-year floodplain. 1% annual chance of flooding, 26% chance over a 30-year mortgage.",
+        "bullets": ["Flood insurance required for federally-backed mortgages", "Base Flood Elevation (BFE) not determined"]
+      },
+      "AE": {
+        "label": "Zone AE — High Risk (Detailed)",
+        "description": "Within the 100-year floodplain with detailed Base Flood Elevations determined by engineering study.",
+        "bullets": ["Flood insurance required", "Elevated construction required above BFE", "Detailed floodway analysis available"]
+      },
+      "AH": {
+        "label": "Zone AH — Shallow Flooding",
+        "description": "Area of 100-year shallow flooding with depths of 1–3 feet, typically ponding areas.",
+        "bullets": ["Flood insurance required", "Flood depths 1–3 feet", "Special drainage considerations"]
+      },
+      "AO": {
+        "label": "Zone AO — Sheet Flow",
+        "description": "Area of 100-year shallow flooding with sheet flow on sloped terrain, depths of 1–3 feet.",
+        "bullets": ["Flood insurance required", "Sheet flow rather than ponding", "Drainage path considerations"]
+      },
+      "VE": {
+        "label": "Zone VE — Coastal High Risk",
+        "description": "Coastal area with 100-year flood risk including wave action. Highest-risk designation.",
+        "bullets": ["Flood insurance required", "Strictest construction standards", "Elevated on pilings required"]
+      }
+    },
+    "extraOverlays": {
+      "tod_combined": {
+        "label": "Transit-Oriented Development (TOD)",
+        "description": "Zone near CTA or Metra rail stations encouraging dense, mixed-use development with reduced parking.",
+        "bullets": ["Reduced parking requirements", "Density bonuses available", "Pedestrian-oriented design standards"]
+      }
+    }
+  }
+}

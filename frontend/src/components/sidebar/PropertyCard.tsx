@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 
@@ -55,6 +56,7 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: (string | null)
 }
 
 export function PropertyCard({ data }: { data: PropertySummary }) {
+  const { t } = useTranslation("data");
   const [showAssessments, setShowAssessments] = useState(false);
   const [showTax, setShowTax] = useState(false);
   const [showSales, setShowSales] = useState(false);
@@ -67,25 +69,23 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
   const classLabel = [data.bldg_class, data.bldg_class_description].filter(Boolean).join(" — ");
 
   return (
-    <CollapsibleCard title="Property" icon={BuildingIcon}>
+    <CollapsibleCard title={t("property.title")} icon={BuildingIcon}>
       <div className="space-y-3">
-        {/* Key-value grid */}
         <div className="space-y-1">
-          <KV label="Address" value={data.address} />
-          <KV label="PIN" value={data.pin14} />
-          {classLabel && <KV label="Class" value={classLabel} />}
-          <KV label="Building Sqft" value={fmt(data.bldg_sqft)} />
-          <KV label="Land Sqft" value={fmt(data.land_sqft)} />
-          <KV label="Stories" value={data.stories != null ? String(data.stories) : null} />
-          <KV label="Units" value={data.units != null ? String(data.units) : null} />
-          <KV label="Rooms" value={data.rooms != null ? String(data.rooms) : null} />
-          <KV label="Bedrooms" value={data.bedrooms != null ? String(data.bedrooms) : null} />
-          <KV label="Baths" value={baths} />
-          <KV label="Building Age" value={data.bldg_age != null ? `${data.bldg_age} yrs` : null} />
-          <KV label="Assessed Value" value={fmtDollar(data.total_assessed_value)} />
+          <KV label={t("property.address")} value={data.address} />
+          <KV label={t("property.pin")} value={data.pin14} />
+          {classLabel && <KV label={t("property.class")} value={classLabel} />}
+          <KV label={t("property.buildingSqft")} value={fmt(data.bldg_sqft)} />
+          <KV label={t("property.landSqft")} value={fmt(data.land_sqft)} />
+          <KV label={t("property.stories")} value={data.stories != null ? String(data.stories) : null} />
+          <KV label={t("property.units")} value={data.units != null ? String(data.units) : null} />
+          <KV label={t("property.rooms")} value={data.rooms != null ? String(data.rooms) : null} />
+          <KV label={t("property.bedrooms")} value={data.bedrooms != null ? String(data.bedrooms) : null} />
+          <KV label={t("property.baths")} value={baths} />
+          <KV label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null} />
+          <KV label={t("property.assessedValue")} value={fmtDollar(data.total_assessed_value)} />
         </div>
 
-        {/* Assessment History */}
         {data.assessment_history.length > 0 && (
           <div>
             <button
@@ -98,12 +98,12 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-              Assessment History ({data.assessment_history.length} yrs)
+              {t("property.assessmentHistory")} ({t("property.yrsCount", { count: data.assessment_history.length })})
             </button>
             {showAssessments && (
               <div className="mt-1.5">
                 <MiniTable
-                  headers={["Year", "Land", "Building", "Total"]}
+                  headers={[t("property.year"), t("property.land"), t("property.building"), t("property.total")]}
                   rows={data.assessment_history.map(a => [
                     a.year != null ? String(a.year) : null,
                     fmtDollar(a.land),
@@ -116,7 +116,6 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
           </div>
         )}
 
-        {/* Sales History */}
         {data.sales_history.length > 0 && (
           <div>
             <button
@@ -129,12 +128,12 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-              Sales History ({data.sales_history.length})
+              {t("property.salesHistory")} ({data.sales_history.length})
             </button>
             {showSales && (
               <div className="mt-1.5">
                 <MiniTable
-                  headers={["Date", "Price", "Deed"]}
+                  headers={[t("property.date"), t("property.price"), t("property.deed")]}
                   rows={data.sales_history.map(s => [
                     s.date ? new Date(s.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null,
                     fmtDollar(s.price),
@@ -146,17 +145,16 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
           </div>
         )}
 
-        {/* Tax Estimate */}
         {data.estimated_annual_tax != null && (
           <div>
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-text-muted">Est. Annual Tax</span>
+              <span className="text-text-muted">{t("property.estAnnualTax")}</span>
               <span className="font-medium text-text-primary">{fmtDollar(data.estimated_annual_tax)}</span>
             </div>
             {data.tax_breakdown.length > 0 && (
               <>
                 <button
-                  onClick={() => setShowTax(t => !t)}
+                  onClick={() => setShowTax(tx => !tx)}
                   className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors mt-1"
                 >
                   <svg
@@ -165,16 +163,16 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
-                  Tax Breakdown ({data.tax_breakdown.length} agencies)
+                  {t("property.taxBreakdown")} ({t("property.agencies", { count: data.tax_breakdown.length })})
                 </button>
                 {showTax && (
                   <div className="mt-1.5">
                     <MiniTable
-                      headers={["Agency", "Rate", "Amount"]}
-                      rows={data.tax_breakdown.map(t => [
-                        t.agency,
-                        `${t.rate.toFixed(3)}%`,
-                        fmtDollar(t.amount),
+                      headers={[t("property.agency"), t("property.rate"), t("property.amount")]}
+                      rows={data.tax_breakdown.map(tb => [
+                        tb.agency,
+                        `${tb.rate.toFixed(3)}%`,
+                        fmtDollar(tb.amount),
                       ])}
                     />
                   </div>

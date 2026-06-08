@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { FoodInspectionSummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 
@@ -27,6 +28,7 @@ function resultColor(result: string | null): string {
 }
 
 export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
+  const { t } = useTranslation("data");
   const results = Object.entries(data.by_result ?? {})
     .sort(([, a], [, b]) => b - a);
 
@@ -34,26 +36,26 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
     .sort(([, a], [, b]) => b - a);
 
   return (
-    <CollapsibleCard title="Food Inspections" icon={ForkKnifeIcon}>
+    <CollapsibleCard title={t("foodInspections.title")} icon={ForkKnifeIcon}>
       <div className="space-y-2.5">
         <div className="flex justify-center gap-4 py-1">
           <div className="text-center">
             <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted mt-0.5">Inspections (1yr)</div>
+            <div className="text-[10px] text-text-muted mt-0.5">{t("foodInspections.inspections1yr")}</div>
           </div>
           {data.fail_rate != null && (
             <div className="text-center">
               <div className={`text-sm font-semibold ${data.fail_rate > 15 ? "text-red-400" : "text-text-primary"}`}>
                 {data.fail_rate}%
               </div>
-              <div className="text-[10px] text-text-muted mt-0.5">Fail Rate</div>
+              <div className="text-[10px] text-text-muted mt-0.5">{t("foodInspections.failRate")}</div>
             </div>
           )}
         </div>
 
         {results.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">By Result</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("foodInspections.byResult")}</span>
             {results.map(([result, count]) => (
               <KV key={result} label={result} value={String(count)} color={resultColor(result)} />
             ))}
@@ -62,7 +64,7 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
 
         {risks.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">By Risk Level</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("foodInspections.byRiskLevel")}</span>
             {risks.map(([risk, count]) => (
               <KV key={risk} label={risk} value={String(count)} />
             ))}
@@ -71,7 +73,7 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
 
         {data.recent_inspections?.length > 0 && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Recent Inspections</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("foodInspections.recentInspections")}</span>
             {data.recent_inspections.slice(0, 5).map((insp, i) => (
               <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border">
                 <p className="text-text-primary">{insp.name}</p>

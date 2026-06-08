@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { MapData, ContextObject } from "../../lib/types";
 import type { FilterMode } from "../../lib/mapColors";
 import { deptColorCSS, normalizeDept, crimeColorCSS, srTypeMapColorCSS, permitColorCSS, normalizePermitType } from "../../lib/mapColors";
@@ -34,6 +35,7 @@ function StatPill({ label, value, color }: { label: string; value: string; color
 }
 
 export function AnalyticsSection({ mapData, filterMode, context }: Props) {
+  const { t } = useTranslation("data");
   const [collapsed, setCollapsed] = useState(false);
   const [threeOneOneGrouping, setThreeOneOneGrouping] = useState<ThreeOneOneGrouping>("sr_type");
 
@@ -94,18 +96,18 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
-        Analytics
+        {t("analytics.title")}
       </button>
 
       {!collapsed && (
         <div className="px-4 pb-4 space-y-5">
           {showCrime && (
             <div>
-              <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">Crime</h4>
+              <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">{t("analytics.crime")}</h4>
               {crimeSummary && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  <StatPill label="Total" value={fmtNum(crimeSummary.total)} />
-                  <StatPill label="Arrest Rate" value={`${(crimeSummary.arrest_rate * 100).toFixed(1)}%`} />
+                  <StatPill label={t("analytics.totalStat")} value={fmtNum(crimeSummary.total)} />
+                  <StatPill label={t("analytics.arrestRate")} value={`${(crimeSummary.arrest_rate * 100).toFixed(1)}%`} />
                 </div>
               )}
               {crimeAnalytics && (
@@ -115,12 +117,12 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                   )}
                   {crimeAnalytics.pie.length > 0 && <PieChart slices={crimeAnalytics.pie} />}
                   {!crimeAnalytics.monthLabels && crimeAnalytics.pie.length > 0 && (
-                    <p className="text-[10px] text-text-muted">Not enough data for month-over-month trends.</p>
+                    <p className="text-[10px] text-text-muted">{t("analytics.notEnoughData")}</p>
                   )}
                 </div>
               )}
               {crimeSummary?.capped && (
-                <p className="text-[10px] text-text-muted italic mt-1">Data capped — more incidents may exist.</p>
+                <p className="text-[10px] text-text-muted italic mt-1">{t("analytics.cappedCrime")}</p>
               )}
             </div>
           )}
@@ -128,7 +130,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
           {show311 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">311 Requests</span>
+                <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.311Requests")}</span>
                 {threeOneOneAnalytics && (
                   <div className="flex bg-dark-bg/60 rounded-md overflow-hidden border border-dark-border">
                     <button
@@ -139,7 +141,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                           : "text-text-muted hover:text-text-secondary"
                       }`}
                     >
-                      Type
+                      {t("analytics.type")}
                     </button>
                     <button
                       onClick={() => setThreeOneOneGrouping("department")}
@@ -149,17 +151,17 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                           : "text-text-muted hover:text-text-secondary"
                       }`}
                     >
-                      Dept
+                      {t("analytics.dept")}
                     </button>
                   </div>
                 )}
               </div>
               {threeOneOneSummary && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  <StatPill label="Open" value={fmtNum(threeOneOneSummary.total)} />
+                  <StatPill label={t("analytics.openStat")} value={fmtNum(threeOneOneSummary.total)} />
                   {threeOneOneSummary.oldest_open_days != null && (
                     <StatPill
-                      label="Oldest"
+                      label={t("analytics.oldest")}
                       value={threeOneOneSummary.oldest_open_days >= 365
                         ? `${(threeOneOneSummary.oldest_open_days / 365).toFixed(1)}yr`
                         : `${threeOneOneSummary.oldest_open_days}d`}
@@ -180,24 +182,24 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                     <PieChart slices={threeOneOneAnalytics.pie} />
                   )}
                   {!threeOneOneAnalytics.monthLabels && threeOneOneAnalytics.pie.length > 0 && (
-                    <p className="text-[10px] text-text-muted">Not enough data for month-over-month trends.</p>
+                    <p className="text-[10px] text-text-muted">{t("analytics.notEnoughData")}</p>
                   )}
                 </div>
               )}
               {threeOneOneSummary?.capped && (
-                <p className="text-[10px] text-text-muted italic mt-1">Data capped — more requests may exist.</p>
+                <p className="text-[10px] text-text-muted italic mt-1">{t("analytics.capped311")}</p>
               )}
             </div>
           )}
 
           {showPermits && (
             <div>
-              <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">Building Permits</h4>
+              <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">{t("analytics.buildingPermits")}</h4>
               {permitSummary && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  <StatPill label="Total" value={fmtNum(permitSummary.total)} />
+                  <StatPill label={t("analytics.totalStat")} value={fmtNum(permitSummary.total)} />
                   {permitSummary.total_estimated_cost > 0 && (
-                    <StatPill label="Est. Cost" value={fmtDollar(permitSummary.total_estimated_cost)} />
+                    <StatPill label={t("analytics.estCost")} value={fmtDollar(permitSummary.total_estimated_cost)} />
                   )}
                 </div>
               )}
@@ -208,12 +210,12 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                   )}
                   {permitAnalytics.pie.length > 0 && <PieChart slices={permitAnalytics.pie} />}
                   {!permitAnalytics.monthLabels && permitAnalytics.pie.length > 0 && (
-                    <p className="text-[10px] text-text-muted">Not enough data for month-over-month trends.</p>
+                    <p className="text-[10px] text-text-muted">{t("analytics.notEnoughData")}</p>
                   )}
                 </div>
               )}
               {permitSummary?.capped && (
-                <p className="text-[10px] text-text-muted italic mt-1">Data capped — more permits may exist.</p>
+                <p className="text-[10px] text-text-muted italic mt-1">{t("analytics.cappedPermits")}</p>
               )}
             </div>
           )}
