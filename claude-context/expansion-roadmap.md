@@ -52,22 +52,32 @@ Evaluated the 5 unintegrated Chicago Zoning MapServer layers. None warranted int
 
 **Violation categorization hybrid**: Investigated using `violation_code` as the primary categorization key. The codes are heterogeneous alphanumeric strings (CN190019, EV1110, AAG679, BR1010) with no consistent structure — a full code-to-category mapping would require maintaining thousands of entries. Instead, added code-prefix mapping for the two clear prefixes (EV→Elevator, BR→Boiler) and expanded keyword coverage to catch common abbreviations (e.g., "ELEVA" for elevator, "ELECT" for electrical). The keyword approach remains primary.
 
-## Planned: Multi-Language Support (i18n)
+## Completed: Multi-Language Support — Spanish (i18n)
 
-Full implementation plan in `language-plan.md`. Target languages: English (default), Spanish, Polish, Simplified Chinese, Traditional Chinese.
+Implemented Spanish as first non-English language. Full architecture plan was in `language-plan.md`.
 
-**Architecture**: Backend stays English-only (DB, Qdrant, APIs unchanged). Translation at two boundaries: (1) synthesizer streams response in target language via `LANGUAGE_INSTRUCTION` appended to system prompt, (2) React frontend localized via `react-i18next` with bundled JSON catalogs.
+**Architecture**: Backend stays English-only (DB, Qdrant, APIs unchanged). Translation at two boundaries: (1) synthesizer streams response in target language via `LANGUAGE_INSTRUCTION` appended to system prompt in `prompts.py`, (2) React frontend localized via `react-i18next` with bundled JSON catalogs in `src/locales/{en,es}/`.
 
-**Key changes**:
-- `ChatRequest.language` field threaded through entire SSE pipeline
-- DB schema v7: `language` column on conversations table
+**What shipped**:
+- `ChatRequest.language: str = "en"` threaded through entire SSE pipeline (loose str, no enum — future languages work without backend changes)
+- DB schema v8: `language TEXT DEFAULT 'en'` column on `conversations` and `request_logs` tables
 - Conversation synthesis forced for non-English follow-ups (English heuristics don't match other languages)
-- Router prompt reinforced: `search_query` always in English (bge-base-en-v1.5 is English-only)
-- `POST /api/translate` endpoint (Haiku + TTLCache) for on-demand source chunk translation
-- `LanguageSelector` component in header, ~90+ hardcoded strings extracted to i18n keys
-- Term definitions (~300 entries) in separate per-language JSON files with English fallback
+- Router + conversation synthesis prompts reinforced: queries always rewritten in English
+- Clarification translation via inline Haiku call when `language != "en"`
+- `LanguageSelector` component (globe icon dropdown) in splash and workspace headers
+- ~150+ strings extracted to 4 i18n namespaces: `common`, `chat`, `sidebar`, `landing`
+- Chat components localized: ChatInput, ChatInterface, DisclaimerBanner, SidebarHeader, MobileSidebarSheet, SourceDetailDrawer, HistorySidebar, AuthModal, ShareModal, UserMenu
+- Full landing page localized: IntelligenceStack, DepthShowcase, PersonaScenarios, HowItWorks, NeighborhoodExplorer, NeighborhoodSelector, DataSourceTabs, LandingAnalytics, StorySection (via App.tsx props), Footer, hero subtitle + suggestions + stats
 
-**Latency**: +0ms for English path; +200-600ms for non-English (forced synthesis + language instruction overhead).
+**Not yet localized**:
+- **Map UI and categories** — map layer toggle labels, legend text, filter popover labels, deck.gl tooltip content, crime/311/permit category names displayed on map markers and in map-related UI. These are high-visibility when using Spanish and should be a priority for the next i18n session.
+- **Sidebar data cards** — DataView section headers, analytics labels (trend table headers like "Type"/"Trend", pie chart labels), CollapsibleCard titles
+- **Term definitions** (~300 entries in `termDefinitions.ts`) — overlay/zone/incentive/flood zone hover tooltips
+- Admin dashboard, About page, Pricing page, Scorecard page, Explorer page
+
+**Adding a new language**: (1) create `src/locales/{code}/` with 4 JSON files, (2) add option to `LanguageSelector.tsx`, (3) optionally add to `LANGUAGE_NAMES` dict in `backend/synthesizer.py` for a friendly name.
+
+**Latency**: +0ms for English path; non-English adds forced synthesis (~300ms) + language instruction overhead.
 
 ## Revenue Sprint Progress (2026-06-07)
 

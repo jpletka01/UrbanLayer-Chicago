@@ -1,0 +1,24 @@
+{
+  "placeholder": "Pregunte sobre Chicago...",
+  "analyzing": "Analizando su pregunta…",
+  "analyzed": "Pregunta analizada",
+  "composing": "Componiendo respuesta…",
+  "located": "Ubicado en {{area}}",
+  "searchingFor": "Buscando en el código municipal \"{{query}}\"",
+  "propertyFor": "Consultando registros de propiedad de {{address}}",
+  "inArea": "{{label}} en {{area}}",
+  "sourceLabels": {
+    "crime_api": "Buscando registros de delitos",
+    "311_api": "Consultando solicitudes de servicio 311",
+    "permits_api": "Verificando permisos de construcción",
+    "violations_api": "Obteniendo violaciones de edificios",
+    "business_api": "Buscando licencias comerciales",
+    "vacant_buildings_api": "Verificando reportes de edificios vacíos",
+    "food_inspections_api": "Cargando inspecciones de alimentos",
+    "vector_search": "Buscando en el código municipal",
+    "regulatory_domain": "Verificando zonificación y regulaciones",
+    "property_domain": "Consultando registros de propiedad",
+    "incentives_domain": "Verificando zonas TIF e incentivos",
+    "neighborhood_domain": "Cargando demografía, datos censales y transporte"
+  }
+}

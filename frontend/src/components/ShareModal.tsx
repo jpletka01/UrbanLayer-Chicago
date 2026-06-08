@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createShareLink, getShareStatus, revokeShareLink } from "../lib/api";
 
 interface ShareModalProps {
@@ -7,6 +8,7 @@ interface ShareModalProps {
 }
 
 export function ShareModal({ conversationId, onClose }: ShareModalProps) {
+  const { t } = useTranslation("common");
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -62,16 +64,16 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
     >
       <div className="w-full max-w-md mx-4 bg-dark-surface border border-dark-border rounded-2xl p-6 shadow-2xl">
         <h2 className="text-lg font-semibold text-text-primary mb-1">
-          Share this conversation
+          {t("shareTitle")}
         </h2>
         <p className="text-sm text-text-secondary mb-5">
-          Anyone with this link can view this conversation read-only.
+          {t("shareDescription")}
         </p>
 
         {loading ? (
           <div className="flex items-center justify-center py-6">
             <div className="w-5 h-5 border-2 border-text-muted border-t-accent rounded-full animate-spin" />
-            <span className="ml-3 text-sm text-text-muted">Creating link...</span>
+            <span className="ml-3 text-sm text-text-muted">{t("creatingLink")}</span>
           </div>
         ) : url ? (
           <>
@@ -87,7 +89,7 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
                 onClick={handleCopy}
                 className="shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-accent text-white hover:bg-accent/90"
               >
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("copied") : t("copy")}
               </button>
             </div>
             <div className="flex items-center justify-between">
@@ -96,19 +98,19 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
                 disabled={revoking}
                 className="text-xs text-text-muted hover:text-rose-400 transition-colors disabled:opacity-50"
               >
-                {revoking ? "Revoking..." : "Revoke link"}
+                {revoking ? t("revoking") : t("revokeLink")}
               </button>
               <button
                 onClick={onClose}
                 className="px-4 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
               >
-                Done
+                {t("done")}
               </button>
             </div>
           </>
         ) : (
           <div className="text-center py-4">
-            <p className="text-sm text-text-muted mb-4">Link has been revoked.</p>
+            <p className="text-sm text-text-muted mb-4">{t("linkRevoked")}</p>
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={async () => {
@@ -119,13 +121,13 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
                 }}
                 className="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/90 transition-colors"
               >
-                Create new link
+                {t("createNewLink")}
               </button>
               <button
                 onClick={onClose}
                 className="px-4 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
               >
-                Close
+                {t("close")}
               </button>
             </div>
           </div>

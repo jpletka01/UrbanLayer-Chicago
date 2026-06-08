@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import re
 from typing import Any
 
 import httpx
@@ -9,8 +11,13 @@ from backend.retrieval.geo import community_area_bounds
 from backend.retrieval.socrata import socrata_aggregate, socrata_get
 from backend.retrieval.utils import cutoff_iso
 
+log = logging.getLogger(__name__)
+
 _permits_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="permits")
 _violations_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="violations")
+_addr_permits_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="addr_permits")
+_addr_violations_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="addr_violations")
+_construction_cache = TTLCache(ttl_seconds=3600, maxsize=128, name="nearby_construction")
 
 
 async def permits_by_community_area(
@@ -110,3 +117,184 @@ async def violations_by_community_area(
     result = {"status_counts": status_counts, "detail": detail}
     _violations_cache.set(key, result)
     return result
+
+
+_SUFFIXES = r"(?:AVE|ST|BLVD|DR|PL|CT|RD|WAY|TER|PKWY|LN|CIR|HWY|SQ)"
+_ADDR_RE = re.compile(
+    r"^\s*(\d+)\s+(N|S|E|W)\s+(.+?)\s+" + _SUFFIXES + r"(?:\s.*|,.*)?$",
+    re.IGNORECASE,
+)
+_ADDR_RE_NO_SUFFIX = re.compile(
+    r"^\s*(\d+)\s+(N|S|E|W)\s+([A-Z]+)(?:\s.*|,.*)?$",
+    re.IGNORECASE,
+)
+
+
+def parse_chicago_address(address: str) -> dict[str, str] | None:
+    """Parse '2400 N MILWAUKEE AVE' or '2400 N MILWAUKEE AVE, Chicago, IL' into {number, direction, name}."""
+    addr = address.strip().upper()
+    m = _ADDR_RE.match(addr)
+    if m:
+        return {
+            "number": m.group(1),
+            "direction": m.group(2),
+            "name": m.group(3).strip(),
+        }
+    m = _ADDR_RE_NO_SUFFIX.match(addr)
+    if m:
+        return {
+            "number": m.group(1),
+            "direction": m.group(2),
+            "name": m.group(3).strip(),
+        }
+    return None
+
+
+async def address_specific_permits(
+    street_number: str,
+    street_direction: str,
+    street_name: str,
+    *,
+    years: int | None = None,
+    limit: int | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Query permits by exact street address fields."""
+    settings = get_settings()
+    years = years or settings.address_permits_years
+    limit = limit or settings.limit_address_permits
+
+    key = f"addr_permits:{street_number}:{street_direction}:{street_name}"
+    cached = _addr_permits_cache.get(key)
+    if cached is not None:
+        return cached
+
+    where = (
+        f"street_number='{street_number}' "
+        f"AND street_direction='{street_direction}' "
+        f"AND upper(street_name)='{street_name.upper()}' "
+        f"AND issue_date > '{cutoff_iso(years * 365)}'"
+    )
+    try:
+        result = await socrata_get(
+            settings.dataset_permits,
+            {
+                "$where": where,
+                "$select": (
+                    "permit_,permit_type,work_description,issue_date,reported_cost,"
+                    "contact_1_type,contact_1_name,"
+                    "contact_2_type,contact_2_name,"
+                    "contact_3_type,contact_3_name"
+                ),
+                "$order": "issue_date DESC",
+                "$limit": limit,
+            },
+            client=client,
+        )
+        _addr_permits_cache.set(key, result)
+        return result
+    except Exception as exc:
+        log.warning("Address permits failed for %s %s %s: %s", street_number, street_direction, street_name, exc)
+        return []
+
+
+async def address_specific_violations(
+    street_number: str,
+    street_direction: str,
+    street_name: str,
+    *,
+    years: int | None = None,
+    limit: int | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Query violations by exact street address fields."""
+    settings = get_settings()
+    years = years or settings.address_violations_years
+    limit = limit or settings.limit_address_violations
+
+    key = f"addr_violations:{street_number}:{street_direction}:{street_name}"
+    cached = _addr_violations_cache.get(key)
+    if cached is not None:
+        return cached
+
+    where = (
+        f"street_number='{street_number}' "
+        f"AND street_direction='{street_direction}' "
+        f"AND upper(street_name)='{street_name.upper()}' "
+        f"AND violation_date > '{cutoff_iso(years * 365)}'"
+    )
+    try:
+        result = await socrata_get(
+            settings.dataset_violations,
+            {
+                "$where": where,
+                "$select": (
+                    "violation_date,violation_code,violation_description,"
+                    "violation_status,violation_status_date,"
+                    "inspection_number,inspector_id"
+                ),
+                "$order": "violation_date DESC",
+                "$limit": limit,
+            },
+            client=client,
+        )
+        _addr_violations_cache.set(key, result)
+        return result
+    except Exception as exc:
+        log.warning("Address violations failed for %s %s %s: %s", street_number, street_direction, street_name, exc)
+        return []
+
+
+async def nearby_new_construction(
+    lat: float,
+    lon: float,
+    *,
+    radius_deg: float | None = None,
+    months: int | None = None,
+    limit: int | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> dict[str, Any]:
+    """Find NEW CONSTRUCTION and WRECKING/DEMOLITION permits within a radius."""
+    settings = get_settings()
+    radius_deg = radius_deg or settings.comparable_sales_radius_deg
+    months = months or settings.nearby_construction_months
+    limit = limit or settings.limit_nearby_construction
+
+    key = f"construction:{round(lat, 4)}:{round(lon, 4)}:{months}"
+    cached = _construction_cache.get(key)
+    if cached is not None:
+        return cached
+
+    where = (
+        f"latitude between '{lat - radius_deg}' and '{lat + radius_deg}' "
+        f"AND longitude between '{lon - radius_deg}' and '{lon + radius_deg}' "
+        f"AND issue_date > '{cutoff_iso(months * 30)}' "
+        f"AND (permit_type='PERMIT - NEW CONSTRUCTION' "
+        f"OR permit_type='PERMIT - WRECKING/DEMOLITION')"
+    )
+    try:
+        rows = await socrata_get(
+            settings.dataset_permits,
+            {
+                "$where": where,
+                "$select": (
+                    "permit_type,work_description,issue_date,reported_cost,"
+                    "street_number,street_direction,street_name,latitude,longitude"
+                ),
+                "$order": "issue_date DESC",
+                "$limit": limit,
+            },
+            client=client,
+        )
+        new_count = sum(1 for r in rows if "NEW CONSTRUCTION" in (r.get("permit_type") or ""))
+        demo_count = sum(1 for r in rows if "WRECKING" in (r.get("permit_type") or ""))
+        result: dict[str, Any] = {
+            "new_construction_count": new_count,
+            "demolition_count": demo_count,
+            "recent_projects": rows,
+        }
+        _construction_cache.set(key, result)
+        return result
+    except Exception as exc:
+        log.warning("Nearby construction failed for (%s, %s): %s", lat, lon, exc)
+        return {"new_construction_count": 0, "demolition_count": 0, "recent_projects": []}

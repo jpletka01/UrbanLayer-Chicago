@@ -1,0 +1,11 @@
+{
+  "data": "Datos",
+  "sources": "Fuentes",
+  "map": "Mapa",
+  "municipalCode": "Código Municipal",
+  "copyFullText": "Copiar texto completo",
+  "loadingSection": "Cargando sección…",
+  "sourceCount_one": "{{count}} fuente",
+  "sourceCount_other": "{{count}} fuentes",
+  "sectionNotFound": "Sección no encontrada"
+}

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import './lib/i18n'
 import './index.css'
 
 if (import.meta.env.VITE_SENTRY_DSN) {

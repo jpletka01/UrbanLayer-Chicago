@@ -1,5 +1,6 @@
 import { motion, useInView } from "motion/react";
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { MapData, SourceTag } from "../../lib/types";
 import { fetchMapData } from "../../lib/api";
 import { getDummyMapData, DUMMY_COMMUNITY_AREA_NAME } from "../../lib/dummyData";
@@ -18,6 +19,7 @@ const SOURCE_MAP: Record<LandingSource, SourceTag[]> = {
 export function NeighborhoodExplorer() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  const { t } = useTranslation("landing");
 
   const [mapData, setMapData] = useState<MapData>(getDummyMapData());
   const [source, setSource] = useState<LandingSource>("all");
@@ -53,10 +55,10 @@ export function NeighborhoodExplorer() {
         {/* Header */}
         <div className="text-center space-y-3">
           <h2 className="text-2xl md:text-3xl font-semibold text-text-primary">
-            Explore a neighborhood
+            {t("explorer.heading")}
           </h2>
           <p className="text-text-secondary text-sm max-w-lg mx-auto">
-            Pick a community area or enter an address to explore live city data — crime patterns, 311 service requests, building permits, and month-over-month trends, updated from the Chicago Data Portal.
+            {t("explorer.subheading")}
           </p>
         </div>
 
@@ -70,7 +72,7 @@ export function NeighborhoodExplorer() {
             <DataSourceTabs active={source} onChange={handleSourceChange} />
             {isDummy && (
               <span className="text-xs text-text-muted">
-                Showing sample data &mdash; {DUMMY_COMMUNITY_AREA_NAME}
+                {t("explorer.sampleData")} &mdash; {DUMMY_COMMUNITY_AREA_NAME}
               </span>
             )}
           </div>

@@ -9,11 +9,18 @@ from backend.config import get_settings
 from backend.context_manager import detect_location_switch, format_summaries_for_prompt
 from backend.llm import tracked_stream
 from backend.models import AnalyticsSummary, ContextObject, Message, RetrievalPlan, TurnSummary
-from backend.prompts import SYNTHESIZER_SYSTEM
+from backend.prompts import LANGUAGE_INSTRUCTION, SYNTHESIZER_SYSTEM
 from backend.vision import prepare_upload_content_blocks
 
 
 log = logging.getLogger(__name__)
+
+LANGUAGE_NAMES: dict[str, str] = {
+    "es": "Spanish",
+    "pl": "Polish",
+    "zh-CN": "Simplified Chinese",
+    "zh-TW": "Traditional Chinese",
+}
 
 SLIDING_WINDOW_PAIRS = 2
 
@@ -124,6 +131,7 @@ async def stream_answer(
     upload_ids: list[str] | None = None,
     request_group: str = "",
     conversation_id: str | None = None,
+    language: str = "en",
 ) -> AsyncIterator[str]:
     settings = get_settings()
 
@@ -141,13 +149,19 @@ async def stream_answer(
         "content": _build_user_content(context, user_message, upload_blocks),
     })
 
+    if language != "en":
+        lang_name = LANGUAGE_NAMES.get(language, language)
+        system = SYNTHESIZER_SYSTEM + "\n\n" + LANGUAGE_INSTRUCTION.format(language_name=lang_name)
+    else:
+        system = SYNTHESIZER_SYSTEM
+
     async with tracked_stream(
         request_group=request_group,
         conversation_id=conversation_id,
         phase="synthesizer",
         model=settings.synthesizer_model,
         max_tokens=settings.synthesizer_max_tokens,
-        system=SYNTHESIZER_SYSTEM,
+        system=system,
         messages=messages,
     ) as stream:
         async for chunk in stream.text_stream:

@@ -222,10 +222,14 @@ export async function* chatStream(
   signal?: AbortSignal,
   conversationId?: string | null,
   uploadIds?: string[],
+  cachedCommunityArea?: number | null,
+  language?: string,
 ): AsyncGenerator<ChatChunk, void, unknown> {
   const body: Record<string, unknown> = { message, history };
   if (conversationId) body.conversation_id = conversationId;
   if (uploadIds?.length) body.upload_ids = uploadIds;
+  if (cachedCommunityArea != null) body.cached_community_area = cachedCommunityArea;
+  if (language && language !== "en") body.language = language;
 
   const resp = await authFetch(`${API_BASE}/chat`, {
     method: "POST",
@@ -255,6 +259,7 @@ export async function listConversations(): Promise<Conversation[]> {
   return data.map((c: Record<string, unknown>) => ({
     id: c.id,
     title: c.title,
+    language: (c.language as string) || "en",
     message_count: c.message_count,
     createdAt: c.created_at,
     updatedAt: c.updated_at,
@@ -270,11 +275,13 @@ export async function getConversation(id: string): Promise<ConversationDetail | 
   return await resp.json();
 }
 
-export async function createConversation(id: string, title: string): Promise<void> {
+export async function createConversation(id: string, title: string, language?: string): Promise<void> {
+  const body: Record<string, string> = { id, title };
+  if (language && language !== "en") body.language = language;
   const resp = await authFetch(`${API_BASE}/api/conversations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, title }),
+    body: JSON.stringify(body),
   });
   if (!resp.ok) throw new Error(`Failed to create conversation: ${resp.status}`);
 }

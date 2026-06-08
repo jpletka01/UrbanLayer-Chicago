@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { SidebarView } from "../lib/types";
 
 interface Props {
@@ -23,6 +24,7 @@ export function SidebarHeader({
   showDataBadge = false,
   showSourcesBadge = false,
 }: Props) {
+  const { t } = useTranslation("sidebar");
   return (
     <div className="flex items-center justify-between flex-1 min-w-0">
       <div className="min-w-0">
@@ -43,7 +45,7 @@ export function SidebarHeader({
                   : "text-text-muted hover:text-text-secondary"
               }`}
           >
-            Data
+            {t("data")}
             {showDataBadge && dataCount > 0 && (
               <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent transition-all duration-200">
                 {dataCount > 9 ? "9+" : dataCount}
@@ -59,7 +61,7 @@ export function SidebarHeader({
                   : "text-text-muted hover:text-text-secondary"
               }`}
           >
-            Sources
+            {t("sources")}
             {showSourcesBadge && sourceCount > 0 && (
               <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent transition-all duration-200">
                 {sourceCount > 9 ? "9+" : sourceCount}

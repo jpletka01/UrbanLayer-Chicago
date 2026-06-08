@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { MapData } from "../../lib/types";
 import type { LandingSource } from "./DataSourceTabs";
 import { computePieSlices, computeTrends, getTrendMonthLabels } from "../../lib/analytics";
@@ -15,6 +16,7 @@ interface Props {
 const commaFmt = (n: number) => n.toLocaleString("en-US");
 
 export function LandingAnalytics({ mapData, source }: Props) {
+  const { t } = useTranslation("landing");
   const showCrime = source === "all" || source === "crime";
   const show311 = source === "all" || source === "311";
   const showPermits = source === "all" || source === "permits";
@@ -56,27 +58,27 @@ export function LandingAnalytics({ mapData, source }: Props) {
       ? srSlices
       : permitSlices;
 
-  const activeLabel = showCrime && crimeSlices.length > 0
-    ? "Crime"
+  const activeBreakdownKey = showCrime && crimeSlices.length > 0
+    ? "crimeBreakdown"
     : show311 && srSlices.length > 0
-      ? "311 Requests"
-      : "Permits";
+      ? "311Breakdown"
+      : "permitsBreakdown";
 
   return (
     <div className="space-y-6">
       {/* Stat badges */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {showCrime && totalCrimes > 0 && (
-          <StatBadge label="Crimes" value={totalCrimes} color="text-red-400" />
+          <StatBadge label={t("explorer.crimes")} value={totalCrimes} color="text-red-400" />
         )}
         {showCrime && totalCrimes > 0 && (
-          <StatBadge label="Arrest rate" value={Math.round(arrestRate * 100)} suffix="%" color="text-amber-400" />
+          <StatBadge label={t("explorer.arrestRate")} value={Math.round(arrestRate * 100)} suffix="%" color="text-amber-400" />
         )}
         {show311 && total311 > 0 && (
-          <StatBadge label="311 requests" value={total311} color="text-teal-400" />
+          <StatBadge label={t("explorer.311requests")} value={total311} color="text-teal-400" />
         )}
         {showPermits && totalPermits > 0 && (
-          <StatBadge label="Permits" value={totalPermits} color="text-green-400" />
+          <StatBadge label={t("explorer.permits")} value={totalPermits} color="text-green-400" />
         )}
       </div>
 
@@ -84,7 +86,7 @@ export function LandingAnalytics({ mapData, source }: Props) {
       {activePie.length > 0 && (
         <div className="space-y-4">
           <h4 className="text-xs font-medium text-text-muted uppercase tracking-wider">
-            {activeLabel} breakdown
+            {t(`explorer.${activeBreakdownKey}`)}
           </h4>
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <div className="flex-shrink-0">

@@ -1,9 +1,12 @@
+import { useTranslation } from "react-i18next";
+
 interface AuthModalProps {
   onSignIn: () => void;
   onClose: () => void;
 }
 
 export default function AuthModal({ onSignIn, onClose }: AuthModalProps) {
+  const { t } = useTranslation("common");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -13,11 +16,10 @@ export default function AuthModal({ onSignIn, onClose }: AuthModalProps) {
     >
       <div className="w-full max-w-sm mx-4 bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-2xl">
         <h2 className="text-lg font-semibold text-text-primary text-center mb-2">
-          Sign in to continue
+          {t("signInTitle")}
         </h2>
         <p className="text-sm text-text-secondary text-center mb-6">
-          Create an account to ask questions about Chicago. Free users get 25
-          queries per day.
+          {t("signInDescription")} {t("signInFreeNote")}.
         </p>
 
         <button
@@ -42,14 +44,14 @@ export default function AuthModal({ onSignIn, onClose }: AuthModalProps) {
               fill="#EA4335"
             />
           </svg>
-          Sign in with Google
+          {t("signIn")}
         </button>
 
         <button
           onClick={onClose}
           className="w-full mt-3 text-xs text-text-muted hover:text-text-secondary transition-colors text-center py-2"
         >
-          Continue browsing
+          {t("continueBrowsing")}
         </button>
       </div>
     </div>

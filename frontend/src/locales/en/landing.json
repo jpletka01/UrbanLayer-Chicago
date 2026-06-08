@@ -1,0 +1,182 @@
+{
+  "heroSubtitle": "Chicago public data, explored through conversation.",
+  "stats": {
+    "dataSources": "Data sources",
+    "codeSections": "Code sections",
+    "communityAreas": "Community areas",
+    "regulatoryLayers": "Regulatory layers"
+  },
+  "suggestions": [
+    "What's going on near 2400 N Milwaukee Ave?",
+    "Tell me about the property at 1425 N Wells St",
+    "Can I open a bar at 2200 W Chicago Ave?",
+    "Is Logan Square in a TIF district?"
+  ],
+  "intelligence": {
+    "heading": "One question. Twenty-five sources.",
+    "subheading": "Every query pulls from property records, zoning regulations, tax estimates, incentive programs, transit data, demographics, crime, 311, permits, business licenses, and 14,535 sections of municipal code — simultaneously.",
+    "domains": [
+      {
+        "title": "Property Intelligence",
+        "badge": "4 sources",
+        "points": ["Parcel characteristics", "Assessed values (5-yr)", "Sales history", "Tax estimation"]
+      },
+      {
+        "title": "Regulatory & Zoning",
+        "badge": "12 layers",
+        "points": ["Base zoning classification", "12 overlay districts", "FEMA flood zones", "EPA brownfield proximity"]
+      },
+      {
+        "title": "Incentives & Investment",
+        "badge": "3 datasets",
+        "points": ["TIF districts + financials", "Opportunity Zones", "Enterprise Zones"]
+      },
+      {
+        "title": "Neighborhood Context",
+        "badge": "4 sources",
+        "points": ["ACS demographics", "Transit proximity (CTA/Metra)", "Walk / Transit / Bike Score", "TOD eligibility"]
+      },
+      {
+        "title": "Safety & Activity",
+        "badge": "5 datasets",
+        "points": ["Crime (30 types + arrest rates)", "311 requests (105 types)", "Building permits & violations", "Business licenses"]
+      },
+      {
+        "title": "Municipal Code",
+        "badge": "Full text",
+        "points": ["14,535 searchable sections", "Cross-reference expansion", "Citation-linked answers"]
+      }
+    ]
+  },
+  "story": {
+    "businessTitle": "Open a business with confidence",
+    "businessSubtitle": "Check zoning compliance and 12 regulatory overlays, find TIF districts and incentive programs, review nearby competition through active business licenses, and understand the neighborhood — all from a single question.",
+    "residentTitle": "Find the right place to live",
+    "residentSubtitle": "Compare crime trends and arrest rates, check Walk Score and transit access, review property taxes and assessed values, see building violations and 311 patterns — the neighborhood report no listing gives you."
+  },
+  "depth": {
+    "heading": "Ask one question. Get the full picture.",
+    "subheading": "Here's what UrbanLayer returns when you ask about a single Chicago address.",
+    "cards": [
+      {
+        "title": "Property dossier",
+        "caption": "Parcel data, 5-year assessment history, sales records, and tax estimates from Cook County."
+      },
+      {
+        "title": "Regulatory profile",
+        "caption": "12 overlay layers checked per address — landmarks to flood zones to ADU eligibility."
+      },
+      {
+        "title": "Neighborhood snapshot",
+        "caption": "Demographics, transit access, and walkability scores assembled for every query."
+      }
+    ],
+    "pin": "PIN",
+    "class": "Class",
+    "building": "Building",
+    "lot": "Lot",
+    "assessmentHistory": "Assessment History",
+    "estAnnualTax": "Est. Annual Tax",
+    "zoning": "Zoning",
+    "activeOverlays": "Active Overlays",
+    "riskFactors": "Risk Factors",
+    "plannedDevelopment": "Planned Development",
+    "pedestrianStreet": "Pedestrian Street",
+    "todEligible": "TOD Eligible",
+    "noFloodZone": "No Flood Zone",
+    "noBrownfield": "No Brownfield",
+    "walkability": "Walkability",
+    "walkScore": "Walk Score",
+    "transitScore": "Transit Score",
+    "bikeScore": "Bike Score",
+    "nearestTransit": "Nearest Transit",
+    "demographics": "Demographics",
+    "population": "Population",
+    "medIncome": "Med. Income",
+    "ownerOcc": "Owner-Occ.",
+    "medAge": "Med. Age"
+  },
+  "explorer": {
+    "heading": "Explore a neighborhood",
+    "subheading": "Pick a community area or enter an address to explore live city data — crime patterns, 311 service requests, building permits, and month-over-month trends, updated from the Chicago Data Portal.",
+    "sampleData": "Showing sample data",
+    "neighborhood": "Neighborhood",
+    "address": "Address",
+    "or": "or",
+    "searchAreas": "Search areas...",
+    "enterAddress": "Enter an address...",
+    "all": "All",
+    "crime": "Crime",
+    "311": "311",
+    "permits": "Permits",
+    "crimes": "Crimes",
+    "arrestRate": "Arrest rate",
+    "311requests": "311 requests",
+    "breakdown": "{{label}} breakdown",
+    "crimeBreakdown": "Crime breakdown",
+    "311Breakdown": "311 Requests breakdown",
+    "permitsBreakdown": "Permits breakdown"
+  },
+  "personas": {
+    "heading": "Built for real decisions",
+    "subheading": "Whether you're evaluating a property, siting a business, or choosing a neighborhood.",
+    "returns": "UrbanLayer returns",
+    "items": [
+      {
+        "title": "The Investor",
+        "question": "Tell me about the property at 1425 N Wells St",
+        "domains": ["Property Details", "Assessment History", "Tax Estimate", "TIF Status", "Opportunity Zone", "Zoning + Overlays"],
+        "framing": "Due diligence that used to take a week of FOIA requests."
+      },
+      {
+        "title": "The Business Owner",
+        "question": "Can I open a restaurant at 2200 W Chicago Ave?",
+        "domains": ["Zoning Classification", "Permitted Uses", "Regulatory Overlays", "Nearby Businesses", "Building Permits", "Incentive Programs"],
+        "framing": "Everything between your idea and your lease agreement."
+      },
+      {
+        "title": "The Resident",
+        "question": "What's it like living near Damen and Division?",
+        "domains": ["Crime Trends (90d)", "311 Patterns", "Walk / Transit Score", "CTA Access", "Demographics", "Building Activity"],
+        "framing": "The neighborhood report no listing gives you."
+      }
+    ]
+  },
+  "howItWorks": {
+    "heading": "How it works",
+    "steps": [
+      {
+        "title": "You ask",
+        "description": "Ask in plain English — no query language, no filters to configure, no forms to fill out.",
+        "query": "Can I build a 6-flat at 2100 N Damen?"
+      },
+      {
+        "title": "We retrieve",
+        "description": "Your question activates the right combination of city, county, federal, and legal data sources — in parallel."
+      },
+      {
+        "title": "You get answers",
+        "description": "A sourced, cited answer with interactive maps, trend analysis, and linked code references. Not a spreadsheet."
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "Chicago public data, explored through conversation.",
+    "copyright": "© 2026 UrbanLayer",
+    "dataSources": "Data Sources",
+    "cityOfChicago": "City of Chicago",
+    "cityOfChicagoDesc": "Crime, 311, Permits, Violations, Business Licenses,",
+    "zoningMapServer": "Zoning MapServer",
+    "overlayLayers": "(12 overlay layers)",
+    "cookCounty": "Cook County",
+    "cookCountyDesc": "Property Characteristics, Assessed Values, Sales History, Tax Estimation",
+    "federalExternal": "Federal & External",
+    "federalExternalDesc": "Census Demographics, FEMA Flood Zones, EPA Brownfields, Walk Score",
+    "legal": "Legal",
+    "legalDesc": "Chicago Municipal Code (14,535 sections)",
+    "about": "About",
+    "howItWorks": "How it works",
+    "notAffiliated": "Not affiliated with the City of Chicago",
+    "dataDelay": "Data may be delayed up to 7 days"
+  }
+}

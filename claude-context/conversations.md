@@ -86,7 +86,7 @@ All conversation endpoints use `Depends(get_current_user)` which returns `dict |
 7. Server OOM check: `dmesg | grep -i -E 'oom|kill|memory'` (exit code 137 = SIGKILL from OOM killer)
 
 ### Key Design Notes
-- `verify_csrf()` exists in `auth.py:186` but is **never called** as a FastAPI dependency — CSRF is not enforced on any endpoint
+- `CSRFMiddleware` in `main.py` enforces CSRF double-submit on all POST/PUT/DELETE/PATCH requests. Exempt paths: `/api/webhook/stripe` (server-to-server), `/api/auth/refresh` (cookie may be expired), `/api/auth/logout`. In dev mode (no `GOOGLE_CLIENT_ID`), CSRF is skipped entirely. `verify_csrf()` in `auth.py` is the original function (kept for reference) but the middleware handles enforcement
 - The 401-interceptor uses raw `fetch` (not `authFetch`) for the refresh call to avoid infinite recursion
 - A module-level `_refreshPromise` coalesces concurrent 401s — only one refresh request fires
 - After refresh, CSRF token is re-read from `document.cookie` since refresh sets a new one

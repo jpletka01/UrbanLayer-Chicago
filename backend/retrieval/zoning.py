@@ -5,6 +5,7 @@ Layer 1 ("Zoning Boundaries") returns ZONE_CLASS (e.g. "B2", "RS-3", "DC-16"),
 ZONE_TYPE, and ORDINANCE_NUM for spatial queries (point or envelope).
 """
 
+import asyncio
 import logging
 
 import httpx
@@ -90,6 +91,39 @@ async def lookup_zoning(
     except Exception as exc:
         log.warning("Zoning lookup failed for (%s, %s): %s", lat, lon, exc)
         return None
+
+
+async def adjacent_parcel_zoning(
+    lat: float,
+    lon: float,
+    *,
+    offset_deg: float = 0.001,
+    client: httpx.AsyncClient | None = None,
+) -> dict[str, str | None]:
+    """Look up zoning at 4 cardinal points around a location.
+
+    Returns {"N": "RS-3", "S": "B3-2", "E": "RS-3", "W": "RS-3"}.
+    """
+    directions = {
+        "N": (lat + offset_deg, lon),
+        "S": (lat - offset_deg, lon),
+        "E": (lat, lon + offset_deg),
+        "W": (lat, lon - offset_deg),
+    }
+    tasks = {
+        d: lookup_zoning(coords[0], coords[1], client=client)
+        for d, coords in directions.items()
+    }
+    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    adjacent: dict[str, str | None] = {}
+    for direction, result in zip(tasks.keys(), results):
+        if isinstance(result, Exception):
+            adjacent[direction] = None
+        elif result and result.get("zone_class"):
+            adjacent[direction] = result["zone_class"]
+        else:
+            adjacent[direction] = None
+    return adjacent
 
 
 _EMPTY_FC: dict = {"type": "FeatureCollection", "features": []}

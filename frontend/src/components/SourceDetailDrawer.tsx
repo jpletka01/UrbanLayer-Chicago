@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { isResolvableSection } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
+  const { t } = useTranslation("sidebar");
   const chunk = view?.chunk ?? null;
   const { copied, copy } = useCopyButton(chunk?.text ?? "");
 
@@ -46,7 +48,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                   </svg>
                   <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Municipal Code
+                    {t("municipalCode")}
                   </span>
                 </div>
                 {chunk ? (
@@ -62,7 +64,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                   </>
                 ) : (
                   <h2 className="text-base font-semibold text-text-primary">
-                    {view.loading ? "Loading section…" : "Section not found"}
+                    {view.loading ? t("loadingSection") : t("sectionNotFound")}
                   </h2>
                 )}
               </div>
@@ -72,7 +74,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                     onClick={copy}
                     className="p-2 rounded-lg bg-dark-surface border border-dark-border
                                text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-all"
-                    title="Copy full text"
+                    title={t("copyFullText")}
                   >
                     {copied ? (
                       <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

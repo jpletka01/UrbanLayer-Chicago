@@ -22,12 +22,14 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.analytics import compute_analytics
 from backend.assembler import assemble_context
 from backend.config import get_settings
 from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
+from backend.llm import tracked_create
 from backend import db
 from backend.models import (
     ChatChunk,
@@ -54,14 +56,14 @@ from backend.retrieval.neighborhood import neighborhood_domain
 from backend.retrieval.property import property_domain
 from backend.retrieval.regulatory import regulatory_domain
 from backend.retrieval.regulatory.aro_housing import aro_housing_by_community_area
-from backend.retrieval.zoning import lookup_zoning
+from backend.retrieval.zoning import adjacent_parcel_zoning, lookup_zoning
 from backend.retrieval.vector_search import (
     expand_cross_references,
     get_full_section,
     semantic_search,
 )
 from backend.router import route
-from backend.synthesizer import stream_answer
+from backend.synthesizer import LANGUAGE_NAMES, stream_answer
 
 
 log = logging.getLogger(__name__)
@@ -85,6 +87,30 @@ if _settings_init.sentry_dsn:
 
 app = FastAPI(title="Chicago City Intelligence")
 
+_CSRF_EXEMPT_PATHS = {
+    "/api/webhook/stripe",
+    "/api/auth/refresh",
+    "/api/auth/logout",
+}
+
+
+class CSRFMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            if request.url.path not in _CSRF_EXEMPT_PATHS:
+                from backend.auth import _auth_enabled
+                if _auth_enabled():
+                    cookie_token = request.cookies.get("csrf_token", "")
+                    header_token = request.headers.get("x-csrf-token", "")
+                    if not cookie_token or cookie_token != header_token:
+                        from starlette.responses import JSONResponse
+                        return JSONResponse(
+                            status_code=403,
+                            content={"detail": "CSRF token mismatch"},
+                        )
+        return await call_next(request)
+
+
 _settings = get_settings()
 if _settings.cors_origins:
     app.add_middleware(
@@ -94,6 +120,7 @@ if _settings.cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+app.add_middleware(CSRFMiddleware)
 
 
 @app.on_event("startup")
@@ -342,7 +369,8 @@ async def create_conversation(
 ) -> dict:
     conv_id = body.get("id", f"conv_{int(time.time() * 1000)}")
     title = body.get("title", "New conversation")
-    return await db.create_conversation(conv_id, title, _user_id(user))
+    language = body.get("language", "en")
+    return await db.create_conversation(conv_id, title, _user_id(user), language=language)
 
 
 @app.get("/api/conversations/{conv_id}")
@@ -675,6 +703,10 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
             else:
                 results[key] = value
 
+    prop_summary = results.get("property")
+    if prop_summary is not None and hasattr(prop_summary, "data_gaps"):
+        partial_failures.extend(prop_summary.data_gaps)
+
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
         chunks = await semantic_search(plan.search_query, top_k=5)
@@ -714,11 +746,17 @@ async def _fetch_overlay_geojson(
     return await overlay_geojson_features(lat, lon, layer_ids)
 
 
-async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
+async def _fetch_map_rows(
+    plan: RetrievalPlan,
+    *,
+    cached_community_area: int | None = None,
+) -> dict[str, Any]:
     """Fetch raw geo-located rows for analytics computation."""
     ca = plan.location.resolved_community_area
     if ca is None:
         return {}
+
+    skip_polygons = cached_community_area is not None and cached_community_area == ca
 
     tasks: dict[str, asyncio.Task] = {}
 
@@ -734,32 +772,33 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
         tasks["building_permits"] = asyncio.create_task(_limited(
             permits_for_map(ca, days=plan.time_range_days)
         ))
-    if plan.requires_disclaimer:
+    if plan.requires_disclaimer and not skip_polygons:
         tasks["zoning"] = asyncio.create_task(_limited(
             zoning_for_map(ca)
         ))
 
     loc = plan.location
-    if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
-        tasks["overlay_geojson"] = asyncio.create_task(_limited(
-            _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon)
-        ))
+    if not skip_polygons:
+        if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+            tasks["overlay_geojson"] = asyncio.create_task(_limited(
+                _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon)
+            ))
 
-    if "incentives_domain" in plan.sources:
-        if loc.resolved_lat and loc.resolved_lon:
-            from backend.retrieval.incentives.tif import tif_geojson_feature
-            from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
-            tasks["tif_geojson"] = asyncio.create_task(_limited(
-                tif_geojson_feature(loc.resolved_lat, loc.resolved_lon)
-            ))
-            tasks["ez_geojson"] = asyncio.create_task(_limited(
-                ez_geojson_feature(loc.resolved_lat, loc.resolved_lon)
-            ))
-        elif ca is not None:
-            from backend.retrieval.incentives.tif import tif_geojson_by_community_area
-            tasks["tif_geojson_list"] = asyncio.create_task(_limited(
-                tif_geojson_by_community_area(ca)
-            ))
+        if "incentives_domain" in plan.sources:
+            if loc.resolved_lat and loc.resolved_lon:
+                from backend.retrieval.incentives.tif import tif_geojson_feature
+                from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
+                tasks["tif_geojson"] = asyncio.create_task(_limited(
+                    tif_geojson_feature(loc.resolved_lat, loc.resolved_lon)
+                ))
+                tasks["ez_geojson"] = asyncio.create_task(_limited(
+                    ez_geojson_feature(loc.resolved_lat, loc.resolved_lon)
+                ))
+            elif ca is not None:
+                from backend.retrieval.incentives.tif import tif_geojson_by_community_area
+                tasks["tif_geojson_list"] = asyncio.create_task(_limited(
+                    tif_geojson_by_community_area(ca)
+                ))
 
     results: dict[str, Any] = {}
     if tasks:
@@ -773,6 +812,24 @@ async def _fetch_map_rows(plan: RetrievalPlan) -> dict[str, Any]:
                 results[key] = value
 
     return results
+
+
+def _simplify_geojson(fc: dict | None, tolerance: float = 0.0001) -> dict | None:
+    """Simplify polygon geometries in a GeoJSON FeatureCollection."""
+    if fc is None or "features" not in fc:
+        return fc
+    from shapely.geometry import shape, mapping
+    simplified_features = []
+    for feature in fc["features"]:
+        geom = feature.get("geometry")
+        if geom and geom.get("type") in ("Polygon", "MultiPolygon"):
+            try:
+                s = shape(geom).simplify(tolerance, preserve_topology=True)
+                feature = {**feature, "geometry": mapping(s)}
+            except Exception:
+                pass
+        simplified_features.append(feature)
+    return {**fc, "features": simplified_features}
 
 
 def _build_map_response(
@@ -819,9 +876,9 @@ def _build_map_response(
         crimes=crimes,
         requests_311=requests_311,
         building_permits=building_permits,
-        zoning=map_rows.get("zoning"),
-        overlay_districts=map_rows.get("overlay_geojson"),
-        incentive_zones=incentive_zones,
+        zoning=_simplify_geojson(map_rows.get("zoning")),
+        overlay_districts=_simplify_geojson(map_rows.get("overlay_geojson")),
+        incentive_zones=_simplify_geojson(incentive_zones),
         queried_address=queried_address,
         capped=capped,
     )
@@ -864,6 +921,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             req.message, req.history,
             request_group=request_group,
             conversation_id=req.conversation_id,
+            language=req.language,
         )
         timings["conv_synth"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
@@ -897,7 +955,27 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     yield _sse(ChatChunk(type="plan", plan=plan, t_ms=elapsed_ms()))
 
     if plan.intent == "clarification_needed" and plan.clarification:
-        yield _sse(ChatChunk(type="token", text=plan.clarification, t_ms=elapsed_ms()))
+        clarification_text = plan.clarification
+        if req.language != "en":
+            try:
+                lang_name = LANGUAGE_NAMES.get(req.language, req.language)
+                resp = await tracked_create(
+                    request_group=request_group,
+                    conversation_id=req.conversation_id,
+                    phase="translation",
+                    model=settings.conversation_model,
+                    max_tokens=200,
+                    system=f"Translate the following text to {lang_name}. Output ONLY the translation.",
+                    messages=[{"role": "user", "content": clarification_text}],
+                )
+                translated = "".join(
+                    b.text for b in resp.content if getattr(b, "type", "") == "text"
+                ).strip()
+                if translated:
+                    clarification_text = translated
+            except Exception:
+                log.warning("Clarification translation failed, using English", exc_info=True)
+        yield _sse(ChatChunk(type="token", text=clarification_text, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "ok", None,
@@ -909,7 +987,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         t0 = time.monotonic()
         context, map_rows = await asyncio.gather(
             _retrieve(plan),
-            _fetch_map_rows(plan),
+            _fetch_map_rows(plan, cached_community_area=req.cached_community_area),
         )
         timings["retrieval"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
@@ -955,6 +1033,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             upload_ids=req.upload_ids or None,
             request_group=request_group,
             conversation_id=req.conversation_id,
+            language=req.language,
         ):
             chunk_t = elapsed_ms() if first_token else None
             if first_token:
@@ -1015,6 +1094,7 @@ async def _save_request_log(
             total_duration_ms=total_duration_ms,
             status=status,
             error_message=error_message[:500] if error_message else None,
+            language=req.language,
         )
     except Exception:
         log.warning("Failed to save request log")
@@ -1256,34 +1336,199 @@ async def explore_map(
     }
 
 
-@app.get("/api/report")
-async def report(
-    request: Request,
-    address: str | None = None,
-    lat: float | None = None,
-    lon: float | None = None,
-    pin: str | None = None,
-    _user: dict = Depends(require_tier("premium")),
-) -> Response:
-    """Generate a 5-page PDF zoning report for a property."""
-    import re
-    from datetime import date
-    from pathlib import Path
+def _generate_comps_chart(comps: "ComparablesSummary") -> str | None:
+    """Generate a base64-encoded PNG scatter chart of comparable sales."""
+    import base64
+    import io
+    from datetime import datetime
 
-    from jinja2 import Environment, FileSystemLoader
-    from weasyprint import HTML
+    if not comps or not comps.sales or len(comps.sales) < 2:
+        return None
 
-    resolved_lat, resolved_lon, resolved_address = await _resolve_location(
-        address, lat, lon, pin
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+    except ImportError:
+        log.warning("matplotlib not available, skipping comps chart")
+        return None
+
+    dates = []
+    prices = []
+    for s in comps.sales:
+        if s.sale_date and s.sale_price:
+            try:
+                dt = datetime.strptime(s.sale_date[:10], "%Y-%m-%d")
+                dates.append(dt)
+                prices.append(s.sale_price)
+            except ValueError:
+                continue
+
+    if len(dates) < 2:
+        return None
+
+    fig, ax = plt.subplots(figsize=(5.5, 2.5), dpi=150)
+    ax.scatter(
+        dates, [p / 1000 for p in prices],
+        c="#2563eb", s=50, zorder=3, edgecolors="white", linewidth=0.5,
     )
-    data = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
-    ctx = data["context"]
 
-    # Fetch zoning bulk standards via vector search
+    if comps.median_sale_price:
+        ax.axhline(
+            y=comps.median_sale_price / 1000,
+            color="#9ca3af", linestyle="--", linewidth=0.8,
+            label=f"Median ${comps.median_sale_price:,.0f}",
+        )
+        ax.legend(fontsize=7, loc="upper left", frameon=False)
+
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b '%y"))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.set_ylabel("Sale Price ($K)", fontsize=8, color="#374151")
+    ax.set_xlabel("", fontsize=8)
+    ax.tick_params(axis="both", labelsize=7, colors="#6b7280")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_color("#e5e7eb")
+    ax.spines["bottom"].set_color("#e5e7eb")
+    ax.grid(axis="y", color="#f3f4f6", linewidth=0.5)
+    ax.set_axisbelow(True)
+
+    fig.tight_layout(pad=0.5)
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode("ascii")
+
+
+async def _fetch_report_data(
+    resolved_lat: float,
+    resolved_lon: float,
+    resolved_address: str | None,
+) -> "ReportData":
+    """Fetch all data for a v2 development feasibility report."""
+    from backend.models import (
+        ComparablesSummary, ComparableSale, NearbyDevelopment, ReportData,
+    )
+    from backend.retrieval.buildings import (
+        address_specific_permits, address_specific_violations,
+        nearby_new_construction, parse_chicago_address,
+    )
+    from backend.retrieval.property.sales import nearby_comparable_sales
+    from backend.zoning_extract import calculate_development_potential, extract_zoning_standards
+
+    # Step 1: Base scorecard data
+    base = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
+    ctx = base["context"]
+    partial_failures: list[str] = list(base.get("partial_failures", []))
+
+    # Step 2: v2 data retrievals in parallel
+    zone_class = ctx.parcel_zoning.zone_class if ctx.parcel_zoning else None
+    v2_tasks: dict[str, asyncio.Task] = {}
+
+    if zone_class:
+        v2_tasks["zoning_standards"] = asyncio.create_task(
+            _limited(extract_zoning_standards(zone_class, request_group="report"))
+        )
+
+    v2_tasks["adjacent_zoning"] = asyncio.create_task(
+        _limited(adjacent_parcel_zoning(resolved_lat, resolved_lon))
+    )
+
+    if resolved_address:
+        parsed = parse_chicago_address(resolved_address)
+        if parsed:
+            v2_tasks["address_permits"] = asyncio.create_task(
+                _limited(address_specific_permits(
+                    parsed["number"], parsed["direction"], parsed["name"]
+                ))
+            )
+            v2_tasks["address_violations"] = asyncio.create_task(
+                _limited(address_specific_violations(
+                    parsed["number"], parsed["direction"], parsed["name"]
+                ))
+            )
+
+    # Comparable sales (use property class prefix if available)
+    class_prefix = ""
+    if ctx.property and ctx.property.bldg_class:
+        class_prefix = ctx.property.bldg_class[0]
+    if class_prefix:
+        v2_tasks["comparable_sales"] = asyncio.create_task(
+            _limited(nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix))
+        )
+
+    v2_tasks["nearby_construction"] = asyncio.create_task(
+        _limited(nearby_new_construction(resolved_lat, resolved_lon))
+    )
+
+    # Gather v2 results
+    v2_done = await asyncio.gather(*v2_tasks.values(), return_exceptions=True)
+    v2_results: dict[str, Any] = {}
+    _V2_FAILURE_MAP = {
+        "zoning_standards": "zoning code extraction",
+        "adjacent_zoning": "adjacent zoning",
+        "address_permits": "address-specific permits",
+        "address_violations": "address-specific violations",
+        "comparable_sales": "comparable sales",
+        "nearby_construction": "nearby construction activity",
+    }
+    for key, value in zip(v2_tasks.keys(), v2_done):
+        if isinstance(value, Exception):
+            log.warning("Report v2 retrieval %s failed: %s", key, value)
+            v2_results[key] = None
+            if key in _V2_FAILURE_MAP:
+                partial_failures.append(_V2_FAILURE_MAP[key])
+        else:
+            v2_results[key] = value
+
+    # Step 3: Calculate development potential
+    standards = v2_results.get("zoning_standards")
+    dev_potential = None
+    if standards and ctx.property:
+        land_sqft = ctx.property.land_sqft or 0
+        bldg_sqft = ctx.property.bldg_sqft or 0
+        if land_sqft > 0:
+            dev_potential = calculate_development_potential(standards, land_sqft, bldg_sqft)
+
+    # Step 4: Effective tax rate
+    effective_tax_rate = None
+    if ctx.property:
+        assessed = ctx.property.total_assessed_value
+        annual_tax = ctx.property.estimated_annual_tax
+        # Fallback: use most recent assessment total if direct value is missing
+        if not assessed and ctx.property.assessment_history:
+            for ah in ctx.property.assessment_history:
+                if ah.total and ah.total > 0:
+                    assessed = ah.total
+                    break
+        if assessed and assessed > 0 and annual_tax and annual_tax > 0:
+            # Cook County: market value ≈ assessed / 0.10 (residential)
+            market_value = assessed / 0.10
+            effective_tax_rate = round(annual_tax / market_value, 4)
+
+    # Step 5: Static map URL
+    settings = get_settings()
+    mapbox_token = ""
+    try:
+        import os
+        mapbox_token = os.environ.get("VITE_MAPBOX_TOKEN", "")
+    except Exception:
+        pass
+    static_map_url = None
+    if mapbox_token:
+        static_map_url = (
+            f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
+            f"pin-l+2563eb({resolved_lon},{resolved_lat})/"
+            f"{resolved_lon},{resolved_lat},15/600x400@2x"
+            f"?access_token={mapbox_token}"
+        )
+
+    # Step 6: Build bulk standards text fallback (for low-confidence extraction)
     bulk_standards_text = ""
-    zone_class = ""
-    if ctx.parcel_zoning and ctx.parcel_zoning.zone_class:
-        zone_class = ctx.parcel_zoning.zone_class
+    if zone_class:
         try:
             chunks = await _limited(
                 semantic_search(
@@ -1295,30 +1540,206 @@ async def report(
                 bulk_standards_text = "\n\n".join(
                     f"[{c.section_title}]\n{c.text}" for c in chunks[:3]
                 )
-        except Exception as e:
-            log.warning("Vector search for bulk standards failed: %s", e)
+        except Exception:
+            pass
+
+    # Build comparable sales summary
+    comps_data = v2_results.get("comparable_sales") or {"summary": {}, "sales": []}
+    comps_summary = None
+    if comps_data.get("sales"):
+        s = comps_data["summary"]
+        comps_summary = ComparablesSummary(
+            median_sale_price=s.get("median_sale_price"),
+            median_price_per_land_sqft=s.get("median_price_per_land_sqft"),
+            median_price_per_bldg_sqft=s.get("median_price_per_bldg_sqft"),
+            price_range_min=s.get("price_range_min"),
+            price_range_max=s.get("price_range_max"),
+            sales_volume=s.get("sales_volume", 0),
+            sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
+        )
+
+    # Build nearby development
+    nc_data = v2_results.get("nearby_construction")
+    nearby_dev = None
+    if nc_data:
+        nearby_dev = NearbyDevelopment(
+            new_construction_count=nc_data.get("new_construction_count", 0),
+            demolition_count=nc_data.get("demolition_count", 0),
+            recent_projects=nc_data.get("recent_projects", []),
+        )
+
+    # Generate comparable sales chart
+    comps_chart_b64 = None
+    if comps_summary and comps_summary.sales and len(comps_summary.sales) >= 2:
+        loop = asyncio.get_running_loop()
+        try:
+            comps_chart_b64 = await loop.run_in_executor(
+                None, _generate_comps_chart, comps_summary
+            )
+        except Exception:
+            log.warning("Failed to generate comps chart", exc_info=True)
+
+    return ReportData(
+        address=resolved_address,
+        lat=resolved_lat,
+        lon=resolved_lon,
+        community_area=base.get("community_area"),
+        community_area_name=base.get("community_area_name"),
+        context=ctx,
+        zoning_standards=standards,
+        development_potential=dev_potential,
+        comparables=comps_summary,
+        address_permits=v2_results.get("address_permits") or [],
+        address_violations=v2_results.get("address_violations") or [],
+        adjacent_zoning=v2_results.get("adjacent_zoning") or {},
+        nearby_development=nearby_dev,
+        effective_tax_rate=effective_tax_rate,
+        static_map_url=static_map_url,
+        comps_chart_b64=comps_chart_b64,
+        bulk_standards_text=bulk_standards_text,
+        partial_failures=partial_failures,
+    )
+
+
+def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
+    """Inject realistic test data for visual QA of all v2 sections."""
+    from backend.models import (
+        ComparableSale, ComparablesSummary, DevelopmentPotential,
+        NearbyDevelopment, ZoningStandards,
+    )
+
+    # Force zoning extraction with high confidence
+    report_data.zoning_standards = ZoningStandards(
+        far=2.2,
+        max_height_ft=50,
+        max_stories=4,
+        lot_coverage_pct=0.75,
+        min_lot_area_sqft=2500,
+        front_setback_ft=0,
+        side_setback_ft=0,
+        rear_setback_ft=30,
+        parking_residential="1 per unit",
+        parking_commercial="1 per 500 sq ft GFA",
+        permitted_uses=["Retail Sales", "Restaurant", "Office", "Personal Service", "Residential above ground floor"],
+        special_uses=["Tavern", "Drive-Through Facility", "Gas Station"],
+        notes=["Ground floor transparency minimum 60%", "TOD area may reduce parking requirement"],
+        extraction_confidence="high",
+    )
+
+    # Force development potential with surplus
+    land_sqft = report_data.context.property.land_sqft if report_data.context.property else 5000
+    bldg_sqft = report_data.context.property.bldg_sqft if report_data.context.property else 3200
+    if not land_sqft:
+        land_sqft = 5000
+    if not bldg_sqft:
+        bldg_sqft = 3200
+    report_data.development_potential = DevelopmentPotential(
+        max_buildable_sqft=int(2.2 * land_sqft),
+        max_lot_coverage_sqft=int(0.75 * land_sqft),
+        development_surplus_sqft=int(2.2 * land_sqft) - bldg_sqft,
+    )
+
+    # Force effective tax rate + ensure property has tax/assessment for display
+    report_data.effective_tax_rate = 0.0218
+    if report_data.context.property:
+        if not report_data.context.property.estimated_annual_tax:
+            report_data.context.property.estimated_annual_tax = 8720
+        if not report_data.context.property.total_assessed_value:
+            report_data.context.property.total_assessed_value = 40000
+
+    # Force comparable sales
+    report_data.comparables = ComparablesSummary(
+        median_sale_price=425000.0,
+        median_price_per_land_sqft=142.0,
+        median_price_per_bldg_sqft=195.0,
+        price_range_min=275000.0,
+        price_range_max=680000.0,
+        sales_volume=7,
+        sales=[
+            ComparableSale(pin="14-30-316-001", sale_date="2025-11-14", sale_price=520000, class_code="212", land_sqft=3125, bldg_sqft=2400, price_per_land_sqft=166.4, price_per_bldg_sqft=216.7, deed_type="WARRANTY", distance_mi=0.08),
+            ComparableSale(pin="14-30-314-022", sale_date="2025-08-22", sale_price=450000, class_code="211", land_sqft=2750, bldg_sqft=1850, price_per_land_sqft=163.6, price_per_bldg_sqft=243.2, deed_type="WARRANTY", distance_mi=0.12),
+            ComparableSale(pin="14-30-318-015", sale_date="2025-06-03", sale_price=425000, class_code="212", land_sqft=3000, bldg_sqft=2200, price_per_land_sqft=141.7, price_per_bldg_sqft=193.2, deed_type="TRUSTEE", distance_mi=0.15),
+            ComparableSale(pin="14-30-320-009", sale_date="2025-03-18", sale_price=385000, class_code="211", land_sqft=2800, bldg_sqft=2100, price_per_land_sqft=137.5, price_per_bldg_sqft=183.3, deed_type="WARRANTY", distance_mi=0.18),
+            ComparableSale(pin="14-30-312-041", sale_date="2024-12-05", sale_price=680000, class_code="212", land_sqft=4500, bldg_sqft=3600, price_per_land_sqft=151.1, price_per_bldg_sqft=188.9, deed_type="WARRANTY", distance_mi=0.21),
+            ComparableSale(pin="14-30-322-007", sale_date="2024-09-11", sale_price=310000, class_code="211", land_sqft=2500, bldg_sqft=1600, price_per_land_sqft=124.0, price_per_bldg_sqft=193.8, deed_type="WARRANTY", distance_mi=0.22),
+            ComparableSale(pin="14-30-310-033", sale_date="2024-06-27", sale_price=275000, class_code="211", land_sqft=2400, bldg_sqft=1500, price_per_land_sqft=114.6, price_per_bldg_sqft=183.3, deed_type="TRUSTEE", distance_mi=0.24),
+        ],
+    )
+
+    # Force address-specific permits
+    report_data.address_permits = [
+        {"permit_": "100654321", "permit_type": "PERMIT - RENOVATION/ALTERATION", "work_description": "INTERIOR RENOVATION - COMMERCIAL SPACE BUILDOUT FOR RESTAURANT", "issue_date": "2025-09-14", "reported_cost": "185000", "contact_1_name": "ABC CONSTRUCTION LLC"},
+        {"permit_": "100654322", "permit_type": "PERMIT - SIGNS", "work_description": "INSTALL ILLUMINATED WALL SIGN 4x8", "issue_date": "2025-06-02", "reported_cost": "8500", "contact_1_name": "CHICAGO SIGN CO"},
+        {"permit_": "100654323", "permit_type": "PERMIT - EASY PERMIT PROCESS", "work_description": "ELECTRICAL - UPGRADE SERVICE TO 400A", "issue_date": "2025-01-18", "reported_cost": "12000", "contact_1_name": "METRO ELECTRIC INC"},
+        {"permit_": "100654324", "permit_type": "PERMIT - RENOVATION/ALTERATION", "work_description": "TUCKPOINTING AND MASONRY REPAIR - REAR WALL", "issue_date": "2024-08-22", "reported_cost": "45000", "contact_1_name": "LAKESIDE MASONRY"},
+        {"permit_": "100654325", "permit_type": "PERMIT - EASY PERMIT PROCESS", "work_description": "PLUMBING - REPLACE WATER HEATER", "issue_date": "2024-03-11", "reported_cost": "3200", "contact_1_name": "AAA PLUMBING SERVICES"},
+    ]
+
+    # Force address-specific violations
+    report_data.address_violations = [
+        {"violation_date": "2025-04-15", "violation_status": "OPEN", "inspection_number": "14823456", "violation_description": "FAILURE TO MAINTAIN EXTERIOR WALLS - DETERIORATED MASONRY MORTAR JOINTS ON NORTH ELEVATION"},
+        {"violation_date": "2024-11-03", "violation_status": "COMPLIED", "inspection_number": "14712345", "violation_description": "FAILED TO MAINTAIN REQUIRED EXIT SIGN ILLUMINATION IN REAR STAIRWELL"},
+        {"violation_date": "2024-06-20", "violation_status": "COMPLIED", "inspection_number": "14601234", "violation_description": "FAILURE TO MAINTAIN ALLEY AND REAR YARD FREE OF DEBRIS AND REFUSE"},
+    ]
+
+    # Force nearby development
+    report_data.nearby_development = NearbyDevelopment(
+        new_construction_count=4,
+        demolition_count=2,
+        recent_projects=[],
+    )
+
+    # Force adjacent zoning
+    report_data.adjacent_zoning = {"N": "B3-2", "S": "RS-3", "E": "B3-2", "W": "RT-4"}
+
+    # Generate comps chart for mock data
+    try:
+        report_data.comps_chart_b64 = _generate_comps_chart(report_data.comparables)
+    except Exception:
+        pass
+
+    # Clear partial failures since mock data is complete
+    report_data.partial_failures = []
+
+    return report_data
+
+
+@app.get("/api/report")
+async def report(
+    request: Request,
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+    mock: bool = False,
+    _user: dict = Depends(require_tier("premium")),
+) -> Response:
+    """Generate a PDF development feasibility & site intelligence report."""
+    import re
+    from datetime import date
+
+    from jinja2 import Environment, FileSystemLoader
+    from weasyprint import HTML
+
+    resolved_lat, resolved_lon, resolved_address = await _resolve_location(
+        address, lat, lon, pin
+    )
+    report_data = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
+
+    if mock:
+        report_data = _apply_mock_overrides(report_data)
 
     # Render HTML template
     template_dir = Path(__file__).parent / "templates"
     env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
     env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
+    env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
+    env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
     template = env.get_template("zoning_report.html")
 
     html_content = template.render(
-        address=resolved_address,
-        lat=resolved_lat,
-        lon=resolved_lon,
-        community_area_name=data.get("community_area_name"),
+        report=report_data,
         report_date=date.today().strftime("%B %d, %Y"),
-        property=ctx.property,
-        zoning=ctx.parcel_zoning,
-        regulatory=ctx.regulatory,
-        incentives=ctx.incentives,
-        neighborhood=ctx.neighborhood,
-        crime=ctx.crime_last_90d,
-        permits=ctx.permits,
-        address_311=ctx.address_311,
-        bulk_standards=bulk_standards_text,
     )
 
     # Generate PDF
@@ -1326,7 +1747,7 @@ async def report(
 
     # Build filename
     slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
-    filename = f"{slug}_{date.today().isoformat()}_zoning_report.pdf"
+    filename = f"{slug}_{date.today().isoformat()}_feasibility_report.pdf"
 
     return Response(
         content=pdf_bytes,

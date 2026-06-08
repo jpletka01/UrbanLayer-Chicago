@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { COMMUNITY_AREA_LIST } from "../../lib/communityAreas";
 import { getAutocomplete, getCommunityAreaByPoint } from "../../lib/api";
 import type { AddressSuggestion } from "../../lib/types";
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function NeighborhoodSelector({ onSelect, loading }: Props) {
+  const { t } = useTranslation("landing");
   // Neighborhood dropdown state
   const [query, setQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -117,7 +119,7 @@ export function NeighborhoodSelector({ onSelect, loading }: Props) {
       {/* Neighborhood dropdown */}
       <div ref={dropdownRef} className="relative w-full sm:w-64">
         <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1.5">
-          Neighborhood
+          {t("explorer.neighborhood")}
         </label>
         <input
           ref={inputRef}
@@ -126,7 +128,7 @@ export function NeighborhoodSelector({ onSelect, loading }: Props) {
           onChange={(e) => { setQuery(e.target.value); setDropdownOpen(true); }}
           onFocus={() => setDropdownOpen(true)}
           onKeyDown={handleNeighborhoodKey}
-          placeholder="Search areas..."
+          placeholder={t("explorer.searchAreas")}
           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 transition-colors"
         />
         {dropdownOpen && filtered.length > 0 && (
@@ -151,20 +153,20 @@ export function NeighborhoodSelector({ onSelect, loading }: Props) {
 
       {/* Divider */}
       <div className="hidden sm:flex items-center pb-2">
-        <span className="text-text-muted text-xs">or</span>
+        <span className="text-text-muted text-xs">{t("explorer.or")}</span>
       </div>
 
       {/* Address autocomplete */}
       <div ref={addressRef} className="relative w-full sm:w-72">
         <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1.5">
-          Address
+          {t("explorer.address")}
         </label>
         <input
           type="text"
           value={addressQuery}
           onChange={(e) => handleAddressChange(e.target.value)}
           onKeyDown={handleAddressKey}
-          placeholder="Enter an address..."
+          placeholder={t("explorer.enterAddress")}
           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 transition-colors"
         />
         {addressOpen && suggestions.length > 0 && (

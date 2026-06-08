@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "motion/react";
 import type { ContextObject, MapData, SidebarView, SourceTag } from "../lib/types";
 import { deriveFilterMode } from "../lib/mapColors";
@@ -64,6 +65,7 @@ export function MobileSidebarSheet({
   sourceCount = 0,
 }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("sidebar");
   const dragStartY = useRef<number | null>(null);
   const dragStartSnap = useRef<number>(SNAP_DEFAULT);
   const dragging = useRef(false);
@@ -123,11 +125,11 @@ export function MobileSidebarSheet({
   );
 
   const tabs: { key: SidebarView; label: string; show: boolean; badge: boolean }[] = [
-    { key: "map", label: "Map", show: hasMapContent, badge: showMapBadge },
-    { key: "data", label: "Data", show: true, badge: showDataBadge && dataCount > 0 },
-    { key: "sources", label: "Sources", show: hasCodeChunks, badge: showSourcesBadge && sourceCount > 0 },
+    { key: "map", label: t("map"), show: hasMapContent, badge: showMapBadge },
+    { key: "data", label: t("data"), show: true, badge: showDataBadge && dataCount > 0 },
+    { key: "sources", label: t("sources"), show: hasCodeChunks, badge: showSourcesBadge && sourceCount > 0 },
   ];
-  const visibleTabs = tabs.filter(t => t.show);
+  const visibleTabs = tabs.filter(tab => tab.show);
 
   return (
     <AnimatePresence>

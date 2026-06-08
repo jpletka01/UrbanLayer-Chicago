@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 7
+_SCHEMA_VERSION = 8
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -141,6 +141,17 @@ CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_i
 """
 
 
+async def _migrate_v8(db: aiosqlite.Connection) -> None:
+    """Add language column to conversations and request_logs tables."""
+    for table in ("conversations", "request_logs"):
+        cur = await db.execute(f"PRAGMA table_info({table})")
+        cols = {row[1] for row in await cur.fetchall()}
+        if "language" not in cols:
+            await db.execute(
+                f"ALTER TABLE {table} ADD COLUMN language TEXT DEFAULT 'en'"
+            )
+
+
 async def _migrate_v7(db: aiosqlite.Connection) -> None:
     """Add Stripe columns to users table."""
     cur = await db.execute("PRAGMA table_info(users)")
@@ -209,6 +220,7 @@ async def init_db() -> None:
         await _migrate_v5(_db)
         await _migrate_v6(_db)
         await _migrate_v7(_db)
+        await _migrate_v8(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -230,6 +242,9 @@ async def init_db() -> None:
         if version < 7:
             await _migrate_v7(_db)
             version = 7
+        if version < 8:
+            await _migrate_v8(_db)
+            version = 8
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -264,7 +279,7 @@ async def list_conversations(user_id: str | None = None) -> list[dict]:
     if user_id:
         cur = await db.execute(
             """
-            SELECT c.id, c.title, c.created_at, c.updated_at,
+            SELECT c.id, c.title, c.language, c.created_at, c.updated_at,
                    COUNT(CASE WHEN m.role = 'user' THEN 1 END) as message_count
             FROM conversations c
             LEFT JOIN messages m ON m.conversation_id = c.id
@@ -277,7 +292,7 @@ async def list_conversations(user_id: str | None = None) -> list[dict]:
     else:
         cur = await db.execute(
             """
-            SELECT c.id, c.title, c.created_at, c.updated_at,
+            SELECT c.id, c.title, c.language, c.created_at, c.updated_at,
                    COUNT(CASE WHEN m.role = 'user' THEN 1 END) as message_count
             FROM conversations c
             LEFT JOIN messages m ON m.conversation_id = c.id
@@ -290,6 +305,7 @@ async def list_conversations(user_id: str | None = None) -> list[dict]:
         {
             "id": r["id"],
             "title": r["title"],
+            "language": r["language"] or "en",
             "created_at": r["created_at"],
             "updated_at": r["updated_at"],
             "message_count": r["message_count"],
@@ -304,13 +320,13 @@ async def get_conversation(
     db = _get_db()
     if user_id:
         cur = await db.execute(
-            "SELECT id, title, created_at, updated_at FROM conversations "
+            "SELECT id, title, language, created_at, updated_at FROM conversations "
             "WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
             (conv_id, user_id),
         )
     else:
         cur = await db.execute(
-            "SELECT id, title, created_at, updated_at FROM conversations WHERE id = ?",
+            "SELECT id, title, language, created_at, updated_at FROM conversations WHERE id = ?",
             (conv_id,),
         )
     conv = await cur.fetchone()
@@ -341,6 +357,7 @@ async def get_conversation(
     return {
         "id": conv["id"],
         "title": conv["title"],
+        "language": conv["language"] or "en",
         "messages": messages,
         "created_at": conv["created_at"],
         "updated_at": conv["updated_at"],
@@ -349,15 +366,16 @@ async def get_conversation(
 
 async def create_conversation(
     conv_id: str, title: str, user_id: str | None = None,
+    language: str = "en",
 ) -> dict:
     db = _get_db()
     now = _now_ms()
     await db.execute(
-        "INSERT INTO conversations (id, title, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-        (conv_id, title, user_id, now, now),
+        "INSERT INTO conversations (id, title, user_id, language, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (conv_id, title, user_id, language, now, now),
     )
     await db.commit()
-    return {"id": conv_id, "title": title, "created_at": now, "updated_at": now}
+    return {"id": conv_id, "title": title, "language": language, "created_at": now, "updated_at": now}
 
 
 async def save_messages(conv_id: str, messages: list[dict]) -> None:
@@ -674,20 +692,22 @@ async def save_request_log(
     total_duration_ms: int,
     status: str = "ok",
     error_message: str | None = None,
+    language: str = "en",
 ) -> None:
     db = _get_db()
     await db.execute(
         """
         INSERT OR IGNORE INTO request_logs
           (request_group, conversation_id, user_message, intent, community_area,
-           community_area_name, sources, total_duration_ms, status, error_message, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           community_area_name, sources, total_duration_ms, status, error_message,
+           language, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             request_group, conversation_id, user_message, intent,
             community_area, community_area_name,
             json.dumps(sources) if sources else None,
-            total_duration_ms, status, error_message, _now_ms(),
+            total_duration_ms, status, error_message, language, _now_ms(),
         ),
     )
     await db.commit()

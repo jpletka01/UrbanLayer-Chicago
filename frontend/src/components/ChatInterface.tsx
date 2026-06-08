@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { ActivityItem, ContextObject, DataSource, Message } from "../lib/types";
 import { ChatInput, type PendingAttachment } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
@@ -40,6 +41,7 @@ export function ChatInterface({
   activities,
   readOnly,
 }: Props) {
+  const { t } = useTranslation("common");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,16 +82,16 @@ export function ChatInterface({
         <div className="max-w-3xl mx-auto px-3 md:px-6 py-3 md:py-4">
           {readOnly ? (
             <div className="text-center py-3 text-text-muted text-sm">
-              This is a shared conversation — read only
+              {t("sharedConversation")}
             </div>
           ) : atMessageLimit ? (
             <div className="text-center py-3 text-text-muted text-sm">
-              You've reached the 10-message limit for this conversation.{" "}
+              {t("messageLimitReached")}{" "}
               <button
                 onClick={onNewChat}
                 className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
               >
-                Start a new conversation
+                {t("startNewConversation")}
               </button>
             </div>
           ) : (
@@ -97,7 +99,7 @@ export function ChatInterface({
               onSubmit={onSubmit}
               disabled={streaming}
               variant="compact"
-              placeholder="Ask a follow-up..."
+              placeholder={t("followUpPlaceholder")}
               attachments={attachments}
               onAttach={onAttach}
               onRemoveAttachment={onRemoveAttachment}

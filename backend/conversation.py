@@ -148,17 +148,21 @@ async def synthesize_query(
     history: list[Message],
     request_group: str = "",
     conversation_id: str | None = None,
+    language: str = "en",
 ) -> str:
     """Synthesize conversation history into a single self-contained query.
 
     If synthesis is not needed or fails, returns the original message unchanged.
+    For non-English input, always synthesize when history exists (English
+    heuristics won't match non-English pronouns/patterns).
     """
-    if not needs_synthesis(message, history):
-        return message
-
     switched = _try_neighborhood_switch(message, history)
     if switched:
         return switched
+
+    force = language != "en" and len(history) >= 2
+    if not force and not needs_synthesis(message, history):
+        return message
 
     settings = get_settings()
 

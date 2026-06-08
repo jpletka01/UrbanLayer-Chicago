@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { AuthUser } from "../lib/api";
 import { createBillingPortal } from "../lib/api";
@@ -9,6 +10,7 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ user, onSignOut }: UserMenuProps) {
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -74,7 +76,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
               onClick={handleManageSubscription}
               className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-dark-surface hover:text-text-primary transition-colors"
             >
-              Manage subscription
+              {t("manageSubscription")}
             </button>
           ) : (
             <Link
@@ -82,7 +84,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
               onClick={() => setOpen(false)}
               className="block w-full text-left px-4 py-2 text-sm text-accent hover:bg-dark-surface transition-colors"
             >
-              Upgrade to Pro
+              {t("upgradeToPro")}
             </Link>
           )}
           <button
@@ -92,7 +94,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             }}
             className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-dark-surface hover:text-text-primary transition-colors"
           >
-            Sign out
+            {t("signOut")}
           </button>
         </div>
       )}

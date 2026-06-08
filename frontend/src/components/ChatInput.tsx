@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { getAutocomplete } from "../lib/api";
 import { AUTOCOMPLETE_DEBOUNCE_MS, MIN_AUTOCOMPLETE_CHARS } from "../lib/constants";
 import type { AddressSuggestion } from "../lib/types";
@@ -35,6 +36,7 @@ export function ChatInput({
   onAttach,
   onRemoveAttachment,
 }: Props) {
+  const { t } = useTranslation("chat");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -159,7 +161,7 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             disabled={disabled}
-            placeholder={placeholder ?? "Ask about Chicago..."}
+            placeholder={placeholder ?? t("placeholder")}
             rows={1}
             className="w-full bg-transparent px-4 py-3.5 pr-12 rounded-2xl text-base text-white placeholder-white/50 focus:outline-none resize-none max-h-40 overflow-y-auto"
           />
@@ -274,7 +276,7 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             disabled={disabled}
-            placeholder={placeholder ?? "Ask a follow-up..."}
+            placeholder={placeholder ?? t("placeholder")}
             rows={1}
             className="flex-1 bg-transparent py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none min-w-0 resize-none max-h-40 overflow-y-auto"
           />

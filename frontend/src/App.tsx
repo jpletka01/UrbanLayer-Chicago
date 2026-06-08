@@ -19,7 +19,7 @@ import {
   updateMessageMapData,
   uploadFiles,
 } from "./lib/api";
-import { SPLASH_STATS, SUGGESTIONS } from "./lib/constants";
+import { SPLASH_STATS } from "./lib/constants";
 import { Footer } from "./components/landing/Footer";
 import { NeighborhoodExplorer } from "./components/landing/NeighborhoodExplorer";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
@@ -54,6 +54,8 @@ import { ShareModal } from "./components/ShareModal";
 import { useAuthContext } from "./contexts/AuthContext";
 import AuthModal from "./components/AuthModal";
 import UserMenu from "./components/UserMenu";
+import LanguageSelector from "./components/LanguageSelector";
+import { useTranslation } from "react-i18next";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -74,6 +76,7 @@ function countDataCategories(ctx: ContextObject | null): number {
 }
 
 export function App() {
+  const { t } = useTranslation("landing");
   const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
     useConversationRouter();
 
@@ -258,6 +261,7 @@ export function App() {
     onPlan: handlePlan,
     onMapData: handleMapData,
     conversationId,
+    language: localStorage.getItem("urbanlayer-language") || "en",
   });
 
   useEffect(() => {
@@ -318,7 +322,7 @@ export function App() {
       cid = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
       try {
-        await createConversation(cid, title);
+        await createConversation(cid, title, localStorage.getItem("urbanlayer-language") || "en");
       } catch (err) {
         console.error("Failed to create conversation:", err);
         setShowAuthModal(true);
@@ -649,11 +653,14 @@ export function App() {
                       </span>
                     </a>
                   </div>
-                  {user && (
-                    <div className="relative z-50">
-                      <UserMenu user={user} onSignOut={signOut} />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <LanguageSelector variant="splash" />
+                    {user && (
+                      <div className="relative z-50">
+                        <UserMenu user={user} onSignOut={signOut} />
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
 
                 <div className="flex-1 flex flex-col justify-center items-center px-4 py-20">
@@ -667,7 +674,7 @@ export function App() {
                         UrbanLayer
                       </h1>
                       <p className="text-lg text-white/80 leading-relaxed">
-                        Chicago public data, explored through conversation.
+                        {t("heroSubtitle")}
                       </p>
                     </motion.div>
 
@@ -685,7 +692,7 @@ export function App() {
                       transition={{ delay: 0.4, duration: 0.5 }}
                       className="flex flex-wrap gap-2 justify-center"
                     >
-                      {SUGGESTIONS.map((s) => (
+                      {(t("suggestions", { returnObjects: true }) as string[]).map((s) => (
                         <PromptSuggestionChip
                           key={s}
                           label={s}
@@ -702,17 +709,20 @@ export function App() {
                   transition={{ delay: 0.5, duration: 0.5 }}
                   className="flex justify-around px-4 md:px-8 pb-6 gap-2"
                 >
-                  {SPLASH_STATS.map((stat, i) => (
-                    <div key={stat.label} className="text-center">
-                      <CountUp
-                        to={stat.value}
-                        format={stat.format}
-                        delay={0.6 + i * 0.15}
-                        className="text-3xl md:text-4xl font-semibold text-white"
-                      />
-                      <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{stat.label}</div>
-                    </div>
-                  ))}
+                  {SPLASH_STATS.map((stat, i) => {
+                    const labelKeys = ["stats.dataSources", "stats.codeSections", "stats.communityAreas", "stats.regulatoryLayers"];
+                    return (
+                      <div key={i} className="text-center">
+                        <CountUp
+                          to={stat.value}
+                          format={stat.format}
+                          delay={0.6 + i * 0.15}
+                          className="text-3xl md:text-4xl font-semibold text-white"
+                        />
+                        <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{t(labelKeys[i])}</div>
+                      </div>
+                    );
+                  })}
                 </motion.div>
 
                 <ScrollIndicator />
@@ -726,8 +736,8 @@ export function App() {
             {/* Story interstitial — business use case */}
             <StorySection
               image="https://images.unsplash.com/photo-1699898064988-9473dc051320?w=1920&q=80"
-              title="Open a business with confidence"
-              subtitle="Check zoning compliance and 12 regulatory overlays, find TIF districts and incentive programs, review nearby competition through active business licenses, and understand the neighborhood — all from a single question."
+              title={t("story.businessTitle")}
+              subtitle={t("story.businessSubtitle")}
               align="left"
             />
 
@@ -740,8 +750,8 @@ export function App() {
             {/* Story interstitial — move-in use case */}
             <StorySection
               image="https://images.unsplash.com/photo-1654043342878-7491a4c4d098?w=1920&q=80"
-              title="Find the right place to live"
-              subtitle="Compare crime trends and arrest rates, check Walk Score and transit access, review property taxes and assessed values, see building violations and 311 patterns — the neighborhood report no listing gives you."
+              title={t("story.residentTitle")}
+              subtitle={t("story.residentSubtitle")}
               align="right"
             />
 
@@ -864,6 +874,7 @@ export function App() {
                         </svg>
                       </Link>
                     )}
+                    <LanguageSelector variant="workspace" />
                     {user && <UserMenu user={user} onSignOut={signOut} />}
                   </>
                 )}

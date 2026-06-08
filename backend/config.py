@@ -158,6 +158,19 @@ class Settings(BaseSettings):
 
     sentry_dsn: str = ""
 
+    # Report v2
+    limit_comparable_sales: int = 10
+    limit_address_permits: int = 20
+    limit_address_violations: int = 20
+    limit_nearby_construction: int = 20
+    comparable_sales_radius_deg: float = 0.004
+    comparable_sales_years: int = 3
+    address_permits_years: int = 5
+    address_violations_years: int = 5
+    nearby_construction_months: int = 12
+    zoning_extract_model: str = "claude-haiku-4-5-20251001"
+    zoning_extract_max_tokens: int = 1500
+
     # Stripe
     stripe_secret_key: str = ""
     stripe_public_key: str = ""

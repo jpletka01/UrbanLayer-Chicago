@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { chatStream } from "./api";
 import type {
   ActivityItem,
@@ -13,42 +14,33 @@ import type {
 
 const MESSAGE_LIMIT = 10;
 
-const SOURCE_LABELS: Record<SourceTag, string> = {
-  crime_api: "Searching crime records",
-  "311_api": "Looking up 311 service requests",
-  permits_api: "Checking building permits",
-  violations_api: "Pulling building violations",
-  business_api: "Searching business licenses",
-  vacant_buildings_api: "Checking vacant building reports",
-  food_inspections_api: "Loading food inspection records",
-  vector_search: "Searching municipal code",
-  regulatory_domain: "Checking zoning & regulatory overlays",
-  property_domain: "Looking up property records",
-  incentives_domain: "Checking TIF & incentive zones",
-  neighborhood_domain: "Loading demographics, census data & transit",
-};
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
-function deriveActivitiesFromPlan(plan: RetrievalPlan): ActivityItem[] {
+function getSourceLabel(source: SourceTag, t: TFn): string {
+  return t(`chat:sourceLabels.${source}`, { defaultValue: source });
+}
+
+function deriveActivitiesFromPlan(plan: RetrievalPlan, t: TFn): ActivityItem[] {
   const area = plan.location.resolved_community_area_name;
   const addr = plan.location.resolved_address;
   const items: ActivityItem[] = [];
 
   if (area) {
-    items.push({ id: "location", label: `Located ${area}`, status: "done" });
+    items.push({ id: "location", label: t("chat:located", { area }), status: "done" });
   }
 
   for (const source of plan.sources) {
-    let label = SOURCE_LABELS[source] ?? source;
+    let label = getSourceLabel(source, t);
     if (source === "vector_search" && plan.search_query) {
       const q =
         plan.search_query.length > 50
           ? plan.search_query.slice(0, 47) + "..."
           : plan.search_query;
-      label = `Searching municipal code for "${q}"`;
+      label = t("chat:searchingFor", { query: q });
     } else if (source === "property_domain" && addr) {
-      label += ` for ${addr}`;
+      label = t("chat:propertyFor", { address: addr });
     } else if (area && source !== "vector_search") {
-      label += ` in ${area}`;
+      label = t("chat:inArea", { label, area });
     }
     items.push({ id: `retrieve_${source}`, label, status: "active" });
   }
@@ -61,6 +53,7 @@ interface UseChatOptions {
   onPlan?: (plan: RetrievalPlan) => void;
   onMapData?: (mapData: MapData) => void;
   conversationId?: string | null;
+  language?: string;
 }
 
 interface UseChat {
@@ -83,7 +76,9 @@ export function useChat({
   onPlan,
   onMapData,
   conversationId,
+  language,
 }: UseChatOptions = {}): UseChat {
+  const { t } = useTranslation(["chat", "common"]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [plan, setPlan] = useState<RetrievalPlan | null>(null);
   const [context, setContext] = useState<ContextObject | null>(null);
@@ -97,6 +92,7 @@ export function useChat({
   const pendingMapDataRef = useRef<MapData | null>(null);
   const pendingTurnSummaryRef = useRef<TurnSummary | null>(null);
   const hasTokenRef = useRef(false);
+  const cachedMapRef = useRef<{ communityArea: number; mapData: MapData } | null>(null);
 
   const userMessageCount = messages.filter((m) => m.role === "user").length;
   const atMessageLimit = userMessageCount >= MESSAGE_LIMIT;
@@ -119,9 +115,7 @@ export function useChat({
     if (streaming) return;
 
     if (atMessageLimit) {
-      setErrorMsg(
-        "You've reached the 10-message limit for this conversation. Please start a new chat.",
-      );
+      setErrorMsg(t("common:messageLimit"));
       return;
     }
 
@@ -133,7 +127,7 @@ export function useChat({
     hasTokenRef.current = false;
 
     setActivities([
-      { id: "routing", label: "Analyzing your question…", status: "active" },
+      { id: "routing", label: t("chat:analyzing"), status: "active" },
     ]);
 
     const userMessage: Message = {
@@ -159,15 +153,17 @@ export function useChat({
         controller.signal,
         conversationId,
         uploadIds,
+        cachedMapRef.current?.communityArea ?? null,
+        language,
       )) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);
           pendingPlanRef.current = chunk.plan;
           onPlan?.(chunk.plan);
 
-          const planActivities = deriveActivitiesFromPlan(chunk.plan);
+          const planActivities = deriveActivitiesFromPlan(chunk.plan, t);
           setActivities([
-            { id: "routing", label: "Analyzed your question", status: "done" },
+            { id: "routing", label: t("chat:analyzed"), status: "done" },
             ...planActivities,
           ]);
         } else if (chunk.type === "context") {
@@ -178,11 +174,24 @@ export function useChat({
 
           setActivities((prev) => [
             ...prev.map((a) => ({ ...a, status: "done" as const })),
-            { id: "synthesis", label: "Composing response…", status: "active" },
+            { id: "synthesis", label: t("chat:composing"), status: "active" },
           ]);
         } else if (chunk.type === "map_data") {
-          pendingMapDataRef.current = chunk.map_data;
-          onMapData?.(chunk.map_data);
+          let mapData = chunk.map_data;
+          if (mapData) {
+            const cached = cachedMapRef.current;
+            if (cached && !mapData.zoning && cached.mapData.zoning) {
+              mapData = { ...mapData, zoning: cached.mapData.zoning };
+            }
+            if (cached && !mapData.overlay_districts && cached.mapData.overlay_districts) {
+              mapData = { ...mapData, overlay_districts: cached.mapData.overlay_districts };
+            }
+            if (cached && !mapData.incentive_zones && cached.mapData.incentive_zones) {
+              mapData = { ...mapData, incentive_zones: cached.mapData.incentive_zones };
+            }
+          }
+          pendingMapDataRef.current = mapData;
+          onMapData?.(mapData!);
         } else if (chunk.type === "token") {
           if (!hasTokenRef.current) {
             hasTokenRef.current = true;
@@ -204,6 +213,11 @@ export function useChat({
           receivedDone = true;
           if (chunk.timings) {
             console.log("[perf] pipeline timings (ms):", chunk.timings);
+          }
+          const md = pendingMapDataRef.current;
+          const ca = pendingPlanRef.current?.location?.resolved_community_area;
+          if (md && ca != null) {
+            cachedMapRef.current = { communityArea: ca, mapData: md };
           }
           setMessages((m) => {
             const next = [...m];
@@ -231,7 +245,7 @@ export function useChat({
       }
     } finally {
       if (!receivedDone && !controller.signal.aborted) {
-        setErrorMsg("Connection lost — please try again.");
+        setErrorMsg(t("common:connectionLost"));
       }
       setStreaming(false);
       abortRef.current = null;

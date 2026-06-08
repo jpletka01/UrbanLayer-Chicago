@@ -33,38 +33,21 @@ All follow the same pattern as `socrata.py:get_shared_client()`. Each function s
 
 ---
 
+## Completed (2026-06-07)
+
+### 5. Client-Side Map Data Caching
+
+`ChatRequest.cached_community_area` tells the backend which community area's polygons the client already has. When it matches the resolved community area, `_fetch_map_rows()` skips zoning polygon, overlay geometry, and incentive zone polygon fetches. Frontend (`useChat.ts`) tracks `cachedMapRef` — a ref holding `{ communityArea, mapData }` — and merges cached zoning/overlay/incentive polygons into new map data when the backend returns null for those fields. Cache is in-memory (React ref), cleared on page refresh.
+
+### 6. Geometry Simplification
+
+`_simplify_geojson()` in `main.py` applies `shapely.simplify(tolerance=0.0001, preserve_topology=True)` to all Polygon/MultiPolygon features in the zoning, overlay_districts, and incentive_zones FeatureCollections before sending them in the `map_data` SSE event. Tolerance of 0.0001° ≈ 10m, no visible quality loss at UI zoom levels. Reduces polygon payloads 50-80%.
+
+---
+
 ## Forward-Thinking Opportunities
 
-### 5. Client-Side Map Data Caching (~30 min)
-
-Currently, every new query re-fetches all polygon data from the backend, even if the user is asking about the same area. The frontend could cache polygon data by community area.
-
-**Approach:** In `frontend/src/lib/useChat.ts` or a new `mapCache.ts`:
-- After receiving a `map_data` SSE event, cache the zoning FeatureCollection keyed by community area
-- On subsequent queries in the same community area, skip the zoning polygon fetch
-- A `skipZoningPolygons` flag on the ChatRequest could tell the backend to skip the expensive fetch
-
-**Options:**
-- **Simple:** In-memory `Map` in a React ref. Cleared on page refresh. Minimal code.
-- **Durable:** IndexedDB cache with TTL. Survives refresh but more complex.
-
-Start with the simple approach.
-
----
-
-### 6. Geometry Simplification (~1 hour, reduces payload 50-80%)
-
-Zoning polygons often have excessive vertex counts for the zoom levels used in the sidebar map. Douglas-Peucker simplification with tolerance ~0.0001 degrees (~10m) would reduce vertex counts dramatically without visible quality loss.
-
-**Options:**
-- **Server-side (recommended):** Use `shapely.simplify()` on GeoJSON features in `_build_map_response()` in `main.py`. Shapely is already a dependency.
-- **Client-side:** Use `@turf/simplify`. Adds a dependency but keeps server unchanged.
-
-Server-side is better since it reduces both SSE payload size AND rendering time.
-
----
-
-### 7. Vector Tiles (significant effort, best for scaling)
+### Vector Tiles (significant effort, best for scaling)
 
 Replace per-query GeoJSON FeatureCollections with pre-rendered vector tiles served via a tile server (Martin, tippecanoe, or Mapbox-hosted). The frontend would load tiles on demand based on viewport, eliminating per-query polygon fetches entirely.
 
@@ -72,7 +55,7 @@ Replace per-query GeoJSON FeatureCollections with pre-rendered vector tiles serv
 
 ---
 
-### 8. Model Routing for Simple Queries (saves ~500ms, quality risk)
+### Model Routing for Simple Queries (saves ~500ms, quality risk)
 
 Use Haiku instead of Sonnet for synthesis on simple lookups (e.g., "What zone is 123 Main St?"). The router already classifies intent — simple intents could be routed to Haiku.
 

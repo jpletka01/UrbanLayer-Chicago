@@ -1,0 +1,182 @@
+{
+  "heroSubtitle": "Datos públicos de Chicago, explorados a través de conversación.",
+  "stats": {
+    "dataSources": "Fuentes de datos",
+    "codeSections": "Secciones del código",
+    "communityAreas": "Áreas comunitarias",
+    "regulatoryLayers": "Capas regulatorias"
+  },
+  "suggestions": [
+    "¿Qué está pasando cerca de 2400 N Milwaukee Ave?",
+    "Cuéntame sobre la propiedad en 1425 N Wells St",
+    "¿Puedo abrir un bar en 2200 W Chicago Ave?",
+    "¿Está Logan Square en un distrito TIF?"
+  ],
+  "intelligence": {
+    "heading": "Una pregunta. Veinticinco fuentes.",
+    "subheading": "Cada consulta extrae de registros de propiedad, regulaciones de zonificación, estimaciones de impuestos, programas de incentivos, datos de tránsito, demografía, criminalidad, 311, permisos, licencias comerciales y 14,535 secciones del código municipal — simultáneamente.",
+    "domains": [
+      {
+        "title": "Inteligencia de Propiedad",
+        "badge": "4 fuentes",
+        "points": ["Características de parcela", "Valores tasados (5 años)", "Historial de ventas", "Estimación de impuestos"]
+      },
+      {
+        "title": "Regulación y Zonificación",
+        "badge": "12 capas",
+        "points": ["Clasificación base de zonificación", "12 distritos de superposición", "Zonas de inundación FEMA", "Proximidad a terrenos contaminados EPA"]
+      },
+      {
+        "title": "Incentivos e Inversión",
+        "badge": "3 conjuntos",
+        "points": ["Distritos TIF + finanzas", "Zonas de Oportunidad", "Zonas Empresariales"]
+      },
+      {
+        "title": "Contexto del Vecindario",
+        "badge": "4 fuentes",
+        "points": ["Demografía ACS", "Proximidad de tránsito (CTA/Metra)", "Walk / Transit / Bike Score", "Elegibilidad TOD"]
+      },
+      {
+        "title": "Seguridad y Actividad",
+        "badge": "5 conjuntos",
+        "points": ["Crimen (30 tipos + tasas de arresto)", "Solicitudes 311 (105 tipos)", "Permisos y violaciones de edificios", "Licencias comerciales"]
+      },
+      {
+        "title": "Código Municipal",
+        "badge": "Texto completo",
+        "points": ["14,535 secciones buscables", "Expansión de referencias cruzadas", "Respuestas con citas vinculadas"]
+      }
+    ]
+  },
+  "story": {
+    "businessTitle": "Abre un negocio con confianza",
+    "businessSubtitle": "Verifica el cumplimiento de zonificación y 12 capas regulatorias, encuentra distritos TIF y programas de incentivos, revisa la competencia cercana a través de licencias comerciales activas y comprende el vecindario — todo con una sola pregunta.",
+    "residentTitle": "Encuentra el lugar ideal para vivir",
+    "residentSubtitle": "Compara tendencias de crimen y tasas de arresto, revisa Walk Score y acceso al transporte, analiza impuestos de propiedad y valores tasados, observa violaciones de edificios y patrones de 311 — el informe del vecindario que ningún listado te da."
+  },
+  "depth": {
+    "heading": "Haz una pregunta. Obtén el panorama completo.",
+    "subheading": "Esto es lo que UrbanLayer devuelve cuando preguntas sobre una dirección de Chicago.",
+    "cards": [
+      {
+        "title": "Expediente de propiedad",
+        "caption": "Datos de parcela, historial de tasación de 5 años, registros de ventas y estimaciones de impuestos del Condado de Cook."
+      },
+      {
+        "title": "Perfil regulatorio",
+        "caption": "12 capas de superposición verificadas por dirección — desde monumentos históricos hasta zonas de inundación y elegibilidad ADU."
+      },
+      {
+        "title": "Panorama del vecindario",
+        "caption": "Demografía, acceso al transporte y puntajes de caminabilidad compilados para cada consulta."
+      }
+    ],
+    "pin": "PIN",
+    "class": "Clase",
+    "building": "Edificio",
+    "lot": "Lote",
+    "assessmentHistory": "Historial de Tasación",
+    "estAnnualTax": "Impuesto Anual Est.",
+    "zoning": "Zonificación",
+    "activeOverlays": "Superposiciones Activas",
+    "riskFactors": "Factores de Riesgo",
+    "plannedDevelopment": "Desarrollo Planificado",
+    "pedestrianStreet": "Calle Peatonal",
+    "todEligible": "Elegible TOD",
+    "noFloodZone": "Sin Zona de Inundación",
+    "noBrownfield": "Sin Terreno Contaminado",
+    "walkability": "Caminabilidad",
+    "walkScore": "Walk Score",
+    "transitScore": "Transit Score",
+    "bikeScore": "Bike Score",
+    "nearestTransit": "Transporte Más Cercano",
+    "demographics": "Demografía",
+    "population": "Población",
+    "medIncome": "Ingreso Med.",
+    "ownerOcc": "Prop. Ocup.",
+    "medAge": "Edad Med."
+  },
+  "explorer": {
+    "heading": "Explora un vecindario",
+    "subheading": "Elige un área comunitaria o ingresa una dirección para explorar datos de la ciudad en vivo — patrones de crimen, solicitudes de servicio 311, permisos de construcción y tendencias mensuales, actualizados desde el Portal de Datos de Chicago.",
+    "sampleData": "Mostrando datos de ejemplo",
+    "neighborhood": "Vecindario",
+    "address": "Dirección",
+    "or": "o",
+    "searchAreas": "Buscar áreas...",
+    "enterAddress": "Ingresa una dirección...",
+    "all": "Todos",
+    "crime": "Crimen",
+    "311": "311",
+    "permits": "Permisos",
+    "crimes": "Crímenes",
+    "arrestRate": "Tasa de arresto",
+    "311requests": "Solicitudes 311",
+    "breakdown": "Desglose de {{label}}",
+    "crimeBreakdown": "Desglose de crímenes",
+    "311Breakdown": "Desglose de solicitudes 311",
+    "permitsBreakdown": "Desglose de permisos"
+  },
+  "personas": {
+    "heading": "Diseñado para decisiones reales",
+    "subheading": "Ya sea que estés evaluando una propiedad, ubicando un negocio o eligiendo un vecindario.",
+    "returns": "UrbanLayer devuelve",
+    "items": [
+      {
+        "title": "El Inversionista",
+        "question": "Cuéntame sobre la propiedad en 1425 N Wells St",
+        "domains": ["Detalles de Propiedad", "Historial de Tasación", "Estimación de Impuestos", "Estado TIF", "Zona de Oportunidad", "Zonificación + Superposiciones"],
+        "framing": "La diligencia debida que solía tomar una semana de solicitudes FOIA."
+      },
+      {
+        "title": "El Dueño de Negocio",
+        "question": "¿Puedo abrir un restaurante en 2200 W Chicago Ave?",
+        "domains": ["Clasificación de Zonificación", "Usos Permitidos", "Superposiciones Regulatorias", "Negocios Cercanos", "Permisos de Construcción", "Programas de Incentivos"],
+        "framing": "Todo lo que hay entre tu idea y tu contrato de arrendamiento."
+      },
+      {
+        "title": "El Residente",
+        "question": "¿Cómo es vivir cerca de Damen y Division?",
+        "domains": ["Tendencias de Crimen (90d)", "Patrones 311", "Walk / Transit Score", "Acceso CTA", "Demografía", "Actividad de Construcción"],
+        "framing": "El informe del vecindario que ningún listado te da."
+      }
+    ]
+  },
+  "howItWorks": {
+    "heading": "Cómo funciona",
+    "steps": [
+      {
+        "title": "Tú preguntas",
+        "description": "Pregunta en español — sin lenguaje de consulta, sin filtros que configurar, sin formularios que llenar.",
+        "query": "¿Puedo construir un edificio de 6 unidades en 2100 N Damen?"
+      },
+      {
+        "title": "Nosotros buscamos",
+        "description": "Tu pregunta activa la combinación correcta de fuentes de datos municipales, del condado, federales y legales — en paralelo."
+      },
+      {
+        "title": "Tú obtienes respuestas",
+        "description": "Una respuesta con fuentes y citas, mapas interactivos, análisis de tendencias y referencias al código vinculadas. No una hoja de cálculo."
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "Datos públicos de Chicago, explorados a través de conversación.",
+    "copyright": "© 2026 UrbanLayer",
+    "dataSources": "Fuentes de Datos",
+    "cityOfChicago": "Ciudad de Chicago",
+    "cityOfChicagoDesc": "Crimen, 311, Permisos, Violaciones, Licencias Comerciales,",
+    "zoningMapServer": "Servidor de Mapas de Zonificación",
+    "overlayLayers": "(12 capas de superposición)",
+    "cookCounty": "Condado de Cook",
+    "cookCountyDesc": "Características de Propiedad, Valores Tasados, Historial de Ventas, Estimación de Impuestos",
+    "federalExternal": "Federal y Externo",
+    "federalExternalDesc": "Demografía del Censo, Zonas de Inundación FEMA, Terrenos Contaminados EPA, Walk Score",
+    "legal": "Legal",
+    "legalDesc": "Código Municipal de Chicago (14,535 secciones)",
+    "about": "Acerca de",
+    "howItWorks": "Cómo funciona",
+    "notAffiliated": "No afiliado con la Ciudad de Chicago",
+    "dataDelay": "Los datos pueden tener un retraso de hasta 7 días"
+  }
+}

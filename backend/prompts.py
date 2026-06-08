@@ -45,6 +45,7 @@ Rules:
 - For "property_intelligence" at a specific address: include property_domain, regulatory_domain, incentives_domain, neighborhood_domain, crime_api, 311_api, permits_api, violations_api, business_api, and vacant_buildings_api. Set workflow_hint="property_intelligence". Reserve this for narrow property-detail questions (assessed value, PIN, lot size).
 - For "development_feasibility" at a specific address: include regulatory_domain, property_domain, vector_search (for zoning bulk/density rules), and permits_api. Set workflow_hint="development_feasibility".
 - For "business_launch" at a specific address: include vector_search (licensing/zoning), regulatory_domain, incentives_domain, and business_api. Set workflow_hint="business_launch".
+- The user's query may be in any language. Parse it normally. Always write search_query in English regardless of the input language.
 - Always emit valid JSON. Do not wrap it in markdown or commentary.
 
 Search query guidance (for vector_search):
@@ -94,7 +95,7 @@ Rules:
 14. When demographics data is present, weave key statistics into your answer naturally — do not dump a raw table. Lead with population and median household income, then mention other relevant stats (poverty rate, vacancy rate, owner-occupied %, median rent, median home value, education) only when they inform the user's question.
 14a. When census tract demographics (neighborhood.census_tract) are present, prefer these for granular neighborhood statistics — they are more precise than community-area-level data. Mention the census tract number. Highlight the 2-3 most relevant distributions for the user's question (age, income, education, race, transportation) — do not enumerate all five. When comparison data is available, contextualize the tract against Chicago or Cook County medians (e.g., "Median household income of $110,795 — about 40% above the Chicago median"). Include the Census Reporter link for deeper exploration.
 15. When transit access data is present, mention the nearest CTA rail and Metra stations by name with approximate walking distance (in miles). If TOD-eligible, note the eligibility type (CTA or Metra) and that the Connected Communities Ordinance allows density and parking bonuses near transit.
-16. When partial_failures is present and non-empty, briefly note which data sources were temporarily unavailable (e.g., "Note: property records were temporarily unavailable for this query"). Keep it factual — one sentence, no apology.
+16. When partial_failures is present and non-empty, briefly note which data sources were temporarily unavailable (e.g., "Note: property assessment data was temporarily unavailable from Cook County"). Keep it factual — one sentence, no apology. CRITICAL: If partial_failures contains "property assessments", you MUST NOT state any assessed value — say assessment data is currently unavailable. If partial_failures contains "property tax estimate", you MUST NOT state any tax amount — say tax estimates are not available. If partial_failures contains "property characteristics", omit building details that come from CCAO (sqft, stories, rooms, age).
 17. When property tax estimation data is present (estimated_annual_tax, tax_breakdown), state the estimated annual property tax bill and the top 3-5 taxing agencies by amount (e.g., "Estimated annual property tax: $8,245, primarily to Chicago Public Schools ($3,120), City of Chicago ($1,890), and Cook County ($1,450)"). Note that this is an estimate based on the prior year's rates and current assessed value.
 18. When Walk Score data is present in the neighborhood summary, mention the Walk Score, Transit Score, and Bike Score using the "X/100" format with their descriptions (e.g., "This location has a Walk Score of 89/100 (Very Walkable), Transit Score of 74/100 (Excellent Transit), and Bike Score of 82/100 (Very Bikeable)"). Always include "/100" after each score. Integrate them naturally when discussing walkability, transit access, or livability — do not list scores in isolation.
 19. When crime data is present, state the total crimes for the period, arrest rate, and the top 2-3 crime types by volume. Note the 7-day data lag. Use [data:crime] after crime statistics.
@@ -119,6 +120,7 @@ Rules:
 - If the latest message answers a clarification (like providing a location or confirming a detail), merge the original question with the new information into one clear query.
 - If the latest message is a follow-up question on the same topic, incorporate relevant context from prior turns.
 - If the latest message asks to compare with or switch to a different neighborhood or area, rewrite the query to focus on the NEW location only. The previous location's data is already in conversation history.
+- The user may write in a non-English language. Always rewrite the synthesized query in English, regardless of the user's input language.
 - Output ONLY the rewritten query. No explanation, no quotes, no prefixes like "Query:".
 
 Examples:
@@ -151,3 +153,15 @@ Latest: RS-3
 
 Output: Can I open a restaurant in an RS-3 residential zoning district?
 """
+
+
+LANGUAGE_INSTRUCTION = """IMPORTANT: Respond entirely in {language_name}.
+Translate all prose, headers, and explanations into {language_name}.
+You MUST preserve these elements exactly as-is (do NOT translate them):
+- Citation markers: [1], [2], [3], etc.
+- Data source markers: [data:crime], [data:311], [data:permits], [data:violations], [data:business], [data:vacant_buildings], [data:food_inspections]
+- Proper nouns: Chicago neighborhood names, street names, park names
+- Official program names: TIF, ARO, SBIF, TOD, SSA, PMD, etc.
+- Legal section numbers: § 17-2-0207, etc.
+- PIN numbers, zone codes (B1-2, RT-4, etc.), and URLs
+- Statistical values, currency amounts, dates"""

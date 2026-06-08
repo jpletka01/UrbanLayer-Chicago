@@ -1,0 +1,24 @@
+{
+  "placeholder": "Ask about Chicago...",
+  "analyzing": "Analyzing your question…",
+  "analyzed": "Analyzed your question",
+  "composing": "Composing response…",
+  "located": "Located {{area}}",
+  "searchingFor": "Searching municipal code for \"{{query}}\"",
+  "propertyFor": "Looking up property records for {{address}}",
+  "inArea": "{{label}} in {{area}}",
+  "sourceLabels": {
+    "crime_api": "Searching crime records",
+    "311_api": "Looking up 311 service requests",
+    "permits_api": "Checking building permits",
+    "violations_api": "Pulling building violations",
+    "business_api": "Searching business licenses",
+    "vacant_buildings_api": "Checking vacant building reports",
+    "food_inspections_api": "Loading food inspection records",
+    "vector_search": "Searching municipal code",
+    "regulatory_domain": "Checking zoning & regulatory overlays",
+    "property_domain": "Looking up property records",
+    "incentives_domain": "Checking TIF & incentive zones",
+    "neighborhood_domain": "Loading demographics, census data & transit"
+  }
+}

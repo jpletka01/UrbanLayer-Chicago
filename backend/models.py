@@ -242,6 +242,7 @@ class PropertySummary(BaseModel):
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None
+    data_gaps: list[str] = Field(default_factory=list)
 
 
 class GrantProject(BaseModel):
@@ -453,6 +454,8 @@ class ChatRequest(BaseModel):
     history: list[Message] = Field(default_factory=list, max_length=20)
     conversation_id: str | None = None
     upload_ids: list[str] = Field(default_factory=list)
+    cached_community_area: int | None = None
+    language: str = "en"
 
 
 class ChatChunk(BaseModel):
@@ -534,3 +537,82 @@ class AuthStatusResponse(BaseModel):
     authenticated: bool
     auth_required: bool = True
     user: UserResponse | None = None
+
+
+# --- PDF Report v2 models ---
+
+
+class ZoningStandards(BaseModel):
+    far: float | None = None
+    max_height_ft: int | None = None
+    max_stories: int | None = None
+    lot_coverage_pct: float | None = None
+    min_lot_area_sqft: int | None = None
+    front_setback_ft: int | None = None
+    side_setback_ft: int | None = None
+    rear_setback_ft: int | None = None
+    parking_residential: str | None = None
+    parking_commercial: str | None = None
+    permitted_uses: list[str] = Field(default_factory=list)
+    special_uses: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    extraction_confidence: Literal["high", "medium", "low"] = "medium"
+
+
+class DevelopmentPotential(BaseModel):
+    max_buildable_sqft: int | None = None
+    max_lot_coverage_sqft: int | None = None
+    development_surplus_sqft: int | None = None
+    parking_spaces_estimated: int | None = None
+
+
+class ComparableSale(BaseModel):
+    pin: str
+    sale_date: str | None = None
+    sale_price: float | None = None
+    class_code: str | None = None
+    class_description: str | None = None
+    land_sqft: int | None = None
+    bldg_sqft: int | None = None
+    price_per_land_sqft: float | None = None
+    price_per_bldg_sqft: float | None = None
+    deed_type: str | None = None
+    sale_type: str | None = None
+    distance_mi: float | None = None
+
+
+class ComparablesSummary(BaseModel):
+    median_sale_price: float | None = None
+    median_price_per_land_sqft: float | None = None
+    median_price_per_bldg_sqft: float | None = None
+    price_range_min: float | None = None
+    price_range_max: float | None = None
+    sales_volume: int = 0
+    sales: list[ComparableSale] = Field(default_factory=list)
+
+
+class NearbyDevelopment(BaseModel):
+    new_construction_count: int = 0
+    demolition_count: int = 0
+    recent_projects: list[dict] = Field(default_factory=list)
+
+
+class ReportData(BaseModel):
+    address: str | None = None
+    lat: float = 0.0
+    lon: float = 0.0
+    community_area: int | None = None
+    community_area_name: str | None = None
+    context: ContextObject
+    zoning_standards: ZoningStandards | None = None
+    development_potential: DevelopmentPotential | None = None
+    comparables: ComparablesSummary | None = None
+    address_permits: list[dict] = Field(default_factory=list)
+    address_violations: list[dict] = Field(default_factory=list)
+    adjacent_zoning: dict[str, str | None] = Field(default_factory=dict)
+    nearby_development: NearbyDevelopment | None = None
+    effective_tax_rate: float | None = None
+    static_map_url: str | None = None
+    comps_chart_b64: str | None = None
+    bulk_standards_text: str = ""
+    partial_failures: list[str] = Field(default_factory=list)

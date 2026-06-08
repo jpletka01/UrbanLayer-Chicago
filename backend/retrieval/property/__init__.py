@@ -59,10 +59,13 @@ async def property_domain(
 
         results = await asyncio.gather(*coros, return_exceptions=True)
 
+        data_gaps: list[str] = []
+
         idx = 0
         chars = results[idx] if not isinstance(results[idx], Exception) else None
         if isinstance(results[idx], Exception):
             log.warning("CCAO characteristics failed: %s", results[idx])
+            data_gaps.append("property characteristics")
         idx += 1
 
         assessments: list[dict] = []
@@ -71,6 +74,9 @@ async def property_domain(
             assessments = results[idx] if not isinstance(results[idx], Exception) else []
             if isinstance(results[idx], Exception):
                 log.warning("CCAO assessments failed: %s", results[idx])
+                data_gaps.append("property assessments")
+            elif not assessments:
+                data_gaps.append("property assessments")
             idx += 1
             sales = results[idx] if not isinstance(results[idx], Exception) else []
             if isinstance(results[idx], Exception):
@@ -82,8 +88,14 @@ async def property_domain(
             tax_result = results[idx] if not isinstance(results[idx], Exception) else None
             if isinstance(results[idx], Exception):
                 log.warning("PTAXSIM tax estimate failed: %s", results[idx])
+                data_gaps.append("property tax estimate")
+            elif tax_result is None:
+                data_gaps.append("property tax estimate")
+        else:
+            data_gaps.append("property tax estimate")
 
-        return _build_summary(parcel, chars, assessments, sales, tax_result)
+        return _build_summary(parcel, chars, assessments, sales, tax_result,
+                              data_gaps=data_gaps)
     finally:
         if owns:
             await client.aclose()
@@ -113,6 +125,8 @@ def _build_summary(
     assessments: list[dict],
     sales: list[dict],
     tax_result: dict | None = None,
+    *,
+    data_gaps: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
     address = parcel.get("address")
@@ -203,4 +217,5 @@ def _build_summary(
         assessment_history=assessment_history,
         sales_history=sales_history,
         parcel_geometry=parcel.get("geometry"),
+        data_gaps=data_gaps or [],
     )

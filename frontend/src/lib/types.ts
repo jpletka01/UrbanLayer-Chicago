@@ -495,6 +495,7 @@ export interface AddressSuggestion {
 export interface Conversation {
   id: string;
   title: string;
+  language?: string;
   message_count: number;
   createdAt: number;
   updatedAt: number;
@@ -513,6 +514,7 @@ export interface StoredMessage {
 export interface ConversationDetail {
   id: string;
   title: string;
+  language?: string;
   messages: StoredMessage[];
   created_at: number;
   updated_at: number;
