@@ -6,6 +6,7 @@ import { deptColorCSS, normalizeDept, crimeColorCSS, srTypeMapColorCSS, permitCo
 import { computeTrends, computePieSlices, getTrendMonthLabels } from "../../lib/analytics";
 import { PieChart } from "./PieChart";
 import { TrendTable } from "./TrendTable";
+import { exportCSV, buildFilenameSlug } from "../../lib/csvExport";
 
 type ThreeOneOneGrouping = "sr_type" | "department";
 
@@ -103,7 +104,28 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
         <div className="px-4 pb-4 space-y-5">
           {showCrime && (
             <div>
-              <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">{t("analytics.crime")}</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.crime")}</h4>
+                {mapData?.crimes && mapData.crimes.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const slug = buildFilenameSlug(context?.community_area_name || "chicago");
+                      const date = new Date().toISOString().slice(0, 10);
+                      exportCSV(mapData!.crimes, `${slug}_crimes_${date}.csv`, [
+                        { key: "latitude", header: "Latitude" },
+                        { key: "longitude", header: "Longitude" },
+                        { key: "primary_type", header: "Type" },
+                        { key: "description", header: "Description" },
+                        { key: "date", header: "Date" },
+                        { key: "arrest", header: "Arrest" },
+                      ]);
+                    }}
+                    className="text-[10px] text-accent hover:text-accent-hover transition-colors"
+                  >
+                    {t("analytics.exportCsv")}
+                  </button>
+                )}
+              </div>
               {crimeSummary && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   <StatPill label={t("analytics.totalStat")} value={fmtNum(crimeSummary.total)} />
@@ -131,6 +153,26 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.311Requests")}</span>
+                <span className="flex items-center gap-2">
+                  {mapData?.requests_311 && mapData.requests_311.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const slug = buildFilenameSlug(context?.community_area_name || "chicago");
+                        const date = new Date().toISOString().slice(0, 10);
+                        exportCSV(mapData!.requests_311, `${slug}_311_requests_${date}.csv`, [
+                          { key: "latitude", header: "Latitude" },
+                          { key: "longitude", header: "Longitude" },
+                          { key: "sr_type", header: "Type" },
+                          { key: "status", header: "Status" },
+                          { key: "created_date", header: "Date" },
+                          { key: "owner_department", header: "Department" },
+                        ]);
+                      }}
+                      className="text-[10px] text-accent hover:text-accent-hover transition-colors"
+                    >
+                      {t("analytics.exportCsv")}
+                    </button>
+                  )}
                 {threeOneOneAnalytics && (
                   <div className="flex bg-dark-bg/60 rounded-md overflow-hidden border border-dark-border">
                     <button
@@ -155,6 +197,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                     </button>
                   </div>
                 )}
+                </span>
               </div>
               {threeOneOneSummary && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -194,7 +237,28 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
 
           {showPermits && (
             <div>
-              <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">{t("analytics.buildingPermits")}</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.buildingPermits")}</h4>
+                {mapData?.building_permits && mapData.building_permits.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const slug = buildFilenameSlug(context?.community_area_name || "chicago");
+                      const date = new Date().toISOString().slice(0, 10);
+                      exportCSV(mapData!.building_permits, `${slug}_permits_${date}.csv`, [
+                        { key: "latitude", header: "Latitude" },
+                        { key: "longitude", header: "Longitude" },
+                        { key: "permit_type", header: "Type" },
+                        { key: "work_description", header: "Description" },
+                        { key: "estimated_cost", header: "Estimated Cost" },
+                        { key: "issue_date", header: "Date" },
+                      ]);
+                    }}
+                    className="text-[10px] text-accent hover:text-accent-hover transition-colors"
+                  >
+                    {t("analytics.exportCsv")}
+                  </button>
+                )}
+              </div>
               {permitSummary && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   <StatPill label={t("analytics.totalStat")} value={fmtNum(permitSummary.total)} />

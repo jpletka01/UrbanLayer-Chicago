@@ -11,6 +11,7 @@ import {
   type ExploreResponse,
 } from "../lib/api";
 import UpgradePrompt from "./UpgradePrompt";
+import { exportCSV, buildFilenameSlug } from "../lib/csvExport";
 
 const COMMUNITY_AREAS: Record<number, string> = {
   1: "Rogers Park", 2: "West Ridge", 3: "Uptown", 4: "Lincoln Square",
@@ -280,9 +281,32 @@ export default function ExplorePage() {
                     <span className="text-text-primary font-medium">{tableData.total.toLocaleString()}</span> {t("explore.parcels")}
                     {tableData.community_area_name && <> {t("explore.in")} <span className="text-text-primary">{tableData.community_area_name}</span></>}
                   </span>
-                  {mapTotal > 5000 && (
-                    <span className="text-[10px] text-text-muted">{t("explore.mapShown", { count: mapParcels.length.toLocaleString() })}</span>
-                  )}
+                  <span className="flex items-center gap-3">
+                    {mapTotal > 5000 && (
+                      <span className="text-[10px] text-text-muted">{t("explore.mapShown", { count: mapParcels.length.toLocaleString() })}</span>
+                    )}
+                    {mapParcels.length > 0 && (
+                      <button
+                        onClick={() => {
+                          const slug = buildFilenameSlug(tableData.community_area_name || "parcels");
+                          const date = new Date().toISOString().slice(0, 10);
+                          exportCSV(mapParcels, `${slug}_parcels_${date}.csv`, [
+                            { key: "pin", header: "PIN" },
+                            { key: "class", header: "Class" },
+                            { key: "class_description", header: "Description" },
+                            { key: "lat", header: "Latitude" },
+                            { key: "lon", header: "Longitude" },
+                          ]);
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover transition-colors"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        {t("explore.downloadCsv")}
+                      </button>
+                    )}
+                  </span>
                 </div>
 
                 {/* Table */}

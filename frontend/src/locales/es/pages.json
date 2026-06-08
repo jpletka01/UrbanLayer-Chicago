@@ -68,6 +68,7 @@
       "complaints311": "Quejas 311"
     },
     "downloadPdf": "Descargar informe PDF",
+    "downloadCsv": "Descargar CSV",
     "generating": "Generando...",
     "dataAsOf": "Datos al {{date}}",
     "someDataUnavailable": "Algunos datos no disponibles: {{sources}}"
@@ -96,6 +97,7 @@
     "pageOf": "Página {{current}} de {{total}}",
     "loadingParcels": "Cargando parcelas...",
     "selectCAMap": "Selecciona un área comunitaria",
-    "parcelsOnMap": "Las parcelas aparecerán en el mapa"
+    "parcelsOnMap": "Las parcelas aparecerán en el mapa",
+    "downloadCsv": "Descargar CSV"
   }
 }

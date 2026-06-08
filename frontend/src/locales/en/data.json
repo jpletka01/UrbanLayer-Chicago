@@ -207,7 +207,8 @@
     "year": "Year",
     "total": "Total",
     "showLess": "Show less",
-    "moreCount": "+{{count}} more"
+    "moreCount": "+{{count}} more",
+    "exportCsv": "CSV"
   },
   "terms": {
     "incentives": {

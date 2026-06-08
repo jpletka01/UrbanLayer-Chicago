@@ -68,6 +68,7 @@
       "complaints311": "311 complaints"
     },
     "downloadPdf": "Download PDF Report",
+    "downloadCsv": "Download CSV",
     "generating": "Generating...",
     "dataAsOf": "Data as of {{date}}",
     "someDataUnavailable": "Some data unavailable: {{sources}}"
@@ -96,6 +97,7 @@
     "pageOf": "Page {{current}} of {{total}}",
     "loadingParcels": "Loading parcels...",
     "selectCAMap": "Select a community area",
-    "parcelsOnMap": "Parcels will appear on the map"
+    "parcelsOnMap": "Parcels will appear on the map",
+    "downloadCsv": "Download CSV"
   }
 }
