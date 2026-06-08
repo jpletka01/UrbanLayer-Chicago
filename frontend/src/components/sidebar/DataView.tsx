@@ -119,6 +119,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
 
 export function DataView({ context, loading, mapData, filterMode }: Props) {
   const { t } = useTranslation("map");
+  const { t: td } = useTranslation("data");
   const hasMapData = mapData && (mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0);
   const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
   const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood
@@ -128,7 +129,9 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
     <div className="space-y-4">
       {context?.data_lag_note && (
         <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400/90 text-xs">
-          {context.data_lag_note}
+          {context.data_lag_days && context.data_lag_cutoff
+            ? td("crimeDataLag", { days: context.data_lag_days, cutoff: context.data_lag_cutoff })
+            : context.data_lag_note}
         </div>
       )}
 

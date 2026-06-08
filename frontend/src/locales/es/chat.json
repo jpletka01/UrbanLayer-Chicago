@@ -11,7 +11,7 @@
     "crime_api": "Buscando registros de delitos",
     "311_api": "Consultando solicitudes de servicio 311",
     "permits_api": "Verificando permisos de construcción",
-    "violations_api": "Obteniendo violaciones de edificios",
+    "violations_api": "Obteniendo infracciones de edificios",
     "business_api": "Buscando licencias comerciales",
     "vacant_buildings_api": "Verificando reportes de edificios vacíos",
     "food_inspections_api": "Cargando inspecciones de alimentos",

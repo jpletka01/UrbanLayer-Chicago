@@ -42,5 +42,6 @@
   "startNewConversation": "Start a new conversation",
   "upgradeToPro": "Upgrade to Pro",
   "followUpPlaceholder": "Ask a follow-up...",
-  "messageLimitReached": "You've reached the 10-message limit for this conversation."
+  "messageLimitReached": "You've reached the 10-message limit for this conversation.",
+  "shared": "Shared"
 }

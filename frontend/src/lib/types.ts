@@ -374,6 +374,8 @@ export interface ContextObject {
   resolved_address: string | null;
   data_as_of: string | null;
   data_lag_note: string | null;
+  data_lag_days: number | null;
+  data_lag_cutoff: string | null;
   crime_last_90d: CrimeSummary | null;
   open_311_requests: ThreeOneOneSummary | null;
   address_311?: Address311Summary | null;

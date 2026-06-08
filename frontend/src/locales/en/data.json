@@ -108,12 +108,43 @@
     "perCapitaIncome": "Per Capita Income",
     "foreignBorn": "Foreign Born",
     "transit": "Transit",
+    "ctaLines": {
+      "Red": "Red",
+      "Blue": "Blue",
+      "Brown": "Brown",
+      "Green": "Green",
+      "Orange": "Orange",
+      "Purple": "Purple",
+      "Pink": "Pink",
+      "Yellow": "Yellow"
+    },
     "todEligible": "TOD Eligible",
     "walkScore": "Walk Score",
     "walk": "Walk",
     "transitScore": "Transit",
     "bike": "Bike",
     "walkScoreTM": "Walk Score®",
+    "walkDescriptions": {
+      "Walker's Paradise": "Walker's Paradise",
+      "Very Walkable": "Very Walkable",
+      "Somewhat Walkable": "Somewhat Walkable",
+      "Car-Dependent": "Car-Dependent",
+      "Almost All Errands Require a Car": "Almost All Errands Require a Car"
+    },
+    "transitDescriptions": {
+      "Rider's Paradise": "Rider's Paradise",
+      "Excellent Transit": "Excellent Transit",
+      "Good Transit": "Good Transit",
+      "Some Transit": "Some Transit",
+      "Minimal Transit": "Minimal Transit"
+    },
+    "bikeDescriptions": {
+      "Biker's Paradise": "Biker's Paradise",
+      "Very Bikeable": "Very Bikeable",
+      "Bikeable": "Bikeable",
+      "Somewhat Bikeable": "Somewhat Bikeable",
+      "Minimal Bike Infrastructure": "Minimal Bike Infrastructure"
+    },
     "noData": "No neighborhood data available.",
     "aboveChicago": "{{pct}}% above Chicago",
     "belowChicago": "{{pct}}% below Chicago",
@@ -155,6 +186,7 @@
     "recentReports": "Recent Reports",
     "due": "${{amount}} due"
   },
+  "crimeDataLag": "Crime data excludes the most recent {{days}} days (as of {{cutoff}}).",
   "analytics": {
     "title": "Analytics",
     "crime": "Crime",

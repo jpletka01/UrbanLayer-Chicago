@@ -77,6 +77,7 @@ function countDataCategories(ctx: ContextObject | null): number {
 
 export function App() {
   const { t } = useTranslation("landing");
+  const { t: tc } = useTranslation("common");
   const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
     useConversationRouter();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -647,7 +648,7 @@ export function App() {
                       <button
                         onClick={() => setHistoryOpen(true)}
                         className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
-                        title="View history"
+                        title={tc("viewHistory")}
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -790,7 +791,7 @@ export function App() {
                   <button
                     onClick={() => setHistoryOpen(true)}
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors shrink-0"
-                    title="Chat history"
+                    title={tc("chatHistory")}
                   >
                     <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -800,8 +801,8 @@ export function App() {
                 {isSharedView ? (
                   <span className="flex items-center gap-2 text-sm font-medium text-text-secondary shrink-0">
                     <img src="/logo.jpg" alt="" className="w-6 h-6 rounded-full" />
-                    <span className="hidden md:inline">UrbanLayer — Shared</span>
-                    <span className="md:hidden">Shared</span>
+                    <span className="hidden md:inline">UrbanLayer — {tc("shared")}</span>
+                    <span className="md:hidden">{tc("shared")}</span>
                   </span>
                 ) : (
                   <button
@@ -838,24 +839,24 @@ export function App() {
                   <button
                     onClick={handleExport}
                     className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                    title="Download report"
+                    title={tc("report")}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                     </svg>
-                    <span className="hidden md:inline">Report</span>
+                    <span className="hidden md:inline">{tc("report")}</span>
                   </button>
                 )}
                 {!isSharedView && !streaming && isAuthenticated && conversationId && messages.some((m) => m.role === "assistant" && m.context) && (
                   <button
                     onClick={() => setShareModalOpen(true)}
                     className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                    title="Share conversation"
+                    title={tc("shareConversation")}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
-                    <span className="hidden md:inline">Share</span>
+                    <span className="hidden md:inline">{tc("share")}</span>
                   </button>
                 )}
                 {isSharedView ? (
@@ -863,7 +864,7 @@ export function App() {
                     to="/"
                     className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
                   >
-                    Try UrbanLayer
+                    {tc("tryUrbanLayer")}
                   </Link>
                 ) : (
                   <>
@@ -871,7 +872,7 @@ export function App() {
                       onClick={reset}
                       className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
                     >
-                      <span className="hidden md:inline">New chat</span>
+                      <span className="hidden md:inline">{tc("newChat")}</span>
                       <svg className="w-4 h-4 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
@@ -880,7 +881,7 @@ export function App() {
                       <Link
                         to="/admin"
                         className="hidden md:flex px-2 py-1.5 text-text-muted hover:text-text-secondary transition-colors"
-                        title="Admin dashboard"
+                        title={tc("admin")}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />

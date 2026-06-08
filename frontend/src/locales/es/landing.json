@@ -39,7 +39,7 @@
       {
         "title": "Seguridad y Actividad",
         "badge": "5 conjuntos",
-        "points": ["Crimen (30 tipos + tasas de arresto)", "Solicitudes 311 (105 tipos)", "Permisos y violaciones de edificios", "Licencias comerciales"]
+        "points": ["Crimen (30 tipos + tasas de arresto)", "Solicitudes 311 (105 tipos)", "Permisos e infracciones de edificios", "Licencias comerciales"]
       },
       {
         "title": "Código Municipal",
@@ -52,7 +52,7 @@
     "businessTitle": "Abre un negocio con confianza",
     "businessSubtitle": "Verifica el cumplimiento de zonificación y 12 capas regulatorias, encuentra distritos TIF y programas de incentivos, revisa la competencia cercana a través de licencias comerciales activas y comprende el vecindario — todo con una sola pregunta.",
     "residentTitle": "Encuentra el lugar ideal para vivir",
-    "residentSubtitle": "Compara tendencias de crimen y tasas de arresto, revisa Walk Score y acceso al transporte, analiza impuestos de propiedad y valores tasados, observa violaciones de edificios y patrones de 311 — el informe del vecindario que ningún listado te da."
+    "residentSubtitle": "Compara tendencias de crimen y tasas de arresto, revisa Walk Score y acceso al transporte, analiza impuestos de propiedad y valores tasados, observa infracciones de edificios y patrones de 311 — el informe del vecindario que ningún listado te da."
   },
   "depth": {
     "heading": "Haz una pregunta. Obtén el panorama completo.",
@@ -90,6 +90,7 @@
     "transitScore": "Transit Score",
     "bikeScore": "Bike Score",
     "nearestTransit": "Transporte Más Cercano",
+    "blueLine": "Línea Azul, 0.3 mi",
     "demographics": "Demografía",
     "population": "Población",
     "medIncome": "Ingreso Med.",
@@ -173,7 +174,7 @@
     "copyright": "© 2026 UrbanLayer",
     "dataSources": "Fuentes de Datos",
     "cityOfChicago": "Ciudad de Chicago",
-    "cityOfChicagoDesc": "Crimen, 311, Permisos, Violaciones, Licencias Comerciales,",
+    "cityOfChicagoDesc": "Crimen, 311, Permisos, Infracciones, Licencias Comerciales,",
     "zoningMapServer": "Servidor de Mapas de Zonificación",
     "overlayLayers": "(12 capas de superposición)",
     "cookCounty": "Condado de Cook",

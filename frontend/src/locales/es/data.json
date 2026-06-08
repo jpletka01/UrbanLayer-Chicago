@@ -108,12 +108,43 @@
     "perCapitaIncome": "Ingreso per cápita",
     "foreignBorn": "Nacidos en el extranjero",
     "transit": "Transporte",
+    "ctaLines": {
+      "Red": "Roja",
+      "Blue": "Azul",
+      "Brown": "Café",
+      "Green": "Verde",
+      "Orange": "Naranja",
+      "Purple": "Morada",
+      "Pink": "Rosa",
+      "Yellow": "Amarilla"
+    },
     "todEligible": "Elegible TOD",
     "walkScore": "Walk Score",
     "walk": "Caminata",
     "transitScore": "Transporte",
     "bike": "Bicicleta",
     "walkScoreTM": "Walk Score®",
+    "walkDescriptions": {
+      "Walker's Paradise": "Paraíso peatonal",
+      "Very Walkable": "Muy transitable",
+      "Somewhat Walkable": "Algo transitable",
+      "Car-Dependent": "Dependiente del auto",
+      "Almost All Errands Require a Car": "Casi todo requiere auto"
+    },
+    "transitDescriptions": {
+      "Rider's Paradise": "Paraíso del transporte",
+      "Excellent Transit": "Transporte excelente",
+      "Good Transit": "Buen transporte",
+      "Some Transit": "Algo de transporte",
+      "Minimal Transit": "Transporte mínimo"
+    },
+    "bikeDescriptions": {
+      "Biker's Paradise": "Paraíso ciclista",
+      "Very Bikeable": "Muy ciclable",
+      "Bikeable": "Ciclable",
+      "Somewhat Bikeable": "Algo ciclable",
+      "Minimal Bike Infrastructure": "Infraestructura ciclista mínima"
+    },
     "noData": "No hay datos del vecindario disponibles.",
     "aboveChicago": "{{pct}}% sobre Chicago",
     "belowChicago": "{{pct}}% bajo Chicago",
@@ -126,7 +157,7 @@
     "transportationToWork": "Transporte al trabajo"
   },
   "violations": {
-    "title": "Violaciones",
+    "title": "Infracciones",
     "total": "Total",
     "open": "Abiertas",
     "byCategory": "Por categoría",
@@ -155,6 +186,7 @@
     "recentReports": "Reportes recientes",
     "due": "${{amount}} adeudado"
   },
+  "crimeDataLag": "Los datos de delitos excluyen los últimos {{days}} días (al {{cutoff}}).",
   "analytics": {
     "title": "Analíticas",
     "crime": "Delitos",

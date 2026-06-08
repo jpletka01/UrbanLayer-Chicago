@@ -175,6 +175,13 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
   );
 }
 
+function translateWsDesc(t: (key: string, opts?: Record<string, unknown>) => string, ns: string, desc: string | null): string | null {
+  if (!desc) return null;
+  const key = `neighborhood.${ns}.${desc}`;
+  const translated = t(key, { defaultValue: "" });
+  return translated || desc;
+}
+
 export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
   const { t } = useTranslation("data");
   const demo = data.demographics;
@@ -231,7 +238,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
                           border: `1px solid ${(CTA_LINE_COLORS[line] ?? "#666")}40`,
                         }}
                       >
-                        {line}
+                        {t(`neighborhood.ctaLines.${line}`, { defaultValue: line })}
                       </span>
                     ))}
                   </div>
@@ -270,13 +277,13 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
           <div className="space-y-2">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("neighborhood.walkScore")}</span>
             {data.walkscore.walk_score != null && (
-              <ScoreBar score={data.walkscore.walk_score} description={data.walkscore.walk_description} label={t("neighborhood.walk")} />
+              <ScoreBar score={data.walkscore.walk_score} description={translateWsDesc(t, "walkDescriptions", data.walkscore.walk_description)} label={t("neighborhood.walk")} />
             )}
             {data.walkscore.transit_score != null && (
-              <ScoreBar score={data.walkscore.transit_score} description={data.walkscore.transit_description} label={t("neighborhood.transitScore")} />
+              <ScoreBar score={data.walkscore.transit_score} description={translateWsDesc(t, "transitDescriptions", data.walkscore.transit_description)} label={t("neighborhood.transitScore")} />
             )}
             {data.walkscore.bike_score != null && (
-              <ScoreBar score={data.walkscore.bike_score} description={data.walkscore.bike_description} label={t("neighborhood.bike")} />
+              <ScoreBar score={data.walkscore.bike_score} description={translateWsDesc(t, "bikeDescriptions", data.walkscore.bike_description)} label={t("neighborhood.bike")} />
             )}
             <a
               href={data.walkscore.ws_link || "https://www.walkscore.com"}

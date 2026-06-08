@@ -24,7 +24,7 @@
       "25 consultas de IA por día",
       "Búsquedas en la ficha de propiedad",
       "Mapa interactivo con capas de datos",
-      "Datos de delitos, 311, permisos, violaciones",
+      "Datos de delitos, 311, permisos, infracciones",
       "Búsqueda de código municipal (RAG)",
       "Historial de conversaciones",
       "Enlaces compartibles de conversación"
@@ -63,7 +63,7 @@
       "tifFunding": "Fondos TIF",
       "incentivePrograms": "Programas de incentivos",
       "neighborhoodOverview": "Vista del vecindario",
-      "violationDetails": "Detalles de violaciones",
+      "violationDetails": "Detalles de infracciones",
       "crimeAnalysis": "Análisis de delitos",
       "complaints311": "Quejas 311"
     },

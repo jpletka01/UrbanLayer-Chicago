@@ -526,10 +526,14 @@ def assemble_context(
 
     data_as_of = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     lag_note = None
+    lag_days = None
+    lag_cutoff = None
     if crime is not None:
         lag = settings.crime_lag_days
         cutoff = (datetime.now(timezone.utc) - timedelta(days=lag)).strftime("%Y-%m-%d")
         lag_note = f"Crime data excludes the most recent {lag} days (as of {cutoff})."
+        lag_days = lag
+        lag_cutoff = cutoff
 
     parcel_zoning = None
     if zoning_info and zoning_info.get("zone_class"):
@@ -578,6 +582,8 @@ def assemble_context(
         resolved_address=plan.location.resolved_address,
         data_as_of=data_as_of,
         data_lag_note=lag_note,
+        data_lag_days=lag_days,
+        data_lag_cutoff=lag_cutoff,
         crime_last_90d=crime,
         open_311_requests=three11,
         address_311=addr_311,

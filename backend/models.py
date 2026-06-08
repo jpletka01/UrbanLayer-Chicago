@@ -405,6 +405,8 @@ class ContextObject(BaseModel):
     resolved_address: str | None = None
     data_as_of: str | None = None
     data_lag_note: str | None = None
+    data_lag_days: int | None = None
+    data_lag_cutoff: str | None = None
     crime_last_90d: CrimeSummary | None = None
     open_311_requests: ThreeOneOneSummary | None = None
     address_311: Address311Summary | None = None

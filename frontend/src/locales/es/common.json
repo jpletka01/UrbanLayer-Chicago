@@ -42,5 +42,6 @@
   "startNewConversation": "Iniciar nueva conversación",
   "upgradeToPro": "Mejorar a Pro",
   "followUpPlaceholder": "Hacer una pregunta de seguimiento...",
-  "messageLimitReached": "Ha alcanzado el límite de 10 mensajes para esta conversación."
+  "messageLimitReached": "Ha alcanzado el límite de 10 mensajes para esta conversación.",
+  "shared": "Compartida"
 }

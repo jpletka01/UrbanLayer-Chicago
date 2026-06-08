@@ -112,7 +112,7 @@ function NeighborhoodCard({ t }: { t: (key: string) => string }) {
         <div className="flex items-center gap-2 text-text-secondary">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
           <span>Western</span>
-          <span className="text-text-muted">&mdash; Blue Line, 0.3 mi</span>
+          <span className="text-text-muted">&mdash; {t("depth.blueLine")}</span>
         </div>
       </div>
       <div className="border-t border-dark-border pt-2">
