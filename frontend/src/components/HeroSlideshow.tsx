@@ -27,7 +27,7 @@ export function HeroSlideshow() {
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms]"
           style={{
             opacity: i === idx ? 1 : 0,
-            filter: "brightness(0.6)",
+            filter: "brightness(0.35)",
           }}
         />
       ))}

@@ -244,9 +244,7 @@ The first successful experience is: **"This is right, and it told me something I
 
 **Build:**
 - ~~**A la carte report purchase.**~~ **DONE (2026-06-09).** Stripe one-time $25 checkout, `report_purchases` table, Scorecard shows "Download Report — $25" for free users, auto-download after purchase. See `archive/2026-06-09_a-la-carte-reports.md`.
-- Rewrite landing page copy: headline, subheadline, value props, personas (as described in Section 4)
-- Replace "The Investor / Business Owner / Resident" personas with "The Developer / Architect / Attorney"
-- Demote crime analytics, 311 analytics, business licenses, and food inspections from prominent positions (keep in chat pipeline and sidebar, remove from landing page narrative and Scorecard primary view)
+- ~~**Landing page repositioning.**~~ **DONE (2026-06-08).** Rewrote hero subtitle, value props (Build/Worth/Watch), personas (Developer/Architect/Attorney), story sections, intelligence stack (reordered, "Safety" → "Due Diligence Signals"), suggestion chips. Removed NeighborhoodExplorer from landing page. Added ValueProps section. Hero slideshow tint matched to story sections.
 - Elevate comparable sales, incentives, and tax projections on the Scorecard
 - Make the "Download Report" CTA unmissable on the Scorecard
 

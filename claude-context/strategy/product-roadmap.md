@@ -15,6 +15,7 @@
 | Site Explorer / Property Finder | Production |
 | PDF Report v3 (premium development feasibility) | Production |
 | Investigate Buttons (dashboard → chat) | Production |
+| Landing Page (site feasibility positioning, Developer/Architect/Attorney personas) | Production |
 | Multi-language (Spanish) | Production |
 | Mobile UX (bottom sheet, 3-tab) | Production |
 | Admin Dashboard + Eval Suite (93% coverage) | Production |

@@ -4,7 +4,7 @@
 
 Two global UI states:
 
-**Splash Screen** (`/`): Full-screen hero slideshow (5 Unsplash photos, 8s interval, 2s crossfade) + centered chat input + suggestion chips + animated stats footer. Transitions to workspace on first message.
+**Splash Screen** (`/`): Full-screen hero slideshow (5 Unsplash photos, 8s interval, 2s crossfade, brightness 0.35) + centered chat input + suggestion chips + animated stats footer. Below fold: ValueProps (3 cards: Build/Worth/Watch), IntelligenceStack (6 domain cards with background image), StorySection (site feasibility), DepthShowcase, PersonaScenarios (Developer/Architect/Attorney), StorySection (report workflow), HowItWorks, Footer. Positioned for site feasibility professionals, not neighborhood exploration. Transitions to workspace on first message.
 
 **Split-Screen Workspace** (`/c/:id`): Chat (left, ~60%) + collapsible sidebar (right, ~40%). Sidebar starts closed (44px rail with document icon + source count badge). Auto-opens when context data arrives. Drag-to-resize left edge handle; snap-close at <200px, max 60% viewport.
 

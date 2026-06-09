@@ -21,7 +21,7 @@ import {
 } from "./lib/api";
 import { SPLASH_STATS } from "./lib/constants";
 import { Footer } from "./components/landing/Footer";
-import { NeighborhoodExplorer } from "./components/landing/NeighborhoodExplorer";
+import { ValueProps } from "./components/landing/ValueProps";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
 import { StorySection } from "./components/landing/StorySection";
 import { IntelligenceStack } from "./components/landing/IntelligenceStack";
@@ -744,33 +744,33 @@ export function App() {
 
             </div>
 
+            {/* Value Props — professional positioning */}
+            <ValueProps />
+
             {/* Intelligence Stack — breadth: 6 domain cards */}
             <IntelligenceStack />
 
-            {/* Story interstitial — business use case */}
+            {/* Story interstitial — site feasibility */}
             <StorySection
-              image="https://images.unsplash.com/photo-1699898064988-9473dc051320?w=1920&q=80"
-              title={t("story.businessTitle")}
-              subtitle={t("story.businessSubtitle")}
+              image="https://images.unsplash.com/photo-1581373449483-37449f962b6c?w=1920&q=80"
+              title={t("story.feasibilityTitle")}
+              subtitle={t("story.feasibilitySubtitle")}
               align="left"
             />
 
             {/* Depth Showcase — product UI previews */}
             <DepthShowcase />
 
-            {/* Interactive explorer — proof */}
-            <NeighborhoodExplorer />
+            {/* Persona Scenarios — professional personas */}
+            <PersonaScenarios onAsk={sendMessage} />
 
-            {/* Story interstitial — move-in use case */}
+            {/* Story interstitial — report workflow */}
             <StorySection
-              image="https://images.unsplash.com/photo-1654043342878-7491a4c4d098?w=1920&q=80"
-              title={t("story.residentTitle")}
-              subtitle={t("story.residentSubtitle")}
+              image="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1920&q=80"
+              title={t("story.reportTitle")}
+              subtitle={t("story.reportSubtitle")}
               align="right"
             />
-
-            {/* Persona Scenarios — customer sees themselves */}
-            <PersonaScenarios onAsk={sendMessage} />
 
             {/* How It Works — trust / architecture */}
             <HowItWorks />

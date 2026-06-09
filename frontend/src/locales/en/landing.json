@@ -1,5 +1,5 @@
 {
-  "heroSubtitle": "Chicago public data, explored through conversation.",
+  "heroSubtitle": "Zoning, incentives, tax projections, and municipal code analysis for any Chicago address — in seconds.",
   "stats": {
     "dataSources": "Data sources",
     "codeSections": "Code sections",
@@ -7,24 +7,29 @@
     "regulatoryLayers": "Regulatory layers"
   },
   "suggestions": [
-    "What's going on near 2400 N Milwaukee Ave?",
-    "Tell me about the property at 1425 N Wells St",
-    "Can I open a bar at 2200 W Chicago Ave?",
-    "Is Logan Square in a TIF district?"
+    "Can I build a 6-unit building at 4520 N Clark St?",
+    "What are the setback requirements for B3-2 zoning?",
+    "Is 2400 N Milwaukee Ave eligible for a Class 6b incentive?",
+    "Tell me about the property at 1425 N Wells St"
   ],
   "intelligence": {
     "heading": "One question. Twenty-five sources.",
-    "subheading": "Every query pulls from property records, zoning regulations, tax estimates, incentive programs, transit data, demographics, crime, 311, permits, business licenses, and 14,535 sections of municipal code — simultaneously.",
+    "subheading": "Zoning, municipal code, property records, incentives, permits, and more — queried simultaneously.",
     "domains": [
-      {
-        "title": "Property Intelligence",
-        "badge": "4 sources",
-        "points": ["Parcel characteristics", "Assessed values (5-yr)", "Sales history", "Tax estimation"]
-      },
       {
         "title": "Regulatory & Zoning",
         "badge": "12 layers",
-        "points": ["Base zoning classification", "12 overlay districts", "FEMA flood zones", "EPA brownfield proximity"]
+        "points": ["Base zoning + 12 overlays", "FEMA flood zones", "EPA brownfields"]
+      },
+      {
+        "title": "Municipal Code",
+        "badge": "Full text",
+        "points": ["14,535 searchable sections", "Cross-reference expansion", "Cited answers"]
+      },
+      {
+        "title": "Property Intelligence",
+        "badge": "4 sources",
+        "points": ["Parcel data + assessed values", "Sales history", "Tax estimation"]
       },
       {
         "title": "Incentives & Investment",
@@ -34,25 +39,20 @@
       {
         "title": "Neighborhood Context",
         "badge": "4 sources",
-        "points": ["ACS demographics", "Transit proximity (CTA/Metra)", "Walk / Transit / Bike Score", "TOD eligibility"]
+        "points": ["Demographics + transit", "Walk / Transit / Bike Score", "TOD eligibility"]
       },
       {
-        "title": "Safety & Activity",
+        "title": "Due Diligence Signals",
         "badge": "5 datasets",
-        "points": ["Crime (30 types + arrest rates)", "311 requests (105 types)", "Building permits & violations", "Business licenses"]
-      },
-      {
-        "title": "Municipal Code",
-        "badge": "Full text",
-        "points": ["14,535 searchable sections", "Cross-reference expansion", "Citation-linked answers"]
+        "points": ["Permits & violations", "Business licenses", "Crime + 311 summary"]
       }
     ]
   },
   "story": {
-    "businessTitle": "Open a business with confidence",
-    "businessSubtitle": "Check zoning compliance and 12 regulatory overlays, find TIF districts and incentive programs, review nearby competition through active business licenses, and understand the neighborhood — all from a single question.",
-    "residentTitle": "Find the right place to live",
-    "residentSubtitle": "Compare crime trends and arrest rates, check Walk Score and transit access, review property taxes and assessed values, see building violations and 311 patterns — the neighborhood report no listing gives you."
+    "feasibilityTitle": "Evaluate any site in seconds",
+    "feasibilitySubtitle": "Zoning classification, regulatory overlays, incentive eligibility, tax projections, and comparable sales — assembled from 25+ sources for any Chicago address. The due diligence that used to take a week.",
+    "reportTitle": "From question to report",
+    "reportSubtitle": "Ask a question in plain English. Get a sourced analysis with cited municipal code, interactive maps, and trend data. Download a professional PDF report you can hand to a client, investor, or lender."
   },
   "depth": {
     "heading": "Ask one question. Get the full picture.",
@@ -67,7 +67,7 @@
         "caption": "12 overlay layers checked per address — landmarks to flood zones to ADU eligibility."
       },
       {
-        "title": "Neighborhood snapshot",
+        "title": "Site context",
         "caption": "Demographics, transit access, and walkability scores assembled for every query."
       }
     ],
@@ -124,26 +124,26 @@
   },
   "personas": {
     "heading": "Built for real decisions",
-    "subheading": "Whether you're evaluating a property, siting a business, or choosing a neighborhood.",
+    "subheading": "Whether you're evaluating a development site, checking code compliance, or researching incentive eligibility.",
     "returns": "UrbanLayer returns",
     "items": [
       {
-        "title": "The Investor",
-        "question": "Tell me about the property at 1425 N Wells St",
-        "domains": ["Property Details", "Assessment History", "Tax Estimate", "TIF Status", "Opportunity Zone", "Zoning + Overlays"],
-        "framing": "Due diligence that used to take a week of FOIA requests."
+        "title": "The Developer",
+        "question": "Can I build a 6-unit residential building at 4520 N Clark St?",
+        "domains": ["Zoning Analysis", "Bulk Standards", "Overlay Compliance", "Incentive Eligibility", "Tax Projection", "Comparable Sales"],
+        "framing": "Complete site feasibility in seconds, not days."
       },
       {
-        "title": "The Business Owner",
-        "question": "Can I open a restaurant at 2200 W Chicago Ave?",
-        "domains": ["Zoning Classification", "Permitted Uses", "Regulatory Overlays", "Nearby Businesses", "Building Permits", "Incentive Programs"],
-        "framing": "Everything between your idea and your lease agreement."
+        "title": "The Architect",
+        "question": "What are the setback requirements for a mixed-use building in B3-2 adjacent to an RS-3 district?",
+        "domains": ["Cited Municipal Code", "Transition Zone Rules", "Parking Requirements", "Height & Bulk Standards", "FAR Calculation", "Overlay Districts"],
+        "framing": "Every answer cites the specific code section."
       },
       {
-        "title": "The Resident",
-        "question": "What's it like living near Damen and Division?",
-        "domains": ["Crime Trends (90d)", "311 Patterns", "Walk / Transit Score", "CTA Access", "Demographics", "Building Activity"],
-        "framing": "The neighborhood report no listing gives you."
+        "title": "The Attorney",
+        "question": "Is the property at 2400 N Milwaukee Ave eligible for a Class 6b tax incentive?",
+        "domains": ["Property Classification", "Incentive Eligibility", "TIF District Status", "Applicable Programs", "Assessment History", "Municipal Code"],
+        "framing": "Due diligence research in one query, not ten FOIA requests."
       }
     ]
   },
@@ -161,23 +161,23 @@
       },
       {
         "title": "You get answers",
-        "description": "A sourced, cited answer with interactive maps, trend analysis, and linked code references. Not a spreadsheet."
+        "description": "A sourced, cited answer with interactive maps, regulatory analysis, and linked code references. Download a professional report."
       }
     ],
-    "sourceTags": ["Zoning", "Overlays", "Property", "Permits", "TIF", "Code", "Crime", "Demographics"],
+    "sourceTags": ["Zoning", "Overlays", "Property", "Permits", "TIF", "Code", "Incentives", "Tax Est."],
     "sampleResponse": "The parcel at 2100 N Damen Ave is zoned",
     "sampleResponseTail": ", which permits multi-unit residential..."
   },
   "valueProps": {
-    "knowTitle": "Know your neighborhood",
-    "knowBody": "See what's happening around any Chicago address — crime patterns, open 311 requests, building permits, and zoning, all in one place.",
-    "changingTitle": "Understand what's changing",
-    "changingBody": "Month-over-month trends show you whether crime is rising, construction is booming, or complaints are being resolved.",
-    "answersTitle": "Get answers, not spreadsheets",
-    "answersBody": "Ask questions in plain English. Our AI searches 14,000+ municipal code sections and 5 live city datasets to build your answer."
+    "buildTitle": "Know what you can build.",
+    "buildBody": "Instant zoning classification with AI-powered code interpretation. Ask what's allowed, what the setbacks are, what FAR applies — get cited answers from 14,000+ municipal code sections.",
+    "worthTitle": "Know what it's worth.",
+    "worthBody": "Assessment history, comparable sales, PTAXSIM tax projections, and incentive eligibility. The financial picture for any Chicago address.",
+    "watchTitle": "Know what to watch for.",
+    "watchBody": "Regulatory overlays, environmental flags, building violations, and permit history. The risks and opportunities you need to see before committing capital."
   },
   "footer": {
-    "tagline": "Chicago public data, explored through conversation.",
+    "tagline": "AI-powered site feasibility for Chicago real estate professionals.",
     "copyright": "© 2026 UrbanLayer",
     "dataSources": "Data Sources",
     "cityOfChicago": "City of Chicago",
