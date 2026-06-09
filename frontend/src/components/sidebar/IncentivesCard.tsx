@@ -206,9 +206,13 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
         {data.property_tax_class && (
           <div className="space-y-1">
             <Badge active label={t("incentives.taxClass", { code: data.property_tax_class })} />
-            {data.tax_incentive_description && (
-              <p className="text-[10px] text-text-muted ml-5">{data.tax_incentive_description}</p>
-            )}
+            <p className="text-[10px] text-text-muted ml-5">
+              {data.property_tax_class === "standard"
+                ? t("incentives.standardClassDescription")
+                : data.property_tax_class === "unavailable"
+                  ? t("incentives.unavailableClassDescription")
+                  : data.tax_incentive_description}
+            </p>
           </div>
         )}
 

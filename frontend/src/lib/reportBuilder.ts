@@ -1,3 +1,4 @@
+import i18n from "i18next";
 import type {
   Message,
   ContextObject,
@@ -12,6 +13,10 @@ import type {
   ViolationSummary,
   BusinessSummary,
 } from "./types";
+
+function tr(key: string, opts?: Record<string, unknown>): string {
+  return i18n.t(`report.${key}`, { ns: "data", ...opts });
+}
 
 export interface ReportSection {
   type:
@@ -79,13 +84,14 @@ function collectCodeChunks(messages: Message[]): CodeChunk[] {
 }
 
 function formatCurrency(n: number): string {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const locale = i18n.language === "es" ? "es-ES" : "en-US";
+  return n.toLocaleString(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
 function buildPropertySection(prop: PropertySummary): ReportSection {
   return {
     type: "property",
-    title: "Property Summary",
+    title: tr("propertySummary"),
     content: prop,
   };
 }
@@ -93,7 +99,7 @@ function buildPropertySection(prop: PropertySummary): ReportSection {
 function buildRegulatorySection(reg: RegulatorySummary): ReportSection {
   return {
     type: "regulatory",
-    title: "Regulatory Overview",
+    title: tr("regulatoryOverview"),
     content: reg,
   };
 }
@@ -101,7 +107,7 @@ function buildRegulatorySection(reg: RegulatorySummary): ReportSection {
 function buildIncentivesSection(inc: IncentivesSummary): ReportSection {
   return {
     type: "incentives",
-    title: "Incentive Programs",
+    title: tr("incentivePrograms"),
     content: inc,
   };
 }
@@ -109,7 +115,7 @@ function buildIncentivesSection(inc: IncentivesSummary): ReportSection {
 function buildNeighborhoodSection(nb: NeighborhoodSummary): ReportSection {
   return {
     type: "neighborhood",
-    title: "Neighborhood Profile",
+    title: tr("neighborhoodProfile"),
     content: nb,
   };
 }
@@ -123,7 +129,7 @@ function buildSafetySection(
 ): ReportSection {
   return {
     type: "safety",
-    title: "Safety & Activity",
+    title: tr("safetyActivity"),
     content: { crime, three11, permits, violations, businesses },
   };
 }
@@ -139,14 +145,15 @@ export function buildReportData(
   const address = latestCtx?.resolved_address ?? null;
   const communityArea = latestCtx?.community_area_name ?? null;
 
+  const locale = i18n.language === "es" ? "es-ES" : "en-US";
   sections.push({
     type: "header",
-    title: "UrbanLayer Site Report",
-    content: { address, communityArea, generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) },
+    title: tr("siteReport"),
+    content: { address, communityArea, generatedAt: new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" }) },
   });
 
   if (mapScreenshot) {
-    sections.push({ type: "map", title: "Location Map", content: mapScreenshot });
+    sections.push({ type: "map", title: tr("locationMap"), content: mapScreenshot });
   }
 
   const property = findLatest(messages, (c) => c.property);
@@ -180,20 +187,24 @@ export function buildReportData(
     }
   }
   if (qaPairs.length > 0) {
-    sections.push({ type: "qa", title: "Conversation Transcript", content: qaPairs });
+    sections.push({ type: "qa", title: tr("conversationTranscript"), content: qaPairs });
   }
 
   const codeChunks = collectCodeChunks(messages);
   if (codeChunks.length > 0) {
-    sections.push({ type: "sources", title: "Municipal Code Citations", content: codeChunks });
+    sections.push({ type: "sources", title: tr("municipalCodeCitations"), content: codeChunks });
   }
 
   const hasDisclaimer = messages.some((m) => m.context?.requires_disclaimer);
-  const dataLag = latestCtx?.data_lag_note;
+  const dataLagDays = latestCtx?.data_lag_days;
+  const dataLagCutoff = latestCtx?.data_lag_cutoff;
+  const dataLag = dataLagDays && dataLagCutoff
+    ? i18n.t("crimeDataLag", { ns: "data", days: dataLagDays, cutoff: dataLagCutoff })
+    : latestCtx?.data_lag_note;
   if (hasDisclaimer || dataLag) {
     sections.push({
       type: "disclaimer",
-      title: "Disclaimers & Data Provenance",
+      title: tr("disclaimersProvenance"),
       content: { hasDisclaimer, dataLag, dataAsOf: latestCtx?.data_as_of },
     });
   }

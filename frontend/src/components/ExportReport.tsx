@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ReportData } from "../lib/reportBuilder";
 import type {
   CodeChunk,
@@ -118,14 +119,21 @@ const s = {
   badgeGray: { backgroundColor: "#f3f4f6", color: "#374151" },
 };
 
+function getLocale(): string {
+  try {
+    const lang = localStorage.getItem("urbanlayer-language");
+    return lang === "es" ? "es-ES" : "en-US";
+  } catch { return "en-US"; }
+}
+
 function fmt(n: number | null | undefined): string {
   if (n == null) return "—";
-  return n.toLocaleString("en-US");
+  return n.toLocaleString(getLocale());
 }
 
 function fmtCurrency(n: number | null | undefined): string {
   if (n == null) return "—";
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  return n.toLocaleString(getLocale(), { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
 function fmtPct(n: number | null | undefined): string {
@@ -133,19 +141,19 @@ function fmtPct(n: number | null | undefined): string {
   return `${n.toFixed(1)}%`;
 }
 
-function PropertyTable({ data }: { data: PropertySummary }) {
+function PropertyTable({ data, t }: { data: PropertySummary; t: (key: string, opts?: Record<string, unknown>) => string }) {
   const rows: [string, string][] = [];
-  if (data.pin14) rows.push(["PIN", data.pin14]);
-  if (data.address) rows.push(["Address", data.address]);
-  if (data.bldg_class_description) rows.push(["Building Class", `${data.bldg_class ?? ""} — ${data.bldg_class_description}`]);
-  if (data.bldg_sqft) rows.push(["Building Sq Ft", fmt(data.bldg_sqft)]);
-  if (data.land_sqft) rows.push(["Land Sq Ft", fmt(data.land_sqft)]);
-  if (data.stories) rows.push(["Stories", String(data.stories)]);
-  if (data.units) rows.push(["Units", String(data.units)]);
-  if (data.bedrooms) rows.push(["Bedrooms", String(data.bedrooms)]);
-  if (data.bldg_age) rows.push(["Building Age", `${data.bldg_age} years`]);
-  if (data.total_assessed_value) rows.push(["Total Assessed Value", fmtCurrency(data.total_assessed_value)]);
-  if (data.estimated_annual_tax) rows.push(["Estimated Annual Tax", fmtCurrency(data.estimated_annual_tax)]);
+  if (data.pin14) rows.push([t("report.pin"), data.pin14]);
+  if (data.address) rows.push([t("report.address"), data.address]);
+  if (data.bldg_class_description) rows.push([t("report.buildingClass"), `${data.bldg_class ?? ""} — ${data.bldg_class_description}`]);
+  if (data.bldg_sqft) rows.push([t("report.buildingSqFt"), fmt(data.bldg_sqft)]);
+  if (data.land_sqft) rows.push([t("report.landSqFt"), fmt(data.land_sqft)]);
+  if (data.stories) rows.push([t("report.stories"), String(data.stories)]);
+  if (data.units) rows.push([t("report.units"), String(data.units)]);
+  if (data.bedrooms) rows.push([t("report.bedrooms"), String(data.bedrooms)]);
+  if (data.bldg_age) rows.push([t("report.buildingAge"), t("report.yearsUnit", { count: data.bldg_age })]);
+  if (data.total_assessed_value) rows.push([t("report.totalAssessedValue"), fmtCurrency(data.total_assessed_value)]);
+  if (data.estimated_annual_tax) rows.push([t("report.estAnnualTax"), fmtCurrency(data.estimated_annual_tax)]);
 
   return (
     <table style={s.table}>
@@ -161,19 +169,23 @@ function PropertyTable({ data }: { data: PropertySummary }) {
   );
 }
 
-function RegulatoryTable({ data }: { data: RegulatorySummary }) {
-  const flags: string[] = [];
-  if (data.in_planned_development) flags.push("Planned Development");
-  if (data.in_landmark_district) flags.push("Landmark District");
-  if (data.is_landmark_building) flags.push("Landmark Building");
-  if (data.in_historic_district) flags.push("Historic District");
-  if (data.on_national_register) flags.push("National Register");
-  if (data.in_lakefront_protection) flags.push("Lakefront Protection");
-  if (data.on_pedestrian_street) flags.push("Pedestrian Street");
-  if (data.in_tod_area) flags.push("Transit-Oriented Development");
-  if (data.in_adu_area) flags.push("ADU Eligible");
-  if (data.in_aro_zone) flags.push("ARO Zone");
-  if (data.in_ssa) flags.push(`SSA: ${data.ssa_name || "Yes"}`);
+function RegulatoryTable({ data, t }: { data: RegulatorySummary; t: (key: string, opts?: Record<string, unknown>) => string }) {
+  const flagKeys: [string, boolean | undefined][] = [
+    ["in_planned_development", data.in_planned_development],
+    ["in_landmark_district", data.in_landmark_district],
+    ["is_landmark_building", data.is_landmark_building],
+    ["in_historic_district", data.in_historic_district],
+    ["on_national_register", data.on_national_register],
+    ["in_lakefront_protection", data.in_lakefront_protection],
+    ["on_pedestrian_street", data.on_pedestrian_street],
+    ["in_tod_area", data.in_tod_area],
+    ["in_adu_area", data.in_adu_area],
+    ["in_aro_zone", data.in_aro_zone],
+  ];
+  const flags = flagKeys
+    .filter(([, v]) => v)
+    .map(([k]) => t(`regulatory.flags.${k}`));
+  if (data.in_ssa) flags.push(`${t("regulatory.flags.in_ssa")}: ${data.ssa_name || "Yes"}`);
 
   return (
     <div>
@@ -181,8 +193,8 @@ function RegulatoryTable({ data }: { data: RegulatorySummary }) {
         <table style={s.table}>
           <thead>
             <tr>
-              <th style={s.th}>Overlay Type</th>
-              <th style={s.th}>Name</th>
+              <th style={s.th}>{t("report.overlayType")}</th>
+              <th style={s.th}>{t("report.name")}</th>
             </tr>
           </thead>
           <tbody>
@@ -204,90 +216,90 @@ function RegulatoryTable({ data }: { data: RegulatorySummary }) {
       )}
       {data.flood_zone && (
         <p style={{ fontSize: "13px", color: "#92400e" }}>
-          Flood Zone: {data.flood_zone}{data.flood_zone_subtype ? ` (${data.flood_zone_subtype})` : ""}
-          {data.in_special_flood_hazard && " — Special Flood Hazard Area"}
+          {t("report.floodZone")}: {data.flood_zone}{data.flood_zone_subtype ? ` (${data.flood_zone_subtype})` : ""}
+          {data.in_special_flood_hazard && ` — ${t("report.specialFloodHazard")}`}
         </p>
       )}
       {data.brownfield_sites.length > 0 && (
         <p style={{ fontSize: "13px", color: "#92400e" }}>
-          {data.brownfield_sites.length} brownfield site(s) nearby
+          {t("report.brownfieldSites", { count: data.brownfield_sites.length })}
         </p>
       )}
     </div>
   );
 }
 
-function IncentivesTable({ data }: { data: IncentivesSummary }) {
+function IncentivesTable({ data, t }: { data: IncentivesSummary; t: (key: string, opts?: Record<string, unknown>) => string }) {
   return (
     <div>
       <div style={{ margin: "8px 0" }}>
         {data.in_tif_district && (
-          <span style={{ ...s.badge, ...s.badgeGreen }}>TIF District</span>
+          <span style={{ ...s.badge, ...s.badgeGreen }}>{t("incentives.inTif")}</span>
         )}
         {data.in_opportunity_zone && (
-          <span style={{ ...s.badge, ...s.badgeGreen }}>Opportunity Zone</span>
+          <span style={{ ...s.badge, ...s.badgeGreen }}>{t("incentives.opportunityZone")}</span>
         )}
         {data.in_enterprise_zone && (
-          <span style={{ ...s.badge, ...s.badgeGreen }}>Enterprise Zone</span>
+          <span style={{ ...s.badge, ...s.badgeGreen }}>{t("incentives.enterpriseZone")}</span>
         )}
       </div>
       {data.in_tif_district && (
         <table style={s.table}>
           <tbody>
-            {data.tif_name && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>TIF District</td><td style={s.td}>{data.tif_name}</td></tr>}
-            {data.tif_year_start && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>Start Year</td><td style={s.td}>{data.tif_year_start}</td></tr>}
-            {data.tif_end_year && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>End Year</td><td style={s.td}>{data.tif_end_year}</td></tr>}
-            {data.tif_total_revenue != null && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>Total Revenue</td><td style={s.td}>{fmtCurrency(data.tif_total_revenue)}</td></tr>}
-            {data.tif_total_expenditure != null && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>Total Expenditure</td><td style={s.td}>{fmtCurrency(data.tif_total_expenditure)}</td></tr>}
+            {data.tif_name && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.tifDistrict")}</td><td style={s.td}>{data.tif_name}</td></tr>}
+            {data.tif_year_start && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.startYear")}</td><td style={s.td}>{data.tif_year_start}</td></tr>}
+            {data.tif_end_year && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.endYear")}</td><td style={s.td}>{data.tif_end_year}</td></tr>}
+            {data.tif_total_revenue != null && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.totalRevenue")}</td><td style={s.td}>{fmtCurrency(data.tif_total_revenue)}</td></tr>}
+            {data.tif_total_expenditure != null && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.totalExpenditure")}</td><td style={s.td}>{fmtCurrency(data.tif_total_expenditure)}</td></tr>}
           </tbody>
         </table>
       )}
       {data.in_opportunity_zone && data.oz_tract && (
-        <p style={{ fontSize: "13px", color: "#374151" }}>Census Tract: {data.oz_tract}</p>
+        <p style={{ fontSize: "13px", color: "#374151" }}>{t("report.censusTract")}: {data.oz_tract}</p>
       )}
     </div>
   );
 }
 
-function NeighborhoodTable({ data }: { data: NeighborhoodSummary }) {
+function NeighborhoodTable({ data, t }: { data: NeighborhoodSummary; t: (key: string, opts?: Record<string, unknown>) => string }) {
   const d = data.demographics;
-  const t = data.transit;
+  const tr = data.transit;
   const w = data.walkscore;
 
   return (
     <div>
       {d && (
         <table style={s.table}>
-          <thead><tr><th style={s.th} colSpan={2}>Demographics</th></tr></thead>
+          <thead><tr><th style={s.th} colSpan={2}>{t("report.demographics")}</th></tr></thead>
           <tbody>
-            <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>Population</td><td style={s.td}>{fmt(d.population)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>Median Household Income</td><td style={s.td}>{fmtCurrency(d.median_household_income)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>Median Home Value</td><td style={s.td}>{fmtCurrency(d.median_home_value)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>Median Age</td><td style={s.td}>{d.median_age ?? "—"}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>Poverty Rate</td><td style={s.td}>{fmtPct(d.poverty_rate)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>Unemployment</td><td style={s.td}>{fmtPct(d.unemployment_rate)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>Owner-Occupied</td><td style={s.td}>{fmtPct(d.owner_occupied_pct)}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.population")}</td><td style={s.td}>{fmt(d.population)}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.medianHouseholdIncome")}</td><td style={s.td}>{fmtCurrency(d.median_household_income)}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.medianHomeValue")}</td><td style={s.td}>{fmtCurrency(d.median_home_value)}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.medianAge")}</td><td style={s.td}>{d.median_age ?? "—"}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.povertyRate")}</td><td style={s.td}>{fmtPct(d.poverty_rate)}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.unemployment")}</td><td style={s.td}>{fmtPct(d.unemployment_rate)}</td></tr>
+            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.ownerOccupied")}</td><td style={s.td}>{fmtPct(d.owner_occupied_pct)}</td></tr>
           </tbody>
         </table>
       )}
       {w && (w.walk_score != null || w.transit_score != null || w.bike_score != null) && (
         <table style={s.table}>
-          <thead><tr><th style={s.th} colSpan={2}>Walk Score</th></tr></thead>
+          <thead><tr><th style={s.th} colSpan={2}>{t("report.walkScoreSection")}</th></tr></thead>
           <tbody>
-            {w.walk_score != null && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>Walk Score</td><td style={s.td}>{w.walk_score} — {w.walk_description}</td></tr>}
-            {w.transit_score != null && <tr><td style={{ ...s.td, fontWeight: 600 }}>Transit Score</td><td style={s.td}>{w.transit_score} — {w.transit_description}</td></tr>}
-            {w.bike_score != null && <tr><td style={{ ...s.td, fontWeight: 600 }}>Bike Score</td><td style={s.td}>{w.bike_score} — {w.bike_description}</td></tr>}
+            {w.walk_score != null && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.walkScore")}</td><td style={s.td}>{w.walk_score} — {w.walk_description}</td></tr>}
+            {w.transit_score != null && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.transitScore")}</td><td style={s.td}>{w.transit_score} — {w.transit_description}</td></tr>}
+            {w.bike_score != null && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.bikeScore")}</td><td style={s.td}>{w.bike_score} — {w.bike_description}</td></tr>}
           </tbody>
         </table>
       )}
-      {t && (
+      {tr && (
         <table style={s.table}>
-          <thead><tr><th style={s.th} colSpan={2}>Transit Access</th></tr></thead>
+          <thead><tr><th style={s.th} colSpan={2}>{t("report.transitAccess")}</th></tr></thead>
           <tbody>
-            {t.nearest_cta_rail && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>Nearest CTA Rail</td><td style={s.td}>{t.nearest_cta_rail} ({t.cta_rail_distance_mi?.toFixed(2)} mi)</td></tr>}
-            {t.cta_lines.length > 0 && <tr><td style={{ ...s.td, fontWeight: 600 }}>CTA Lines</td><td style={s.td}>{t.cta_lines.join(", ")}</td></tr>}
-            {t.nearest_metra && <tr><td style={{ ...s.td, fontWeight: 600 }}>Nearest Metra</td><td style={s.td}>{t.nearest_metra} ({t.metra_distance_mi?.toFixed(2)} mi)</td></tr>}
-            {t.tod_eligible && <tr><td style={{ ...s.td, fontWeight: 600 }}>TOD Eligible</td><td style={s.td}>{t.tod_type || "Yes"}</td></tr>}
+            {tr.nearest_cta_rail && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.nearestCtaRail")}</td><td style={s.td}>{tr.nearest_cta_rail} ({tr.cta_rail_distance_mi?.toFixed(2)} mi)</td></tr>}
+            {tr.cta_lines.length > 0 && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.ctaLines")}</td><td style={s.td}>{tr.cta_lines.join(", ")}</td></tr>}
+            {tr.nearest_metra && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.nearestMetra")}</td><td style={s.td}>{tr.nearest_metra} ({tr.metra_distance_mi?.toFixed(2)} mi)</td></tr>}
+            {tr.tod_eligible && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.todEligible")}</td><td style={s.td}>{tr.tod_type || "Yes"}</td></tr>}
           </tbody>
         </table>
       )}
@@ -295,16 +307,16 @@ function NeighborhoodTable({ data }: { data: NeighborhoodSummary }) {
   );
 }
 
-function SafetySection({ data }: { data: { crime: CrimeSummary | null; three11: ThreeOneOneSummary | null; permits: PermitSummary | null; violations: ViolationSummary | null; businesses: BusinessSummary | null } }) {
+function SafetySection({ data, t }: { data: { crime: CrimeSummary | null; three11: ThreeOneOneSummary | null; permits: PermitSummary | null; violations: ViolationSummary | null; businesses: BusinessSummary | null }; t: (key: string, opts?: Record<string, unknown>) => string }) {
   const { crime, three11, permits, violations, businesses } = data;
   return (
     <div>
       {crime && (
         <>
-          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>Crime (Last 90 Days)</h3>
-          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>Total incidents: {fmt(crime.total)} | Arrest rate: {fmtPct(crime.arrest_rate)}</p>
+          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>{t("report.crimeLast90")}</h3>
+          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.totalIncidents", { total: fmt(crime.total), rate: fmtPct(crime.arrest_rate) })}</p>
           <table style={s.table}>
-            <thead><tr><th style={s.th}>Type</th><th style={s.th}>Count</th></tr></thead>
+            <thead><tr><th style={s.th}>{t("report.type")}</th><th style={s.th}>{t("report.count")}</th></tr></thead>
             <tbody>
               {Object.entries(crime.by_type).slice(0, 10).map(([type, count]) => (
                 <tr key={type}><td style={s.td}>{type}</td><td style={s.td}>{fmt(count)}</td></tr>
@@ -315,26 +327,26 @@ function SafetySection({ data }: { data: { crime: CrimeSummary | null; three11: 
       )}
       {three11 && (
         <>
-          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>311 Service Requests</h3>
-          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>Open requests: {fmt(three11.total)}{three11.oldest_open_days != null ? ` | Oldest: ${three11.oldest_open_days} days` : ""}</p>
+          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>{t("report.threeOneOneRequests")}</h3>
+          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.openRequests", { total: fmt(three11.total) })}{three11.oldest_open_days != null ? t("report.oldestDays", { days: three11.oldest_open_days }) : ""}</p>
         </>
       )}
       {permits && (
         <>
-          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>Building Permits (Last Year)</h3>
-          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>Total: {fmt(permits.total)} | Est. cost: {fmtCurrency(permits.total_estimated_cost)}</p>
+          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>{t("report.permitsLastYear")}</h3>
+          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.permitsTotal", { total: fmt(permits.total), cost: fmtCurrency(permits.total_estimated_cost) })}</p>
         </>
       )}
       {violations && (
         <>
-          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>Building Violations</h3>
-          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>Total: {fmt(violations.total)} | Open: {fmt(violations.open_count)}</p>
+          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>{t("report.buildingViolations")}</h3>
+          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.violationsTotal", { total: fmt(violations.total), open: fmt(violations.open_count) })}</p>
         </>
       )}
       {businesses && (
         <>
-          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>Business Licenses</h3>
-          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>Total: {fmt(businesses.total)}</p>
+          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>{t("report.businessLicenses")}</h3>
+          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.businessTotal", { total: fmt(businesses.total) })}</p>
         </>
       )}
     </div>
@@ -344,6 +356,7 @@ function SafetySection({ data }: { data: { crime: CrimeSummary | null; three11: 
 export function ExportReport({ report, onClose }: Props) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const { t } = useTranslation("data");
 
   const handleDownload = useCallback(async () => {
     if (!reportRef.current) return;
@@ -385,7 +398,7 @@ export function ExportReport({ report, onClose }: Props) {
         borderBottom: "1px solid #333",
         flexShrink: 0,
       }}>
-        <h2 style={{ color: "#fff", fontSize: "16px", fontWeight: 600, margin: 0 }}>Report Preview</h2>
+        <h2 style={{ color: "#fff", fontSize: "16px", fontWeight: 600, margin: 0 }}>{t("report.reportPreview")}</h2>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={handlePrint}
@@ -399,7 +412,7 @@ export function ExportReport({ report, onClose }: Props) {
               cursor: "pointer",
             }}
           >
-            Print
+            {t("report.print")}
           </button>
           <button
             onClick={handleDownload}
@@ -416,7 +429,7 @@ export function ExportReport({ report, onClose }: Props) {
               opacity: exporting ? 0.7 : 1,
             }}
           >
-            {exporting ? "Generating PDF..." : "Download PDF"}
+            {exporting ? t("report.generatingPdf") : t("report.downloadPdf")}
           </button>
           <button
             onClick={onClose}
@@ -430,7 +443,7 @@ export function ExportReport({ report, onClose }: Props) {
               cursor: "pointer",
             }}
           >
-            Close
+            {t("report.close")}
           </button>
         </div>
       </div>
@@ -443,10 +456,10 @@ export function ExportReport({ report, onClose }: Props) {
                 const h = section.content as { address: string | null; communityArea: string | null; generatedAt: string };
                 return (
                   <div key={i}>
-                    <h1 style={s.h1}>UrbanLayer Site Report</h1>
+                    <h1 style={s.h1}>{t("report.siteReport")}</h1>
                     {h.address && <p style={s.subtitle}>{h.address}</p>}
                     {h.communityArea && <p style={s.subtitle}>{h.communityArea}</p>}
-                    <p style={{ ...s.subtitle, color: "#999" }}>Generated {h.generatedAt}</p>
+                    <p style={{ ...s.subtitle, color: "#999" }}>{t("report.generated", { date: h.generatedAt })}</p>
                   </div>
                 );
               }
@@ -461,35 +474,35 @@ export function ExportReport({ report, onClose }: Props) {
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <PropertyTable data={section.content as PropertySummary} />
+                    <PropertyTable data={section.content as PropertySummary} t={t} />
                   </div>
                 );
               case "regulatory":
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <RegulatoryTable data={section.content as RegulatorySummary} />
+                    <RegulatoryTable data={section.content as RegulatorySummary} t={t} />
                   </div>
                 );
               case "incentives":
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <IncentivesTable data={section.content as IncentivesSummary} />
+                    <IncentivesTable data={section.content as IncentivesSummary} t={t} />
                   </div>
                 );
               case "neighborhood":
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <NeighborhoodTable data={section.content as NeighborhoodSummary} />
+                    <NeighborhoodTable data={section.content as NeighborhoodSummary} t={t} />
                   </div>
                 );
               case "safety":
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <SafetySection data={section.content as { crime: CrimeSummary | null; three11: ThreeOneOneSummary | null; permits: PermitSummary | null; violations: ViolationSummary | null; businesses: BusinessSummary | null }} />
+                    <SafetySection data={section.content as { crime: CrimeSummary | null; three11: ThreeOneOneSummary | null; permits: PermitSummary | null; violations: ViolationSummary | null; businesses: BusinessSummary | null }} t={t} />
                   </div>
                 );
               case "qa": {
@@ -531,14 +544,13 @@ export function ExportReport({ report, onClose }: Props) {
                     <h2 style={{ ...s.h2, borderColor: "#fde68a", color: "#92400e", margin: "0 0 8px", fontSize: "15px" }}>{section.title}</h2>
                     {d.hasDisclaimer && (
                       <p style={{ margin: "0 0 8px" }}>
-                        This report is for informational purposes only and does not constitute legal, zoning, or financial advice.
-                        Always verify information with official city records and consult qualified professionals before making decisions.
+                        {t("report.disclaimerText")}
                       </p>
                     )}
-                    {d.dataAsOf && <p style={{ margin: "0 0 4px" }}>Data as of: {d.dataAsOf}</p>}
+                    {d.dataAsOf && <p style={{ margin: "0 0 4px" }}>{t("report.dataAsOf", { date: d.dataAsOf })}</p>}
                     {d.dataLag && <p style={{ margin: 0 }}>{d.dataLag}</p>}
                     <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#b45309" }}>
-                      Generated by UrbanLayer — Chicago City Intelligence Platform
+                      {t("report.generatedBy")}
                     </p>
                   </div>
                 );
