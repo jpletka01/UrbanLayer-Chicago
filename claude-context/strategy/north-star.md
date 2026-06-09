@@ -168,7 +168,7 @@ Both moments depend on accuracy. A wrong zoning classification or incorrect ince
 | **Zoning Alert Monitoring** | Phase 4+. Cron-diff the municipal code HTML. | Users asking "will the zoning change?" Municipal code changes are infrequent (~2-3 times/year on relevant topics). Don't build this early; it fires too rarely to justify the investment. |
 | **API Access** | Phase 4+. REST API for power users and firms. | Multiple users asking for programmatic access. |
 | **Team Accounts / Enterprise** | Phase 4+. Shared billing, admin controls. | A firm with 3+ people wanting to use the product. |
-| **A La Carte Report Sales** | Phase 0-1. Sell individual PDF reports for $25-35 without requiring a subscription. This is the wedge -- the first thing someone pays for. | This should be the FIRST revenue feature, not a future one. Ship in Phase 0 or Phase 1. |
+| ~~**A La Carte Report Sales**~~ | ~~Phase 0-1.~~ **DONE (2026-06-09).** $25 one-time Stripe checkout. See `archive/2026-06-09_a-la-carte-reports.md`. | Shipped. |
 | **One-Time Scorecard Purchase** | Phase 2. Pay $5-10 for a single premium Scorecard (comps, full assessment, tax projection) without subscribing. | Users who hit the 3/day free limit but don't want monthly commitment. |
 
 ### Distraction (Confuses the narrative or serves the wrong market)
@@ -243,7 +243,7 @@ The first successful experience is: **"This is right, and it told me something I
 **Goal:** Align the product with site feasibility positioning AND ship the revenue wedge (a la carte report sales).
 
 **Build:**
-- **A la carte report purchase.** Add a Stripe payment flow for individual PDF reports ($25-35). This is the wedge. A user should be able to: visit the site → type an address → see the Scorecard → click "Buy Report — $25" → pay via Stripe → receive the PDF. No subscription required. This is the fastest path to proving someone will pay for UrbanLayer.
+- ~~**A la carte report purchase.**~~ **DONE (2026-06-09).** Stripe one-time $25 checkout, `report_purchases` table, Scorecard shows "Download Report — $25" for free users, auto-download after purchase. See `archive/2026-06-09_a-la-carte-reports.md`.
 - Rewrite landing page copy: headline, subheadline, value props, personas (as described in Section 4)
 - Replace "The Investor / Business Owner / Resident" personas with "The Developer / Architect / Attorney"
 - Demote crime analytics, 311 analytics, business licenses, and food inspections from prominent positions (keep in chat pipeline and sidebar, remove from landing page narrative and Scorecard primary view)
@@ -408,7 +408,7 @@ All of this exists today.
 ### What should exist before asking for money?
 
 - Stripe payment flow (already exists)
-- A la carte report purchase option (should be added -- minimal engineering)
+- ~~A la carte report purchase option~~ **DONE (2026-06-09)**
 - Confidence that the municipal code RAG is accurate enough for professional use (eval at 95%+)
 - A pricing page that makes the value clear (already exists)
 

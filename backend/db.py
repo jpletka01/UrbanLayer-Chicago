@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 8
+_SCHEMA_VERSION = 9
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -141,6 +141,29 @@ CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_i
 """
 
 
+async def _migrate_v9(db: aiosqlite.Connection) -> None:
+    """Add report_purchases table for a la carte report sales."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS report_purchases (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id               TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    stripe_session_id     TEXT UNIQUE,
+    stripe_payment_intent TEXT,
+    address               TEXT,
+    lat                   REAL NOT NULL,
+    lon                   REAL NOT NULL,
+    amount_cents          INTEGER NOT NULL DEFAULT 2500,
+    status                TEXT NOT NULL DEFAULT 'pending'
+        CHECK(status IN ('pending', 'completed', 'refunded')),
+    created_at            INTEGER NOT NULL,
+    completed_at          INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_rp_user ON report_purchases(user_id);
+CREATE INDEX IF NOT EXISTS idx_rp_location ON report_purchases(user_id, lat, lon);
+CREATE INDEX IF NOT EXISTS idx_rp_session ON report_purchases(stripe_session_id);
+""")
+
+
 async def _migrate_v8(db: aiosqlite.Connection) -> None:
     """Add language column to conversations and request_logs tables."""
     for table in ("conversations", "request_logs"):
@@ -221,6 +244,7 @@ async def init_db() -> None:
         await _migrate_v6(_db)
         await _migrate_v7(_db)
         await _migrate_v8(_db)
+        await _migrate_v9(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -245,6 +269,9 @@ async def init_db() -> None:
         if version < 8:
             await _migrate_v8(_db)
             version = 8
+        if version < 9:
+            await _migrate_v9(_db)
+            version = 9
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -1033,6 +1060,95 @@ async def revoke_all_user_refresh_tokens(user_id: str) -> None:
         "UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?", (user_id,),
     )
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Report purchases (a la carte)
+# ---------------------------------------------------------------------------
+
+
+async def save_report_purchase(
+    user_id: str,
+    stripe_session_id: str,
+    address: str | None,
+    lat: float,
+    lon: float,
+    amount_cents: int = 2500,
+) -> int:
+    """Insert a pending report purchase. Returns the row id."""
+    conn = _get_db()
+    cur = await conn.execute(
+        """
+        INSERT INTO report_purchases
+          (user_id, stripe_session_id, address, lat, lon, amount_cents, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        """,
+        (user_id, stripe_session_id, address, round(lat, 4), round(lon, 4),
+         amount_cents, _now_ms()),
+    )
+    await conn.commit()
+    return cur.lastrowid  # type: ignore[return-value]
+
+
+async def complete_report_purchase(
+    stripe_session_id: str, payment_intent: str | None = None,
+) -> dict | None:
+    """Mark a purchase as completed. Idempotent — no-op if already completed."""
+    conn = _get_db()
+    cur = await conn.execute(
+        "SELECT * FROM report_purchases WHERE stripe_session_id = ?",
+        (stripe_session_id,),
+    )
+    row = await cur.fetchone()
+    if not row:
+        return None
+    if row["status"] == "completed":
+        return dict(row)
+    await conn.execute(
+        """
+        UPDATE report_purchases
+        SET status = 'completed', stripe_payment_intent = ?, completed_at = ?
+        WHERE stripe_session_id = ? AND status = 'pending'
+        """,
+        (payment_intent, _now_ms(), stripe_session_id),
+    )
+    await conn.commit()
+    cur = await conn.execute(
+        "SELECT * FROM report_purchases WHERE stripe_session_id = ?",
+        (stripe_session_id,),
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def has_purchased_report(user_id: str, lat: float, lon: float) -> bool:
+    """Check if user has a completed purchase for this location."""
+    conn = _get_db()
+    cur = await conn.execute(
+        """
+        SELECT 1 FROM report_purchases
+        WHERE user_id = ? AND ROUND(lat, 4) = ROUND(?, 4) AND ROUND(lon, 4) = ROUND(?, 4)
+          AND status = 'completed'
+        LIMIT 1
+        """,
+        (user_id, lat, lon),
+    )
+    return await cur.fetchone() is not None
+
+
+async def get_user_report_purchases(user_id: str) -> list[dict]:
+    """Return all completed report purchases for a user."""
+    conn = _get_db()
+    cur = await conn.execute(
+        """
+        SELECT id, address, lat, lon, amount_cents, created_at, completed_at
+        FROM report_purchases
+        WHERE user_id = ? AND status = 'completed'
+        ORDER BY completed_at DESC
+        """,
+        (user_id,),
+    )
+    return [dict(r) for r in await cur.fetchall()]
 
 
 # ---------------------------------------------------------------------------

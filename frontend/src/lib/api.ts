@@ -139,6 +139,37 @@ export async function getSubscription(): Promise<{
   return resp.json();
 }
 
+export async function createReportCheckoutSession(params: {
+  address: string;
+  lat: number;
+  lon: number;
+}): Promise<{ url: string }> {
+  const resp = await authFetch(`${API_BASE}/api/checkout/report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!resp.ok) throw new Error("Failed to create report checkout session");
+  return resp.json();
+}
+
+export async function checkReportAccess(params: {
+  lat: number;
+  lon: number;
+}): Promise<{ has_access: boolean; reason: string }> {
+  const qs = new URLSearchParams({
+    lat: String(params.lat),
+    lon: String(params.lon),
+  });
+  try {
+    const resp = await authFetch(`${API_BASE}/api/report/access?${qs}`);
+    if (!resp.ok) return { has_access: false, reason: "error" };
+    return resp.json();
+  } catch {
+    return { has_access: false, reason: "error" };
+  }
+}
+
 export async function createBillingPortal(): Promise<{ url: string }> {
   const resp = await authFetch(`${API_BASE}/api/billing/portal`, { method: "POST" });
   if (!resp.ok) throw new Error("Failed to create billing portal session");

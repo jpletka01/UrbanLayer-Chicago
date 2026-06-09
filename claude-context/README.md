@@ -21,6 +21,7 @@ Load only what you need for the current task. Don't read everything.
 - `strategy/design-guidelines.md` — Hybrid dashboard+chat model, UX principles, when to use chat vs tools
 
 ## Archive (historical — don't load unless asked about past decisions)
+- `archive/2026-06-09_a-la-carte-reports.md` — A la carte $25 report purchases via Stripe one-time payment (code complete 2026-06-09)
 - `archive/2026-06-08_i18n-spanish.md` — Full i18n implementation plan (shipped 2026-06-08)
 - `archive/2026-06-05_deployment.md` — Phase-by-phase deployment log (all phases complete)
 - `archive/2026-06-05_expansion-phases.md` — Completed expansion phases, Tier 3 decisions

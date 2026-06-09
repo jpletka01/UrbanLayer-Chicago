@@ -1712,18 +1712,27 @@ async def report(
     lon: float | None = None,
     pin: str | None = None,
     mock: bool = False,
-    _user: dict = Depends(require_tier("premium")),
+    user: dict = Depends(require_auth),
 ) -> Response:
     """Generate a PDF development feasibility & site intelligence report."""
     import re
     from datetime import date
 
+    from backend.auth import _TIER_ORDER
     from jinja2 import Environment, FileSystemLoader
     from weasyprint import HTML
 
     resolved_lat, resolved_lon, resolved_address = await _resolve_location(
         address, lat, lon, pin
     )
+
+    if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER["premium"]:
+        if not await db.has_purchased_report(user["id"], resolved_lat, resolved_lon):
+            raise HTTPException(
+                status_code=403,
+                detail={"error": "report_purchase_required"},
+            )
+
     report_data = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
 
     if mock:
@@ -1778,6 +1787,37 @@ async def checkout(request: Request, user: dict = Depends(require_auth)) -> dict
     from backend.payments import create_checkout_session
     url = await create_checkout_session(user)
     return {"url": url}
+
+
+@app.post("/api/checkout/report")
+async def checkout_report(request: Request, user: dict = Depends(require_auth)) -> dict:
+    from backend.payments import create_report_checkout_session
+    body = await request.json()
+    address = body.get("address")
+    lat = body.get("lat")
+    lon = body.get("lon")
+    if not address or lat is None or lon is None:
+        raise HTTPException(status_code=400, detail="address, lat, and lon are required")
+    url = await create_report_checkout_session(user, address, float(lat), float(lon))
+    return {"url": url}
+
+
+@app.get("/api/report/access")
+async def check_report_access(
+    request: Request,
+    address: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    pin: str | None = None,
+    user: dict = Depends(require_auth),
+) -> dict:
+    """Check if the current user can download a report for this location."""
+    from backend.auth import _TIER_ORDER
+    if _TIER_ORDER.get(user["tier"], 0) >= _TIER_ORDER["premium"]:
+        return {"has_access": True, "reason": "subscription"}
+    resolved_lat, resolved_lon, _ = await _resolve_location(address, lat, lon, pin)
+    purchased = await db.has_purchased_report(user["id"], resolved_lat, resolved_lon)
+    return {"has_access": purchased, "reason": "purchased" if purchased else "none"}
 
 
 @app.post("/api/webhook/stripe")

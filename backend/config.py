@@ -176,6 +176,7 @@ class Settings(BaseSettings):
     stripe_public_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_id_pro_monthly: str = ""
+    stripe_price_id_report: str = ""
 
 
 @lru_cache

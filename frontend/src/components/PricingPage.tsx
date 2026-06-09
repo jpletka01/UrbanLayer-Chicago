@@ -110,6 +110,17 @@ export default function PricingPage() {
           </div>
         </div>
 
+        <div className="mt-10 text-center bg-dark-surface border border-dark-border rounded-xl px-6 py-5">
+          <p className="text-sm text-text-secondary">
+            Don't need a subscription? Buy individual PDF reports for{" "}
+            <span className="text-text-primary font-medium">$25 each</span>{" "}
+            from any{" "}
+            <Link to="/scorecard" className="text-accent hover:text-accent-hover transition-colors">
+              Property Scorecard
+            </Link>.
+          </p>
+        </div>
+
         <p className="text-center text-xs text-text-muted mt-8">
           {t("pricing.billingNote")}
         </p>

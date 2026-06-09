@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote_plus
 
 import stripe
 from fastapi import HTTPException, Request
@@ -59,6 +60,50 @@ async def create_billing_portal_session(user: dict) -> str:
     return session.url
 
 
+async def create_report_checkout_session(
+    user: dict, address: str, lat: float, lon: float,
+) -> str:
+    """Create a one-time Stripe Checkout session for a single report ($25)."""
+    _configure_stripe()
+    s = get_settings()
+
+    if not s.stripe_price_id_report:
+        raise HTTPException(status_code=503, detail="Report purchase not configured")
+
+    encoded_address = quote_plus(address)
+    params: dict = {
+        "mode": "payment",
+        "line_items": [{"price": s.stripe_price_id_report, "quantity": 1}],
+        "success_url": f"{s.frontend_url}/scorecard?address={encoded_address}&report_purchased=1",
+        "cancel_url": f"{s.frontend_url}/scorecard?address={encoded_address}",
+        "metadata": {
+            "user_id": user["id"],
+            "purchase_type": "report",
+            "address": address,
+            "lat": str(round(lat, 4)),
+            "lon": str(round(lon, 4)),
+        },
+    }
+
+    if user.get("stripe_customer_id"):
+        params["customer"] = user["stripe_customer_id"]
+    else:
+        params["customer_email"] = user["email"]
+        params["customer_creation"] = "always"
+
+    session = stripe.checkout.Session.create(**params)
+
+    await db.save_report_purchase(
+        user_id=user["id"],
+        stripe_session_id=session.id,
+        address=address,
+        lat=lat,
+        lon=lon,
+    )
+
+    return session.url
+
+
 async def handle_webhook(request: Request) -> dict:
     """Process a Stripe webhook event."""
     _configure_stripe()
@@ -93,6 +138,14 @@ async def handle_webhook(request: Request) -> dict:
 
 
 async def _handle_checkout_completed(session: dict) -> None:
+    mode = session.get("mode")
+    if mode == "payment":
+        await _handle_report_purchase_completed(session)
+    else:
+        await _handle_subscription_checkout_completed(session)
+
+
+async def _handle_subscription_checkout_completed(session: dict) -> None:
     user_id = session.get("metadata", {}).get("user_id")
     if not user_id:
         log.error("Checkout session missing user_id metadata")
@@ -104,6 +157,31 @@ async def _handle_checkout_completed(session: dict) -> None:
     await db.update_user_stripe(user_id, customer_id, subscription_id)
     await db.update_user_tier(user_id, "premium")
     log.info("User %s upgraded to premium (customer=%s)", user_id, customer_id)
+
+
+async def _handle_report_purchase_completed(session: dict) -> None:
+    metadata = session.get("metadata", {})
+    user_id = metadata.get("user_id")
+    if not user_id:
+        log.error("Report purchase session missing user_id metadata")
+        return
+
+    session_id = session.get("id")
+    payment_intent = session.get("payment_intent")
+    customer_id = session.get("customer")
+
+    purchase = await db.complete_report_purchase(session_id, payment_intent)
+
+    if customer_id and user_id:
+        user = await db.get_user_by_id(user_id)
+        if user and not user.get("stripe_customer_id"):
+            await db.update_user_stripe(user_id, customer_id, None)
+
+    address = metadata.get("address", "unknown")
+    log.info(
+        "Report purchased: user=%s address=%s session=%s",
+        user_id, address, session_id,
+    )
 
 
 async def _handle_subscription_updated(subscription: dict) -> None:

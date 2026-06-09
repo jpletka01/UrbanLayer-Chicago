@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchScorecard, fetchReport, type ScorecardResponse } from "../lib/api";
+import { fetchScorecard, fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
 import { useAuthContext } from "../contexts/AuthContext";
-import UpgradePrompt from "./UpgradePrompt";
+import ReportPurchasePrompt from "./ReportPurchasePrompt";
 import { InvestigateButton } from "./InvestigateButton";
 import { PropertyCard } from "./sidebar/PropertyCard";
 import { RegulatoryCard } from "./sidebar/RegulatoryCard";
@@ -124,31 +124,37 @@ export default function ScorecardPage() {
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showPurchasePrompt, setShowPurchasePrompt] = useState(false);
+  const [reportAccess, setReportAccess] = useState<{ has_access: boolean; reason: string } | null>(null);
 
   const isPro = user?.tier === "premium" || user?.tier === "admin";
+  const hasReportAccess = isPro || reportAccess?.has_access === true;
 
-  const handleDownloadPdf = useCallback(async () => {
-    if (!data?.address) return;
-    if (!isPro) {
-      setShowUpgrade(true);
-      return;
-    }
+  const triggerDownload = useCallback(async (addr: string) => {
     setDownloading(true);
     try {
-      const blob = await fetchReport({ address: data.address });
+      const blob = await fetchReport({ address: addr });
       if (blob) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${data.address.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}_zoning_report.pdf`;
+        a.download = `${addr.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}_zoning_report.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       }
     } finally {
       setDownloading(false);
     }
-  }, [data, isPro]);
+  }, []);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!data?.address) return;
+    if (hasReportAccess) {
+      await triggerDownload(data.address);
+    } else {
+      setShowPurchasePrompt(true);
+    }
+  }, [data, hasReportAccess, triggerDownload]);
 
   const doSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
@@ -191,6 +197,23 @@ export default function ScorecardPage() {
       doSearchByCoords(parseFloat(lat), parseFloat(lon));
     }
   }, []);
+
+  // Fetch report access when scorecard data loads (for non-pro users)
+  useEffect(() => {
+    if (!data || isPro) return;
+    checkReportAccess({ lat: data.lat, lon: data.lon }).then(setReportAccess);
+  }, [data, isPro]);
+
+  // Handle post-purchase redirect: auto-download the report
+  useEffect(() => {
+    if (!data?.address) return;
+    if (searchParams.get("report_purchased") !== "1") return;
+    setReportAccess({ has_access: true, reason: "purchased" });
+    triggerDownload(data.address);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("report_purchased");
+    window.history.replaceState({}, "", url.toString());
+  }, [data, searchParams, triggerDownload]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,12 +313,20 @@ export default function ScorecardPage() {
                 <button
                   onClick={handleDownloadPdf}
                   disabled={downloading}
-                  className="inline-flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
+                  className={`inline-flex items-center gap-1 text-[10px] transition-colors disabled:opacity-50 ${
+                    hasReportAccess
+                      ? "text-accent hover:text-accent-hover"
+                      : "bg-accent/10 text-accent hover:bg-accent/20 px-2.5 py-1 rounded-md font-medium"
+                  }`}
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                   </svg>
-                  {downloading ? t("scorecard.generating") : t("scorecard.downloadPdf")}
+                  {downloading
+                    ? t("scorecard.generating")
+                    : hasReportAccess
+                      ? t("scorecard.downloadPdf")
+                      : "Download Report — $25"}
                 </button>
                 <button
                   onClick={() => {
@@ -414,10 +445,12 @@ export default function ScorecardPage() {
           <div className="text-center text-text-muted py-12">{t("scorecard.noResults")}</div>
         )}
       </main>
-      {showUpgrade && (
-        <UpgradePrompt
-          feature="PDF zoning reports"
-          onClose={() => setShowUpgrade(false)}
+      {showPurchasePrompt && data && (
+        <ReportPurchasePrompt
+          address={data.address || ""}
+          lat={data.lat}
+          lon={data.lon}
+          onClose={() => setShowPurchasePrompt(false)}
         />
       )}
     </div>
