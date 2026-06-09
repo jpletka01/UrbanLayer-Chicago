@@ -235,6 +235,11 @@ class PropertySummary(BaseModel):
     full_baths: int | None = None
     half_baths: int | None = None
     bldg_age: int | None = None
+    exterior_wall: str | None = None
+    roof_type: str | None = None
+    basement: str | None = None
+    garage_size: str | None = None
+    air_conditioning: str | None = None
     total_assessed_value: float | None = None
     estimated_annual_tax: float | None = None
     tax_code: str | None = None
@@ -614,6 +619,10 @@ class ReportData(BaseModel):
     adjacent_zoning: dict[str, str | None] = Field(default_factory=dict)
     nearby_development: NearbyDevelopment | None = None
     effective_tax_rate: float | None = None
+    assessment_trend: dict | None = None
+    ownership_signals: list[dict] = Field(default_factory=list)
+    parcel_map_b64: str | None = None
+    parcel_dimensions: dict | None = None
     static_map_url: str | None = None
     comps_chart_b64: str | None = None
     zoning_map_b64: str | None = None

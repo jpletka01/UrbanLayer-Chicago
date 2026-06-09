@@ -1907,10 +1907,12 @@ async def _fetch_report_data(
     nc_data = v2_results.get("nearby_construction")
     nearby_dev = None
     if nc_data:
+        projects = nc_data.get("recent_projects", [])
+        projects = _enrich_nearby_projects(resolved_lat, resolved_lon, projects)
         nearby_dev = NearbyDevelopment(
             new_construction_count=nc_data.get("new_construction_count", 0),
             demolition_count=nc_data.get("demolition_count", 0),
-            recent_projects=nc_data.get("recent_projects", []),
+            recent_projects=projects,
         )
 
     # Generate comparable sales chart
@@ -1971,6 +1973,48 @@ async def _fetch_report_data(
         except Exception:
             log.warning("Failed to generate construction map", exc_info=True)
 
+    # Assessment trend analysis
+    assessment_trend = None
+    if ctx.property and ctx.property.assessment_history:
+        assessment_trend = _compute_assessment_trend(ctx.property.assessment_history)
+
+    # Ownership signals
+    ownership_signals: list[dict] = []
+    if ctx.property:
+        ownership_signals = _derive_ownership_signals(ctx.property)
+
+    # Parcel map + dimensions
+    parcel_map_b64 = None
+    parcel_dimensions = None
+    if ctx.property and ctx.property.parcel_geometry:
+        parcel_dimensions = _compute_parcel_dimensions(ctx.property.parcel_geometry)
+        if basemap_bytes:
+            # Fetch a higher-zoom basemap for the parcel map
+            parcel_basemap_bytes = None
+            if mapbox_token:
+                parcel_basemap_url = (
+                    f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
+                    f"{resolved_lon},{resolved_lat},17/600x400@2x"
+                    f"?access_token={mapbox_token}"
+                )
+                try:
+                    parcel_resp = await httpx.AsyncClient(timeout=15).get(parcel_basemap_url)
+                    if parcel_resp.status_code == 200:
+                        parcel_basemap_bytes = parcel_resp.content
+                except Exception:
+                    log.warning("Failed to fetch parcel basemap", exc_info=True)
+            if parcel_basemap_bytes:
+                try:
+                    loop = asyncio.get_running_loop()
+                    parcel_map_b64 = await loop.run_in_executor(
+                        None, _generate_parcel_map,
+                        resolved_lat, resolved_lon,
+                        ctx.property.parcel_geometry, parcel_basemap_bytes,
+                        parcel_dimensions,
+                    )
+                except Exception:
+                    log.warning("Failed to generate parcel map", exc_info=True)
+
     report = ReportData(
         address=resolved_address,
         lat=resolved_lat,
@@ -1986,6 +2030,10 @@ async def _fetch_report_data(
         adjacent_zoning=v2_results.get("adjacent_zoning") or {},
         nearby_development=nearby_dev,
         effective_tax_rate=effective_tax_rate,
+        assessment_trend=assessment_trend,
+        ownership_signals=ownership_signals,
+        parcel_map_b64=parcel_map_b64,
+        parcel_dimensions=parcel_dimensions,
         static_map_url=static_map_url,
         comps_chart_b64=comps_chart_b64,
         zoning_map_b64=zoning_map_b64,
@@ -1996,11 +2044,340 @@ async def _fetch_report_data(
     return report, basemap_bytes
 
 
+def _enrich_nearby_projects(
+    lat: float, lon: float, projects: list[dict],
+) -> list[dict]:
+    """Add distance_mi and formatted_address to each nearby project."""
+    from backend.retrieval.property.sales import _haversine_mi
+    enriched = []
+    for proj in projects:
+        p = dict(proj)
+        try:
+            plat = float(p.get("latitude", 0))
+            plon = float(p.get("longitude", 0))
+            if plat and plon:
+                p["distance_mi"] = round(_haversine_mi(lat, lon, plat, plon), 2)
+        except (ValueError, TypeError):
+            pass
+        parts = []
+        if p.get("street_number"):
+            parts.append(str(p["street_number"]))
+        if p.get("street_direction"):
+            parts.append(str(p["street_direction"]))
+        if p.get("street_name"):
+            parts.append(str(p["street_name"]))
+        if parts:
+            p["formatted_address"] = " ".join(parts)
+        enriched.append(p)
+    enriched.sort(key=lambda x: x.get("distance_mi", 999))
+    return enriched
+
+
+def _compute_assessment_trend(
+    assessment_history: list,
+) -> dict | None:
+    """Compute assessment trend from assessment history records."""
+    valid = [a for a in assessment_history if a.total and a.total > 0 and a.year]
+    if len(valid) < 2:
+        return None
+    valid.sort(key=lambda a: a.year)
+    oldest, newest = valid[0], valid[-1]
+    years = newest.year - oldest.year
+    if years <= 0:
+        return None
+    total_change_pct = round((newest.total - oldest.total) / oldest.total * 100, 1)
+    cagr_pct = round(((newest.total / oldest.total) ** (1.0 / years) - 1) * 100, 1)
+    direction = "increasing" if total_change_pct > 5 else "decreasing" if total_change_pct < -5 else "stable"
+    return {
+        "total_change_pct": total_change_pct,
+        "cagr_pct": cagr_pct,
+        "years": years,
+        "oldest_year": oldest.year,
+        "newest_year": newest.year,
+        "oldest_total": oldest.total,
+        "newest_total": newest.total,
+        "direction": direction,
+    }
+
+
+def _derive_ownership_signals(prop) -> list[dict]:
+    """Derive factual ownership signals from property data. No LLM."""
+    if not prop:
+        return []
+    signals: list[dict] = []
+
+    if prop.sales_history:
+        sorted_sales = sorted(
+            [s for s in prop.sales_history if s.date],
+            key=lambda s: s.date, reverse=True,
+        )
+        if sorted_sales:
+            last_sale = sorted_sales[0]
+            from datetime import date
+            try:
+                sale_date = date.fromisoformat(last_sale.date[:10])
+                years_held = round((date.today() - sale_date).days / 365.25, 1)
+                if years_held > 10:
+                    signals.append({
+                        "signal": "Long-Term Hold",
+                        "detail": f"Last sale {years_held:.0f} years ago ({last_sale.date[:10]})",
+                        "category": "ownership_duration",
+                    })
+                elif years_held < 2:
+                    signals.append({
+                        "signal": "Recent Acquisition",
+                        "detail": f"Acquired {years_held:.1f} years ago ({last_sale.date[:10]})",
+                        "category": "ownership_duration",
+                    })
+                else:
+                    signals.append({
+                        "signal": "Ownership Duration",
+                        "detail": f"{years_held:.0f} years since last sale ({last_sale.date[:10]})",
+                        "category": "ownership_duration",
+                    })
+            except (ValueError, TypeError):
+                pass
+
+            if last_sale.price is not None and last_sale.price <= 500:
+                signals.append({
+                    "signal": "Non-Arm's-Length Transfer",
+                    "detail": f"Last sale price ${last_sale.price:,.0f} suggests related-party transfer",
+                    "category": "transfer_type",
+                })
+            elif last_sale.deed_type and "QUIT" in last_sale.deed_type.upper():
+                signals.append({
+                    "signal": "Quit Claim Deed",
+                    "detail": "Last transfer via quit claim deed (non-arm's-length)",
+                    "category": "transfer_type",
+                })
+
+        if len(sorted_sales) >= 2:
+            for i in range(len(sorted_sales) - 1):
+                try:
+                    d1 = date.fromisoformat(sorted_sales[i].date[:10])
+                    d2 = date.fromisoformat(sorted_sales[i + 1].date[:10])
+                    gap_years = (d1 - d2).days / 365.25
+                    if gap_years < 2:
+                        signals.append({
+                            "signal": "Rapid Turnover",
+                            "detail": f"Consecutive sales {gap_years:.1f} years apart ({sorted_sales[i+1].date[:10]} → {sorted_sales[i].date[:10]})",
+                            "category": "turnover",
+                        })
+                        break
+                except (ValueError, TypeError):
+                    continue
+
+    if prop.tax_breakdown:
+        for item in prop.tax_breakdown:
+            agency_upper = item.agency.upper()
+            if "HOMEOWNER" in agency_upper or "HOME OWNER" in agency_upper:
+                signals.append({
+                    "signal": "Owner-Occupied (Homeowner Exemption)",
+                    "detail": f"Homeowner exemption found in tax breakdown",
+                    "category": "occupancy",
+                })
+                break
+
+    return signals
+
+
+def _compute_parcel_dimensions(geojson_polygon: dict) -> dict | None:
+    """Compute parcel dimensions from GeoJSON polygon."""
+    import math
+    coords = None
+    geom_type = geojson_polygon.get("type", "")
+    if geom_type == "Polygon":
+        rings = geojson_polygon.get("coordinates", [])
+        if rings:
+            coords = rings[0]
+    elif geom_type == "MultiPolygon":
+        polys = geojson_polygon.get("coordinates", [])
+        if polys and polys[0]:
+            coords = polys[0][0]
+
+    if not coords or len(coords) < 4:
+        return None
+
+    lat_mid = sum(c[1] for c in coords) / len(coords)
+    cos_lat = math.cos(math.radians(lat_mid))
+
+    edges = []
+    for i in range(len(coords) - 1):
+        lon1, lat1 = coords[i]
+        lon2, lat2 = coords[i + 1]
+        dx = (lon2 - lon1) * cos_lat * 364567.2
+        dy = (lat2 - lat1) * 364567.2
+        length_ft = math.sqrt(dx * dx + dy * dy)
+        bearing = math.degrees(math.atan2(dx, dy)) % 360
+        edges.append({"length_ft": round(length_ft, 1), "bearing": round(bearing, 1)})
+
+    if not edges:
+        return None
+
+    # Area via shoelace formula in local feet
+    xs = [(c[0] - coords[0][0]) * cos_lat * 364567.2 for c in coords]
+    ys = [(c[1] - coords[0][1]) * 364567.2 for c in coords]
+    n = len(xs)
+    area = 0.0
+    for i in range(n - 1):
+        area += xs[i] * ys[i + 1] - xs[i + 1] * ys[i]
+    area_sqft = abs(area) / 2.0
+
+    perimeter_ft = sum(e["length_ft"] for e in edges)
+
+    sorted_edges = sorted(edges, key=lambda e: e["length_ft"], reverse=True)
+    frontage_ft = None
+    depth_ft = None
+    if len(sorted_edges) >= 2:
+        # Group edges by similar bearing (within 15 degrees)
+        long_edge = sorted_edges[0]
+        perpendicular = []
+        parallel = []
+        for e in sorted_edges[1:]:
+            angle_diff = abs(long_edge["bearing"] - e["bearing"]) % 180
+            if angle_diff < 30 or angle_diff > 150:
+                parallel.append(e)
+            else:
+                perpendicular.append(e)
+        depth_ft = round(long_edge["length_ft"], 1)
+        if perpendicular:
+            frontage_ft = round(perpendicular[0]["length_ft"], 1)
+        elif parallel:
+            frontage_ft = round(parallel[0]["length_ft"], 1)
+
+    return {
+        "area_sqft": round(area_sqft, 0),
+        "perimeter_ft": round(perimeter_ft, 1),
+        "frontage_ft": frontage_ft,
+        "depth_ft": depth_ft,
+        "edge_count": len(edges),
+        "edges": edges[:8],
+    }
+
+
+def _generate_parcel_map(
+    lat: float,
+    lon: float,
+    parcel_geojson: dict,
+    basemap_bytes: bytes,
+    dimensions: dict | None = None,
+) -> str | None:
+    """Generate a base64-encoded PNG map with parcel polygon overlay."""
+    import base64
+    import io
+
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Polygon as MplPolygon
+        from PIL import Image
+    except ImportError:
+        return None
+
+    MAP_W, MAP_H, ZOOM = 600, 400, 17
+
+    try:
+        basemap = Image.open(io.BytesIO(basemap_bytes))
+        img_w, img_h = basemap.size
+
+        dpi = 150
+        fig, ax = plt.subplots(figsize=(img_w / dpi, img_h / dpi), dpi=dpi)
+        ax.imshow(basemap, extent=[0, img_w, img_h, 0], aspect="auto")
+        ax.set_xlim(0, img_w)
+        ax.set_ylim(img_h, 0)
+        ax.axis("off")
+
+        geom_type = parcel_geojson.get("type", "")
+        coord_rings: list[list] = []
+        if geom_type == "Polygon":
+            coord_rings = parcel_geojson.get("coordinates", [])
+        elif geom_type == "MultiPolygon":
+            for poly in parcel_geojson.get("coordinates", []):
+                coord_rings.extend(poly)
+
+        for ring in coord_rings:
+            pixels = []
+            for coord in ring:
+                px, py = _latlon_to_px(coord[1], coord[0], lat, lon, ZOOM, MAP_W, MAP_H)
+                pixels.append((px, py))
+            if len(pixels) < 3:
+                continue
+            patch = MplPolygon(
+                pixels, closed=True,
+                facecolor=(0.15, 0.39, 0.92, 0.3),
+                edgecolor=(0.15, 0.39, 0.92, 0.9),
+                linewidth=2,
+            )
+            ax.add_patch(patch)
+
+            if dimensions and len(pixels) >= 4:
+                for i in range(min(len(pixels) - 1, 4)):
+                    mx = (pixels[i][0] + pixels[i + 1][0]) / 2
+                    my = (pixels[i][1] + pixels[i + 1][1]) / 2
+                    if 0 <= mx <= img_w and 0 <= my <= img_h:
+                        edge_idx = i
+                        if edge_idx < len(dimensions.get("edges", [])):
+                            length = dimensions["edges"][edge_idx]["length_ft"]
+                            if length > 10:
+                                ax.text(
+                                    mx, my, f"{length:.0f}'",
+                                    ha="center", va="center", fontsize=5.5,
+                                    color="white", fontweight="bold",
+                                    bbox=dict(facecolor="#2563eb", alpha=0.85,
+                                              edgecolor="none", pad=2, boxstyle="round,pad=0.2"),
+                                    zorder=15,
+                                )
+
+        # Subject property pin
+        pin_px, pin_py = img_w / 2, img_h / 2
+        ax.plot(pin_px, pin_py, "o", markersize=8, color="#c96442",
+                markeredgecolor="white", markeredgewidth=2, zorder=10)
+
+        if dimensions:
+            info_parts = []
+            if dimensions.get("frontage_ft"):
+                info_parts.append(f"Frontage: {dimensions['frontage_ft']:.0f}'")
+            if dimensions.get("depth_ft"):
+                info_parts.append(f"Depth: {dimensions['depth_ft']:.0f}'")
+            if dimensions.get("area_sqft"):
+                info_parts.append(f"Area: {dimensions['area_sqft']:,.0f} sq ft")
+            if info_parts:
+                ax.text(
+                    8, 12, "  |  ".join(info_parts),
+                    ha="left", va="top", fontsize=5.5, color="white",
+                    bbox=dict(facecolor="#1a1a1a", alpha=0.8,
+                              edgecolor="#333", pad=4, boxstyle="round,pad=0.3"),
+                    zorder=20,
+                )
+
+        ax.text(
+            img_w / 2, img_h - 8,
+            "Sources: Cook County GIS · Mapbox · OpenStreetMap",
+            ha="center", va="bottom", fontsize=4.5, color="#999999",
+            bbox=dict(facecolor="#0d0d0d", alpha=0.7, edgecolor="none", pad=3),
+            zorder=15,
+        )
+
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight",
+                    pad_inches=0, facecolor="#0d0d0d")
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode("ascii")
+
+    except Exception:
+        log.warning("Failed to generate parcel map", exc_info=True)
+        return None
+
+
 def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
     """Inject realistic test data for visual QA of all v2 sections."""
     from backend.models import (
-        ComparableSale, ComparablesSummary, DevelopmentPotential,
-        NearbyDevelopment, ZoningStandards,
+        AssessmentRecord, ComparableSale, ComparablesSummary,
+        DevelopmentPotential, NearbyDevelopment, SaleRecord,
+        TaxLineItem, ZoningStandards,
     )
 
     # Force zoning extraction with high confidence
@@ -2084,14 +2461,84 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
         new_construction_count=4,
         demolition_count=2,
         recent_projects=[
-            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat + 0.001), "longitude": str(mock_lon + 0.001), "work_description": "Erect new 3-story mixed-use building", "issue_date": "2025-11-15", "reported_cost": "450000"},
-            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat - 0.001), "longitude": str(mock_lon + 0.002), "work_description": "Erect new single-family residence", "issue_date": "2025-09-22", "reported_cost": "280000"},
-            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat + 0.002), "longitude": str(mock_lon - 0.001), "work_description": "Erect new 6-unit residential building", "issue_date": "2025-08-10", "reported_cost": "720000"},
-            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat - 0.002), "longitude": str(mock_lon - 0.002), "work_description": "Erect new commercial building", "issue_date": "2025-06-05", "reported_cost": "950000"},
-            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "latitude": str(mock_lat + 0.0015), "longitude": str(mock_lon - 0.0015), "work_description": "Wreck existing 2-story frame building", "issue_date": "2025-10-01", "reported_cost": "35000"},
-            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "latitude": str(mock_lat - 0.0015), "longitude": str(mock_lon + 0.0005), "work_description": "Wreck existing garage structure", "issue_date": "2025-07-18", "reported_cost": "15000"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat + 0.001), "longitude": str(mock_lon + 0.001), "work_description": "Erect new 3-story mixed-use building", "issue_date": "2025-11-15", "reported_cost": "450000", "street_number": "2410", "street_direction": "N", "street_name": "MILWAUKEE AVE", "distance_mi": 0.07, "formatted_address": "2410 N MILWAUKEE AVE"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat - 0.001), "longitude": str(mock_lon + 0.002), "work_description": "Erect new single-family residence", "issue_date": "2025-09-22", "reported_cost": "280000", "street_number": "2356", "street_direction": "N", "street_name": "KEDZIE AVE", "distance_mi": 0.12, "formatted_address": "2356 N KEDZIE AVE"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat + 0.002), "longitude": str(mock_lon - 0.001), "work_description": "Erect new 6-unit residential building", "issue_date": "2025-08-10", "reported_cost": "720000", "street_number": "2430", "street_direction": "N", "street_name": "CALIFORNIA AVE", "distance_mi": 0.15, "formatted_address": "2430 N CALIFORNIA AVE"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat - 0.002), "longitude": str(mock_lon - 0.002), "work_description": "Erect new commercial building", "issue_date": "2025-06-05", "reported_cost": "950000", "street_number": "2501", "street_direction": "N", "street_name": "MILWAUKEE AVE", "distance_mi": 0.20, "formatted_address": "2501 N MILWAUKEE AVE"},
+            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "latitude": str(mock_lat + 0.0015), "longitude": str(mock_lon - 0.0015), "work_description": "Wreck existing 2-story frame building", "issue_date": "2025-10-01", "reported_cost": "35000", "street_number": "2418", "street_direction": "N", "street_name": "SACRAMENTO AVE", "distance_mi": 0.11, "formatted_address": "2418 N SACRAMENTO AVE"},
+            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "latitude": str(mock_lat - 0.0015), "longitude": str(mock_lon + 0.0005), "work_description": "Wreck existing garage structure", "issue_date": "2025-07-18", "reported_cost": "15000", "street_number": "2380", "street_direction": "N", "street_name": "MILWAUKEE AVE", "distance_mi": 0.13, "formatted_address": "2380 N MILWAUKEE AVE"},
         ],
     )
+
+    # Force building characteristics + history (development_feasibility workflow skips history)
+    if report_data.context.property:
+        report_data.context.property.exterior_wall = report_data.context.property.exterior_wall or "Masonry"
+        report_data.context.property.roof_type = report_data.context.property.roof_type or "Shingle/Asphalt"
+        report_data.context.property.basement = report_data.context.property.basement or "Full"
+        report_data.context.property.garage_size = report_data.context.property.garage_size or "1 Car"
+        report_data.context.property.air_conditioning = report_data.context.property.air_conditioning or "Central"
+
+        if not report_data.context.property.assessment_history:
+            report_data.context.property.assessment_history = [
+                AssessmentRecord(year=2025, land=12000, building=27900, total=39900),
+                AssessmentRecord(year=2024, land=11500, building=26000, total=37500),
+                AssessmentRecord(year=2023, land=10800, building=24200, total=35000),
+                AssessmentRecord(year=2022, land=10000, building=22000, total=32000),
+                AssessmentRecord(year=2021, land=9500, building=18500, total=28000),
+            ]
+            report_data.context.property.total_assessed_value = 39900
+
+        if not report_data.context.property.sales_history:
+            report_data.context.property.sales_history = [
+                SaleRecord(date="2014-03-22", price=285000, deed_type="WARRANTY"),
+                SaleRecord(date="2005-09-15", price=192000, deed_type="WARRANTY"),
+                SaleRecord(date="1998-06-01", price=125000, deed_type="TRUSTEE"),
+            ]
+
+        if not report_data.context.property.tax_breakdown:
+            report_data.context.property.tax_breakdown = [
+                TaxLineItem(agency="CITY OF CHICAGO", rate=0.01245, amount=4215.60),
+                TaxLineItem(agency="BOARD OF EDUCATION", rate=0.00980, amount=3316.20),
+                TaxLineItem(agency="COOK COUNTY FOREST PRESERVE", rate=0.00162, amount=548.44),
+                TaxLineItem(agency="METRO WATER RECLAMATION", rate=0.00410, amount=1387.86),
+                TaxLineItem(agency="CHICAGO PARK DISTRICT", rate=0.00315, amount=1066.14),
+                TaxLineItem(agency="CITY COLLEGES", rate=0.00205, amount=693.90),
+                TaxLineItem(agency="COOK COUNTY", rate=0.00175, amount=592.34),
+                TaxLineItem(agency="COOK COUNTY HEALTH FACILITIES", rate=0.00098, amount=331.63),
+            ]
+
+    # Force assessment trend
+    report_data.assessment_trend = {
+        "total_change_pct": 42.5,
+        "cagr_pct": 7.3,
+        "years": 5,
+        "oldest_year": 2020,
+        "newest_year": 2025,
+        "oldest_total": 28000,
+        "newest_total": 39900,
+        "direction": "increasing",
+    }
+
+    # Force ownership signals
+    report_data.ownership_signals = [
+        {"signal": "Long-Term Hold", "detail": "Last sale 12 years ago (2014-03-22)", "category": "ownership_duration"},
+        {"signal": "Owner-Occupied (Homeowner Exemption)", "detail": "Homeowner exemption found in tax breakdown", "category": "occupancy"},
+    ]
+
+    # Force parcel dimensions (mock rectangular lot)
+    report_data.parcel_dimensions = {
+        "area_sqft": 3125,
+        "perimeter_ft": 250.0,
+        "frontage_ft": 25.0,
+        "depth_ft": 125.0,
+        "edge_count": 4,
+        "edges": [
+            {"length_ft": 125.0, "bearing": 0.0},
+            {"length_ft": 25.0, "bearing": 90.0},
+            {"length_ft": 125.0, "bearing": 180.0},
+            {"length_ft": 25.0, "bearing": 270.0},
+        ],
+    }
 
     # Force adjacent zoning
     report_data.adjacent_zoning = {"N": "B3-2", "S": "RS-3", "E": "B3-2", "W": "RT-4"}

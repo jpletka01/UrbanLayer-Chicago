@@ -143,6 +143,12 @@ def _build_summary(
     half_baths = None
     bldg_age = None
 
+    exterior_wall = None
+    roof_type = None
+    basement = None
+    garage_size = None
+    air_conditioning = None
+
     if chars:
         bldg_sqft = _safe_int(chars.get("char_bldg_sf")) or bldg_sqft
         land_sqft = _safe_int(chars.get("char_land_sf")) or land_sqft
@@ -154,6 +160,11 @@ def _build_summary(
         half_baths = _safe_int(chars.get("char_hbath"))
         bldg_age = _safe_int(chars.get("char_age"))
         bldg_class_description = chars.get("char_class_description")
+        exterior_wall = chars.get("char_ext_wall") or None
+        roof_type = chars.get("char_roof_cnst") or None
+        basement = chars.get("char_bsmt") or None
+        garage_size = chars.get("char_gar1_size") or None
+        air_conditioning = chars.get("char_ac") or None
 
     assessment_history = []
     total_assessed_value = None
@@ -210,6 +221,11 @@ def _build_summary(
         full_baths=full_baths,
         half_baths=half_baths,
         bldg_age=bldg_age,
+        exterior_wall=exterior_wall,
+        roof_type=roof_type,
+        basement=basement,
+        garage_size=garage_size,
+        air_conditioning=air_conditioning,
         total_assessed_value=total_assessed_value,
         estimated_annual_tax=estimated_annual_tax,
         tax_code=tax_code,

@@ -682,10 +682,33 @@ a.glossary-link {
     {% if prop.bedrooms %}<dt>Bedrooms</dt><dd>{{ prop.bedrooms }}</dd>{% endif %}
     {% if prop.full_baths %}<dt>Bathrooms</dt><dd>{{ prop.full_baths }}{% if prop.half_baths %} + {{ prop.half_baths }} half{% endif %}</dd>{% endif %}
     {% if prop.bldg_age %}<dt>Building Age</dt><dd>{{ prop.bldg_age }} years</dd>{% endif %}
+    {% if prop.exterior_wall %}<dt>Exterior Wall</dt><dd>{{ prop.exterior_wall }}</dd>{% endif %}
+    {% if prop.roof_type %}<dt>Roof</dt><dd>{{ prop.roof_type }}</dd>{% endif %}
+    {% if prop.basement %}<dt>Basement</dt><dd>{{ prop.basement }}</dd>{% endif %}
+    {% if prop.garage_size %}<dt>Garage</dt><dd>{{ prop.garage_size }}</dd>{% endif %}
+    {% if prop.air_conditioning %}<dt>A/C</dt><dd>{{ prop.air_conditioning }}</dd>{% endif %}
     {% if prop.total_assessed_value %}<dt>Assessed Value</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
     {% if prop.estimated_annual_tax %}<dt>Est. Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}</dd>{% endif %}
     {% if report.effective_tax_rate %}<dt>Effective Tax Rate</dt><dd>{{ report.effective_tax_rate|fpct }}</dd>{% endif %}
   </dl>
+
+  {% if report.parcel_map_b64 or report.parcel_dimensions %}
+  <h3>Parcel Geometry</h3>
+  {% if report.parcel_map_b64 %}
+  <div style="text-align: center; margin: 8pt 0 10pt 0;">
+    <img src="data:image/png;base64,{{ report.parcel_map_b64 }}" alt="Parcel Map with Dimensions" style="max-width: 100%; border-radius: 4pt;">
+  </div>
+  {% endif %}
+  {% if report.parcel_dimensions %}
+  <dl class="info-grid">
+    {% if report.parcel_dimensions.frontage_ft %}<dt>Frontage</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.frontage_ft) }} ft</dd>{% endif %}
+    {% if report.parcel_dimensions.depth_ft %}<dt>Depth</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.depth_ft) }} ft</dd>{% endif %}
+    {% if report.parcel_dimensions.area_sqft %}<dt>Computed Area</dt><dd>{{ report.parcel_dimensions.area_sqft|fnum }} sq ft</dd>{% endif %}
+    {% if report.parcel_dimensions.perimeter_ft %}<dt>Perimeter</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.perimeter_ft) }} ft</dd>{% endif %}
+  </dl>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Dimensions estimated from GIS data. Confirm with a licensed surveyor before acquisition.</p>
+  {% endif %}
+  {% endif %}
 
   {% if dev %}
   <div class="dev-potential">
@@ -717,6 +740,15 @@ a.glossary-link {
     {% endfor %}
     </tbody>
   </table>
+  {% if report.assessment_trend %}
+  <p style="font-size: 9pt; margin-top: 4pt;">
+    <strong>Trend:</strong> Assessed value {{ report.assessment_trend.direction }}
+    {{ "%.1f"|format(report.assessment_trend.total_change_pct) }}% over {{ report.assessment_trend.years }} years
+    ({{ report.assessment_trend.oldest_year }}–{{ report.assessment_trend.newest_year }}){% if report.assessment_trend.cagr_pct %},
+    {{ "%.1f"|format(report.assessment_trend.cagr_pct) }}% CAGR{% endif %}.
+    <span style="color: #888;">Assessment changes reflect Cook County reassessment cycles, not necessarily market value changes.</span>
+  </p>
+  {% endif %}
   {% endif %}
 
   {% if prop.sales_history %}
@@ -733,6 +765,22 @@ a.glossary-link {
     {% endfor %}
     </tbody>
   </table>
+  {% endif %}
+
+  {% if report.ownership_signals %}
+  <h3>Ownership Intelligence</h3>
+  <table>
+    <thead><tr><th>Signal</th><th>Detail</th></tr></thead>
+    <tbody>
+    {% for sig in report.ownership_signals %}
+    <tr>
+      <td><strong>{{ sig.signal }}</strong></td>
+      <td style="font-size: 8pt;">{{ sig.detail }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Derived from public sales history and tax records. Taxpayer names are not available via open data.</p>
   {% endif %}
   {% else %}
   <p class="section-note">Property data unavailable for this location.</p>
@@ -832,6 +880,24 @@ a.glossary-link {
     <dt>New Construction</dt><dd>{{ report.nearby_development.new_construction_count }} permits</dd>
     <dt>Demolition</dt><dd>{{ report.nearby_development.demolition_count }} permits</dd>
   </dl>
+  {% if report.nearby_development.recent_projects %}
+  <table style="font-size: 7pt;">
+    <thead><tr><th>Type</th><th>Address</th><th>Description</th><th class="num">Cost</th><th>Date</th><th class="num">Dist</th></tr></thead>
+    <tbody>
+    {% for p in report.nearby_development.recent_projects[:10] %}
+    <tr>
+      <td>{% if "WRECKING" in (p.permit_type or "") or "DEMOLITION" in (p.permit_type or "") %}Demo{% else %}New{% endif %}</td>
+      <td>{{ p.formatted_address or "—" }}</td>
+      <td>{{ ((p.work_description or "—")[:50]) }}{% if (p.work_description or "")|length > 50 %}…{% endif %}</td>
+      <td class="num">{{ ("$%s"|format(("{:,.0f}".format(p.reported_cost|float)))) if p.reported_cost else "—" }}</td>
+      <td>{{ p.issue_date[:10] if p.issue_date else "—" }}</td>
+      <td class="num">{{ ("%.2f mi"|format(p.distance_mi)) if p.distance_mi else "—" }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
   {% if report.construction_map_b64 %}
   <div style="text-align: center; margin: 10pt 0 12pt 0;">
     <img src="data:image/png;base64,{{ report.construction_map_b64 }}" alt="Construction &amp; Demolition Activity Map" style="max-width: 100%; border-radius: 4pt;">
@@ -894,6 +960,28 @@ a.glossary-link {
     <dt>Estimated Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}</dd>
     {% if report.effective_tax_rate %}<dt>Effective Rate</dt><dd>{{ report.effective_tax_rate|fpct }}</dd>{% endif %}
   </dl>
+
+  {% if prop.tax_breakdown %}
+  <h3>Tax Breakdown by Agency</h3>
+  <table style="font-size: 8pt;">
+    <thead><tr><th>Agency</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for t in prop.tax_breakdown|sort(attribute="amount", reverse=true) %}
+    {% if loop.index <= 5 %}
+    <tr>
+      <td>{{ t.agency }}</td>
+      <td class="num">{{ "%.4f"|format(t.rate) if t.rate else "—" }}</td>
+      <td class="num">{{ t.amount|fcur if t.amount else "—" }}</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  {% set other_amount = prop.tax_breakdown|sort(attribute="amount", reverse=true)|list %}
+  {% if other_amount|length > 5 %}
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Showing top 5 of {{ other_amount|length }} taxing agencies.</p>
+  {% endif %}
+  {% endif %}
   {% endif %}
 </div>
 
