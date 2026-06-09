@@ -15,6 +15,7 @@ Load only what you need for the current task. Don't read everything.
 - `guides/latency-reduction.md` — Completed + planned perf optimizations, pipeline timing reference
 
 ## Strategy (load only for product planning / business discussions)
+- `strategy/north-star.md` — **North Star Product Plan**: manifesto, wedge (per-unit reports), feature audit, development phases, customer validation plan. This is the governing strategy document.
 - `strategy/competitive-analysis.md` — Chicago Cityscape comparison, data gaps, structural weaknesses
 - `strategy/product-roadmap.md` — Revenue features, pricing model, target personas, open questions
 - `strategy/design-guidelines.md` — Hybrid dashboard+chat model, UX principles, when to use chat vs tools
