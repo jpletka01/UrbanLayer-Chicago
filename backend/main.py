@@ -1198,6 +1198,7 @@ async def _fetch_scorecard_data(
 
     results: dict[str, Any] = {}
     partial_failures: list[str] = []
+    comparables_summary = None
     _FAILURE_MAP = {
         "property": "property records",
         "regulatory": "regulatory overlays",
@@ -1256,6 +1257,31 @@ async def _fetch_scorecard_data(
         partial_failures=partial_failures,
     )
 
+    # Phase 2: comparable sales (needs property class from phase 1)
+    prop = results.get("property")
+    if prop and getattr(prop, "bldg_class", None) and len(prop.bldg_class) > 0:
+        class_prefix = prop.bldg_class[0]
+        try:
+            from backend.retrieval.property.sales import nearby_comparable_sales
+            from backend.models import ComparableSale, ComparablesSummary
+            comps_data = await _limited(
+                nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix)
+            )
+            if comps_data.get("sales"):
+                s = comps_data["summary"]
+                comparables_summary = ComparablesSummary(
+                    median_sale_price=s.get("median_sale_price"),
+                    median_price_per_land_sqft=s.get("median_price_per_land_sqft"),
+                    median_price_per_bldg_sqft=s.get("median_price_per_bldg_sqft"),
+                    price_range_min=s.get("price_range_min"),
+                    price_range_max=s.get("price_range_max"),
+                    sales_volume=s.get("sales_volume", 0),
+                    sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
+                )
+        except Exception as exc:
+            log.warning("Scorecard comparable sales failed: %s", exc)
+            partial_failures.append("comparable sales")
+
     return {
         "address": resolved_address,
         "lat": resolved_lat,
@@ -1263,6 +1289,7 @@ async def _fetch_scorecard_data(
         "community_area": ca,
         "community_area_name": ca_name,
         "context": ctx,
+        "comparables": comparables_summary,
         "partial_failures": partial_failures,
     }
 
@@ -1280,6 +1307,10 @@ async def scorecard(
     )
     data = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
     data["context"] = data["context"].model_dump(exclude_none=True)
+    if data.get("comparables"):
+        data["comparables"] = data["comparables"].model_dump(exclude_none=True)
+    else:
+        data["comparables"] = None
     return data
 
 
@@ -1334,6 +1365,320 @@ async def explore_map(
         "parcels": parcels,
         "total": total,
     }
+
+
+_ZONE_PREFIX_COLORS: dict[str, tuple[int, int, int]] = {
+    "RS": (255, 235, 59),
+    "RT": (255, 224, 130),
+    "RM": (255, 213, 79),
+    "B": (66, 133, 244),
+    "C": (156, 39, 176),
+    "M": (233, 30, 99),
+    "PD": (158, 158, 158),
+    "PMD": (176, 176, 176),
+    "D": (0, 150, 136),
+    "DC": (0, 150, 136),
+    "DX": (38, 166, 154),
+    "DR": (77, 182, 172),
+    "DS": (0, 137, 123),
+    "T": (141, 110, 99),
+    "P": (76, 175, 80),
+    "POS": (102, 187, 106),
+}
+_ZONE_FALLBACK = (120, 120, 120)
+
+_ZONE_LABELS: dict[str, str] = {
+    "RS": "Residential Single",
+    "RT": "Residential Two-Flat",
+    "RM": "Residential Multi",
+    "B": "Business",
+    "C": "Commercial",
+    "M": "Manufacturing",
+    "PD": "Planned Dev",
+    "PMD": "Planned Mfg",
+    "D": "Downtown",
+    "DC": "Downtown Core",
+    "DX": "Downtown Mixed",
+    "DR": "Downtown Res",
+    "DS": "Downtown Svc",
+    "T": "Transportation",
+    "P": "Parks",
+    "POS": "Open Space",
+}
+
+
+def _zone_prefix(zone_class: str) -> str:
+    import re
+    m = re.match(r"^([A-Z]+)", (zone_class or "").strip().upper())
+    return m.group(1) if m else ""
+
+
+def _latlon_to_px(
+    lat: float, lon: float,
+    lat0: float, lon0: float,
+    zoom: int, w: int, h: int,
+) -> tuple[float, float]:
+    from math import log, tan, radians, cos, pi
+    scale = 256 * (2 ** zoom)
+    x = (lon + 180) / 360 * scale
+    y = (1 - log(tan(radians(lat)) + 1 / cos(radians(lat))) / pi) / 2 * scale
+    cx = (lon0 + 180) / 360 * scale
+    cy = (1 - log(tan(radians(lat0)) + 1 / cos(radians(lat0))) / pi) / 2 * scale
+    return (x - cx + w / 2) * 2, (y - cy + h / 2) * 2
+
+
+def _generate_zoning_map(
+    lat: float,
+    lon: float,
+    zoning_geojson: dict,
+    basemap_bytes: bytes,
+) -> str | None:
+    """Generate a base64-encoded PNG map with zoning polygon overlays."""
+    import base64
+    import io
+
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Polygon as MplPolygon
+        from PIL import Image
+    except ImportError:
+        log.warning("matplotlib/Pillow not available, skipping zoning map")
+        return None
+
+    MAP_W, MAP_H, ZOOM = 600, 400, 15
+
+    try:
+        basemap = Image.open(io.BytesIO(basemap_bytes))
+        img_w, img_h = basemap.size
+
+        dpi = 150
+        fig, ax = plt.subplots(
+            figsize=(img_w / dpi, img_h / dpi), dpi=dpi,
+        )
+        ax.imshow(basemap, extent=[0, img_w, img_h, 0], aspect="auto")
+        ax.set_xlim(0, img_w)
+        ax.set_ylim(img_h, 0)
+        ax.axis("off")
+
+        seen_prefixes: dict[str, tuple[float, float, float]] = {}
+
+        features = zoning_geojson.get("features") or []
+        for feat in features:
+            props = feat.get("properties") or {}
+            zone_class = props.get("ZONE_CLASS", "")
+            prefix = _zone_prefix(zone_class)
+            rgb = _ZONE_PREFIX_COLORS.get(prefix, _ZONE_FALLBACK)
+            fc = (rgb[0] / 255, rgb[1] / 255, rgb[2] / 255)
+
+            if prefix and prefix not in seen_prefixes:
+                seen_prefixes[prefix] = fc
+
+            geom = feat.get("geometry") or {}
+            geom_type = geom.get("type", "")
+            coord_rings: list[list] = []
+
+            if geom_type == "Polygon":
+                coord_rings = geom.get("coordinates") or []
+            elif geom_type == "MultiPolygon":
+                for poly in geom.get("coordinates") or []:
+                    coord_rings.extend(poly)
+
+            for ring in coord_rings:
+                pixels = []
+                in_view = False
+                for coord in ring:
+                    px, py = _latlon_to_px(
+                        coord[1], coord[0], lat, lon, ZOOM, MAP_W, MAP_H,
+                    )
+                    pixels.append((px, py))
+                    if 0 <= px <= img_w and 0 <= py <= img_h:
+                        in_view = True
+
+                if not in_view or len(pixels) < 3:
+                    continue
+
+                patch = MplPolygon(
+                    pixels, closed=True,
+                    facecolor=(*fc, 0.35),
+                    edgecolor=(*fc, 0.7),
+                    linewidth=0.5,
+                )
+                ax.add_patch(patch)
+
+        pin_px, pin_py = img_w / 2, img_h / 2
+        ax.plot(
+            pin_px, pin_py, "o",
+            markersize=10, color="#c96442",
+            markeredgecolor="white", markeredgewidth=2,
+            zorder=10,
+        )
+
+        if seen_prefixes:
+            sorted_prefixes = sorted(
+                seen_prefixes.items(),
+                key=lambda kv: list(_ZONE_PREFIX_COLORS.keys()).index(kv[0])
+                if kv[0] in _ZONE_PREFIX_COLORS else 99,
+            )
+            legend_handles = []
+            for prefix, color in sorted_prefixes:
+                label = _ZONE_LABELS.get(prefix, prefix)
+                handle = plt.Line2D(
+                    [0], [0], marker="s", color="none",
+                    markerfacecolor=(*color, 0.6),
+                    markeredgecolor=(*color, 0.9),
+                    markersize=6, label=label,
+                )
+                legend_handles.append(handle)
+
+            legend = ax.legend(
+                handles=legend_handles,
+                loc="upper right",
+                fontsize=5.5,
+                frameon=True,
+                framealpha=0.8,
+                facecolor="#1a1a1a",
+                edgecolor="#333333",
+                labelcolor="white",
+                handletextpad=0.4,
+                borderpad=0.4,
+                borderaxespad=0.6,
+            )
+            legend.set_zorder(20)
+
+        ax.text(
+            img_w / 2, img_h - 8,
+            "Sources: City of Chicago Zoning Map (ArcGIS) · Mapbox · OpenStreetMap",
+            ha="center", va="bottom",
+            fontsize=4.5, color="#999999",
+            bbox=dict(
+                facecolor="#0d0d0d", alpha=0.7,
+                edgecolor="none", pad=3,
+            ),
+            zorder=15,
+        )
+
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        buf = io.BytesIO()
+        fig.savefig(
+            buf, format="png", bbox_inches="tight",
+            pad_inches=0, facecolor="#0d0d0d",
+        )
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode("ascii")
+
+    except Exception:
+        log.warning("Failed to generate zoning map", exc_info=True)
+        return None
+
+
+def _generate_construction_map(
+    lat: float,
+    lon: float,
+    projects: list[dict],
+    basemap_bytes: bytes,
+) -> str | None:
+    """Generate a base64-encoded PNG map with construction/demolition markers."""
+    import base64
+    import io
+
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from PIL import Image
+    except ImportError:
+        return None
+
+    MAP_W, MAP_H, ZOOM = 600, 400, 15
+
+    try:
+        basemap = Image.open(io.BytesIO(basemap_bytes))
+        img_w, img_h = basemap.size
+
+        dpi = 150
+        fig, ax = plt.subplots(figsize=(img_w / dpi, img_h / dpi), dpi=dpi)
+        ax.imshow(basemap, extent=[0, img_w, img_h, 0], aspect="auto")
+        ax.set_xlim(0, img_w)
+        ax.set_ylim(img_h, 0)
+        ax.axis("off")
+
+        has_construction = False
+        has_demolition = False
+
+        for proj in projects:
+            try:
+                plat = float(proj.get("latitude", 0))
+                plon = float(proj.get("longitude", 0))
+            except (ValueError, TypeError):
+                continue
+            if plat == 0 or plon == 0:
+                continue
+
+            px, py = _latlon_to_px(plat, plon, lat, lon, ZOOM, MAP_W, MAP_H)
+            if not (0 <= px <= img_w and 0 <= py <= img_h):
+                continue
+
+            ptype = proj.get("permit_type", "")
+            if "NEW CONSTRUCTION" in ptype:
+                ax.plot(px, py, "o", markersize=8, color="#10b981",
+                        markeredgecolor="white", markeredgewidth=1, zorder=5)
+                has_construction = True
+            elif "WRECKING" in ptype:
+                ax.plot(px, py, "X", markersize=8, color="#ef4444",
+                        markeredgecolor="white", markeredgewidth=1, zorder=5)
+                has_demolition = True
+
+        # Subject property pin
+        pin_px, pin_py = img_w / 2, img_h / 2
+        ax.plot(pin_px, pin_py, "o", markersize=10, color="#c96442",
+                markeredgecolor="white", markeredgewidth=2, zorder=10)
+
+        legend_handles = []
+        if has_construction:
+            legend_handles.append(plt.Line2D(
+                [0], [0], marker="o", color="none", markerfacecolor="#10b981",
+                markeredgecolor="white", markersize=6, label="New Construction",
+            ))
+        if has_demolition:
+            legend_handles.append(plt.Line2D(
+                [0], [0], marker="X", color="none", markerfacecolor="#ef4444",
+                markeredgecolor="white", markersize=6, label="Demolition",
+            ))
+        legend_handles.append(plt.Line2D(
+            [0], [0], marker="o", color="none", markerfacecolor="#c96442",
+            markeredgecolor="white", markersize=6, label="Subject Property",
+        ))
+
+        legend = ax.legend(
+            handles=legend_handles, loc="upper right", fontsize=5.5,
+            frameon=True, framealpha=0.8, facecolor="#1a1a1a",
+            edgecolor="#333333", labelcolor="white",
+            handletextpad=0.4, borderpad=0.4, borderaxespad=0.6,
+        )
+        legend.set_zorder(20)
+
+        ax.text(
+            img_w / 2, img_h - 8,
+            "Sources: City of Chicago Building Permits · Mapbox · OpenStreetMap",
+            ha="center", va="bottom", fontsize=4.5, color="#999999",
+            bbox=dict(facecolor="#0d0d0d", alpha=0.7, edgecolor="none", pad=3),
+            zorder=15,
+        )
+
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight",
+                    pad_inches=0, facecolor="#0d0d0d")
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode("ascii")
+
+    except Exception:
+        log.warning("Failed to generate construction map", exc_info=True)
+        return None
 
 
 def _generate_comps_chart(comps: "ComparablesSummary") -> str | None:
@@ -1579,7 +1924,54 @@ async def _fetch_report_data(
         except Exception:
             log.warning("Failed to generate comps chart", exc_info=True)
 
-    return ReportData(
+    # Fetch basemap once for both zoning and construction maps
+    basemap_bytes = None
+    if mapbox_token:
+        basemap_no_pin_url = (
+            f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
+            f"{resolved_lon},{resolved_lat},15/600x400@2x"
+            f"?access_token={mapbox_token}"
+        )
+        try:
+            basemap_resp = await httpx.AsyncClient(timeout=15).get(basemap_no_pin_url)
+            if basemap_resp.status_code == 200:
+                basemap_bytes = basemap_resp.content
+        except Exception:
+            log.warning("Failed to fetch basemap for report maps", exc_info=True)
+
+    # Generate zoning map
+    zoning_map_b64 = None
+    ca = base.get("community_area")
+    if ca and basemap_bytes:
+        try:
+            from backend.retrieval.zoning import zoning_polygons_for_map
+            zoning_geojson = await _limited(zoning_polygons_for_map(ca))
+            if zoning_geojson.get("features"):
+                loop = asyncio.get_running_loop()
+                zoning_map_b64 = await loop.run_in_executor(
+                    None,
+                    _generate_zoning_map,
+                    resolved_lat, resolved_lon,
+                    zoning_geojson, basemap_bytes,
+                )
+        except Exception:
+            log.warning("Failed to generate zoning map", exc_info=True)
+
+    # Generate construction/demolition map
+    construction_map_b64 = None
+    if basemap_bytes and nearby_dev and nearby_dev.recent_projects:
+        try:
+            loop = asyncio.get_running_loop()
+            construction_map_b64 = await loop.run_in_executor(
+                None,
+                _generate_construction_map,
+                resolved_lat, resolved_lon,
+                nearby_dev.recent_projects, basemap_bytes,
+            )
+        except Exception:
+            log.warning("Failed to generate construction map", exc_info=True)
+
+    report = ReportData(
         address=resolved_address,
         lat=resolved_lat,
         lon=resolved_lon,
@@ -1596,9 +1988,12 @@ async def _fetch_report_data(
         effective_tax_rate=effective_tax_rate,
         static_map_url=static_map_url,
         comps_chart_b64=comps_chart_b64,
+        zoning_map_b64=zoning_map_b64,
+        construction_map_b64=construction_map_b64,
         bulk_standards_text=bulk_standards_text,
         partial_failures=partial_failures,
     )
+    return report, basemap_bytes
 
 
 def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
@@ -1682,11 +2077,20 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
         {"violation_date": "2024-06-20", "violation_status": "COMPLIED", "inspection_number": "14601234", "violation_description": "FAILURE TO MAINTAIN ALLEY AND REAR YARD FREE OF DEBRIS AND REFUSE"},
     ]
 
-    # Force nearby development
+    # Force nearby development (with lat/lon for map generation)
+    mock_lat = report_data.lat or 41.9270
+    mock_lon = report_data.lon or -87.6980
     report_data.nearby_development = NearbyDevelopment(
         new_construction_count=4,
         demolition_count=2,
-        recent_projects=[],
+        recent_projects=[
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat + 0.001), "longitude": str(mock_lon + 0.001), "work_description": "Erect new 3-story mixed-use building", "issue_date": "2025-11-15", "reported_cost": "450000"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat - 0.001), "longitude": str(mock_lon + 0.002), "work_description": "Erect new single-family residence", "issue_date": "2025-09-22", "reported_cost": "280000"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat + 0.002), "longitude": str(mock_lon - 0.001), "work_description": "Erect new 6-unit residential building", "issue_date": "2025-08-10", "reported_cost": "720000"},
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "latitude": str(mock_lat - 0.002), "longitude": str(mock_lon - 0.002), "work_description": "Erect new commercial building", "issue_date": "2025-06-05", "reported_cost": "950000"},
+            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "latitude": str(mock_lat + 0.0015), "longitude": str(mock_lon - 0.0015), "work_description": "Wreck existing 2-story frame building", "issue_date": "2025-10-01", "reported_cost": "35000"},
+            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "latitude": str(mock_lat - 0.0015), "longitude": str(mock_lon + 0.0005), "work_description": "Wreck existing garage structure", "issue_date": "2025-07-18", "reported_cost": "15000"},
+        ],
     )
 
     # Force adjacent zoning
@@ -1733,10 +2137,21 @@ async def report(
                 detail={"error": "report_purchase_required"},
             )
 
-    report_data = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
+    report_data, basemap_bytes = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
 
     if mock:
         report_data = _apply_mock_overrides(report_data)
+        # Regenerate construction map with mock development data
+        if basemap_bytes and report_data.nearby_development and report_data.nearby_development.recent_projects and not report_data.construction_map_b64:
+            try:
+                loop = asyncio.get_running_loop()
+                report_data.construction_map_b64 = await loop.run_in_executor(
+                    None, _generate_construction_map,
+                    report_data.lat, report_data.lon,
+                    report_data.nearby_development.recent_projects, basemap_bytes,
+                )
+            except Exception:
+                log.warning("Failed to generate mock construction map", exc_info=True)
 
     # Render HTML template
     template_dir = Path(__file__).parent / "templates"

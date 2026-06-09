@@ -616,5 +616,7 @@ class ReportData(BaseModel):
     effective_tax_rate: float | None = None
     static_map_url: str | None = None
     comps_chart_b64: str | None = None
+    zoning_map_b64: str | None = None
+    construction_map_b64: str | None = None
     bulk_standards_text: str = ""
     partial_failures: list[str] = Field(default_factory=list)

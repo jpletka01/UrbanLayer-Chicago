@@ -55,6 +55,10 @@ async def get_sales(
         return []
 
 
+def _normalize_pin(pin: str) -> str:
+    return pin.replace("-", "").strip()
+
+
 def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 3958.8
     dlat = math.radians(lat2 - lat1)
@@ -116,7 +120,7 @@ async def nearby_comparable_sales(
 
         pin_list = list({p["pin"] for p in parcels if p.get("pin")})
         pin_coords = {
-            p["pin"]: (float(p.get("lat", 0)), float(p.get("lon", 0)))
+            _normalize_pin(p["pin"]): (float(p.get("lat", 0)), float(p.get("lon", 0)))
             for p in parcels
             if p.get("pin")
         }
@@ -134,7 +138,7 @@ async def nearby_comparable_sales(
             settings.dataset_ccao_sales,
             {
                 "$where": sales_where,
-                "$select": "pin,sale_date,sale_price,sale_deed_type,class",
+                "$select": "pin,sale_date,sale_price,deed_type,class",
                 "$order": "sale_date DESC",
                 "$limit": limit * 3,
             },
@@ -144,7 +148,8 @@ async def nearby_comparable_sales(
         )
 
         # Hop 3 (parallel with hop 2): Characteristics for all PINs
-        chars_in = ",".join(f"'{p}'" for p in pin_list[:50])
+        normalized_pins = [_normalize_pin(p) for p in pin_list[:50]]
+        chars_in = ",".join(f"'{p}'" for p in normalized_pins)
         chars_task = socrata_get(
             settings.dataset_ccao_characteristics,
             {
@@ -161,7 +166,7 @@ async def nearby_comparable_sales(
 
         chars_by_pin: dict[str, dict] = {}
         for c in chars_raw:
-            chars_by_pin.setdefault(c.get("pin", ""), c)
+            chars_by_pin.setdefault(_normalize_pin(c.get("pin", "")), c)
 
         # Merge and build ComparableSale-shaped dicts
         seen_pins: set[str] = set()
@@ -173,11 +178,12 @@ async def nearby_comparable_sales(
             seen_pins.add(pin)
 
             price = float(s["sale_price"]) if s.get("sale_price") else None
-            chars = chars_by_pin.get(pin, {})
+            norm_pin = _normalize_pin(pin)
+            chars = chars_by_pin.get(norm_pin, {})
             land_sf = int(float(chars["char_land_sf"])) if chars.get("char_land_sf") else None
             bldg_sf = int(float(chars["char_bldg_sf"])) if chars.get("char_bldg_sf") else None
 
-            coords = pin_coords.get(pin, (0, 0))
+            coords = pin_coords.get(norm_pin, (0, 0))
             dist = _haversine_mi(lat, lon, coords[0], coords[1]) if coords[0] else None
 
             comp: dict[str, Any] = {
@@ -189,7 +195,7 @@ async def nearby_comparable_sales(
                 "bldg_sqft": bldg_sf,
                 "price_per_land_sqft": round(price / land_sf, 2) if price and land_sf else None,
                 "price_per_bldg_sqft": round(price / bldg_sf, 2) if price and bldg_sf else None,
-                "deed_type": s.get("sale_deed_type"),
+                "deed_type": s.get("deed_type"),
                 "sale_type": "LAND" if (bldg_sf or 0) == 0 else "LAND AND BUILDING",
                 "distance_mi": round(dist, 2) if dist else None,
             }
