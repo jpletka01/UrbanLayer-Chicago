@@ -33,9 +33,9 @@ log = logging.getLogger(__name__)
 SOURCE_FILE = Path(__file__).resolve().parent.parent / "chicago-il-codes.html"
 OUT_DIR = Path(__file__).resolve().parent / "data" / "sections"
 
-SECTION_RE = re.compile(r"^(\d+-\d+-\d+(?:\.\d+)?)\s+(.+)", re.DOTALL)
-TITLE_RE = re.compile(r"^TITLE\s+(\d+)\s*(.*)$", re.IGNORECASE | re.DOTALL)
-CHAPTER_RE = re.compile(r"^CHAPTER\s+(\d+-\d+)\s*(.*)$", re.IGNORECASE | re.DOTALL)
+SECTION_RE = re.compile(r"^(\d+[A-Za-z]?-\d+-\d+(?:\.\d+)?)\s+(.+)", re.DOTALL)
+TITLE_RE = re.compile(r"^TITLE\s+(\d+[A-Za-z]?)\s*(.*)$", re.IGNORECASE | re.DOTALL)
+CHAPTER_RE = re.compile(r"^CHAPTER\s+(\d+[A-Za-z]?-\d+)\s*(.*)$", re.IGNORECASE | re.DOTALL)
 ARTICLE_RE = re.compile(r"^ARTICLE\s+([IVXLCDM]+|\d+)\s*\.?\s*(.*)$", re.IGNORECASE | re.DOTALL)
 SUBARTICLE_RE = re.compile(r"^SUBARTICLE\s+([IVXLCDM]+|\d+)\s*\.?\s*(.*)$", re.IGNORECASE | re.DOTALL)
 PART_RE = re.compile(r"^PART\s+([IVXLCDM]+|\d+)\s*\.?\s*(.*)$", re.IGNORECASE | re.DOTALL)
@@ -380,7 +380,8 @@ def parse(
                 txt = _txt(div)
                 m = TITLE_RE.match(txt)
                 if m:
-                    state.title_number = int(m.group(1))
+                    raw_title = m.group(1)
+                    state.title_number = int(raw_title) if raw_title.isdigit() else int(raw_title.rstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"))
                     state.title_name = m.group(2).strip(" .:")
                     state.reset_below("title")
                     skipping_title = only_title is not None and state.title_number != only_title

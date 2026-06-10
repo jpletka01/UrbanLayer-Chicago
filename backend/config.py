@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     reranker_candidate_count: int = 20
     reranker_weight: float = 0.2
 
-    keyword_boost_weight: float = 0.15
+    keyword_boost_weight: float = 0.20
 
     qdrant_code_collection: str = "chicago_municipal_code"
     qdrant_zoning_collection: str = "chicago_zoning"

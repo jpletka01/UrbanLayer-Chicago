@@ -105,6 +105,39 @@ def _is_legend_only_chunk(text: str) -> bool:
     return not _REGULAR_ROW_RE.search(text)
 
 
+_QUERY_SYNONYMS: dict[str, str] = {
+    "adu": "accessory dwelling unit coach house additional dwelling unit",
+    "accessory dwelling": "coach house additional dwelling unit",
+    "granny flat": "accessory dwelling unit coach house",
+    "in-law suite": "accessory dwelling unit coach house",
+    "mother-in-law": "accessory dwelling unit coach house",
+    "short-term rental": "shared housing unit registration vacation rental",
+    "airbnb": "shared housing unit vacation rental short-term residential rental",
+    "vrbo": "shared housing unit vacation rental short-term residential rental",
+    "loading dock": "off-street loading freight delivery loading berth",
+    "demolition permit": "demolition wrecking razing building removal",
+    "transition": "transition area buffer zone screening",
+}
+
+_DISTRICT_NORMALIZE_RE = re.compile(
+    r"\b(rs|rt|rm|b|c|m|dx|dc|ds|dr|pd|pmd)[\s-]?(\d+(?:\.\d+)?)\b",
+    re.IGNORECASE,
+)
+
+
+def _expand_query(query: str) -> str:
+    expanded = query
+    q_lower = query.lower()
+    for trigger, synonyms in _QUERY_SYNONYMS.items():
+        if trigger in q_lower:
+            expanded = f"{expanded} {synonyms}"
+    expanded = _DISTRICT_NORMALIZE_RE.sub(
+        lambda m: f"{m.group(0)} {m.group(1).upper()}-{m.group(2)}",
+        expanded,
+    )
+    return expanded
+
+
 _STOPWORDS = frozenset({
     "a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or",
     "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
@@ -200,7 +233,8 @@ async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = Fal
     collection = settings.qdrant_zoning_collection if zoning_only else settings.qdrant_code_collection
 
     loop = asyncio.get_running_loop()
-    prefixed = settings.embedding_query_prefix + query
+    expanded = _expand_query(query)
+    prefixed = settings.embedding_query_prefix + expanded
     vec = await loop.run_in_executor(
         None, lambda: _model().encode(prefixed, normalize_embeddings=True).tolist()
     )
@@ -243,17 +277,26 @@ async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = Fal
     scored_hits.sort(key=lambda x: x[0], reverse=True)
 
     known = await _get_known_sections()
-    chunks = []
-    seen_sections: set[str] = set()
+    best_per_section: dict[str, tuple[float, dict]] = {}
     for score, payload in scored_hits:
         section = payload.get("section", "")
-        if section in seen_sections:
-            continue
-        seen_sections.add(section)
-        chunks.append(_payload_to_chunk(payload, score, known))
-        if len(chunks) >= top_k:
-            break
+        if section not in best_per_section:
+            best_per_section[section] = (score, payload)
+        else:
+            prev_score, prev_payload = best_per_section[section]
+            if abs(score - prev_score) < 0.05:
+                new_kw = _keyword_score(query, payload.get("text", ""))
+                old_kw = _keyword_score(query, prev_payload.get("text", ""))
+                if new_kw > old_kw:
+                    best_per_section[section] = (score, payload)
+            elif score > prev_score:
+                best_per_section[section] = (score, payload)
 
+    ranked = sorted(best_per_section.values(), key=lambda x: x[0], reverse=True)
+    chunks = [
+        _payload_to_chunk(payload, score, known)
+        for score, payload in ranked[:top_k]
+    ]
     return chunks
 
 

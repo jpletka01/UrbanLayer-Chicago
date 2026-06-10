@@ -379,6 +379,53 @@
         "sources_any_of": ["crime_api", "311_api", "neighborhood_domain"],
         "location_resolved": true
       }
+    },
+    {
+      "id": "qct_check",
+      "question": "Is 4700 S Federal St in a Qualified Census Tract for LIHTC?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "nmtc_check",
+      "question": "Does the area around 6300 S Halsted St qualify for New Markets Tax Credits?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "incentives_mixed_zoning",
+      "question": "What incentive programs are available and what's the zoning at 3100 W Roosevelt Rd?",
+      "category": "compound",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "sources_any_of": ["vector_search", "regulatory_domain"],
+        "location_resolved": true
+      }
+    },
+    {
+      "id": "affordable_housing_development",
+      "question": "I want to build affordable housing at 5000 S State St. What incentives can I use?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain"],
+        "location_resolved": true,
+        "note": "Should mention QCT/LIHTC and NMTC if the tract qualifies"
+      }
+    },
+    {
+      "id": "tax_class_incentive",
+      "question": "What Cook County property tax incentive classes apply at 2900 S Archer Ave?",
+      "category": "incentives",
+      "expect": {
+        "sources_include": ["incentives_domain", "property_domain"],
+        "location_resolved": true
+      }
     }
   ]
 }
