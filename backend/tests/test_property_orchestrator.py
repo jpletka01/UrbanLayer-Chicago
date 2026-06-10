@@ -1,5 +1,7 @@
 """Tests for the property domain orchestrator."""
 
+import datetime
+
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -16,24 +18,26 @@ SAMPLE_PARCEL = {
     "address": "443 W WRIGHTWOOD AVE",
 }
 
+# Mirrors the real x54s-btds schema: `char_apts` (not char_units), `char_yrblt`
+# (age derived from it), `char_air`; there is no char_age/char_class_description.
 SAMPLE_CHARS = {
     "pin": "14241020170000",
     "year": "2024",
     "char_bldg_sf": "2600",
     "char_land_sf": "3200",
     "char_ncu": "3",
-    "char_units": "2",
+    "char_apts": "2",
     "char_rooms": "8",
     "char_beds": "4",
     "char_fbath": "2",
     "char_hbath": "1",
-    "char_age": "95",
-    "char_class_description": "Two-Story Residence",
+    "char_yrblt": "1929",
 }
 
+# Real uzyt-m557 schema uses `year`, not `tax_year`.
 SAMPLE_ASSESSMENTS = [
-    {"tax_year": "2024", "mailed_land": "10000", "mailed_bldg": "35000", "mailed_tot": "45000"},
-    {"tax_year": "2023", "mailed_land": "9500", "mailed_bldg": "33000", "mailed_tot": "42500"},
+    {"year": "2024", "class": "211", "mailed_land": "10000", "mailed_bldg": "35000", "mailed_tot": "45000"},
+    {"year": "2023", "class": "211", "mailed_land": "9500", "mailed_bldg": "33000", "mailed_tot": "42500"},
 ]
 
 SAMPLE_SALES = [
@@ -68,8 +72,9 @@ async def test_assembles_full_summary():
         assert result.bedrooms == 4
         assert result.full_baths == 2
         assert result.half_baths == 1
-        assert result.bldg_age == 95
-        assert result.bldg_class_description == "Two-Story Residence"
+        assert result.year_built == 1929
+        assert result.bldg_age == datetime.date.today().year - 1929
+        assert result.tax_exempt is False
         assert result.total_assessed_value == 45000.0
         assert len(result.assessment_history) == 2
         assert result.assessment_history[0].year == 2024

@@ -72,6 +72,11 @@ def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
+def _deg_to_mi(radius_deg: float) -> float:
+    """Approximate a lat/lon bounding-box radius in degrees to miles (~69 mi/deg)."""
+    return round(radius_deg * 69.0, 2)
+
+
 async def nearby_comparable_sales(
     lat: float,
     lon: float,
@@ -82,20 +87,53 @@ async def nearby_comparable_sales(
     limit: int | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, Any]:
-    """3-hop comparable sales: Parcel Universe → Sales → Characteristics.
+    """Comparable sales with progressive widening.
 
-    Returns {"summary": {...}, "sales": [...]}.
+    Tries same-class @ base radius/window, then widens radius, then extends the
+    window, returning the first non-empty tier with a ``basis`` label so the
+    report can disclose comparability. Returns {"summary": {...}, "sales": [...]}.
     """
     settings = get_settings()
-    years = years or settings.comparable_sales_years
-    radius_deg = radius_deg or settings.comparable_sales_radius_deg
+    base_years = years or settings.comparable_sales_years
+    base_radius = radius_deg or settings.comparable_sales_radius_deg
     limit = limit or settings.limit_comparable_sales
 
-    key = f"comps:{round(lat, 4)}:{round(lon, 4)}:{class_prefix}:{years}"
+    key = f"comps:{round(lat, 4)}:{round(lon, 4)}:{class_prefix}:{base_years}"
     cached = _comps_cache.get(key)
     if cached is not None:
         return cached
 
+    # Escalating (radius, window) tiers — stop at the first that yields comps.
+    tiers = [
+        (base_radius, base_years),
+        (base_radius * 2, base_years),
+        (base_radius * 2, base_years + 2),
+    ]
+    result: dict[str, Any] = {"summary": {}, "sales": []}
+    for rad, yrs in tiers:
+        result = await _query_comps(lat, lon, class_prefix, yrs, rad, limit, client)
+        if result["sales"]:
+            result["summary"]["comp_basis"] = (
+                f"Class {class_prefix}xx sales within {_deg_to_mi(rad)} mi, last {yrs} yr "
+                f"(n={len(result['sales'])})"
+            )
+            break
+
+    _comps_cache.set(key, result)
+    return result
+
+
+async def _query_comps(
+    lat: float,
+    lon: float,
+    class_prefix: str,
+    years: int,
+    radius_deg: float,
+    limit: int,
+    client: httpx.AsyncClient | None,
+) -> dict[str, Any]:
+    """Single-pass 3-hop comparable sales query (Parcel Universe → Sales → Characteristics)."""
+    settings = get_settings()
     try:
         # Hop 1: Nearby PINs from Parcel Universe
         parcel_where = (
@@ -115,7 +153,6 @@ async def nearby_comparable_sales(
             app_token=settings.cook_county_socrata_token or None,
         )
         if not parcels:
-            _comps_cache.set(key, {"summary": {}, "sales": []})
             return {"summary": {}, "sales": []}
 
         pin_list = list({p["pin"] for p in parcels if p.get("pin")})
@@ -198,6 +235,8 @@ async def nearby_comparable_sales(
                 "deed_type": s.get("deed_type"),
                 "sale_type": "LAND" if (bldg_sf or 0) == 0 else "LAND AND BUILDING",
                 "distance_mi": round(dist, 2) if dist else None,
+                "lat": coords[0] if coords[0] else None,
+                "lon": coords[1] if coords[1] else None,
             }
             comps.append(comp)
             if len(comps) >= limit:
@@ -217,9 +256,7 @@ async def nearby_comparable_sales(
             "sales_volume": len(comps),
         }
 
-        result = {"summary": summary, "sales": comps}
-        _comps_cache.set(key, result)
-        return result
+        return {"summary": summary, "sales": comps}
 
     except Exception as exc:
         log.warning("Comparable sales failed for (%s, %s): %s", lat, lon, exc)

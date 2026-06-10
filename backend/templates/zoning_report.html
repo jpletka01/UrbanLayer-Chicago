@@ -406,7 +406,7 @@ a.glossary-link {
     {% endif %}
 
     {# Regulatory signal #}
-    {% if reg and (reg.in_landmark_district or reg.in_historic_district) %}
+    {% if reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register) %}
     <div class="tl-item tl-red">
       <span class="tl-pill tl-pill-red">RISK</span>
       <span class="tl-topic">Regulatory</span>
@@ -567,6 +567,9 @@ a.glossary-link {
   {% endif %}
 
   {% if standards and standards.extraction_confidence != "low" %}
+  {% if standards.extraction_confidence == "definitions" %}
+  <p class="section-note">Base-district standards from the Title 17 zone-class reference table. Setbacks, parking, and special-use details are not enumerated here — verify site-specific requirements with the City of Chicago Zoning Division.</p>
+  {% endif %}
   <h3>Bulk &amp; Density Standards</h3>
   <table>
     <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
@@ -701,6 +704,7 @@ a.glossary-link {
     {% for overlay in reg.overlays %}
     <div class="overlay-item">
       <span class="status-yes">&#10003;</span> {{ overlay.name or overlay.layer_type }}
+      {% if overlay.description %}<span style="font-size: 7pt; color: #9ca3af;"> [{{ overlay.description }}]</span>{% endif %}
       {% if overlay.ordinance %}<span style="font-size: 8pt; color: #6b7280;"> ({{ overlay.ordinance }})</span>{% endif %}
     </div>
     {% endfor %}
@@ -716,6 +720,8 @@ a.glossary-link {
     <dd>{% if reg and reg.in_landmark_district %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
     <dt>Historic District</dt>
     <dd>{% if reg and reg.in_historic_district %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dt>National Register</dt>
+    <dd>{% if reg and reg.on_national_register %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
     <dt><a href="#glossary-tod" class="glossary-link">TOD</a> Eligible</dt>
     <dd>{% if nbr and nbr.transit and nbr.transit.tod_eligible %}<span class="status-yes">Yes</span>{% if nbr.transit.tod_type %} — {{ nbr.transit.tod_type }}{% endif %}{% else %}<span class="status-no">No</span>{% endif %}</dd>
     <dt><a href="#glossary-aro" class="glossary-link">ARO</a> Zone</dt>
@@ -723,6 +729,20 @@ a.glossary-link {
     <dt><a href="#glossary-ssa" class="glossary-link">SSA</a></dt>
     <dd>{% if reg and reg.in_ssa %}<span class="status-yes">{{ reg.ssa_name or "Yes" }}</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
   </dl>
+
+  {% if nbr and nbr.transit and (nbr.transit.nearest_cta_rail or nbr.transit.nearest_metra) %}
+  <h3>Transit Access</h3>
+  <dl class="info-grid">
+    {% if nbr.transit.nearest_cta_rail %}
+    <dt>Nearest CTA Rail</dt>
+    <dd>{{ nbr.transit.nearest_cta_rail }}{% if nbr.transit.cta_rail_distance_mi %} ({{ "%.2f"|format(nbr.transit.cta_rail_distance_mi) }} mi){% endif %}{% if nbr.transit.cta_lines %} — {{ nbr.transit.cta_lines | join(", ") }}{% endif %}</dd>
+    {% endif %}
+    {% if nbr.transit.nearest_metra %}
+    <dt>Nearest Metra</dt>
+    <dd>{{ nbr.transit.nearest_metra }}{% if nbr.transit.metra_distance_mi %} ({{ "%.2f"|format(nbr.transit.metra_distance_mi) }} mi){% endif %}{% if nbr.transit.metra_line %} — {{ nbr.transit.metra_line }}{% endif %}</dd>
+    {% endif %}
+  </dl>
+  {% endif %}
 
   <h3>Flood Zone (FEMA)</h3>
   {% if reg and reg.flood_zone %}
@@ -791,19 +811,26 @@ a.glossary-link {
     {% if prop.units %}<dt>Units</dt><dd>{{ prop.units }}</dd>{% endif %}
     {% if prop.bedrooms %}<dt>Bedrooms</dt><dd>{{ prop.bedrooms }}</dd>{% endif %}
     {% if prop.full_baths %}<dt>Bathrooms</dt><dd>{{ prop.full_baths }}{% if prop.half_baths %} + {{ prop.half_baths }} half{% endif %}</dd>{% endif %}
-    {% if prop.bldg_age %}<dt>Building Age</dt><dd>{{ prop.bldg_age }} years</dd>{% endif %}
+    {% if prop.year_built %}<dt>Year Built</dt><dd>{{ prop.year_built }}</dd>{% endif %}
+    {% if prop.bldg_age %}<dt>Building Age</dt><dd>{{ prop.bldg_age }} years{% if prop.year_built and prop.year_built < 1957 %} <span style="font-size: 7pt; color: #b45309;">(predates current zoning code)</span>{% endif %}</dd>{% endif %}
     {% if prop.exterior_wall %}<dt>Exterior Wall</dt><dd>{{ prop.exterior_wall }}</dd>{% endif %}
     {% if prop.roof_type %}<dt>Roof</dt><dd>{{ prop.roof_type }}</dd>{% endif %}
     {% if prop.basement %}<dt>Basement</dt><dd>{{ prop.basement }}</dd>{% endif %}
     {% if prop.garage_size %}<dt>Garage</dt><dd>{{ prop.garage_size }}</dd>{% endif %}
     {% if prop.air_conditioning %}<dt>A/C</dt><dd>{{ prop.air_conditioning }}</dd>{% endif %}
+    {% if prop.tax_exempt %}<dt>Tax Status</dt><dd><strong>Tax-Exempt</strong> (Class EX){% if prop.bldg_class %} — {{ prop.bldg_class }}{% endif %}</dd>{% endif %}
+    {% if not prop.tax_exempt %}
     {% if prop.total_assessed_value %}<dt>Assessed Value</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
     {% if prop.estimated_annual_tax %}<dt>Est. Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}</dd>{% endif %}
     {% if report.effective_tax_rate %}<dt>Effective Tax Rate</dt><dd>{{ report.effective_tax_rate|fpct }}</dd>{% endif %}
+    {% endif %}
   </dl>
+  {% if prop.tax_exempt %}
+  <p class="section-note">This parcel is currently <strong>tax-exempt</strong> (assessor class EX) — typically institutional, government, religious, or non-profit ownership. No assessed value or property-tax estimate applies in its current use. A change of ownership or use would trigger reassessment at the applicable class. Verify exemption status and any pending change with the Cook County Assessor.</p>
+  {% endif %}
 
-  {% if report.parcel_map_b64 or report.parcel_dimensions %}
   <h3>Parcel Geometry</h3>
+  {% if report.parcel_map_b64 or report.parcel_dimensions %}
   {% if report.parcel_map_b64 %}
   <div style="text-align: center; margin: 8pt 0 10pt 0;">
     <img src="data:image/png;base64,{{ report.parcel_map_b64 }}" alt="Parcel Map with Dimensions" style="max-width: 100%; border-radius: 4pt;">
@@ -818,13 +845,15 @@ a.glossary-link {
   </dl>
   <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Dimensions estimated from GIS data. Confirm with a licensed surveyor before acquisition.</p>
   {% endif %}
+  {% else %}
+  <p class="section-note">Parcel geometry unavailable — Cook County GIS did not return boundary data for this property. Land area shown above is from assessor records. For precise lot dimensions, obtain a boundary survey from a licensed surveyor.</p>
   {% endif %}
 
   {% if inc and inc.property_tax_class %}
   <p style="font-size: 9pt;"><strong>Tax Incentive Class:</strong> {{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</p>
   {% endif %}
 
-  {% if prop.assessment_history %}
+  {% if prop.assessment_history and not prop.tax_exempt %}
   <h3>Assessment History</h3>
   <table>
     <thead><tr><th>Year</th><th class="num">Land</th><th class="num">Building</th><th class="num">Total</th></tr></thead>
@@ -891,7 +920,8 @@ a.glossary-link {
   <h2 id="section-market">Market Context &amp; Comparables</h2>
 
   {% if comps and comps.sales_volume %}
-  <h3>Comparable Sales Summary ({{ comps.sales_volume }} <a href="#glossary-arms-length" class="glossary-link">arm's-length</a> transactions, 0.25mi, 3yr)</h3>
+  <h3>Comparable Sales Summary ({{ comps.sales_volume }} <a href="#glossary-arms-length" class="glossary-link">arm's-length</a> transactions)</h3>
+  {% if comps.comp_basis %}<p class="section-note">Basis: {{ comps.comp_basis }}.</p>{% endif %}
   <div class="stats-box">
     <div class="stat-item">
       <div class="value">{{ comps.median_sale_price|fcur if comps.median_sale_price else "—" }}</div>
@@ -927,6 +957,12 @@ a.glossary-link {
   {% if report.comps_chart_b64 %}
   <div style="text-align: center; margin: 10pt 0 12pt 0;">
     <img src="data:image/png;base64,{{ report.comps_chart_b64 }}" alt="Comparable Sales Timeline" style="max-width: 100%; border-radius: 4pt;">
+  </div>
+  {% endif %}
+
+  {% if report.comps_map_b64 %}
+  <div style="text-align: center; margin: 8pt 0 10pt 0;">
+    <img src="data:image/png;base64,{{ report.comps_map_b64 }}" alt="Comparable Sales Location Map" style="max-width: 65%; border-radius: 4pt;">
   </div>
   {% endif %}
 
@@ -988,7 +1024,7 @@ a.glossary-link {
   {% endif %}
 
   {% if report.nearby_development and (report.nearby_development.new_construction_count or report.nearby_development.demolition_count) %}
-  <h3>Nearby Development Activity (12 months, 0.25mi)</h3>
+  <h3>Nearby Development Activity (12 months, 0.5mi)</h3>
   {% if report.development_trend %}
   <p style="font-size: 9.5pt; margin-bottom: 8pt; padding: 6pt 10pt; background: #f9fafb; border-left: 3pt solid #2563eb; border-radius: 2pt;">
     {{ report.development_trend.narrative }}
@@ -1141,13 +1177,20 @@ a.glossary-link {
 
   {% if ctx.address_311 and ctx.address_311.total %}
   <h3>311 Complaints at Address (12 months)</h3>
-  <dl class="info-grid">
-    <dt>Total</dt><dd>{{ ctx.address_311.total }}</dd>
-    <dt>Open</dt><dd>{{ ctx.address_311.open_count or 0 }}</dd>
-  </dl>
+  {% if ctx.address_311.open_count %}
+  <p style="font-size: 9.5pt; margin-bottom: 4pt;">
+    <span class="status-warn"><strong>{{ ctx.address_311.open_count }} open complaint{{ "s" if ctx.address_311.open_count != 1 else "" }}</strong></span>
+    {% if ctx.address_311.by_type_open %}
+    — {% for type, count in ctx.address_311.by_type_open.items() %}{{ type }}{% if count > 1 %} ({{ count }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+    {% endif %}
+  </p>
+  {% else %}
+  <p style="font-size: 9.5pt; margin-bottom: 4pt;"><span class="status-no">No open complaints</span></p>
+  {% endif %}
   {% if ctx.address_311.high_risk_flags %}
   <p style="font-size: 9pt;"><span class="status-warn">High-Risk Flags:</span> {{ ctx.address_311.high_risk_flags | join(", ") }}</p>
   {% endif %}
+  <p style="font-size: 8pt; color: #6b7280;">{{ ctx.address_311.total }} total complaints in past 12 months (open + closed).</p>
   {% endif %}
 
   {% if report.address_permits %}
@@ -1223,14 +1266,18 @@ a.glossary-link {
 
   {% set open_violations_count = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list|length if report.address_violations else 0 %}
 
-  {% if open_violations_count > 0 or (reg and (reg.in_landmark_district or reg.in_historic_district)) or (reg and reg.brownfield_sites) or (reg and reg.in_special_flood_hazard) %}
+  {% if open_violations_count > 0 or (reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register)) or (reg and reg.brownfield_sites) or (reg and reg.in_special_flood_hazard) %}
   <h3>Immediate (Blocking Issues)</h3>
   <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
     {% if open_violations_count > 0 %}
     <li>Resolve {{ open_violations_count }} open building code violation{{ "s" if open_violations_count > 1 else "" }} before applying for new permits — outstanding violations can delay or block permit issuance</li>
     {% endif %}
-    {% if reg and (reg.in_landmark_district or reg.in_historic_district) %}
-    <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a {% if reg.in_landmark_district %}landmark{% endif %}{% if reg.in_landmark_district and reg.in_historic_district %}/{% endif %}{% if reg.in_historic_district %}historic{% endif %} district requiring permit review</li>
+    {% if reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register) %}
+    <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a
+      {%- if reg.in_landmark_district %} landmark district{%- endif %}
+      {%- if reg.in_historic_district %}{%- if reg.in_landmark_district %} /{%- endif %} historic district{%- endif %}
+      {%- if reg.on_national_register %}{%- if reg.in_landmark_district or reg.in_historic_district %} /{%- endif %} National Register district{%- endif %}
+      requiring permit review</li>
     {% endif %}
     {% if reg and reg.brownfield_sites %}
     <li>Commission a Phase I Environmental Site Assessment (ESA) — {{ reg.brownfield_sites|length }} brownfield site{{ "s" if reg.brownfield_sites|length > 1 else "" }} identified nearby</li>

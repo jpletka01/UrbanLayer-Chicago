@@ -104,6 +104,7 @@ async def address_311_complaints(
     rows = await socrata_get(settings.dataset_311, params, client=client)
 
     by_type: dict[str, int] = {}
+    by_type_open: dict[str, int] = {}
     high_risk: list[str] = []
     open_count = 0
     for row in rows:
@@ -111,6 +112,7 @@ async def address_311_complaints(
         by_type[sr] = by_type.get(sr, 0) + 1
         if row.get("status") == "Open":
             open_count += 1
+            by_type_open[sr] = by_type_open.get(sr, 0) + 1
         if sr in _HIGH_RISK_TYPES and sr not in high_risk:
             high_risk.append(sr)
 
@@ -118,6 +120,7 @@ async def address_311_complaints(
         "total": len(rows),
         "open_count": open_count,
         "by_type": dict(sorted(by_type.items(), key=lambda kv: kv[1], reverse=True)[:10]),
+        "by_type_open": dict(sorted(by_type_open.items(), key=lambda kv: kv[1], reverse=True)[:10]),
         "high_risk_flags": high_risk,
         "recent": rows[:5],
     }

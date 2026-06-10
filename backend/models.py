@@ -235,11 +235,13 @@ class PropertySummary(BaseModel):
     full_baths: int | None = None
     half_baths: int | None = None
     bldg_age: int | None = None
+    year_built: int | None = None
     exterior_wall: str | None = None
     roof_type: str | None = None
     basement: str | None = None
     garage_size: str | None = None
     air_conditioning: str | None = None
+    tax_exempt: bool = False
     total_assessed_value: float | None = None
     estimated_annual_tax: float | None = None
     tax_code: str | None = None
@@ -569,7 +571,10 @@ class ZoningStandards(BaseModel):
     permitted_uses: list[str] = Field(default_factory=list)
     special_uses: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
-    extraction_confidence: Literal["high", "medium", "low"] = "medium"
+    # "definitions" = synthesized from the deterministic Title 17 zone-class
+    # reference table (zoning_definitions.py) when AI extraction was unavailable
+    # or low-confidence. Treated as authoritative for base-district standards.
+    extraction_confidence: Literal["high", "medium", "low", "definitions"] = "medium"
 
 
 class DevelopmentPotential(BaseModel):
@@ -592,6 +597,8 @@ class ComparableSale(BaseModel):
     deed_type: str | None = None
     sale_type: str | None = None
     distance_mi: float | None = None
+    lat: float | None = None
+    lon: float | None = None
 
 
 class ComparablesSummary(BaseModel):
@@ -601,6 +608,9 @@ class ComparablesSummary(BaseModel):
     price_range_min: float | None = None
     price_range_max: float | None = None
     sales_volume: int = 0
+    # Human-readable basis describing the comp set used (class + radius + window),
+    # set by the progressive-widening search so the reader can judge comparability.
+    comp_basis: str | None = None
     sales: list[ComparableSale] = Field(default_factory=list)
 
 
@@ -631,6 +641,7 @@ class ReportData(BaseModel):
     parcel_dimensions: dict | None = None
     static_map_url: str | None = None
     comps_chart_b64: str | None = None
+    comps_map_b64: str | None = None
     zoning_map_b64: str | None = None
     construction_map_b64: str | None = None
     bulk_standards_text: str = ""

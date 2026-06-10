@@ -167,6 +167,7 @@ class Settings(BaseSettings):
     limit_address_violations: int = 20
     limit_nearby_construction: int = 20
     comparable_sales_radius_deg: float = 0.004
+    nearby_construction_radius_deg: float = 0.00725
     comparable_sales_years: int = 3
     address_permits_years: int = 5
     address_violations_years: int = 5

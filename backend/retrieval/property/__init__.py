@@ -142,6 +142,7 @@ def _build_summary(
     full_baths = None
     half_baths = None
     bldg_age = None
+    year_built = None
 
     exterior_wall = None
     roof_type = None
@@ -150,27 +151,31 @@ def _build_summary(
     air_conditioning = None
 
     if chars:
+        # NOTE: dataset x54s-btds column names — `char_apts` (not char_units),
+        # `char_air` (not char_ac); there is no char_age or char_class_description.
         bldg_sqft = _safe_int(chars.get("char_bldg_sf")) or bldg_sqft
         land_sqft = _safe_int(chars.get("char_land_sf")) or land_sqft
         stories = _safe_int(chars.get("char_ncu"))
-        units = _safe_int(chars.get("char_units"))
+        units = _safe_int(chars.get("char_apts"))
         rooms = _safe_int(chars.get("char_rooms"))
         bedrooms = _safe_int(chars.get("char_beds"))
         full_baths = _safe_int(chars.get("char_fbath"))
         half_baths = _safe_int(chars.get("char_hbath"))
-        bldg_age = _safe_int(chars.get("char_age"))
-        bldg_class_description = chars.get("char_class_description")
+        year_built = _safe_int(chars.get("char_yrblt"))
+        # Derive age from year built (dataset has no precomputed age column).
+        if year_built:
+            bldg_age = datetime.date.today().year - year_built
         exterior_wall = chars.get("char_ext_wall") or None
         roof_type = chars.get("char_roof_cnst") or None
         basement = chars.get("char_bsmt") or None
         garage_size = chars.get("char_gar1_size") or None
-        air_conditioning = chars.get("char_ac") or None
+        air_conditioning = chars.get("char_air") or None
 
     assessment_history = []
     total_assessed_value = None
     for row in assessments:
         rec = AssessmentRecord(
-            year=_safe_int(row.get("tax_year")),
+            year=_safe_int(row.get("year")),
             land=_safe_float(row.get("mailed_land") or row.get("certified_land")),
             building=_safe_float(
                 row.get("mailed_bldg") or row.get("certified_bldg")
@@ -193,6 +198,14 @@ def _build_summary(
             deed_type=row.get("deed_type"),
         )
         sales_history.append(rec)
+
+    # Exempt parcels (class "EX") carry zero assessed value / tax — a real,
+    # decision-relevant fact (institutional ownership), not a data gap.
+    assessment_class = assessments[0].get("class") if assessments else None
+    tax_exempt = any(
+        (c or "").strip().upper().startswith("EX")
+        for c in (bldg_class, assessment_class)
+    )
 
     estimated_annual_tax = None
     tax_code = None
@@ -221,11 +234,13 @@ def _build_summary(
         full_baths=full_baths,
         half_baths=half_baths,
         bldg_age=bldg_age,
+        year_built=year_built,
         exterior_wall=exterior_wall,
         roof_type=roof_type,
         basement=basement,
         garage_size=garage_size,
         air_conditioning=air_conditioning,
+        tax_exempt=tax_exempt,
         total_assessed_value=total_assessed_value,
         estimated_annual_tax=estimated_annual_tax,
         tax_code=tax_code,

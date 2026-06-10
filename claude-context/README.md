@@ -15,6 +15,9 @@ Load only what you need for the current task. Don't read everything.
 - `guides/latency-reduction.md` — Completed + planned perf optimizations, pipeline timing reference
 - `guides/report-v5-plan.md` — V5 Report plan (shipped 2026-06-10). Reference for understanding synthesis rules, envelope rendering spec, approval pathway logic.
 - `guides/report-v4-plan.md` — V4 Report plan (items 1-7 shipped; item 8 superseded by V5)
+- `guides/report-status.md` — **Master report feature tracker**: shipped (V3-V6), blocked/data-dependent, confirmed limitations, rejected features, future ideas
+- `guides/report-v6-improvements.md` — V6 open issues: parcel map needs real geometry, year_built data gaps, ownership limitation, comps map validation
+- `guides/report-v6-audit.md` — **Rejection audit of `report_v6g.pdf`** (2026-06-10): every finding ranked by decision-quality impact × effort, quadrant view, execution order, verified root causes. Key caveat: audited PDF was mock=true — regenerate real-data before fixing
 
 ## Strategy (load only for product planning / business discussions)
 - `strategy/north-star.md` — **North Star Product Plan**: manifesto, wedge (per-unit reports), feature audit, development phases, customer validation plan. This is the governing strategy document.

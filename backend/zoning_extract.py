@@ -8,6 +8,7 @@ a ZoningStandards model.
 import asyncio
 import json
 import logging
+import re
 from typing import Any
 
 from backend.config import get_settings
@@ -16,6 +17,58 @@ from backend.models import DevelopmentPotential, ZoningStandards
 from backend.retrieval.vector_search import semantic_search
 
 log = logging.getLogger(__name__)
+
+
+def standards_from_definitions(zone_class: str) -> ZoningStandards | None:
+    """Synthesize ZoningStandards from the deterministic Title 17 zone-class table.
+
+    R1 fallback: when AI extraction is unavailable or low-confidence, the
+    deterministic table (``zoning_definitions``) provides authoritative base-district
+    FAR / height / coverage / uses for known classes. Returns ``None`` for zones the
+    table cannot resolve to real numbers (PD / PMD / unknown), so callers can preserve
+    the raw-code-section path only for genuinely unknown districts.
+    """
+    from backend.retrieval.zoning_definitions import get_zone_definition
+
+    d = get_zone_definition(zone_class)
+
+    # Fallback defs (PD/PMD/unknown) carry no FAR — nothing reliable to surface.
+    if d.is_fallback and d.far is None:
+        return None
+
+    max_height_ft: int | None = None
+    if d.max_height:
+        m = re.search(r"(\d+)", d.max_height)
+        if m:
+            max_height_ft = int(m.group(1))
+
+    lot_coverage_pct: float | None = None
+    if d.lot_coverage:
+        m = re.search(r"(\d+(?:\.\d+)?)", d.lot_coverage)
+        if m:
+            lot_coverage_pct = round(float(m.group(1)) / 100.0, 4)
+
+    # Keep the use description intact as a single line rather than naively
+    # comma-splitting (which mangles commercial-district sentences).
+    permitted_uses = [d.uses.strip()] if d.uses and d.uses.strip() else []
+
+    notes = [
+        "Standards from the deterministic Title 17 zone-class reference table "
+        "(base district only), not site-specific code extraction. Overlays, planned "
+        "developments, and transition zones may alter these. Verify with the City of "
+        "Chicago Zoning Division.",
+    ]
+    if d.notes:
+        notes.insert(0, d.notes)
+
+    return ZoningStandards(
+        far=d.far,
+        max_height_ft=max_height_ft,
+        lot_coverage_pct=lot_coverage_pct,
+        permitted_uses=permitted_uses,
+        notes=notes,
+        extraction_confidence="definitions",
+    )
 
 EXTRACTION_SYSTEM = """You are a zoning code extraction specialist for Chicago's Municipal Code (Title 17).
 Given retrieved text chunks from the zoning ordinance, extract structured development standards for the specified zone class.

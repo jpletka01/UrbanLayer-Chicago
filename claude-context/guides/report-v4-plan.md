@@ -1,7 +1,8 @@
 # PDF Report v4: High-Value Intelligence Additions
 
-**Status:** Planned (2026-06-09)
+**Status:** Items 1-7 shipped (2026-06-09). Item 8 superseded by V5.
 **Prereq:** Report v3 shipped (TOC, glossary, construction map, comps sqft fix, spacing)
+**Next:** See `guides/report-v5-plan.md` for the V5 plan — gap analysis vs NAHB checklist, opportunities & constraints synthesis, development envelope, regulatory approval pathway, and complete implementation roadmap.
 
 ## Context
 

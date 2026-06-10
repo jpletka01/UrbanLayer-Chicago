@@ -31,7 +31,9 @@ async def get_assessments(
     settings = get_settings()
     params = {
         "pin": pin14,
-        "$order": "tax_year DESC",
+        # Dataset uzyt-m557 exposes the assessment year as `year` (not `tax_year`);
+        # ordering by a non-existent column 400s and silently empties every report.
+        "$order": "year DESC",
         "$limit": settings.limit_ccao_assessments,
     }
     try:

@@ -55,18 +55,22 @@ async def estimate_tax(year: int, pin14: str) -> dict | None:
 
     pin_clean = pin14.replace("-", "")
 
+    # Select the most recent available year at or before the requested one. The
+    # PTAXSIM DB lags ~1 year behind the calendar (e.g. max year 2024 in 2026), so
+    # a fixed ``today-1`` would 404 every report; this clamps gracefully per-PIN.
     async with conn.execute(
-        "SELECT tax_code_num, tax_bill_total, av_clerk, "
+        "SELECT year, tax_code_num, tax_bill_total, av_clerk, "
         "  exe_homeowner + exe_senior + exe_freeze + exe_longtime_homeowner + "
         "  exe_disabled + exe_vet_returning + exe_vet_dis_lt50 + exe_vet_dis_50_69 + "
         "  exe_vet_dis_ge70 + exe_vet_dis_100 + exe_wwii + exe_abate AS total_exe "
-        "FROM pin WHERE year = ? AND pin = ?",
-        (year, pin_clean),
+        "FROM pin WHERE pin = ? AND year <= ? ORDER BY year DESC LIMIT 1",
+        (pin_clean, year),
     ) as cursor:
         row = await cursor.fetchone()
     if not row:
         return None
 
+    data_year = row["year"]
     tax_code = row["tax_code_num"]
     tax_bill_total = row["tax_bill_total"]
     av_clerk = row["av_clerk"]
@@ -78,7 +82,7 @@ async def estimate_tax(year: int, pin14: str) -> dict | None:
         "JOIN agency_info ai ON tc.agency_num = ai.agency_num "
         "WHERE tc.year = ? AND tc.tax_code_num = ? "
         "ORDER BY tc.agency_rate DESC",
-        (year, tax_code),
+        (data_year, tax_code),
     ) as cursor:
         agencies = await cursor.fetchall()
 
@@ -94,7 +98,7 @@ async def estimate_tax(year: int, pin14: str) -> dict | None:
         })
 
     return {
-        "year": year,
+        "year": data_year,
         "pin": pin_clean,
         "tax_code": tax_code,
         "tax_bill_total": round(tax_bill_total, 2),

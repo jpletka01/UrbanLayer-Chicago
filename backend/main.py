@@ -1129,12 +1129,14 @@ async def _resolve_location(
         settings = get_settings()
         rows = await socrata_get(
             settings.dataset_ccao_parcels,
-            {"$where": f"pin='{pin}'", "$select": "latitude,longitude", "$limit": 1},
+            # Parcel Universe (pabr-t5kh) exposes coordinates as lat/lon, not
+            # latitude/longitude — the latter 400s and breaks PIN-only resolution.
+            {"$where": f"pin='{pin}'", "$select": "lat,lon", "$limit": 1},
             base_url=settings.cook_county_socrata_base,
         )
-        if rows and rows[0].get("latitude") and rows[0].get("longitude"):
-            resolved_lat = float(rows[0]["latitude"])
-            resolved_lon = float(rows[0]["longitude"])
+        if rows and rows[0].get("lat") and rows[0].get("lon"):
+            resolved_lat = float(rows[0]["lat"])
+            resolved_lon = float(rows[0]["lon"])
 
     if resolved_lat is None or resolved_lon is None:
         raise HTTPException(
@@ -1434,8 +1436,9 @@ def _generate_zoning_map(
     lon: float,
     zoning_geojson: dict,
     basemap_bytes: bytes,
+    overlay_geojson: dict | None = None,
 ) -> str | None:
-    """Generate a base64-encoded PNG map with zoning polygon overlays."""
+    """Generate a base64-encoded PNG map with zoning polygon overlays and regulatory boundaries."""
     import base64
     import io
 
@@ -1509,6 +1512,53 @@ def _generate_zoning_map(
                 )
                 ax.add_patch(patch)
 
+        # Draw regulatory overlay boundaries (dashed outlines)
+        _OVERLAY_COLORS = {
+            "landmark_district": ("#f59e0b", "Landmark"),
+            "historic_district": ("#f59e0b", "Historic"),
+            "national_register": ("#fbbf24", "Nat'l Register"),
+            "planned_development": ("#8b5cf6", "Planned Dev"),
+            "ssa": ("#06b6d4", "SSA"),
+            "pedestrian_street": ("#ec4899", "Ped. Street"),
+        }
+        overlay_legend: list[tuple[str, str, str]] = []
+        if overlay_geojson:
+            for feat in (overlay_geojson.get("features") or []):
+                props = feat.get("properties") or {}
+                otype = props.get("overlay_type", "")
+                if otype not in _OVERLAY_COLORS:
+                    continue
+                color_hex, label = _OVERLAY_COLORS[otype]
+                oname = props.get("NAME") or props.get("DIST_NAME") or label
+                if (color_hex, oname) not in [(c, n) for c, _, n in overlay_legend]:
+                    overlay_legend.append((color_hex, label, oname))
+
+                geom = feat.get("geometry") or {}
+                geom_type = geom.get("type", "")
+                coord_rings: list[list] = []
+                if geom_type == "Polygon":
+                    coord_rings = geom.get("coordinates") or []
+                elif geom_type == "MultiPolygon":
+                    for poly in geom.get("coordinates") or []:
+                        coord_rings.extend(poly)
+
+                for ring in coord_rings:
+                    pixels = []
+                    for coord in ring:
+                        px, py = _latlon_to_px(coord[1], coord[0], lat, lon, ZOOM, MAP_W, MAP_H)
+                        pixels.append((px, py))
+                    if len(pixels) < 3:
+                        continue
+                    patch = MplPolygon(
+                        pixels, closed=True,
+                        facecolor="none",
+                        edgecolor=color_hex,
+                        linewidth=1.5,
+                        linestyle="--",
+                        zorder=8,
+                    )
+                    ax.add_patch(patch)
+
         pin_px, pin_py = img_w / 2, img_h / 2
         ax.plot(
             pin_px, pin_py, "o",
@@ -1531,6 +1581,14 @@ def _generate_zoning_map(
                     markerfacecolor=(*color, 0.6),
                     markeredgecolor=(*color, 0.9),
                     markersize=6, label=label,
+                )
+                legend_handles.append(handle)
+
+            for color_hex, label, oname in overlay_legend:
+                handle = plt.Line2D(
+                    [0], [0], color=color_hex,
+                    linewidth=1.5, linestyle="--",
+                    label=oname[:20],
                 )
                 legend_handles.append(handle)
 
@@ -1594,7 +1652,7 @@ def _generate_construction_map(
     except ImportError:
         return None
 
-    MAP_W, MAP_H, ZOOM = 600, 400, 15
+    MAP_W, MAP_H, ZOOM = 600, 400, 14
 
     try:
         basemap = Image.open(io.BytesIO(basemap_bytes))
@@ -1688,6 +1746,93 @@ def _generate_construction_map(
         return None
 
 
+def _generate_comps_map(
+    lat: float,
+    lon: float,
+    sales: list["ComparableSale"],
+    basemap_bytes: bytes,
+) -> str | None:
+    """Generate a base64-encoded PNG map with comparable sale locations."""
+    import base64
+    import io
+
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from PIL import Image
+    except ImportError:
+        return None
+
+    MAP_W, MAP_H, ZOOM = 600, 400, 15
+
+    try:
+        basemap = Image.open(io.BytesIO(basemap_bytes))
+        img_w, img_h = basemap.size
+
+        dpi = 150
+        fig, ax = plt.subplots(figsize=(img_w / dpi, img_h / dpi), dpi=dpi)
+        ax.imshow(basemap, extent=[0, img_w, img_h, 0], aspect="auto")
+        ax.set_xlim(0, img_w)
+        ax.set_ylim(img_h, 0)
+        ax.axis("off")
+
+        for i, sale in enumerate(sales[:15]):
+            slat = getattr(sale, "lat", None) or (sale.get("lat") if isinstance(sale, dict) else None)
+            slon = getattr(sale, "lon", None) or (sale.get("lon") if isinstance(sale, dict) else None)
+            if not slat or not slon:
+                continue
+            px, py = _latlon_to_px(slat, slon, lat, lon, ZOOM, MAP_W, MAP_H)
+            if not (0 <= px <= img_w and 0 <= py <= img_h):
+                continue
+            ax.plot(
+                px, py, "D",
+                markersize=7, color="#22d3ee",
+                markeredgecolor="white", markeredgewidth=0.8,
+                zorder=5,
+            )
+            ax.annotate(
+                str(i + 1),
+                (px, py), color="white", fontsize=4.5,
+                fontweight="bold", ha="center", va="center",
+                zorder=6,
+            )
+
+        # Subject property
+        pin_px, pin_py = img_w / 2, img_h / 2
+        ax.plot(
+            pin_px, pin_py, "o",
+            markersize=10, color="#c96442",
+            markeredgecolor="white", markeredgewidth=2,
+            zorder=10,
+        )
+
+        legend_handles = [
+            plt.Line2D([0], [0], marker="D", color="none", markerfacecolor="#22d3ee",
+                       markeredgecolor="white", markersize=6, label="Comparable Sale"),
+            plt.Line2D([0], [0], marker="o", color="none", markerfacecolor="#c96442",
+                       markeredgecolor="white", markersize=6, label="Subject Property"),
+        ]
+        legend = ax.legend(
+            handles=legend_handles, loc="upper right",
+            fontsize=5.5, frameon=True, framealpha=0.8,
+            facecolor="#1a1a1a", edgecolor="#333333", labelcolor="white",
+            handletextpad=0.4, borderpad=0.4, borderaxespad=0.6,
+        )
+        legend.set_zorder(20)
+
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, facecolor="#0d0d0d")
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode("ascii")
+
+    except Exception:
+        log.warning("Failed to generate comps map", exc_info=True)
+        return None
+
+
 def _generate_comps_chart(comps: "ComparablesSummary") -> str | None:
     """Generate a base64-encoded PNG scatter chart of comparable sales."""
     import base64
@@ -1755,6 +1900,26 @@ def _generate_comps_chart(comps: "ComparablesSummary") -> str | None:
     return base64.b64encode(buf.read()).decode("ascii")
 
 
+def _comp_class_prefix(bldg_class: str | None, zone_class: str | None) -> str:
+    """Choose the Cook County class prefix for comparable-sales search.
+
+    Marketable subjects use their own class family (first digit). Non-marketable
+    subjects (exempt class "EX", or non-numeric/unknown classes that never trade)
+    fall back to a class implied by zoning, so a redevelopment reader still gets
+    comps. Cook County: 2xx residential, 5xx commercial/industrial.
+    """
+    bc = (bldg_class or "").strip().upper()
+    if bc and bc[0].isdigit() and not bc.startswith("EX"):
+        return bc[0]
+
+    z = (zone_class or "").strip().upper()
+    if z.startswith(("RS", "RT", "RM", "DR")):
+        return "2"
+    if z.startswith(("B", "C", "M", "DX", "DC", "DS", "PMD")):
+        return "5"
+    return "2"  # default to residential comps
+
+
 async def _fetch_report_data(
     resolved_lat: float,
     resolved_lon: float,
@@ -1770,6 +1935,8 @@ async def _fetch_report_data(
     )
     from backend.retrieval.property.sales import nearby_comparable_sales
     from backend.zoning_extract import calculate_development_potential, extract_zoning_standards
+
+    settings = get_settings()
 
     # Step 1: Base scorecard data
     base = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
@@ -1803,17 +1970,19 @@ async def _fetch_report_data(
                 ))
             )
 
-    # Comparable sales (use property class prefix if available)
-    class_prefix = ""
-    if ctx.property and ctx.property.bldg_class:
-        class_prefix = ctx.property.bldg_class[0]
+    # Comparable sales. For marketable parcels use the subject's own class family;
+    # for non-marketable subjects (exempt / unknown class) derive the comp class
+    # from zoning so a redevelopment reader still gets a valuation basis.
+    class_prefix = _comp_class_prefix(
+        ctx.property.bldg_class if ctx.property else None, zone_class
+    )
     if class_prefix:
         v2_tasks["comparable_sales"] = asyncio.create_task(
             _limited(nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix))
         )
 
     v2_tasks["nearby_construction"] = asyncio.create_task(
-        _limited(nearby_new_construction(resolved_lat, resolved_lon))
+        _limited(nearby_new_construction(resolved_lat, resolved_lon, radius_deg=settings.nearby_construction_radius_deg))
     )
 
     # Gather v2 results
@@ -1838,6 +2007,14 @@ async def _fetch_report_data(
 
     # Step 3: Calculate development potential
     standards = v2_results.get("zoning_standards")
+    # R1: when AI extraction is unavailable or low-confidence, fall back to the
+    # deterministic Title 17 zone-class table so we never dump wrong-chapter raw
+    # code and development potential can still be computed for known zones.
+    if zone_class and (standards is None or standards.extraction_confidence == "low"):
+        from backend.zoning_extract import standards_from_definitions
+        fallback_standards = standards_from_definitions(zone_class)
+        if fallback_standards is not None:
+            standards = fallback_standards
     dev_potential = None
     if standards and ctx.property:
         land_sqft = ctx.property.land_sqft or 0
@@ -1862,7 +2039,6 @@ async def _fetch_report_data(
             effective_tax_rate = round(annual_tax / market_value, 4)
 
     # Step 5: Static map URL
-    settings = get_settings()
     mapbox_token = settings.mapbox_token or settings.vite_mapbox_token
     static_map_url = None
     if mapbox_token:
@@ -1902,6 +2078,7 @@ async def _fetch_report_data(
             price_range_min=s.get("price_range_min"),
             price_range_max=s.get("price_range_max"),
             sales_volume=s.get("sales_volume", 0),
+            comp_basis=s.get("comp_basis"),
             sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
         )
 
@@ -1917,8 +2094,9 @@ async def _fetch_report_data(
             recent_projects=projects,
         )
 
-    # Generate comparable sales chart
+    # Generate comparable sales chart + map
     comps_chart_b64 = None
+    comps_map_b64 = None
     if comps_summary and comps_summary.sales and len(comps_summary.sales) >= 2:
         loop = asyncio.get_running_loop()
         try:
@@ -1928,20 +2106,41 @@ async def _fetch_report_data(
         except Exception:
             log.warning("Failed to generate comps chart", exc_info=True)
 
-    # Fetch basemap once for both zoning and construction maps
+    # Fetch basemaps for maps (zoom 15 for zoning, zoom 14 for construction)
     basemap_bytes = None
+    basemap_wide_bytes = None
     if mapbox_token:
-        basemap_no_pin_url = (
-            f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
-            f"{resolved_lon},{resolved_lat},15/600x400@2x"
-            f"?access_token={mapbox_token}"
-        )
         try:
-            basemap_resp = await httpx.AsyncClient(timeout=15).get(basemap_no_pin_url)
-            if basemap_resp.status_code == 200:
-                basemap_bytes = basemap_resp.content
+            async with httpx.AsyncClient(timeout=15) as map_client:
+                basemap_url = (
+                    f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
+                    f"{resolved_lon},{resolved_lat},15/600x400@2x"
+                    f"?access_token={mapbox_token}"
+                )
+                basemap_wide_url = (
+                    f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
+                    f"{resolved_lon},{resolved_lat},14/600x400@2x"
+                    f"?access_token={mapbox_token}"
+                )
+                resp, resp_wide = await asyncio.gather(
+                    map_client.get(basemap_url),
+                    map_client.get(basemap_wide_url),
+                )
+                if resp.status_code == 200:
+                    basemap_bytes = resp.content
+                if resp_wide.status_code == 200:
+                    basemap_wide_bytes = resp_wide.content
         except Exception:
             log.warning("Failed to fetch basemap for report maps", exc_info=True)
+
+    # Fetch overlay GeoJSON for zoning map boundaries
+    overlay_geojson = None
+    _OVERLAY_MAP_LAYERS = [2, 5, 6, 7, 8, 9, 23]  # PD, landmark, historic, landmark bldg, nat'l register, special, SSA
+    try:
+        from backend.retrieval.regulatory.overlays import overlay_geojson_features
+        overlay_geojson = await _limited(overlay_geojson_features(resolved_lat, resolved_lon, _OVERLAY_MAP_LAYERS))
+    except Exception:
+        log.warning("Failed to fetch overlay GeoJSON for zoning map", exc_info=True)
 
     # Generate zoning map
     zoning_map_b64 = None
@@ -1957,23 +2156,37 @@ async def _fetch_report_data(
                     _generate_zoning_map,
                     resolved_lat, resolved_lon,
                     zoning_geojson, basemap_bytes,
+                    overlay_geojson,
                 )
         except Exception:
             log.warning("Failed to generate zoning map", exc_info=True)
 
-    # Generate construction/demolition map
+    # Generate construction/demolition map (wider zoom for 0.5mi radius)
     construction_map_b64 = None
-    if basemap_bytes and nearby_dev and nearby_dev.recent_projects:
+    construction_basemap = basemap_wide_bytes or basemap_bytes
+    if construction_basemap and nearby_dev and nearby_dev.recent_projects:
         try:
             loop = asyncio.get_running_loop()
             construction_map_b64 = await loop.run_in_executor(
                 None,
                 _generate_construction_map,
                 resolved_lat, resolved_lon,
-                nearby_dev.recent_projects, basemap_bytes,
+                nearby_dev.recent_projects, construction_basemap,
             )
         except Exception:
             log.warning("Failed to generate construction map", exc_info=True)
+
+    # Generate comparable sales map
+    if basemap_bytes and comps_summary and comps_summary.sales and len(comps_summary.sales) >= 2:
+        try:
+            loop = asyncio.get_running_loop()
+            comps_map_b64 = await loop.run_in_executor(
+                None, _generate_comps_map,
+                resolved_lat, resolved_lon,
+                comps_summary.sales, basemap_bytes,
+            )
+        except Exception:
+            log.warning("Failed to generate comps map", exc_info=True)
 
     # Assessment trend analysis
     assessment_trend = None
@@ -1996,7 +2209,7 @@ async def _fetch_report_data(
             if mapbox_token:
                 parcel_basemap_url = (
                     f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/"
-                    f"{resolved_lon},{resolved_lat},17/600x400@2x"
+                    f"{resolved_lon},{resolved_lat},19/600x400@2x"
                     f"?access_token={mapbox_token}"
                 )
                 try:
@@ -2057,6 +2270,7 @@ async def _fetch_report_data(
         parcel_dimensions=parcel_dimensions,
         static_map_url=static_map_url,
         comps_chart_b64=comps_chart_b64,
+        comps_map_b64=comps_map_b64,
         zoning_map_b64=zoning_map_b64,
         construction_map_b64=construction_map_b64,
         bulk_standards_text=bulk_standards_text,
@@ -2087,7 +2301,7 @@ async def _fetch_report_data(
         except Exception:
             log.warning("Failed to generate envelope map", exc_info=True)
 
-    return report, basemap_bytes
+    return report, basemap_bytes, basemap_wide_bytes
 
 
 def _enrich_nearby_projects(
@@ -2308,20 +2522,25 @@ def _generate_parcel_map(
     basemap_bytes: bytes,
     dimensions: dict | None = None,
 ) -> str | None:
-    """Generate a base64-encoded PNG map with parcel polygon overlay."""
+    """Generate a base64-encoded PNG map with parcel polygon overlay.
+
+    Uses zoom 19 so the lot boundary fills the frame. Draws the parcel
+    boundary, labels each edge with its length, and adds a scale bar.
+    """
     import base64
     import io
+    from math import atan2, degrees
 
     try:
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        from matplotlib.patches import Polygon as MplPolygon
+        from matplotlib.patches import FancyArrowPatch, Polygon as MplPolygon
         from PIL import Image
     except ImportError:
         return None
 
-    MAP_W, MAP_H, ZOOM = 600, 400, 17
+    MAP_W, MAP_H, ZOOM = 600, 400, 19
 
     try:
         basemap = Image.open(io.BytesIO(basemap_bytes))
@@ -2349,53 +2568,94 @@ def _generate_parcel_map(
                 pixels.append((px, py))
             if len(pixels) < 3:
                 continue
+
+            # Fill + thick boundary
             patch = MplPolygon(
                 pixels, closed=True,
-                facecolor=(0.15, 0.39, 0.92, 0.3),
-                edgecolor=(0.15, 0.39, 0.92, 0.9),
-                linewidth=2,
+                facecolor=(0.15, 0.39, 0.92, 0.15),
+                edgecolor=(0.15, 0.39, 0.92, 1.0),
+                linewidth=3,
             )
             ax.add_patch(patch)
 
+            # Corner markers
+            for px_pt, py_pt in pixels[:-1]:
+                ax.plot(px_pt, py_pt, "s", markersize=4,
+                        color="#2563eb", markeredgecolor="white",
+                        markeredgewidth=0.8, zorder=12)
+
+            # Edge dimension labels — offset outward from centroid
             if dimensions and len(pixels) >= 4:
-                for i in range(min(len(pixels) - 1, 4)):
-                    mx = (pixels[i][0] + pixels[i + 1][0]) / 2
-                    my = (pixels[i][1] + pixels[i + 1][1]) / 2
-                    if 0 <= mx <= img_w and 0 <= my <= img_h:
-                        edge_idx = i
-                        if edge_idx < len(dimensions.get("edges", [])):
-                            length = dimensions["edges"][edge_idx]["length_ft"]
-                            if length > 10:
-                                ax.text(
-                                    mx, my, f"{length:.0f}'",
-                                    ha="center", va="center", fontsize=5.5,
-                                    color="white", fontweight="bold",
-                                    bbox=dict(facecolor="#2563eb", alpha=0.85,
-                                              edgecolor="none", pad=2, boxstyle="round,pad=0.2"),
-                                    zorder=15,
-                                )
+                cx = sum(p[0] for p in pixels[:-1]) / max(len(pixels) - 1, 1)
+                cy = sum(p[1] for p in pixels[:-1]) / max(len(pixels) - 1, 1)
+                edges = dimensions.get("edges", [])
+                for i in range(min(len(pixels) - 1, len(edges))):
+                    x1, y1 = pixels[i]
+                    x2, y2 = pixels[i + 1]
+                    mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+                    length = edges[i]["length_ft"]
+                    if length < 5:
+                        continue
+                    # Push label outward from polygon centroid
+                    dx, dy = mx - cx, my - cy
+                    norm = (dx**2 + dy**2) ** 0.5 or 1
+                    offset = 28
+                    lx = mx + dx / norm * offset
+                    ly = my + dy / norm * offset
 
-        # Subject property pin
-        pin_px, pin_py = img_w / 2, img_h / 2
-        ax.plot(pin_px, pin_py, "o", markersize=8, color="#c96442",
-                markeredgecolor="white", markeredgewidth=2, zorder=10)
+                    # Rotate text to match edge angle
+                    angle = degrees(atan2(-(y2 - y1), x2 - x1))
+                    if angle > 90:
+                        angle -= 180
+                    elif angle < -90:
+                        angle += 180
 
+                    ax.text(
+                        lx, ly, f"{length:.0f} ft",
+                        ha="center", va="center", fontsize=7,
+                        color="white", fontweight="bold",
+                        rotation=angle,
+                        bbox=dict(facecolor="#2563eb", alpha=0.9,
+                                  edgecolor="white", linewidth=0.5,
+                                  pad=2.5, boxstyle="round,pad=0.3"),
+                        zorder=15,
+                    )
+
+        # Info box: frontage x depth = area
         if dimensions:
             info_parts = []
             if dimensions.get("frontage_ft"):
-                info_parts.append(f"Frontage: {dimensions['frontage_ft']:.0f}'")
+                info_parts.append(f"Frontage: {dimensions['frontage_ft']:.0f} ft")
             if dimensions.get("depth_ft"):
-                info_parts.append(f"Depth: {dimensions['depth_ft']:.0f}'")
+                info_parts.append(f"Depth: {dimensions['depth_ft']:.0f} ft")
             if dimensions.get("area_sqft"):
                 info_parts.append(f"Area: {dimensions['area_sqft']:,.0f} sq ft")
             if info_parts:
                 ax.text(
                     8, 12, "  |  ".join(info_parts),
-                    ha="left", va="top", fontsize=5.5, color="white",
-                    bbox=dict(facecolor="#1a1a1a", alpha=0.8,
-                              edgecolor="#333", pad=4, boxstyle="round,pad=0.3"),
+                    ha="left", va="top", fontsize=6, color="white",
+                    bbox=dict(facecolor="#1a1a1a", alpha=0.85,
+                              edgecolor="#444", linewidth=0.5,
+                              pad=4, boxstyle="round,pad=0.3"),
                     zorder=20,
                 )
+
+        # Scale bar (bottom-left)
+        from math import cos, radians
+        meters_per_px = 156543.03 * cos(radians(lat)) / (2 ** ZOOM) / 2  # @2x
+        ft_per_px = meters_per_px * 3.28084
+        bar_ft = 50
+        bar_px = bar_ft / ft_per_px
+        bar_x, bar_y = 30, img_h - 40
+        ax.plot([bar_x, bar_x + bar_px], [bar_y, bar_y],
+                color="white", linewidth=2.5, solid_capstyle="butt", zorder=18)
+        ax.plot([bar_x, bar_x], [bar_y - 4, bar_y + 4],
+                color="white", linewidth=1.5, zorder=18)
+        ax.plot([bar_x + bar_px, bar_x + bar_px], [bar_y - 4, bar_y + 4],
+                color="white", linewidth=1.5, zorder=18)
+        ax.text(bar_x + bar_px / 2, bar_y - 8, f"{bar_ft} ft",
+                ha="center", va="bottom", fontsize=5.5, color="white",
+                fontweight="bold", zorder=18)
 
         ax.text(
             img_w / 2, img_h - 8,
@@ -2916,7 +3176,7 @@ def _synthesize_opportunities_constraints(
         })
 
     # --- Development potential ---
-    if prop and (prop.bldg_sqft or 0) == 0 and dev and dev.development_surplus_sqft and dev.development_surplus_sqft > 0:
+    if prop and (prop.bldg_sqft or 0) == 0 and prop.land_sqft and dev and dev.max_buildable_sqft and dev.development_surplus_sqft and dev.development_surplus_sqft > 0:
         opportunities.append({
             "signal": "Vacant lot with full development capacity",
             "detail": f"{prop.land_sqft:,} sq ft lot allows up to {dev.max_buildable_sqft:,} sq ft with no existing structure.",
@@ -2946,6 +3206,30 @@ def _synthesize_opportunities_constraints(
             "category": "financial",
         })
 
+    # --- Zoning conformity / nonconformity ---
+    if prop and prop.year_built and prop.year_built < 1957 and prop.bldg_sqft and prop.bldg_sqft > 0:
+        nonconformities: list[str] = []
+        if standards and standards.far and prop.bldg_sqft and prop.land_sqft:
+            allowed_sqft = standards.far * prop.land_sqft
+            if prop.bldg_sqft > allowed_sqft * 1.05:
+                nonconformities.append(f"floor area ({prop.bldg_sqft:,} sq ft vs {allowed_sqft:,.0f} sq ft allowed by FAR {standards.far})")
+        if standards and standards.max_height_ft and prop.stories:
+            est_height = prop.stories * 10
+            if est_height > standards.max_height_ft:
+                nonconformities.append(f"height ({prop.stories} stories, est. {est_height}' vs {standards.max_height_ft:.0f}' limit)")
+        if nonconformities:
+            opportunities.append({
+                "signal": f"Likely legally nonconforming — predates {prop.year_built} zoning",
+                "detail": f"Built in {prop.year_built}, before current zoning code (1957/2004). Existing structure likely exceeds current standards for {' and '.join(nonconformities)}. Legally nonconforming buildings can continue current use but may face restrictions on expansion or reconstruction.",
+                "category": "zoning",
+            })
+        elif prop.year_built < 1957:
+            opportunities.append({
+                "signal": f"Pre-zoning building (built {prop.year_built})",
+                "detail": "Structure predates Chicago's 1957 comprehensive zoning code. Existing use and dimensions may be legally nonconforming ('grandfathered'). Verify conformity status before planning modifications.",
+                "category": "zoning",
+            })
+
     # --- Regulatory ---
     if reg and reg.in_planned_development:
         constraints.append({
@@ -2958,6 +3242,13 @@ def _synthesize_opportunities_constraints(
         constraints.append({
             "signal": "Landmark district — design review required",
             "detail": "Commission on Chicago Landmarks must review exterior modifications. Demolition is unlikely to be approved.",
+            "category": "regulatory",
+        })
+
+    if reg and reg.on_national_register and not reg.in_landmark_district:
+        constraints.append({
+            "signal": "National Register district — federal review for funded projects",
+            "detail": "Property is in a National Register historic district. Federal tax credit projects require Section 106 review. Local demolition or major alteration may trigger Landmarks Commission review.",
             "category": "regulatory",
         })
 
@@ -3038,7 +3329,7 @@ def _synthesize_opportunities_constraints(
         elif nc == 0 and (report.nearby_development.demolition_count or 0) == 0:
             constraints.append({
                 "signal": "No nearby development activity (12 months)",
-                "detail": "Limited construction within 0.25mi may indicate weak demand, regulatory barriers, or infrastructure constraints.",
+                "detail": "Limited nearby construction may indicate weak demand, regulatory barriers, or infrastructure constraints.",
                 "category": "market",
             })
 
@@ -3125,6 +3416,10 @@ def _compute_approval_pathway(report: "ReportData") -> dict | None:
         complexity = "COMPLEX"
         detail = "Commission on Chicago Landmarks review required for exterior modifications"
         timeline = "3-6 months for permit review"
+    elif reg.on_national_register:
+        complexity = "MODERATE"
+        detail = "National Register district — Section 106 review for federal tax credit projects; local review may apply for demolition or major alteration"
+        timeline = "2-4 months for review"
     elif has_special and not has_permitted:
         complexity = "MODERATE"
         detail = "Zoning Board of Appeals hearing required for special use approval"
@@ -3158,11 +3453,23 @@ def _compute_approval_pathway(report: "ReportData") -> dict | None:
     }
 
 
+def _fmt_money(amount: float) -> str:
+    """Format a dollar amount with a consistent magnitude suffix ($K below $1M, $M above)."""
+    if amount >= 1_000_000:
+        return f"${amount / 1_000_000:.1f}M"
+    return f"${amount / 1_000:.0f}K"
+
+
 def _compute_development_trend(report: "ReportData") -> dict | None:
     """Synthesize nearby development data into a narrative summary."""
     nd = report.nearby_development
     if not nd:
         return None
+
+    # Radius label derived from the actual construction-search config (0.5mi),
+    # not a stale hardcoded "0.25mi" that contradicts the section header.
+    radius_mi = round(get_settings().nearby_construction_radius_deg * 69.0, 2)
+    radius_label = f"{radius_mi:g}mi"
 
     nc = nd.new_construction_count or 0
     demo = nd.demolition_count or 0
@@ -3170,7 +3477,7 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
 
     if nc == 0 and demo == 0:
         return {
-            "narrative": f"Limited development activity within 0.25mi — {len(projects)} permit(s) in 12 months.",
+            "narrative": f"Limited development activity within {radius_label} — {len(projects)} permit(s) in 12 months.",
             "intensity": "quiet",
         }
 
@@ -3186,8 +3493,8 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
         avg_cost = total_investment / max(nc, 1)
         narrative = (
             f"{nc} new construction permit{'s' if nc > 1 else ''} totaling "
-            f"${total_investment / 1_000_000:.1f}M within 0.25mi in the last 12 months. "
-            f"Average project investment: ${avg_cost / 1_000:.0f}K."
+            f"{_fmt_money(total_investment)} within {radius_label} in the last 12 months. "
+            f"Average project investment: {_fmt_money(avg_cost)}."
         )
         if demo > 0:
             narrative += f" {demo} demolition permit{'s' if demo > 1 else ''} suggest{'s' if demo == 1 else ''} active site clearance."
@@ -3199,7 +3506,7 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
         )
         intensity = "transitional"
     else:
-        narrative = f"{nc + demo} development permit{'s' if (nc + demo) > 1 else ''} within 0.25mi in 12 months."
+        narrative = f"{nc + demo} development permit{'s' if (nc + demo) > 1 else ''} within {radius_label} in 12 months."
         intensity = "moderate"
 
     return {
@@ -3379,13 +3686,13 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
         price_range_max=680000.0,
         sales_volume=7,
         sales=[
-            ComparableSale(pin="14-30-316-001", sale_date="2025-11-14", sale_price=520000, class_code="212", land_sqft=3125, bldg_sqft=2400, price_per_land_sqft=166.4, price_per_bldg_sqft=216.7, deed_type="WARRANTY", distance_mi=0.08),
-            ComparableSale(pin="14-30-314-022", sale_date="2025-08-22", sale_price=450000, class_code="211", land_sqft=2750, bldg_sqft=1850, price_per_land_sqft=163.6, price_per_bldg_sqft=243.2, deed_type="WARRANTY", distance_mi=0.12),
-            ComparableSale(pin="14-30-318-015", sale_date="2025-06-03", sale_price=425000, class_code="212", land_sqft=3000, bldg_sqft=2200, price_per_land_sqft=141.7, price_per_bldg_sqft=193.2, deed_type="TRUSTEE", distance_mi=0.15),
-            ComparableSale(pin="14-30-320-009", sale_date="2025-03-18", sale_price=385000, class_code="211", land_sqft=2800, bldg_sqft=2100, price_per_land_sqft=137.5, price_per_bldg_sqft=183.3, deed_type="WARRANTY", distance_mi=0.18),
-            ComparableSale(pin="14-30-312-041", sale_date="2024-12-05", sale_price=680000, class_code="212", land_sqft=4500, bldg_sqft=3600, price_per_land_sqft=151.1, price_per_bldg_sqft=188.9, deed_type="WARRANTY", distance_mi=0.21),
-            ComparableSale(pin="14-30-322-007", sale_date="2024-09-11", sale_price=310000, class_code="211", land_sqft=2500, bldg_sqft=1600, price_per_land_sqft=124.0, price_per_bldg_sqft=193.8, deed_type="WARRANTY", distance_mi=0.22),
-            ComparableSale(pin="14-30-310-033", sale_date="2024-06-27", sale_price=275000, class_code="211", land_sqft=2400, bldg_sqft=1500, price_per_land_sqft=114.6, price_per_bldg_sqft=183.3, deed_type="TRUSTEE", distance_mi=0.24),
+            ComparableSale(pin="14-30-316-001", sale_date="2025-11-14", sale_price=520000, class_code="212", land_sqft=3125, bldg_sqft=2400, price_per_land_sqft=166.4, price_per_bldg_sqft=216.7, deed_type="WARRANTY", distance_mi=0.08, lat=41.9280, lon=-87.6430),
+            ComparableSale(pin="14-30-314-022", sale_date="2025-08-22", sale_price=450000, class_code="211", land_sqft=2750, bldg_sqft=1850, price_per_land_sqft=163.6, price_per_bldg_sqft=243.2, deed_type="WARRANTY", distance_mi=0.12, lat=41.9295, lon=-87.6455),
+            ComparableSale(pin="14-30-318-015", sale_date="2025-06-03", sale_price=425000, class_code="212", land_sqft=3000, bldg_sqft=2200, price_per_land_sqft=141.7, price_per_bldg_sqft=193.2, deed_type="TRUSTEE", distance_mi=0.15, lat=41.9260, lon=-87.6420),
+            ComparableSale(pin="14-30-320-009", sale_date="2025-03-18", sale_price=385000, class_code="211", land_sqft=2800, bldg_sqft=2100, price_per_land_sqft=137.5, price_per_bldg_sqft=183.3, deed_type="WARRANTY", distance_mi=0.18, lat=41.9310, lon=-87.6400),
+            ComparableSale(pin="14-30-312-041", sale_date="2024-12-05", sale_price=680000, class_code="212", land_sqft=4500, bldg_sqft=3600, price_per_land_sqft=151.1, price_per_bldg_sqft=188.9, deed_type="WARRANTY", distance_mi=0.21, lat=41.9245, lon=-87.6445),
+            ComparableSale(pin="14-30-322-007", sale_date="2024-09-11", sale_price=310000, class_code="211", land_sqft=2500, bldg_sqft=1600, price_per_land_sqft=124.0, price_per_bldg_sqft=193.8, deed_type="WARRANTY", distance_mi=0.22, lat=41.9320, lon=-87.6430),
+            ComparableSale(pin="14-30-310-033", sale_date="2024-06-27", sale_price=275000, class_code="211", land_sqft=2400, bldg_sqft=1500, price_per_land_sqft=114.6, price_per_bldg_sqft=183.3, deed_type="TRUSTEE", distance_mi=0.24, lat=41.9250, lon=-87.6460),
         ],
     )
 
@@ -3428,6 +3735,9 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
         report_data.context.property.basement = report_data.context.property.basement or "Full"
         report_data.context.property.garage_size = report_data.context.property.garage_size or "1 Car"
         report_data.context.property.air_conditioning = report_data.context.property.air_conditioning or "Central"
+        if not report_data.context.property.year_built and report_data.context.property.bldg_age:
+            from datetime import date
+            report_data.context.property.year_built = date.today().year - report_data.context.property.bldg_age
 
         if not report_data.context.property.assessment_history:
             report_data.context.property.assessment_history = [
@@ -3494,18 +3804,9 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
     # Force adjacent zoning
     report_data.adjacent_zoning = {"N": "B3-2", "S": "RS-3", "E": "B3-2", "W": "RT-4"}
 
-    # Mock parcel geometry (25' x 125' rectangular lot near 2400 N Milwaukee)
-    if report_data.context.property:
-        report_data.context.property.parcel_geometry = {
-            "type": "Polygon",
-            "coordinates": [[
-                [-87.69230, 41.92720],
-                [-87.69230, 41.92754],
-                [-87.69220, 41.92754],
-                [-87.69220, 41.92720],
-                [-87.69230, 41.92720],
-            ]],
-        }
+    # NOTE: parcel_geometry is NOT mocked — fabricated coordinates produce a
+    # misleading lot map. The parcel map only renders with real GIS geometry.
+    # Mock parcel_dimensions (below) still populate the dimensions grid.
 
     # Generate comps chart for mock data
     try:
@@ -3568,21 +3869,38 @@ async def report(
                 detail={"error": "report_purchase_required"},
             )
 
-    report_data, basemap_bytes = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
+    report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
 
     if mock:
         report_data = _apply_mock_overrides(report_data)
         # Regenerate construction map with mock development data (always, since mock replaces projects)
-        if basemap_bytes and report_data.nearby_development and report_data.nearby_development.recent_projects:
+        construction_basemap = basemap_wide_bytes or basemap_bytes
+        if construction_basemap and report_data.nearby_development and report_data.nearby_development.recent_projects:
             try:
                 loop = asyncio.get_running_loop()
                 report_data.construction_map_b64 = await loop.run_in_executor(
                     None, _generate_construction_map,
                     report_data.lat, report_data.lon,
-                    report_data.nearby_development.recent_projects, basemap_bytes,
+                    report_data.nearby_development.recent_projects, construction_basemap,
                 )
             except Exception:
                 log.warning("Failed to generate mock construction map", exc_info=True)
+        # NOTE: parcel map is NOT regenerated for mock mode — mock geometry is
+        # fabricated and would produce a misleading lot boundary. The parcel map
+        # only renders when real GIS geometry is available from _fetch_report_data().
+        # Regenerate comps map with mock data
+        if not report_data.comps_map_b64 and basemap_bytes and report_data.comparables and report_data.comparables.sales:
+            sales_with_coords = [s for s in report_data.comparables.sales if s.lat and s.lon]
+            if len(sales_with_coords) >= 2:
+                try:
+                    loop = asyncio.get_running_loop()
+                    report_data.comps_map_b64 = await loop.run_in_executor(
+                        None, _generate_comps_map,
+                        report_data.lat, report_data.lon,
+                        report_data.comparables.sales, basemap_bytes,
+                    )
+                except Exception:
+                    log.warning("Failed to generate mock comps map", exc_info=True)
         # Regenerate zone definitions from mock-overridden zone data
         from backend.retrieval.zoning_definitions import collect_report_zone_definitions as _collect_zdefs
         zone_class = report_data.context.parcel_zoning.zone_class if report_data.context.parcel_zoning else None

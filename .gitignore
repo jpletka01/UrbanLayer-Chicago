@@ -22,3 +22,6 @@ test-results/
 
 # Large source files (download separately)
 chicago-il-codes.html
+
+# JetBrains IDE
+.idea/
