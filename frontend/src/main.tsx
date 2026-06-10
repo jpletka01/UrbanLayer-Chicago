@@ -1,10 +1,11 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './lib/i18n'
 import './index.css'
+import { initTracking, track } from './lib/tracking'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -13,6 +14,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     tracesSampleRate: 0.1,
   });
 }
+
+initTracking();
+
 import { App } from './App.tsx'
 import { AboutPage } from './components/AboutPage.tsx'
 import { AdminDashboard } from './components/AdminDashboard.tsx'
@@ -22,10 +26,17 @@ import ExplorePage from './components/ExplorePage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 
+function TrackPageView() {
+  const { pathname } = useLocation();
+  useEffect(() => { track("page_view"); }, [pathname]);
+  return null;
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        <TrackPageView />
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/c/:id" element={<App />} />

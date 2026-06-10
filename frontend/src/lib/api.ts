@@ -9,6 +9,7 @@ import type {
   Conversation,
   ConversationDetail,
   ConversationStats,
+  EngagementMetrics,
   JudgeResults,
   LatencyPercentiles,
   MapData,
@@ -448,6 +449,14 @@ export async function deleteUpload(uploadId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Admin API
 // ---------------------------------------------------------------------------
+
+export async function fetchAdminEngagement(period: string): Promise<EngagementMetrics | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/engagement?period=${period}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
 
 export async function fetchAdminOverview(period: string): Promise<AdminOverview | null> {
   try {

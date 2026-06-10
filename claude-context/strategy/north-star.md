@@ -159,7 +159,7 @@ Both moments depend on accuracy. A wrong zoning classification or incorrect ince
 
 | Feature | When to Build | Signal to Watch |
 |---------|--------------|-----------------|
-| **Incentives Expansion (10→25 programs)** | Phase 2-3. Add the developer-relevant programs: Class 6b/7a/7b/8, LIHTC, NMTC, IRA energy credits, Justice40. | Developers asking "does it check [specific program]?" |
+| ~~**Incentives Expansion**~~ | **DONE (2026-06-10).** ~14 programs: Class 6b/6c/7a/7b/7c/8, QCT, NMTC, TIF, EZ, OZ, SBIF, NOF. Further expansion paused until customer demand. | Shipped. |
 | **Property Tracker Alerts** | Phase 3-4. Watch addresses for new violations/permits/assessment changes. Email notifications. | Users returning daily to check the same properties. |
 | **Comparable Sales Enhancement** | Phase 1-2. Already partially in PDF v3. Surface comps on the Scorecard as a visible section, not just buried in the report. | Users asking about nearby sales or property values. |
 | **Contractor Intelligence** | Phase 4+. Parse permit contacts to identify projects missing specific trades. | Subcontractor interest in the product (different persona). |
@@ -263,33 +263,19 @@ The first successful experience is: **"This is right, and it told me something I
 
 **Phase 0 Status: COMPLETE (2026-06-09).** All build items shipped. Exit criteria met: a la carte $25 report purchase works end-to-end, landing page communicates site feasibility positioning, Scorecard prominently surfaces comps/incentives/tax projections with unmissable report CTA.
 
-### Phase 1: Demoable Product (2-3 weeks)
+### Phase 1: Demoable Product — COMPLETE (2026-06-10)
 
-**Goal:** A product you'd be confident showing to any Chicago real estate professional in a 5-minute demo.
+All build items shipped. RAG at 100% A/B. Incentives at ~14 programs (Class 6b/6c/7a/7b/7c/8, QCT, NMTC, TIF, EZ, OZ, SBIF, NOF). Report V5 shipped with synthesis intelligence, envelope visualization, and approval pathway. Comps on Scorecard, a la carte reports, landing page — all done.
+
+### Phase 1.5: Observation Infrastructure (NEW — 2026-06-10)
+
+**Goal:** Before customer conversations, instrument the product so engagement data flows. Without this, customer validation (Phase 2) is qualitative-only.
 
 **Build:**
-- ~~**Municipal Code RAG accuracy hardening.**~~ **DONE (2026-06-09).** Retrieval benchmark: 100% A/B (26A, 2B across 28 queries). Pipeline v5: synonym expansion (11 triggers), keyword-aware section dedup, keyword boost 0.20. Incremental ingestion infra built (`ingestion/update.py`). Title 14A parser regex fixed (re-ingestion pending).
-- ~~**Comparable sales as a visible Scorecard section.**~~ **DONE (2026-06-09).** `ComparablesCard` shows median price, $/land sqft, sales volume, price range, $/bldg sqft, and expandable recent sales table with date, price, distance, $/sqft. Shipped as part of Phase 0 Scorecard elevation.
-- Incentives expansion: add 5-8 more programs beyond the current ~10. Focus on the ones developers actually encounter: Class 6b/7a/7b/8, LIHTC, NMTC. Each one is a concrete bullet point on the pricing page.
-- PDF report polish. Make it genuinely professional -- something a developer would show an investor or a lender. Review formatting, data completeness, and the "Recommended Next Steps" section. **Progress (2026-06-09):** Added deterministic zoning district definitions section (FAR, height, lot coverage, permitted uses, Title 17 citations for all zone classes referenced in a report), inline zone descriptions on zone class and adjacent zoning, parcel geometry map, ownership signals, assessment trend analysis, tax breakdown, nearby development map with color-coded markers.
-- ~~**A la carte report purchase.**~~ **DONE (2026-06-09).** Shipped in Phase 0.
+- ~~**Usage analytics (4 events).**~~ **DONE (2026-06-10).** `page_view`, `investigate_click`, `report_cta_click`, `chat_message_sent`. Schema v10, fire-and-forget ingestion, admin dashboard with engagement section.
+- **Title 14A re-ingestion.** Parser regex already fixed. Run `python -m ingestion.update` to add ~500+ building code sections to the index. ~30 minutes.
 
-**Ignore:**
-- Property tracker alerts
-- Contractor intelligence
-- Pending zoning changes
-- Zoning alerts
-- Site Explorer improvements
-- API access
-- Team accounts
-
-**Success Metrics:**
-- ~~RAG eval passes at 97%+ on top-50 zoning questions~~ **DONE (2026-06-09).** 100% A/B on 28-query retrieval benchmark.
-- ~~Scorecard shows comps, incentives, and tax projections prominently~~ **DONE (2026-06-09)**
-- PDF report is professional enough that a developer would share it externally
-- End-to-end demo (address → Scorecard → Chat → Report) takes <5 minutes and is compelling
-
-**Exit Criteria:** You would not be embarrassed showing this to a real estate professional. Every feature that appears in the demo works correctly and looks professional.
+**Exit Criteria:** Events flowing in production, admin dashboard shows engagement metrics, Title 14A sections indexed.
 
 ### Phase 2: Customer Validation (4-6 weeks)
 
@@ -303,7 +289,7 @@ The first successful experience is: **"This is right, and it told me something I
   - Property ownership data (consider a per-lookup scraping approach if the use case is strong)
   - Specific zoning comparison queries
   - Something you haven't anticipated
-- Analytics: add basic usage tracking (which Scorecard sections are expanded, which Investigate buttons are clicked, what chat questions are asked, how many PDFs are downloaded)
+- ~~**Analytics.**~~ **DONE (2026-06-10).** Moved to Phase 1.5 and shipped: 4 events, admin dashboard, hypothesis-driven design. See Phase 1.5.
 
 **Conversations to Have:**
 - 5 small developers (find via LinkedIn, local RE meetups, ULI Chicago)
@@ -415,7 +401,7 @@ All of this exists today.
 - 10+ paying customers who validate the product
 - A clear understanding of which persona converts
 - Content (blog posts, demo videos) that can drive organic traffic
-- Basic usage analytics
+- ~~Basic usage analytics~~ **DONE (2026-06-10).** 4-event analytics system with admin dashboard.
 - Confidence in the infrastructure under moderate load
 
 ---

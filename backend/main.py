@@ -35,6 +35,7 @@ from backend.models import (
     ChatChunk,
     ChatRequest,
     ContextObject,
+    EventBatch,
     ImportRequest,
     MapDataRequest,
     MapDataResponse,
@@ -91,6 +92,7 @@ _CSRF_EXEMPT_PATHS = {
     "/api/webhook/stripe",
     "/api/auth/refresh",
     "/api/auth/logout",
+    "/api/events",
 }
 
 
@@ -3761,6 +3763,11 @@ async def admin_requests(request: Request, limit: int = 50, offset: int = 0, _ad
     return await db.get_admin_request_logs(limit, offset)
 
 
+@app.get("/api/admin/engagement")
+async def admin_engagement(request: Request, period: str = "30d", _admin: dict = Depends(require_admin)) -> dict:
+    return await db.get_engagement_stats(period)
+
+
 @app.get("/api/admin/benchmark")
 async def admin_benchmark(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     import json as json_mod
@@ -3784,6 +3791,29 @@ async def admin_benchmark(request: Request, _admin: dict = Depends(require_admin
             "last_run": None,
             "per_query": [],
         }
+
+
+_VALID_EVENT_NAMES = {"page_view", "investigate_click", "report_cta_click", "chat_message_sent"}
+
+
+@app.post("/api/events")
+async def ingest_events(request: Request, batch: EventBatch) -> dict:
+    user_id = None
+    try:
+        from backend.auth import get_current_user
+        user = await get_current_user(request)
+        user_id = user.get("id") if user else None
+    except Exception:
+        pass
+
+    valid = [
+        {**e.model_dump(), "user_id": user_id}
+        for e in batch.events
+        if e.event_name in _VALID_EVENT_NAMES
+    ]
+    if valid:
+        asyncio.create_task(db.save_events(valid))
+    return {"ok": True}
 
 
 _transit_stations_cache: list | None = None

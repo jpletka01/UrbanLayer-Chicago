@@ -659,3 +659,22 @@ export interface JudgeResults {
   last_run: string | null;
   per_query: JudgeQueryResult[];
 }
+
+export interface BehaviorReturnRate {
+  total: number;
+  returned: number;
+  rate: number;
+}
+
+export interface EngagementMetrics {
+  investigate_clicks: Record<string, number>;
+  report_cta_clicks: number;
+  report_purchases_count: number;
+  chat_messages: number;
+  unique_visitors: number;
+  returning_visitors: number;
+  avg_days_between_visits: number | null;
+  scorecard_to_chat_rate: number | null;
+  return_rate_by_behavior: Record<string, BehaviorReturnRate>;
+  page_views: Record<string, number>;
+}

@@ -646,3 +646,21 @@ class ReportData(BaseModel):
     envelope_summary: str | None = None
     envelope_map_b64: str | None = None
     buildable_footprint_sqft: float | None = None
+
+
+# ---------------------------------------------------------------------------
+# Usage analytics
+# ---------------------------------------------------------------------------
+
+class EventPayload(BaseModel):
+    event_name: str
+    event_data: dict | None = None
+    session_id: str
+    visitor_id: str
+    page: str | None = None
+    address: str | None = None
+    timestamp: int | None = None
+
+
+class EventBatch(BaseModel):
+    events: list[EventPayload] = Field(max_length=50)

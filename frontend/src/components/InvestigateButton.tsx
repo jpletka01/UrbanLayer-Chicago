@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
+import { track } from "../lib/tracking";
 
-export function InvestigateButton({ question, label }: { question: string; label: string }) {
+export function InvestigateButton({ question, label, cardName }: { question: string; label: string; cardName?: string }) {
   return (
     <Link
       to={`/?q=${encodeURIComponent(question)}`}
+      onClick={() => track("investigate_click", { card_name: cardName ?? label })}
       className="inline-flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover transition-colors"
     >
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

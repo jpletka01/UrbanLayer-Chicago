@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { track } from "../lib/tracking";
 
 interface ReportCTACardProps {
   hasReportAccess: boolean;
@@ -32,7 +33,7 @@ export function ReportCTACard({
             </div>
           </div>
           <button
-            onClick={onDownload}
+            onClick={() => { track("report_cta_click"); onDownload(); }}
             disabled={downloading}
             className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
           >
@@ -71,7 +72,7 @@ export function ReportCTACard({
 
         <div className="flex items-center gap-3 ml-12">
           <button
-            onClick={onShowPurchase}
+            onClick={() => { track("report_cta_click"); onShowPurchase(); }}
             disabled={downloading}
             className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >

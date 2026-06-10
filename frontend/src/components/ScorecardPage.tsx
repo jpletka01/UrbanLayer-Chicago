@@ -6,6 +6,7 @@ import { useAuthContext } from "../contexts/AuthContext";
 import ReportPurchasePrompt from "./ReportPurchasePrompt";
 import { ReportCTACard } from "./ReportCTACard";
 import { InvestigateButton } from "./InvestigateButton";
+import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { PropertyCard } from "./sidebar/PropertyCard";
 import { ComparablesCard } from "./sidebar/ComparablesCard";
 import { RegulatoryCard } from "./sidebar/RegulatoryCard";
@@ -209,6 +210,11 @@ export default function ScorecardPage() {
     checkReportAccess({ lat: data.lat, lon: data.lon }).then(setReportAccess);
   }, [data, isPro]);
 
+  useEffect(() => {
+    if (data?.address) setTrackingAddress(data.address);
+    return () => setTrackingAddress(null);
+  }, [data?.address]);
+
   // Handle post-purchase redirect: auto-download the report
   useEffect(() => {
     if (!data?.address) return;
@@ -319,11 +325,13 @@ export default function ScorecardPage() {
                 <InvestigateButton
                   question={`What's going on near ${data.address}?`}
                   label={t("scorecard.fullAnalysis")}
+                  cardName="full_analysis"
                 />
                 {zoning && (
                   <InvestigateButton
                     question={`What are the allowed uses, setbacks, and FAR for ${zoning.zone_class} zoning?`}
                     label={t("scorecard.zoningRules", { zone: zoning.zone_class })}
+                    cardName="zoning"
                   />
                 )}
                 <button
@@ -368,6 +376,7 @@ export default function ScorecardPage() {
                     <InvestigateButton
                       question={`Tell me about the building and property characteristics at ${addr}`}
                       label={t("scorecard.investigate.buildingDetails")}
+                      cardName="property"
                     />
                   </div>
                 </div>
@@ -379,6 +388,7 @@ export default function ScorecardPage() {
                     <InvestigateButton
                       question={`What are the recent comparable sales near ${addr} and what do they suggest about property values?`}
                       label={t("scorecard.investigate.comparableSales")}
+                      cardName="comparables"
                     />
                   </div>
                 </div>
@@ -391,11 +401,13 @@ export default function ScorecardPage() {
                       <InvestigateButton
                         question={`How much TIF funding is available in ${ctx.incentives.tif_name} and what projects qualify?`}
                         label={t("scorecard.investigate.tifFunding")}
+                        cardName="incentives"
                       />
                     )}
                     <InvestigateButton
                       question={`What tax incentives and grant programs are available near ${addr}?`}
                       label={t("scorecard.investigate.incentivePrograms")}
+                      cardName="incentives"
                     />
                   </div>
                 </div>
@@ -407,11 +419,13 @@ export default function ScorecardPage() {
                     <InvestigateButton
                       question={`What are the development restrictions from regulatory overlays at ${addr}?`}
                       label={t("scorecard.investigate.overlayRestrictions")}
+                      cardName="regulatory"
                     />
                     {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" && (
                       <InvestigateButton
                         question={`What are the flood insurance requirements for FEMA zone ${ctx.regulatory.flood_zone} at ${addr}?`}
                         label={t("scorecard.investigate.floodRisk")}
+                        cardName="regulatory"
                       />
                     )}
                   </div>
@@ -424,6 +438,7 @@ export default function ScorecardPage() {
                     <InvestigateButton
                       question={`What's the neighborhood like around ${addr}?`}
                       label={t("scorecard.investigate.neighborhoodOverview")}
+                      cardName="neighborhood"
                     />
                   </div>
                 </div>
@@ -436,6 +451,7 @@ export default function ScorecardPage() {
                       <InvestigateButton
                         question={`Explain the building violations at ${addr} and typical remediation steps`}
                         label={t("scorecard.investigate.violationDetails")}
+                        cardName="violations"
                       />
                     </div>
                   )}
@@ -448,6 +464,7 @@ export default function ScorecardPage() {
                     <InvestigateButton
                       question={`What are the crime trends and safety concerns near ${addr}?`}
                       label={t("scorecard.investigate.crimeAnalysis")}
+                      cardName="crime"
                     />
                   </div>
                 )}
@@ -459,6 +476,7 @@ export default function ScorecardPage() {
                     <InvestigateButton
                       question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
                       label={t("scorecard.investigate.complaints311")}
+                      cardName="311"
                     />
                   </div>
                 )}
@@ -482,7 +500,7 @@ export default function ScorecardPage() {
               <span className="text-sm font-medium text-text-primary">{t("scorecard.reportCTA.stickyTitle")}</span>
             </div>
             <button
-              onClick={hasReportAccess ? handleDownloadPdf : () => setShowPurchasePrompt(true)}
+              onClick={() => { track("report_cta_click"); (hasReportAccess ? handleDownloadPdf : () => setShowPurchasePrompt(true))(); }}
               disabled={downloading}
               className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
             >

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
+  fetchAdminEngagement,
   fetchAdminOverview,
   fetchAdminTimeseries,
   fetchAdminLatency,
@@ -11,6 +12,7 @@ import {
 } from "../lib/api";
 import type {
   AdminOverview,
+  EngagementMetrics,
   TimeseriesBucket,
   LatencyPercentiles,
   ConversationStats,
@@ -26,6 +28,7 @@ import { RequestsTable } from "./admin/RequestsTable";
 import { BenchmarkSection } from "./admin/BenchmarkSection";
 import { JudgeSection } from "./admin/JudgeSection";
 import { PieChart } from "./sidebar/PieChart";
+import { BarChart } from "./sidebar/BarChart";
 import { CountUp } from "./CountUp";
 
 type Period = "today" | "7d" | "30d" | "all";
@@ -74,12 +77,13 @@ export function AdminDashboard() {
   const [requestOffset, setRequestOffset] = useState(0);
   const [benchmark, setBenchmark] = useState<BenchmarkResults | null>(null);
   const [judgeResults, setJudgeResults] = useState<JudgeResults | null>(null);
+  const [engagement, setEngagement] = useState<EngagementMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async (p: Period) => {
     setLoading(true);
     const bucket = p === "today" ? "hour" : "day";
-    const [ov, ts, lat, cs, req, bm, jr] = await Promise.all([
+    const [ov, ts, lat, cs, req, bm, jr, eng] = await Promise.all([
       fetchAdminOverview(p),
       fetchAdminTimeseries(p, bucket),
       fetchAdminLatency(p),
@@ -87,6 +91,7 @@ export function AdminDashboard() {
       fetchRequestLogs(50, 0),
       fetchBenchmarkResults(),
       fetchJudgeResults(),
+      fetchAdminEngagement(p),
     ]);
     setOverview(ov);
     setTimeseries(ts);
@@ -96,6 +101,7 @@ export function AdminDashboard() {
     setRequestOffset(50);
     setBenchmark(bm);
     setJudgeResults(jr);
+    setEngagement(eng);
     setLoading(false);
   }, []);
 
@@ -375,7 +381,93 @@ export function AdminDashboard() {
               )}
             </section>
 
-            {/* Row 7: Recent requests */}
+            {/* Row 7: Engagement */}
+            {engagement && (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <StatCard
+                    label="Unique Visitors"
+                    value={engagement.unique_visitors}
+                    format={(n) => n.toLocaleString()}
+                  />
+                  <StatCard
+                    label="Returning Visitors"
+                    value={engagement.returning_visitors}
+                    format={(n) => n.toLocaleString()}
+                    subtitle={engagement.avg_days_between_visits != null
+                      ? `Avg ${engagement.avg_days_between_visits}d between visits`
+                      : undefined}
+                  />
+                  <StatCard
+                    label="Scorecard → Chat"
+                    value={engagement.scorecard_to_chat_rate ?? 0}
+                    format={(n) => `${(n * 100).toFixed(1)}%`}
+                  />
+                  <StatCard
+                    label="Chat Messages"
+                    value={engagement.chat_messages}
+                    format={(n) => n.toLocaleString()}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+                    <h2 className="text-sm font-semibold text-text-secondary mb-3">
+                      Investigate Clicks by Card
+                    </h2>
+                    {Object.keys(engagement.investigate_clicks).length > 0 ? (
+                      <BarChart
+                        bars={Object.entries(engagement.investigate_clicks).map(([label, value]) => ({ label, value }))}
+                      />
+                    ) : (
+                      <div className="text-text-muted text-sm text-center py-8">No data</div>
+                    )}
+                  </section>
+                  <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+                    <h2 className="text-sm font-semibold text-text-secondary mb-3">
+                      Return Rate by Behavior
+                    </h2>
+                    {Object.keys(engagement.return_rate_by_behavior).length > 0 ? (
+                      <div className="space-y-3 py-2">
+                        {Object.entries(engagement.return_rate_by_behavior).map(([behavior, data]) => (
+                          <div key={behavior} className="flex items-center justify-between">
+                            <span className="text-sm text-text-primary capitalize">
+                              {behavior.replace("_", " ")}
+                            </span>
+                            <div className="text-right">
+                              <span className="text-sm font-semibold text-text-primary">
+                                {(data.rate * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-text-muted ml-2">
+                                ({data.returned}/{data.total})
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-text-muted text-sm text-center py-8">No data</div>
+                    )}
+                    {engagement.report_cta_clicks > 0 && (
+                      <div className="mt-3 pt-3 border-t border-dark-border flex items-center justify-between">
+                        <span className="text-sm text-text-secondary">Report CTA Clicks</span>
+                        <div className="text-right">
+                          <span className="text-sm font-semibold text-text-primary">
+                            {engagement.report_cta_clicks}
+                          </span>
+                          {engagement.report_purchases_count > 0 && (
+                            <span className="text-xs text-text-muted ml-2">
+                              → {engagement.report_purchases_count} purchased
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </>
+            )}
+
+            {/* Row 8: Recent requests */}
             <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
               <h2 className="text-sm font-semibold text-text-secondary mb-3">
                 Recent Requests

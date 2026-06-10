@@ -56,6 +56,7 @@ import AuthModal from "./components/AuthModal";
 import UserMenu from "./components/UserMenu";
 import LanguageSelector from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
+import { track } from "./lib/tracking";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -349,6 +350,7 @@ export function App() {
       setPendingAttachments([]);
     }
 
+    track("chat_message_sent");
     sendChat(text, uploadMetas);
   }
 

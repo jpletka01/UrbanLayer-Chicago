@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 9
+_SCHEMA_VERSION = 10
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -141,6 +141,26 @@ CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_i
 """
 
 
+async def _migrate_v10(db: aiosqlite.Connection) -> None:
+    """Add events table for usage analytics."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    visitor_id TEXT,
+    user_id    TEXT,
+    event_name TEXT NOT NULL,
+    event_data TEXT,
+    page       TEXT,
+    address    TEXT,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_name_ts ON events(event_name, created_at);
+CREATE INDEX IF NOT EXISTS idx_events_visitor_ts ON events(visitor_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(created_at);
+""")
+
+
 async def _migrate_v9(db: aiosqlite.Connection) -> None:
     """Add report_purchases table for a la carte report sales."""
     await db.executescript("""\
@@ -245,6 +265,7 @@ async def init_db() -> None:
         await _migrate_v7(_db)
         await _migrate_v8(_db)
         await _migrate_v9(_db)
+        await _migrate_v10(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -272,6 +293,9 @@ async def init_db() -> None:
         if version < 9:
             await _migrate_v9(_db)
             version = 9
+        if version < 10:
+            await _migrate_v10(_db)
+            version = 10
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -1149,6 +1173,201 @@ async def get_user_report_purchases(user_id: str) -> list[dict]:
         (user_id,),
     )
     return [dict(r) for r in await cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Usage analytics
+# ---------------------------------------------------------------------------
+
+async def save_events(events: list[dict]) -> None:
+    """Batch-insert analytics events. Never raises — logs on failure."""
+    try:
+        db = _get_db()
+        now = _now_ms()
+        await db.executemany(
+            """
+            INSERT INTO events
+              (session_id, visitor_id, user_id, event_name, event_data, page, address, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    e["session_id"],
+                    e.get("visitor_id"),
+                    e.get("user_id"),
+                    e["event_name"],
+                    json.dumps(e["event_data"]) if e.get("event_data") else None,
+                    e.get("page"),
+                    e.get("address"),
+                    e.get("timestamp") or now,
+                )
+                for e in events
+            ],
+        )
+        await db.commit()
+    except Exception:
+        log.exception("Failed to save %d analytics events", len(events))
+
+
+async def get_engagement_stats(period: str) -> dict:
+    """Return engagement metrics for the admin dashboard."""
+    db = _get_db()
+    cutoff = _period_cutoff_ms(period)
+    ts_filter = "AND created_at >= ?" if cutoff else ""
+    where = "WHERE created_at >= ?" if cutoff else ""
+    params: tuple = (cutoff,) if cutoff else ()
+
+    def _ev_params(event_name: str) -> tuple:
+        return (event_name, cutoff) if cutoff else (event_name,)
+
+    ev_where = f"WHERE event_name = ? {ts_filter}"
+
+    # Investigate clicks by card
+    cur = await db.execute(
+        f"""
+        SELECT json_extract(event_data, '$.card_name') as card_name, COUNT(*) as cnt
+        FROM events {ev_where}
+        GROUP BY card_name ORDER BY cnt DESC
+        """,
+        _ev_params("investigate_click"),
+    )
+    investigate_clicks = {r["card_name"]: r["cnt"] for r in await cur.fetchall()}
+
+    # Simple counts
+    counts = {}
+    for ev_name in ("report_cta_click", "chat_message_sent", "page_view"):
+        cur = await db.execute(
+            f"SELECT COUNT(*) as cnt FROM events {ev_where}",
+            _ev_params(ev_name),
+        )
+        counts[ev_name] = (await cur.fetchone())["cnt"]
+
+    # Report purchases (from existing table, same period)
+    rp_where = "WHERE status = 'completed'" + (
+        " AND completed_at >= ?" if cutoff else ""
+    )
+    cur = await db.execute(
+        f"SELECT COUNT(*) as cnt FROM report_purchases {rp_where}",
+        params,
+    )
+    report_purchases_count = (await cur.fetchone())["cnt"]
+
+    # Unique visitors
+    cur = await db.execute(
+        f"SELECT COUNT(DISTINCT visitor_id) as cnt FROM events {where}",
+        params,
+    )
+    unique_visitors = (await cur.fetchone())["cnt"]
+
+    # Returning visitors (2+ sessions on different days)
+    cur = await db.execute(
+        f"""
+        SELECT COUNT(*) as cnt FROM (
+            SELECT visitor_id FROM events {where}
+            GROUP BY visitor_id
+            HAVING COUNT(DISTINCT created_at / 86400000) >= 2
+        )
+        """,
+        params,
+    )
+    returning_visitors = (await cur.fetchone())["cnt"]
+
+    # Avg days between visits for returning visitors
+    cur = await db.execute(
+        f"""
+        SELECT AVG(span_days) as avg_days FROM (
+            SELECT visitor_id,
+                (MAX(created_at) - MIN(created_at)) / 86400000.0 as span_days
+            FROM events {where}
+            GROUP BY visitor_id
+            HAVING COUNT(DISTINCT created_at / 86400000) >= 2
+        )
+        """,
+        params,
+    )
+    row = await cur.fetchone()
+    avg_days_between = round(row["avg_days"], 1) if row["avg_days"] else None
+
+    # Scorecard → chat conversion
+    cur = await db.execute(
+        f"""
+        SELECT COUNT(DISTINCT visitor_id) as cnt FROM events
+        WHERE event_name = 'page_view' AND page = '/scorecard' {ts_filter}
+        """,
+        params,
+    )
+    scorecard_visitors = (await cur.fetchone())["cnt"]
+
+    cur = await db.execute(
+        f"""
+        SELECT COUNT(*) as cnt FROM (
+            SELECT visitor_id FROM events
+            WHERE event_name = 'page_view' AND page = '/scorecard' {ts_filter}
+            INTERSECT
+            SELECT visitor_id FROM events
+            WHERE event_name = 'chat_message_sent' {ts_filter}
+        )
+        """,
+        params + params,
+    )
+    scorecard_and_chat = (await cur.fetchone())["cnt"]
+    scorecard_to_chat_rate = (
+        round(scorecard_and_chat / scorecard_visitors, 3)
+        if scorecard_visitors > 0
+        else None
+    )
+
+    # Return rate by behavior: investigate users vs non-investigate users
+    cur = await db.execute(
+        f"""
+        SELECT
+            CASE WHEN inv.visitor_id IS NOT NULL THEN 'investigated' ELSE 'not_investigated' END as behavior,
+            COUNT(*) as total,
+            SUM(CASE WHEN days >= 2 THEN 1 ELSE 0 END) as returned
+        FROM (
+            SELECT visitor_id, COUNT(DISTINCT created_at / 86400000) as days
+            FROM events {where}
+            GROUP BY visitor_id
+        ) v
+        LEFT JOIN (
+            SELECT DISTINCT visitor_id FROM events
+            WHERE event_name = 'investigate_click' {ts_filter}
+        ) inv ON v.visitor_id = inv.visitor_id
+        GROUP BY behavior
+        """,
+        params + params,
+    )
+    return_rate_by_behavior = {}
+    for r in await cur.fetchall():
+        rate = round(r["returned"] / r["total"], 3) if r["total"] > 0 else 0
+        return_rate_by_behavior[r["behavior"]] = {
+            "total": r["total"],
+            "returned": r["returned"],
+            "rate": rate,
+        }
+
+    # Page views by page
+    cur = await db.execute(
+        f"""
+        SELECT page, COUNT(*) as cnt FROM events {ev_where}
+        GROUP BY page ORDER BY cnt DESC
+        """,
+        _ev_params("page_view"),
+    )
+    page_views = {r["page"]: r["cnt"] for r in await cur.fetchall()}
+
+    return {
+        "investigate_clicks": investigate_clicks,
+        "report_cta_clicks": counts["report_cta_click"],
+        "report_purchases_count": report_purchases_count,
+        "chat_messages": counts["chat_message_sent"],
+        "unique_visitors": unique_visitors,
+        "returning_visitors": returning_visitors,
+        "avg_days_between_visits": avg_days_between,
+        "scorecard_to_chat_rate": scorecard_to_chat_rate,
+        "return_rate_by_behavior": return_rate_by_behavior,
+        "page_views": page_views,
+    }
 
 
 # ---------------------------------------------------------------------------

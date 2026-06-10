@@ -26,6 +26,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
 | `src/components/InfoTooltip.tsx` | Hover/tap popover for domain terms (dotted underline trigger, portal-based) |
 | `src/lib/analytics.ts` | Client-side trend/pie computation from map data |
+| `src/lib/tracking.ts` | Usage analytics: `track()`, `flush()`, `setAddress()`, `initTracking()`. 4 events (page_view, investigate_click, report_cta_click, chat_message_sent). Batched flush every 30s + sendBeacon on page hide. Session ID (per tab) + visitor ID (cross-session). |
 | `src/lib/csvExport.ts` | CSV export utility: `toCSV`, `downloadCSV`, `exportCSV`, `buildScorecardCSV`. Used by Scorecard, Explorer, AnalyticsSection |
 | `src/lib/history.ts` | Async API-backed persistence + localStorage→SQLite migration |
 | `src/lib/i18n.ts` | i18next initialization, bundled resources, localStorage language persistence |
