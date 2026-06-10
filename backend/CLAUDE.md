@@ -17,8 +17,8 @@
 | `db.py` | SQLite persistence (aiosqlite, WAL, schema v9). Tables: conversations (user-scoped), messages, uploads, llm_calls, request_logs, users (with stripe_customer_id, stripe_subscription_id), refresh_tokens, conversation_shares, report_purchases (a la carte $25 reports, matched by lat/lon rounded to 4 decimals) |
 | `llm.py` | Shared Anthropic client + `tracked_create()`/`tracked_stream()` wrappers (token/cost/latency logging) + automatic prompt caching via `_enable_prompt_caching()` |
 | `prompts.py` | System prompts: ROUTER_SYSTEM_TEMPLATE, SYNTHESIZER_SYSTEM, CONVERSATION_SYNTHESIS |
-| `models.py` | All Pydantic types: RetrievalPlan, ContextObject, domain summaries, SSE event types, Report v2 models (ZoningStandards, DevelopmentPotential, ComparableSale, ComparablesSummary, NearbyDevelopment, ReportData with comps_chart_b64) |
-| `zoning_extract.py` | Haiku-powered structured zoning standard extraction from Municipal Code vectors. 5 parallel semantic searches → Haiku JSON extraction with confidence self-assessment. `calculate_development_potential()` pure math |
+| `models.py` | All Pydantic types: RetrievalPlan, ContextObject, domain summaries, SSE event types, Report v2 models (ZoningStandards, DevelopmentPotential, ComparableSale, ComparablesSummary, NearbyDevelopment, ReportData with comps_chart_b64, zoning_map_b64, zone_definitions) |
+| `zoning_extract.py` | Haiku-powered structured zoning standard extraction from Municipal Code vectors. 5 parallel semantic searches → Haiku JSON extraction with confidence self-assessment. `calculate_development_potential()` pure math. For per-property interpretive analysis (setbacks, parking, special conditions) |
 | `config.py` | Settings via pydantic-settings: API keys, model IDs, query limits, assembler caps |
 | `vision.py` | Image/PDF processing for Claude Vision uploads |
 
@@ -37,6 +37,7 @@ retrieval/
 ├── map_data.py             # Raw geo-located rows for map (2500/1000/500 row limits)
 ├── vector_search.py        # Async Qdrant search + keyword boost + bge-reranker + per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch + adjacent_parcel_zoning()
+├── zoning_definitions.py   # Deterministic zone class lookup table (~50 entries). FAR, height, uses, code sections from Title 17. Used by PDF report for inline descriptions + definitions section. Fallback chain: exact → prefix → PD/PMD → unknown
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
 ├── explore.py              # Site Explorer: bulk parcel query by community area + class prefix (Cook County Parcel Universe)
 ├── utils.py                # Shared helpers (cutoff_iso)

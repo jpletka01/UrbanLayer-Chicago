@@ -245,8 +245,8 @@ The first successful experience is: **"This is right, and it told me something I
 **Build:**
 - ~~**A la carte report purchase.**~~ **DONE (2026-06-09).** Stripe one-time $25 checkout, `report_purchases` table, Scorecard shows "Download Report — $25" for free users, auto-download after purchase. See `archive/2026-06-09_a-la-carte-reports.md`.
 - ~~**Landing page repositioning.**~~ **DONE (2026-06-08).** Rewrote hero subtitle, value props (Build/Worth/Watch), personas (Developer/Architect/Attorney), story sections, intelligence stack (reordered, "Safety" → "Due Diligence Signals"), suggestion chips. Removed NeighborhoodExplorer from landing page. Added ValueProps section. Hero slideshow tint matched to story sections.
-- Elevate comparable sales, incentives, and tax projections on the Scorecard
-- Make the "Download Report" CTA unmissable on the Scorecard
+- ~~**Elevate comparable sales, incentives, and tax projections on the Scorecard.**~~ **DONE (2026-06-09).** `ComparablesCard` (median price, $/sqft, sales volume, expandable recent sales table), expanded `IncentivesCard` (TIF financials + grant programs), `FinancialSnapshotStrip` above card grid (assessed value, annual tax, median comp sale, TIF balance, active incentive zone count). `ReportTeaser` nudges embedded in PropertyCard, ComparablesCard, and IncentivesCard.
+- ~~**Make the "Download Report" CTA unmissable on the Scorecard.**~~ **DONE (2026-06-09).** `ReportCTACard` with feature checklist placed prominently above the card grid, sticky bottom CTA bar that appears when main CTA scrolls out of view, "$25" buy button for free users with purchase modal flow.
 
 **Ignore:**
 - New data sources
@@ -261,7 +261,7 @@ The first successful experience is: **"This is right, and it told me something I
 - A developer friend or acquaintance can describe what UrbanLayer does after visiting the homepage
 - The Scorecard → Report flow has zero friction
 
-**Exit Criteria:** Someone can buy a single report for $25 without subscribing. The product narrative is coherent.
+**Phase 0 Status: COMPLETE (2026-06-09).** All build items shipped. Exit criteria met: a la carte $25 report purchase works end-to-end, landing page communicates site feasibility positioning, Scorecard prominently surfaces comps/incentives/tax projections with unmissable report CTA.
 
 ### Phase 1: Demoable Product (2-3 weeks)
 
@@ -269,10 +269,10 @@ The first successful experience is: **"This is right, and it told me something I
 
 **Build:**
 - Municipal Code RAG accuracy hardening. Push eval coverage toward 98%+ on the most common zoning questions (FAR, height, setbacks, allowed uses, parking). Every wrong answer is a trust-destroying event. This is the highest-ROI engineering investment.
-- Comparable sales as a visible Scorecard section (not just buried in PDF). Show 3-5 nearest recent sales with price, date, and distance.
+- ~~**Comparable sales as a visible Scorecard section.**~~ **DONE (2026-06-09).** `ComparablesCard` shows median price, $/land sqft, sales volume, price range, $/bldg sqft, and expandable recent sales table with date, price, distance, $/sqft. Shipped as part of Phase 0 Scorecard elevation.
 - Incentives expansion: add 5-8 more programs beyond the current ~10. Focus on the ones developers actually encounter: Class 6b/7a/7b/8, LIHTC, NMTC. Each one is a concrete bullet point on the pricing page.
-- PDF report polish. Make it genuinely professional -- something a developer would show an investor or a lender. Review formatting, data completeness, and the "Recommended Next Steps" section.
-- A la carte report purchase if not done in Phase 0.
+- PDF report polish. Make it genuinely professional -- something a developer would show an investor or a lender. Review formatting, data completeness, and the "Recommended Next Steps" section. **Progress (2026-06-09):** Added deterministic zoning district definitions section (FAR, height, lot coverage, permitted uses, Title 17 citations for all zone classes referenced in a report), inline zone descriptions on zone class and adjacent zoning, parcel geometry map, ownership signals, assessment trend analysis, tax breakdown, nearby development map with color-coded markers.
+- ~~**A la carte report purchase.**~~ **DONE (2026-06-09).** Shipped in Phase 0.
 
 **Ignore:**
 - Property tracker alerts
@@ -285,7 +285,7 @@ The first successful experience is: **"This is right, and it told me something I
 
 **Success Metrics:**
 - RAG eval passes at 97%+ on top-50 zoning questions
-- Scorecard shows comps, incentives, and tax projections prominently
+- ~~Scorecard shows comps, incentives, and tax projections prominently~~ **DONE (2026-06-09)**
 - PDF report is professional enough that a developer would share it externally
 - End-to-end demo (address → Scorecard → Chat → Report) takes <5 minutes and is compelling
 
@@ -390,7 +390,7 @@ The first successful experience is: **"This is right, and it told me something I
 **Now.** The product is already live at urbanlayerchicago.com. It has a Scorecard, Chat, PDF Reports, maps, and auth/payments. It works. The question is not "is it ready?" -- it's "will anyone pay for it?"
 
 What should happen before showing it:
-- Phase 0 (landing page repositioning) is a 1-2 week effort that makes the first impression professional and focused. Ideal but not strictly necessary.
+- ~~Phase 0 (landing page repositioning)~~ **DONE.** Landing page repositioned for site feasibility. Scorecard elevated with comps, incentives, financial snapshot, and report CTA.
 - Municipal Code RAG accuracy should be spot-checked on 10 common zoning questions. If any are egregiously wrong, fix them before demoing. One bad answer in a demo kills the conversation.
 
 ### What should exist before conducting interviews?
@@ -463,9 +463,9 @@ All of this exists today.
 ### The Fastest Path to Proving the Product Has Value
 
 1. **This week:** Spot-check 10 common zoning questions against the municipal code RAG. Fix any egregiously wrong answers.
-2. **This week:** Ship a la carte report purchase ($25-35 via Stripe). This is the wedge. The single most important thing to build next.
+2. ~~**This week:** Ship a la carte report purchase ($25-35 via Stripe).~~ **DONE (2026-06-09).**
 3. **Next week:** Send the product to 5 people you know in Chicago real estate (developers, architects, attorneys, brokers). Don't explain it. Give them the URL and watch what they do. Ask: "Would you pay $25 for this report?"
-4. **Next 2 weeks:** Rewrite the landing page per Phase 0.
+4. ~~**Next 2 weeks:** Rewrite the landing page per Phase 0.~~ **DONE (2026-06-08).**
 5. **Next 4 weeks:** Have 15-20 conversations with potential customers per the Phase 2 script.
 6. **By week 6:** You should know whether this product has commercial potential, who the customer is, and what they'll pay for.
 
@@ -475,7 +475,7 @@ All of this exists today.
 
 ### Uncomfortable Truths
 
-**The current landing page tells three different stories.** "The Investor," "The Business Owner," and "The Resident" are three different products for three different markets. A professional visiting the site doesn't know if this is a neighborhood safety tool, a business licensing checker, or a development feasibility platform. This confusion is likely costing you every visitor who might otherwise have explored further.
+~~**The current landing page tells three different stories.**~~ **RESOLVED (2026-06-08).** Landing page repositioned with Developer/Architect/Attorney personas, site feasibility value props (Build/Worth/Watch), and professional narrative. NeighborhoodExplorer removed from landing page.
 
 **Crime and 311 analytics are the wrong lead.** The interactive crime and 311 dashboards (date sliders, arrest filters, trend tables, pie charts) are the most visually impressive features -- and the least relevant to the paying customer. They say "explore your neighborhood" when the product should say "evaluate your next investment." These features aren't bad. They're just in the wrong position in the product hierarchy.
 
