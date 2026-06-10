@@ -628,4 +628,5 @@ class ReportData(BaseModel):
     zoning_map_b64: str | None = None
     construction_map_b64: str | None = None
     bulk_standards_text: str = ""
+    zone_definitions: list[dict] = Field(default_factory=list)
     partial_failures: list[str] = Field(default_factory=list)

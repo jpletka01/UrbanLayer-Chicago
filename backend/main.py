@@ -2015,6 +2015,25 @@ async def _fetch_report_data(
                 except Exception:
                     log.warning("Failed to generate parcel map", exc_info=True)
 
+    # Zone class definitions (deterministic lookup, no API call)
+    from backend.retrieval.zoning_definitions import collect_report_zone_definitions
+    adj_zoning = v2_results.get("adjacent_zoning") or {}
+    zone_defs = collect_report_zone_definitions(zone_class, adj_zoning)
+    zone_definitions_data = [
+        {
+            "zone_class": zd.zone_class,
+            "name": zd.name,
+            "code_section": zd.code_section,
+            "far": zd.far,
+            "max_height": zd.max_height,
+            "lot_coverage": zd.lot_coverage,
+            "uses": zd.uses,
+            "notes": zd.notes,
+            "is_fallback": zd.is_fallback,
+        }
+        for zd in zone_defs
+    ]
+
     report = ReportData(
         address=resolved_address,
         lat=resolved_lat,
@@ -2027,7 +2046,7 @@ async def _fetch_report_data(
         comparables=comps_summary,
         address_permits=v2_results.get("address_permits") or [],
         address_violations=v2_results.get("address_violations") or [],
-        adjacent_zoning=v2_results.get("adjacent_zoning") or {},
+        adjacent_zoning=adj_zoning,
         nearby_development=nearby_dev,
         effective_tax_rate=effective_tax_rate,
         assessment_trend=assessment_trend,
@@ -2039,6 +2058,7 @@ async def _fetch_report_data(
         zoning_map_b64=zoning_map_b64,
         construction_map_b64=construction_map_b64,
         bulk_standards_text=bulk_standards_text,
+        zone_definitions=zone_definitions_data,
         partial_failures=partial_failures,
     )
     return report, basemap_bytes
@@ -2599,6 +2619,16 @@ async def report(
                 )
             except Exception:
                 log.warning("Failed to generate mock construction map", exc_info=True)
+        # Regenerate zone definitions from mock-overridden zone data
+        from backend.retrieval.zoning_definitions import collect_report_zone_definitions as _collect_zdefs
+        zone_class = report_data.context.parcel_zoning.zone_class if report_data.context.parcel_zoning else None
+        mock_zdefs = _collect_zdefs(zone_class, report_data.adjacent_zoning)
+        report_data.zone_definitions = [
+            {"zone_class": zd.zone_class, "name": zd.name, "code_section": zd.code_section,
+             "far": zd.far, "max_height": zd.max_height, "lot_coverage": zd.lot_coverage,
+             "uses": zd.uses, "notes": zd.notes, "is_fallback": zd.is_fallback}
+            for zd in mock_zdefs
+        ]
 
     # Render HTML template
     template_dir = Path(__file__).parent / "templates"
@@ -2606,6 +2636,8 @@ async def report(
     env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
     env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
     env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
+    from backend.retrieval.zoning_definitions import get_zone_name
+    env.filters["zone_desc"] = get_zone_name
     template = env.get_template("zoning_report.html")
 
     html_content = template.render(

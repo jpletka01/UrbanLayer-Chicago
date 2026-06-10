@@ -366,6 +366,7 @@ a.glossary-link {
     <div class="toc-entry"><span class="toc-title">Financial Feasibility &amp; Incentives</span><span class="toc-dots"></span><a class="toc-page" href="#section-financial"></a></div>
     <div class="toc-entry"><span class="toc-title">Site Condition &amp; History</span><span class="toc-dots"></span><a class="toc-page" href="#section-site-condition"></a></div>
     <div class="toc-entry"><span class="toc-title">Glossary</span><span class="toc-dots"></span><a class="toc-page" href="#section-glossary"></a></div>
+    {% if report.zone_definitions %}<div class="toc-entry"><span class="toc-title">Zoning District Definitions</span><span class="toc-dots"></span><a class="toc-page" href="#section-zone-definitions"></a></div>{% endif %}
     <div class="toc-entry"><span class="toc-title">Data Sources &amp; Disclaimers</span><span class="toc-dots"></span><a class="toc-page" href="#section-data-sources"></a></div>
   </div>
 </div>
@@ -507,7 +508,7 @@ a.glossary-link {
 
   {% if zoning %}
   <dl class="info-grid">
-    <dt>Zone Class</dt><dd><a href="https://codelibrary.amlegal.com/codes/chicago/latest/chicago_il/0-0-0-2680928#JD_Title17">{{ zoning.zone_class or "N/A" }}</a></dd>
+    <dt>Zone Class</dt><dd><a href="https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&amp;config=zoning">{{ zoning.zone_class or "N/A" }}</a> — {{ zoning.zone_class|zone_desc }}</dd>
     <dt>Zone Type</dt><dd>{{ zoning.zone_type or "N/A" }}</dd>
     {% if zoning.ordinance_num %}<dt>Ordinance</dt><dd>{{ zoning.ordinance_num }}</dd>{% endif %}
   </dl>
@@ -594,7 +595,7 @@ a.glossary-link {
     {% for dir, zone in report.adjacent_zoning.items() %}
     <div class="adj-item">
       <div class="dir">{{ dir }}</div>
-      <div class="zone">{{ zone or "—" }}</div>
+      <div class="zone">{{ zone or "—" }}{% if zone %} <span style="font-size: 8pt; color: #6b7280;">({{ zone|zone_desc }})</span>{% endif %}</div>
     </div>
     {% endfor %}
   </div>
@@ -1131,7 +1132,53 @@ a.glossary-link {
   </div>
 </div>
 
-<!-- SECTION 10: Data Sources & Disclaimers -->
+<!-- SECTION 10: Zoning District Definitions -->
+{% if report.zone_definitions %}
+<div class="page-break">
+  <h2 id="section-zone-definitions">Zoning District Definitions</h2>
+  <p style="font-size: 9pt; color: #6b7280; margin-bottom: 10px;">
+    Reference standards for all zoning districts cited in this report, sourced from Chicago Municipal Code, Title 17.
+    Values shown are base district standards; overlays, planned developments, and bonuses may modify these limits.
+  </p>
+
+  {% for zd in report.zone_definitions %}
+  <div style="margin-bottom: 14px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 4px; background: {% if loop.first %}#f0f7ff{% else %}#fafafa{% endif %};">
+    <div style="font-weight: 700; font-size: 11pt; margin-bottom: 4px;">
+      {{ zd.zone_class }} — {{ zd.name }}
+      <span style="font-size: 8pt; font-weight: 400; color: #6b7280; margin-left: 8px;">{{ zd.code_section }}</span>
+      {% if loop.first and report.context.parcel_zoning %}
+      <span style="font-size: 8pt; font-weight: 600; color: #2563eb; margin-left: 8px;">&#9679; Subject Property</span>
+      {% endif %}
+    </div>
+
+    {% if zd.far is not none or zd.max_height or zd.lot_coverage %}
+    <table style="margin: 6px 0 6px 0; font-size: 9pt;">
+      <thead><tr><th style="width: 160px;">Standard</th><th>Value</th></tr></thead>
+      <tbody>
+      {% if zd.far is not none %}<tr><td>Floor Area Ratio (FAR)</td><td>{{ zd.far }}</td></tr>{% endif %}
+      {% if zd.max_height %}<tr><td>Maximum Height</td><td>{{ zd.max_height }}</td></tr>{% endif %}
+      {% if zd.lot_coverage %}<tr><td>Lot Coverage</td><td>{{ zd.lot_coverage }}</td></tr>{% endif %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if zd.uses %}
+    <div style="font-size: 8.5pt; color: #374151; margin-top: 4px;"><strong>Permitted Uses:</strong> {{ zd.uses }}</div>
+    {% endif %}
+
+    {% if zd.notes %}
+    <div style="font-size: 8pt; color: #6b7280; margin-top: 3px; font-style: italic;">{{ zd.notes }}</div>
+    {% endif %}
+
+    {% if zd.is_fallback %}
+    <div style="font-size: 8pt; color: #d97706; margin-top: 3px;">&#9888; Non-standard or site-specific designation — verify with the City of Chicago Zoning Division.</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- SECTION 11: Data Sources & Disclaimers -->
 <div class="page-break">
   <h2 id="section-data-sources">Data Sources &amp; Disclaimers</h2>
 
