@@ -158,6 +158,9 @@ class Settings(BaseSettings):
 
     sentry_dsn: str = ""
 
+    mapbox_token: str = ""
+    vite_mapbox_token: str = ""
+
     # Report v2
     limit_comparable_sales: int = 10
     limit_address_permits: int = 20

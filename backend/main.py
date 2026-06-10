@@ -1856,12 +1856,7 @@ async def _fetch_report_data(
 
     # Step 5: Static map URL
     settings = get_settings()
-    mapbox_token = ""
-    try:
-        import os
-        mapbox_token = os.environ.get("VITE_MAPBOX_TOKEN", "")
-    except Exception:
-        pass
+    mapbox_token = settings.mapbox_token or settings.vite_mapbox_token
     static_map_url = None
     if mapbox_token:
         static_map_url = (
