@@ -4,7 +4,7 @@
     "points": "Puntos",
     "transit": "Transporte",
     "incentives": "Incentivos",
-    "overlays": "Regulaciones"
+    "overlays": "Normativas"
   },
   "filters": {
     "filters": "Filtros",
@@ -57,7 +57,7 @@
     "officialMap": "Mapa oficial",
     "chicagoZoningMap": "Mapa de Zonificación de Chicago",
     "baseZoning": "Zonificación base",
-    "regulatoryOverlays": "Regulaciones superpuestas",
+    "regulatoryOverlays": "Normativas superpuestas",
     "incentiveZones": "Zonas de incentivos",
     "type": "Tipo",
     "description": "Descripción",
@@ -110,159 +110,262 @@
     "RS": {
       "label": "Residencial unifamiliar",
       "description": "Viviendas unifamiliares independientes en lotes individuales",
-      "examples": ["Casa unifamiliar", "Oficina en casa", "Garaje accesorio"]
+      "examples": [
+        "Casa unifamiliar",
+        "Oficina en casa",
+        "Garaje accesorio"
+      ]
     },
     "RT": {
       "label": "Residencial de dos unidades",
       "description": "Edificios residenciales de dos unidades y casas adosadas",
-      "examples": ["Edificio de dos pisos", "Casa adosada", "Casa de cochera"]
+      "examples": [
+        "Edificio de dos pisos",
+        "Casa adosada",
+        "Casa de cochera"
+      ]
     },
     "RM": {
       "label": "Residencial multifamiliar",
       "description": "Edificios de apartamentos y residencias multifamiliares",
-      "examples": ["Edificio de apartamentos", "Edificio de condominios", "Vivienda para adultos mayores"]
+      "examples": [
+        "Edificio de apartamentos",
+        "Edificio de condominios",
+        "Vivienda para adultos mayores"
+      ]
     },
     "B": {
       "label": "Comercial",
       "description": "Comercio local, oficinas y uso mixto",
-      "examples": ["Tienda minorista", "Restaurante", "Espacio de oficina"]
+      "examples": [
+        "Tienda minorista",
+        "Restaurante",
+        "Espacio de oficina"
+      ]
     },
     "C": {
       "label": "Comercial mayor",
       "description": "Comercio mayor y usos orientados al automóvil",
-      "examples": ["Taller de reparación de autos", "Centro comercial", "Gasolinera"]
+      "examples": [
+        "Taller de reparación de autos",
+        "Centro comercial",
+        "Gasolinera"
+      ]
     },
     "M": {
       "label": "Industrial",
       "description": "Usos industriales y de manufactura",
-      "examples": ["Almacén", "Fábrica", "Centro de distribución"]
+      "examples": [
+        "Almacén",
+        "Fábrica",
+        "Centro de distribución"
+      ]
     },
     "PD": {
       "label": "Desarrollo planificado",
       "description": "Desarrollo personalizado con términos negociados con la ciudad",
-      "examples": ["Complejo de uso mixto", "Gran desarrollo residencial"]
+      "examples": [
+        "Complejo de uso mixto",
+        "Gran desarrollo residencial"
+      ]
     },
     "PMD": {
       "label": "Manufactura planificada",
       "description": "Corredores industriales protegidos",
-      "examples": ["Campus industrial", "Instalación de manufactura"]
+      "examples": [
+        "Campus industrial",
+        "Instalación de manufactura"
+      ]
     },
     "D": {
       "label": "Centro urbano",
       "description": "Oficinas y comercio de alta densidad en el centro",
-      "examples": ["Torre de oficinas", "Tienda departamental", "Hotel"]
+      "examples": [
+        "Torre de oficinas",
+        "Tienda departamental",
+        "Hotel"
+      ]
     },
     "DC": {
       "label": "Centro urbano",
       "description": "Oficinas y comercio de alta densidad en el centro",
-      "examples": ["Torre de oficinas", "Tienda departamental", "Hotel"]
+      "examples": [
+        "Torre de oficinas",
+        "Tienda departamental",
+        "Hotel"
+      ]
     },
     "DX": {
       "label": "Centro de uso mixto",
       "description": "Residencial, oficinas y comercio mixto en el Loop",
-      "examples": ["Torre de uso mixto", "Rascacielos residencial"]
+      "examples": [
+        "Torre de uso mixto",
+        "Rascacielos residencial"
+      ]
     },
     "DR": {
       "label": "Centro residencial",
       "description": "Torres residenciales en el centro de Chicago",
-      "examples": ["Torre de condominios", "Rascacielos de apartamentos"]
+      "examples": [
+        "Torre de condominios",
+        "Rascacielos de apartamentos"
+      ]
     },
     "DS": {
       "label": "Centro de servicios",
       "description": "Servicios y usos de apoyo en el centro",
-      "examples": ["Estructura de estacionamiento", "Instalación de servicios públicos"]
+      "examples": [
+        "Estructura de estacionamiento",
+        "Instalación de servicios públicos"
+      ]
     },
     "T": {
       "label": "Transporte",
       "description": "Corredores e instalaciones relacionadas con el transporte",
-      "examples": ["Estación de transporte", "Corredor ferroviario"]
+      "examples": [
+        "Estación de transporte",
+        "Corredor ferroviario"
+      ]
     },
     "P": {
       "label": "Parques y espacios abiertos",
       "description": "Parques públicos, áreas recreativas y espacios abiertos",
-      "examples": ["Parque público", "Área de juegos", "Reserva natural"]
+      "examples": [
+        "Parque público",
+        "Área de juegos",
+        "Reserva natural"
+      ]
     },
     "POS": {
       "label": "Parques y espacios abiertos",
       "description": "Parques públicos, áreas recreativas y espacios abiertos",
-      "examples": ["Parque público", "Área de juegos", "Reserva natural"]
+      "examples": [
+        "Parque público",
+        "Área de juegos",
+        "Reserva natural"
+      ]
     }
   },
   "overlays": {
     "planned_development": {
       "label": "Desarrollo planificado",
       "description": "Zonificación personalizada con reglas específicas negociadas con la ciudad",
-      "implications": ["Reglas especiales de retiro/FAR/altura", "Puede requerir revisión del concejal para cambios"]
+      "implications": [
+        "Reglas especiales de retiro/FAR/altura",
+        "Puede requerir revisión del concejal para cambios"
+      ]
     },
     "lakefront_protection": {
       "label": "Protección del lago",
       "description": "Revisión de diseño adicional y límites de densidad cerca del Lago Michigan",
-      "implications": ["Revisión del Depto. de Planificación requerida", "Restricciones de altura/retiro"]
+      "implications": [
+        "Revisión del Depto. de Planificación requerida",
+        "Restricciones de altura/retiro"
+      ]
     },
     "pedestrian_street": {
       "label": "Calle peatonal",
       "description": "Comercio a nivel de calle requerido; sin autoservicios ni estacionamiento frontal",
-      "implications": ["Comercio en planta baja obligatorio", "Sin cortes de acera en fachada designada"]
+      "implications": [
+        "Comercio en planta baja obligatorio",
+        "Sin cortes de acera en fachada designada"
+      ]
     },
     "landmark_district": {
       "label": "Distrito histórico",
       "description": "Revisión de la Comisión de Monumentos de Chicago para alteraciones exteriores",
-      "implications": ["Revisión de permisos por la Comisión de Monumentos", "Restricciones de demolición"]
+      "implications": [
+        "Revisión de permisos por la Comisión de Monumentos",
+        "Restricciones de demolición"
+      ]
     },
     "historic_district": {
       "label": "Distrito histórico estatal",
       "description": "Designación histórica estatal/local con estándares de preservación",
-      "implications": ["Elegibilidad para créditos fiscales", "Revisión de modificaciones exteriores"]
+      "implications": [
+        "Elegibilidad para créditos fiscales",
+        "Revisión de modificaciones exteriores"
+      ]
     },
     "landmark_building": {
       "label": "Monumento individual",
       "description": "Edificio individual designado como Monumento de Chicago",
-      "implications": ["Revisión de permisos por la Comisión de Monumentos", "Retraso/prohibición de demolición"]
+      "implications": [
+        "Revisión de permisos por la Comisión de Monumentos",
+        "Retraso/prohibición de demolición"
+      ]
     },
     "national_register": {
       "label": "Distrito del Registro Nacional",
       "description": "Inscrito en el Registro Nacional de Lugares Históricos",
-      "implications": ["Elegibilidad para crédito fiscal federal (20%)", "Revisión de Sección 106 para proyectos federales"]
+      "implications": [
+        "Elegibilidad para crédito fiscal federal (20%)",
+        "Revisión de Sección 106 para proyectos federales"
+      ]
     },
     "special_district": {
       "label": "Distrito especial",
-      "description": "Regulaciones adicionales más allá de la clasificación de zonificación base",
-      "implications": ["Puede imponer estándares de diseño", "Restricciones de uso adicionales"]
+      "description": "Normativas adicionales más allá de la clasificación de zonificación base",
+      "implications": [
+        "Puede imponer estándares de diseño",
+        "Restricciones de uso adicionales"
+      ]
     },
     "fema_floodplain": {
       "label": "Zona inundable FEMA",
       "description": "Área de riesgo de inundación mapeada federalmente",
-      "implications": ["Seguro contra inundaciones requerido para hipotecas", "Puede requerirse construcción elevada"]
+      "implications": [
+        "Seguro contra inundaciones requerido para hipotecas",
+        "Puede requerirse construcción elevada"
+      ]
     },
     "pmd_subarea": {
       "label": "Subárea PMD",
       "description": "Distrito de manufactura protegido con protecciones de uso industrial",
-      "implications": ["Conversión residencial restringida", "Usos industriales protegidos"]
+      "implications": [
+        "Conversión residencial restringida",
+        "Usos industriales protegidos"
+      ]
     },
     "tod_cta": {
       "label": "TOD (CTA)",
       "description": "Zona de desarrollo orientado al transporte cerca de estaciones del CTA",
-      "implications": ["Requisitos de estacionamiento reducidos", "Bonificaciones de densidad disponibles"]
+      "implications": [
+        "Requisitos de estacionamiento reducidos",
+        "Bonificaciones de densidad disponibles"
+      ]
     },
     "tod_metra": {
       "label": "TOD (Metra)",
       "description": "Zona de desarrollo orientado al transporte cerca de estaciones de Metra",
-      "implications": ["Requisitos de estacionamiento reducidos", "Bonificaciones de densidad disponibles"]
+      "implications": [
+        "Requisitos de estacionamiento reducidos",
+        "Bonificaciones de densidad disponibles"
+      ]
     },
     "adu_area": {
       "label": "Área elegible para ADU",
       "description": "Elegible para unidades de vivienda accesorias bajo la ordenanza ADU de 2020",
-      "implications": ["Puede agregar casa de cochera/unidad de jardín", "Unidades de garaje convertidas permitidas"]
+      "implications": [
+        "Puede agregar casa de cochera/unidad de jardín",
+        "Unidades de garaje convertidas permitidas"
+      ]
     },
     "aro_zone": {
       "label": "Zona ARO",
       "description": "Área de la Ordenanza de Requisitos de Vivienda Asequible",
-      "implications": ["10–20% de unidades asequibles en nuevos desarrollos (10+ unidades)", "Opción de pago en lugar disponible"]
+      "implications": [
+        "10–20% de unidades asequibles en nuevos desarrollos (10+ unidades)",
+        "Opción de pago en lugar disponible"
+      ]
     },
     "ssa": {
       "label": "Área de servicio especial",
       "description": "Distrito fiscal local que financia mejoras del paisaje urbano, marketing y mantenimiento",
-      "implications": ["Impuesto predial adicional", "Servicios vecinales mejorados"]
+      "implications": [
+        "Impuesto predial adicional",
+        "Servicios vecinales mejorados"
+      ]
     }
   },
   "crimeLabels": {
@@ -273,7 +376,7 @@
     "BATTERY": "Agresión física",
     "ROBBERY": "Robo con violencia",
     "HUMAN TRAFFICKING": "Trata de personas",
-    "OFFENSE INVOLVING CHILDREN": "Delito con menores",
+    "OFFENSE INVOLVING CHILDREN": "Delitos contra menores",
     "SEX OFFENSE": "Delito sexual",
     "ARSON": "Incendio provocado",
     "WEAPONS VIOLATION": "Infracción de armas",

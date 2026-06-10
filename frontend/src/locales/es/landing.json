@@ -1,5 +1,5 @@
 {
-  "heroSubtitle": "Zonificación, incentivos, proyecciones de impuestos y análisis del código municipal para cualquier dirección de Chicago — en segundos.",
+  "heroSubtitle": "Zonificación, incentivos, proyecciones de impuestos y análisis del código municipal para cualquier dirección de Chicago, en segundos.",
   "stats": {
     "dataSources": "Fuentes de datos",
     "codeSections": "Secciones del código",
@@ -8,142 +8,187 @@
   },
   "suggestions": [
     "¿Puedo construir un edificio de 6 unidades en 4520 N Clark St?",
-    "¿Cuáles son los requisitos de retroceso para zonificación B3-2?",
-    "¿Es 2400 N Milwaukee Ave elegible para un incentivo Clase 6b?",
-    "Cuéntame sobre la propiedad en 1425 N Wells St"
+    "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
+    "¿Es 2400 N Milwaukee Ave elegible para un incentivo fiscal Clase 6b?",
+    "Hábleme sobre la propiedad en 1425 N Wells St"
   ],
   "intelligence": {
-    "heading": "Una pregunta. Veinticinco fuentes.",
-    "subheading": "Zonificación, código municipal, registros de propiedad, incentivos, permisos y más — consultados simultáneamente.",
+    "heading": "25 fuentes en una sola consulta.",
+    "subheading": "Zonificación, código municipal, registros de la propiedad, incentivos, permisos y más, consultados simultáneamente.",
     "domains": [
       {
-        "title": "Regulación y Zonificación",
+        "title": "Zonificación y Normativas",
         "badge": "12 capas",
-        "points": ["Zonificación base + 12 capas", "Zonas de inundación FEMA", "Terrenos contaminados EPA"]
+        "points": [
+          "Zonificación base y 12 normativas superpuestas",
+          "Zonas de inundación FEMA",
+          "Terrenos industriales abandonados (EPA)"
+        ]
       },
       {
         "title": "Código Municipal",
         "badge": "Texto completo",
-        "points": ["14,535 secciones buscables", "Expansión de referencias cruzadas", "Respuestas citadas"]
+        "points": [
+          "14,535 secciones con opción de búsqueda",
+          "Expansión de referencias cruzadas",
+          "Respuestas citadas"
+        ]
       },
       {
-        "title": "Inteligencia de Propiedad",
+        "title": "Inteligencia de la Propiedad",
         "badge": "4 fuentes",
-        "points": ["Parcela + valores tasados", "Historial de ventas", "Estimación de impuestos"]
+        "points": [
+          "Datos de propiedad y valores de avalúo",
+          "Historial de ventas",
+          "Proyección de impuestos"
+        ]
       },
       {
         "title": "Incentivos e Inversión",
         "badge": "3 conjuntos",
-        "points": ["Distritos TIF + finanzas", "Zonas de Oportunidad", "Zonas Empresariales"]
+        "points": [
+          "Distritos TIF y finanzas",
+          "Zonas de oportunidad",
+          "Zonas empresariales"
+        ]
       },
       {
         "title": "Contexto del Sitio",
         "badge": "4 fuentes",
-        "points": ["Demografía + tránsito", "Walk / Transit / Bike Score", "Elegibilidad TOD"]
+        "points": [
+          "Demografía y transporte público",
+          "Walk Score, Transit Score y Bike Score",
+          "Elegibilidad para TOD"
+        ]
       },
       {
-        "title": "Señales de Diligencia Debida",
+        "title": "Auditoría de compra",
         "badge": "5 conjuntos",
-        "points": ["Permisos e infracciones", "Licencias comerciales", "Crimen + resumen 311"]
+        "points": [
+          "Permisos e infracciones",
+          "Licencias comerciales",
+          "Delitos y quejas 311"
+        ]
       }
     ]
   },
   "story": {
-    "feasibilityTitle": "Evalúe cualquier sitio en segundos",
-    "feasibilitySubtitle": "Clasificación de zonificación, capas regulatorias, elegibilidad de incentivos, proyecciones de impuestos y ventas comparables — ensambladas de más de 25 fuentes para cualquier dirección de Chicago. La diligencia debida que solía tomar una semana.",
-    "reportTitle": "De la pregunta al informe",
-    "reportSubtitle": "Haga una pregunta en español. Obtenga un análisis con fuentes citadas del código municipal, mapas interactivos y datos de tendencias. Descargue un informe PDF profesional para entregar a un cliente, inversionista o prestamista."
+    "feasibilityTitle": "Evalúa cualquier sitio en segundos",
+    "feasibilitySubtitle": "Clasificación de zonificación, normativas superpuestas, elegibilidad de incentivos, proyecciones de impuestos y propiedades comparables consolidadas desde más de 25 fuentes. Auditoría de compra en segundos, no en semanas de trabajo.",
+    "reportTitle": "Generación de informes a partir de análisis",
+    "reportSubtitle": "Haz tu consulta en español y obtén un análisis detallado con fuentes citadas del código municipal, mapas interactivos y tendencias de datos. Descarga un informe profesional en PDF para clientes, inversores o prestamistas."
   },
   "depth": {
-    "heading": "Haz una pregunta. Obtén el panorama completo.",
-    "subheading": "Esto es lo que UrbanLayer devuelve cuando preguntas sobre una dirección de Chicago.",
+    "heading": "Haz tu consulta y obtén el panorama completo.",
+    "subheading": "Esto es lo que UrbanLayer proporciona al consultar una dirección en Chicago.",
     "cards": [
       {
-        "title": "Expediente de propiedad",
-        "caption": "Datos de parcela, historial de tasación de 5 años, registros de ventas y estimaciones de impuestos del Condado de Cook."
+        "title": "Ficha de la propiedad",
+        "caption": "Datos de la propiedad, historial de avalúo de 5 años, registros de ventas y estimaciones de impuestos del Condado de Cook."
       },
       {
-        "title": "Perfil regulatorio",
-        "caption": "12 capas de superposición verificadas por dirección — desde monumentos históricos hasta zonas de inundación y elegibilidad ADU."
+        "title": "Perfil normativo",
+        "caption": "12 capas de normativas superpuestas verificadas por dirección: desde monumentos históricos hasta zonas de inundación y elegibilidad para viviendas accesorias (ADU)."
       },
       {
         "title": "Contexto del sitio",
-        "caption": "Demografía, acceso al transporte y puntajes de caminabilidad compilados para cada consulta."
+        "caption": "Demografía, acceso a transporte público e índices de transitabilidad peatonal recopilados para cada consulta."
       }
     ],
     "pin": "PIN",
     "class": "Clase",
     "building": "Edificio",
     "lot": "Lote",
-    "assessmentHistory": "Historial de Tasación",
-    "estAnnualTax": "Impuesto Anual Est.",
+    "assessmentHistory": "Historial de avalúo",
+    "estAnnualTax": "Impuesto anual estimado",
     "zoning": "Zonificación",
-    "activeOverlays": "Superposiciones Activas",
-    "riskFactors": "Factores de Riesgo",
-    "plannedDevelopment": "Desarrollo Planificado",
-    "pedestrianStreet": "Calle Peatonal",
-    "todEligible": "Elegible TOD",
-    "noFloodZone": "Sin Zona de Inundación",
-    "noBrownfield": "Sin Terreno Contaminado",
-    "walkability": "Caminabilidad",
+    "activeOverlays": "Normativas superpuestas",
+    "riskFactors": "Factores de riesgo",
+    "plannedDevelopment": "Desarrollo planificado",
+    "pedestrianStreet": "Calle peatonal",
+    "todEligible": "Elegibilidad para TOD",
+    "noFloodZone": "Sin riesgo de inundación",
+    "noBrownfield": "Libre de terrenos contaminados",
+    "walkability": "Walk Score",
     "walkScore": "Walk Score",
     "transitScore": "Transit Score",
     "bikeScore": "Bike Score",
-    "nearestTransit": "Transporte Más Cercano",
+    "nearestTransit": "Transporte más cercano",
     "blueLine": "Línea Azul, 0.3 mi",
     "demographics": "Demografía",
     "population": "Población",
-    "medIncome": "Ingreso Med.",
-    "ownerOcc": "Prop. Ocup.",
-    "medAge": "Edad Med.",
-    "sampleClass": "2-11 Residencia de dos pisos",
+    "medIncome": "Ingreso medio",
+    "ownerOcc": "Propietario-ocupada",
+    "medAge": "Edad media",
+    "sampleClass": "Residencia de dos pisos (Clase 2-11)",
     "sampleBuilding": "2,450 pies² · 2 pisos",
     "sampleLot": "3,125 pies²",
     "sampleZoneDesc": "Distrito comercial comunitario"
   },
   "explorer": {
-    "heading": "Explora un vecindario",
-    "subheading": "Elige un área comunitaria o ingresa una dirección para explorar datos de la ciudad en vivo — patrones de crimen, solicitudes de servicio 311, permisos de construcción y tendencias mensuales, actualizados desde el Portal de Datos de Chicago.",
-    "sampleData": "Mostrando datos de ejemplo",
+    "heading": "Explorar un vecindario",
+    "subheading": "Selecciona un área comunitaria o ingresa una dirección para explorar datos municipales en tiempo real: patrones de delitos, solicitudes de servicio 311, permisos de construcción y tendencias mensuales, actualizados directamente desde el Portal de Datos de Chicago.",
+    "sampleData": "Mostrando datos de muestra",
     "neighborhood": "Vecindario",
     "address": "Dirección",
     "or": "o",
     "searchAreas": "Buscar áreas...",
     "enterAddress": "Ingresa una dirección...",
     "all": "Todos",
-    "crime": "Crimen",
+    "crime": "Delitos",
     "311": "311",
     "permits": "Permisos",
-    "crimes": "Crímenes",
+    "crimes": "Delitos",
     "arrestRate": "Tasa de arresto",
     "311requests": "Solicitudes 311",
     "breakdown": "Desglose de {{label}}",
-    "crimeBreakdown": "Desglose de crímenes",
+    "crimeBreakdown": "Desglose de delitos",
     "311Breakdown": "Desglose de solicitudes 311",
     "permitsBreakdown": "Desglose de permisos"
   },
   "personas": {
-    "heading": "Diseñado para decisiones reales",
-    "subheading": "Ya sea que esté evaluando un sitio de desarrollo, verificando cumplimiento del código o investigando elegibilidad de incentivos.",
-    "returns": "UrbanLayer devuelve",
+    "heading": "Diseñado para tomar decisiones reales",
+    "subheading": "Ideal para evaluar sitios de desarrollo, verificar el cumplimiento de normativas o investigar la elegibilidad de incentivos.",
+    "returns": "UrbanLayer proporciona:",
     "items": [
       {
         "title": "El Desarrollador",
         "question": "¿Puedo construir un edificio residencial de 6 unidades en 4520 N Clark St?",
-        "domains": ["Análisis de Zonificación", "Estándares de Volumen", "Cumplimiento de Superposiciones", "Elegibilidad de Incentivos", "Proyección de Impuestos", "Ventas Comparables"],
-        "framing": "Factibilidad de sitio completa en segundos, no en días."
+        "domains": [
+          "Análisis de zonificación",
+          "Normativas de edificabilidad",
+          "Cumplimiento de normativas superpuestas",
+          "Elegibilidad de incentivos",
+          "Proyección de impuestos",
+          "Propiedades comparables"
+        ],
+        "framing": "Estudio de viabilidad completo en segundos, no en días."
       },
       {
         "title": "El Arquitecto",
-        "question": "¿Cuáles son los requisitos de retroceso para un edificio de uso mixto en B3-2 adyacente a un distrito RS-3?",
-        "domains": ["Código Municipal Citado", "Reglas de Zona de Transición", "Requisitos de Estacionamiento", "Estándares de Altura y Volumen", "Cálculo de FAR", "Distritos de Superposición"],
+        "question": "¿Cuáles son los requisitos de retiro para un edificio de uso mixto en zonificación B3-2 adyacente a un distrito RS-3?",
+        "domains": [
+          "Citas del Código Municipal",
+          "Normas de zonas de transición",
+          "Requisitos de estacionamiento",
+          "Normativas de altura y edificabilidad",
+          "Cálculo de FAR",
+          "Distritos superpuestos"
+        ],
         "framing": "Cada respuesta cita la sección específica del código."
       },
       {
         "title": "El Abogado",
-        "question": "¿Es la propiedad en 2400 N Milwaukee Ave elegible para un incentivo de impuestos Clase 6b?",
-        "domains": ["Clasificación de Propiedad", "Elegibilidad de Incentivos", "Estado de Distrito TIF", "Programas Aplicables", "Historial de Tasación", "Código Municipal"],
-        "framing": "Investigación de diligencia debida en una consulta, no en diez solicitudes FOIA."
+        "question": "¿Es la propiedad en 2400 N Milwaukee Ave elegible para un incentivo fiscal Clase 6b?",
+        "domains": [
+          "Clasificación de la propiedad",
+          "Elegibilidad de incentivos",
+          "Estado de distrito TIF",
+          "Programas aplicables",
+          "Historial de avalúo",
+          "Código Municipal"
+        ],
+        "framing": "Auditoría de compra en una sola consulta, en lugar de múltiples solicitudes de acceso a información pública (FOIA)."
       }
     ]
   },
@@ -151,43 +196,52 @@
     "heading": "Cómo funciona",
     "steps": [
       {
-        "title": "Tú preguntas",
-        "description": "Pregunta en español — sin lenguaje de consulta, sin filtros que configurar, sin formularios que llenar.",
+        "title": "Ingresa tu consulta",
+        "description": "Haz tu consulta en español, sin sintaxis compleja ni formularios.",
         "query": "¿Puedo construir un edificio de 6 unidades en 2100 N Damen?"
       },
       {
-        "title": "Nosotros buscamos",
-        "description": "Tu pregunta activa la combinación correcta de fuentes de datos municipales, del condado, federales y legales — en paralelo."
+        "title": "Procesamiento de datos",
+        "description": "Tu consulta activa las fuentes de datos del municipio, condado y gobierno federal en paralelo."
       },
       {
-        "title": "Tú obtienes respuestas",
-        "description": "Una respuesta con fuentes y citas, mapas interactivos, análisis regulatorio y referencias al código vinculadas. Descarga un informe profesional."
+        "title": "Resultados detallados",
+        "description": "Obtén respuestas documentadas con citas, mapas interactivos y análisis normativo. Descarga directa de informes profesionales."
       }
     ],
-    "sourceTags": ["Zonificación", "Regulaciones", "Propiedad", "Permisos", "TIF", "Código", "Incentivos", "Imp. Est."],
-    "sampleResponse": "La parcela en 2100 N Damen Ave está zonificada",
+    "sourceTags": [
+      "Zonificación",
+      "Normativas",
+      "Propiedad",
+      "Permisos",
+      "TIF",
+      "Código municipal",
+      "Incentivos",
+      "Impuestos"
+    ],
+    "sampleResponse": "La propiedad en 2100 N Damen Ave está zonificada",
     "sampleResponseTail": ", que permite uso residencial multifamiliar..."
   },
   "valueProps": {
-    "buildTitle": "Sabe qué puede construir.",
-    "buildBody": "Clasificación de zonificación instantánea con interpretación del código impulsada por IA. Pregunte qué está permitido, cuáles son los retrocesos, qué FAR aplica — obtenga respuestas citadas de más de 14,000 secciones del código municipal.",
-    "worthTitle": "Sabe cuánto vale.",
-    "worthBody": "Historial de tasación, ventas comparables, proyecciones de impuestos PTAXSIM y elegibilidad de incentivos. El panorama financiero para cualquier dirección de Chicago.",
-    "watchTitle": "Sabe qué vigilar.",
-    "watchBody": "Capas regulatorias, alertas ambientales, infracciones de edificios e historial de permisos. Los riesgos y oportunidades que necesita ver antes de comprometer capital."
+    "buildTitle": "Qué puedes construir",
+    "buildBody": "Clasificación de zonificación instantánea con interpretación del código impulsada por IA. Permite consultar usos permitidos, retiros (setbacks) y FAR, con respuestas citadas de más de 14,000 secciones del código municipal.",
+    "worthTitle": "Cuánto vale",
+    "worthBody": "Historial de avalúo, propiedades comparables, proyecciones de impuestos PTAXSIM y elegibilidad de incentivos. El panorama financiero para cualquier dirección de Chicago.",
+    "watchTitle": "Qué debes vigilar",
+    "watchBody": "Normativas superpuestas, alertas ambientales, infracciones de edificios, historial de permisos. Los riesgos y oportunidades que debes conocer antes de invertir."
   },
   "footer": {
-    "tagline": "Factibilidad de sitio impulsada por IA para profesionales inmobiliarios de Chicago.",
+    "tagline": "Estudios de viabilidad impulsados por IA para profesionales inmobiliarios de Chicago.",
     "copyright": "© 2026 UrbanLayer",
     "dataSources": "Fuentes de Datos",
     "cityOfChicago": "Ciudad de Chicago",
-    "cityOfChicagoDesc": "Crimen, 311, Permisos, Infracciones, Licencias Comerciales,",
+    "cityOfChicagoDesc": "Delitos, 311, Permisos, Infracciones, Licencias Comerciales",
     "zoningMapServer": "Servidor de Mapas de Zonificación",
-    "overlayLayers": "(12 capas de superposición)",
+    "overlayLayers": "(12 normativas superpuestas)",
     "cookCounty": "Condado de Cook",
-    "cookCountyDesc": "Características de Propiedad, Valores Tasados, Historial de Ventas, Estimación de Impuestos",
+    "cookCountyDesc": "Características de la Propiedad, Avalúos, Historial de Ventas, Proyección de impuestos",
     "federalExternal": "Federal y Externo",
-    "federalExternalDesc": "Demografía del Censo, Zonas de Inundación FEMA, Terrenos Contaminados EPA, Walk Score",
+    "federalExternalDesc": "Demografía del Censo, Zonas de Inundación FEMA, Terrenos Industriales Abandonados (EPA), Walk Score",
     "legal": "Legal",
     "legalDesc": "Código Municipal de Chicago (14,535 secciones)",
     "about": "Acerca de",

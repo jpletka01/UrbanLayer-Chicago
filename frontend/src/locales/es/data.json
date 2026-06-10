@@ -13,8 +13,8 @@
     "baths": "Baños",
     "buildingAge": "Antigüedad",
     "yrs": "años",
-    "assessedValue": "Valor tasado",
-    "assessmentHistory": "Historial de tasación",
+    "assessedValue": "Valor de avalúo",
+    "assessmentHistory": "Historial de avalúo",
     "yrsCount": "{{count}} años",
     "year": "Año",
     "land": "Terreno",
@@ -29,13 +29,14 @@
     "agencies": "{{count}} agencias",
     "agency": "Agencia",
     "rate": "Tasa",
-    "amount": "Monto"
+    "amount": "Monto",
+    "reportTeaser": "Tax projections + development potential in report"
   },
   "regulatory": {
-    "title": "Regulatorio",
-    "overlays": "Regulaciones",
+    "title": "Normativo",
+    "overlays": "Normativas superpuestas",
     "status": "Estado",
-    "noOverlays": "No se aplican regulaciones superpuestas a esta ubicación.",
+    "noOverlays": "No se aplican normativas superpuestas a esta ubicación.",
     "floodZone": "Zona inundable",
     "zone": "Zona {{code}}",
     "specialFloodHazard": "Riesgo especial de inundación",
@@ -91,7 +92,8 @@
     "taxClass": "Clase fiscal {{code}}",
     "standardClassDescription": "Clasificación estándar — no aplica reducción de incentivo fiscal.",
     "unavailableClassDescription": "El código de clase de propiedad no está disponible del Condado de Cook — no se puede determinar la clasificación de incentivo fiscal.",
-    "censusTract": "Tramo censal:"
+    "censusTract": "Tramo censal:",
+    "reportTeaser": "AI eligibility analysis + next steps in report"
   },
   "neighborhood": {
     "title": "Vecindario",
@@ -122,9 +124,9 @@
     },
     "todEligible": "Elegible TOD",
     "walkScore": "Walk Score",
-    "walk": "Caminata",
-    "transitScore": "Transporte",
-    "bike": "Bicicleta",
+    "walk": "Walk Score",
+    "transitScore": "Transit Score",
+    "bike": "Bike Score",
     "walkScoreTM": "Walk Score®",
     "walkDescriptions": {
       "Walker's Paradise": "Paraíso peatonal",
@@ -297,6 +299,14 @@
     "moreCount": "+{{count}} más",
     "exportCsv": "CSV"
   },
+  "financialSnapshot": {
+    "assessedValue": "Assessed Value",
+    "annualTax": "Annual Tax",
+    "medianCompSale": "Median Comp Sale",
+    "tifFundBalance": "TIF Fund Balance",
+    "activeIncentives": "Active Incentives",
+    "zonesCount": "{{count}} of 3 zones"
+  },
   "terms": {
     "incentives": {
       "tif_district": {
@@ -334,39 +344,65 @@
       "X": {
         "label": "Zona X — Riesgo mínimo",
         "description": "Área fuera de las llanuras de inundación de 100 y 500 años. Designación de menor riesgo de inundación.",
-        "bullets": ["Seguro contra inundaciones no requerido (pero disponible)", "Sin requisitos especiales de construcción"]
+        "bullets": [
+          "Seguro contra inundaciones no requerido (pero disponible)",
+          "Sin requisitos especiales de construcción"
+        ]
       },
       "A": {
         "label": "Zona A — Alto riesgo",
         "description": "Dentro de la llanura de inundación de 100 años. 1% de probabilidad anual de inundación, 26% de probabilidad en una hipoteca de 30 años.",
-        "bullets": ["Seguro contra inundaciones requerido para hipotecas federales", "Elevación Base de Inundación (BFE) no determinada"]
+        "bullets": [
+          "Seguro contra inundaciones requerido para hipotecas federales",
+          "Elevación Base de Inundación (BFE) no determinada"
+        ]
       },
       "AE": {
         "label": "Zona AE — Alto riesgo (detallado)",
         "description": "Dentro de la llanura de inundación de 100 años con elevaciones base detalladas determinadas por estudio de ingeniería.",
-        "bullets": ["Seguro contra inundaciones requerido", "Construcción elevada requerida sobre BFE", "Análisis detallado de zona de inundación disponible"]
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Construcción elevada requerida sobre BFE",
+          "Análisis detallado de zona de inundación disponible"
+        ]
       },
       "AH": {
         "label": "Zona AH — Inundación superficial",
         "description": "Área de inundación superficial de 100 años con profundidades de 1–3 pies, típicamente áreas de acumulación.",
-        "bullets": ["Seguro contra inundaciones requerido", "Profundidades de inundación de 1–3 pies", "Consideraciones especiales de drenaje"]
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Profundidades de inundación de 1–3 pies",
+          "Consideraciones especiales de drenaje"
+        ]
       },
       "AO": {
         "label": "Zona AO — Flujo laminar",
         "description": "Área de inundación superficial de 100 años con flujo laminar en terreno inclinado, profundidades de 1–3 pies.",
-        "bullets": ["Seguro contra inundaciones requerido", "Flujo laminar en lugar de acumulación", "Consideraciones de ruta de drenaje"]
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Flujo laminar en lugar de acumulación",
+          "Consideraciones de ruta de drenaje"
+        ]
       },
       "VE": {
         "label": "Zona VE — Alto riesgo costero",
         "description": "Área costera con riesgo de inundación de 100 años incluyendo acción de oleaje. Designación de mayor riesgo.",
-        "bullets": ["Seguro contra inundaciones requerido", "Estándares de construcción más estrictos", "Elevación sobre pilotes requerida"]
+        "bullets": [
+          "Seguro contra inundaciones requerido",
+          "Estándares de construcción más estrictos",
+          "Elevación sobre pilotes requerida"
+        ]
       }
     },
     "extraOverlays": {
       "tod_combined": {
         "label": "Desarrollo orientado al tránsito (TOD)",
         "description": "Zona cerca de estaciones de CTA o Metra que fomenta desarrollo denso de uso mixto con estacionamiento reducido.",
-        "bullets": ["Requisitos de estacionamiento reducidos", "Bonificaciones de densidad disponibles", "Estándares de diseño orientados al peatón"]
+        "bullets": [
+          "Requisitos de estacionamiento reducidos",
+          "Bonificaciones de densidad disponibles",
+          "Estándares de diseño orientados al peatón"
+        ]
       }
     }
   },
@@ -379,7 +415,7 @@
     "generatingPdf": "Generando PDF...",
     "locationMap": "Mapa de ubicación",
     "propertySummary": "Resumen de propiedad",
-    "regulatoryOverview": "Resumen regulatorio",
+    "regulatoryOverview": "Resumen normativo",
     "incentivePrograms": "Programas de incentivos",
     "neighborhoodProfile": "Perfil del vecindario",
     "safetyActivity": "Seguridad y actividad",
@@ -396,7 +432,7 @@
     "bedrooms": "Dormitorios",
     "buildingAge": "Antigüedad",
     "yearsUnit": "{{count}} años",
-    "totalAssessedValue": "Valor tasado total",
+    "totalAssessedValue": "Valor de avalúo total",
     "estAnnualTax": "Impuesto anual estimado",
     "overlayType": "Tipo de regulación",
     "name": "Nombre",
