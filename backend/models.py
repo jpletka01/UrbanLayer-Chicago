@@ -636,3 +636,13 @@ class ReportData(BaseModel):
     bulk_standards_text: str = ""
     zone_definitions: list[dict] = Field(default_factory=list)
     partial_failures: list[str] = Field(default_factory=list)
+    # V5 synthesis fields
+    opportunities: list[dict] = Field(default_factory=list)
+    constraints: list[dict] = Field(default_factory=list)
+    estimated_land_value: dict | None = None
+    approval_pathway: dict | None = None
+    development_trend: dict | None = None
+    incentive_stacking_narrative: str | None = None
+    envelope_summary: str | None = None
+    envelope_map_b64: str | None = None
+    buildable_footprint_sqft: float | None = None

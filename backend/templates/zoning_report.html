@@ -365,6 +365,7 @@ a.glossary-link {
     <div class="toc-entry"><span class="toc-title">Market Context &amp; Comparables</span><span class="toc-dots"></span><a class="toc-page" href="#section-market"></a></div>
     <div class="toc-entry"><span class="toc-title">Financial Feasibility &amp; Incentives</span><span class="toc-dots"></span><a class="toc-page" href="#section-financial"></a></div>
     <div class="toc-entry"><span class="toc-title">Site Condition &amp; History</span><span class="toc-dots"></span><a class="toc-page" href="#section-site-condition"></a></div>
+    <div class="toc-entry"><span class="toc-title">Recommended Next Steps</span><span class="toc-dots"></span><a class="toc-page" href="#section-next-steps"></a></div>
     <div class="toc-entry"><span class="toc-title">Glossary</span><span class="toc-dots"></span><a class="toc-page" href="#section-glossary"></a></div>
     {% if report.zone_definitions %}<div class="toc-entry"><span class="toc-title">Zoning District Definitions</span><span class="toc-dots"></span><a class="toc-page" href="#section-zone-definitions"></a></div>{% endif %}
     <div class="toc-entry"><span class="toc-title">Data Sources &amp; Disclaimers</span><span class="toc-dots"></span><a class="toc-page" href="#section-data-sources"></a></div>
@@ -488,6 +489,29 @@ a.glossary-link {
       <span class="tl-detail">No open violations</span>
     </div>
     {% endif %}
+
+    {# Approval complexity signal (6th traffic light) #}
+    {% if report.approval_pathway %}
+    {% if report.approval_pathway.complexity == "SIMPLE" %}
+    <div class="tl-item tl-green">
+      <span class="tl-pill tl-pill-green">SIMPLE</span>
+      <span class="tl-topic">Approval</span>
+      <span class="tl-detail">Standard building permit ({{ report.approval_pathway.timeline }})</span>
+    </div>
+    {% elif report.approval_pathway.complexity == "MODERATE" %}
+    <div class="tl-item tl-yellow">
+      <span class="tl-pill tl-pill-yellow">MODERATE</span>
+      <span class="tl-topic">Approval</span>
+      <span class="tl-detail">Special use or overlay review required</span>
+    </div>
+    {% else %}
+    <div class="tl-item tl-red">
+      <span class="tl-pill tl-pill-red">COMPLEX</span>
+      <span class="tl-topic">Approval</span>
+      <span class="tl-detail">Discretionary approval process ({{ report.approval_pathway.timeline }})</span>
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 
   {% if dev %}
@@ -499,6 +523,32 @@ a.glossary-link {
       {% if dev.max_lot_coverage_sqft %} | Max <a href="#glossary-lot-coverage" class="glossary-link">lot coverage</a>: {{ dev.max_lot_coverage_sqft|fnum }} sq ft{% endif %}
     </div>
   </div>
+  {% endif %}
+
+  {% if report.opportunities or report.constraints %}
+  <h3>Opportunities &amp; Constraints</h3>
+  {% if report.opportunities %}
+  <div style="margin-bottom: 8pt;">
+    {% for opp in report.opportunities %}
+    <div style="font-size: 9pt; margin-bottom: 4pt; padding: 4pt 8pt; background: #ecfdf5; border-left: 3pt solid #059669; border-radius: 2pt;">
+      <span style="color: #059669; font-weight: 700;">&#9650;</span>
+      <strong>{{ opp.signal }}</strong>
+      <span style="color: #4b5563;"> — {{ opp.detail }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if report.constraints %}
+  <div style="margin-bottom: 8pt;">
+    {% for con in report.constraints %}
+    <div style="font-size: 9pt; margin-bottom: 4pt; padding: 4pt 8pt; background: #fef2f2; border-left: 3pt solid #dc2626; border-radius: 2pt;">
+      <span style="color: #dc2626; font-weight: 700;">&#9660;</span>
+      <strong>{{ con.signal }}</strong>
+      <span style="color: #4b5563;"> — {{ con.detail }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
   {% endif %}
 </div>
 
@@ -521,15 +571,15 @@ a.glossary-link {
   <table>
     <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
     <tbody>
-    {% if standards.far is not none %}<tr><td><a href="#glossary-far" class="glossary-link">Floor Area Ratio (FAR)</a></td><td>{{ standards.far }}</td></tr>{% endif %}
+    {% if standards.far is not none %}<tr><td><a id="glossary-far">Floor Area Ratio (FAR)</a> <span style="font-size: 7.5pt; color: #6b7280;">— total floor area ÷ lot area</span></td><td>{{ standards.far }}</td></tr>{% endif %}
     {% if standards.max_height_ft is not none %}<tr><td>Maximum Height</td><td>{{ standards.max_height_ft }} ft</td></tr>{% endif %}
     {% if standards.max_stories is not none %}<tr><td>Maximum Stories</td><td>{{ standards.max_stories }}</td></tr>{% endif %}
-    {% if standards.lot_coverage_pct is not none %}<tr><td><a href="#glossary-lot-coverage" class="glossary-link">Lot Coverage</a></td><td>{{ "%.0f"|format(standards.lot_coverage_pct * 100) }}%</td></tr>{% endif %}
+    {% if standards.lot_coverage_pct is not none %}<tr><td><a id="glossary-lot-coverage">Lot Coverage</a> <span style="font-size: 7.5pt; color: #6b7280;">— max % of lot covered by structures</span></td><td>{{ "%.0f"|format(standards.lot_coverage_pct * 100) }}%</td></tr>{% endif %}
     {% if standards.min_lot_area_sqft is not none %}<tr><td>Minimum Lot Area</td><td>{{ standards.min_lot_area_sqft|fnum }} sq ft</td></tr>{% endif %}
     </tbody>
   </table>
 
-  <h3><a href="#glossary-setback" class="glossary-link">Setbacks</a></h3>
+  <h3><a id="glossary-setback">Setbacks</a> <span style="font-size: 7.5pt; color: #6b7280; font-weight: normal;">— min. distance from property line to building</span></h3>
   <table>
     <thead><tr><th>Direction</th><th>Minimum (ft)</th></tr></thead>
     <tbody>
@@ -538,6 +588,22 @@ a.glossary-link {
     {% if standards.rear_setback_ft is not none %}<tr><td>Rear Yard</td><td>{{ standards.rear_setback_ft }}</td></tr>{% endif %}
     </tbody>
   </table>
+
+  {% if report.envelope_summary %}
+  <h3>Development Envelope Summary</h3>
+  <div class="dev-potential" style="background: #f0f7ff;">
+    <div class="detail" style="font-size: 9.5pt;">{{ report.envelope_summary }}</div>
+  </div>
+  {% if report.envelope_map_b64 %}
+  <div style="text-align: center; margin: 8pt 0;">
+    <img src="data:image/png;base64,{{ report.envelope_map_b64 }}" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 6px;" alt="Development envelope diagram showing parcel outline, setback zones, and buildable footprint" />
+    {% if report.buildable_footprint_sqft %}
+    <p style="font-size: 8pt; color: #1e40af; margin-top: 4pt; font-weight: 600;">Estimated buildable footprint: {{ "{:,.0f}".format(report.buildable_footprint_sqft) }} sq ft</p>
+    {% endif %}
+  </div>
+  {% endif %}
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Reflects base district standards only. Overlays, planned developments, transition zones, and site-specific conditions may alter these parameters.</p>
+  {% endif %}
 
   {% if standards.permitted_uses %}
   <h3>Permitted Uses</h3>
@@ -601,6 +667,27 @@ a.glossary-link {
     </div>
     {% endfor %}
   </div>
+  {% if zoning and zoning.zone_class %}
+  {% set subj = zoning.zone_class[:1] %}
+  {% set subj_res = subj in ['R'] or zoning.zone_class[:2] in ['RS', 'RT', 'RM'] %}
+  {% set subj_com = subj in ['B', 'C', 'M'] or zoning.zone_class[:2] in ['DX', 'DC', 'DS', 'DR'] %}
+  {% set ns = namespace(transition_dirs=[]) %}
+  {% for dir, zone in report.adjacent_zoning.items() %}
+    {% if zone %}
+      {% set adj_first = zone[:1] %}
+      {% set adj_res = adj_first in ['R'] or zone[:2] in ['RS', 'RT', 'RM'] %}
+      {% set adj_com = adj_first in ['B', 'C', 'M'] or zone[:2] in ['DX', 'DC', 'DS', 'DR'] %}
+      {% if (subj_res and adj_com) or (subj_com and adj_res) %}
+        {% set ns.transition_dirs = ns.transition_dirs + [dir + ' (' + zone + ')'] %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+  {% if ns.transition_dirs %}
+  <p style="font-size: 8pt; color: #92400e; background: #fffbeb; padding: 6pt 8pt; border-radius: 4pt; border-left: 3px solid #f59e0b; margin-top: -4pt;">
+    &#9888; Transition zone setback may apply (Title 17-2-0303) at {{ ns.transition_dirs|join(', ') }} boundary — residential/commercial interface requires additional setback verification.
+  </p>
+  {% endif %}
+  {% endif %}
   {% endif %}
 </div>
 
@@ -668,6 +755,26 @@ a.glossary-link {
   <h3><a href="#glossary-aro" class="glossary-link">ARO</a> Affordable Housing</h3>
   <p style="font-size: 9pt;">{{ reg.aro_housing.total_projects }} projects, {{ reg.aro_housing.total_units }} total units in this community area.</p>
   {% endif %}
+
+  {% if report.approval_pathway %}
+  <h3>Approval Pathway</h3>
+  <dl class="info-grid">
+    <dt>Complexity</dt>
+    <dd>
+      {% if report.approval_pathway.complexity == "SIMPLE" %}<span class="status-yes">{{ report.approval_pathway.complexity }}</span>
+      {% elif report.approval_pathway.complexity == "MODERATE" %}<span class="status-warn">{{ report.approval_pathway.complexity }}</span>
+      {% else %}<span style="color: #dc2626; font-weight: 600;">{{ report.approval_pathway.complexity }}</span>{% endif %}
+    </dd>
+    <dt>Process</dt><dd>{{ report.approval_pathway.detail }}</dd>
+    <dt>Estimated Timeline</dt><dd>{{ report.approval_pathway.timeline }}</dd>
+  </dl>
+  {% if report.approval_pathway.modifiers %}
+  <p style="font-size: 8.5pt; color: #4b5563;">Additional requirements:
+    {% for mod in report.approval_pathway.modifiers %}<br>&#8226; {{ mod }}{% endfor %}
+  </p>
+  {% endif %}
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Timelines are estimates and vary by project specifics and political context.</p>
+  {% endif %}
 </div>
 
 <!-- SECTION 5: Property & Physical Characteristics (flows) -->
@@ -711,17 +818,6 @@ a.glossary-link {
   </dl>
   <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Dimensions estimated from GIS data. Confirm with a licensed surveyor before acquisition.</p>
   {% endif %}
-  {% endif %}
-
-  {% if dev %}
-  <div class="dev-potential">
-    <div class="headline">Development Potential vs. Existing</div>
-    <div class="detail">
-      {% if dev.max_buildable_sqft %}Max buildable (<a href="#glossary-far" class="glossary-link">FAR</a> × land): <strong>{{ dev.max_buildable_sqft|fnum }} sq ft</strong>{% endif %}
-      {% if prop.bldg_sqft %} | Existing: {{ prop.bldg_sqft|fnum }} sq ft{% endif %}
-      {% if dev.development_surplus_sqft %} | <strong>Surplus: {{ dev.development_surplus_sqft|fnum }} sq ft</strong>{% endif %}
-    </div>
-  </div>
   {% endif %}
 
   {% if inc and inc.property_tax_class %}
@@ -814,6 +910,20 @@ a.glossary-link {
   <p style="font-size: 9pt; margin-bottom: 8pt;">Price range: {{ comps.price_range_min|fcur }} — {{ comps.price_range_max|fcur }}</p>
   {% endif %}
 
+  {% if report.estimated_land_value %}
+  <div class="dev-potential" style="background: #fefce8; border-color: #fde68a;">
+    <div class="headline" style="color: #92400e;">Estimated Land Value</div>
+    <div class="detail">
+      <strong>{{ report.estimated_land_value.low|fcur }} — {{ report.estimated_land_value.high|fcur }}</strong>
+      (${{ "%.0f"|format(report.estimated_land_value.low_per_sqft) }}–${{ "%.0f"|format(report.estimated_land_value.high_per_sqft) }}/land sq ft)
+      based on {{ report.estimated_land_value.sample_size }} arm's-length sales within 0.25mi / 3yr
+    </div>
+    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">This is not an appraisal. Range reflects the interquartile (25th–75th percentile) of comparable $/land sq ft applied to the subject lot. An independent appraisal is recommended for transaction decisions.</div>
+  </div>
+  {% elif comps and comps.sales_volume and comps.sales_volume < 3 %}
+  <p class="section-note" style="font-style: italic;">Insufficient comparable sales ({{ comps.sales_volume }}) for automated land valuation. An independent appraisal is recommended.</p>
+  {% endif %}
+
   {% if report.comps_chart_b64 %}
   <div style="text-align: center; margin: 10pt 0 12pt 0;">
     <img src="data:image/png;base64,{{ report.comps_chart_b64 }}" alt="Comparable Sales Timeline" style="max-width: 100%; border-radius: 4pt;">
@@ -879,6 +989,11 @@ a.glossary-link {
 
   {% if report.nearby_development and (report.nearby_development.new_construction_count or report.nearby_development.demolition_count) %}
   <h3>Nearby Development Activity (12 months, 0.25mi)</h3>
+  {% if report.development_trend %}
+  <p style="font-size: 9.5pt; margin-bottom: 8pt; padding: 6pt 10pt; background: #f9fafb; border-left: 3pt solid #2563eb; border-radius: 2pt;">
+    {{ report.development_trend.narrative }}
+  </p>
+  {% endif %}
   {% if report.nearby_development.recent_projects %}
   <table style="font-size: 7pt;">
     <thead><tr><th>#</th><th>Type</th><th>Address</th><th>Description</th><th class="num">Cost</th><th>Date</th><th class="num">Dist</th></tr></thead>
@@ -924,6 +1039,12 @@ a.glossary-link {
     <dd>{% if inc.in_nmtc %}<span class="status-yes">Yes</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">(Severely Distressed)</span>{% endif %}{% else %}<span class="status-no">No</span>{% endif %}</dd>
     {% if inc.property_tax_class %}<dt>Tax Incentive Class</dt><dd>{{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</dd>{% endif %}
   </dl>
+
+  {% if report.incentive_stacking_narrative %}
+  <div style="font-size: 9pt; margin-bottom: 12pt; padding: 8pt 12pt; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4pt;">
+    <strong style="color: #1e40af;">Incentive Stacking:</strong> {{ report.incentive_stacking_narrative }}
+  </div>
+  {% endif %}
 
   {% if inc.in_tif_district and (inc.tif_total_revenue or inc.tif_fund_balance) %}
   <h3>TIF Financials</h3>
@@ -1049,30 +1170,105 @@ a.glossary-link {
   {% endif %}
 
   {% if crime %}
-  <h3>Crime (Last 90 Days — Community Area)</h3>
-  <dl class="info-grid">
-    <dt>Total Incidents</dt><dd>{{ crime.total }}</dd>
-    <dt>Arrest Rate</dt><dd>{{ "%.0f"|format(crime.arrest_rate * 100) }}%</dd>
-  </dl>
-  {% if crime.yoy %}
-  <table>
-    <thead><tr><th>Category</th><th>Current</th><th>Prior Year</th><th>Change</th></tr></thead>
-    <tbody>
-    {% for item in crime.yoy[:8] %}
-    <tr>
-      <td>{{ item.category }}</td>
-      <td>{{ item.current_count }}</td>
-      <td>{{ item.prior_year_count }}</td>
-      <td>{% if item.change_pct > 0 %}<span class="status-warn">+{{ item.change_pct }}%</span>{% elif item.change_pct < 0 %}<span class="status-yes">{{ item.change_pct }}%</span>{% else %}0%{% endif %}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <h3>Crime Summary (Last 90 Days — Community Area)</h3>
+  <p style="font-size: 9pt;">
+    {{ crime.total }} total incidents ({{ "%.0f"|format(crime.arrest_rate * 100) }}% arrest rate).
+    {% if crime.yoy %}
+    {% set total_current = crime.yoy|sum(attribute='current_count') %}
+    {% set total_prior = crime.yoy|sum(attribute='prior_year_count') %}
+    {% set violent_cats = crime.yoy|selectattr("category", "in", ["HOMICIDE", "ASSAULT", "BATTERY", "ROBBERY", "CRIMINAL SEXUAL ASSAULT"])|list %}
+    {% set violent_increase = violent_cats|selectattr("change_pct", "greaterthan", 50)|list %}
+    {% if violent_increase %}
+    <span class="status-warn">Notable increase in {{ violent_increase|map(attribute='category')|map('lower')|join(', ') }}.</span>
+    {% else %}
+    {% set overall_change = ((total_current - total_prior) / total_prior * 100) if total_prior > 0 else 0 %}
+    Overall trend: {% if overall_change > 10 %}<span class="status-warn">increasing</span>{% elif overall_change < -10 %}<span class="status-yes">decreasing</span>{% else %}stable{% endif %} vs. prior year.
+    {% endif %}
+    {% endif %}
+  </p>
   {% endif %}
+
+  <h3>Due Diligence Checklist</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; font-size: 8.5pt;">
+    <div>
+      <div style="font-weight: 600; color: #065f46; margin-bottom: 4pt;">&#10003; Completed in This Report</div>
+      <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
+        <li style="color: #047857;">&#10003; Zoning classification &amp; standards</li>
+        <li style="color: #047857;">&#10003; Overlay &amp; special district check</li>
+        <li style="color: #047857;">&#10003; FEMA flood zone determination</li>
+        <li style="color: #047857;">&#10003; EPA brownfield proximity search</li>
+        <li style="color: #047857;">&#10003; Property tax &amp; assessment analysis</li>
+        <li style="color: #047857;">&#10003; Comparable sales analysis</li>
+        <li style="color: #047857;">&#10003; Permit history review</li>
+        <li style="color: #047857;">&#10003; Building violation audit</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-weight: 600; color: #92400e; margin-bottom: 4pt;">&#9744; Action Required</div>
+      <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
+        <li>&#9744; Title search &amp; commitment</li>
+        <li>&#9744; ALTA/NSPS land survey</li>
+        {% if reg and reg.brownfield_sites %}<li style="color: #dc2626;">&#9744; Phase I ESA (brownfield nearby)</li>{% else %}<li>&#9744; Phase I ESA (if warranted)</li>{% endif %}
+        <li>&#9744; Utility verification (DWM/ComEd)</li>
+        <li>&#9744; Soil/geotechnical (if new construction)</li>
+        {% if reg and reg.in_special_flood_hazard %}<li style="color: #dc2626;">&#9744; Flood insurance quotes (SFHA)</li>{% else %}<li>&#9744; Flood insurance quotes (if applicable)</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 9: Recommended Next Steps -->
+<div class="section-flow">
+  <h2 id="section-next-steps">Recommended Next Steps</h2>
+
+  {% set open_violations_count = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list|length if report.address_violations else 0 %}
+
+  {% if open_violations_count > 0 or (reg and (reg.in_landmark_district or reg.in_historic_district)) or (reg and reg.brownfield_sites) or (reg and reg.in_special_flood_hazard) %}
+  <h3>Immediate (Blocking Issues)</h3>
+  <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
+    {% if open_violations_count > 0 %}
+    <li>Resolve {{ open_violations_count }} open building code violation{{ "s" if open_violations_count > 1 else "" }} before applying for new permits — outstanding violations can delay or block permit issuance</li>
+    {% endif %}
+    {% if reg and (reg.in_landmark_district or reg.in_historic_district) %}
+    <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a {% if reg.in_landmark_district %}landmark{% endif %}{% if reg.in_landmark_district and reg.in_historic_district %}/{% endif %}{% if reg.in_historic_district %}historic{% endif %} district requiring permit review</li>
+    {% endif %}
+    {% if reg and reg.brownfield_sites %}
+    <li>Commission a Phase I Environmental Site Assessment (ESA) — {{ reg.brownfield_sites|length }} brownfield site{{ "s" if reg.brownfield_sites|length > 1 else "" }} identified nearby</li>
+    {% endif %}
+    {% if reg and reg.in_special_flood_hazard %}
+    <li>Obtain a FEMA elevation certificate and flood insurance quotes — property is in a Special Flood Hazard Area</li>
+    {% endif %}
+  </ul>
+  {% endif %}
+
+  <h3>Due Diligence (Standard Process)</h3>
+  <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
+    <li>Request title search from Cook County Recorder of Deeds for recorded easements and encumbrances</li>
+    <li>Engage a licensed surveyor for boundary survey and easement identification</li>
+    <li>Contact DWM and ComEd for utility location maps</li>
+    <li>Check Chicago Legistar for active zoning applications or planned developments affecting this property</li>
+  </ul>
+
+  {% if inc and (inc.in_tif_district or inc.in_opportunity_zone or inc.in_qct or inc.in_nmtc) %}
+  <h3>Advisory (Optimization)</h3>
+  <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
+    {% if inc.in_tif_district %}
+    <li>Contact the TIF administrator for <strong>{{ inc.tif_name }}</strong> to discuss available funding for site improvements, infrastructure, or environmental remediation</li>
+    {% endif %}
+    {% if inc.in_opportunity_zone %}
+    <li>Consult a tax advisor regarding Qualified Opportunity Fund (QOF) structuring — this property is in a designated Opportunity Zone (Tract {{ inc.oz_tract }})</li>
+    {% endif %}
+    {% if inc.in_qct %}
+    <li>Explore LIHTC financing — QCT designation provides an enhanced 130% basis boost for affordable housing projects</li>
+    {% endif %}
+    {% if inc.in_nmtc %}
+    <li>Contact a CDFI allocatee to explore NMTC financing for commercial, mixed-use, or community facility development</li>
+    {% endif %}
+  </ul>
   {% endif %}
 </div>
 
-<!-- SECTION 9: Glossary -->
+<!-- SECTION 10: Glossary -->
 <div class="section-flow">
   <h2 id="section-glossary">Glossary</h2>
 
@@ -1095,14 +1291,6 @@ a.glossary-link {
         <dd>State-designated areas offering tax incentives to encourage business investment and job creation, including sales tax exemptions on building materials, investment tax credits, and utility tax exemptions.</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-far">FAR (Floor Area Ratio)</a></dt>
-        <dd>The ratio of a building's total floor area to the lot size. A FAR of 2.0 on a 5,000 sq ft lot allows up to 10,000 sq ft of floor area. FAR is the primary density control in Chicago's zoning code (Title 17).</dd>
-      </div>
-      <div class="glossary-entry">
-        <dt><a id="glossary-lot-coverage">Lot Coverage</a></dt>
-        <dd>The percentage of a lot that may be covered by buildings and structures. Limits the building footprint to preserve open space, light, and air access.</dd>
-      </div>
-      <div class="glossary-entry">
         <dt><a id="glossary-nmtc">NMTC (New Markets Tax Credit)</a></dt>
         <dd>Federal program providing 39% tax credit over 7 years for private investment in qualifying low-income communities through Community Development Financial Institutions (CDFIs). Severely distressed tracts receive allocation priority.</dd>
       </div>
@@ -1121,10 +1309,6 @@ a.glossary-link {
       <div class="glossary-entry">
         <dt><a id="glossary-qct">QCT (Qualified Census Tract)</a></dt>
         <dd>HUD-designated census tract where 50%+ of households earn below 60% of Area Median Income. LIHTC (Low-Income Housing Tax Credit) projects in QCTs receive an enhanced basis boost of up to 130%, making affordable housing development more financially feasible.</dd>
-      </div>
-      <div class="glossary-entry">
-        <dt><a id="glossary-setback">Setback</a></dt>
-        <dd>The minimum required distance between a building and a property line (front, side, or rear). Setback requirements vary by zoning district and ensure adequate spacing between structures.</dd>
       </div>
       <div class="glossary-entry">
         <dt><a id="glossary-sfha">SFHA (Special Flood Hazard Area)</a></dt>
@@ -1200,29 +1384,14 @@ a.glossary-link {
   <table>
     <thead><tr><th>Category</th><th>Source</th><th>Notes</th></tr></thead>
     <tbody>
-    <tr><td>Parcel / PIN</td><td>Cook County GIS / Socrata Parcel Universe</td><td>Real-time lookup</td></tr>
-    <tr><td>Characteristics</td><td>Cook County Assessor (CCAO)</td><td>Annual assessment cycle</td></tr>
-    <tr><td>Assessments</td><td>Cook County Assessor (CCAO)</td><td>Triennial by township</td></tr>
-    <tr><td>Sales / Comps</td><td>Cook County Assessor (CCAO)</td><td>Arm's-length transactions, 3yr radius</td></tr>
-    <tr><td>Zoning</td><td>Chicago Zoning MapServer (ArcGIS)</td><td>Real-time spatial query + adjacent</td></tr>
-    <tr><td>Zoning Standards</td><td>Chicago Municipal Code, Title 17</td><td>AI-extracted from semantic search</td></tr>
-    <tr><td>Overlays</td><td>Chicago Zoning MapServer (layers 2-24)</td><td>14 overlay types checked</td></tr>
-    <tr><td>Flood Zone</td><td>FEMA National Flood Hazard Layer</td><td>Real-time query</td></tr>
-    <tr><td>Brownfields</td><td>EPA Cleanups in My Community</td><td>2-mile radius search</td></tr>
-    <tr><td>TIF Districts</td><td>City of Chicago Data Portal</td><td>Spatial + financial datasets</td></tr>
-    <tr><td>Opportunity Zones</td><td>HUD / Census Tract FIPS</td><td>Federal designation</td></tr>
-    <tr><td>Enterprise Zones</td><td>City of Chicago Data Portal</td><td>State-designated zones</td></tr>
-    <tr><td>Qualified Census Tracts</td><td>HUD ArcGIS FeatureServer</td><td>Annual LIHTC QCT designation</td></tr>
-    <tr><td>NMTC Eligibility</td><td>HUD ArcGIS FeatureServer (NMTC20)</td><td>Low-Income Community designation</td></tr>
-    <tr><td>Grant Programs</td><td>City of Chicago (SBIF, NOF datasets)</td><td>Historical project data</td></tr>
-    <tr><td>Demographics</td><td>U.S. Census ACS 5-Year Estimates</td><td>2019–2023 period (2-year lag)</td></tr>
-    <tr><td>Transit</td><td>CTA / Metra GTFS station data</td><td>Static station locations</td></tr>
-    <tr><td>Walk Score</td><td>Walk Score API</td><td>Real-time calculation</td></tr>
-    <tr><td>Crime</td><td>Chicago Police Dept. via Data Portal</td><td>~7-day reporting lag</td></tr>
-    <tr><td>311 Complaints</td><td>City of Chicago 311 via Data Portal</td><td>12-month address-level lookup</td></tr>
-    <tr><td>Permits</td><td>City of Chicago Bldg. Permits</td><td>Address-specific + nearby activity</td></tr>
-    <tr><td>Violations</td><td>City of Chicago Building Violations</td><td>Address-specific lookup</td></tr>
-    <tr><td>ARO Housing</td><td>City of Chicago Affordable Housing</td><td>Community area projects</td></tr>
+    <tr><td>Property (parcel, characteristics, assessments, sales)</td><td>Cook County Assessor / GIS / Parcel Universe</td><td>Triennial assessments; arm's-length comps only</td></tr>
+    <tr><td>Zoning (classification, standards, overlays, adjacent)</td><td>Chicago Zoning MapServer + Municipal Code Title 17</td><td>Real-time spatial query; standards AI-extracted</td></tr>
+    <tr><td>Regulatory (flood, brownfields)</td><td>FEMA NFHL / EPA Cleanups in My Community</td><td>Real-time queries</td></tr>
+    <tr><td>Incentives (TIF, OZ, EZ, QCT, NMTC, grants)</td><td>City of Chicago / HUD / Census FIPS</td><td>Spatial + financial datasets</td></tr>
+    <tr><td>Demographics &amp; Transit</td><td>Census ACS 5-Year / CTA-Metra GTFS / Walk Score</td><td>ACS 2019–2023 (2-year lag)</td></tr>
+    <tr><td>Crime &amp; 311</td><td>Chicago Police Dept. / 311 via Data Portal</td><td>~7-day lag; 12-month address lookup</td></tr>
+    <tr><td>Permits &amp; Violations</td><td>City of Chicago Building Dept.</td><td>Address-specific + nearby activity</td></tr>
+    <tr><td>Affordable Housing (ARO)</td><td>City of Chicago Affordable Housing</td><td>Community area projects</td></tr>
     </tbody>
   </table>
 
@@ -1232,39 +1401,6 @@ a.glossary-link {
   <p style="font-size: 8.5pt; margin-bottom: 8pt;">
     This report aggregates publicly available government data from multiple sources. Zoning standards are extracted from the indexed Chicago Municipal Code via AI (Claude Haiku) and should be verified against the current ordinance. Property assessments are triennial and may not reflect current market values. Demographics are estimated from ACS 5-year survey data (2019–2023). Comparable sales are filtered for arm's-length transactions only (excluding multi-sales, sub-$10K, and non-standard deed types). Development potential is calculated as FAR × lot area and does not account for planned development restrictions, variance requirements, or site-specific conditions.
   </p>
-
-  <h3>Recommended Next Steps</h3>
-  {% set open_violations_count = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list|length if report.address_violations else 0 %}
-  <ul style="font-size: 8.5pt; padding-left: 16pt; margin-bottom: 12pt;">
-    {% if inc and inc.in_tif_district %}
-    <li>Contact the TIF administrator for <strong>{{ inc.tif_name }}</strong> to discuss available funding for site improvements, infrastructure, or environmental remediation</li>
-    {% endif %}
-    {% if inc and inc.in_opportunity_zone %}
-    <li>Consult a tax advisor regarding Qualified Opportunity Fund (QOF) structuring — this property is in a designated Opportunity Zone (Tract {{ inc.oz_tract }})</li>
-    {% endif %}
-    {% if inc and inc.in_qct %}
-    <li>Explore LIHTC financing — QCT designation provides an enhanced 130% basis boost for affordable housing projects without needing a housing finance agency income test</li>
-    {% endif %}
-    {% if inc and inc.in_nmtc %}
-    <li>Contact a CDFI allocatee to explore NMTC financing for commercial, mixed-use, or community facility development in this qualifying low-income community tract</li>
-    {% endif %}
-    {% if reg and reg.in_special_flood_hazard %}
-    <li>Obtain a FEMA elevation certificate and flood insurance quotes — this property is in a Special Flood Hazard Area (mandatory flood insurance for federally backed mortgages)</li>
-    {% endif %}
-    {% if reg and reg.brownfield_sites %}
-    <li>Commission a Phase I Environmental Site Assessment (ESA) — {{ reg.brownfield_sites|length }} brownfield site{{ "s" if reg.brownfield_sites|length > 1 else "" }} identified nearby</li>
-    {% endif %}
-    {% if reg and (reg.in_landmark_district or reg.in_historic_district) %}
-    <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a {% if reg.in_landmark_district %}landmark{% endif %}{% if reg.in_landmark_district and reg.in_historic_district %}/{% endif %}{% if reg.in_historic_district %}historic{% endif %} district requiring permit review</li>
-    {% endif %}
-    {% if open_violations_count > 0 %}
-    <li>Resolve {{ open_violations_count }} open building code violation{{ "s" if open_violations_count > 1 else "" }} before applying for new permits — outstanding violations can delay or block permit issuance</li>
-    {% endif %}
-    <li>Request title search from Cook County Recorder of Deeds for recorded easements and encumbrances</li>
-    <li>Engage a licensed surveyor for boundary survey and easement identification</li>
-    <li>Contact DWM and ComEd for utility location maps</li>
-    <li>Check Chicago Legistar for active zoning applications or planned developments affecting this property</li>
-  </ul>
 
   <div class="disclaimer">
     <strong>IMPORTANT DISCLAIMER:</strong> This report is provided for informational purposes only and does not constitute legal, financial, or real estate advice. Zoning interpretations, regulatory determinations, and property valuations should be verified with the appropriate government agencies and qualified professionals before making investment, development, or compliance decisions. UrbanLayer makes no warranty as to the accuracy, completeness, or timeliness of the data presented. Data is sourced from public government APIs and may contain errors, omissions, or outdated information. Always consult with a licensed attorney for zoning and land use matters, a licensed appraiser for property valuations, and appropriate city departments for permit and regulatory compliance.

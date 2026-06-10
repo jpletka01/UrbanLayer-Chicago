@@ -2061,6 +2061,30 @@ async def _fetch_report_data(
         zone_definitions=zone_definitions_data,
         partial_failures=partial_failures,
     )
+
+    # V5 synthesis (all deterministic, no API calls)
+    report.opportunities, report.constraints = _synthesize_opportunities_constraints(report)
+    report.estimated_land_value = _compute_land_value_range(report)
+    report.approval_pathway = _compute_approval_pathway(report)
+    report.development_trend = _compute_development_trend(report)
+    report.incentive_stacking_narrative = _build_incentive_stacking_narrative(report)
+    report.envelope_summary = _build_envelope_summary(report)
+
+    # Envelope map (CPU-bound matplotlib render)
+    if ctx.property and ctx.property.parcel_geometry and standards:
+        try:
+            loop = asyncio.get_running_loop()
+            env_b64, env_sqft = await loop.run_in_executor(
+                None, _generate_envelope_map,
+                resolved_lat, resolved_lon,
+                ctx.property.parcel_geometry, standards,
+                parcel_dimensions,
+            )
+            report.envelope_map_b64 = env_b64
+            report.buildable_footprint_sqft = env_sqft
+        except Exception:
+            log.warning("Failed to generate envelope map", exc_info=True)
+
     return report, basemap_bytes
 
 
@@ -2392,6 +2416,911 @@ def _generate_parcel_map(
         return None
 
 
+def _classify_edges(
+    coords: list[list[float]],
+    front_ft: int, side_ft: int, rear_ft: int,
+) -> list[dict]:
+    """Classify polygon edges as front/side/rear for setback drawing.
+
+    Heuristic for Chicago's grid: the shortest pair of roughly-parallel edges
+    are front/rear (lot width), the longest pair are sides (lot depth).
+    Front = shorter of the width pair (street-facing).
+    """
+    import math
+
+    if len(coords) < 4:
+        return []
+
+    lat_mid = sum(c[1] for c in coords) / len(coords)
+    cos_lat = math.cos(math.radians(lat_mid))
+
+    edges = []
+    for i in range(len(coords) - 1):
+        lon1, lat1 = coords[i]
+        lon2, lat2 = coords[i + 1]
+        dx = (lon2 - lon1) * cos_lat * 364567.2
+        dy = (lat2 - lat1) * 364567.2
+        length_ft = math.sqrt(dx * dx + dy * dy)
+        bearing = math.degrees(math.atan2(dx, dy)) % 360
+        # Inward normal (perpendicular, pointing into polygon center)
+        cx = sum(c[0] for c in coords[:-1]) / (len(coords) - 1)
+        cy = sum(c[1] for c in coords[:-1]) / (len(coords) - 1)
+        mx = (lon1 + lon2) / 2
+        my = (lat1 + lat2) / 2
+        # Two candidate normals
+        nx1, ny1 = -dy, dx
+        nx2, ny2 = dy, -dx
+        # Pick the one pointing toward centroid
+        to_cx = (cx - mx) * cos_lat * 364567.2
+        to_cy = (cy - my) * 364567.2
+        if nx1 * to_cx + ny1 * to_cy > nx2 * to_cx + ny2 * to_cy:
+            nx, ny = nx1, ny1
+        else:
+            nx, ny = nx2, ny2
+        norm = math.sqrt(nx * nx + ny * ny)
+        if norm > 0:
+            nx /= norm
+            ny /= norm
+
+        edges.append({
+            "idx": i,
+            "p1": coords[i], "p2": coords[i + 1],
+            "length_ft": length_ft,
+            "bearing": bearing,
+            "nx_ft": nx, "ny_ft": ny,
+        })
+
+    if len(edges) < 3:
+        # Fallback: uniform minimum setback
+        min_sb = min(front_ft, side_ft, rear_ft)
+        for e in edges:
+            e["role"] = "uniform"
+            e["setback_ft"] = min_sb
+        return edges
+
+    # Normalize bearing to 0-180 (undirected)
+    for e in edges:
+        e["norm_bearing"] = e["bearing"] % 180
+
+    # Sort by length to find the two principal directions
+    by_length = sorted(edges, key=lambda e: e["length_ft"], reverse=True)
+
+    # Group into two bearing clusters using the longest edge as anchor
+    anchor_bearing = by_length[0]["norm_bearing"]
+    group_a = []  # Parallel to anchor (sides / depth)
+    group_b = []  # Perpendicular to anchor (front / rear width)
+
+    for e in edges:
+        diff = abs(e["norm_bearing"] - anchor_bearing) % 180
+        if diff > 90:
+            diff = 180 - diff
+        if diff < 30:
+            group_a.append(e)
+        else:
+            group_b.append(e)
+
+    # If grouping failed (irregular lot), use uniform setback
+    if not group_a or not group_b:
+        min_sb = min(front_ft, side_ft, rear_ft)
+        for e in edges:
+            e["role"] = "uniform"
+            e["setback_ft"] = min_sb
+        return edges
+
+    # group_a = longer edges = sides, group_b = shorter edges = front/rear
+    # But if group_b is actually longer, swap
+    avg_a = sum(e["length_ft"] for e in group_a) / len(group_a)
+    avg_b = sum(e["length_ft"] for e in group_b) / len(group_b)
+    if avg_b > avg_a:
+        group_a, group_b = group_b, group_a
+
+    for e in group_a:
+        e["role"] = "side"
+        e["setback_ft"] = side_ft
+
+    # In group_b, shortest = front, rest = rear
+    group_b.sort(key=lambda e: e["length_ft"])
+    for i, e in enumerate(group_b):
+        if i == 0:
+            e["role"] = "front"
+            e["setback_ft"] = front_ft
+        else:
+            e["role"] = "rear"
+            e["setback_ft"] = rear_ft
+
+    return edges
+
+
+def _compute_inset_polygon(
+    coords: list[list[float]],
+    edges: list[dict],
+) -> tuple[list[tuple[float, float]], float] | None:
+    """Compute the buildable footprint polygon by insetting each edge."""
+    import math
+
+    if not edges or len(coords) < 4:
+        return None
+
+    lat_mid = sum(c[1] for c in coords) / len(coords)
+    cos_lat = math.cos(math.radians(lat_mid))
+    ft_to_lon = 1.0 / (cos_lat * 364567.2)
+    ft_to_lat = 1.0 / 364567.2
+
+    # For each edge, compute the offset line (shifted inward by setback)
+    offset_lines = []
+    for e in edges:
+        sb = e.get("setback_ft", 0)
+        if sb <= 0:
+            # No setback — keep original edge
+            offset_lines.append((e["p1"], e["p2"]))
+            continue
+        # Offset in lon/lat space
+        dx_lon = e["nx_ft"] * sb * ft_to_lon
+        dy_lat = e["ny_ft"] * sb * ft_to_lat
+        p1_off = [e["p1"][0] + dx_lon, e["p1"][1] + dy_lat]
+        p2_off = [e["p2"][0] + dx_lon, e["p2"][1] + dy_lat]
+        offset_lines.append((p1_off, p2_off))
+
+    if len(offset_lines) < 3:
+        return None
+
+    # Intersect adjacent offset lines to find inner polygon vertices
+    def line_intersect(p1, p2, p3, p4):
+        x1, y1 = p1
+        x2, y2 = p2
+        x3, y3 = p3
+        x4, y4 = p4
+        denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if abs(denom) < 1e-15:
+            return None
+        t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
+        ix = x1 + t * (x2 - x1)
+        iy = y1 + t * (y2 - y1)
+        return (ix, iy)
+
+    inner_pts = []
+    n = len(offset_lines)
+    for i in range(n):
+        j = (i + 1) % n
+        pt = line_intersect(
+            offset_lines[i][0], offset_lines[i][1],
+            offset_lines[j][0], offset_lines[j][1],
+        )
+        if pt is None:
+            return None
+        inner_pts.append(pt)
+
+    # Close the polygon
+    if inner_pts and inner_pts[0] != inner_pts[-1]:
+        inner_pts.append(inner_pts[0])
+
+    # Compute area via shoelace in feet
+    xs = [(p[0] - inner_pts[0][0]) * cos_lat * 364567.2 for p in inner_pts]
+    ys = [(p[1] - inner_pts[0][1]) * 364567.2 for p in inner_pts]
+    area = 0.0
+    for i in range(len(xs) - 1):
+        area += xs[i] * ys[i + 1] - xs[i + 1] * ys[i]
+    area_sqft = abs(area) / 2.0
+
+    if area_sqft < 10:
+        return None
+
+    return inner_pts, area_sqft
+
+
+def _generate_envelope_map(
+    lat: float, lon: float,
+    parcel_geojson: dict,
+    standards: "ZoningStandards",
+    dimensions: dict | None = None,
+) -> tuple[str | None, float | None]:
+    """Render parcel with setback zones and buildable footprint.
+
+    Returns (base64_png, buildable_footprint_sqft) or (None, None).
+    """
+    import base64
+    import io
+
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Polygon as MplPolygon
+    except ImportError:
+        return None, None
+
+    front_ft = standards.front_setback_ft or 0
+    side_ft = standards.side_setback_ft or 0
+    rear_ft = standards.rear_setback_ft or 0
+
+    if front_ft == 0 and side_ft == 0 and rear_ft == 0:
+        return None, None
+
+    # Extract coordinates
+    geom_type = parcel_geojson.get("type", "")
+    coords = None
+    if geom_type == "Polygon":
+        rings = parcel_geojson.get("coordinates", [])
+        if rings:
+            coords = rings[0]
+    elif geom_type == "MultiPolygon":
+        polys = parcel_geojson.get("coordinates", [])
+        if polys and polys[0]:
+            coords = polys[0][0]
+
+    if not coords or len(coords) < 4:
+        return None, None
+
+    edges = _classify_edges(coords, front_ft, side_ft, rear_ft)
+    if not edges:
+        return None, None
+
+    inset_result = _compute_inset_polygon(coords, edges)
+    if inset_result is None:
+        return None, None
+
+    inner_pts, buildable_sqft = inset_result
+
+    try:
+        import math
+
+        lat_mid = sum(c[1] for c in coords) / len(coords)
+        cos_lat = math.cos(math.radians(lat_mid))
+
+        # Convert to local feet for rendering
+        def to_ft(lon_v, lat_v):
+            return (
+                (lon_v - coords[0][0]) * cos_lat * 364567.2,
+                (lat_v - coords[0][1]) * 364567.2,
+            )
+
+        parcel_ft = [to_ft(c[0], c[1]) for c in coords]
+        inner_ft = [to_ft(p[0], p[1]) for p in inner_pts]
+
+        # Figure size based on parcel extents
+        all_x = [p[0] for p in parcel_ft]
+        all_y = [p[1] for p in parcel_ft]
+        w = max(all_x) - min(all_x)
+        h = max(all_y) - min(all_y)
+        pad = max(w, h) * 0.15
+
+        dpi = 150
+        fig_w = max(3, min(5, (w + 2 * pad) / 40))
+        fig_h = max(3, min(5, (h + 2 * pad) / 40))
+        fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=dpi)
+        ax.set_facecolor("#f8fafc")
+        fig.set_facecolor("#f8fafc")
+
+        # Parcel outline
+        parcel_patch = MplPolygon(
+            parcel_ft, closed=True,
+            facecolor="#f3f4f6", edgecolor="#374151",
+            linewidth=2, zorder=2,
+        )
+        ax.add_patch(parcel_patch)
+
+        # Setback zone hatching — draw parcel minus inner as a visual
+        # Simpler approach: draw hatched strips for each edge
+        for e in edges:
+            sb = e.get("setback_ft", 0)
+            if sb <= 0:
+                continue
+            p1_ft = to_ft(e["p1"][0], e["p1"][1])
+            p2_ft = to_ft(e["p2"][0], e["p2"][1])
+            # Offset points
+            ft_to_lon = 1.0 / (cos_lat * 364567.2)
+            ft_to_lat = 1.0 / 364567.2
+            dx_lon = e["nx_ft"] * sb * ft_to_lon
+            dy_lat = e["ny_ft"] * sb * ft_to_lat
+            p1_off_ft = to_ft(e["p1"][0] + dx_lon, e["p1"][1] + dy_lat)
+            p2_off_ft = to_ft(e["p2"][0] + dx_lon, e["p2"][1] + dy_lat)
+
+            strip = [p1_ft, p2_ft, p2_off_ft, p1_off_ft]
+            strip_patch = MplPolygon(
+                strip, closed=True,
+                facecolor="#e5e7eb", edgecolor="none",
+                alpha=0.6, hatch="///", zorder=3,
+            )
+            ax.add_patch(strip_patch)
+
+            # Label the setback
+            mx = (p1_ft[0] + p2_ft[0] + p1_off_ft[0] + p2_off_ft[0]) / 4
+            my = (p1_ft[1] + p2_ft[1] + p1_off_ft[1] + p2_off_ft[1]) / 4
+            role = e.get("role", "")
+            label = f"{sb}' {role}" if role and role != "uniform" else f"{sb}'"
+            ax.text(
+                mx, my, label,
+                ha="center", va="center", fontsize=6,
+                color="#6b7280", fontstyle="italic",
+                zorder=8,
+            )
+
+        # Buildable footprint
+        inner_patch = MplPolygon(
+            inner_ft, closed=True,
+            facecolor=(0.15, 0.39, 0.92, 0.15),
+            edgecolor="#2563eb",
+            linewidth=1.5, linestyle="--",
+            zorder=5,
+        )
+        ax.add_patch(inner_patch)
+
+        # Buildable area annotation centered
+        cx = sum(p[0] for p in inner_ft) / len(inner_ft)
+        cy = sum(p[1] for p in inner_ft) / len(inner_ft)
+        ax.text(
+            cx, cy, f"~{buildable_sqft:,.0f} sq ft\nbuildable",
+            ha="center", va="center", fontsize=7,
+            color="#1e40af", fontweight="bold",
+            bbox=dict(facecolor="white", alpha=0.85, edgecolor="#93c5fd",
+                      pad=3, boxstyle="round,pad=0.3"),
+            zorder=10,
+        )
+
+        # Edge dimension labels on parcel outline (outside edge)
+        for e in edges:
+            if e["length_ft"] < 5:
+                continue
+            p1_ft = to_ft(e["p1"][0], e["p1"][1])
+            p2_ft = to_ft(e["p2"][0], e["p2"][1])
+            mx = (p1_ft[0] + p2_ft[0]) / 2
+            my = (p1_ft[1] + p2_ft[1]) / 2
+            # Push dimension label outward past the edge
+            ox = -e["nx_ft"] * 10
+            oy = -e["ny_ft"] * 10
+            ax.text(
+                mx + ox, my + oy, f"{e['length_ft']:.0f}'",
+                ha="center", va="center", fontsize=5.5,
+                color="#374151", fontweight="bold",
+                bbox=dict(facecolor="white", alpha=0.9, edgecolor="#d1d5db",
+                          pad=1.5, boxstyle="round,pad=0.2"),
+                zorder=9,
+            )
+
+        ax.set_xlim(min(all_x) - pad, max(all_x) + pad)
+        ax.set_ylim(min(all_y) - pad, max(all_y) + pad)
+        ax.set_aspect("equal")
+        ax.axis("off")
+
+        # Legend
+        from matplotlib.patches import Patch
+        from matplotlib.lines import Line2D
+        legend_elements = [
+            Patch(facecolor="#f3f4f6", edgecolor="#374151", linewidth=1.5, label="Parcel"),
+            Patch(facecolor="#e5e7eb", edgecolor="none", hatch="///", alpha=0.6, label="Setback zone"),
+            Patch(facecolor=(0.15, 0.39, 0.92, 0.15), edgecolor="#2563eb",
+                  linestyle="--", linewidth=1, label="Buildable footprint"),
+        ]
+        ax.legend(handles=legend_elements, loc="upper right", fontsize=5,
+                  framealpha=0.9, edgecolor="#d1d5db")
+
+        fig.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight",
+                    pad_inches=0.1, facecolor="#f8fafc")
+        plt.close(fig)
+        buf.seek(0)
+        b64 = base64.b64encode(buf.read()).decode("ascii")
+        return b64, round(buildable_sqft, 0)
+
+    except Exception:
+        log.warning("Failed to generate envelope map", exc_info=True)
+        return None, None
+
+
+def _synthesize_opportunities_constraints(
+    report: "ReportData",
+) -> tuple[list[dict], list[dict]]:
+    """Deterministic cross-reference of all report data into actionable insights."""
+    from datetime import date
+
+    opportunities: list[dict] = []
+    constraints: list[dict] = []
+
+    ctx = report.context
+    prop = ctx.property
+    reg = ctx.regulatory
+    inc = ctx.incentives
+    nbr = ctx.neighborhood
+    dev = report.development_potential
+    comps = report.comparables
+    standards = report.zoning_standards
+    current_year = date.today().year
+
+    # --- Incentive stacking ---
+    if inc:
+        has_tif = inc.in_tif_district
+        has_oz = inc.in_opportunity_zone
+        has_ez = inc.in_enterprise_zone
+        has_qct = inc.in_qct
+        has_nmtc = inc.in_nmtc
+
+        if has_tif and has_oz and has_qct:
+            opportunities.append({
+                "signal": "Triple incentive stack: TIF + OZ + QCT",
+                "detail": "TIF funds site improvements, OZ defers investor capital gains, QCT provides 130% LIHTC basis boost for affordable housing.",
+                "category": "incentive",
+            })
+        elif has_tif and has_oz:
+            opportunities.append({
+                "signal": "TIF + Opportunity Zone",
+                "detail": "TIF can subsidize infrastructure and remediation; OZ structuring provides investors with tax-advantaged entry.",
+                "category": "incentive",
+            })
+        elif has_oz and has_qct:
+            opportunities.append({
+                "signal": "OZ + Qualified Census Tract",
+                "detail": "OZ investors receive capital gains deferral; QCT provides 130% basis boost for LIHTC projects.",
+                "category": "incentive",
+            })
+
+        if has_tif and has_ez:
+            opportunities.append({
+                "signal": "TIF + Enterprise Zone",
+                "detail": "TIF provides direct project funding; EZ provides sales tax exemption on building materials and investment tax credits.",
+                "category": "incentive",
+            })
+
+        if has_nmtc and inc.nmtc_severe_distress:
+            opportunities.append({
+                "signal": "NMTC with Severe Distress designation",
+                "detail": "Severely Distressed tracts receive priority in CDFI allocation rounds for the 39% NMTC credit.",
+                "category": "incentive",
+            })
+
+        if has_oz and prop and (prop.bldg_sqft or 0) == 0:
+            opportunities.append({
+                "signal": "Vacant lot in Opportunity Zone",
+                "detail": "Ground-up construction on vacant land is the cleanest Qualified Opportunity Fund investment — no substantial improvement test needed.",
+                "category": "incentive",
+            })
+
+        if inc.grant_programs and inc.grant_programs.total_funding and inc.grant_programs.total_funding > 500_000:
+            opportunities.append({
+                "signal": "Active grant funding in area",
+                "detail": f"${inc.grant_programs.total_funding:,.0f} in SBIF/NOF grants awarded in this community area — established pipeline for applications.",
+                "category": "incentive",
+            })
+
+        if has_tif and inc.tif_end_year:
+            years_left = inc.tif_end_year - current_year
+            if 0 < years_left <= 3:
+                constraints.append({
+                    "signal": f"TIF district expires in {years_left} year{'s' if years_left > 1 else ''}",
+                    "detail": f"{inc.tif_name} expires {inc.tif_end_year}. Apply for TIF funding before expiration.",
+                    "category": "incentive",
+                })
+
+    # --- TOD & Transit ---
+    if nbr and nbr.transit and nbr.transit.tod_eligible and standards and standards.parking_residential:
+        opportunities.append({
+            "signal": "TOD parking reduction eligible",
+            "detail": "Chicago TOD ordinance allows reduced parking near transit — could free buildable area otherwise consumed by parking.",
+            "category": "zoning",
+        })
+
+    if nbr and nbr.walkscore and nbr.walkscore.walk_score and nbr.walkscore.walk_score >= 80 and nbr and nbr.transit and nbr.transit.tod_eligible:
+        opportunities.append({
+            "signal": f"Walkable transit corridor (Walk Score {nbr.walkscore.walk_score})",
+            "detail": "High walkability + transit access supports reduced-parking or car-free residential development.",
+            "category": "market",
+        })
+
+    if reg and any(o.layer_type == "adu" for o in (reg.overlays or [])):
+        opportunities.append({
+            "signal": "ADU-eligible area",
+            "detail": "Accessory dwelling unit (coach house, basement apartment, rear cottage) is permitted — adds rental income potential without rezoning.",
+            "category": "zoning",
+        })
+
+    # --- Development potential ---
+    if prop and (prop.bldg_sqft or 0) == 0 and dev and dev.development_surplus_sqft and dev.development_surplus_sqft > 0:
+        opportunities.append({
+            "signal": "Vacant lot with full development capacity",
+            "detail": f"{prop.land_sqft:,} sq ft lot allows up to {dev.max_buildable_sqft:,} sq ft with no existing structure.",
+            "category": "zoning",
+        })
+
+    if prop and prop.bldg_sqft and dev and dev.development_surplus_sqft and dev.max_buildable_sqft:
+        utilization = prop.bldg_sqft / dev.max_buildable_sqft
+        if utilization < 0.3:
+            opportunities.append({
+                "signal": f"Under-improved property ({utilization:.0%} of allowed density)",
+                "detail": f"Existing {prop.bldg_sqft:,} sq ft uses {utilization:.0%} of the {dev.max_buildable_sqft:,} sq ft allowed. Significant expansion or teardown-rebuild potential.",
+                "category": "zoning",
+            })
+
+    if prop and prop.bldg_sqft and dev and dev.development_surplus_sqft is not None and dev.development_surplus_sqft <= 0:
+        constraints.append({
+            "signal": "At FAR limit — no development surplus",
+            "detail": f"Existing {prop.bldg_sqft:,} sq ft structure is at or near the maximum allowed. Additional floor area requires a variance or rezoning.",
+            "category": "zoning",
+        })
+
+    if prop and prop.bldg_age and prop.bldg_age >= 50 and prop.bldg_sqft and prop.bldg_sqft > 0:
+        opportunities.append({
+            "signal": f"Building age ({prop.bldg_age} years) may qualify for historic tax credits",
+            "detail": "Federal 20% and Illinois 25% historic tax credits available for certified historic structures. Verify individual listing eligibility with Illinois SHPO.",
+            "category": "financial",
+        })
+
+    # --- Regulatory ---
+    if reg and reg.in_planned_development:
+        constraints.append({
+            "signal": "Planned Development — discretionary approval required",
+            "detail": "Any modification to the approved PD plan requires City Council approval, public hearing, and aldermanic support (typically 6-18 months).",
+            "category": "regulatory",
+        })
+
+    if reg and reg.in_landmark_district:
+        constraints.append({
+            "signal": "Landmark district — design review required",
+            "detail": "Commission on Chicago Landmarks must review exterior modifications. Demolition is unlikely to be approved.",
+            "category": "regulatory",
+        })
+
+    if reg and reg.in_aro_zone and dev and dev.max_buildable_sqft:
+        constraints.append({
+            "signal": "ARO zone — affordable housing requirement at 10+ units",
+            "detail": "Projects of 10+ units must set aside units as affordable or pay in-lieu fee (~$175K/required unit). Factor into project economics.",
+            "category": "regulatory",
+        })
+
+    if reg and any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
+        opportunities.append({
+            "signal": "Pedestrian street overlay",
+            "detail": "Requires 60% ground-floor transparency and active uses — constrains design but signals walkable commercial corridor with higher foot traffic.",
+            "category": "regulatory",
+        })
+
+    if reg and reg.in_ssa:
+        constraints.append({
+            "signal": "Special Service Area levy",
+            "detail": f"SSA {reg.ssa_name or ''} imposes additional property tax (typically 0.5-2.0% of EAV) beyond base property tax.",
+            "category": "financial",
+        })
+
+    # --- Financial ---
+    if report.effective_tax_rate and report.effective_tax_rate > 0.035:
+        constraints.append({
+            "signal": f"High effective tax rate ({report.effective_tax_rate:.1%})",
+            "detail": "Above Cook County median (~2.1%). Reduces NOI and may impair debt service coverage. Investigate Class 6b/7a/7b/8 incentive eligibility.",
+            "category": "financial",
+        })
+
+    if report.assessment_trend and report.assessment_trend.get("cagr_pct", 0) > 5:
+        opportunities.append({
+            "signal": f"Strong assessment appreciation ({report.assessment_trend['cagr_pct']:.1f}% CAGR)",
+            "detail": f"Assessed values increased {report.assessment_trend['total_change_pct']:.0f}% over {report.assessment_trend['years']} years — reflects Cook County reassessment cycle and area market trends.",
+            "category": "market",
+        })
+
+    if comps and comps.sales_volume and comps.sales_volume < 3:
+        constraints.append({
+            "signal": f"Thin comparable sales market ({comps.sales_volume} transactions)",
+            "detail": "Land valuation carries higher uncertainty with limited arm's-length sales nearby. Consider wider search radius or independent appraisal.",
+            "category": "market",
+        })
+
+    # --- Site condition ---
+    if report.address_violations:
+        open_v = [v for v in report.address_violations if v.get("violation_status") == "OPEN"]
+        if len(open_v) > 10:
+            constraints.append({
+                "signal": f"{len(open_v)} open building code violations",
+                "detail": "Outstanding violations can block new permit issuance. Budget for remediation and factor violation clearance into closing timeline.",
+                "category": "site_condition",
+            })
+        elif len(open_v) > 0:
+            opportunities.append({
+                "signal": f"Open violations ({len(open_v)}) as acquisition leverage",
+                "detail": "Owner faces compliance costs. Open violations may create negotiating leverage on purchase price.",
+                "category": "site_condition",
+            })
+
+    if ctx.address_311 and ctx.address_311.high_risk_flags:
+        constraints.append({
+            "signal": "High-risk 311 complaints on file",
+            "detail": f"Flags: {', '.join(ctx.address_311.high_risk_flags)}. May indicate structural, mechanical, or habitability issues requiring immediate assessment.",
+            "category": "site_condition",
+        })
+
+    if report.nearby_development:
+        nc = report.nearby_development.new_construction_count or 0
+        if nc >= 5:
+            opportunities.append({
+                "signal": f"Active development corridor ({nc} new construction permits nearby)",
+                "detail": "High nearby construction activity indicates market confidence, established contractor availability, and favorable zoning precedent.",
+                "category": "market",
+            })
+        elif nc == 0 and (report.nearby_development.demolition_count or 0) == 0:
+            constraints.append({
+                "signal": "No nearby development activity (12 months)",
+                "detail": "Limited construction within 0.25mi may indicate weak demand, regulatory barriers, or infrastructure constraints.",
+                "category": "market",
+            })
+
+    if report.ownership_signals:
+        long_hold = any(s.get("signal") == "Long-Term Hold" for s in report.ownership_signals)
+        if long_hold and report.address_violations:
+            open_count = len([v for v in report.address_violations if v.get("violation_status") == "OPEN"])
+            if open_count > 5:
+                opportunities.append({
+                    "signal": "Long-held property with deferred maintenance",
+                    "detail": f"{open_count} open violations on a long-held property — owner faces mounting compliance costs and may be motivated to sell.",
+                    "category": "site_condition",
+                })
+
+    # --- Environmental ---
+    if reg and reg.in_special_flood_hazard:
+        constraints.append({
+            "signal": f"FEMA Special Flood Hazard Area (Zone {reg.flood_zone})",
+            "detail": "Flood insurance mandatory for federally-backed mortgages. Construction costs typically increase 10-20% for SFHA compliance.",
+            "category": "environmental",
+        })
+
+    if reg and reg.brownfield_sites and inc and inc.in_tif_district:
+        opportunities.append({
+            "signal": "TIF funding available for brownfield remediation",
+            "detail": f"{len(reg.brownfield_sites)} brownfield site(s) nearby. TIF districts routinely fund environmental remediation as an eligible expense.",
+            "category": "environmental",
+        })
+
+    # Cap at 4+4, prioritizing by category order
+    _CAT_PRIORITY = ["incentive", "zoning", "regulatory", "market", "financial", "site_condition", "environmental"]
+    opportunities.sort(key=lambda x: _CAT_PRIORITY.index(x["category"]) if x["category"] in _CAT_PRIORITY else 99)
+    constraints.sort(key=lambda x: _CAT_PRIORITY.index(x["category"]) if x["category"] in _CAT_PRIORITY else 99)
+
+    return opportunities[:4], constraints[:4]
+
+
+def _compute_land_value_range(report: "ReportData") -> dict | None:
+    """Compute estimated land value range from comparable sales."""
+    comps = report.comparables
+    prop = report.context.property
+    if not comps or not comps.sales or comps.sales_volume < 3:
+        return None
+    if not prop or not prop.land_sqft or prop.land_sqft <= 0:
+        return None
+
+    prices_per_sqft = [s.price_per_land_sqft for s in comps.sales if s.price_per_land_sqft and s.price_per_land_sqft > 0]
+    if len(prices_per_sqft) < 3:
+        return None
+
+    prices_per_sqft.sort()
+    n = len(prices_per_sqft)
+    p25_idx = max(0, int(n * 0.25))
+    p75_idx = min(n - 1, int(n * 0.75))
+    low_per_sqft = round(prices_per_sqft[p25_idx], 0)
+    high_per_sqft = round(prices_per_sqft[p75_idx], 0)
+    low = round(low_per_sqft * prop.land_sqft)
+    high = round(high_per_sqft * prop.land_sqft)
+
+    return {
+        "low": low,
+        "high": high,
+        "low_per_sqft": low_per_sqft,
+        "high_per_sqft": high_per_sqft,
+        "sample_size": comps.sales_volume,
+    }
+
+
+def _compute_approval_pathway(report: "ReportData") -> dict | None:
+    """Determine regulatory approval complexity from report data."""
+    reg = report.context.regulatory
+    if not reg:
+        return None
+
+    standards = report.zoning_standards
+    has_special = standards and standards.special_uses
+    has_permitted = standards and standards.permitted_uses
+
+    if reg.in_planned_development:
+        complexity = "COMPLEX"
+        detail = "Planned Development amendment required: City Council approval, public hearing, aldermanic support"
+        timeline = "6-18 months"
+    elif reg.in_landmark_district or reg.in_historic_district:
+        complexity = "COMPLEX"
+        detail = "Commission on Chicago Landmarks review required for exterior modifications"
+        timeline = "3-6 months for permit review"
+    elif has_special and not has_permitted:
+        complexity = "MODERATE"
+        detail = "Zoning Board of Appeals hearing required for special use approval"
+        timeline = "3-6 months"
+    elif has_special and has_permitted:
+        complexity = "MODERATE"
+        detail = "Permitted uses available; special use approval needed for some use types"
+        timeline = "4-8 weeks (permitted) / 3-6 months (special use)"
+    else:
+        complexity = "SIMPLE"
+        detail = "Standard building permit application under base zoning"
+        timeline = "4-8 weeks"
+
+    modifiers: list[str] = []
+    if report.address_violations:
+        open_count = len([v for v in report.address_violations if v.get("violation_status") == "OPEN"])
+        if open_count > 5:
+            modifiers.append("Violation clearance required before new permits")
+    if reg.in_special_flood_hazard:
+        modifiers.append("FEMA floodplain compliance review")
+    if reg.in_aro_zone:
+        modifiers.append("ARO affordable housing compliance (if 10+ units)")
+    if any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
+        modifiers.append("Ground-floor design must meet pedestrian street standards")
+
+    return {
+        "complexity": complexity,
+        "detail": detail,
+        "timeline": timeline,
+        "modifiers": modifiers,
+    }
+
+
+def _compute_development_trend(report: "ReportData") -> dict | None:
+    """Synthesize nearby development data into a narrative summary."""
+    nd = report.nearby_development
+    if not nd:
+        return None
+
+    nc = nd.new_construction_count or 0
+    demo = nd.demolition_count or 0
+    projects = nd.recent_projects or []
+
+    if nc == 0 and demo == 0:
+        return {
+            "narrative": f"Limited development activity within 0.25mi — {len(projects)} permit(s) in 12 months.",
+            "intensity": "quiet",
+        }
+
+    total_investment = 0
+    for p in projects:
+        try:
+            cost = float(p.get("reported_cost", 0) or 0)
+            total_investment += cost
+        except (ValueError, TypeError):
+            pass
+
+    if nc > 0 and total_investment > 0:
+        avg_cost = total_investment / max(nc, 1)
+        narrative = (
+            f"{nc} new construction permit{'s' if nc > 1 else ''} totaling "
+            f"${total_investment / 1_000_000:.1f}M within 0.25mi in the last 12 months. "
+            f"Average project investment: ${avg_cost / 1_000:.0f}K."
+        )
+        if demo > 0:
+            narrative += f" {demo} demolition permit{'s' if demo > 1 else ''} suggest{'s' if demo == 1 else ''} active site clearance."
+        intensity = "active" if nc >= 3 else "moderate"
+    elif demo > nc:
+        narrative = (
+            f"{demo} demolition permit{'s' if demo > 1 else ''} vs {nc} new construction "
+            f"permit{'s' if nc != 1 else ''} suggest a teardown-rebuild cycle in early stages."
+        )
+        intensity = "transitional"
+    else:
+        narrative = f"{nc + demo} development permit{'s' if (nc + demo) > 1 else ''} within 0.25mi in 12 months."
+        intensity = "moderate"
+
+    return {
+        "narrative": narrative,
+        "intensity": intensity,
+        "total_investment": total_investment,
+        "new_construction_count": nc,
+        "demolition_count": demo,
+    }
+
+
+def _build_incentive_stacking_narrative(report: "ReportData") -> str | None:
+    """Generate a paragraph explaining how multiple incentive programs combine."""
+    inc = report.context.incentives
+    if not inc:
+        return None
+
+    flags = []
+    if inc.in_tif_district:
+        flags.append("TIF")
+    if inc.in_opportunity_zone:
+        flags.append("OZ")
+    if inc.in_enterprise_zone:
+        flags.append("EZ")
+    if inc.in_qct:
+        flags.append("QCT")
+    if inc.in_nmtc:
+        flags.append("NMTC")
+
+    if len(flags) < 2:
+        return None
+
+    key = "+".join(sorted(flags))
+    templates = {
+        "OZ+TIF": (
+            "This parcel sits in both a TIF district and an Opportunity Zone. "
+            "TIF funding can subsidize infrastructure, remediation, and public improvements, "
+            "while OZ structuring allows investors to defer and reduce capital gains taxes through a Qualified Opportunity Fund. "
+            "These programs operate independently and can be combined in the same project."
+        ),
+        "EZ+TIF": (
+            "This parcel benefits from both TIF and Enterprise Zone designations. "
+            "TIF provides direct project funding for eligible expenses, "
+            "while the Enterprise Zone offers sales tax exemptions on building materials and state investment tax credits. "
+            "Together, these can meaningfully reduce both hard and soft development costs."
+        ),
+        "OZ+QCT": (
+            "This parcel is in both an Opportunity Zone and a Qualified Census Tract. "
+            "OZ investors receive capital gains deferral and potential exclusion on appreciation. "
+            "The QCT designation provides LIHTC projects with a 130% basis boost, "
+            "making affordable housing development significantly more feasible."
+        ),
+        "OZ+QCT+TIF": (
+            "This parcel qualifies for a triple incentive stack: TIF + Opportunity Zone + Qualified Census Tract. "
+            "TIF can fund site improvements and infrastructure. OZ provides investor-level capital gains benefits. "
+            "QCT delivers a 130% LIHTC basis boost for affordable housing. "
+            "This combination represents one of the strongest incentive positions available in Chicago."
+        ),
+        "NMTC+TIF": (
+            "This parcel sits in both a TIF district and an NMTC-eligible census tract. "
+            "TIF provides direct project funding, while NMTC offers a 39% federal tax credit over 7 years for qualifying investments. "
+            "NMTC is typically applied to commercial, mixed-use, or community facility projects."
+        ),
+        "EZ+OZ": (
+            "This parcel benefits from both Enterprise Zone and Opportunity Zone designations. "
+            "EZ provides immediate benefits through sales tax exemptions on building materials, "
+            "while OZ offers long-term investor capital gains advantages through Qualified Opportunity Fund structuring."
+        ),
+    }
+
+    narrative = templates.get(key)
+    if narrative:
+        return narrative
+
+    return (
+        f"This parcel is eligible for {len(flags)} incentive programs: {', '.join(flags)}. "
+        "Multiple incentive programs can often be combined in the same project, though each has specific eligibility "
+        "requirements and application processes. Consult with a tax advisor or economic development specialist "
+        "to evaluate the optimal incentive strategy."
+    )
+
+
+def _build_envelope_summary(report: "ReportData") -> str | None:
+    """Assemble development parameters into one readable block."""
+    standards = report.zoning_standards
+    dev = report.development_potential
+    prop = report.context.property
+    zoning = report.context.parcel_zoning
+
+    if not standards or not prop or not prop.land_sqft:
+        return None
+
+    zone = zoning.zone_class if zoning else "this district"
+    parts = [f"On this {prop.land_sqft:,} sq ft lot, {zone}"]
+
+    if dev and dev.max_buildable_sqft:
+        parts.append(f" allows up to {dev.max_buildable_sqft:,} sq ft of floor area")
+    elif standards.far is not None:
+        parts.append(f" permits a FAR of {standards.far}")
+
+    if standards.max_stories and standards.max_height_ft:
+        parts.append(f" across {standards.max_stories} stories / {standards.max_height_ft} ft")
+    elif standards.max_stories:
+        parts.append(f" across {standards.max_stories} stories")
+    elif standards.max_height_ft:
+        parts.append(f" up to {standards.max_height_ft} ft")
+
+    parts.append(".")
+
+    if standards.lot_coverage_pct and prop.land_sqft:
+        footprint = int(standards.lot_coverage_pct * prop.land_sqft)
+        parts.append(f" Maximum building footprint: approximately {footprint:,} sq ft ({int(standards.lot_coverage_pct * 100)}% lot coverage).")
+
+    if standards.permitted_uses:
+        top_uses = standards.permitted_uses[:3]
+        parts.append(f" Permitted uses include: {', '.join(top_uses)}.")
+
+    if standards.parking_residential:
+        parts.append(f" Parking: {standards.parking_residential} per residential unit.")
+
+    return "".join(parts)
+
+
 def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
     """Inject realistic test data for visual QA of all v2 sections."""
     from backend.models import (
@@ -2407,8 +3336,8 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
         max_stories=4,
         lot_coverage_pct=0.75,
         min_lot_area_sqft=2500,
-        front_setback_ft=0,
-        side_setback_ft=0,
+        front_setback_ft=10,
+        side_setback_ft=5,
         rear_setback_ft=30,
         parking_residential="1 per unit",
         parking_commercial="1 per 500 sq ft GFA",
@@ -2563,11 +3492,44 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
     # Force adjacent zoning
     report_data.adjacent_zoning = {"N": "B3-2", "S": "RS-3", "E": "B3-2", "W": "RT-4"}
 
+    # Mock parcel geometry (25' x 125' rectangular lot near 2400 N Milwaukee)
+    if report_data.context.property:
+        report_data.context.property.parcel_geometry = {
+            "type": "Polygon",
+            "coordinates": [[
+                [-87.69230, 41.92720],
+                [-87.69230, 41.92754],
+                [-87.69220, 41.92754],
+                [-87.69220, 41.92720],
+                [-87.69230, 41.92720],
+            ]],
+        }
+
     # Generate comps chart for mock data
     try:
         report_data.comps_chart_b64 = _generate_comps_chart(report_data.comparables)
     except Exception:
         pass
+
+    # Envelope map for mock data
+    if report_data.context.property and report_data.context.property.parcel_geometry and report_data.zoning_standards:
+        try:
+            report_data.envelope_map_b64, report_data.buildable_footprint_sqft = _generate_envelope_map(
+                report_data.lat, report_data.lon,
+                report_data.context.property.parcel_geometry,
+                report_data.zoning_standards,
+                report_data.parcel_dimensions,
+            )
+        except Exception:
+            log.warning("Failed to generate mock envelope map", exc_info=True)
+
+    # V5 synthesis on mock data
+    report_data.opportunities, report_data.constraints = _synthesize_opportunities_constraints(report_data)
+    report_data.estimated_land_value = _compute_land_value_range(report_data)
+    report_data.approval_pathway = _compute_approval_pathway(report_data)
+    report_data.development_trend = _compute_development_trend(report_data)
+    report_data.incentive_stacking_narrative = _build_incentive_stacking_narrative(report_data)
+    report_data.envelope_summary = _build_envelope_summary(report_data)
 
     # Clear partial failures since mock data is complete
     report_data.partial_failures = []
