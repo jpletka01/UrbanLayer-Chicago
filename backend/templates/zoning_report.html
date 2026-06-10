@@ -882,10 +882,11 @@ a.glossary-link {
   </dl>
   {% if report.nearby_development.recent_projects %}
   <table style="font-size: 7pt;">
-    <thead><tr><th>Type</th><th>Address</th><th>Description</th><th class="num">Cost</th><th>Date</th><th class="num">Dist</th></tr></thead>
+    <thead><tr><th>#</th><th>Type</th><th>Address</th><th>Description</th><th class="num">Cost</th><th>Date</th><th class="num">Dist</th></tr></thead>
     <tbody>
     {% for p in report.nearby_development.recent_projects[:10] %}
     <tr>
+      <td>{{ loop.index }}</td>
       <td>{% if "WRECKING" in (p.permit_type or "") or "DEMOLITION" in (p.permit_type or "") %}Demo{% else %}New{% endif %}</td>
       <td>{{ p.formatted_address or "—" }}</td>
       <td>{{ ((p.work_description or "—")[:50]) }}{% if (p.work_description or "")|length > 50 %}…{% endif %}</td>

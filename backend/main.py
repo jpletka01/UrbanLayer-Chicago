@@ -1608,7 +1608,7 @@ def _generate_construction_map(
         has_construction = False
         has_demolition = False
 
-        for proj in projects:
+        for idx, proj in enumerate(projects[:10], start=1):
             try:
                 plat = float(proj.get("latitude", 0))
                 plon = float(proj.get("longitude", 0))
@@ -1623,13 +1623,18 @@ def _generate_construction_map(
 
             ptype = proj.get("permit_type", "")
             if "NEW CONSTRUCTION" in ptype:
-                ax.plot(px, py, "o", markersize=8, color="#10b981",
-                        markeredgecolor="white", markeredgewidth=1, zorder=5)
+                color = "#10b981"
                 has_construction = True
-            elif "WRECKING" in ptype:
-                ax.plot(px, py, "X", markersize=8, color="#ef4444",
-                        markeredgecolor="white", markeredgewidth=1, zorder=5)
+            elif "WRECKING" in ptype or "DEMOLITION" in ptype:
+                color = "#ef4444"
                 has_demolition = True
+            else:
+                color = "#10b981"
+                has_construction = True
+            ax.plot(px, py, "o", markersize=10, color=color,
+                    markeredgecolor="white", markeredgewidth=1.2, zorder=5)
+            ax.text(px, py, str(idx), ha="center", va="center",
+                    fontsize=5.5, fontweight="bold", color="white", zorder=6)
 
         # Subject property pin
         pin_px, pin_py = img_w / 2, img_h / 2
