@@ -30,9 +30,20 @@ Regenerated the **same parcel** without mock: `GET /api/report?pin=1428319007000
 
 ### Reclassification of audited findings
 
+> **Phase 2 correction (2026-06-10): Q9 and Q11 are NOT bugs.** Investigated against the authoritative
+> Chicago Zoning MapServer and verified independently with shapely point-in-polygon:
+> - **Q9 Lakefront:** the subject (443 W Wrightwood) is genuinely inside the Lakefront Protection District
+>   "Private Lakefront" zone — it sits ≈0.2 mi west of Lake Shore Drive (the audit's "1.5 mi inland" was a
+>   mock-era mis-estimate). ArcGIS intersect AND shapely PIP agree; Logan Square and parcels west of the
+>   boundary correctly return no hit. The LPO is a real material constraint — the flag must stay. Only the
+>   misleading lead label was changed to "Lakefront Protection District [Private Lakefront]".
+> - **Q11 Lakeview NR:** the National Register layer returns a real district literally named "Lakeview
+>   Historic District" whose ADDRESS field lists "Wrightwood … Sheridan, Belmont, Halsted …". NR district
+>   names are independent of community-area names; the name is authoritative. No code change.
+
 **CONFIRMED REAL (persist in real data — fix these):**
-- **Q9** Lakefront Protection District false positive — still shows "Private Lakefront" ~1.5 mi inland. ✔ real.
-- **Q11** "Lakeview Historic District" on a Lincoln Park property — still present. ✔ real.
+- **Q9** ~~Lakefront Protection District false positive~~ → **TRUE positive; label fixed only** (see note above).
+- **Q11** ~~"Lakeview Historic District" on a Lincoln Park property~~ → **correct NR district name** (see note above).
 - **D6** redundant bracket labels ("ADU Eligible Areas [ADU Eligible Areas]", "ARO Zones [ARO Zones]") — still present. ✔ real.
 - **P4** 311 rat-complaint alarmism — still present verbatim. ✔ real.
 - **D9** "ZONE TYPE: 4" — still present. ✔ real.

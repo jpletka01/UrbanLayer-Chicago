@@ -559,7 +559,6 @@ a.glossary-link {
   {% if zoning %}
   <dl class="info-grid">
     <dt>Zone Class</dt><dd><a href="https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&amp;config=zoning">{{ zoning.zone_class or "N/A" }}</a> — {{ zoning.zone_class|zone_desc }}</dd>
-    <dt>Zone Type</dt><dd>{{ zoning.zone_type or "N/A" }}</dd>
     {% if zoning.ordinance_num %}<dt>Ordinance</dt><dd>{{ zoning.ordinance_num }}</dd>{% endif %}
   </dl>
   {% else %}
@@ -704,7 +703,7 @@ a.glossary-link {
     {% for overlay in reg.overlays %}
     <div class="overlay-item">
       <span class="status-yes">&#10003;</span> {{ overlay.name or overlay.layer_type }}
-      {% if overlay.description %}<span style="font-size: 7pt; color: #9ca3af;"> [{{ overlay.description }}]</span>{% endif %}
+      {% if overlay.description and overlay.description|lower|trim != (overlay.name or overlay.layer_type)|lower|trim %}<span style="font-size: 7pt; color: #9ca3af;"> [{{ overlay.description }}]</span>{% endif %}
       {% if overlay.ordinance %}<span style="font-size: 8pt; color: #6b7280;"> ({{ overlay.ordinance }})</span>{% endif %}
     </div>
     {% endfor %}
@@ -730,19 +729,9 @@ a.glossary-link {
     <dd>{% if reg and reg.in_ssa %}<span class="status-yes">{{ reg.ssa_name or "Yes" }}</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
   </dl>
 
-  {% if nbr and nbr.transit and (nbr.transit.nearest_cta_rail or nbr.transit.nearest_metra) %}
-  <h3>Transit Access</h3>
-  <dl class="info-grid">
-    {% if nbr.transit.nearest_cta_rail %}
-    <dt>Nearest CTA Rail</dt>
-    <dd>{{ nbr.transit.nearest_cta_rail }}{% if nbr.transit.cta_rail_distance_mi %} ({{ "%.2f"|format(nbr.transit.cta_rail_distance_mi) }} mi){% endif %}{% if nbr.transit.cta_lines %} — {{ nbr.transit.cta_lines | join(", ") }}{% endif %}</dd>
-    {% endif %}
-    {% if nbr.transit.nearest_metra %}
-    <dt>Nearest Metra</dt>
-    <dd>{{ nbr.transit.nearest_metra }}{% if nbr.transit.metra_distance_mi %} ({{ "%.2f"|format(nbr.transit.metra_distance_mi) }} mi){% endif %}{% if nbr.transit.metra_line %} — {{ nbr.transit.metra_line }}{% endif %}</dd>
-    {% endif %}
-  </dl>
-  {% endif %}
+  {# Transit Access detail (CTA rail + Metra) lives in the Market Context section to
+     avoid duplicating it here; the TOD-eligibility row above carries the regulatory
+     signal. See D5. #}
 
   <h3>Flood Zone (FEMA)</h3>
   {% if reg and reg.flood_zone %}
@@ -1050,9 +1039,10 @@ a.glossary-link {
   {% endif %}
 
   {% if report.construction_map_b64 %}
-  <div style="text-align: center; margin: 4pt 0 6pt 0;">
+  <figure style="text-align: center; margin: 4pt 0 6pt 0; page-break-inside: avoid;">
     <img src="data:image/png;base64,{{ report.construction_map_b64 }}" alt="Construction &amp; Demolition Activity Map" style="max-width: 65%; border-radius: 4pt;">
-  </div>
+    <figcaption style="font-size: 7.5pt; color: #6b7280; margin-top: 3pt;">New construction (green) and demolition (red) permits within 0.5&nbsp;mi over the past 12 months.</figcaption>
+  </figure>
   {% endif %}
   {% endif %}
 </div>
@@ -1188,7 +1178,10 @@ a.glossary-link {
   <p style="font-size: 9.5pt; margin-bottom: 4pt;"><span class="status-no">No open complaints</span></p>
   {% endif %}
   {% if ctx.address_311.high_risk_flags %}
-  <p style="font-size: 9pt;"><span class="status-warn">High-Risk Flags:</span> {{ ctx.address_311.high_risk_flags | join(", ") }}</p>
+  <p style="font-size: 9pt;"><span class="status-warn">High-Risk Flags:</span> {{ ctx.address_311.high_risk_flags | join(", ") }} <span style="color: #6b7280;">(structural / habitability / safety — warrant inspection)</span></p>
+  {% endif %}
+  {% if ctx.address_311.routine_service_flags %}
+  <p style="font-size: 9pt; color: #6b7280;">Routine City service requests: {{ ctx.address_311.routine_service_flags | join(", ") }} — standard municipal abatement, not a structural or development-feasibility indicator.</p>
   {% endif %}
   <p style="font-size: 8pt; color: #6b7280;">{{ ctx.address_311.total }} total complaints in past 12 months (open + closed).</p>
   {% endif %}

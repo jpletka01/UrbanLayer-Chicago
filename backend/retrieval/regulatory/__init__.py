@@ -102,11 +102,23 @@ def _build_summary(
         )
         ordinance = attrs.get("ORDINANCE") or attrs.get("ORDINANCE_NUM") or attrs.get("ORD_NUM")
 
+        if layer_type == "lakefront_protection":
+            # The Lakefront Protection District legitimately extends inland; this flag
+            # is correct for near-lake parcels. But the feature NAME is a subtype
+            # ("Private Lakefront" / "Public Lakefront") that, used as a standalone
+            # label, misleads a reader into thinking the parcel has private waterfront.
+            # Lead with the regulatory district name and keep the subtype as a qualifier.
+            display_name = layer_name
+            description = feature_name or layer_name
+        else:
+            display_name = feature_name or layer_name
+            description = layer_name
+
         overlays.append(OverlayDistrict(
             layer_type=layer_type,
-            name=feature_name or layer_name,
+            name=display_name,
             ordinance=ordinance,
-            description=layer_name,
+            description=description,
         ))
 
         flag_field = FLAG_MAP.get(layer_type)

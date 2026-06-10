@@ -96,6 +96,7 @@ class Address311Summary(BaseModel):
     open_count: int
     by_type: dict[str, int]
     high_risk_flags: list[str] = Field(default_factory=list)
+    routine_service_flags: list[str] = Field(default_factory=list)
 
 
 class PermitSummary(BaseModel):

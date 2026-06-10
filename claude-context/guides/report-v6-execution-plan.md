@@ -2,10 +2,39 @@
 
 Plan date: 2026-06-10.
 
+## STATUS — Phase 2 SHIPPED (2026-06-10)
+
+**Phase 2 (credibility) complete, verified on real PDFs for both parcels.** Two audit items
+(**Q9 Lakefront, Q11 Lakeview NR**) were **investigated and found NOT to be bugs** — the City GIS
+data is authoritative and correct; the original audit ran on a mock and mis-estimated geography.
+
+| Item | Resolution | Verified on |
+|------|-----------|-------------|
+| P4 311 rodent alarmism | Severity taxonomy: `_STRUCTURAL_RISK_TYPES` vs `_ROUTINE_SERVICE_TYPES`; rodent/rat → `routine_service_flags`, no longer a structural high-risk constraint | EX cover badge downgraded RISK→CAUTION (real open violations); routine note renders |
+| Q12/P9 EX "standard" | Assembler labels exempt class → `property_tax_class="exempt"`, consistent with R2c callout | EX shows "Tax Incentive Class: exempt…"; control 205 still "standard" |
+| Q9 Lakefront | **TRUE positive** — parcel is genuinely in the LPO (≈0.2mi W of Lake Shore Dr; confirmed by ArcGIS intersect + shapely PIP; inland controls excluded). Only the misleading lead label fixed | EX: "Lakefront Protection District [Private Lakefront]" |
+| Q11 Lakeview NR | **CORRECT** — real National Register "Lakeview Historic District" spans Wrightwood per its ADDRESS field; NR names are independent of community area. No code change | EX shows authoritative name, kept |
+| D6 dup brackets | `[desc]` shown only when it differs from name (case-insensitive) | EX: "ADU Eligible Areas" / "ARO Zones" — no dup |
+| D5/D10 transit | Removed regulatory dup; single canonical block in Market Context at 1-decimal | both: one "Transit Access" |
+| D9 ZONE TYPE | Removed redundant numeric row (no published domain; Zone Class already labels it) | both: no Zone Type row |
+| D2 construction map | `<figure page-break-inside:avoid>` + caption binds map together | template |
+| Q10 CAGR | Already derived from real oldest/newest year + reassessment disclaimer; regression-tested | control: "over 3 years (2022–2025)…" |
+| P7 appreciation | Synthesis signal reframed reassessment-trend + tax-burden, not "appreciation opportunity" | code (CAGR>5 not present on either parcel) |
+| D1 blank page | **Not reproducible** on real data (15/18pp, no blank page) — was mock-only | both |
+
+**Files changed (Phase 2):** `backend/retrieval/three11.py` (severity taxonomy), `backend/models.py`
+(`Address311Summary.routine_service_flags`), `backend/assembler.py` (exempt tax-class branch + 311 passthrough),
+`backend/retrieval/regulatory/__init__.py` (lakefront lead label), `backend/main.py` (P7 reframe),
+`backend/templates/zoning_report.html` (D6/D9/D5/D2/P4 display), tests (`test_report_phase2_fixes.py` +8).
+539 tests pass (8 pre-existing live-API integration failures unrelated).
+
+Remaining: Phase 3 (decision quality), Phase 4 (UX/viz) — not started.
+
+---
+
 ## STATUS — Phase 1 SHIPPED (2026-06-10, commit f0c1996)
 
 **Phase 1 (viability: R1, R2, R3, R4) is complete, verified, committed, and pushed to `main`.**
-Remaining: Phase 2 (credibility), Phase 3 (decision quality), Phase 4 (UX/viz) — not started.
 
 Phase 1 verified end-to-end by regenerating real (non-mock) PDFs for both parcels and extracting text:
 

@@ -3282,9 +3282,12 @@ def _synthesize_opportunities_constraints(
         })
 
     if report.assessment_trend and report.assessment_trend.get("cagr_pct", 0) > 5:
+        # Rising assessed value is a reassessment-cycle signal, not realized market
+        # appreciation, and it raises the tax burden — frame it as a trend/cost to
+        # verify, not an "appreciation opportunity" (see P7).
         opportunities.append({
-            "signal": f"Strong assessment appreciation ({report.assessment_trend['cagr_pct']:.1f}% CAGR)",
-            "detail": f"Assessed values increased {report.assessment_trend['total_change_pct']:.0f}% over {report.assessment_trend['years']} years — reflects Cook County reassessment cycle and area market trends.",
+            "signal": f"Assessed value rising ({report.assessment_trend['cagr_pct']:.1f}% CAGR, reassessment trend)",
+            "detail": f"Assessed value rose {report.assessment_trend['total_change_pct']:.0f}% over {report.assessment_trend['years']} years ({report.assessment_trend.get('oldest_year')}–{report.assessment_trend.get('newest_year')}). This reflects Cook County reassessment cycles, not necessarily market appreciation, and increases the property-tax burden — model the higher assessment in underwriting.",
             "category": "market",
         })
 

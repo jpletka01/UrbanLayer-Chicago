@@ -516,6 +516,7 @@ def assemble_context(
             open_count=address_311_data.get("open_count", 0),
             by_type=address_311_data.get("by_type", {}),
             high_risk_flags=address_311_data.get("high_risk_flags", []),
+            routine_service_flags=address_311_data.get("routine_service_flags", []),
         )
     permits = _permit_summary(permit_data) if permit_data is not None else None
     violations = _violation_summary(violation_data) if violation_data is not None else None
@@ -554,12 +555,30 @@ def assemble_context(
 
     if property_summary and property_summary.bldg_class:
         tax_class, tax_desc = _interpret_tax_class(property_summary.bldg_class)
+        is_exempt = (
+            property_summary.tax_exempt
+            or property_summary.bldg_class.strip().upper().startswith("EX")
+        )
         if tax_class:
             if incentives_summary is None:
                 incentives_summary = IncentivesSummary()
             incentives_summary = incentives_summary.model_copy(update={
                 "property_tax_class": tax_class,
                 "tax_incentive_description": tax_desc,
+            })
+        elif is_exempt:
+            # Class EX is tax-exempt, not a "standard" classification. Labeling it
+            # "standard" contradicts the Tax-Exempt callout in the property section.
+            if incentives_summary is None:
+                incentives_summary = IncentivesSummary()
+            incentives_summary = incentives_summary.model_copy(update={
+                "property_tax_class": "exempt",
+                "tax_incentive_description": (
+                    f"Property class {property_summary.bldg_class} is tax-exempt — typically "
+                    "institutional, government, religious, or non-profit ownership. No assessed "
+                    "value or tax-incentive reduction applies in its current use; a change of "
+                    "ownership or use would trigger reassessment at the applicable class."
+                ),
             })
         elif "incentives_domain" in plan.sources:
             if incentives_summary is None:

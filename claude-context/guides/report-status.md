@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-10
+Last updated: 2026-06-10 (Report V6 Phase 2 — credibility — shipped)
 
 ## Shipped Features
 
@@ -71,33 +71,43 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 7 | P1 | No FAR-utilization framing | 4 | S | Open |
 | 8 | P8 | No as-of-right unit yield | 4 | S | Open |
 | 9 | Exec | Constraints not consolidated into one callout | 4 | S | Open |
-| 10 | P4 | 311 "high-risk" alarmism (rodent baiting) | 4 | M | Open |
-| 11 | Q9 | Lakefront Protection false positive inland | 4 | M | Needs real-data |
+| 10 | P4 | 311 "high-risk" alarmism (rodent baiting) | 4 | M | **Fixed (Phase 2)** — severity taxonomy: rodent/rat → routine_service_flags, structural only stays high-risk |
+| 11 | Q9 | Lakefront Protection false positive inland | 4 | M | **Won't fix — verified TRUE positive (Phase 2)**; only the lead label changed |
 | 12 | Q7/Q8 | Map/table different neighborhoods; comps wrong section `[mock?]` | 4 | S/M | Needs real-data |
 | 13 | Miss#6 | No combined site-context map | 4 | L | Open |
 | 14 | Q5 | Tax agency rows sum > stated total `[mock?]` | 3 | XS/S | Needs real-data |
-| 15 | P7/Q13 | Reassessment drift sold as appreciation opportunity | 3 | XS | Open |
+| 15 | P7/Q13 | Reassessment drift sold as appreciation opportunity | 3 | XS | **Fixed (Phase 2)** — synthesis signal reframed as reassessment trend + tax-burden, not "appreciation opportunity" |
 | 16 | Q6 | Effective tax rate vs assessed value; market value hidden | 3 | S | Open |
 | 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | Open |
 | 18 | D7 | Comps scatter plots absolute price, not $/sf | 3 | S | Open |
-| 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | Needs real-data |
+| 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | **Fixed (Phase 2)** — EX → property_tax_class "exempt", consistent with R2c callout |
 | 20 | P5 | Ownership Intelligence lacks the "so what" | 3 | S | Open |
-| 21 | D2 | Construction map orphaned across page break | 2 | XS–S | Open |
-| 22 | V6-5 | "0.25mi" narrative contradicts "0.5mi" header | 2 | XS | Open |
-| 23 | Q10 | CAGR labeled 5yr (2020–2025) but data starts 2021 | 2 | XS | Open |
+| 21 | D2 | Construction map orphaned across page break | 2 | XS–S | **Fixed (Phase 2)** — `<figure page-break-inside:avoid>` + caption binds map together |
+| 22 | V6-5 | "0.25mi" narrative contradicts "0.5mi" header | 2 | XS | Fixed (Phase 1, R4) |
+| 23 | Q10 | CAGR labeled 5yr (2020–2025) but data starts 2021 | 2 | XS | **Fixed (Phase 2)** — period already derived from real oldest/newest year + disclaimer; regression-tested |
 | 24 | Q14 | "Surplus" undefined; existing sf not shown | 2 | XS | Open |
 | 25 | P6/D11 | Crime: no benchmark, buried | 2 | S | Open |
 | 26 | P3 | Financial = five "No"s + irrelevant grant | 2 | S | Open |
 | 27 | V5-1c | Advisory tier of Next Steps missing | 2 | S | Open |
-| 28 | D1 | Blank page 8 (orphaned footnote) | 1 | XS | Open |
+| 28 | D1 | Blank page 8 (orphaned footnote) | 1 | XS | **Won't fix — not reproducible (Phase 2)**; real reports (15/18pp) have no blank page (was mock-only) |
 | 29 | D4 | Tax + effective rate shown 3× | 1 | XS | Open |
-| 30 | D5 | Transit duplicated + rounding mismatch | 1 | XS | Open |
-| 31 | D6 | Overlay bracket labels duplicate name verbatim | 1 | XS | Open |
-| 32 | D9 | "ZONE TYPE: 4" meaningless | 1 | XS | Open |
-| 33 | D10 | Inconsistent distance precision | 1 | XS | Open |
-| 34 | Q11 | "Lakeview Historic District" on Lincoln Park property | 1 | XS | Open |
+| 30 | D5 | Transit duplicated + rounding mismatch | 1 | XS | **Fixed (Phase 2)** — single canonical transit block in Market Context; regulatory dup removed |
+| 31 | D6 | Overlay bracket labels duplicate name verbatim | 1 | XS | **Fixed (Phase 2)** — `[desc]` rendered only when it differs from name |
+| 32 | D9 | "ZONE TYPE: 4" meaningless | 1 | XS | **Fixed (Phase 2)** — redundant numeric Zone Type row removed (Zone Class already labels it) |
+| 33 | D10 | Inconsistent distance precision | 1 | XS | **Fixed (Phase 2)** — transit narrative standardized to 1 decimal (tables keep 2-dec for comp separation) |
+| 34 | Q11 | "Lakeview Historic District" on Lincoln Park property | 1 | XS | **Won't fix — verified correct (Phase 2)**; real NR district spans Wrightwood, name is authoritative |
 | 35 | D8 | Site Assessment badges mix scales | 1 | S | Open |
 | 36 | V6-2 | Year-built / nonconformity absent (CCAO-blocked) | 3 | L | Needs real-data |
+
+### Phase 2 (credibility) SHIPPED — 2026-06-10
+
+P4, Q12/P9, D6, D5, D9, D10, D2, Q10, P7 **Fixed**; Q9 + Q11 **investigated → not bugs** (authoritative
+City GIS confirmed via ArcGIS intersect + shapely PIP); D1 **not reproducible** on real data. Verified on
+real PDFs for both parcels (EX 14pp / control 18pp). 8 regression tests in `test_report_phase2_fixes.py`.
+Key finding: the audit's Q9 "1.5mi inland false positive" was a mock-era mis-estimate — the parcel is
+genuinely in the Lakefront Protection District (~0.2mi W of Lake Shore Dr) and the flag is a real
+constraint. Detail + per-item table: `guides/report-v6-execution-plan.md` (Phase 2 status).
+**Next: Phase 3 (decision quality)** — cover decision box, land-value range, FAR utilization, unit yield.
 
 ### Phase 1 (viability) SHIPPED — 2026-06-10, commit f0c1996
 
