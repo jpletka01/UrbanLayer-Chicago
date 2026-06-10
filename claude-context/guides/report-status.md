@@ -99,6 +99,14 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 35 | D8 | Site Assessment badges mix scales | 1 | S | Open |
 | 36 | V6-2 | Year-built / nonconformity absent (CCAO-blocked) | 3 | L | Needs real-data |
 
+### Phase 1 (viability) SHIPPED — 2026-06-10, commit f0c1996
+
+R1, R2, R3, R4 all **Fixed** and verified on real PDFs for the EX subject + taxable control (table below).
+Full plan, per-fix detail, and verification evidence: `guides/report-v6-execution-plan.md`.
+Also fixed two latent general bugs (PIN→coords `latitude/longitude` resolver; `standards.max_far`→`far`).
+**Next: Phase 2 (credibility)** — Q9 Lakefront false positive, P4 311 alarmism, Q12/P9 "EX called standard"
+(now contradicts the new Tax-Exempt callout), plus the D5/D6/D9/Q11/V6-5 dedup/label batch.
+
 ### Real-data regeneration done (2026-06-10) — reclassification
 
 Regenerated real (non-mock) report for the same parcel → `/tmp/report_v6_real.pdf` (14 pp). Full analysis in `report-v6-audit.md`. The real report for the flagship address is **largely hollow** — mock=true was masking it.
@@ -119,7 +127,7 @@ Regenerated real (non-mock) report for the same parcel → `/tmp/report_v6_real.
 **Reclassified — CONFIRMED REAL (fix):** Q9, Q11, D6, P4, D9, D5, V6-5, Q12/P9.
 **Reclassified — MOCK-ONLY (drop from fix list):** Q3/Q4 (real fails via R1 instead), Q7/Q8, Q1/Q2 (hero absent in real), Q5/Q6 (no tax section in real → R2), Q10, Q14, P7. Justifies a decoupling/fallback guard, not per-symptom fixes.
 
-**Revised execution order:** (1) **R1 zoning fallback** → (2) **R3 comps fallback** + **R2 tax/assessment source** → (3) confirmed-real cleanups (D6, P4, D9, D5, V6-5, R4, Q12) → (4) Q9 Lakefront overlay validation → (5) cover decision box + land-value range (depends on R1/R3) → (6) big-bet maps.
+**Revised execution order:** (1) **R1 zoning fallback** ✅ → (2) **R3 comps fallback** ✅ + **R2 tax/assessment source** ✅ → (3) confirmed-real cleanups (D6, P4, D9, D5, V6-5, **R4 ✅**, Q12) ← **Phase 2 starts here** → (4) Q9 Lakefront overlay validation → (5) cover decision box + land-value range (depends on R1/R3) → (6) big-bet maps.
 
 **Original execution order (pre-regen, from audit):** (1) coherent-mock + Quick-Wins pass → (2) cover decision box + land-value range → (3) 311/overlay validation → (4) real-data regen + decoupling guards → (5) big-bet maps.
 

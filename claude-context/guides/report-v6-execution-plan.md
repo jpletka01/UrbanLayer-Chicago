@@ -1,6 +1,39 @@
 # Report V6 — Implementation Strategy & Phased Execution Plan
 
-Plan date: 2026-06-10. Status: **strategy only — no implementation started.**
+Plan date: 2026-06-10.
+
+## STATUS — Phase 1 SHIPPED (2026-06-10, commit f0c1996)
+
+**Phase 1 (viability: R1, R2, R3, R4) is complete, verified, committed, and pushed to `main`.**
+Remaining: Phase 2 (credibility), Phase 3 (decision quality), Phase 4 (UX/viz) — not started.
+
+Phase 1 verified end-to-end by regenerating real (non-mock) PDFs for both parcels and extracting text:
+
+| Fix | Subject EX `14283190070000` | Control `14331030110000` |
+|-----|------------------------------|--------------------------|
+| R1 zoning fallback | "RM-6 — Residential Multi-Unit (FAR 4.4)" bulk table; **no manufacturing text** | RM-5 FAR 2.0, max buildable 6,700 sf |
+| R2a assessment column | exempt (correct) | assessed **$114,600** + history + trend |
+| R2b ptaxsim year clamp | $0 exempt (correct) | est. tax **$23,024** (2024 clamped from 2025) |
+| R2c exempt label + char drift | "Tax-Exempt (Class EX)" callout | Year Built **1888** → nonconformity flagged |
+| R3 comp class + widening | **6 comps** (was 0), basis labeled | 4 comps, basis labeled |
+| R4 money/radius format | "$4.0M" (was $3987K), "0.5mi" matches header | — |
+
+**Files changed (Phase 1):** `backend/zoning_extract.py` (`standards_from_definitions`), `backend/main.py`
+(`_comp_class_prefix`, `_fmt_money`, fallback wiring, `max_far`→`far`, lat/lon resolver), `backend/models.py`
+(`ZoningStandards.extraction_confidence="definitions"`, `PropertySummary.tax_exempt`, `ComparablesSummary.comp_basis`),
+`backend/retrieval/property/{__init__,assessments,sales,tax_estimate}.py`, `backend/templates/zoning_report.html`,
+tests (`test_report_phase1_fixes.py` +8, updated `test_property_orchestrator.py` to real schema). 489 tests green.
+
+**Bonus general bugs fixed in Phase 1:** PIN→coords resolver used non-existent `latitude/longitude` columns
+(broke pin-only report lookups); constraints synthesizer referenced `standards.max_far` (field is `far`).
+
+**Phase 2 entry point:** Q9 (Lakefront false positive), P4 (311 rodent alarmism), and **Q12/P9** — the
+subject still prints *"Tax Incentive Class: standard — class EX is a standard classification,"* which now
+directly contradicts the new Tax-Exempt callout. See "Phase 2" section below.
+
+---
+
+Original plan date: 2026-06-10. Status when written: **strategy only — no implementation started.**
 
 Sources of truth: `report-status.md`, `report-v6-audit.md`, `report-v6-improvements.md`.
 Subject parcel for all diagnostics: **PIN 14283190070000** (443 W Wrightwood Ave, Lincoln Park / Lake View township, **class EX**).
@@ -166,7 +199,7 @@ are non-zero (the `report-v6-improvements.md` open item).
 
 | Phase | Theme | Gate to exit |
 |-------|-------|--------------|
-| 1 | Report viability (R1, R2, R3) | Real report for subject + taxable control is no longer hollow; zoning/tax/comps each render correct data or a correct labeled state |
+| 1 ✅ SHIPPED | Report viability (R1, R2, R3) | DONE — real report for subject + taxable control no longer hollow; zoning/tax/comps each render correct data or a correct labeled state |
 | 2 | Credibility (false positives, dupes, mislabels, formatting) | No factual contradiction or false risk signal survives a re-audit |
 | 3 | Decision quality (decision box, land value, FAR util, yield, constraints) | A reader gets the go/no-go answer in <60s on page 1 |
 | 4 | UX & visualization (legends, combined map, layout) | Maps are self-explanatory; no orphaned/blank pages |
