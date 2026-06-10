@@ -13,6 +13,8 @@ Load only what you need for the current task. Don't read everything.
 - `guides/auth-and-conversations.md` — Full auth flow (Google OAuth + JWT), conversation persistence, sharing
 - `guides/deployment.md` — Server ops, .env template, deploy commands, monitoring, database backups
 - `guides/latency-reduction.md` — Completed + planned perf optimizations, pipeline timing reference
+- `guides/report-v5-plan.md` — V5 Report plan (shipped 2026-06-10). Reference for understanding synthesis rules, envelope rendering spec, approval pathway logic.
+- `guides/report-v4-plan.md` — V4 Report plan (items 1-7 shipped; item 8 superseded by V5)
 
 ## Strategy (load only for product planning / business discussions)
 - `strategy/north-star.md` — **North Star Product Plan**: manifesto, wedge (per-unit reports), feature audit, development phases, customer validation plan. This is the governing strategy document.

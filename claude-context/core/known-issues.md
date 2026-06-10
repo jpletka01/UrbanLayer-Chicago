@@ -6,6 +6,10 @@
 
 ## Known Limitations
 
+**Report envelope map depends on parcel geometry**: The V5 development envelope visualization (`_generate_envelope_map()`) requires parcel polygon geometry from Cook County GIS. When GIS is down and the Socrata fallback is used, no geometry is available — the envelope map section silently omits. Edge classification assumes roughly rectangular lots; irregular parcels (5+ distinct edges, L-shapes) fall back to uniform minimum setback.
+
+**Report envelope map skipped for zero-setback zones**: Some commercial zones (C1, B3, etc.) have front_setback_ft=0 and side_setback_ft=0 with only a rear setback. When all three setbacks are 0, the envelope map won't render. When only rear is non-zero, the visualization is technically correct but less visually informative.
+
 **Demographics median values are estimated**: The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is interpolated from the bracket containing the 50th percentile. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Census tract-level demographics (via Census Reporter API) provide housing fields: median home value, median gross rent, owner-occupied %, vacancy rate, and bachelor's degree %.
 
 **Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. `_categorize_violation()` does first-match keyword bucketing into 18 custom categories, supplemented by code-prefix mapping (EV→Elevator, BR→Boiler) using the `violation_code` field.
