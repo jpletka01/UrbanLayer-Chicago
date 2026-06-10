@@ -29,8 +29,9 @@
 - **Sub-header detection inside tables** — length cap (<80 chars) and min-chars threshold (400 chars before splitting)
 - **Multi-row header count** — inferred from consecutive row patterns
 - **Cross-references** — filtered to section IDs only
-- **Keyword boost weight (0.15)** — hand-tuned; too high drowns out semantic similarity
+- **Keyword boost weight (0.20)** — hand-tuned; higher drowns out semantic similarity, lower misses exact-match terms
 - **Reranker weight (0.2)** — hand-tuned; higher values (0.3-0.5) regress `minimum_lot_size` and `setback_single_family` queries
+- **Section dedup score threshold (0.05)** — keyword-aware dedup only activates when two chunks from the same section are within 0.05 blended score; wider thresholds cause regressions (e.g. m1_setbacks)
 
 ## Gotchas
 
@@ -62,6 +63,7 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`, then `python -m ev
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS acceleration available but not configured for production (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
+- **Title 14A re-ingestion** — Parser regex fixed to handle Title 14A (building code) sections, but re-ingestion not yet run. Will add ~500+ building code sections to the index. Requires downloading fresh `chicago-il-codes.html` and running `python -m ingestion.update`.
 
 ## Operational Status
 

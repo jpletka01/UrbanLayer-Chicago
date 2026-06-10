@@ -107,3 +107,4 @@ Key test patterns:
 | Router eval | `python -m eval.run_eval` | Source tag routing, intent, location resolution (39 queries) |
 | Full eval + judge | `python -m eval.run_eval --full URL --judge` | End-to-end retrieval + LLM-as-judge synthesis grading |
 | Source coverage | `python -m eval.source_coverage --full URL` | Per-sub-source data presence (29 queries, 41 checks) |
+| Retrieval benchmark | `python -m eval.retrieval_benchmark` | Vector search quality — 28 queries, grades A-F by gold section rank + answer terms (target: 100% A/B) |

@@ -35,7 +35,7 @@ retrieval/
 ├── vacant.py               # Vacant buildings (bounding-box filter, grouped by department + detail sample)
 ├── food_inspections.py     # Food inspections (bounding-box filter, grouped by result/risk + detail sample)
 ├── map_data.py             # Raw geo-located rows for map (2500/1000/500 row limits)
-├── vector_search.py        # Async Qdrant search + keyword boost + bge-reranker + per-section dedup
+├── vector_search.py        # Async Qdrant search + synonym expansion + keyword boost + bge-reranker + keyword-aware per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch + adjacent_parcel_zoning()
 ├── zoning_definitions.py   # Deterministic zone class lookup table (~50 entries). FAR, height, uses, code sections from Title 17. Used by PDF report for inline descriptions + definitions section. Fallback chain: exact → prefix → PD/PMD → unknown
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
@@ -61,6 +61,28 @@ retrieval/
 - **ML model preloading**: Embedding model (`bge-base-en-v1.5`, ~500MB) is preloaded at startup via `run_in_executor` in the `lifespan` handler. Startup is **blocking** (not `create_task`) so health checks don't pass before models are loaded.
 - **Reranker**: Enabled in production via `RERANKER_ENABLED=true` (set in `docker-compose.prod.yml`). Re-enabled after server upgrade to 8GB RAM (2026-06-06). Full vector search pipeline with cross-encoder reranking active.
 - **SSE error handling**: `_event_stream()` wraps fatal calls (`db.count_user_messages()`, `synthesize_query()`) and non-fatal calls (`compute_analytics()`, `_build_map_response()`) in separate try-except blocks to prevent generator crashes before any SSE chunk is yielded.
+
+## Ingestion Pipeline
+
+```
+ingestion/
+├── parse_chicago_code.py   # HTML → section JSON files (8615+ sections). Handles Title 14A (alphanumeric IDs)
+├── chunk.py                # Section JSON → chunks.jsonl (MAX_CHARS=1800, table flattening, no overlap)
+├── embed_and_store.py      # chunks.jsonl → Qdrant (bge-base-en-v1.5, two collections). Supports --recreate and --incremental
+├── manifest.py             # Section content hash tracking for incremental updates (SHA-256 of body + tables)
+├── update.py               # Unified CLI: parse → chunk → diff → embed. Supports --dry-run, --full, --manifest
+├── source_check.py         # Detect whether source HTML changed since last ingestion
+├── build_transit_stations.py
+└── load_community_areas.py
+```
+
+```bash
+python -m ingestion.update                # incremental update (diff against manifest)
+python -m ingestion.update --dry-run      # show changes without modifying Qdrant
+python -m ingestion.update --full         # full rebuild
+python -m ingestion.update --manifest     # just save manifest from current sections
+python -m ingestion.source_check          # check if source HTML changed
+```
 
 ## Testing
 

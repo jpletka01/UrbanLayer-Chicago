@@ -86,23 +86,26 @@ The router emits a `workflow_hint` that tells domain orchestrators how deep to g
 - `neighborhood_overview` — standard sources + demographics + transit
 - `general` — standard behavior, no domain expansion
 
-## Vector Search Pipeline (v4)
+## Vector Search Pipeline (v5)
 
 ```
 query
+  → synonym expansion (_expand_query: 11 trigger terms for ADU, loading, demolition, etc.)
+  → district code normalization (e.g. "RM5" → "RM-5")
   → prepend BGE query prefix (asymmetric retrieval)
   → encode with bge-base-en-v1.5 (768-dim) [thread pool]
   → Qdrant async dense search (limit = top_k × 5, overfetch for dedup)
   → filter legend-only table chunks
-  → keyword boost: combined = 0.85 × dense + 0.15 × keyword_overlap
+  → keyword boost: combined = 0.80 × dense + 0.20 × keyword_overlap
   → cross-encoder rerank ALL candidates [thread pool]
   → blend: final = 0.80 × norm_dense + 0.20 × norm_reranker
   → sort by blended score
-  → per-section dedup (keep best chunk per section)
+  → keyword-aware per-section dedup (when two chunks from same section are within
+    0.05 blended score, prefer the one with higher keyword overlap with the query)
   → return top_k CodeChunks
 ```
 
-Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then reranked — the reranker was stuck with whatever chunk the dense embedding liked most. v4 reranks all ~60 candidates first, so dedup picks the best-scoring chunk per section after blending. This fixed lot_size and liquor_school_distance queries (C→A).
+Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then reranked — the reranker was stuck with whatever chunk the dense embedding liked most. v4 reranks all ~60 candidates first, so dedup picks the best-scoring chunk per section after blending. v5 added synonym expansion, keyword-aware dedup, and bumped keyword weight from 0.15 to 0.20 — improved retrieval benchmark from 75% to 100% A/B (26A, 2B across 28 queries).
 
 **Note**: Reranker is enabled in production (`RERANKER_ENABLED=true`) after server upgrade to 8GB RAM (2026-06-06). Full pipeline with cross-encoder reranking and blended scoring is active.
 
@@ -118,8 +121,8 @@ Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Chunking | Section-aware (subsection level) | Legal cross-references break naive character chunking |
-| Search scoring | 0.85 dense + 0.15 keyword | Keyword boost catches exact-term relevance embeddings miss |
-| Section dedup | Keep best chunk per section | Prevents long sections from monopolizing results |
+| Search scoring | 0.80 dense + 0.20 keyword | Keyword boost catches exact-term relevance embeddings miss |
+| Section dedup | Keyword-aware best chunk per section | Within 0.05 score delta, prefer higher keyword overlap. Prevents long sections from monopolizing results |
 | Analytics format | Text in synthesis prompt, not JSON | Saves ~40% tokens vs JSON encoding of trend data |
 | Map data delivery | Inline SSE events, not separate endpoint | Eliminates round-trip for current turn's map data |
 | Map data staleness | 24h threshold for re-fetch | Fresh enough for recent conversations, current for revisits |
