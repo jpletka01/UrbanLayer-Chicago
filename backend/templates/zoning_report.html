@@ -876,10 +876,6 @@ a.glossary-link {
 
   {% if report.nearby_development and (report.nearby_development.new_construction_count or report.nearby_development.demolition_count) %}
   <h3>Nearby Development Activity (12 months, 0.25mi)</h3>
-  <dl class="info-grid">
-    <dt>New Construction</dt><dd>{{ report.nearby_development.new_construction_count }} permits</dd>
-    <dt>Demolition</dt><dd>{{ report.nearby_development.demolition_count }} permits</dd>
-  </dl>
   {% if report.nearby_development.recent_projects %}
   <table style="font-size: 7pt;">
     <thead><tr><th>#</th><th>Type</th><th>Address</th><th>Description</th><th class="num">Cost</th><th>Date</th><th class="num">Dist</th></tr></thead>
@@ -887,7 +883,7 @@ a.glossary-link {
     {% for p in report.nearby_development.recent_projects[:10] %}
     <tr>
       <td>{{ loop.index }}</td>
-      <td>{% if "WRECKING" in (p.permit_type or "") or "DEMOLITION" in (p.permit_type or "") %}Demo{% else %}New{% endif %}</td>
+      <td>{% if "WRECKING" in (p.permit_type or "") or "DEMOLITION" in (p.permit_type or "") %}<span style="color: #ef4444;">Demo</span>{% else %}<span style="color: #10b981;">New</span>{% endif %}</td>
       <td>{{ p.formatted_address or "—" }}</td>
       <td>{{ ((p.work_description or "—")[:50]) }}{% if (p.work_description or "")|length > 50 %}…{% endif %}</td>
       <td class="num">{{ ("$%s"|format(("{:,.0f}".format(p.reported_cost|float)))) if p.reported_cost else "—" }}</td>

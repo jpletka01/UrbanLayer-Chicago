@@ -1622,23 +1622,23 @@ def _generate_construction_map(
                 continue
 
             ptype = proj.get("permit_type", "")
-            if "NEW CONSTRUCTION" in ptype:
-                color = "#10b981"
-                has_construction = True
-            elif "WRECKING" in ptype or "DEMOLITION" in ptype:
+            is_demo = "WRECKING" in ptype or "DEMOLITION" in ptype
+            if is_demo:
                 color = "#ef4444"
+                marker = "s"
                 has_demolition = True
             else:
                 color = "#10b981"
+                marker = "o"
                 has_construction = True
-            ax.plot(px, py, "o", markersize=10, color=color,
+            ax.plot(px, py, marker, markersize=10, color=color,
                     markeredgecolor="white", markeredgewidth=1.2, zorder=5)
             ax.text(px, py, str(idx), ha="center", va="center",
                     fontsize=5.5, fontweight="bold", color="white", zorder=6)
 
         # Subject property pin
         pin_px, pin_py = img_w / 2, img_h / 2
-        ax.plot(pin_px, pin_py, "o", markersize=10, color="#c96442",
+        ax.plot(pin_px, pin_py, "D", markersize=9, color="#2563eb",
                 markeredgecolor="white", markeredgewidth=2, zorder=10)
 
         legend_handles = []
@@ -1649,11 +1649,11 @@ def _generate_construction_map(
             ))
         if has_demolition:
             legend_handles.append(plt.Line2D(
-                [0], [0], marker="X", color="none", markerfacecolor="#ef4444",
+                [0], [0], marker="s", color="none", markerfacecolor="#ef4444",
                 markeredgecolor="white", markersize=6, label="Demolition",
             ))
         legend_handles.append(plt.Line2D(
-            [0], [0], marker="o", color="none", markerfacecolor="#c96442",
+            [0], [0], marker="D", color="none", markerfacecolor="#2563eb",
             markeredgecolor="white", markersize=6, label="Subject Property",
         ))
 
