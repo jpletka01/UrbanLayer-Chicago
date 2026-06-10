@@ -58,6 +58,7 @@
     "zoningRules": "{{zone}} zoning rules",
     "investigate": {
       "buildingDetails": "Building details",
+      "comparableSales": "Comparable sales",
       "overlayRestrictions": "Overlay restrictions",
       "floodRisk": "Flood risk",
       "tifFunding": "TIF funding",
@@ -66,6 +67,23 @@
       "violationDetails": "Violation details",
       "crimeAnalysis": "Crime analysis",
       "complaints311": "311 complaints"
+    },
+    "reportCTA": {
+      "title": "Development Feasibility Report",
+      "description": "Professional PDF with AI-powered analysis for this property.",
+      "features": [
+        "AI zoning bulk standards",
+        "Development potential",
+        "Comparable sales chart",
+        "Address permits & violations",
+        "Recommended next steps"
+      ],
+      "buyReport": "Download Report — $25",
+      "download": "Download Report",
+      "generating": "Generating...",
+      "orUpgrade": "or upgrade to Pro — $99/mo",
+      "ready": "Your report is ready",
+      "stickyTitle": "Development Feasibility Report"
     },
     "downloadPdf": "Download PDF Report",
     "downloadCsv": "Download CSV",

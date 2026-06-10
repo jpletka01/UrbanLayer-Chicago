@@ -14,6 +14,8 @@
     "buildingAge": "Building Age",
     "yrs": "yrs",
     "assessedValue": "Assessed Value",
+    "annualTax": "Annual Tax",
+    "effectiveRate": "Eff. Tax Rate",
     "assessmentHistory": "Assessment History",
     "yrsCount": "{{count}} yrs",
     "year": "Year",
@@ -29,7 +31,8 @@
     "agencies": "{{count}} agencies",
     "agency": "Agency",
     "rate": "Rate",
-    "amount": "Amount"
+    "amount": "Amount",
+    "reportTeaser": "Tax projections + development potential in report"
   },
   "regulatory": {
     "title": "Regulatory",
@@ -88,10 +91,16 @@
     "totalFunding": "Total Funding",
     "projects": "projects",
     "recentProjects": "Recent Projects",
+    "qct": "Qualified Census Tract (LIHTC)",
+    "notInQct": "Not in Qualified Census Tract",
+    "nmtcEligible": "NMTC Low-Income Community",
+    "notNmtcEligible": "Not NMTC Eligible",
+    "severeDistress": "Severely Distressed — enhanced NMTC allocation priority",
     "taxClass": "Tax Class {{code}}",
     "standardClassDescription": "Standard classification — no tax incentive reduction applies.",
     "unavailableClassDescription": "Property class code not available from Cook County — tax incentive classification cannot be determined.",
-    "censusTract": "Census Tract:"
+    "censusTract": "Census Tract:",
+    "reportTeaser": "AI eligibility analysis + next steps in report"
   },
   "neighborhood": {
     "title": "Neighborhood",
@@ -203,6 +212,22 @@
       }
     }
   },
+  "comparables": {
+    "title": "Comparable Sales",
+    "medianPrice": "Median Price",
+    "priceLandSqft": "$/Land Sqft",
+    "salesVolume": "Sales",
+    "priceRange": "Price Range",
+    "priceBldgSqft": "$/Bldg Sqft",
+    "recentSales": "Recent Sales",
+    "date": "Date",
+    "price": "Price",
+    "distance": "Dist.",
+    "priceSqft": "$/Sqft",
+    "noData": "No comparable sales found nearby.",
+    "radius": "Within 0.25 mi, last 3 yrs",
+    "reportTeaser": "Sales trend chart + full analysis in report"
+  },
   "violations": {
     "title": "Violations",
     "total": "Total",
@@ -297,6 +322,14 @@
     "moreCount": "+{{count}} more",
     "exportCsv": "CSV"
   },
+  "financialSnapshot": {
+    "assessedValue": "Assessed Value",
+    "annualTax": "Annual Tax",
+    "medianCompSale": "Median Comp Sale",
+    "tifFundBalance": "TIF Fund Balance",
+    "activeIncentives": "Active Incentives",
+    "zonesCount": "{{count}} of 5 zones"
+  },
   "terms": {
     "incentives": {
       "tif_district": {
@@ -327,6 +360,26 @@
           "State investment tax credits",
           "Utility tax exemptions available",
           "Must create or retain jobs to qualify"
+        ]
+      },
+      "qct": {
+        "label": "Qualified Census Tract (QCT)",
+        "description": "HUD-designated census tract where 50%+ of households earn below 60% of Area Median Income. LIHTC projects in QCTs receive an enhanced basis boost.",
+        "bullets": [
+          "Up to 130% basis boost for LIHTC projects",
+          "Enables 9% tax credit on larger share of eligible costs",
+          "Designated annually by HUD based on income data",
+          "Key factor for affordable housing development feasibility"
+        ]
+      },
+      "nmtc": {
+        "label": "New Markets Tax Credit (NMTC)",
+        "description": "Federal program providing tax credit incentives for private investment in low-income communities through Community Development Financial Institutions (CDFIs).",
+        "bullets": [
+          "39% tax credit claimed over 7 years on qualified investments",
+          "Finances commercial, industrial, and community projects",
+          "Below-market-rate loans through CDFI allocatees",
+          "Severely distressed tracts receive allocation priority"
         ]
       }
     },

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
 import { CollapsibleCard } from "./CollapsibleCard";
+import { ReportTeaser } from "./ReportTeaser";
 
 const BuildingIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -56,6 +57,15 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: (string | null)
   );
 }
 
+function StatBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-sm font-semibold text-text-primary">{value}</div>
+      <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
+    </div>
+  );
+}
+
 export function PropertyCard({ data }: { data: PropertySummary }) {
   const { t } = useTranslation("data");
   const [showAssessments, setShowAssessments] = useState(false);
@@ -69,9 +79,25 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
 
   const classLabel = [data.bldg_class, data.bldg_class_description].filter(Boolean).join(" — ");
 
+  const assessed = data.total_assessed_value;
+  const tax = data.estimated_annual_tax;
+  const effectiveRate = assessed && assessed > 0 && tax && tax > 0
+    ? `${((tax / (assessed / 0.10)) * 100).toFixed(2)}%`
+    : null;
+
+  const hasFinancials = assessed != null || tax != null;
+
   return (
     <CollapsibleCard title={t("property.title")} icon={BuildingIcon}>
       <div className="space-y-3">
+        {hasFinancials && (
+          <div className="grid grid-cols-3 gap-2 py-1">
+            <StatBox label={t("property.assessedValue")} value={fmtDollar(assessed)} />
+            <StatBox label={t("property.annualTax")} value={fmtDollar(tax)} />
+            <StatBox label={t("property.effectiveRate")} value={effectiveRate ?? "—"} />
+          </div>
+        )}
+
         <div className="space-y-1">
           <KV label={t("property.address")} value={data.address} />
           <KV label={t("property.pin")} value={data.pin14} />
@@ -84,7 +110,6 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
           <KV label={t("property.bedrooms")} value={data.bedrooms != null ? String(data.bedrooms) : null} />
           <KV label={t("property.baths")} value={baths} />
           <KV label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null} />
-          <KV label={t("property.assessedValue")} value={fmtDollar(data.total_assessed_value)} />
         </div>
 
         {data.assessment_history.length > 0 && (
@@ -182,6 +207,7 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
             )}
           </div>
         )}
+        <ReportTeaser text={t("property.reportTeaser")} />
       </div>
     </CollapsibleCard>
   );

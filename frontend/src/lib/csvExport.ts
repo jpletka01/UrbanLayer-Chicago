@@ -1,4 +1,4 @@
-import type { ContextObject } from "./types";
+import type { ComparablesSummary, ContextObject } from "./types";
 
 interface CSVColumn<T> {
   key: keyof T & string;
@@ -62,7 +62,7 @@ function addSection(parts: string[], title: string, csv: string): void {
   parts.push("");
 }
 
-export function buildScorecardCSV(ctx: ContextObject, address: string): string {
+export function buildScorecardCSV(ctx: ContextObject, address: string, comparables?: ComparablesSummary | null): string {
   const parts: string[] = [];
   const date = new Date().toISOString().slice(0, 10);
 
@@ -120,6 +120,45 @@ export function buildScorecardCSV(ctx: ContextObject, address: string): string {
         { key: "amount", header: "Amount" },
       ]));
     }
+  }
+
+  // Comparable Sales
+  if (comparables && comparables.sales.length > 0) {
+    const summaryRows = [
+      { field: "Median Sale Price", value: comparables.median_sale_price ?? "" },
+      { field: "Median $/Land Sqft", value: comparables.median_price_per_land_sqft ?? "" },
+      { field: "Median $/Bldg Sqft", value: comparables.median_price_per_bldg_sqft ?? "" },
+      { field: "Price Range Min", value: comparables.price_range_min ?? "" },
+      { field: "Price Range Max", value: comparables.price_range_max ?? "" },
+      { field: "Sales Volume", value: comparables.sales_volume },
+    ];
+    addSection(parts, "Comparable Sales Summary", toCSV(summaryRows, [
+      { key: "field", header: "Metric" },
+      { key: "value", header: "Value" },
+    ]));
+
+    const salesRows = comparables.sales.map(s => ({
+      pin: s.pin,
+      date: s.sale_date ?? "",
+      price: s.sale_price ?? "",
+      land_sqft: s.land_sqft ?? "",
+      bldg_sqft: s.bldg_sqft ?? "",
+      price_per_land_sqft: s.price_per_land_sqft ?? "",
+      price_per_bldg_sqft: s.price_per_bldg_sqft ?? "",
+      distance_mi: s.distance_mi ?? "",
+      deed_type: s.deed_type ?? "",
+    }));
+    addSection(parts, "Comparable Sales Detail", toCSV(salesRows, [
+      { key: "pin", header: "PIN" },
+      { key: "date", header: "Date" },
+      { key: "price", header: "Price" },
+      { key: "land_sqft", header: "Land Sqft" },
+      { key: "bldg_sqft", header: "Bldg Sqft" },
+      { key: "price_per_land_sqft", header: "$/Land Sqft" },
+      { key: "price_per_bldg_sqft", header: "$/Bldg Sqft" },
+      { key: "distance_mi", header: "Distance (mi)" },
+      { key: "deed_type", header: "Deed Type" },
+    ]));
   }
 
   // Violations

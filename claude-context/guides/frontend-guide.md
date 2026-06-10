@@ -49,14 +49,16 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 | `PieChart` | SVG donut with hover expansion + thin-slice ring + expandable legend |
 | `TrendTable` | MoM trend rows with sortable columns, colored arrows |
 | `CollapsibleCard` | Reusable pattern for sidebar data cards |
-| `PropertyCard` | Parcel info, assessment history, sales |
+| `PropertyCard` | Parcel info with financial stat boxes (assessed value, annual tax, effective rate), assessment history, sales |
+| `ComparablesCard` | Comparable sales summary (median price, $/sqft, volume, price range) with expandable recent sales table |
+| `ReportCTACard` | Report download/purchase CTA — shows "$25 Download" with feature list for free users, compact download button for Pro |
 | `RegulatoryCard` | Zoning overlays, status badges, flood zone, ARO housing projects (count + units + project list) — all with InfoTooltip hover definitions |
 | `IncentivesCard` | TIF/OZ/EZ status with fund analysis financials, city grant programs (SBIF/NOF total + recent projects), tax incentive class badge (6b/7a/etc.), per-district cards for neighborhood queries, expandable annual history table, InfoTooltip definitions, census tract links |
 | `InfoTooltip` | Dotted-underline hover/tap popover for domain terms. Wraps children, looks up `termDefinitions.ts` |
 | `NeighborhoodCard` | Demographics, transit, Walk Score |
 | `ViolationsCard` | Building violations |
 | `BusinessCard` | Nearby business licenses |
-| `InvestigateButton` | Shared `<Link to="/?q=...">` component — navigates to chat with pre-populated question. Used on Scorecard cards |
+| `InvestigateButton` | Shared `<Link to="/?q=...">` component — navigates to chat with pre-populated question. Used on Scorecard cards. Scorecard card order: Property → Comparables → Incentives → Regulatory → Neighborhood |
 
 ### Admin
 | Component | Purpose |

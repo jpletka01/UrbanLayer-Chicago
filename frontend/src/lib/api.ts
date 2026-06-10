@@ -520,6 +520,7 @@ export interface ScorecardResponse {
   community_area: number | null;
   community_area_name: string | null;
   context: ContextObject;
+  comparables?: import("./types").ComparablesSummary | null;
   partial_failures: string[];
 }
 
