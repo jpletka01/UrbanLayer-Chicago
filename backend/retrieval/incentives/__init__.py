@@ -14,6 +14,8 @@ from backend.models import IncentivesSummary
 from backend.retrieval.incentives.enterprise_zones import check_enterprise_zone
 from backend.retrieval.incentives.grant_programs import grant_programs_by_community_area
 from backend.retrieval.geo import resolve_census_tract
+from backend.retrieval.incentives.lihtc import check_qct
+from backend.retrieval.incentives.nmtc import check_nmtc
 from backend.retrieval.incentives.opportunity_zones import check_opportunity_zone
 from backend.retrieval.incentives.tif import (
     check_tif,
@@ -112,6 +114,12 @@ async def _incentives_by_point(
         phase_b_tasks["oz"] = asyncio.create_task(
             check_opportunity_zone(tract_fips, client=client)
         )
+        phase_b_tasks["qct"] = asyncio.create_task(
+            check_qct(tract_fips, client=client)
+        )
+        phase_b_tasks["nmtc"] = asyncio.create_task(
+            check_nmtc(tract_fips, client=client)
+        )
 
     phase_b_results: dict[str, object] = {}
     if phase_b_tasks:
@@ -129,6 +137,8 @@ async def _incentives_by_point(
         phase_b_results.get("oz"),
         fund_analysis=phase_b_results.get("fund_analysis"),
         grant_data=grant_data,
+        qct_result=phase_b_results.get("qct"),
+        nmtc_result=phase_b_results.get("nmtc"),
     )
 
 
@@ -207,6 +217,8 @@ def _build_summary(
     *,
     fund_analysis: list[dict] | None = None,
     grant_data: dict | None = None,
+    qct_result: dict | None = None,
+    nmtc_result: dict | None = None,
 ) -> IncentivesSummary:
     in_tif = tif_result is not None
     tif_name = tif_result["tif_name"] if tif_result else None
@@ -261,6 +273,14 @@ def _build_summary(
     in_ez = ez_result is not None
     ez_name = ez_result.get("zone_name") if ez_result else None
 
+    in_qct = qct_result is not None and qct_result.get("designated", False)
+    qct_tract = qct_result.get("tract") if qct_result else None
+
+    in_nmtc = nmtc_result is not None and nmtc_result.get("qualifying", False)
+    nmtc_tract = nmtc_result.get("tract") if nmtc_result else None
+    nmtc_severe = nmtc_result.get("severe_distress", False) if nmtc_result else False
+    nmtc_pov = nmtc_result.get("poverty_rate") if nmtc_result else None
+
     return IncentivesSummary(
         in_tif_district=in_tif,
         tif_name=tif_name,
@@ -278,6 +298,12 @@ def _build_summary(
         oz_tract=oz_tract,
         in_enterprise_zone=in_ez,
         enterprise_zone_name=ez_name,
+        in_qct=in_qct,
+        qct_tract=qct_tract,
+        in_nmtc=in_nmtc,
+        nmtc_tract=nmtc_tract,
+        nmtc_severe_distress=nmtc_severe,
+        nmtc_poverty_rate=nmtc_pov,
         census_tract=tract_fips,
         grant_programs=_build_grant_summary(grant_data),
     )

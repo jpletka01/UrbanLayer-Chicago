@@ -93,7 +93,7 @@ function tryTranslatedExtraOverlay(key: string): TermInfo | null {
   };
 }
 
-const INCENTIVE_KEYS = ["tif_district", "opportunity_zone", "enterprise_zone"];
+const INCENTIVE_KEYS = ["tif_district", "opportunity_zone", "enterprise_zone", "qct", "nmtc"];
 
 export function getTermInfo(key: string): TermInfo | null {
   if (key.startsWith("zone:")) {

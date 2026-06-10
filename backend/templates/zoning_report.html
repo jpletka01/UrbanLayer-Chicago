@@ -447,11 +447,11 @@ a.glossary-link {
     {% endif %}
 
     {# Financial signal #}
-    {% if inc and (inc.in_tif_district or inc.in_opportunity_zone or inc.in_enterprise_zone) %}
+    {% if inc and (inc.in_tif_district or inc.in_opportunity_zone or inc.in_enterprise_zone or inc.in_qct or inc.in_nmtc) %}
     <div class="tl-item tl-green">
       <span class="tl-pill tl-pill-green">FAVORABLE</span>
       <span class="tl-topic">Financial</span>
-      <span class="tl-detail">Incentives available ({% if inc.in_tif_district %}<a href="#glossary-tif" class="glossary-link">TIF</a>{% endif %}{% if inc.in_opportunity_zone %} <a href="#glossary-oz" class="glossary-link">OZ</a>{% endif %}{% if inc.in_enterprise_zone %} <a href="#glossary-ez" class="glossary-link">EZ</a>{% endif %})</span>
+      <span class="tl-detail">Incentives available ({% if inc.in_tif_district %}<a href="#glossary-tif" class="glossary-link">TIF</a>{% endif %}{% if inc.in_opportunity_zone %} <a href="#glossary-oz" class="glossary-link">OZ</a>{% endif %}{% if inc.in_enterprise_zone %} <a href="#glossary-ez" class="glossary-link">EZ</a>{% endif %}{% if inc.in_qct %} <a href="#glossary-qct" class="glossary-link">QCT</a>{% endif %}{% if inc.in_nmtc %} <a href="#glossary-nmtc" class="glossary-link">NMTC</a>{% endif %})</span>
     </div>
     {% elif report.effective_tax_rate and report.effective_tax_rate > 0.03 %}
     <div class="tl-item tl-red">
@@ -512,6 +512,8 @@ a.glossary-link {
     <dt>Zone Type</dt><dd>{{ zoning.zone_type or "N/A" }}</dd>
     {% if zoning.ordinance_num %}<dt>Ordinance</dt><dd>{{ zoning.ordinance_num }}</dd>{% endif %}
   </dl>
+  {% else %}
+  <p class="section-note">Zoning data unavailable — verify zone class with the Chicago Zoning Map at gisapps.chicago.gov.</p>
   {% endif %}
 
   {% if standards and standards.extraction_confidence != "low" %}
@@ -916,6 +918,10 @@ a.glossary-link {
     <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">Yes</span> (Tract: {{ inc.oz_tract or "N/A" }}){% else %}<span class="status-no">No</span>{% endif %}</dd>
     <dt><a href="#glossary-ez" class="glossary-link">Enterprise Zone</a></dt>
     <dd>{% if inc.in_enterprise_zone %}<span class="status-yes">{{ inc.enterprise_zone_name or "Yes" }}</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dt><a href="#glossary-qct" class="glossary-link">LIHTC Qualified Census Tract</a></dt>
+    <dd>{% if inc.in_qct %}<span class="status-yes">Yes</span> (Tract: {{ inc.qct_tract or "N/A" }}){% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dt><a href="#glossary-nmtc" class="glossary-link">NMTC Low-Income Community</a></dt>
+    <dd>{% if inc.in_nmtc %}<span class="status-yes">Yes</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">(Severely Distressed)</span>{% endif %}{% else %}<span class="status-no">No</span>{% endif %}</dd>
     {% if inc.property_tax_class %}<dt>Tax Incentive Class</dt><dd>{{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</dd>{% endif %}
   </dl>
 
@@ -1097,6 +1103,10 @@ a.glossary-link {
         <dd>The percentage of a lot that may be covered by buildings and structures. Limits the building footprint to preserve open space, light, and air access.</dd>
       </div>
       <div class="glossary-entry">
+        <dt><a id="glossary-nmtc">NMTC (New Markets Tax Credit)</a></dt>
+        <dd>Federal program providing 39% tax credit over 7 years for private investment in qualifying low-income communities through Community Development Financial Institutions (CDFIs). Severely distressed tracts receive allocation priority.</dd>
+      </div>
+      <div class="glossary-entry">
         <dt><a id="glossary-oz">OZ (Opportunity Zone)</a></dt>
         <dd>Federally designated census tracts where investors can receive capital gains tax benefits for long-term investments. Created by the 2017 Tax Cuts and Jobs Act to stimulate economic development in distressed communities.</dd>
       </div>
@@ -1107,6 +1117,10 @@ a.glossary-link {
       <div class="glossary-entry">
         <dt><a id="glossary-pin">PIN (Property Index Number)</a></dt>
         <dd>A 14-digit identifier assigned by the Cook County Assessor to every parcel of real property. Used for tax assessment, title records, and government data systems.</dd>
+      </div>
+      <div class="glossary-entry">
+        <dt><a id="glossary-qct">QCT (Qualified Census Tract)</a></dt>
+        <dd>HUD-designated census tract where 50%+ of households earn below 60% of Area Median Income. LIHTC (Low-Income Housing Tax Credit) projects in QCTs receive an enhanced basis boost of up to 130%, making affordable housing development more financially feasible.</dd>
       </div>
       <div class="glossary-entry">
         <dt><a id="glossary-setback">Setback</a></dt>
@@ -1198,6 +1212,8 @@ a.glossary-link {
     <tr><td>TIF Districts</td><td>City of Chicago Data Portal</td><td>Spatial + financial datasets</td></tr>
     <tr><td>Opportunity Zones</td><td>HUD / Census Tract FIPS</td><td>Federal designation</td></tr>
     <tr><td>Enterprise Zones</td><td>City of Chicago Data Portal</td><td>State-designated zones</td></tr>
+    <tr><td>Qualified Census Tracts</td><td>HUD ArcGIS FeatureServer</td><td>Annual LIHTC QCT designation</td></tr>
+    <tr><td>NMTC Eligibility</td><td>HUD ArcGIS FeatureServer (NMTC20)</td><td>Low-Income Community designation</td></tr>
     <tr><td>Grant Programs</td><td>City of Chicago (SBIF, NOF datasets)</td><td>Historical project data</td></tr>
     <tr><td>Demographics</td><td>U.S. Census ACS 5-Year Estimates</td><td>2019–2023 period (2-year lag)</td></tr>
     <tr><td>Transit</td><td>CTA / Metra GTFS station data</td><td>Static station locations</td></tr>
@@ -1210,20 +1226,44 @@ a.glossary-link {
     </tbody>
   </table>
 
+  <hr style="border: none; border-top: 1px solid #374151; margin: 16pt 0;">
+
   <h3>Methodology</h3>
   <p style="font-size: 8.5pt; margin-bottom: 8pt;">
     This report aggregates publicly available government data from multiple sources. Zoning standards are extracted from the indexed Chicago Municipal Code via AI (Claude Haiku) and should be verified against the current ordinance. Property assessments are triennial and may not reflect current market values. Demographics are estimated from ACS 5-year survey data (2019–2023). Comparable sales are filtered for arm's-length transactions only (excluding multi-sales, sub-$10K, and non-standard deed types). Development potential is calculated as FAR × lot area and does not account for planned development restrictions, variance requirements, or site-specific conditions.
   </p>
 
   <h3>Recommended Next Steps</h3>
+  {% set open_violations_count = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list|length if report.address_violations else 0 %}
   <ul style="font-size: 8.5pt; padding-left: 16pt; margin-bottom: 12pt;">
-    <li>Consult Cook County Recorder of Deeds for property ownership</li>
+    {% if inc and inc.in_tif_district %}
+    <li>Contact the TIF administrator for <strong>{{ inc.tif_name }}</strong> to discuss available funding for site improvements, infrastructure, or environmental remediation</li>
+    {% endif %}
+    {% if inc and inc.in_opportunity_zone %}
+    <li>Consult a tax advisor regarding Qualified Opportunity Fund (QOF) structuring — this property is in a designated Opportunity Zone (Tract {{ inc.oz_tract }})</li>
+    {% endif %}
+    {% if inc and inc.in_qct %}
+    <li>Explore LIHTC financing — QCT designation provides an enhanced 130% basis boost for affordable housing projects without needing a housing finance agency income test</li>
+    {% endif %}
+    {% if inc and inc.in_nmtc %}
+    <li>Contact a CDFI allocatee to explore NMTC financing for commercial, mixed-use, or community facility development in this qualifying low-income community tract</li>
+    {% endif %}
+    {% if reg and reg.in_special_flood_hazard %}
+    <li>Obtain a FEMA elevation certificate and flood insurance quotes — this property is in a Special Flood Hazard Area (mandatory flood insurance for federally backed mortgages)</li>
+    {% endif %}
+    {% if reg and reg.brownfield_sites %}
+    <li>Commission a Phase I Environmental Site Assessment (ESA) — {{ reg.brownfield_sites|length }} brownfield site{{ "s" if reg.brownfield_sites|length > 1 else "" }} identified nearby</li>
+    {% endif %}
+    {% if reg and (reg.in_landmark_district or reg.in_historic_district) %}
+    <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a {% if reg.in_landmark_district %}landmark{% endif %}{% if reg.in_landmark_district and reg.in_historic_district %}/{% endif %}{% if reg.in_historic_district %}historic{% endif %} district requiring permit review</li>
+    {% endif %}
+    {% if open_violations_count > 0 %}
+    <li>Resolve {{ open_violations_count }} open building code violation{{ "s" if open_violations_count > 1 else "" }} before applying for new permits — outstanding violations can delay or block permit issuance</li>
+    {% endif %}
+    <li>Request title search from Cook County Recorder of Deeds for recorded easements and encumbrances</li>
+    <li>Engage a licensed surveyor for boundary survey and easement identification</li>
     <li>Contact DWM and ComEd for utility location maps</li>
-    <li>Recommend Phase I ESA and geotechnical report for environmental assessment</li>
-    <li>Engage licensed surveyor for boundary survey and easement identification</li>
-    <li>Check Chicago Legistar for active zoning applications affecting this property</li>
-    <li>Request title search for recorded easements and encumbrances</li>
-    <li>Contact CDOT for traffic study if commercial development planned</li>
+    <li>Check Chicago Legistar for active zoning applications or planned developments affecting this property</li>
   </ul>
 
   <div class="disclaimer">

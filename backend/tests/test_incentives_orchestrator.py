@@ -6,13 +6,15 @@ from backend.retrieval.incentives import incentives_domain
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_full_assembly(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_full_assembly(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = {
         "tif_name": "Elston/Armstrong",
         "properties": {
@@ -36,6 +38,8 @@ async def test_full_assembly(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund,
         },
     ]
     mock_oz.return_value = {"tract": "17031839100", "designated": True}
+    mock_qct.return_value = {"tract": "17031839100", "designated": True, "name": "Census Tract 8391"}
+    mock_nmtc.return_value = {"tract": "17031839100", "qualifying": True, "severe_distress": True, "deep_distress": False, "poverty_rate": 35.0}
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -53,23 +57,33 @@ async def test_full_assembly(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund,
     assert result.oz_tract == "17031839100"
     assert result.in_enterprise_zone is True
     assert result.enterprise_zone_name == "Chicago Enterprise Zone"
+    assert result.in_qct is True
+    assert result.qct_tract == "17031839100"
+    assert result.in_nmtc is True
+    assert result.nmtc_tract == "17031839100"
+    assert result.nmtc_severe_distress is True
+    assert result.nmtc_poverty_rate == 35.0
     assert result.census_tract == "17031839100"
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_no_incentives(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_no_incentives(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = None
     mock_ez.return_value = None
     mock_tract.return_value = "17031111111"
     mock_fin.return_value = []
     mock_fund.return_value = []
     mock_oz.return_value = None
+    mock_qct.return_value = None
+    mock_nmtc.return_value = {"tract": "17031111111", "qualifying": False, "severe_distress": False, "deep_distress": False, "poverty_rate": 8.0}
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -78,17 +92,21 @@ async def test_no_incentives(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund,
     assert result.tif_financials == []
     assert result.in_opportunity_zone is False
     assert result.in_enterprise_zone is False
+    assert result.in_qct is False
+    assert result.in_nmtc is False
     assert result.census_tract == "17031111111"
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_tif_hit_triggers_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_tif_hit_triggers_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = {"tif_name": "Test TIF", "properties": {}}
     mock_ez.return_value = None
     mock_tract.return_value = None
@@ -97,6 +115,8 @@ async def test_tif_hit_triggers_financials(mock_tif, mock_ez, mock_tract, mock_f
         {"report_year": "2024", "property_tax_increment_current": "500000", "total_expenditure": "400000", "fund_balance": "1000000", "net_income": "100000"},
     ]
     mock_oz.return_value = None
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -109,17 +129,21 @@ async def test_tif_hit_triggers_financials(mock_tif, mock_ez, mock_tract, mock_f
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_no_tif_skips_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_no_tif_skips_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = None
     mock_ez.return_value = None
     mock_tract.return_value = None
     mock_oz.return_value = None
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -129,19 +153,23 @@ async def test_no_tif_skips_financials(mock_tif, mock_ez, mock_tract, mock_fin, 
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_partial_failure_phase_a(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_partial_failure_phase_a(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.side_effect = Exception("TIF boundary load failed")
     mock_ez.return_value = {"zone_name": "Test EZ"}
     mock_tract.return_value = "17031839100"
     mock_fin.return_value = []
     mock_fund.return_value = []
     mock_oz.return_value = {"tract": "17031839100", "designated": True}
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -151,13 +179,15 @@ async def test_partial_failure_phase_a(mock_tif, mock_ez, mock_tract, mock_fin, 
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_all_fail_returns_empty(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_all_fail_returns_empty(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.side_effect = Exception("fail")
     mock_ez.side_effect = Exception("fail")
     mock_tract.side_effect = Exception("fail")
@@ -167,23 +197,29 @@ async def test_all_fail_returns_empty(mock_tif, mock_ez, mock_tract, mock_fin, m
     assert result.in_tif_district is False
     assert result.in_enterprise_zone is False
     assert result.in_opportunity_zone is False
+    assert result.in_qct is False
+    assert result.in_nmtc is False
     assert result.census_tract is None
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_oz_not_designated(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_oz_not_designated(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = None
     mock_ez.return_value = None
     mock_tract.return_value = "17031111111"
     mock_fin.return_value = []
     mock_fund.return_value = []
     mock_oz.return_value = {"tract": "17031111111", "designated": False}
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -192,19 +228,23 @@ async def test_oz_not_designated(mock_tif, mock_ez, mock_tract, mock_fin, mock_f
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_phase_b_financials_failure(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_phase_b_financials_failure(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = {"tif_name": "Test TIF", "properties": {}}
     mock_ez.return_value = None
     mock_tract.return_value = None
     mock_fin.side_effect = Exception("Socrata down")
     mock_fund.side_effect = Exception("Socrata down")
     mock_oz.return_value = None
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, client=AsyncMock())
 
@@ -215,19 +255,23 @@ async def test_phase_b_financials_failure(mock_tif, mock_ez, mock_tract, mock_fi
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_business_launch_skips_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_business_launch_skips_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = {"tif_name": "Test TIF", "properties": {"approval_d": "2010-01-01T00:00:00.000"}}
     mock_ez.return_value = None
     mock_tract.return_value = None
     mock_fin.return_value = [{"report_year": "2024", "public_funds": "5000000"}]
     mock_fund.return_value = [{"report_year": "2024", "property_tax_increment_current": "500000"}]
     mock_oz.return_value = None
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, workflow="business_launch", client=AsyncMock())
 
@@ -239,19 +283,23 @@ async def test_business_launch_skips_tif_financials(mock_tif, mock_ez, mock_trac
 
 
 @pytest.mark.asyncio
+@patch("backend.retrieval.incentives.check_nmtc")
+@patch("backend.retrieval.incentives.check_qct")
 @patch("backend.retrieval.incentives.check_opportunity_zone")
 @patch("backend.retrieval.incentives.fetch_tif_fund_analysis")
 @patch("backend.retrieval.incentives.fetch_tif_financials")
 @patch("backend.retrieval.incentives.resolve_census_tract")
 @patch("backend.retrieval.incentives.check_enterprise_zone")
 @patch("backend.retrieval.incentives.check_tif")
-async def test_general_workflow_fetches_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz):
+async def test_general_workflow_fetches_tif_financials(mock_tif, mock_ez, mock_tract, mock_fin, mock_fund, mock_oz, mock_qct, mock_nmtc):
     mock_tif.return_value = {"tif_name": "Test TIF", "properties": {}}
     mock_ez.return_value = None
     mock_tract.return_value = None
     mock_fin.return_value = [{"report_year": "2024", "public_funds": "5000000"}]
     mock_fund.return_value = [{"report_year": "2024", "property_tax_increment_current": "500000"}]
     mock_oz.return_value = None
+    mock_qct.return_value = None
+    mock_nmtc.return_value = None
 
     result = await incentives_domain(41.93, -87.65, workflow="general", client=AsyncMock())
 

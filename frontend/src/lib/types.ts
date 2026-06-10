@@ -273,6 +273,12 @@ export interface IncentivesSummary {
   oz_tract: string | null;
   in_enterprise_zone: boolean;
   enterprise_zone_name: string | null;
+  in_qct: boolean;
+  qct_tract: string | null;
+  in_nmtc: boolean;
+  nmtc_tract: string | null;
+  nmtc_severe_distress: boolean;
+  nmtc_poverty_rate: number | null;
   census_tract: string | null;
   property_tax_class: string | null;
   tax_incentive_description: string | null;
@@ -366,6 +372,31 @@ export interface NeighborhoodSummary {
   census_tract: CensusTractDemographics | null;
   transit: TransitAccess | null;
   walkscore: WalkScoreSummary | null;
+}
+
+export interface ComparableSale {
+  pin: string;
+  sale_date: string | null;
+  sale_price: number | null;
+  class_code: string | null;
+  class_description: string | null;
+  land_sqft: number | null;
+  bldg_sqft: number | null;
+  price_per_land_sqft: number | null;
+  price_per_bldg_sqft: number | null;
+  deed_type: string | null;
+  sale_type: string | null;
+  distance_mi: number | null;
+}
+
+export interface ComparablesSummary {
+  median_sale_price: number | null;
+  median_price_per_land_sqft: number | null;
+  median_price_per_bldg_sqft: number | null;
+  price_range_min: number | null;
+  price_range_max: number | null;
+  sales_volume: number;
+  sales: ComparableSale[];
 }
 
 export interface ContextObject {

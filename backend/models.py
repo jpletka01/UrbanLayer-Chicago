@@ -285,6 +285,12 @@ class IncentivesSummary(BaseModel):
     oz_tract: str | None = None
     in_enterprise_zone: bool = False
     enterprise_zone_name: str | None = None
+    in_qct: bool = False
+    qct_tract: str | None = None
+    in_nmtc: bool = False
+    nmtc_tract: str | None = None
+    nmtc_severe_distress: bool = False
+    nmtc_poverty_rate: float | None = None
     census_tract: str | None = None
     property_tax_class: str | None = None
     tax_incentive_description: str | None = None

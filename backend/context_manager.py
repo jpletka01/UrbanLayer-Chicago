@@ -72,6 +72,10 @@ def summarize_turn(
             programs.append("Opportunity Zone")
         if inc.in_enterprise_zone:
             programs.append(f"EZ: {inc.enterprise_zone_name}")
+        if inc.in_qct:
+            programs.append("QCT (LIHTC)")
+        if inc.in_nmtc:
+            programs.append("NMTC")
         if programs:
             facts.append(", ".join(programs))
 

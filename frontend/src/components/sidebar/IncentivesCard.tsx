@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { IncentivesSummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 import { InfoTooltip } from "../InfoTooltip";
+import { ReportTeaser } from "./ReportTeaser";
 
 const DollarIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -46,7 +47,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
   const { t } = useTranslation("data");
   const [showFinancials, setShowFinancials] = useState(false);
 
-  const hasAnyIncentive = data.in_tif_district || data.in_opportunity_zone || data.in_enterprise_zone || !!data.property_tax_class;
+  const hasAnyIncentive = data.in_tif_district || data.in_opportunity_zone || data.in_enterprise_zone || data.in_qct || data.in_nmtc || !!data.property_tax_class;
 
   return (
     <CollapsibleCard title={t("incentives.title")} icon={DollarIcon}>
@@ -166,6 +167,55 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
           )}
         </div>
 
+        <div className="space-y-1">
+          <Badge
+            active={data.in_qct}
+            label={data.in_qct ? t("incentives.qct") : t("incentives.notInQct")}
+            termKey="qct"
+          />
+          {data.in_qct && data.qct_tract && (
+            <p className="text-[10px] text-text-muted ml-5">
+              {t("incentives.tract")}{" "}
+              <a
+                href={`https://censusreporter.org/profiles/14000US${data.qct_tract}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+              >
+                {data.qct_tract}
+              </a>
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <Badge
+            active={data.in_nmtc}
+            label={data.in_nmtc ? t("incentives.nmtcEligible") : t("incentives.notNmtcEligible")}
+            termKey="nmtc"
+          />
+          {data.in_nmtc && (
+            <div className="ml-5 space-y-0.5">
+              {data.nmtc_tract && (
+                <p className="text-[10px] text-text-muted">
+                  {t("incentives.tract")}{" "}
+                  <a
+                    href={`https://censusreporter.org/profiles/14000US${data.nmtc_tract}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                  >
+                    {data.nmtc_tract}
+                  </a>
+                </p>
+              )}
+              {data.nmtc_severe_distress && (
+                <p className="text-[10px] text-amber-400">{t("incentives.severeDistress")}</p>
+              )}
+            </div>
+          )}
+        </div>
+
         {data.grant_programs && data.grant_programs.total_projects > 0 && (
           <div className="space-y-1.5">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">
@@ -231,6 +281,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
             ) : data.census_tract}
           </p>
         )}
+        <ReportTeaser text={t("incentives.reportTeaser")} />
       </div>
     </CollapsibleCard>
   );
