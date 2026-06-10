@@ -2588,8 +2588,8 @@ async def report(
 
     if mock:
         report_data = _apply_mock_overrides(report_data)
-        # Regenerate construction map with mock development data
-        if basemap_bytes and report_data.nearby_development and report_data.nearby_development.recent_projects and not report_data.construction_map_b64:
+        # Regenerate construction map with mock development data (always, since mock replaces projects)
+        if basemap_bytes and report_data.nearby_development and report_data.nearby_development.recent_projects:
             try:
                 loop = asyncio.get_running_loop()
                 report_data.construction_map_b64 = await loop.run_in_executor(
