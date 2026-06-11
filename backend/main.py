@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, NamedTuple
 
 import httpx
 import uuid
@@ -1113,61 +1113,104 @@ async def _save_request_log(
 # ---------------------------------------------------------------------------
 
 
+class ResolvedLocation(NamedTuple):
+    """Outcome of parcel resolution. ``pin`` is the system-of-record identity
+    (None on the degraded path); ``confidence`` is "authoritative" or
+    "approximate" (truth-model §5, drives the INV-5 disclosure)."""
+    lat: float
+    lon: float
+    address: str | None
+    pin: str | None
+    confidence: str
+
+
 async def _resolve_location(
     address: str | None = None,
     lat: float | None = None,
     lon: float | None = None,
     pin: str | None = None,
-) -> tuple[float, float, str | None]:
-    """Resolve input to (lat, lon, address). Raises HTTPException on failure."""
-    resolved_lat: float | None = None
-    resolved_lon: float | None = None
+) -> ResolvedLocation:
+    """Resolve input to a parcel identity + point. Raises HTTPException on failure.
+
+    Strict precedence (truth-model §5) — first confident match wins:
+      1. explicit lat/lon — a deliberate point (map/Explorer click).
+      2. supplied PIN — the authoritative parcel key (never overridden by a
+         co-supplied address; INV-6 / R6).
+      3. address → authoritative PIN via Cook County Address Points (78yw-iddh).
+         GIS-independent; this is the step that closes R7 for typed addresses.
+      4. degraded fallback — geocode + downstream nearest-centroid, flagged
+         "approximate" so the artifact discloses it (INV-5).
+      5. nothing resolvable → 422.
+    """
+    settings = get_settings()
     resolved_address: str | None = address
 
+    # 1. Explicit coordinates are a deliberate point override — highest precedence.
     if lat is not None and lon is not None:
-        # Explicit coordinates are a deliberate point override — highest precedence.
-        resolved_lat, resolved_lon = lat, lon
-    else:
-        # A supplied PIN is the authoritative unique parcel key, so it takes
-        # precedence over a co-supplied address. Geocoding an address yields a point
-        # that the downstream bbox parcel lookup resolves to the *nearest* parcel,
-        # which in dense/condo blocks can be a neighbor — so letting an address
-        # override a valid PIN can render a report for the wrong parcel. The address
-        # is kept as display metadata (resolved_address) and used only as a fallback
-        # when PIN resolution yields no coordinates (missing PIN / null lat-lon).
-        if pin:
-            from backend.retrieval.socrata import socrata_get
-            settings = get_settings()
-            rows = await socrata_get(
-                settings.dataset_ccao_parcels,
-                # Parcel Universe (pabr-t5kh) exposes coordinates as lat/lon, not
-                # latitude/longitude — the latter 400s and breaks PIN-only resolution.
-                {"$where": f"pin='{pin}'", "$select": "lat,lon", "$limit": 1},
-                base_url=settings.cook_county_socrata_base,
-            )
-            if rows and rows[0].get("lat") and rows[0].get("lon"):
-                resolved_lat = float(rows[0]["lat"])
-                resolved_lon = float(rows[0]["lon"])
+        return ResolvedLocation(lat, lon, resolved_address, pin, "authoritative")
 
-        if (resolved_lat is None or resolved_lon is None) and address:
-            coords = await geocode_address(address)
-            if coords:
-                resolved_lat, resolved_lon = coords
-
-    if resolved_lat is None or resolved_lon is None:
-        raise HTTPException(
-            status_code=422,
-            detail="Could not geocode address. Try a different format or provide lat/lon coordinates.",
+    # 2. A supplied PIN is the authoritative unique parcel key — resolve its
+    #    centroid directly, never overridden by a co-supplied address.
+    if pin:
+        from backend.retrieval.socrata import socrata_get
+        rows = await socrata_get(
+            settings.dataset_ccao_parcels,
+            # Parcel Universe (pabr-t5kh) exposes coordinates as lat/lon, not
+            # latitude/longitude — the latter 400s and breaks PIN-only resolution.
+            {"$where": f"pin='{pin}'", "$select": "lat,lon", "$limit": 1},
+            base_url=settings.cook_county_socrata_base,
         )
-    return resolved_lat, resolved_lon, resolved_address
+        if rows and rows[0].get("lat") and rows[0].get("lon"):
+            return ResolvedLocation(
+                float(rows[0]["lat"]), float(rows[0]["lon"]),
+                resolved_address, pin, "authoritative",
+            )
+
+    # 3. Address → authoritative PIN via Address Points. Resolving the parcel by
+    #    PIN (not by the geocoded point's nearest centroid) is what eliminates the
+    #    ~77% wrong-parcel rate while GIS is down. The returned lat/lon is the
+    #    parcel's own point, improving every coordinate-driven downstream domain.
+    if address and settings.address_point_resolution_enabled:
+        from backend.retrieval.property.address_points import address_to_pin
+        hit = await address_to_pin(address)
+        if hit:
+            return ResolvedLocation(
+                hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative",
+            )
+
+    # 4. Degraded fallback: geocode → street-interpolated point → downstream
+    #    nearest-centroid. No confident PIN, so flag approximate (INV-5) and log.
+    if address:
+        coords = await geocode_address(address)
+        if coords:
+            log.warning(
+                "R7 degraded resolution (approximate parcel) for address=%r", address
+            )
+            return ResolvedLocation(
+                coords[0], coords[1], resolved_address, None, "approximate",
+            )
+
+    # 5. Nothing resolvable.
+    raise HTTPException(
+        status_code=422,
+        detail="Could not geocode address. Try a different format or provide lat/lon coordinates.",
+    )
 
 
 async def _fetch_scorecard_data(
     resolved_lat: float,
     resolved_lon: float,
     resolved_address: str | None,
+    *,
+    pin: str | None = None,
 ) -> dict:
-    """Fetch all domain data for a location. Returns dict with context, metadata, and failures."""
+    """Fetch all domain data for a location. Returns dict with context, metadata, and failures.
+
+    ``pin`` (the authoritative parcel key from _resolve_location, when available)
+    keys the property domain by PIN instead of re-deriving identity from the
+    coordinate — INV-2. All other domains stay coordinate-driven on the resolved
+    point.
+    """
     ca = community_area_by_point(resolved_lat, resolved_lon)
     ca_name = community_area_name(ca) if ca else None
 
@@ -1175,7 +1218,7 @@ async def _fetch_scorecard_data(
     wf = "property_intelligence"
 
     tasks["property"] = asyncio.create_task(_limited(
-        property_domain(resolved_lat, resolved_lon, workflow=wf)
+        property_domain(resolved_lat, resolved_lon, pin=pin, workflow=wf)
     ))
     tasks["regulatory"] = asyncio.create_task(_limited(
         regulatory_domain(resolved_lat, resolved_lon, workflow="site_due_diligence")
@@ -1322,10 +1365,10 @@ async def scorecard(
     pin: str | None = None,
 ) -> dict:
     """Non-AI instant-load property dashboard. Zero LLM cost."""
-    resolved_lat, resolved_lon, resolved_address = await _resolve_location(
-        address, lat, lon, pin
-    )
-    data = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
+    rl = await _resolve_location(address, lat, lon, pin)
+    data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
+    data["resolved_pin"] = rl.pin
+    data["resolved_confidence"] = rl.confidence
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
         data["comparables"] = data["comparables"].model_dump(exclude_none=True)
@@ -2032,8 +2075,16 @@ async def _fetch_report_data(
     resolved_lat: float,
     resolved_lon: float,
     resolved_address: str | None,
+    *,
+    pin: str | None = None,
+    confidence: str | None = None,
 ) -> "ReportData":
-    """Fetch all data for a v2 development feasibility report."""
+    """Fetch all data for a v2 development feasibility report.
+
+    ``pin``/``confidence`` come from _resolve_location: ``pin`` keys the property
+    domain by parcel identity; ``confidence`` drives the INV-5 disclosure on the
+    artifact when resolution was degraded ("approximate").
+    """
     from backend.models import (
         ComparablesSummary, ComparableSale, NearbyDevelopment, ReportData,
     )
@@ -2047,7 +2098,7 @@ async def _fetch_report_data(
     settings = get_settings()
 
     # Step 1: Base scorecard data
-    base = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address)
+    base = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address, pin=pin)
     ctx = base["context"]
     partial_failures: list[str] = list(base.get("partial_failures", []))
 
@@ -2372,6 +2423,8 @@ async def _fetch_report_data(
         bulk_standards_text=bulk_standards_text,
         zone_definitions=zone_definitions_data,
         partial_failures=partial_failures,
+        resolved_pin=pin,
+        resolved_confidence=confidence,
     )
 
     # V5 synthesis (all deterministic, no API calls)
@@ -4230,9 +4283,8 @@ async def report(
     from jinja2 import Environment, FileSystemLoader
     from weasyprint import HTML
 
-    resolved_lat, resolved_lon, resolved_address = await _resolve_location(
-        address, lat, lon, pin
-    )
+    rl = await _resolve_location(address, lat, lon, pin)
+    resolved_lat, resolved_lon, resolved_address = rl.lat, rl.lon, rl.address
 
     if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER["premium"]:
         if not await db.has_purchased_report(user["id"], resolved_lat, resolved_lon):
@@ -4247,7 +4299,9 @@ async def report(
     # memory so concurrent reports can't OOM the single worker. See the Tier-0
     # investigation in report-v6-execution-plan.md.
     async with _REPORT_SEM:
-        report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
+        report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(
+            resolved_lat, resolved_lon, resolved_address, pin=rl.pin, confidence=rl.confidence
+        )
 
         if mock:
             report_data = _apply_mock_overrides(report_data)
@@ -4376,8 +4430,8 @@ async def check_report_access(
     from backend.auth import _TIER_ORDER
     if _TIER_ORDER.get(user["tier"], 0) >= _TIER_ORDER["premium"]:
         return {"has_access": True, "reason": "subscription"}
-    resolved_lat, resolved_lon, _ = await _resolve_location(address, lat, lon, pin)
-    purchased = await db.has_purchased_report(user["id"], resolved_lat, resolved_lon)
+    rl = await _resolve_location(address, lat, lon, pin)
+    purchased = await db.has_purchased_report(user["id"], rl.lat, rl.lon)
     return {"has_access": purchased, "reason": "purchased" if purchased else "none"}
 
 

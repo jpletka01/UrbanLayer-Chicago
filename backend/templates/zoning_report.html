@@ -366,6 +366,14 @@ a.glossary-link {
   <div class="subtitle" style="font-size: 10pt;">{{ report.community_area_name }} Community Area</div>
   {% endif %}
 
+  {% if report.resolved_confidence == "approximate" %}
+  <div style="margin-top: 12pt; padding: 6pt 10pt; background: #fef3c7; border: 1pt solid #f59e0b; border-radius: 4pt; font-size: 8pt; color: #92400e; max-width: 440pt; margin-left: auto; margin-right: auto;">
+    <strong>Approximate parcel match.</strong> This address could not be matched to an
+    authoritative parcel record, so the parcel was located by proximity. Verify the
+    PIN and address below before relying on this report.
+  </div>
+  {% endif %}
+
   {% if dev and dev.max_buildable_sqft and prop and (prop.bldg_sqft or 0) == 0 %}
   <div class="headline">
     This {{ prop.land_sqft|fnum }} sq ft lot in {{ zoning.zone_class }} allows up to {{ dev.max_buildable_sqft|fnum }} sq ft

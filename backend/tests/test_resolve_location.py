@@ -1,14 +1,15 @@
-"""Regression tests for `_resolve_location` precedence.
+"""Regression + R7 tests for `_resolve_location` precedence.
 
-Locks in the PIN-precedence fix (follow-up to R5, the parcel bbox-fallback bug
-in `claude-context/guides/report-status.md`): when a request supplies both a
-`pin` and an `address`, the **PIN** is the authoritative parcel key and must win.
-Previously the resolver checked `address` before `pin` (an `elif` chain), so a
-co-supplied address geocoded to a point that the downstream bbox parcel lookup
-could resolve to a *neighbor* — rendering a report for the wrong parcel.
+Strict precedence (truth-model §5, highest → lowest):
+    explicit lat/lon  →  pin  →  address→PIN (78yw-iddh)  →  geocode (approximate)
 
-Precedence contract (highest → lowest):
-    explicit lat/lon  →  pin  →  address (fallback + display metadata)
+Locks in:
+  * R6 — a supplied PIN is never overridden by a co-supplied address (INV-6).
+  * R7 — a typed address resolves to its authoritative PIN via Address Points
+    before the degraded geocode + nearest-centroid path ever runs.
+
+`_resolve_location` returns a `ResolvedLocation(lat, lon, address, pin, confidence)`
+NamedTuple; `confidence` is "authoritative" or "approximate".
 """
 
 import pytest
@@ -20,23 +21,33 @@ pytestmark = pytest.mark.asyncio
 
 # Distinct sentinel coordinates so each branch is unambiguous.
 PIN_COORDS = (41.9300, -87.6400)
+ADDR_POINT_COORDS = (41.9287, -87.6414)
 GEOCODE_COORDS = (41.8800, -87.6300)
 EXPLICIT_COORDS = (41.8500, -87.6500)
 
 
 def _patch_pin_lookup(lat_lon):
-    """Patch the lazily-imported socrata_get used by the PIN branch.
-
-    `lat_lon` is a (lat, lon) tuple for a hit, or None for "PIN not found".
-    """
-    if lat_lon is None:
-        rows = []
-    else:
-        rows = [{"lat": str(lat_lon[0]), "lon": str(lat_lon[1])}]
+    """Patch the lazily-imported socrata_get used by the PIN branch (step 2)."""
+    rows = [] if lat_lon is None else [{"lat": str(lat_lon[0]), "lon": str(lat_lon[1])}]
     return patch(
         "backend.retrieval.socrata.socrata_get",
         new=AsyncMock(return_value=rows),
     )
+
+
+def _patch_address_to_pin(result):
+    """Patch the lazily-imported address→PIN resolver (step 3).
+
+    `result` is a hit dict, or None for "no confident match".
+    """
+    return patch(
+        "backend.retrieval.property.address_points.address_to_pin",
+        new=AsyncMock(return_value=result),
+    )
+
+
+def _addr_point_hit(lat_lon, pin="14283190070000"):
+    return {"pin14": pin, "lat": lat_lon[0], "lon": lat_lon[1], "address": "x"}
 
 
 def _patch_geocode(lat_lon):
@@ -45,66 +56,133 @@ def _patch_geocode(lat_lon):
     )
 
 
+# --------------------------------------------------------------------------- #
+# R6 — PIN precedence
+# --------------------------------------------------------------------------- #
+
 async def test_pin_wins_over_address():
-    """pin + address supplied → PIN coordinates are used, not the geocoded address."""
-    with _patch_pin_lookup(PIN_COORDS), _patch_geocode(GEOCODE_COORDS):
-        lat, lon, addr = await main_mod._resolve_location(
+    """pin + address → PIN coords win; address→PIN is never consulted."""
+    addr_mock = AsyncMock(return_value=_addr_point_hit(ADDR_POINT_COORDS))
+    with _patch_pin_lookup(PIN_COORDS), _patch_geocode(GEOCODE_COORDS), \
+            patch("backend.retrieval.property.address_points.address_to_pin", new=addr_mock):
+        rl = await main_mod._resolve_location(
             address="443 W Wrightwood Ave", pin="14283190070000"
         )
-    assert (lat, lon) == PIN_COORDS
-    # Address is retained as display metadata even though it did not drive coords.
-    assert addr == "443 W Wrightwood Ave"
-
-
-async def test_address_used_as_fallback_when_pin_lookup_empty():
-    """pin + address, but the PIN returns no rows → fall back to the geocoded address."""
-    with _patch_pin_lookup(None), _patch_geocode(GEOCODE_COORDS):
-        lat, lon, addr = await main_mod._resolve_location(
-            address="443 W Wrightwood Ave", pin="00000000000000"
-        )
-    assert (lat, lon) == GEOCODE_COORDS
-    assert addr == "443 W Wrightwood Ave"
-
-
-async def test_address_used_as_fallback_when_pin_has_null_coords():
-    """PIN row exists but lat/lon are null → fall back to the geocoded address."""
-    rows = [{"lat": None, "lon": None}]
-    with patch("backend.retrieval.socrata.socrata_get", new=AsyncMock(return_value=rows)), \
-            _patch_geocode(GEOCODE_COORDS):
-        lat, lon, _ = await main_mod._resolve_location(
-            address="443 W Wrightwood Ave", pin="14283190070000"
-        )
-    assert (lat, lon) == GEOCODE_COORDS
+    assert (rl.lat, rl.lon) == PIN_COORDS
+    assert rl.pin == "14283190070000"
+    assert rl.confidence == "authoritative"
+    assert rl.address == "443 W Wrightwood Ave"
+    addr_mock.assert_not_called()
 
 
 async def test_pin_only_still_resolves():
-    """pin alone (no address) → PIN coordinates (behavior preserved)."""
-    with _patch_pin_lookup(PIN_COORDS), _patch_geocode(GEOCODE_COORDS):
-        lat, lon, addr = await main_mod._resolve_location(pin="14283190070000")
-    assert (lat, lon) == PIN_COORDS
-    assert addr is None
+    """pin alone → PIN coords, authoritative."""
+    with _patch_pin_lookup(PIN_COORDS):
+        rl = await main_mod._resolve_location(pin="14283190070000")
+    assert (rl.lat, rl.lon) == PIN_COORDS
+    assert rl.pin == "14283190070000"
+    assert rl.confidence == "authoritative"
+    assert rl.address is None
 
 
-async def test_address_only_unaffected():
-    """address alone (no pin) → geocoded address (behavior preserved)."""
-    with _patch_geocode(GEOCODE_COORDS):
-        lat, lon, addr = await main_mod._resolve_location(address="2400 N Milwaukee Ave")
-    assert (lat, lon) == GEOCODE_COORDS
-    assert addr == "2400 N Milwaukee Ave"
+# --------------------------------------------------------------------------- #
+# R7 — address → authoritative PIN (the new dominant path)
+# --------------------------------------------------------------------------- #
 
+async def test_address_point_hit_resolves_by_pin():
+    """address only, Address Points hit → parcel point + PIN, geocode not called."""
+    geo = AsyncMock(return_value=GEOCODE_COORDS)
+    with _patch_address_to_pin(_addr_point_hit(ADDR_POINT_COORDS, pin="14331030110000")), \
+            patch.object(main_mod, "geocode_address", new=geo):
+        rl = await main_mod._resolve_location(address="443 W Wrightwood Ave")
+    assert (rl.lat, rl.lon) == ADDR_POINT_COORDS
+    assert rl.pin == "14331030110000"
+    assert rl.confidence == "authoritative"
+    geo.assert_not_called()
+
+
+async def test_address_point_miss_falls_to_geocode_approximate():
+    """address only, no confident Address Points match → geocode, approximate, no PIN."""
+    with _patch_address_to_pin(None), _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(address="2400 N Milwaukee Ave")
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.pin is None
+    assert rl.confidence == "approximate"
+    assert rl.address == "2400 N Milwaukee Ave"
+
+
+async def test_kill_switch_skips_address_point_step():
+    """address_point_resolution_enabled=False → straight to geocode (no PIN)."""
+    addr_mock = AsyncMock(return_value=_addr_point_hit(ADDR_POINT_COORDS))
+    settings = main_mod.get_settings()
+    with patch.object(settings, "address_point_resolution_enabled", False), \
+            patch("backend.retrieval.property.address_points.address_to_pin", new=addr_mock), \
+            _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(address="443 W Wrightwood Ave")
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.confidence == "approximate"
+    addr_mock.assert_not_called()
+
+
+# --------------------------------------------------------------------------- #
+# Fallback chains when a supplied PIN does not resolve
+# --------------------------------------------------------------------------- #
+
+async def test_empty_pin_falls_through_to_address_point():
+    """pin returns no rows → address→PIN is tried next (more authoritative than geocode)."""
+    with _patch_pin_lookup(None), \
+            _patch_address_to_pin(_addr_point_hit(ADDR_POINT_COORDS, pin="14331030110000")), \
+            _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(
+            address="443 W Wrightwood Ave", pin="00000000000000"
+        )
+    assert (rl.lat, rl.lon) == ADDR_POINT_COORDS
+    assert rl.pin == "14331030110000"
+    assert rl.confidence == "authoritative"
+
+
+async def test_empty_pin_and_address_miss_falls_to_geocode():
+    """pin empty + Address Points miss → geocoded address, approximate."""
+    with _patch_pin_lookup(None), _patch_address_to_pin(None), _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(
+            address="443 W Wrightwood Ave", pin="00000000000000"
+        )
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.pin is None
+    assert rl.confidence == "approximate"
+
+
+async def test_pin_null_coords_falls_through():
+    """PIN row exists but lat/lon null → fall through to address→PIN then geocode."""
+    rows = [{"lat": None, "lon": None}]
+    with patch("backend.retrieval.socrata.socrata_get", new=AsyncMock(return_value=rows)), \
+            _patch_address_to_pin(None), _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(
+            address="443 W Wrightwood Ave", pin="14283190070000"
+        )
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.confidence == "approximate"
+
+
+# --------------------------------------------------------------------------- #
+# Explicit lat/lon + error path
+# --------------------------------------------------------------------------- #
 
 async def test_explicit_latlon_wins_over_pin_and_address():
     """Explicit lat/lon is a deliberate point override → highest precedence."""
-    # If either the pin or geocode path were consulted the test would fail, so
-    # patch them to *other* coords and assert the explicit ones win.
-    with _patch_pin_lookup(PIN_COORDS), _patch_geocode(GEOCODE_COORDS):
-        lat, lon, _ = await main_mod._resolve_location(
+    addr_mock = AsyncMock(return_value=_addr_point_hit(ADDR_POINT_COORDS))
+    with _patch_pin_lookup(PIN_COORDS), _patch_geocode(GEOCODE_COORDS), \
+            patch("backend.retrieval.property.address_points.address_to_pin", new=addr_mock):
+        rl = await main_mod._resolve_location(
             address="443 W Wrightwood Ave",
             lat=EXPLICIT_COORDS[0],
             lon=EXPLICIT_COORDS[1],
             pin="14283190070000",
         )
-    assert (lat, lon) == EXPLICIT_COORDS
+    assert (rl.lat, rl.lon) == EXPLICIT_COORDS
+    assert rl.confidence == "authoritative"
+    # The explicit-point branch carries the supplied pin forward, never geocodes.
+    addr_mock.assert_not_called()
 
 
 async def test_no_inputs_raises_422():

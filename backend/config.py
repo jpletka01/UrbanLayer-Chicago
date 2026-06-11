@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     dataset_ccao_assessments: str = "uzyt-m557"
     dataset_ccao_sales: str = "wvhk-k5uv"
     dataset_ccao_parcels: str = "pabr-t5kh"
+    # Cook County Address Points — authoritative address→PIN map (GIS-index-independent).
+    # Used by the R7 address→PIN resolver. $limit=2 so a multi-match (≥2 distinct PINs)
+    # can be detected and rejected as "not confident" rather than picked arbitrarily.
+    dataset_address_points: str = "78yw-iddh"
+    limit_address_points: int = 2
+    # Kill-switch for the R7 address→PIN resolution step. False reverts _resolve_location
+    # to the pre-R7 geocode + nearest-centroid path with no redeploy.
+    address_point_resolution_enabled: bool = True
     limit_ccao_characteristics: int = 1
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10

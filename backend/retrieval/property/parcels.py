@@ -71,6 +71,65 @@ async def lookup_parcel(
     return result
 
 
+async def lookup_parcel_by_pin(
+    pin14: str,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict | None:
+    """Resolve a parcel directly from a known PIN — no coordinate round-trip.
+
+    Used when the PIN is already authoritative (supplied, or derived via the
+    Address Points address→PIN map). Returns the **same dict shape** as
+    `_lookup_parcel_socrata` so `_build_summary` is identical downstream. Pure
+    Socrata (Parcel Universe), so it is correct throughout the GIS outage.
+    Geometry is None (Parcel Universe has no polygon; GIS layer is down).
+    """
+    settings = get_settings()
+    key = f"parcel_pin:{pin14}"
+    cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return None
+    if cached is not None:
+        return cached
+
+    params = {
+        "$where": f"pin='{pin14}'",
+        "$select": "pin,pin10,class,lat,lon,zip_code,township_name,nbhd_code,tax_code",
+        "$limit": 1,
+    }
+    try:
+        rows = await socrata_get(
+            settings.dataset_ccao_parcels,
+            params,
+            client=client,
+            base_url=settings.cook_county_socrata_base,
+            app_token=settings.cook_county_socrata_token or None,
+        )
+    except Exception as exc:
+        log.warning("Parcel-by-PIN lookup failed for %s: %s", pin14, exc)
+        return None
+
+    if not rows:
+        _cache.set(key, _NOT_FOUND)
+        return None
+    row = rows[0]
+    result = {
+        "pin14": str(row.get("pin", pin14)).replace("-", "").zfill(14),
+        "bldg_class": row.get("class"),
+        "bldg_sqft": None,
+        "land_sqft": None,
+        "total_value": None,
+        "address": None,
+        "geometry": None,
+        "zip_code": row.get("zip_code"),
+        "township_name": row.get("township_name"),
+        "nbhd_code": row.get("nbhd_code"),
+        "tax_code": row.get("tax_code"),
+    }
+    _cache.set(key, result)
+    return result
+
+
 async def _lookup_parcel_gis(
     lat: float,
     lon: float,

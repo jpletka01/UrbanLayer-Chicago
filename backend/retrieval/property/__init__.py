@@ -15,7 +15,7 @@ from backend.config import get_settings
 from backend.models import AssessmentRecord, PropertySummary, SaleRecord, TaxLineItem
 from backend.retrieval.property.assessments import get_assessments
 from backend.retrieval.property.characteristics import get_characteristics
-from backend.retrieval.property.parcels import lookup_parcel
+from backend.retrieval.property.parcels import lookup_parcel, lookup_parcel_by_pin
 from backend.retrieval.property.sales import get_sales
 
 log = logging.getLogger(__name__)
@@ -25,21 +25,30 @@ async def property_domain(
     lat: float,
     lon: float,
     *,
+    pin: str | None = None,
     workflow: str = "general",
     client: httpx.AsyncClient | None = None,
 ) -> PropertySummary | None:
     """Fetch all property data for a point.
 
-    Step 1: Cook County GIS parcel lookup (lat/lon -> PIN14)
+    Step 1: Resolve the parcel. When an authoritative PIN is supplied, resolve
+            by PIN directly (pure Socrata, GIS-independent). Otherwise fall back
+            to the coordinate parcel lookup (GIS PIP → Socrata nearest-centroid).
     Step 2: CCAO characteristics, assessments, sales in parallel (by PIN)
     """
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        parcel = await lookup_parcel(lat, lon, client=client)
+        if pin:
+            parcel = await lookup_parcel_by_pin(pin, client=client)
+            if parcel is None:
+                # PIN row missing/unavailable — degrade to the coordinate path.
+                parcel = await lookup_parcel(lat, lon, client=client)
+        else:
+            parcel = await lookup_parcel(lat, lon, client=client)
         if parcel is None:
-            log.info("No parcel found at (%s, %s)", lat, lon)
+            log.info("No parcel found at (%s, %s) pin=%s", lat, lon, pin)
             return None
 
         pin14 = parcel["pin14"]

@@ -653,6 +653,11 @@ class ReportData(BaseModel):
     bulk_standards_text: str = ""
     zone_definitions: list[dict] = Field(default_factory=list)
     partial_failures: list[str] = Field(default_factory=list)
+    # R7 parcel-resolution provenance. resolved_pin is the system-of-record parcel
+    # identity; resolved_confidence is "authoritative" or "approximate" and drives
+    # the INV-5 disclosure on the report cover when resolution was degraded.
+    resolved_pin: str | None = None
+    resolved_confidence: str | None = None
     # V5 synthesis fields
     opportunities: list[dict] = Field(default_factory=list)
     constraints: list[dict] = Field(default_factory=list)
