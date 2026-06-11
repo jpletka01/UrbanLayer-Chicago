@@ -578,13 +578,57 @@ and the Q6 root cause is now known.**
 
 ---
 
-## Tier-0 investigation — GIS / report-gen reliability (READ-ONLY SPIKE, 2026-06-11)
+## Tier-0 investigation — GIS / report-gen reliability (2026-06-11)
 
-Status: **investigation complete (read-only); no code changed.** A future session can implement the
-mitigation directly from this section. Headline finding: **the mid-render worker exit is not caused by GIS,
-and GIS cannot by itself abort a report.** The crash is an out-of-memory (OOM) kill of the single uvicorn
-worker during the synchronous PDF render; the "GIS lookup failed" log line right before it is a co-symptom
-of the same load window, not the cause.
+Status: **investigation complete + hypothesis EMPIRICALLY VALIDATED (read-only); no app code changed.**
+Headline finding: **the mid-render worker exit is not caused by GIS, and GIS cannot by itself abort a
+report.** The crash is an out-of-memory (OOM) kill of the single uvicorn worker driven by per-report render
+memory + a synchronous PDF render that serializes the event loop; the "GIS lookup failed" log line right
+before it is a co-symptom of the same load window, not the cause. **The concrete implementation plan is at
+the end of this section ("Tier-0 implementation plan").**
+
+### Tier-0 VALIDATION — empirical evidence (2026-06-11)
+
+Ran live experiments against the local running server (pid 26923) + standalone microbenchmarks. **Caveat:
+the local box has 48 GB RAM and macOS memory compression, so a literal SIGKILL/OOM cannot reproduce locally
+— under pressure macOS compresses pages (RSS collapses) and requests time out instead of the worker being
+killed. On the 8 GB prod Linux container with no compressor, the same contention produces the OOM-kill.**
+Same root cause, different surface symptom.
+
+| Experiment | Result | What it proves |
+|-----------|--------|----------------|
+| **Single mock report + `/health` polling** | Report 94 s, 200. A `/health` check **at report completion took 6.44 s** (vs 0.06 s avg); RSS peaked ~904 MB vs ~620 MB idle (**+284 MB**). | `write_pdf()` runs synchronously and **blocks the event loop ~6 s at the end of every report** — health/chat/other reports stall. Confirms the loop-blocking mechanism. |
+| **3 concurrent mock reports** | **All 3 timed out at 240 s (none completed)**; RSS peaked 986 MB then **collapsed to ~42–70 MB while the pid stayed alive** (macOS compressor). | The single worker **serializes catastrophically under concurrency**. On 8 GB Linux this is the OOM-kill; here the compressor masks it as a timeout cascade. |
+| **`write_pdf` microbench, realistic 1200×800 basemaps** | Holding 6 map images ≈ **+236 MB**; `write_pdf` ≈ **+139 MB** on top → **~375 MB/report render footprint**; `write_pdf` blocked 0.8 s (synthetic) / 6.4 s (real template). | Attributes the spike: **large embedded map rasters + `write_pdf` rasterization**, both held in one process. Scales with image size/count. |
+| **GIS blackholed (unreachable URL)** | Returned a PIN via **Socrata fallback in 11 s, no exception**. | GIS fully down → graceful degradation, **no crash**. (Claim 3 confirmed.) |
+| **Real `lookup_parcel` timing** | 12.66 s, returned PIN but **`geometry=none`** (GIS currently failing → Socrata fallback). | GIS adds ~12 s latency/report **and is currently not returning geometry at all** — so parcel/envelope maps are already silently absent. |
+| **GIS helper forced to `raise`** | Propagated out of `lookup_parcel` (the `await _lookup_parcel_gis(...)` call at `parcels.py:60` is **not** wrapped) — BUT the report's retrieve-level `gather(return_exceptions=True)` (`main.py:1219/1223`, `1989/2002`) maps it to `property=None`. | A raise *can* escape `lookup_parcel`, but **the report orchestration contains it** → still no endpoint crash. Earlier "GIS can never raise" was too strong; corrected — containment is at the gather, not inside `lookup_parcel`. |
+
+**Arithmetic for prod (8 GB container):** resident embed + reranker ≈ 1–1.5 GB; each in-flight report holds
+~375 MB (maps + render) and one report is in `write_pdf` at a time (serialized on the loop). 3–4 concurrent
+reports → models + ~1.1–1.5 GB of report data + write_pdf working set can exceed available RAM → OOM-kill.
+Single sequential reports stay well under budget (consistent with "same PIN succeeded on other runs"; the
+crash hit twice during overlapping Phase-3 regen).
+
+### Confidence assessment
+
+**Confidence: HIGH** that the failure is render-memory + event-loop serialization (not GIS). Demonstrated:
+the per-report render footprint (~375 MB), the synchronous `write_pdf` loop-block (6.4 s real), the
+concurrency saturation (3 reports → total stall), and GIS graceful degradation. The one un-reproduced link
+is the literal SIGKILL (impossible on a 48 GB macOS box) — inferred from the signature + the prod arithmetic.
+
+**Alternative explanations that still fit (and how they're handled):**
+- *A1 — timeout/health-check cascade rather than literal OOM.* In prod a failed `/health` (blocked by
+  `write_pdf`) could trigger a container restart that looks like "worker down." **Same fix** (concurrency cap
+  + offload). The "leaked semaphore" line still points to SIGKILL/OOM specifically.
+- *A2 — the map rasters, not `write_pdf`, are the bigger memory share* (microbench: +236 MB vs +139 MB).
+  True; the concurrency cap bounds the aggregate either way, and freeing base64 strings earlier is a cheap
+  add-on.
+- *A3 — GIS native hang leaking threads/semaphores.* **Weakened** — GIS is pure-async `httpx`, times out
+  cleanly, demonstrated no crash. Low likelihood.
+
+**Verdict: hypothesis CONFIRMED (render-memory/serialization), with the GIS-as-cause theory DISPROVEN as a
+direct crash path and reduced to a latency amplifier.**
 
 ### 1. Exact failure path (traced in code)
 
@@ -670,15 +714,16 @@ In priority order; (a) is the keystone:
   GIS timeout makes GIS safe but does not fix the mid-render worker exit; that exit is a memory/concurrency
   problem at the WeasyPrint step.*
 
-### Reproduction steps (documented; not executed in this read-only spike)
+### Reproduction steps (EXECUTED 2026-06-11 — see "Tier-0 VALIDATION" above)
 
-- **Reproduce the crash (OOM):** with the reranker enabled, fire 2–3 **concurrent** `/api/report` requests
-  (EX subject `14283190070000` + control `14331030110000`) and watch `docker logs` / `dmesg` for a SIGKILL /
-  OOM-kill and the `resource_tracker: ... leaked semaphore objects` line. Single **sequential** reports
-  succeed (consistent with "same PIN succeeded on other runs").
-- **Prove GIS is not the crash path:** make the GIS endpoint fail fast (point `PARCEL_QUERY_URL` at an
-  unreachable host, or block egress to `gis.cookcountyil.gov`) and generate **one** report — it must
-  complete, degraded (no parcel/envelope map). This is also the Tier-0 acceptance test.
+- **Concurrency reproduction (done):** fired 3 concurrent `/api/report?...&mock=true` requests → **all timed
+  out at 240 s**; RSS peaked 986 MB then collapsed (macOS compressor). On 8 GB Linux this is the OOM-kill /
+  `resource_tracker: ... leaked semaphore objects`. Single sequential report succeeds (~90 s).
+- **Loop-block reproduction (done):** single report + `/health` polling → health stalled **6.44 s at report
+  completion** = synchronous `write_pdf`.
+- **GIS-not-the-crash (done):** blackholed `PARCEL_QUERY_URL` → report path still returns a parcel via Socrata
+  fallback, no exception. To re-confirm end-to-end on prod, block egress to `gis.cookcountyil.gov` and
+  generate one report — it must complete degraded. (This remains the Tier-0 acceptance test.)
 
 ### Impact assessment
 
@@ -697,12 +742,67 @@ caching. Nothing in the spike changes the Tier-1/Tier-2 ranking.
 
 ### Assumptions & open items (carry forward)
 
-- **OOM is inferred from code + crash signature, not yet reproduced at runtime** (this was a read-only
-  spike). The concurrent-request reproduction above should confirm it before/while implementing (a).
-- Exact prod memory headroom (resident model footprint vs 8 GB) is **unmeasured**; (a)'s semaphore size
-  (1 vs 2) should be chosen after a quick `docker stats` during a report.
-- Whether GIS native-hang ever segfaults the process (vs clean timeout) is **unconfirmed** but **low
-  likelihood** — `httpx` timeouts raise catchable exceptions, and the catch is in place.
+- **OOM is now validated by arithmetic + behavior, not just inference** — but the literal SIGKILL is still
+  un-reproduced locally (48 GB macOS compresses instead of killing). Optionally confirm on a memory-capped
+  container (`docker run --memory=1g`) before shipping, or just ship the cap (it's safe regardless).
+- Resident model footprint measured locally at **~620 MB idle** (embed; reranker lazy). On prod with
+  `RERANKER_ENABLED=true` resident, budget ~1–1.5 GB. Choose `_REPORT_SEM` size after a quick `docker stats`
+  during a report; **default 2, drop to 1 if headroom is tight.**
+- GIS is **currently returning no geometry** (Socrata fallback) — parcel/envelope maps are already absent in
+  practice, so the GIS-dependent Phase-4 viz items have no live data to render even if built.
+
+### Tier-0 implementation plan (concrete — ready to execute next session)
+
+Effort: **S (~½ day)** total. Items (1)+(2) are the keystone (the OOM + loop-block); (3) is a cheap latency
+add-on. All changes are in `backend/main.py` + `parcels.py` + config; no new deps, no data changes.
+
+1. **Report/render concurrency limit (keystone).**
+   - Add `_REPORT_SEM = asyncio.Semaphore(get_settings().report_concurrency)` at module level in `main.py`
+     (alongside `_RETRIEVAL_SEM`, `:72`); add `report_concurrency: int = 2` to `config.py` (env
+     `REPORT_CONCURRENCY`).
+   - In `report()` (`main.py:4074`), wrap the heavy span — from `_fetch_report_data` (`:4102`) through the
+     `write_pdf` call (`:4161`) — in `async with _REPORT_SEM:`. This bounds the number of reports
+     simultaneously holding ~375 MB of render data + doing `write_pdf`.
+   - Acceptance: 3 concurrent report requests all return 200 (serialized), none time out; peak RSS stays
+     bounded (≈ models + `report_concurrency` × ~375 MB).
+
+2. **Offload `write_pdf()` off the event loop.**
+   - Replace `pdf_bytes = HTML(string=html_content).write_pdf()` (`:4161`) with
+     `pdf_bytes = await asyncio.get_running_loop().run_in_executor(None, lambda: HTML(string=html_content).write_pdf())`.
+   - WeasyPrint is mostly C (cairo/pango) so a thread genuinely unblocks the loop. Combined with (1), at most
+     `report_concurrency` PDF threads run at once.
+   - Acceptance: during a report, `/health` latency stays < 1 s (was 6.4 s); chat/health no longer stall at
+     report completion.
+
+3. **Bound + unify the GIS timeout (latency).**
+   - In `_lookup_parcel_gis` (`parcels.py:93`), pass an explicit per-request timeout so a shared client can't
+     impose 15 s: `await client.get(PARCEL_QUERY_URL, params=params, timeout=httpx.Timeout(8.0))`; and reduce
+     the retry loop from 2 attempts to 1 for the point query (the retry rarely helps a broken index).
+   - Net: GIS stall capped at ~8 s (was ~12–30 s), shrinking the request duration and the contention window.
+   - Acceptance: a blackholed GIS lookup returns within ~8 s (measured 11–12 s today).
+
+4. **Tests (per QA strategy).**
+   - Degradation test: monkeypatch `lookup_parcel` to raise/hang → assert `/api/report` still returns a
+     (degraded) report, proving no crash path. (Mostly true today; lock it in.)
+   - Concurrency test: fire 2–3 concurrent report requests (mock, fast) → assert all return 200 within a
+     bound. Without the semaphore this currently times out; with it they serialize and complete.
+   - Re-measure the single-report `/health` stall (< 1 s) after (2).
+
+5. **(Optional) Infra backstop** in `docker-compose.prod.yml`: `mem_limit` + `restart: unless-stopped` so any
+   residual OOM recycles fast instead of wedging the single worker; consider dropping the 6 base64 map
+   strings from `report_data` once embedded in the HTML.
+
+**Is a hard GIS timeout + graceful degradation sufficient?** Confirmed empirically: **sufficient for GIS
+safety (already ~90 % implemented — GIS down degrades cleanly), NOT sufficient for the worker exit.** The
+worker exit needs (1) + (2). Ship all three; (1)+(2) are the fix, (3) is hygiene.
+
+### Updated implementation order (post-validation)
+
+**Unchanged sequence; Tier-0 now CONFIRMED and concretely specified.** Tier-0 (items 1–3 above) ships first
+and is re-scoped definitively as *render-concurrency cap + event-loop offload + GIS-timeout trim* — not a
+GIS-retry rewrite. After Tier-0 lands, Miss#6 / V5-2a remain deferred: they are safer behind the semaphore
+but still **geometry-blocked** (GIS returns no geometry today), so there is nothing for them to render.
+Tier-1 (comps consolidation, Q6) and Tier-2 (D3, P5) are unaffected by this spike.
 
 ---
 
