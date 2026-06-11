@@ -437,12 +437,6 @@ a.glossary-link {
 <div class="page-break">
   <h2 id="section-exec-summary">Executive Summary</h2>
 
-  {% if report.effective_tax_rate %}
-  <dl class="info-grid">
-    <dt>Effective Tax Rate</dt><dd>{{ report.effective_tax_rate|fpct }}</dd>
-  </dl>
-  {% endif %}
-
   <h3>Site Assessment</h3>
   <div class="traffic-lights">
     {# Zoning signal #}
@@ -890,8 +884,9 @@ a.glossary-link {
     {% if prop.tax_exempt %}<dt>Tax Status</dt><dd><strong>Tax-Exempt</strong> (Class EX){% if prop.bldg_class %} — {{ prop.bldg_class }}{% endif %}</dd>{% endif %}
     {% if not prop.tax_exempt %}
     {% if prop.total_assessed_value %}<dt>Assessed Value</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
-    {% if prop.estimated_annual_tax %}<dt>Est. Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}</dd>{% endif %}
-    {% if report.effective_tax_rate %}<dt>Effective Tax Rate</dt><dd>{{ report.effective_tax_rate|fpct }}</dd>{% endif %}
+    {% if report.market_value %}<dt>Est. Market Value</dt><dd>{{ report.market_value|fcur }} <span style="font-size: 7pt; color: #888;">(assessed ÷ 10% residential level)</span></dd>{% endif %}
+    {% if prop.estimated_annual_tax %}<dt>Est. Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">(estimated from assessed value — no ptaxsim bill)</span>{% endif %}</dd>{% endif %}
+    {% if report.effective_tax_rate %}<dt>Effective Tax Rate</dt><dd>{{ report.effective_tax_rate|fpct }} <span style="font-size: 7pt; color: #888;">(of market value)</span></dd>{% endif %}
     {% endif %}
   </dl>
   {% if prop.tax_exempt %}
@@ -994,25 +989,7 @@ a.glossary-link {
   <h2 id="section-market">Market Context &amp; Comparables</h2>
 
   {% if comps and comps.sales_volume %}
-  <h3>Comparable Sales Summary ({{ comps.sales_volume }} <a href="#glossary-arms-length" class="glossary-link">arm's-length</a> transactions)</h3>
-  {% if comps.comp_basis %}<p class="section-note">Basis: {{ comps.comp_basis }}.</p>{% endif %}
-  <div class="stats-box">
-    <div class="stat-item">
-      <div class="value">{{ comps.median_sale_price|fcur if comps.median_sale_price else "—" }}</div>
-      <div class="label">Median Sale Price</div>
-    </div>
-    <div class="stat-item">
-      <div class="value">{{ ("$%.0f"|format(comps.median_price_per_land_sqft)) if comps.median_price_per_land_sqft else "—" }}</div>
-      <div class="label">Median $/Land Sq Ft</div>
-    </div>
-    <div class="stat-item">
-      <div class="value">{{ ("$%.0f"|format(comps.median_price_per_bldg_sqft)) if comps.median_price_per_bldg_sqft else "—" }}</div>
-      <div class="label">Median $/Bldg Sq Ft</div>
-    </div>
-  </div>
-  {% if comps.price_range_min and comps.price_range_max %}
-  <p style="font-size: 9pt; margin-bottom: 8pt;">Price range: {{ comps.price_range_min|fcur }} — {{ comps.price_range_max|fcur }}</p>
-  {% endif %}
+  <h3>Comparable Sales ({{ comps.sales_volume }} <a href="#glossary-arms-length" class="glossary-link">arm's-length</a> transaction{{ "s" if comps.sales_volume != 1 else "" }})</h3>
 
   {% if report.comp_valuation %}
   {% set cv = report.comp_valuation %}
@@ -1035,6 +1012,9 @@ a.glossary-link {
       <span style="color: #92400e;">— {{ cv.comp_basis or "nearby arm's-length sales" }}</span>
       <br><span style="font-size: 8pt; color: #92400e;">Too few sales for a reliable central estimate — treat as directional only.</span>
     </div>
+    {% endif %}
+    {% if cv.median_price_per_bldg_sqft %}
+    <div class="detail" style="margin-top: 4pt;">Median price per building sq ft: <strong>${{ "%.0f"|format(cv.median_price_per_bldg_sqft) }}</strong> <span style="font-size: 7pt; color: #92400e;">(sold structures; a size-normalized cross-check on the sale prices above)</span></div>
     {% endif %}
     {% if not cv.data_limited %}
     <div class="detail" style="margin-top: 4pt;">
@@ -1062,7 +1042,7 @@ a.glossary-link {
   {% endif %}
 
   <table>
-    <thead><tr><th>PIN</th><th>Date</th><th class="num">Price</th><th class="num">Land SF</th><th class="num">Bldg SF</th><th class="num">$/Land SF</th><th class="num">Dist</th></tr></thead>
+    <thead><tr><th>PIN</th><th>Date</th><th class="num">Price</th><th class="num">Land SF</th><th class="num">Bldg SF</th><th class="num">$/Bldg SF</th><th class="num">Dist</th></tr></thead>
     <tbody>
     {% for c in comps.sales[:10] %}
     <tr>
@@ -1071,7 +1051,7 @@ a.glossary-link {
       <td class="num">{{ c.sale_price|fcur if c.sale_price else "—" }}</td>
       <td class="num">{{ c.land_sqft|fnum if c.land_sqft else "—" }}</td>
       <td class="num">{{ c.bldg_sqft|fnum if c.bldg_sqft else "—" }}</td>
-      <td class="num">{{ ("$%.0f"|format(c.price_per_land_sqft)) if c.price_per_land_sqft else "—" }}</td>
+      <td class="num">{{ ("$%.0f"|format(c.price_per_bldg_sqft)) if c.price_per_bldg_sqft else "—" }}</td>
       <td class="num">{{ ("%.2f mi"|format(c.distance_mi)) if c.distance_mi else "—" }}</td>
     </tr>
     {% endfor %}
@@ -1214,9 +1194,9 @@ a.glossary-link {
   {% if prop and prop.estimated_annual_tax %}
   <h3>Tax Estimate</h3>
   <dl class="info-grid">
-    <dt>Estimated Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}</dd>
-    {% if report.effective_tax_rate %}<dt>Effective Rate</dt><dd>{{ report.effective_tax_rate|fpct }}</dd>{% endif %}
+    <dt>Estimated Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">(estimated from assessed value)</span>{% endif %}</dd>
   </dl>
+  <p class="section-note">Market value, assessed value, and effective tax rate are detailed under Property &amp; Physical Characteristics.</p>
 
   {% if prop.tax_breakdown %}
   <h3>Tax Breakdown by Agency</h3>

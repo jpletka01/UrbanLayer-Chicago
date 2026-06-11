@@ -2028,21 +2028,8 @@ async def _fetch_report_data(
         if land_sqft > 0:
             dev_potential = calculate_development_potential(standards, land_sqft, bldg_sqft)
 
-    # Step 4: Effective tax rate
-    effective_tax_rate = None
-    if ctx.property:
-        assessed = ctx.property.total_assessed_value
-        annual_tax = ctx.property.estimated_annual_tax
-        # Fallback: use most recent assessment total if direct value is missing
-        if not assessed and ctx.property.assessment_history:
-            for ah in ctx.property.assessment_history:
-                if ah.total and ah.total > 0:
-                    assessed = ah.total
-                    break
-        if assessed and assessed > 0 and annual_tax and annual_tax > 0:
-            # Cook County: market value ≈ assessed / 0.10 (residential)
-            market_value = assessed / 0.10
-            effective_tax_rate = round(annual_tax / market_value, 4)
+    # Step 4: Market value, effective tax rate, and annual-tax fallback (Q6).
+    effective_tax_rate, market_value = _resolve_market_value_and_tax(ctx.property)
 
     # Step 5: Static map URL
     mapbox_token = settings.mapbox_token or settings.vite_mapbox_token
@@ -2270,6 +2257,7 @@ async def _fetch_report_data(
         adjacent_zoning=adj_zoning,
         nearby_development=nearby_dev,
         effective_tax_rate=effective_tax_rate,
+        market_value=market_value,
         assessment_trend=assessment_trend,
         ownership_signals=ownership_signals,
         parcel_map_b64=parcel_map_b64,
@@ -3395,6 +3383,48 @@ def _synthesize_opportunities_constraints(
     return opportunities[:4], constraints[:4]
 
 
+def _resolve_market_value_and_tax(prop) -> tuple[float | None, float | None]:
+    """Derive (effective_tax_rate, market_value) for the property, with an
+    annual-tax fallback (Q6).
+
+    market_value and effective_tax_rate are surfaced together with assessed
+    value in the template so a reader can't misread the effective rate — which
+    is computed against *market* value (assessed ÷ 10% Cook County residential
+    level) — as if it applied to the much-smaller assessed value.
+
+    When the ptaxsim bill is missing, annual tax is estimated from the
+    documented effective rate (`report_fallback_tax_rate`) so the tax row isn't
+    all-or-nothing; that path sets `prop.tax_estimate_is_fallback` and leaves
+    the effective rate None (recomputing it would circularly echo the assumed
+    rate). Mutates `prop` (estimated_annual_tax / total_assessed_value /
+    tax_estimate_is_fallback) for downstream rendering.
+    """
+    if not prop or prop.tax_exempt:
+        return None, None
+    assessed = prop.total_assessed_value
+    annual_tax = prop.estimated_annual_tax
+    # Fallback: use most recent assessment total if the direct value is missing.
+    if not assessed and prop.assessment_history:
+        for ah in prop.assessment_history:
+            if ah.total and ah.total > 0:
+                assessed = ah.total
+                break
+    if not (assessed and assessed > 0):
+        return None, None
+    market_value = round(assessed / 0.10)
+    # Keep the displayed assessed value consistent with market value when it was
+    # only recoverable from assessment history.
+    if not prop.total_assessed_value:
+        prop.total_assessed_value = assessed
+    if annual_tax and annual_tax > 0:
+        return round(annual_tax / market_value, 4), market_value
+    prop.estimated_annual_tax = round(
+        market_value * get_settings().report_fallback_tax_rate
+    )
+    prop.tax_estimate_is_fallback = True
+    return None, market_value
+
+
 def _compute_land_value_range(report: "ReportData") -> dict | None:
     """Compute estimated land value range from comparable sales."""
     comps = report.comparables
@@ -3443,6 +3473,7 @@ def _compute_comp_valuation(report: "ReportData") -> dict | None:
     dev = report.development_potential
     out: dict[str, Any] = {
         "median_sale_price": comps.median_sale_price,
+        "median_price_per_bldg_sqft": comps.median_price_per_bldg_sqft,
         "price_range_min": comps.price_range_min,
         "price_range_max": comps.price_range_max,
         "sample_size": comps.sales_volume,
@@ -3905,6 +3936,9 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
             report_data.context.property.estimated_annual_tax = 8720
         if not report_data.context.property.total_assessed_value:
             report_data.context.property.total_assessed_value = 40000
+        report_data.market_value = round(
+            report_data.context.property.total_assessed_value / 0.10
+        )
 
     # Force comparable sales
     report_data.comparables = ComparablesSummary(

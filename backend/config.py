@@ -181,6 +181,14 @@ class Settings(BaseSettings):
     # single uvicorn worker. This semaphore bounds peak render memory.
     report_concurrency: int = 2
 
+    # Fallback effective property-tax rate on *market value* for Chicago
+    # residential parcels, applied to derive an estimated annual tax when the
+    # ptaxsim bill is unavailable (so the tax row isn't all-or-nothing). ~2.1%
+    # is consistent with Cook County Treasurer / Civic Federation effective-rate
+    # figures for residential Chicago and the report's own mock assumption
+    # (0.0218). Displayed values derived this way are labeled "estimated".
+    report_fallback_tax_rate: float = 0.021
+
     # Stripe
     stripe_secret_key: str = ""
     stripe_public_key: str = ""

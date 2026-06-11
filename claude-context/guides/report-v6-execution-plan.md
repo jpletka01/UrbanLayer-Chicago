@@ -2,6 +2,36 @@
 
 Plan date: 2026-06-10.
 
+## STATUS — Tier 1 SHIPPED (2026-06-11)
+
+**Both Tier-1 items (comps-section consolidation + Q6 tax clarity) are implemented and verified on the
+real taxable control PDF `14331030110000` and the real EX subject `14283190070000`.** Tier-0 shipped
+earlier in commit d5c165c. 532 backend unit tests pass (`-m "not integration"`); +8 regression tests in
+`test_report_tier1_fixes.py`.
+
+| Item | Resolution | Verified on real data |
+|------|-----------|------------------------|
+| Comps consolidation | Removed the legacy "Comparable Sales Summary" `stats-box` (+ the always-empty `Median $/Land Sq Ft` tile + standalone price-range line). Section now leads with a neutral `Comparable Sales (N …)` heading and consolidates on the "Comparable Market Activity"/"Valuation Indicators" callout (`comp_valuation`). $/bldg-sf preserved: median in the callout + per-row table column `$/Land SF`→`$/Bldg SF` | Control: single "Comparable Sales (6 …)" + "Comparable Market Activity", no legacy block; EX: "Comparable Sales (4 …)" |
+| Q6 tax clarity | `ReportData.market_value` persisted + rendered "Est. Market Value" between Assessed and Est. Annual Tax; effective rate labeled "(of market value)"; effective-rate **value** collapsed to **one** render (closes **D4**); `_resolve_market_value_and_tax` adds an assessment-history annual-tax fallback (`config.report_fallback_tax_rate=0.021`, `PropertySummary.tax_estimate_is_fallback` → "estimated from assessed value", effective rate left None) | Control: **$146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% (of market value)**, one effective-rate value row; EX: market value + effective rate correctly suppressed, Tax-Exempt callout kept |
+
+**New data finding (answers an open question below):** the surviving $/bldg-sf metric is *also* thinly
+populated — on the control run **0 of 6** returned comps carried a building sq ft (all rows `—`), same
+missing-CCAO-characteristics root cause as land area. Consolidation is still correct (one presentation, no
+contradictory `—` tiles); the metric simply renders only when data exists.
+
+**Files (Tier-1):** `backend/main.py` (`_resolve_market_value_and_tax` extracted from inline Step-4 logic;
+`median_price_per_bldg_sqft` added to `_compute_comp_valuation`; `market_value` wired into `ReportData` +
+mock path), `backend/models.py` (`ReportData.market_value`, `PropertySummary.tax_estimate_is_fallback`),
+`backend/config.py` (`report_fallback_tax_rate`), `backend/templates/zoning_report.html` (comps block + table
+column; tax grid; removed the exec-summary orphan + financial-section effective-rate dups),
+`backend/tests/test_report_tier1_fixes.py` (+8).
+
+**Not done / deferred:** condo (class 299) vs non-condo comp tagging (optional in the plan — skipped to stay
+low-risk; the consolidation made it unnecessary for the contradiction fix). **Deploy still pending** (per
+workflow rules). **Next: Tier 2 — D3 map legends / scale / radius ring.**
+
+---
+
 ## STATUS — Phase 3 SHIPPED (2026-06-10)
 
 **Phase 3 (decision quality) complete, verified on real PDFs for both parcels.** All 8 items
@@ -524,13 +554,20 @@ and the Q6 root cause is now known.**
   (Determines whether the GIS maps are merely blocked or actively dangerous.) **Still open — needs the
   Tier-0 spike (requires running report-gen, out of scope for the read-only verification pass).**
 - How often does `char_bldg_sf` exist for the returned comps in real runs? (Determines whether the surviving
-  $/bldg-sf column has enough coverage to be worth keeping prominent.) **Still open — `sales.py` keeps the
-  most-complete chars row, but at-scale coverage is unmeasured; confirm during Tier 1 on both QA parcels.**
+  $/bldg-sf column has enough coverage to be worth keeping prominent.) **RESOLVED (Tier-1 verification):
+  rarely — on the control run 0 of 6 comps carried a building sq ft (all rows `—`), so the median $/bldg-sf
+  line did not render. Same missing-CCAO-characteristics root cause as land area. Implication: the $/bldg-sf
+  column/metric is correct to keep (renders when present) but should NOT be relied on as a primary signal;
+  the median comparable *sale price* remains the only reliably-populated anchor. Do not invest further in
+  $/bldg-sf prominence; if Tier-2+ wants a size-normalized signal it is data-blocked, not presentation-blocked.**
 - ~~Does the effective-rate / market-value display logic still execute for taxable parcels?~~ **RESOLVED:
   effective rate executes and renders 3×; market value is computed but never stored. See verification pass.**
 - Should the comps section exclude condos (299) from the basis for development-oriented subjects, or just
-  label them? (Comparability vs sample size trade-off.) **Still open — recommend *label, don't exclude*
-  (excluding collapses already-thin n); decide during Tier 1.**
+  label them? (Comparability vs sample size trade-off.) **Decided in Tier 1: neither yet — keep all comps,
+  no class tagging.** The consolidation already fixes the contradiction (one presentation, honest "not
+  size-/condition-matched" disclosure on the callout), and on these QA parcels n is too thin (2–6) to afford
+  excluding. Optional condo (299) vs non-condo *labelling* was deliberately skipped to stay low-risk; revisit
+  only if a future subject returns a comp set large enough that filtering wouldn't collapse n.
 
 ### Technical risks
 - **Report-gen can OOM-kill the single worker at `write_pdf`** (Tier 0) — highest risk; takes down the whole

@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized + pre-impl verification pass + Tier-0 GIS/report-gen reliability investigation **empirically validated**; **Tier-0 fix now SHIPPED** — report-render concurrency cap + `write_pdf` event-loop offload + GIS timeout/retry trim + regression tests)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0 SHIPPED** (render concurrency cap + `write_pdf` offload + GIS timeout trim); **Tier-1 now SHIPPED** — comps-section consolidation (legacy "Comparable Sales Summary" stat block removed, consolidated on "Comparable Market Activity", $/bldg-sf preserved) + Q6 tax clarity (market value persisted+rendered, market/assessed/effective-rate shown coherently, effective-rate collapsed to one value render → closes D4, assessment-history annual-tax fallback). Verified on the real taxable control PDF; 532 unit tests pass)
 
 ## Shipped Features
 
@@ -77,7 +77,7 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 13 | Miss#6 | No combined site-context map | 4 | L | Open |
 | 14 | Q5 | Tax agency rows sum > stated total `[mock?]` | 3 | XS/S | Needs real-data |
 | 15 | P7/Q13 | Reassessment drift sold as appreciation opportunity | 3 | XS | **Fixed (Phase 2)** — synthesis signal reframed as reassessment trend + tax-burden, not "appreciation opportunity" |
-| 16 | Q6 | Effective tax rate vs assessed value; market value hidden | 3 | S | Open |
+| 16 | Q6 | Effective tax rate vs assessed value; market value hidden | 3 | S | **Fixed (Tier-1)** — `market_value` persisted on `ReportData` + rendered as "Est. Market Value" between Assessed Value and Est. Annual Tax; effective rate labeled "(of market value)" so 1.9% can't be misread as ~19% of assessed. Verified on real control: $146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% |
 | 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | Open |
 | 18 | D7 | Comps scatter plots absolute price, not $/sf | 3 | S | Open |
 | 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | **Fixed (Phase 2)** — EX → property_tax_class "exempt", consistent with R2c callout |
@@ -90,7 +90,7 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 26 | P3 | Financial = five "No"s + irrelevant grant | 2 | S | Open |
 | 27 | V5-1c | Advisory tier of Next Steps missing | 2 | S | **Fixed (Phase 3)** — Advisory (Optimization) tier now always renders (appraisal, validate unit yield w/ zoning attorney, broker comps + market study) plus the conditional incentive items |
 | 28 | D1 | Blank page 8 (orphaned footnote) | 1 | XS | **Won't fix — not reproducible (Phase 2)**; real reports (15/18pp) have no blank page (was mock-only) |
-| 29 | D4 | Tax + effective rate shown 3× | 1 | XS | Open — **confirmed live** (effective rate renders at template 440/894/1218); folded into the Tier-1 **Q6** fix (collapse to one render) |
+| 29 | D4 | Tax + effective rate shown 3× | 1 | XS | **Fixed (Tier-1, with Q6)** — effective-rate **value** now renders exactly once (property section); the orphan exec-summary block and the duplicate financial-section "Effective Rate" dt were removed. The traffic-light "high effective tax rate" pill is a separate conditional risk signal, not a value display, and is intentionally kept |
 | 30 | D5 | Transit duplicated + rounding mismatch | 1 | XS | **Fixed (Phase 2)** — single canonical transit block in Market Context; regulatory dup removed |
 | 31 | D6 | Overlay bracket labels duplicate name verbatim | 1 | XS | **Fixed (Phase 2)** — `[desc]` rendered only when it differs from name |
 | 32 | D9 | "ZONE TYPE: 4" meaningless | 1 | XS | **Fixed (Phase 2)** — redundant numeric Zone Type row removed (Zone Class already labels it) |
@@ -129,15 +129,18 @@ Re-prioritized order:
    tests (single-attempt, explicit-timeout). 524 unit tests pass (integration GIS tests fail = GIS down,
    environmental). Full evidence/rationale: `report-v6-execution-plan.md` → "Tier-0 investigation" /
    "Tier-0 implementation plan".
-2. **Tier 1 — comp comparability + comps-section consolidation** — *verified to be consolidation, not new
-   computation*: `$/bldg-sf` is already computed (`sales.py:246,266`) and rendered (template 1009/1073); the
-   defect is the legacy "Comparable Sales Summary" block (`zoning_report.html:997`) co-existing with the new
-   "Comparable Market Activity" block (`:1023`). Effort revised S–M → **S**.
-3. **Tier 1 — Q6 tax clarity** — *verified*: market value computed at `main.py:2038` but never stored/passed;
-   effective rate already renders **3×** (this is the still-live **D4**, now folded into Q6); the "0×"
-   symptom is gated by `annual_tax>0`. Fix = store + render market value once, collapse effective rate to
-   one render (closes D4), add an annual-tax fallback. Display-layer, low risk.
-4. **Tier 2 — D3 map legends/scale/radius** (the one safe, valuable viz item).
+2. **Tier 1 — comps-section consolidation — ✅ SHIPPED (2026-06-11).** Removed the legacy "Comparable Sales
+   Summary" stat block (and its always-empty `Median $/Land Sq Ft` tile); consolidated on the "Comparable
+   Market Activity" callout. $/bldg-sf preserved: median surfaced in the callout, per-row column switched from
+   `$/Land SF` → `$/Bldg SF`. **New finding:** the surviving $/bldg-sf is *also* frequently empty — on the
+   real control run, **0 of 6 comps carried building sq ft** (same missing-CCAO-characteristics root cause as
+   land area). The consolidation is still correct (one presentation, no contradictory `—` tiles); the metric
+   renders only when data exists.
+3. **Tier 1 — Q6 tax clarity — ✅ SHIPPED (2026-06-11).** `market_value` persisted on `ReportData` + rendered
+   as "Est. Market Value"; market/assessed/effective-rate now read coherently; effective-rate **value**
+   collapsed to one render (**closes D4**); assessment-history fallback fills estimated annual tax when the
+   ptaxsim bill is missing. Verified on the real control PDF.
+4. **Tier 2 — D3 map legends/scale/radius** (the one safe, valuable viz item) — **next up.**
 5. **Tier 2 — P5 ownership-coverage validation** + **D8/Q14 cosmetic batch**.
 6. **Optional — P6 crime benchmark.**
 **Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
@@ -147,6 +150,46 @@ the live 3× effective-rate render; now folded into the Tier-1 Q6 fix (see execu
 > **Verification pass (2026-06-11):** a read-only code review before Phase 4 implementation resolved 2 of 4
 > open questions (Q6 root cause; comps already compute $/bldg-sf) and reclassified D4. Ordering unchanged;
 > Tier-1 effort lower than estimated. Detail: `report-v6-execution-plan.md` → "Verification pass (2026-06-11)".
+
+### Tier-1 (comps consolidation + Q6 tax clarity) SHIPPED — 2026-06-11
+
+Both Tier-1 items landed and were verified on the **real** taxable control PDF (`14331030110000`,
+19pp). 532 backend unit tests pass (`-m "not integration"`); +8 regression tests in
+`test_report_tier1_fixes.py` (3 comps, 5 Q6) including a render of the real Jinja template.
+
+**Comps consolidation.** The legacy "Comparable Sales Summary" `stats-box` (Median Sale Price · the
+always-empty `Median $/Land Sq Ft` tile · Median $/Bldg Sq Ft) and the standalone price-range line were
+removed. The section now leads with a neutral `Comparable Sales (N arm's-length transactions)` heading
+and consolidates on the existing "Comparable Market Activity" / "Valuation Indicators" callout (`comp_valuation`).
+$/bldg-sf is **preserved**: `_compute_comp_valuation` now carries `median_price_per_bldg_sqft`, surfaced as a
+"Median price per building sq ft" line in the callout, and the per-row comps table column switched from
+`$/Land SF` (mostly `—` in this market) to `$/Bldg SF`.
+
+**New finding — $/bldg-sf coverage is also thin.** On the control run, **0 of 6** returned comps carried a
+building sq ft (all rows `LAND SF —, BLDG SF —, $/BLDG SF —`), so the median $/bldg-sf line did not render.
+Same root cause as the missing land area (CCAO characteristics frequently null for class-2xx sales in this
+dense market). The consolidation is correct regardless — one presentation, no contradictory empty tiles —
+but the surviving $/bldg-sf metric is *not* reliably populated. This answers the execution plan's open
+"how often does `char_bldg_sf` exist" question: **rarely, on these QA parcels.**
+
+**Q6 tax clarity.** `ReportData.market_value` is now persisted (was a throwaway local) and rendered as
+"Est. Market Value (assessed ÷ 10% residential level)" between Assessed Value and Est. Annual Tax; the
+effective-rate row is labeled "(of market value)". On the real control this reads coherently —
+**$146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% (of market value)** — where before the lone
+1.9% sat next to $146,001 and looked like it should be ~19%. The effective-rate **value** now renders
+**exactly once** (the orphan exec-summary block + the duplicate financial-section "Effective Rate" dt were
+deleted) → **closes D4**; the conditional traffic-light "high effective tax rate" pill is a separate risk
+signal and is kept. An **assessment-history annual-tax fallback** (`_resolve_market_value_and_tax`, rate
+`config.report_fallback_tax_rate=0.021`) fills `estimated_annual_tax` from assessed value when the ptaxsim
+bill is missing, flags it (`PropertySummary.tax_estimate_is_fallback` → "estimated from assessed value"
+label), and intentionally leaves the effective rate `None` to avoid circularly echoing the assumed rate.
+
+**Files (Tier-1):** `backend/main.py` (`_resolve_market_value_and_tax` helper extracted from Step-4 inline
+logic; `median_price_per_bldg_sqft` added to `_compute_comp_valuation`; `market_value` wired into `ReportData`
++ mock path), `backend/models.py` (`ReportData.market_value`, `PropertySummary.tax_estimate_is_fallback`),
+`backend/config.py` (`report_fallback_tax_rate`), `backend/templates/zoning_report.html` (comps block +
+table column; tax grid; removed exec-summary + financial-section effective-rate dups),
+`backend/tests/test_report_tier1_fixes.py` (+8). **Next: Tier-2 — D3 map legends/scale/radius ring.**
 
 ### Phase 3 credibility pass — 2026-06-11
 

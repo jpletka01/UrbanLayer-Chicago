@@ -245,6 +245,10 @@ class PropertySummary(BaseModel):
     tax_exempt: bool = False
     total_assessed_value: float | None = None
     estimated_annual_tax: float | None = None
+    # True when estimated_annual_tax was derived from assessed value via a
+    # documented effective-rate fallback (ptaxsim bill unavailable), not a
+    # parcel-specific ptaxsim computation. Drives an "estimated" label.
+    tax_estimate_is_fallback: bool = False
     tax_code: str | None = None
     tax_breakdown: list[TaxLineItem] = Field(default_factory=list)
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
@@ -636,6 +640,7 @@ class ReportData(BaseModel):
     adjacent_zoning: dict[str, str | None] = Field(default_factory=dict)
     nearby_development: NearbyDevelopment | None = None
     effective_tax_rate: float | None = None
+    market_value: float | None = None
     assessment_trend: dict | None = None
     ownership_signals: list[dict] = Field(default_factory=list)
     parcel_map_b64: str | None = None
