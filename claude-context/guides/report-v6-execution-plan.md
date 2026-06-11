@@ -2,6 +2,31 @@
 
 Plan date: 2026-06-10.
 
+## STATUS — R5 parcel-resolution bug FIXED (2026-06-11, commit 2c12286)
+
+**Found while validating P5 (Tier-2, "next up").** Validating "does ownership render?" exposed a far more
+serious, un-backlogged bug: **the Socrata parcel bounding-box fallback resolved the subject to the wrong
+neighbor whenever Cook County GIS is down — which is currently always.**
+
+- **Mechanism:** `_lookup_parcel_socrata` fetched only `limit_ccao_parcels=20` rows from a ~220m box (no
+  `$order`) then picked closest. Dense residential boxes hold ~500-600 parcels, so the arbitrary 20 usually
+  **excluded the true parcel** → report rendered a neighbor's class/year/assessments/sales/tax/ownership.
+- **Reproduced:** control `14331030110000` (class 205, 2023 sale $1.207M) → resolved `14331090140000`
+  (class 211, 0 sales); 557 parcels in box, true PIN not in the fetched 20. P5 ("ownership renders on
+  neither QA parcel") was a *symptom*: the wrong neighbor had no sales.
+- **Fix:** cap → 2000 so closest is computed over the whole bbox; warn on cap-hit (condos stay
+  coord-ambiguous). **Verified:** control now resolves class 205 + 2023 sale + Ownership Intelligence
+  ("What this means for a buyer"); EX subject still class EX (`match=True`). 543 unit tests + regression test.
+- **Implication for this whole document:** several "verified on real data" claims were produced while GIS
+  was down and may describe a neighbor parcel, not the named PIN. The deterministic numbers tied to a
+  *specific* PIN (e.g. R2 "$114,600 assessed", "1888 year built") should be re-spot-checked post-fix;
+  coords-based sections (regulatory overlays, comps, transit, crime) are unaffected.
+- **Re-ranking consequence:** R5 outranked the entire remaining Phase-4 backlog (it is data-correctness, not
+  polish) and is now fixed. **Deploy pending.** Remaining backlog is low-leverage cosmetics or GIS-blocked —
+  see "Re-prioritized ranking" below (updated).
+
+---
+
 ## STATUS — Tier 2 D3 SHIPPED (2026-06-11)
 
 **D3 (map scale bar + radius ring) is implemented and verified on both real QA-parcel PDFs.** Tier-0/Tier-1
@@ -498,7 +523,8 @@ not the problem; under-display is.
 
 | Item | User value | Decision value | Effort | Data risk | Regression risk | Verdict |
 |------|-----------|----------------|--------|-----------|-----------------|---------|
-| **GIS / report-gen reliability spike** (NEW) | 5 | 4 (a crashed report = no decision) | S–M (investigate) | n/a | n/a (read-only spike) | **Tier 0 — do first; gates the GIS maps** |
+| **R5 — parcel bbox fallback resolves WRONG parcel when GIS down** (NEW, found 2026-06-11) | 5 | 5 (whole property section can be the wrong building) | XS (one-line cap + warn) | n/a | Low | **✅ FIXED (commit 2c12286) — outranked everything; this is correctness, not polish** |
+| **GIS / report-gen reliability spike** (NEW) | 5 | 4 (a crashed report = no decision) | S–M (investigate) | n/a | n/a (read-only spike) | **Tier 0 — ✅ SHIPPED & DEPLOYED** |
 | **Comp comparability + comps-section consolidation** (NEW, absorbs D7) | 4 | 5 | **S** (was S–M; $/bldg-sf already computed+rendered — see verification pass) | Med | Med (touches comps render) | **Tier 1** |
 | **Q6 — market value + assessed + effective rate together** | 3 | 4 | S | Low | Low | **Tier 1** (verified: market value computed at `main.py:2038` but never stored; effective rate renders 3× = latent D4; gated on `annual_tax>0`. Fix = store market value, collapse to one render, add annual-tax fallback) |
 | **D3 — map legends + scale + radius ring** | 3 | 2 | S | Low | Low (render-only) | **Tier 2** (the safe, valuable viz item) |
@@ -530,9 +556,16 @@ not the problem; under-display is.
 4. **D3 map legends (Tier 2).** ✅ **SHIPPED 2026-06-11.** Legends already existed → delivered the scale bar +
    distance reference ring on the three maps that already render (cover zoning, comps, construction).
    Render-only, low regression risk, verified visually on both QA PDFs. See the Tier-2 status block at top.
-5. **P5 ownership-coverage validation + D8/Q14 cosmetic batch (Tier 2/3).** ← **now next.** Validate the ownership "so
-   what" on a parcel that actually has signals; one-pass badge-vocabulary + "Surplus" label cleanup.
-6. **(Optional) P6 crime benchmark.** Only if time allows.
+5. **P5 ownership-coverage validation (Tier 2).** ✅ **DONE 2026-06-11.** Validation exposed **R5** (see the
+   R5 status block at top) — the ownership read was never broken, it just never received sales data because
+   the report resolved the wrong parcel when GIS is down. R5 fixed in commit 2c12286; P5 now renders on the
+   control. **This is the model case for "validate, don't assume": the next-up task was cosmetic; validating
+   it surfaced a critical correctness bug underneath.**
+6. **D8/Q14 cosmetic batch (Tier 2/3).** ← **now next.** One-pass badge-vocabulary + "Surplus" label cleanup.
+   Low leverage; render-only.
+7. **(Optional) P6 crime benchmark.** Only if time allows.
+8. **Deploy the shipped-but-undeployed fixes (D3 + R5).** Highest *user-facing* value remaining — the fixes
+   exist on `main` but the live site hasn't pulled them. Requires deploy confirmation (workflow rule).
    **Defer Miss#6 and V5-2a** until the Tier-0 spike clears GIS reliability *and* parcel-geometry caching
    exists; otherwise they cannot land reliably and raise crash exposure.
 

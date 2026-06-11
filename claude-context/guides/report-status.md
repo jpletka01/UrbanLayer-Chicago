@@ -2,7 +2,29 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 SHIPPED & DEPLOYED** + prod memory validated (no OOM history, backend <1 GB); **Tier-2 D3 now SHIPPED** — scale bar + distance reference ring added to the three always-rendering maps (zoning/cover, construction, comps). Scope note: legends already existed, so D3 reduced to scale+ring. Verified visually on both QA-parcel PDFs; 542 unit tests pass (+10 in `test_report_d3_maps.py`). **Not yet deployed.**)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 SHIPPED & DEPLOYED**; Tier-2 D3 SHIPPED. **NEW — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** See "R5 — Parcel resolution bug" below. This reframes Phase-4 priorities — see re-ranking note.)
+
+### R5 — Parcel bbox fallback resolved the WRONG parcel (CRITICAL, FIXED 2026-06-11, commit 2c12286)
+
+**Found while validating P5** (which was "next up"). `_lookup_parcel_socrata` (the fallback used whenever
+Cook County GIS is down — which is **currently always**, GIS returns no geometry) fetched only
+`limit_ccao_parcels=20` rows from a ~220m bounding box with **no `$order`**, then picked the closest. A
+220m box in dense residential holds **~500-600 parcels**, so Socrata returned an arbitrary 20 that
+frequently did **not contain the true parcel** → the report silently resolved the subject to a wrong
+neighbor (up to ~220m away) and rendered **that neighbor's** class, year built, assessments, sales, tax,
+and ownership.
+
+**Reproduced:** control PIN `14331030110000` (class 205, real 2023 sale $1.207M) resolved to neighbor
+`14331090140000` (class 211, 0 sales); 557 parcels in the box, true PIN not among the fetched 20. This is
+the root cause of P5 ("ownership renders on neither QA parcel") — the resolved neighbor simply had no sales.
+
+**Fix:** raised the candidate cap to 2000 so "pick closest" runs over the full bbox; warn when the cap is
+hit (condo-dense blocks stay inherently coord-ambiguous from lat/lon alone). **Verified end-to-end:**
+control now resolves class 205 with the 2023 sale and renders an Ownership Intelligence + "What this means
+for a buyer" section; EX subject still resolves class EX (`match=True`). 543 unit tests pass + a regression
+test asserting the cap stays ≥1000. **Caveat for prior QA:** any "verified on real data" claim recorded
+while GIS was down may have described a neighbor, not the named PIN — re-confirm spot checks post-fix.
+**P5 (rank 20) is thus resolved as a side-effect.** **Deploy pending** (per workflow rules).
 
 ## Shipped Features
 
@@ -81,7 +103,7 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | **Fixed (Tier-2)** — legends already existed; added a bottom-left **scale bar** (auto round distance) + a dashed **distance reference ring** (zoning/comps 0.25 mi, construction 0.5 mi) to all three always-rendering maps, both derived from the basemap's actual Web Mercator m/px (`_rendered_m_per_px`, with the `@2x` ÷2 factor) so they can't misstate distance. Verified visually on both QA PDFs |
 | 18 | D7 | Comps scatter plots absolute price, not $/sf | 3 | S | Open |
 | 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | **Fixed (Phase 2)** — EX → property_tax_class "exempt", consistent with R2c callout |
-| 20 | P5 | Ownership Intelligence lacks the "so what" | 3 | S | **Fixed (Phase 3)** — `_ownership_interpretation` renders a "What this means for a buyer" deal read (off-market / basis / non-arm's-length) under Ownership Intelligence |
+| 20 | P5 | Ownership Intelligence lacks the "so what" | 3 | S | **Fixed (Phase 3) + VALIDATED (2026-06-11)** — the "What this means for a buyer" deal read existed but rendered on neither QA parcel; root cause was **R5** (wrong-parcel resolution), not the P5 logic. Now confirmed rendering on the control after the R5 fix |
 | 21 | D2 | Construction map orphaned across page break | 2 | XS–S | **Fixed (Phase 2)** — `<figure page-break-inside:avoid>` + caption binds map together |
 | 22 | V6-5 | "0.25mi" narrative contradicts "0.5mi" header | 2 | XS | Fixed (Phase 1, R4) |
 | 23 | Q10 | CAGR labeled 5yr (2020–2025) but data starts 2021 | 2 | XS | **Fixed (Phase 2)** — period already derived from real oldest/newest year + disclaimer; regression-tested |
@@ -146,8 +168,18 @@ Re-prioritized order:
    `_generate_zoning_map` (0.25 mi), `_generate_construction_map` (0.5 mi = its real search radius), and
    `_generate_comps_map` (0.25 mi reference — comps search starts ~0.28 mi and may widen, so it's labeled a
    *reference* not a boundary). Verified visually on both QA-parcel PDFs. **Not yet deployed.**
-5. **Tier 2 — P5 ownership-coverage validation** + **D8/Q14 cosmetic batch** — **next up.**
-6. **Optional — P6 crime benchmark.**
+5. **Tier 2 — P5 ownership-coverage validation** — ✅ **DONE (2026-06-11).** Validation surfaced **R5**
+   (parcel bbox fallback resolved a wrong neighbor when GIS is down); fixed in commit 2c12286. P5 itself was
+   never broken — it just never received sales data because the wrong parcel was resolved. See "R5" above.
+6. **Tier 2/3 — D8 badge vocabulary + Q14 "Surplus" label cosmetic batch** — **next up** (XS, render-only).
+7. **Optional — P6 crime benchmark.**
+
+**Re-ranking note (2026-06-11):** R5 was found above the entire Phase-4 backlog in leverage — it is a live
+data-*correctness* bug (every report could describe the wrong parcel while GIS is down), not polish. It is
+now fixed. With R5 + P5 closed, the remaining actionable backlog is genuinely low-leverage cosmetics
+(D8/Q14, P6) or data/GIS-blocked work (Miss#6, V5-2a, V6-2, D7-dropped, P3-deferred). The report has reached
+"good draft"; the highest-value *next* action is to **deploy** the shipped-but-undeployed fixes (D3 + R5),
+after which Phase 4 is effectively complete pending GIS geometry + customer validation (North Star Phase 2).
 **Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
 by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5. **D4 reclassified:** *not* moot — it is
 the live 3× effective-rate render; now folded into the Tier-1 Q6 fix (see execution plan verification pass).
