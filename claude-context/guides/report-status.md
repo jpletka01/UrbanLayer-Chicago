@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized — planning only)
+Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized + pre-impl verification pass — planning only)
 
 ## Shipped Features
 
@@ -90,7 +90,7 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 26 | P3 | Financial = five "No"s + irrelevant grant | 2 | S | Open |
 | 27 | V5-1c | Advisory tier of Next Steps missing | 2 | S | **Fixed (Phase 3)** — Advisory (Optimization) tier now always renders (appraisal, validate unit yield w/ zoning attorney, broker comps + market study) plus the conditional incentive items |
 | 28 | D1 | Blank page 8 (orphaned footnote) | 1 | XS | **Won't fix — not reproducible (Phase 2)**; real reports (15/18pp) have no blank page (was mock-only) |
-| 29 | D4 | Tax + effective rate shown 3× | 1 | XS | Open |
+| 29 | D4 | Tax + effective rate shown 3× | 1 | XS | Open — **confirmed live** (effective rate renders at template 440/894/1218); folded into the Tier-1 **Q6** fix (collapse to one render) |
 | 30 | D5 | Transit duplicated + rounding mismatch | 1 | XS | **Fixed (Phase 2)** — single canonical transit block in Market Context; regulatory dup removed |
 | 31 | D6 | Overlay bracket labels duplicate name verbatim | 1 | XS | **Fixed (Phase 2)** — `[desc]` rendered only when it differs from name |
 | 32 | D9 | "ZONE TYPE: 4" meaningless | 1 | XS | **Fixed (Phase 2)** — redundant numeric Zone Type row removed (Zone Class already labels it) |
@@ -113,15 +113,24 @@ remaining leverage is **comp comparability**, not map cosmetics.
 
 Re-prioritized order:
 1. **Tier 0 — GIS / report-gen reliability spike** (gates the GIS maps; protects the live site).
-2. **Tier 1 — comp comparability + comps-section consolidation** (kills the legacy `—` $/sf tiles that now
-   co-exist with the new "Comparable Market Activity" block; show comp bldg size / $/bldg-sf where present).
-3. **Tier 1 — Q6 tax clarity** (market value + assessed + effective rate together; they currently render
-   **0×** on the taxable control — likely a wiring gap, not a missing feature).
+2. **Tier 1 — comp comparability + comps-section consolidation** — *verified to be consolidation, not new
+   computation*: `$/bldg-sf` is already computed (`sales.py:246,266`) and rendered (template 1009/1073); the
+   defect is the legacy "Comparable Sales Summary" block (`zoning_report.html:997`) co-existing with the new
+   "Comparable Market Activity" block (`:1023`). Effort revised S–M → **S**.
+3. **Tier 1 — Q6 tax clarity** — *verified*: market value computed at `main.py:2038` but never stored/passed;
+   effective rate already renders **3×** (this is the still-live **D4**, now folded into Q6); the "0×"
+   symptom is gated by `annual_tax>0`. Fix = store + render market value once, collapse effective rate to
+   one render (closes D4), add an annual-tax fallback. Display-layer, low risk.
 4. **Tier 2 — D3 map legends/scale/radius** (the one safe, valuable viz item).
 5. **Tier 2 — P5 ownership-coverage validation** + **D8/Q14 cosmetic batch**.
 6. **Optional — P6 crime benchmark.**
 **Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
-by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5, D4.
+by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5. **D4 reclassified:** *not* moot — it is
+the live 3× effective-rate render; now folded into the Tier-1 Q6 fix (see execution plan verification pass).
+
+> **Verification pass (2026-06-11):** a read-only code review before Phase 4 implementation resolved 2 of 4
+> open questions (Q6 root cause; comps already compute $/bldg-sf) and reclassified D4. Ordering unchanged;
+> Tier-1 effort lower than estimated. Detail: `report-v6-execution-plan.md` → "Verification pass (2026-06-11)".
 
 ### Phase 3 credibility pass — 2026-06-11
 

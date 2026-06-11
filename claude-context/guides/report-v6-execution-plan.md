@@ -442,8 +442,8 @@ not the problem; under-display is.
 | Item | User value | Decision value | Effort | Data risk | Regression risk | Verdict |
 |------|-----------|----------------|--------|-----------|-----------------|---------|
 | **GIS / report-gen reliability spike** (NEW) | 5 | 4 (a crashed report = no decision) | S–M (investigate) | n/a | n/a (read-only spike) | **Tier 0 — do first; gates the GIS maps** |
-| **Comp comparability + comps-section consolidation** (NEW, absorbs D7) | 4 | 5 | S–M | Med | Med (touches comps render) | **Tier 1** |
-| **Q6 — market value + assessed + effective rate together** | 3 | 4 | S | Low | Low | **Tier 1** (real gap: effective rate/market value currently render 0× on the taxable control) |
+| **Comp comparability + comps-section consolidation** (NEW, absorbs D7) | 4 | 5 | **S** (was S–M; $/bldg-sf already computed+rendered — see verification pass) | Med | Med (touches comps render) | **Tier 1** |
+| **Q6 — market value + assessed + effective rate together** | 3 | 4 | S | Low | Low | **Tier 1** (verified: market value computed at `main.py:2038` but never stored; effective rate renders 3× = latent D4; gated on `annual_tax>0`. Fix = store market value, collapse to one render, add annual-tax fallback) |
 | **D3 — map legends + scale + radius ring** | 3 | 2 | S | Low | Low (render-only) | **Tier 2** (the safe, valuable viz item) |
 | **P5 ownership-coverage validation** (NEW) | 2 | 3 | XS | Low | Low | **Tier 2** (de-risk a shipped feature: it renders on neither QA parcel) |
 | **P6/D11 — crime benchmark + placement** | 2 | 2 | S | Low | Low | **Tier 3 (optional)** |
@@ -460,12 +460,16 @@ not the problem; under-display is.
    vs OOM, add a hard timeout + graceful-degrade around the parcel GIS call so a slow/failing GIS never
    crashes a report. This *gates* any further GIS map work and protects the live site. ~½ day, read-only
    until the fix.
-2. **Comp comparability + comps-section consolidation (Tier 1).** Collapse the legacy "Comparable Sales
-   Summary" tiles into the new "Comparable Market Activity" block (kill the `—` $/sf tiles); where
-   `char_bldg_sf` exists, show comp building size and a $/bldg-sf so the reader can judge comparability;
-   consider tagging condo (299) vs non-condo so the basis isn't a black box. Highest decision-value lever.
-3. **Q6 tax clarity (Tier 1).** For taxable parcels, render market value + assessed value + effective rate
-   together (and confirm they render at all — currently absent on the control). Small, real clarity win.
+2. **Comp comparability + comps-section consolidation (Tier 1).** Verified to be a *consolidation* task, not
+   new computation: `price_per_bldg_sqft`/`median_price_per_bldg_sqft` are already computed (`sales.py:246,
+   266`) and rendered (template 1009/1073). Kill/merge the legacy "Comparable Sales Summary" stat block
+   (`zoning_report.html:997`, with the `MEDIAN $/LAND SQ FT —` tile) that co-exists with the new "Comparable
+   Market Activity" block (`:1023`); optionally tag condo (299) vs non-condo. Highest decision-value lever.
+3. **Q6 tax clarity (Tier 1).** Verified root cause: market value computed at `main.py:2038` but never stored
+   on the report; effective rate already renders in 3 template spots (latent D4). Fix = add `market_value`
+   to the report and render it once next to assessed + effective rate, collapse the 3 effective-rate renders
+   to one, and add an assessment-history fallback for `estimated_annual_tax` so the row isn't all-or-nothing
+   when ptaxsim misses. Small, real clarity win; closes D4 in passing.
 4. **D3 map legends (Tier 2).** Legend strip + scale + radius ring on the maps that already render
    (cover zoning, comps, construction). Render-only, low regression risk.
 5. **P5 ownership-coverage validation + D8/Q14 cosmetic batch (Tier 2/3).** Validate the ownership "so
@@ -489,15 +493,44 @@ defers/drops the rest.
 - The live production site uses the same report path; a local report-gen crash is therefore assumed
   production-relevant until the Tier-0 spike proves it is local-only (OOM) and not GIS.
 
+### Verification pass (2026-06-11) — two open questions resolved by code inspection
+
+A read-only code review (no regen) before Phase 4 implementation resolved two of the four unresolved
+questions below and sharpened two ranking rows. **Net effect: the ordering holds, but Tier-1 effort drops
+and the Q6 root cause is now known.**
+
+- **Q6 is a display-wiring gap, not dead logic — and it carries a latent D4.** `effective_tax_rate` *is*
+  computed (`main.py:2026–2039`) and *is* rendered — in **three** template locations (`zoning_report.html`
+  440–442, 894, 1218). So the old D4 ("tax shown 3×") is still live and should be collapsed *in the same
+  edit*. The genuine "hidden" value is **market value**: it is computed as a throwaway local
+  (`main.py:2038 market_value = assessed / 0.10`) and **never stored on `ReportData`/`PropertySummary` nor
+  passed to the template**. The "renders 0× on the control" symptom is gated by `annual_tax > 0`
+  (`main.py:2036`): when `estimated_annual_tax` is null on a run (ptaxsim miss), effective rate is `None`
+  and nothing renders despite a real AV in history. → **Q6 work = (a) surface `market_value` once next to
+  assessed + effective rate; (b) collapse the 3 effective-rate renders to one (closes D4); (c) add an
+  assessment-history annual-tax fallback so the row isn't all-or-nothing.** All display-layer, low risk.
+  Effort confirmed **S**.
+- **Tier-1 comps is consolidation, not new computation — effort drops S–M → S.** `price_per_bldg_sqft`
+  *and* `median_price_per_bldg_sqft` are **already computed** (`sales.py:246, 266`) and **already rendered**
+  (`zoning_report.html` 1009 median tile, 1073 per-row). The defect is that the **legacy "Comparable Sales
+  Summary" stat block** (`zoning_report.html:997`, with the `MEDIAN $/LAND SQ FT —` tile at 1005) still
+  co-exists with the **new "Comparable Market Activity" block** (`:1023`). → **Tier-1 comps work = kill/merge
+  the legacy 997 block (and its `—` $/land-sf tile), keep the new block, optionally tag condo (299) vs
+  non-condo.** No new query, no new field. The $/bldg-sf coverage question (below) still governs how useful
+  the surviving $/bldg-sf column is.
+
 ### Unresolved questions
 - Is the mid-render worker exit caused by Cook County GIS (hang/native crash) or local memory pressure?
-  (Determines whether the GIS maps are merely blocked or actively dangerous.)
-- How often does `char_bldg_sf` exist for the returned comps in real runs? (Determines whether the
-  comparability fix has enough coverage to be worth it.)
-- Does the effective-rate / market-value display logic still execute for taxable parcels, or did a Phase 1–2
-  change suppress it? (Q6 may be a wiring bug, not a missing feature.)
+  (Determines whether the GIS maps are merely blocked or actively dangerous.) **Still open — needs the
+  Tier-0 spike (requires running report-gen, out of scope for the read-only verification pass).**
+- How often does `char_bldg_sf` exist for the returned comps in real runs? (Determines whether the surviving
+  $/bldg-sf column has enough coverage to be worth keeping prominent.) **Still open — `sales.py` keeps the
+  most-complete chars row, but at-scale coverage is unmeasured; confirm during Tier 1 on both QA parcels.**
+- ~~Does the effective-rate / market-value display logic still execute for taxable parcels?~~ **RESOLVED:
+  effective rate executes and renders 3×; market value is computed but never stored. See verification pass.**
 - Should the comps section exclude condos (299) from the basis for development-oriented subjects, or just
-  label them? (Comparability vs sample size trade-off.)
+  label them? (Comparability vs sample size trade-off.) **Still open — recommend *label, don't exclude*
+  (excluding collapses already-thin n); decide during Tier 1.**
 
 ### Technical risks
 - **GIS path can crash the whole report** (Tier 0) — highest risk; affects every report, not just maps.
