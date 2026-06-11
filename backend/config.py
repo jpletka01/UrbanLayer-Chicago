@@ -62,7 +62,14 @@ class Settings(BaseSettings):
     limit_ccao_characteristics: int = 1
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10
-    limit_ccao_parcels: int = 20
+    # Candidate cap for the Socrata Parcel Universe bounding-box fallback
+    # (_lookup_parcel_socrata). MUST exceed the parcel count inside a _BBOX_DELTA
+    # box or "pick closest" is computed over an arbitrary truncated subset that may
+    # not even contain the true parcel — a correctness bug that silently resolves a
+    # report to a wrong neighbor. A 220m box in dense residential holds ~500-600
+    # parcels; 2000 covers that with headroom. (Condo towers can still exceed it —
+    # those are inherently coord-ambiguous; the fallback logs a truncation warning.)
+    limit_ccao_parcels: int = 2000
     limit_explore_parcels: int = 200
     limit_explore_max: int = 500
     limit_explore_map: int = 5000

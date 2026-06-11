@@ -157,6 +157,15 @@ async def _lookup_parcel_socrata(
         )
         if not rows:
             return None
+        # "closest" is only correct if the candidate set actually contains the true
+        # parcel. If we hit the limit, the box was truncated (e.g. a condo-dense
+        # block) and the nearest returned parcel may not be the real one — surface it.
+        if len(rows) >= settings.limit_ccao_parcels:
+            log.warning(
+                "Parcel bbox fallback hit the %d-row cap at (%s, %s); nearest parcel "
+                "may be approximate (dense/condo area).",
+                settings.limit_ccao_parcels, lat, lon,
+            )
         closest = min(rows, key=lambda r: _distance_sq(lat, lon, r))
         pin_raw = closest.get("pin", "")
         if not pin_raw:

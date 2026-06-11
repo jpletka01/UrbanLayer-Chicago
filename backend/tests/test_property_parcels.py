@@ -170,6 +170,31 @@ async def test_socrata_fallback_picks_closest_pin():
 
 
 @pytest.mark.asyncio
+async def test_socrata_fallback_requests_full_bbox_not_truncated():
+    """Regression: the fallback must fetch enough candidates that 'pick closest' is
+    computed over the whole bounding box. A small cap (the old bug: 20) silently
+    truncated dense urban boxes (~500+ parcels), so the true parcel was often not in
+    the candidate set and the report resolved to a wrong neighbor. Lock the cap high."""
+    from backend.config import get_settings
+
+    captured = {}
+
+    async def _spy(dataset, params, **kwargs):
+        captured["params"] = params
+        return [{"pin": "14241020170000", "class": "2-05",
+                 "lat": "41.9307", "lon": "-87.6411"}]
+
+    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=_spy):
+        result = await _lookup_parcel_socrata(41.9307, -87.6411)
+
+    assert result is not None
+    cap = captured["params"]["$limit"]
+    assert cap == get_settings().limit_ccao_parcels
+    # Must comfortably exceed a dense-residential bbox population (~500-600).
+    assert cap >= 1000, f"parcel bbox cap {cap} is too small — truncation bug risk"
+
+
+@pytest.mark.asyncio
 async def test_socrata_fallback_empty_box():
     """No parcels in bounding box → returns None."""
     with patch("backend.retrieval.property.parcels.socrata_get", return_value=[]):
