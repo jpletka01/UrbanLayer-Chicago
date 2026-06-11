@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **R6 (`_resolve_location` address-over-PIN override) FIXED 2026-06-11 — deploy pending.** See "R5 — Parcel resolution bug" + "R6" + Revalidation note below.)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **R6 (`_resolve_location` address-over-PIN override) FIXED 2026-06-11 — deploy pending.** **NEW — R7 (CRITICAL, OPEN): an empirical audit (n=111) shows address-only resolution selects the WRONG parcel ~77% of the time while GIS is down — now the #1 report-correctness issue, above all Phase 4 work; investigation only, not yet implemented.** See "R5"/"R6"/"R7" + Revalidation note below.)
 
 ### R5 — Parcel bbox fallback resolved the WRONG parcel (CRITICAL, FIXED 2026-06-11, commit 2c12286)
 
@@ -61,13 +61,81 @@ regression tests in `test_resolve_location.py` (pin-wins, address-fallback on em
 address-only, explicit-latlon-wins, 422). **Files:** `backend/main.py` (`_resolve_location`),
 `backend/tests/test_resolve_location.py`. **Deploy pending** (per workflow rules).
 
-**Residual (NOT fixed by R6, separate concern):** the report pipeline resolves the parcel from *coordinates*,
-not the PIN, so an **address-only** request whose geocode lands in a neighbor's parcel still renders the
-neighbor (the EX address geocodes ~220m off → class 391). The true subject's zoning is **PD 533** (not the
-RM-6 older address-based runs recorded). Fully fixing this would require threading the PIN through
-`_fetch_report_data` → `property_domain` → `lookup_parcel` so an explicit PIN resolves the parcel directly
-(bigger change, deferred). **Until then, QA must use pin-only and the geocoder remains the weak link for
-address-only requests.**
+**Residual (NOT fixed by R6) → escalated to R7 below.** R6 fixed only the case where a PIN is *also*
+supplied. The dominant production path — a user **typing an address** — resolves the parcel from
+*coordinates* (Census geocode → nearest Parcel-Universe centroid, because GIS is down), and an empirical
+audit (below) shows this picks the **wrong parcel ~77% of the time**. This is now tracked as **R7**, the
+top report-correctness issue.
+
+### R7 — address-only resolution selects the WRONG parcel ~77% of the time while GIS is down (CRITICAL, OPEN — investigation 2026-06-11)
+
+**This is the single largest report-correctness issue found to date — it outranks R5/R6 and all remaining
+Phase 4 work.** It affects the **live, paid** product: the $25 report and the scorecard render the wrong
+parcel for the majority of *address-typed* requests under the current (indefinite) Cook County GIS outage.
+
+**Empirical measurement (read-only audit, 2026-06-11).** Ground truth = Cook County **Address Points**
+(`78yw-iddh`, authoritative address→PIN→lat/long). Method: reconstruct each address, run the exact
+production path (`geocode_address` → `lookup_parcel`; GIS down → `_lookup_parcel_socrata` nearest-centroid),
+compare resolved PIN to the authoritative PIN. Two passes, n=65 and **n=111**, stratified by class.
+
+| Metric | Result |
+|--------|--------|
+| **Exact-PIN match (current path)** | **23%** (n=111); 22% (n=65) → **~77% wrong** |
+| Wrong-*building* misses (pin10 differs, i.e. a different parcel, not a condo unit) | **100% of misses** (51/51 in pass 1) |
+| Miss rate — residential 2xx | **78%** |
+| Miss rate — commercial/ind 5xx | 75% |
+| Miss rate — exempt/institutional | 80% |
+| Miss rate — vacant 1xx | 100% |
+| Miss rate — condo | 60% (still wrong *building*, not unit ambiguity) |
+| Census geocoder offset from true parcel | median **31 m**, p90 **66 m**, max 270 m |
+
+**Failure mode (traced end-to-end).** `_resolve_location(address)` → `geocode_address` returns a Census
+**street-interpolated** point offset ~30 m from the parcel (toward the street, interpolated along the block).
+`_fetch_report_data` → `_fetch_scorecard_data` → `property_domain(lat,lon)` → `lookup_parcel(lat,lon)`:
+GIS point-in-polygon is **down** (returns `None`), so `_lookup_parcel_socrata` picks the **nearest
+Parcel-Universe centroid** in the bbox. Chicago lots are ~7.6 m (25–33 ft) wide, so a 30 m offset is ~4 lots
+— nearest-centroid almost always returns an **adjacent** parcel (e.g. truth `…0110000` → selected
+`…0120000`). R5's cap fix made nearest-centroid *correct*; the problem is that the nearest centroid to a
+street-interpolated point is the wrong parcel. **Not condo/unit ambiguity** — these are genuinely different
+buildings on the block. The whole report (class, tax, assessments, sales, ownership, zoning interpretation)
+is then for the wrong parcel.
+
+**Conditional on the GIS outage.** With GIS up, point-in-polygon would be near-exact and this collapses. GIS
+has been down since mid-2026 with no ETA (see Known Issues), so this is the **current, persistent**
+production reality, not a hypothetical.
+
+**Reachability is HIGH (unlike R5/R6).** The frontend report/scorecard download is **address-only**
+(`ScorecardPage` → `fetchReport({address})`), and shared scorecard links use `?address=`. So typed searches
+and shared links hit the broken path directly. (Map/Explorer clicks pass `?lat&lon` — a point *inside* the
+parcel — and are much more accurate; the failure is specific to **address-typed / shared-link** requests.)
+
+#### Fix options evaluated
+
+| Option | Mechanism | Effort | Regression risk | Expected accuracy | Op. complexity | Verdict |
+|--------|-----------|--------|-----------------|-------------------|----------------|---------|
+| **A. Address→PIN via Address Points (`78yw-iddh`)** | Parse address → query the authoritative address-point layer → resolve parcel **by PIN**; keep Census-geocode + nearest-centroid as fallback when no point matches | **M** | Med (core resolution path; gate behind unambiguous match + fallback so it never does worse) | **Ceiling ~100%** (authoritative, unique per address in the n=111 sample); **realistic ~85–95%** (bounded by address-parser robustness + dataset coverage/freshness — new construction lags, the flagship "2400 N Milwaukee" had no address point) | Low–Med (one more Socrata dataset on the same portal/client + TTLCache; no new infra) | **RECOMMENDED (primary)** |
+| **B. Thread PINs through the pipeline** | When a PIN is supplied, resolve parcel by PIN directly (no coord round-trip) | S–M | Low (additive, backward-compatible) | **~0 for the production path** (frontend sends no PIN); helps API/curl + future Explorer PIN flows | Low | **Necessary plumbing for A, not a standalone fix** — A reuses "resolve-by-PIN"; deliver them together. A second lever: have the Explorer pass its known PIN |
+| **C. Point-in-polygon via cached parcel geometry** | Replace nearest-centroid with PIP against pre-cached polygons (alt geometry source, since GIS is down) | L–XL | Med | High *if* the geocoded point falls inside the right polygon — but street-interpolated points often fall in the street/neighbor, so PIP still mis-assigns | High (bulk geometry store + refresh + spatial index) | **Defer** (heavy; doesn't fully solve the geocoder-offset problem) |
+| **D. Parcel-accurate geocoder** | Swap Census street-interpolation for a rooftop/parcel geocoder | M | Med | Reduces offset but still needs parcel assignment | Med (new dependency/cost) | **Complementary, not primary** — A is more direct |
+
+**Recommended path forward:** implement **Option A delivered via Option B's plumbing** — resolution order
+becomes **address-point PIN → (GIS PIP when it returns) → Census geocode + nearest-centroid (fallback)**,
+and the resolved PIN is threaded `_resolve_location → _fetch_report_data → _fetch_scorecard_data →
+property_domain → lookup_parcel` so the parcel is fetched by PIN, not re-derived from coordinates. There is
+already a `parse_chicago_address()` helper in `retrieval/buildings.py` to build on. Verify with the same
+audit harness against a **held-out, user-formatted** address sample (target **≥90% exact**), plus the EX +
+control QA parcels.
+
+**Interim risk (product decision for Jack):** the live $25 report currently mis-resolves ~77% of
+address-typed requests. Worth a stopgap until R7 lands — e.g. surface the resolved PIN/address prominently on
+the report cover for user verification, prefer an Explorer/map-click (lat/lon) confirmation before purchase,
+or temporarily gate address-only report purchase. Flagged, not decided.
+
+**Prioritization:** **R7 is the new #1 report-correctness priority — above D8/Q14/P6 and all remaining Phase
+4 items.** **Gate future *report* deploys on R7** (shipping more report polish while 3-in-4 address reports
+describe the wrong parcel is negative-value). Already-deployed D3/R5/R6 are fine — they don't worsen R7 and
+improve the PIN/coord cases. **Do not implement yet** (per Jack's instruction — investigation only); the
+implementation plan above is ready for a follow-up session.
 
 ## Shipped Features
 
@@ -221,11 +289,14 @@ Re-prioritized order:
 data-*correctness* bug (every report could describe the wrong parcel while GIS is down), not polish. It is
 now fixed. With R5 + P5 closed, the remaining actionable backlog is genuinely low-leverage cosmetics
 (D8/Q14, P6) or data/GIS-blocked work (Miss#6, V5-2a, V6-2, D7-dropped, P3-deferred). The report has reached
-"good draft"; D3 + R5 are now **DEPLOYED (2026-06-11)**, so Phase 4 is effectively complete pending GIS
-geometry + customer validation (North Star Phase 2). The `_resolve_location` address-over-PIN override (R6)
-is now **fixed (deploy pending)**; the remaining residual is the coord-driven pipeline / geocoder accuracy
-for address-only requests (see R6 residual) — deferred (needs threading the PIN through to `lookup_parcel`).
-**Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
+"good draft"; D3 + R5 are now **DEPLOYED (2026-06-11)**. R6 (`_resolve_location` address-over-PIN override)
+is **fixed (deploy pending)**. **SUPERSEDED 2026-06-11:** the R6 "residual" is now **R7** — an empirical
+audit shows address-only resolution picks the wrong parcel **~77% of the time while GIS is down**, making it
+the **new #1 report-correctness priority above everything in Phase 4**, and the recommended fix is **not**
+plain PIN-threading but **address→PIN resolution via the Cook County Address Points dataset** (threading is
+its delivery mechanism). **Future report deploys should be gated on R7.** See the R7 section above for the
+quantified audit, fix-option table, and recommended path. **Defer (below R7):** D8/Q14/P6 cosmetics;
+Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
 by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5. **D4 reclassified:** *not* moot — it is
 the live 3× effective-rate render; now folded into the Tier-1 Q6 fix (see execution plan verification pass).
 

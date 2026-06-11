@@ -2,6 +2,43 @@
 
 Plan date: 2026-06-10.
 
+## STATUS — R7: address-only resolution is wrong ~77% of the time while GIS is down (CRITICAL, OPEN, investigation 2026-06-11)
+
+**This is now the #1 report-correctness priority — above R5/R6 and every remaining Phase 4 item.** It is a
+read-only investigation finding (no code changed; implementation deferred per Jack's instruction). Full
+write-up, fix-option table, and recommended path: **`report-status.md` → "R7"**. Summary:
+
+- **Quantified impact.** Audit against Cook County Address Points (`78yw-iddh`, authoritative address→PIN),
+  replaying the exact production path (`geocode_address` → `lookup_parcel`; GIS down → Socrata
+  nearest-centroid). Two passes (n=65, **n=111**): **only ~23% of address-typed requests resolve the correct
+  PIN** → **~77% render the wrong parcel.** Misses are wrong *buildings* (adjacent lots, pin10 differs), not
+  condo-unit ambiguity. By type: residential 78%, commercial 75%, exempt 80%, vacant 100%, condo 60% miss.
+- **Root cause (traced).** Census geocoder returns a **street-interpolated** point ~31 m (median) from the
+  parcel; with GIS point-in-polygon down, `_lookup_parcel_socrata` returns the **nearest Parcel-Universe
+  centroid**, and Chicago lots are ~7.6 m wide, so the nearest centroid is almost always an adjacent parcel.
+  The pipeline is coordinate-driven end to end (`_resolve_location → _fetch_report_data →
+  _fetch_scorecard_data → property_domain → lookup_parcel(lat,lon)`); the PIN is never used to fetch the
+  parcel. Conditional on the (indefinite, current) GIS outage.
+- **Reachability HIGH.** Frontend report/scorecard download is **address-only**; shared links use
+  `?address=`. Map/Explorer clicks (`?lat&lon`, a point inside the parcel) are far more accurate — the
+  failure is specific to address-typed / shared-link requests, i.e. the app's "killer query" pattern and the
+  paid $25 report.
+- **Recommended fix.** **Option A — resolve address→PIN directly from `78yw-iddh`** (authoritative; ~100%
+  unique on the sample, realistic ~85–95% with a robust parser + the existing `parse_chicago_address()`),
+  delivered via **Option B threading** (resolve-by-PIN through the pipeline), with Census-geocode +
+  nearest-centroid retained only as the fallback. Plain PIN-threading alone (Option B) does **not** fix the
+  production path (frontend sends no PIN). Point-in-polygon-via-cached-geometry (C) and a parcel-accurate
+  geocoder (D) are deferred/complementary. Verify with the same audit harness on a held-out user-formatted
+  sample (target ≥90% exact) + the EX/control QA parcels.
+- **Deploy gating.** Gate future *report* deploys on R7; consider an interim stopgap (surface resolved
+  PIN/address for verification, or prefer map-click confirmation before purchase) — product call for Jack.
+
+> **Note on the earlier R6 "residual / thread the PIN through" plan:** superseded by R7. The residual is real
+> but the high-leverage fix is address-point resolution, not bare PIN-threading — threading is the mechanism,
+> not the cure.
+
+---
+
 ## STATUS — R5 parcel-resolution bug FIXED (2026-06-11, commit 2c12286)
 
 **Found while validating P5 (Tier-2, "next up").** Validating "does ownership render?" exposed a far more
