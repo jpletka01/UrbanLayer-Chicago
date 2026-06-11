@@ -65,8 +65,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ## Workflow Rules
 
-- **Commit + push freely** — commit and push to remote without asking. Use clear, conventional commit messages.
-- **Deploy requires confirmation** — always ask before deploying to production (SSH to server, docker compose up, etc.). Show the deploy command and wait for approval.
+- **⚠️ Pushing to `main` IS deploying.** The production server (`178.105.184.66` / `/opt/urbanlayer`) **auto-pulls and rebuilds on every push to `main`** — a push goes live within minutes with no manual `docker compose up`. (Verified 2026-06-11: R7 commit `a9b7e6b` auto-shipped ~12 min after push.)
+- **Deploy requires confirmation → so `git push` to `main` requires confirmation.** Because push = deploy, always ask before pushing production code to `main`, the same way you'd ask before a manual deploy. Commit freely on a branch; **get approval before pushing to `main`.** Docs-only/non-code changes can be pushed freely. The manual deploy command (below) is now a fallback; normally the push does it.
+- **Commit freely; use clear, conventional commit messages.** Branch for code work that isn't ready to ship.
+- **Verify a deploy via the live API**, not just the server's git HEAD — confirm the running image actually serves the change (e.g. `curl https://urbanlayerchicago.com/api/scorecard?address=...` and check the response). The server's git tree can advance ahead of (or independently of) what the running container serves.
 - **Archive completed work** — when a feature ships, follow the archivation rules in `claude-context/README.md`. Strip completed items from active docs, create archive entry, keep active files lean.
 
 ## Context Docs
