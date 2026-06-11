@@ -403,6 +403,144 @@ CCAO year-built/nonconformity for EX/400 PINs, owner names. Do not spend Phase 1
 
 ---
 
+## Phase 4 — RE-PRIORITIZED after the Phase 1–3 handoff review (2026-06-11)
+
+> This supersedes the ordering in the original Phase 4 table above. The table above is kept for
+> history; **use this section to choose work.** A future conversation should be able to read this
+> section alone and understand exactly why the priorities are what they are.
+
+### What Phases 1–3 changed about Phase 4
+
+Three findings from implementation invalidate parts of the original Phase 4 plan:
+
+1. **`$/land-sqft` is data-blocked, not "Low (post R3)" as the plan assumed.** Comparable sales in
+   dense, condo-dominated areas (class 299) carry **no land area** in CCAO characteristics, and even SFR
+   `char_land_sf` is frequently null (best-row merge recovers ~1 land-bearing comp within 0.25mi/3yr).
+   → **D7 as written ("scatter $/land-sf with trend line") cannot be built** — there is no $/land-sf to
+   plot, and typical n (2–3) makes a "trend line" statistically meaningless. D7 must be descoped or dropped.
+2. **The marquee Phase 4 maps are GIS-blocked AND now look reliability-risky.** During Phase 3
+   regeneration the report-generation process **exited mid-render twice** right after a `GIS parcel
+   lookup failed` log line (empty HTTP reply, worker down, leaked-semaphore warning) — while the same
+   PIN succeeded on other runs and the live-API/GIS integration tests were simultaneously failing. Root
+   cause is **unconfirmed** (Cook County GIS hang vs local OOM under embed+reranker+matplotlib+weasyprint).
+   Miss#6 (combined site-context map) and V5-2a (parcel/envelope viz) both add *more* GIS-dependent
+   rendering, so if the crash is GIS-related they amplify a production reliability risk on the live site.
+3. **The weakest analytical area is comparable-sales comparability, not map cosmetics.** Comps render
+   with unknown size/type (`LAND SF —, BLDG SF —`), and a legacy "Comparable Sales Summary" stat block
+   (showing `MEDIAN $/LAND SQ FT —`) now co-exists with the new "Comparable Market Activity" block — a
+   redundant/contradictory presentation. Improving comp *quality and presentation* delivers more decision
+   value than any planned Phase 4 viz item.
+
+Also resolved-in-passing by Phase 3 (so dropped from the Phase 4 backlog): Q14 (existing sf now shown via
+FAR-utilization), Q1/Q2 hero (replaced by the decision box), Q3/Q4 + Q7/Q8 + Q5 (mock-only; real path uses
+the deterministic fallbacks). D4 ("tax shown 3×") is effectively moot — on the real taxable control the
+effective rate / market value / estimated annual tax now render **0×** (see Q6 below), so over-display is
+not the problem; under-display is.
+
+### Re-prioritized ranking (all remaining items, 1 = lowest, 5 = highest)
+
+| Item | User value | Decision value | Effort | Data risk | Regression risk | Verdict |
+|------|-----------|----------------|--------|-----------|-----------------|---------|
+| **GIS / report-gen reliability spike** (NEW) | 5 | 4 (a crashed report = no decision) | S–M (investigate) | n/a | n/a (read-only spike) | **Tier 0 — do first; gates the GIS maps** |
+| **Comp comparability + comps-section consolidation** (NEW, absorbs D7) | 4 | 5 | S–M | Med | Med (touches comps render) | **Tier 1** |
+| **Q6 — market value + assessed + effective rate together** | 3 | 4 | S | Low | Low | **Tier 1** (real gap: effective rate/market value currently render 0× on the taxable control) |
+| **D3 — map legends + scale + radius ring** | 3 | 2 | S | Low | Low (render-only) | **Tier 2** (the safe, valuable viz item) |
+| **P5 ownership-coverage validation** (NEW) | 2 | 3 | XS | Low | Low | **Tier 2** (de-risk a shipped feature: it renders on neither QA parcel) |
+| **P6/D11 — crime benchmark + placement** | 2 | 2 | S | Low | Low | **Tier 3 (optional)** |
+| **D8 badge vocabulary + Q14 "Surplus" label** | 1 | 1 | XS | Low | Low | **Tier 3 (cosmetic batch)** |
+| **Miss#6 — combined site-context map** | 4 | 3 | L | High (GIS) | High (GIS crash) | **Defer** until Tier 0 + geometry caching resolved |
+| **V5-2a — parcel + setback-envelope viz** | 5 | 4 | XL | High (GIS) | High | **Defer** (XL, GIS-blocked) |
+| **V6-2 — year-built / nonconformity** | 3 | 3 | L | High (CCAO 400) | Med | **Defer** (data-blocked) |
+| **P3 — financial section rework** | 2 | 2 | S | Low | Low | **Defer** (low leverage) |
+| **D7 (original) — $/land-sf scatter + trend line** | 3 | 2 | S | **Blocked** | — | **Drop** (no $/land-sf; n too small for a trend) |
+
+### Proposed implementation order + rationale
+
+1. **GIS / report-gen reliability spike (Tier 0).** Reproduce the mid-render worker exit, determine GIS-hang
+   vs OOM, add a hard timeout + graceful-degrade around the parcel GIS call so a slow/failing GIS never
+   crashes a report. This *gates* any further GIS map work and protects the live site. ~½ day, read-only
+   until the fix.
+2. **Comp comparability + comps-section consolidation (Tier 1).** Collapse the legacy "Comparable Sales
+   Summary" tiles into the new "Comparable Market Activity" block (kill the `—` $/sf tiles); where
+   `char_bldg_sf` exists, show comp building size and a $/bldg-sf so the reader can judge comparability;
+   consider tagging condo (299) vs non-condo so the basis isn't a black box. Highest decision-value lever.
+3. **Q6 tax clarity (Tier 1).** For taxable parcels, render market value + assessed value + effective rate
+   together (and confirm they render at all — currently absent on the control). Small, real clarity win.
+4. **D3 map legends (Tier 2).** Legend strip + scale + radius ring on the maps that already render
+   (cover zoning, comps, construction). Render-only, low regression risk.
+5. **P5 ownership-coverage validation + D8/Q14 cosmetic batch (Tier 2/3).** Validate the ownership "so
+   what" on a parcel that actually has signals; one-pass badge-vocabulary + "Surplus" label cleanup.
+6. **(Optional) P6 crime benchmark.** Only if time allows.
+   **Defer Miss#6 and V5-2a** until the Tier-0 spike clears GIS reliability *and* parcel-geometry caching
+   exists; otherwise they cannot land reliably and raise crash exposure.
+
+Rationale in one line: Phase 4 was framed as "UX/visualization," but the implementation reality is that
+the high-ceiling viz items are GIS-blocked and now reliability-risky, while the real remaining leverage is
+**(a) not crashing, (b) trustworthy comps, (c) legible tax** — so the re-prioritization elevates a
+reliability spike + two analytical/clarity fixes above map polish, keeps the one safe viz item (D3), and
+defers/drops the rest.
+
+### Assumptions
+- The two QA parcels remain the regression baseline: EX subject `14283190070000` (exercises empty/exempt
+  states) + taxable control `14331030110000` (exercises populated states). Pass the control with **pin only**
+  (an `address` param overrides the pin in `_resolve_location`).
+- Comp building size (`char_bldg_sf`) is more often present than land size; the comparability fix relies on
+  that asymmetry. **Unverified at scale** — confirm during Tier 1.
+- The live production site uses the same report path; a local report-gen crash is therefore assumed
+  production-relevant until the Tier-0 spike proves it is local-only (OOM) and not GIS.
+
+### Unresolved questions
+- Is the mid-render worker exit caused by Cook County GIS (hang/native crash) or local memory pressure?
+  (Determines whether the GIS maps are merely blocked or actively dangerous.)
+- How often does `char_bldg_sf` exist for the returned comps in real runs? (Determines whether the
+  comparability fix has enough coverage to be worth it.)
+- Does the effective-rate / market-value display logic still execute for taxable parcels, or did a Phase 1–2
+  change suppress it? (Q6 may be a wiring bug, not a missing feature.)
+- Should the comps section exclude condos (299) from the basis for development-oriented subjects, or just
+  label them? (Comparability vs sample size trade-off.)
+
+### Technical risks
+- **GIS path can crash the whole report** (Tier 0) — highest risk; affects every report, not just maps.
+- Comps-section edits touch a render path with run-to-run data variance (n flips 2↔3) — snapshot tests must
+  tolerate variable n; assert on *structure/labels*, not exact comp counts.
+- Any matplotlib legend work must degrade when a map is absent (EX parcel has no parcel/envelope map).
+- Adding sections grows an already-long report (EX 16pp / control 19pp); prefer consolidation over addition.
+
+### Known data limitations (carry forward)
+- No reliable per-parcel land area for comps → no land-value range in condo markets (use sale price + honest
+  disclosure; already shipped Phase 3).
+- Cook County GIS intermittent/down → parcel & envelope geometry unavailable, and possibly crash-inducing.
+- CCAO characteristics 400 for some PINs (incl. the EX subject) → no year-built / land area for those.
+- Owner names not in open data.
+- Comps have no size/type for many parcels → comparability is structurally limited even after Tier 1.
+
+### Dependencies
+- Miss#6, V5-2a **depend on** the Tier-0 GIS spike + parcel-geometry caching (neither exists yet).
+- Q6 depends on the assessment/tax pipeline (Phase 1 R2) — already fixed; this is display-only.
+- Comp comparability depends only on the existing 3-hop comps query (no new data source).
+
+### QA strategy
+- Regenerate **both** real PDFs (no `mock=true` for data sign-off) after each Tier; use `mock=true` only for
+  template-layout smoke tests. A template-render smoke script (build a `ReportData`, render the Jinja
+  template, grep the text) is the fast, GIS-independent check used in Phase 3 — reuse it.
+- For the Tier-0 spike: add an integration-style test that simulates a slow/failing GIS call and asserts the
+  report still returns (degraded), proving no crash path.
+- Snapshot assertions on comps must key off labels/structure, not exact n (data varies run-to-run).
+- Each viz change must be verified against the EX parcel (empty-state) as well as the control (populated).
+
+### Acceptance criteria (Phase 4, re-prioritized)
+- **Tier 0:** a simulated GIS timeout/failure yields a complete report (geometry sections degrade, no worker
+  exit); a hard timeout caps the GIS call. Both QA reports still generate end-to-end.
+- **Tier 1 comps:** exactly one comparable-sales presentation (no legacy `—` $/sf tiles alongside the new
+  block); comp building size / $/bldg-sf shown where data exists; basis discloses comparability limits.
+- **Tier 1 Q6:** taxable control shows market value + assessed value + effective rate together, once, legibly.
+- **Tier 2 D3:** every rendered map has a legend, scale indication, and radius ring; absent maps don't error.
+- **Tier 2 P5:** ownership "so what" verified to render with correct wording on a parcel with real signals.
+- **Exit gate (unchanged):** maps are self-explanatory; no orphaned/blank pages; geometry-blocked items
+  degrade gracefully and never fabricate.
+
+---
+
 ## If we stopped after only 5 changes — maximum-leverage list
 
 Ranked by improvement-in-usefulness per unit effort, respecting dependencies. These five take the real

@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-10 (Report V6 Phase 3 — decision quality — shipped)
+Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized — planning only)
 
 ## Shipped Features
 
@@ -98,6 +98,30 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 34 | Q11 | "Lakeview Historic District" on Lincoln Park property | 1 | XS | **Won't fix — verified correct (Phase 2)**; real NR district spans Wrightwood, name is authoritative |
 | 35 | D8 | Site Assessment badges mix scales | 1 | S | Open |
 | 36 | V6-2 | Year-built / nonconformity absent (CCAO-blocked) | 3 | L | Needs real-data |
+
+### Phase 4 — RE-PRIORITIZED (planning only, 2026-06-11)
+
+Full rationale, rankings, assumptions, risks, dependencies, QA strategy, and acceptance criteria:
+**`report-v6-execution-plan.md` → "Phase 4 — RE-PRIORITIZED" section** (that is the source of truth;
+this is a pointer). Not yet implemented.
+
+The original Phase 4 plan (D3 → D7 → Miss#6 → V5-2a → D8 → P6) was re-prioritized after three Phase 1–3
+findings: (1) `$/land-sqft` is data-blocked (condo market) → **D7 dropped as specified**; (2) the
+GIS-dependent maps (Miss#6, V5-2a) are not just blocked but **reliability-risky** — report generation
+exited mid-render twice after a GIS lookup failure (root cause unconfirmed: GIS hang vs OOM); (3) the real
+remaining leverage is **comp comparability**, not map cosmetics.
+
+Re-prioritized order:
+1. **Tier 0 — GIS / report-gen reliability spike** (gates the GIS maps; protects the live site).
+2. **Tier 1 — comp comparability + comps-section consolidation** (kills the legacy `—` $/sf tiles that now
+   co-exist with the new "Comparable Market Activity" block; show comp bldg size / $/bldg-sf where present).
+3. **Tier 1 — Q6 tax clarity** (market value + assessed + effective rate together; they currently render
+   **0×** on the taxable control — likely a wiring gap, not a missing feature).
+4. **Tier 2 — D3 map legends/scale/radius** (the one safe, valuable viz item).
+5. **Tier 2 — P5 ownership-coverage validation** + **D8/Q14 cosmetic batch**.
+6. **Optional — P6 crime benchmark.**
+**Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
+by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5, D4.
 
 ### Phase 3 credibility pass — 2026-06-11
 
