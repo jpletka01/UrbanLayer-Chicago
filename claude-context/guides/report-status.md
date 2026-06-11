@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized + pre-impl verification pass — planning only)
+Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized + pre-impl verification pass + Tier-0 GIS/report-gen reliability investigation — planning/investigation only, no code)
 
 ## Shipped Features
 
@@ -113,6 +113,15 @@ remaining leverage is **comp comparability**, not map cosmetics.
 
 Re-prioritized order:
 1. **Tier 0 — GIS / report-gen reliability spike** (gates the GIS maps; protects the live site).
+   **Investigation complete (2026-06-11, read-only).** Root cause is **OOM kill of the single uvicorn worker
+   during the synchronous `write_pdf()` (`main.py:4161`)**, layered on resident torch models + in-RAM
+   matplotlib PNGs — **not** GIS. A GIS failure is fully swallowed (`parcels.py` returns `None`; orchestrator
+   `gather(return_exceptions=True)`; all 6 map renders `try/except`; geometry sections skip when
+   `parcel_geometry is None`) and **cannot raise/abort a report**; it only adds ~30 s latency (15 s client ×
+   2 attempts) that widens the OOM overlap window. **Smallest fix (S, ~½ day):** (a) `Semaphore(1–2)` around
+   the render block + `write_pdf`, (b) offload `write_pdf` to `run_in_executor`, (c) bound the GIS timeout to
+   ~8 s. A hard timeout alone is **sufficient for GIS safety (already ~90% there) but NOT for the OOM** — that
+   needs (a)+(b). Full root-cause/repro/impact: `report-v6-execution-plan.md` → "Tier-0 investigation".
 2. **Tier 1 — comp comparability + comps-section consolidation** — *verified to be consolidation, not new
    computation*: `$/bldg-sf` is already computed (`sales.py:246,266`) and rendered (template 1009/1073); the
    defect is the legacy "Comparable Sales Summary" block (`zoning_report.html:997`) co-existing with the new
