@@ -1,7 +1,8 @@
 # R7 — Implementation Plan (address→PIN resolution)
 
-**Status:** ✅ **EXECUTED 2026-06-11 — commit `a9b7e6b`, pushed, deploy-pending.**
-Acceptance audit PASSED (98–100% exact-PIN, target ≥90%). Implements, without
+**Status:** ✅ **EXECUTED & DEPLOYED 2026-06-11 — commit `a9b7e6b`, live at `060c281`, verified in prod.**
+Acceptance audit PASSED (98–100% exact-PIN, target ≥90%). Live prod smoke: `642 W Belden Ave` →
+`resolved_pin=14331030110000`, `confidence=authoritative`, class 205. Server auto-deploys `main`. Implements, without
 redesigning, `parcel-resolution-truth-model.md` (DESIGN OF RECORD). Scope was **R7 only**.
 
 ### Deltas discovered during execution (vs. the plan as written)
