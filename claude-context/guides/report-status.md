@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 SHIPPED & DEPLOYED**; Tier-2 D3 SHIPPED. **NEW — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** See "R5 — Parcel resolution bug" below. This reframes Phase-4 priorities — see re-ranking note.)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **NEW open follow-up:** `_resolve_location` address-over-PIN override can still resolve a neighbor — QA must use pin-only. See "R5 — Parcel resolution bug" + Revalidation note below.)
 
 ### R5 — Parcel bbox fallback resolved the WRONG parcel (CRITICAL, FIXED 2026-06-11, commit 2c12286)
 
@@ -24,7 +24,29 @@ control now resolves class 205 with the 2023 sale and renders an Ownership Intel
 for a buyer" section; EX subject still resolves class EX (`match=True`). 543 unit tests pass + a regression
 test asserting the cap stays ≥1000. **Caveat for prior QA:** any "verified on real data" claim recorded
 while GIS was down may have described a neighbor, not the named PIN — re-confirm spot checks post-fix.
-**P5 (rank 20) is thus resolved as a side-effect.** **Deploy pending** (per workflow rules).
+**P5 (rank 20) is thus resolved as a side-effect.** **DEPLOYED 2026-06-11** (live image built 19:05 UTC,
+container started 19:07; verified `limit_ccao_parcels=2000` + D3 helpers inside the running prod container,
+git `2fdf465`; public site `200`).
+
+#### Revalidation (post-R5, 2026-06-11) — both QA parcels re-confirmed pin-only
+
+Regenerated both real (non-mock) reports against the corrected resolver:
+- **Control `14331030110000` (pin-only): CORRECT** — class **205**, RM-5, year built **1888**, assessed
+  **$114,600** / market $1,146,000 / annual tax **$23,024** / effective **2.0%**, 2023 sale **$1,207,000**
+  (Trustee), Ownership Intelligence renders. Matches the documented baseline. **This confirms the earlier
+  Tier-1 "verified" figures ($146,001 / $1,460,010 / $28,141) were a NEIGHBOR parcel (pre-fix); corrected
+  above.**
+- **EX `14283190070000` (pin-only): CORRECT** — "Tax-Exempt (Class EX)" callout, n/a assessed, exempt
+  incentive class.
+
+**Separate finding (NOT R5, NOT fixed): address-param override resolves a neighbor.** Running the EX report
+with `&address=443+W+Wrightwood+Ave` (both pin + address) resolved a **taxable $2.16M neighbor** with RM-6
+zoning, because `_resolve_location` lets an `address` param override the PIN → geocode → nearest-parcel. The
+true subject (pin-only) is class EX and its zoning is actually **PD 533** (not the RM-6 that older
+address-based verifications recorded). Implication: any historical verification run with an `address` param
+may describe a geocoded neighbor even after R5. **Open follow-up:** make `_resolve_location` prefer an
+explicit PIN over a co-supplied address (or resolve the PIN's own centroid for zoning). Until then, QA must
+use **pin-only**.
 
 ## Shipped Features
 
@@ -99,7 +121,7 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 13 | Miss#6 | No combined site-context map | 4 | L | Open |
 | 14 | Q5 | Tax agency rows sum > stated total `[mock?]` | 3 | XS/S | Needs real-data |
 | 15 | P7/Q13 | Reassessment drift sold as appreciation opportunity | 3 | XS | **Fixed (Phase 2)** — synthesis signal reframed as reassessment trend + tax-burden, not "appreciation opportunity" |
-| 16 | Q6 | Effective tax rate vs assessed value; market value hidden | 3 | S | **Fixed (Tier-1)** — `market_value` persisted on `ReportData` + rendered as "Est. Market Value" between Assessed Value and Est. Annual Tax; effective rate labeled "(of market value)" so 1.9% can't be misread as ~19% of assessed. Verified on real control: $146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% |
+| 16 | Q6 | Effective tax rate vs assessed value; market value hidden | 3 | S | **Fixed (Tier-1)** — `market_value` persisted on `ReportData` + rendered as "Est. Market Value" between Assessed Value and Est. Annual Tax; effective rate labeled "(of market value)" so 2.0% can't be misread as ~19% of assessed. Verified on real control (post-R5, pin-only — see correction note): **$114,600 assessed → $1,146,000 market → $23,024 tax → 2.0%** |
 | 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | **Fixed (Tier-2)** — legends already existed; added a bottom-left **scale bar** (auto round distance) + a dashed **distance reference ring** (zoning/comps 0.25 mi, construction 0.5 mi) to all three always-rendering maps, both derived from the basemap's actual Web Mercator m/px (`_rendered_m_per_px`, with the `@2x` ÷2 factor) so they can't misstate distance. Verified visually on both QA PDFs |
 | 18 | D7 | Comps scatter plots absolute price, not $/sf | 3 | S | Open |
 | 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | **Fixed (Phase 2)** — EX → property_tax_class "exempt", consistent with R2c callout |
@@ -167,7 +189,7 @@ Re-prioritized order:
    (pure, tested) + `_draw_scale_and_ring` (best-effort, swallows failure) in `backend/main.py`; called from
    `_generate_zoning_map` (0.25 mi), `_generate_construction_map` (0.5 mi = its real search radius), and
    `_generate_comps_map` (0.25 mi reference — comps search starts ~0.28 mi and may widen, so it's labeled a
-   *reference* not a boundary). Verified visually on both QA-parcel PDFs. **Not yet deployed.**
+   *reference* not a boundary). Verified visually on both QA-parcel PDFs. **DEPLOYED 2026-06-11** (live image build 19:05 UTC, git `2fdf465`).
 5. **Tier 2 — P5 ownership-coverage validation** — ✅ **DONE (2026-06-11).** Validation surfaced **R5**
    (parcel bbox fallback resolved a wrong neighbor when GIS is down); fixed in commit 2c12286. P5 itself was
    never broken — it just never received sales data because the wrong parcel was resolved. See "R5" above.
@@ -178,8 +200,9 @@ Re-prioritized order:
 data-*correctness* bug (every report could describe the wrong parcel while GIS is down), not polish. It is
 now fixed. With R5 + P5 closed, the remaining actionable backlog is genuinely low-leverage cosmetics
 (D8/Q14, P6) or data/GIS-blocked work (Miss#6, V5-2a, V6-2, D7-dropped, P3-deferred). The report has reached
-"good draft"; the highest-value *next* action is to **deploy** the shipped-but-undeployed fixes (D3 + R5),
-after which Phase 4 is effectively complete pending GIS geometry + customer validation (North Star Phase 2).
+"good draft"; D3 + R5 are now **DEPLOYED (2026-06-11)**, so Phase 4 is effectively complete pending GIS
+geometry + customer validation (North Star Phase 2). The one open code follow-up is the `_resolve_location`
+address-over-PIN override (see Revalidation note under R5) — low-leverage but it can resolve a neighbor.
 **Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
 by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5. **D4 reclassified:** *not* moot — it is
 the live 3× effective-rate render; now folded into the Tier-1 Q6 fix (see execution plan verification pass).
@@ -212,8 +235,8 @@ but the surviving $/bldg-sf metric is *not* reliably populated. This answers the
 **Q6 tax clarity.** `ReportData.market_value` is now persisted (was a throwaway local) and rendered as
 "Est. Market Value (assessed ÷ 10% residential level)" between Assessed Value and Est. Annual Tax; the
 effective-rate row is labeled "(of market value)". On the real control this reads coherently —
-**$146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% (of market value)** — where before the lone
-1.9% sat next to $146,001 and looked like it should be ~19%. The effective-rate **value** now renders
+**$114,600 assessed → $1,146,000 market → $23,024 tax → 2.0% (of market value)** — where before the lone
+rate sat next to the assessed value and looked like it should be ~19%. The effective-rate **value** now renders
 **exactly once** (the orphan exec-summary block + the duplicate financial-section "Effective Rate" dt were
 deleted) → **closes D4**; the conditional traffic-light "high effective tax rate" pill is a separate risk
 signal and is kept. An **assessment-history annual-tax fallback** (`_resolve_market_value_and_tax`, rate

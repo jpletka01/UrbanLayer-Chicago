@@ -22,7 +22,8 @@ neighbor whenever Cook County GIS is down — which is currently always.**
   *specific* PIN (e.g. R2 "$114,600 assessed", "1888 year built") should be re-spot-checked post-fix;
   coords-based sections (regulatory overlays, comps, transit, crime) are unaffected.
 - **Re-ranking consequence:** R5 outranked the entire remaining Phase-4 backlog (it is data-correctness, not
-  polish) and is now fixed. **Deploy pending.** Remaining backlog is low-leverage cosmetics or GIS-blocked —
+  polish) and is now fixed. **DEPLOYED 2026-06-11** (with D3; live image built 19:05 UTC, git `2fdf465`,
+  verified inside the running prod container). Remaining backlog is low-leverage cosmetics or GIS-blocked —
   see "Re-prioritized ranking" below (updated).
 
 ---
@@ -49,7 +50,7 @@ distance reference ring** only. Effort came in below the plan's "S."
 comps/construction maps show ring + scale bar + legend; no render warnings in the log. **542 unit tests pass**
 (+10 in `test_report_d3_maps.py`). **Files:** `backend/main.py` (`_rendered_m_per_px`, `_draw_scale_and_ring`,
 `_SCALE_BAR_MILES`, +3 call sites), `backend/tests/test_report_d3_maps.py`. No model/template/config changes.
-**Deploy pending** (per workflow rules). **Next: Tier-2 P5 ownership-coverage validation + D8/Q14 batch.**
+**DEPLOYED 2026-06-11.** **Next: Tier-2 P5 ownership-coverage validation + D8/Q14 batch.**
 
 ---
 
@@ -63,7 +64,7 @@ earlier in commit d5c165c. 532 backend unit tests pass (`-m "not integration"`);
 | Item | Resolution | Verified on real data |
 |------|-----------|------------------------|
 | Comps consolidation | Removed the legacy "Comparable Sales Summary" `stats-box` (+ the always-empty `Median $/Land Sq Ft` tile + standalone price-range line). Section now leads with a neutral `Comparable Sales (N …)` heading and consolidates on the "Comparable Market Activity"/"Valuation Indicators" callout (`comp_valuation`). $/bldg-sf preserved: median in the callout + per-row table column `$/Land SF`→`$/Bldg SF` | Control: single "Comparable Sales (6 …)" + "Comparable Market Activity", no legacy block; EX: "Comparable Sales (4 …)" |
-| Q6 tax clarity | `ReportData.market_value` persisted + rendered "Est. Market Value" between Assessed and Est. Annual Tax; effective rate labeled "(of market value)"; effective-rate **value** collapsed to **one** render (closes **D4**); `_resolve_market_value_and_tax` adds an assessment-history annual-tax fallback (`config.report_fallback_tax_rate=0.021`, `PropertySummary.tax_estimate_is_fallback` → "estimated from assessed value", effective rate left None) | Control: **$146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% (of market value)**, one effective-rate value row; EX: market value + effective rate correctly suppressed, Tax-Exempt callout kept |
+| Q6 tax clarity | `ReportData.market_value` persisted + rendered "Est. Market Value" between Assessed and Est. Annual Tax; effective rate labeled "(of market value)"; effective-rate **value** collapsed to **one** render (closes **D4**); `_resolve_market_value_and_tax` adds an assessment-history annual-tax fallback (`config.report_fallback_tax_rate=0.021`, `PropertySummary.tax_estimate_is_fallback` → "estimated from assessed value", effective rate left None) | Control (post-R5, pin-only): **$114,600 assessed → $1,146,000 market → $23,024 tax → 2.0% (of market value)**, one effective-rate value row; EX: market value + effective rate correctly suppressed, Tax-Exempt callout kept |
 
 **New data finding (answers an open question below):** the surviving $/bldg-sf metric is *also* thinly
 populated — on the control run **0 of 6** returned comps carried a building sq ft (all rows `—`), same
