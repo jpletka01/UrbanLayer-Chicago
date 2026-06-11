@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **NEW open follow-up:** `_resolve_location` address-over-PIN override can still resolve a neighbor — QA must use pin-only. See "R5 — Parcel resolution bug" + Revalidation note below.)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **R6 (`_resolve_location` address-over-PIN override) FIXED 2026-06-11 — deploy pending.** See "R5 — Parcel resolution bug" + "R6" + Revalidation note below.)
 
 ### R5 — Parcel bbox fallback resolved the WRONG parcel (CRITICAL, FIXED 2026-06-11, commit 2c12286)
 
@@ -39,14 +39,35 @@ Regenerated both real (non-mock) reports against the corrected resolver:
 - **EX `14283190070000` (pin-only): CORRECT** — "Tax-Exempt (Class EX)" callout, n/a assessed, exempt
   incentive class.
 
-**Separate finding (NOT R5, NOT fixed): address-param override resolves a neighbor.** Running the EX report
-with `&address=443+W+Wrightwood+Ave` (both pin + address) resolved a **taxable $2.16M neighbor** with RM-6
-zoning, because `_resolve_location` lets an `address` param override the PIN → geocode → nearest-parcel. The
-true subject (pin-only) is class EX and its zoning is actually **PD 533** (not the RM-6 that older
-address-based verifications recorded). Implication: any historical verification run with an `address` param
-may describe a geocoded neighbor even after R5. **Open follow-up:** make `_resolve_location` prefer an
-explicit PIN over a co-supplied address (or resolve the PIN's own centroid for zoning). Until then, QA must
-use **pin-only**.
+### R6 — address param overrode a supplied PIN (FIXED 2026-06-11, not yet deployed)
+
+**Found during R5 revalidation.** Running the EX report with `&address=443+W+Wrightwood+Ave` (both pin +
+address) resolved a **taxable class-391 neighbor** instead of the EX subject, because `_resolve_location`
+was an `if lat/lon → elif address → elif pin` chain: a co-supplied **address was checked before the PIN**,
+geocoded to a point ~220m away, and the coordinate-driven downstream lookup (`property_domain` →
+`lookup_parcel(lat, lon)`) resolved the nearest parcel there. The PIN never flows past `_resolve_location` —
+the whole report pipeline is coordinate-driven — so an address silently won over a valid unique parcel key.
+
+**Scope of impact:** low reachability — the **frontend never sends `pin`** (callers pass `{address}` or
+`{lat,lon}`), so this was reachable only via direct API/curl. No test, eval harness, or backend caller
+relied on address precedence.
+
+**Fix:** reordered precedence to **explicit lat/lon → pin → address**. A supplied PIN now wins; the address
+is kept as display metadata (`resolved_address`) and used only as a fallback when PIN resolution yields no
+coordinates (missing PIN / null lat-lon). **Verified live:** `?pin=…&address=…` for the EX subject now
+resolves **class EX (exempt), 41.92874,-87.64145**; address-only still geocodes to the **class-391** neighbor
+at 41.93072,-87.6411 (a separate coord-driven-pipeline / geocoder-accuracy limitation, see note). 7 new
+regression tests in `test_resolve_location.py` (pin-wins, address-fallback on empty/null PIN, pin-only,
+address-only, explicit-latlon-wins, 422). **Files:** `backend/main.py` (`_resolve_location`),
+`backend/tests/test_resolve_location.py`. **Deploy pending** (per workflow rules).
+
+**Residual (NOT fixed by R6, separate concern):** the report pipeline resolves the parcel from *coordinates*,
+not the PIN, so an **address-only** request whose geocode lands in a neighbor's parcel still renders the
+neighbor (the EX address geocodes ~220m off → class 391). The true subject's zoning is **PD 533** (not the
+RM-6 older address-based runs recorded). Fully fixing this would require threading the PIN through
+`_fetch_report_data` → `property_domain` → `lookup_parcel` so an explicit PIN resolves the parcel directly
+(bigger change, deferred). **Until then, QA must use pin-only and the geocoder remains the weak link for
+address-only requests.**
 
 ## Shipped Features
 
@@ -201,8 +222,9 @@ data-*correctness* bug (every report could describe the wrong parcel while GIS i
 now fixed. With R5 + P5 closed, the remaining actionable backlog is genuinely low-leverage cosmetics
 (D8/Q14, P6) or data/GIS-blocked work (Miss#6, V5-2a, V6-2, D7-dropped, P3-deferred). The report has reached
 "good draft"; D3 + R5 are now **DEPLOYED (2026-06-11)**, so Phase 4 is effectively complete pending GIS
-geometry + customer validation (North Star Phase 2). The one open code follow-up is the `_resolve_location`
-address-over-PIN override (see Revalidation note under R5) — low-leverage but it can resolve a neighbor.
+geometry + customer validation (North Star Phase 2). The `_resolve_location` address-over-PIN override (R6)
+is now **fixed (deploy pending)**; the remaining residual is the coord-driven pipeline / geocoder accuracy
+for address-only requests (see R6 residual) — deferred (needs threading the PIN through to `lookup_parcel`).
 **Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
 by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5. **D4 reclassified:** *not* moot — it is
 the live 3× effective-rate render; now folded into the Tier-1 Q6 fix (see execution plan verification pass).

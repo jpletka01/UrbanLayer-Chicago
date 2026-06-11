@@ -1125,24 +1125,34 @@ async def _resolve_location(
     resolved_address: str | None = address
 
     if lat is not None and lon is not None:
+        # Explicit coordinates are a deliberate point override — highest precedence.
         resolved_lat, resolved_lon = lat, lon
-    elif address:
-        coords = await geocode_address(address)
-        if coords:
-            resolved_lat, resolved_lon = coords
-    elif pin:
-        from backend.retrieval.socrata import socrata_get
-        settings = get_settings()
-        rows = await socrata_get(
-            settings.dataset_ccao_parcels,
-            # Parcel Universe (pabr-t5kh) exposes coordinates as lat/lon, not
-            # latitude/longitude — the latter 400s and breaks PIN-only resolution.
-            {"$where": f"pin='{pin}'", "$select": "lat,lon", "$limit": 1},
-            base_url=settings.cook_county_socrata_base,
-        )
-        if rows and rows[0].get("lat") and rows[0].get("lon"):
-            resolved_lat = float(rows[0]["lat"])
-            resolved_lon = float(rows[0]["lon"])
+    else:
+        # A supplied PIN is the authoritative unique parcel key, so it takes
+        # precedence over a co-supplied address. Geocoding an address yields a point
+        # that the downstream bbox parcel lookup resolves to the *nearest* parcel,
+        # which in dense/condo blocks can be a neighbor — so letting an address
+        # override a valid PIN can render a report for the wrong parcel. The address
+        # is kept as display metadata (resolved_address) and used only as a fallback
+        # when PIN resolution yields no coordinates (missing PIN / null lat-lon).
+        if pin:
+            from backend.retrieval.socrata import socrata_get
+            settings = get_settings()
+            rows = await socrata_get(
+                settings.dataset_ccao_parcels,
+                # Parcel Universe (pabr-t5kh) exposes coordinates as lat/lon, not
+                # latitude/longitude — the latter 400s and breaks PIN-only resolution.
+                {"$where": f"pin='{pin}'", "$select": "lat,lon", "$limit": 1},
+                base_url=settings.cook_county_socrata_base,
+            )
+            if rows and rows[0].get("lat") and rows[0].get("lon"):
+                resolved_lat = float(rows[0]["lat"])
+                resolved_lon = float(rows[0]["lon"])
+
+        if (resolved_lat is None or resolved_lon is None) and address:
+            coords = await geocode_address(address)
+            if coords:
+                resolved_lat, resolved_lon = coords
 
     if resolved_lat is None or resolved_lon is None:
         raise HTTPException(
