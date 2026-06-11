@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized + pre-impl verification pass + Tier-0 GIS/report-gen reliability investigation **empirically validated** with a ready-to-execute fix plan — investigation only, no app code)
+Last updated: 2026-06-11 (Report V6 Phase 3 shipped + credibility pass; Phase 4 re-prioritized + pre-impl verification pass + Tier-0 GIS/report-gen reliability investigation **empirically validated**; **Tier-0 fix now SHIPPED** — report-render concurrency cap + `write_pdf` event-loop offload + GIS timeout/retry trim + regression tests)
 
 ## Shipped Features
 
@@ -112,19 +112,22 @@ exited mid-render twice after a GIS lookup failure (root cause unconfirmed: GIS 
 remaining leverage is **comp comparability**, not map cosmetics.
 
 Re-prioritized order:
-1. **Tier 0 — GIS / report-gen reliability spike** (gates the GIS maps; protects the live site).
-   **Investigation + empirical VALIDATION complete (2026-06-11, read-only — no app code changed).** Root cause
-   **CONFIRMED**: render-memory + event-loop serialization, **not** GIS. Measured: each report holds ~375 MB
-   of render data (map rasters + `write_pdf`); `write_pdf()` (`main.py:4161`) runs **synchronously and blocked
-   `/health` for 6.4 s** at report completion; **3 concurrent reports all timed out** (single worker
-   saturates). GIS-as-cause **disproven** as a direct crash path: a blackholed GIS lookup still returned via
-   Socrata fallback with no exception; GIS only adds ~12 s latency and currently returns **no geometry** at
-   all. (Local 48 GB macOS compresses instead of OOM-killing → symptom is a timeout cascade; prod 8 GB Linux
-   → the SIGKILL.) **Confidence HIGH.** **Concrete fix (S, ~½ day):** (1) `_REPORT_SEM = Semaphore(2)` around
-   `_fetch_report_data`…`write_pdf` in `report()`; (2) offload `write_pdf` to `run_in_executor`; (3) cap the
-   GIS timeout to ~8 s + 1 attempt in `_lookup_parcel_gis`. Hard timeout alone = sufficient for GIS safety,
-   **not** for the worker exit (needs 1+2). Full evidence table, confidence/alternatives, and the
-   ready-to-execute implementation plan: `report-v6-execution-plan.md` → "Tier-0 investigation" /
+1. **Tier 0 — GIS / report-gen reliability — ✅ SHIPPED (2026-06-11).** Root cause was
+   **CONFIRMED** (investigation, read-only): render-memory + event-loop serialization, **not** GIS. Measured:
+   each report holds ~375 MB of render data (map rasters + `write_pdf`); `write_pdf()` ran **synchronously and
+   blocked `/health` for 6.4 s** at report completion; **3 concurrent reports all timed out** (single worker
+   saturates). GIS-as-cause **disproven** as a direct crash path (blackholed GIS still returned via Socrata
+   fallback, no exception; GIS only adds ~12 s latency and currently returns **no geometry**). (Local 48 GB
+   macOS compresses instead of OOM-killing → timeout cascade; prod 8 GB Linux → the SIGKILL.)
+   **Fix shipped (all 3 items):** (1) `_REPORT_SEM = asyncio.Semaphore(report_concurrency=2)` wraps the heavy
+   span `_fetch_report_data`…`write_pdf` in `report()`; (2) `write_pdf()` offloaded to `run_in_executor` so it
+   no longer blocks the loop; (3) `_lookup_parcel_gis` now passes an explicit 8 s per-request timeout and makes
+   a single attempt (retry 2→1). **Files:** `backend/config.py` (`report_concurrency`, env `REPORT_CONCURRENCY`),
+   `backend/main.py` (`_REPORT_SEM` + `async with` span + executor offload), `backend/retrieval/property/parcels.py`
+   (`_GIS_TIMEOUT_S=8.0`, single attempt). **Tests:** `backend/tests/test_report_tier0.py` (+4: semaphore
+   serialization, concurrency bound, harness-concurrency sanity, degraded-data completion) and 2 new parcels
+   tests (single-attempt, explicit-timeout). 524 unit tests pass (integration GIS tests fail = GIS down,
+   environmental). Full evidence/rationale: `report-v6-execution-plan.md` → "Tier-0 investigation" /
    "Tier-0 implementation plan".
 2. **Tier 1 — comp comparability + comps-section consolidation** — *verified to be consolidation, not new
    computation*: `$/bldg-sf` is already computed (`sales.py:246,266`) and rendered (template 1009/1073); the

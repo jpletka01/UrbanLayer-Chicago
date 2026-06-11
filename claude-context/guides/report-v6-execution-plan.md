@@ -580,7 +580,31 @@ and the Q6 root cause is now known.**
 
 ## Tier-0 investigation — GIS / report-gen reliability (2026-06-11)
 
-Status: **investigation complete + hypothesis EMPIRICALLY VALIDATED (read-only); no app code changed.**
+> ### ✅ Tier-0 FIX SHIPPED (2026-06-11)
+> The fix described in "Tier-0 implementation plan" below is **implemented and verified**. All three items
+> landed exactly as specified:
+> 1. **Render concurrency cap** — `report_concurrency: int = 2` in `config.py` (env `REPORT_CONCURRENCY`);
+>    `_REPORT_SEM = asyncio.Semaphore(get_settings().report_concurrency)` at `main.py` module level;
+>    `async with _REPORT_SEM:` wraps the heavy span (`_fetch_report_data` → `write_pdf`) in `report()`. Auth /
+>    `_resolve_location` / purchase-gate stay **outside** the semaphore (cheap, shouldn't hold the cap).
+> 2. **`write_pdf` offload** — now `await loop.run_in_executor(None, lambda: HTML(string=html_content).write_pdf())`,
+>    so the synchronous cairo/pango rasterization no longer blocks the event loop.
+> 3. **GIS timeout/retry trim** — `_lookup_parcel_gis` passes an explicit `httpx.Timeout(8.0)` per request
+>    (`_GIS_TIMEOUT_S=8.0`) even with a shared client, and makes a **single** attempt (retry 2→1; the
+>    `asyncio.sleep(0.5)` and the now-unused `asyncio` import were removed).
+>
+> **Tests:** `backend/tests/test_report_tier0.py` (4 endpoint tests via `httpx.ASGITransport` with the heavy
+> internals faked: semaphore-of-1 serialization, concurrency bounded by sem value, harness-observes-true-
+> concurrency sanity, degraded-data still returns 200+PDF) and 2 new `test_property_parcels.py` tests
+> (single-attempt, explicit-timeout). **524 unit tests pass** (`-m "not integration"`); the 2 integration GIS
+> tests fail only because Cook County GIS is down (environmental, pre-existing).
+>
+> **Not done (optional, deferred):** item 5 infra backstop (`mem_limit` + `restart: unless-stopped` in
+> `docker-compose.prod.yml`; freeing base64 map strings post-embed) — safe to add but not required for the fix.
+> **Deploy still pending** (per workflow rules, requires confirmation) — the fix is committed-ready but not
+> yet on the live server.
+
+Status: **investigation complete + hypothesis EMPIRICALLY VALIDATED; FIX SHIPPED (2026-06-11).**
 Headline finding: **the mid-render worker exit is not caused by GIS, and GIS cannot by itself abort a
 report.** The crash is an out-of-memory (OOM) kill of the single uvicorn worker driven by per-report render
 memory + a synchronous PDF render that serializes the event loop; the "GIS lookup failed" log line right

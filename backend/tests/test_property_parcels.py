@@ -86,6 +86,36 @@ async def test_parcel_sends_correct_geometry():
 
 
 @pytest.mark.asyncio
+async def test_parcel_gis_single_attempt(monkeypatch):
+    """Tier-0: GIS point query makes a single attempt (no retry loop).
+
+    The retry rarely helps Cook County GIS's broken spatial index and only widens
+    the request/contention window, so it was removed.
+    """
+    client = AsyncMock()
+    client.get.return_value = _mock_response([])
+    result = await _lookup_parcel_gis(41.93, -87.64, client=client)
+    assert result is None
+    assert client.get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_parcel_gis_passes_explicit_timeout():
+    """Tier-0: an explicit 8s timeout is passed even with a shared client, so a
+    longer shared-client timeout (e.g. the orchestrator's 15s) can't impose a stall."""
+    from backend.retrieval.property.parcels import _GIS_TIMEOUT_S
+
+    client = AsyncMock()
+    client.get.return_value = _mock_response([])
+    await _lookup_parcel_gis(41.93, -87.64, client=client)
+    call = client.get.call_args
+    timeout = call.kwargs.get("timeout")
+    assert isinstance(timeout, httpx.Timeout)
+    # httpx.Timeout exposes the connect/read/etc. as attributes; all set to 8s here.
+    assert timeout.read == _GIS_TIMEOUT_S == 8.0
+
+
+@pytest.mark.asyncio
 async def test_pin14_zero_padded():
     """Short PINs should be zero-padded to 14 digits."""
     client = AsyncMock()

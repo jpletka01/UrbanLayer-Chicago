@@ -5,7 +5,6 @@ Fallback: Socrata Parcel Universe (pabr-t5kh) bounding-box query when GIS
 is down or returns no results.
 """
 
-import asyncio
 import logging
 import math
 
@@ -36,6 +35,11 @@ PARCEL_QUERY_URL = (
 )
 
 _BBOX_DELTA = 0.002  # ~220m at Chicago's latitude
+
+# Hard cap on the GIS point query. Cook County GIS is intermittently down; a bounded
+# timeout keeps a hanging GIS call from stretching the report request (and its
+# memory-pressure window) before the Socrata fallback fires.
+_GIS_TIMEOUT_S = 8.0
 
 
 async def lookup_parcel(
@@ -86,18 +90,18 @@ async def _lookup_parcel_gis(
     }
     owns = client is None
     if owns:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+        client = httpx.AsyncClient(timeout=httpx.Timeout(_GIS_TIMEOUT_S))
     try:
-        features = []
-        for attempt in range(2):
-            resp = await client.get(PARCEL_QUERY_URL, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            features = data.get("features", [])
-            if features:
-                break
-            if attempt == 0:
-                await asyncio.sleep(0.5)
+        # Pass an explicit per-request timeout so a shared client (e.g. the property
+        # orchestrator's 15 s client) can't impose a longer stall, and use a single
+        # attempt: the retry rarely helps Cook County GIS's broken spatial index and
+        # only widens the request/contention window. GIS down → Socrata fallback.
+        resp = await client.get(
+            PARCEL_QUERY_URL, params=params, timeout=httpx.Timeout(_GIS_TIMEOUT_S)
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        features = data.get("features", [])
         if not features:
             return None
         attrs = features[0].get("attributes", {})

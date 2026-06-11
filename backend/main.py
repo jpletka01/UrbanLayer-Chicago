@@ -71,6 +71,12 @@ log = logging.getLogger(__name__)
 
 _RETRIEVAL_SEM = asyncio.Semaphore(8)
 
+# Bounds concurrent PDF report renders. Each report holds ~375 MB of render data
+# (embedded map rasters + WeasyPrint buffers) on top of the resident embed/reranker
+# models; unbounded concurrency OOM-kills the single prod worker. See the Tier-0
+# investigation in claude-context/guides/report-v6-execution-plan.md.
+_REPORT_SEM = asyncio.Semaphore(get_settings().report_concurrency)
+
 
 async def _limited(coro):
     async with _RETRIEVAL_SEM:
@@ -4099,66 +4105,79 @@ async def report(
                 detail={"error": "report_purchase_required"},
             )
 
-    report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
+    # Bound concurrent report renders: _fetch_report_data through write_pdf is the
+    # memory-heavy span (map rasters + WeasyPrint buffers). Holding _REPORT_SEM here
+    # — not around the cheap auth/_resolve_location work above — caps peak render
+    # memory so concurrent reports can't OOM the single worker. See the Tier-0
+    # investigation in report-v6-execution-plan.md.
+    async with _REPORT_SEM:
+        report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(resolved_lat, resolved_lon, resolved_address)
 
-    if mock:
-        report_data = _apply_mock_overrides(report_data)
-        # Regenerate construction map with mock development data (always, since mock replaces projects)
-        construction_basemap = basemap_wide_bytes or basemap_bytes
-        if construction_basemap and report_data.nearby_development and report_data.nearby_development.recent_projects:
-            try:
-                loop = asyncio.get_running_loop()
-                report_data.construction_map_b64 = await loop.run_in_executor(
-                    None, _generate_construction_map,
-                    report_data.lat, report_data.lon,
-                    report_data.nearby_development.recent_projects, construction_basemap,
-                )
-            except Exception:
-                log.warning("Failed to generate mock construction map", exc_info=True)
-        # NOTE: parcel map is NOT regenerated for mock mode — mock geometry is
-        # fabricated and would produce a misleading lot boundary. The parcel map
-        # only renders when real GIS geometry is available from _fetch_report_data().
-        # Regenerate comps map with mock data
-        if not report_data.comps_map_b64 and basemap_bytes and report_data.comparables and report_data.comparables.sales:
-            sales_with_coords = [s for s in report_data.comparables.sales if s.lat and s.lon]
-            if len(sales_with_coords) >= 2:
+        if mock:
+            report_data = _apply_mock_overrides(report_data)
+            # Regenerate construction map with mock development data (always, since mock replaces projects)
+            construction_basemap = basemap_wide_bytes or basemap_bytes
+            if construction_basemap and report_data.nearby_development and report_data.nearby_development.recent_projects:
                 try:
                     loop = asyncio.get_running_loop()
-                    report_data.comps_map_b64 = await loop.run_in_executor(
-                        None, _generate_comps_map,
+                    report_data.construction_map_b64 = await loop.run_in_executor(
+                        None, _generate_construction_map,
                         report_data.lat, report_data.lon,
-                        report_data.comparables.sales, basemap_bytes,
+                        report_data.nearby_development.recent_projects, construction_basemap,
                     )
                 except Exception:
-                    log.warning("Failed to generate mock comps map", exc_info=True)
-        # Regenerate zone definitions from mock-overridden zone data
-        from backend.retrieval.zoning_definitions import collect_report_zone_definitions as _collect_zdefs
-        zone_class = report_data.context.parcel_zoning.zone_class if report_data.context.parcel_zoning else None
-        mock_zdefs = _collect_zdefs(zone_class, report_data.adjacent_zoning)
-        report_data.zone_definitions = [
-            {"zone_class": zd.zone_class, "name": zd.name, "code_section": zd.code_section,
-             "far": zd.far, "max_height": zd.max_height, "lot_coverage": zd.lot_coverage,
-             "uses": zd.uses, "notes": zd.notes, "is_fallback": zd.is_fallback}
-            for zd in mock_zdefs
-        ]
+                    log.warning("Failed to generate mock construction map", exc_info=True)
+            # NOTE: parcel map is NOT regenerated for mock mode — mock geometry is
+            # fabricated and would produce a misleading lot boundary. The parcel map
+            # only renders when real GIS geometry is available from _fetch_report_data().
+            # Regenerate comps map with mock data
+            if not report_data.comps_map_b64 and basemap_bytes and report_data.comparables and report_data.comparables.sales:
+                sales_with_coords = [s for s in report_data.comparables.sales if s.lat and s.lon]
+                if len(sales_with_coords) >= 2:
+                    try:
+                        loop = asyncio.get_running_loop()
+                        report_data.comps_map_b64 = await loop.run_in_executor(
+                            None, _generate_comps_map,
+                            report_data.lat, report_data.lon,
+                            report_data.comparables.sales, basemap_bytes,
+                        )
+                    except Exception:
+                        log.warning("Failed to generate mock comps map", exc_info=True)
+            # Regenerate zone definitions from mock-overridden zone data
+            from backend.retrieval.zoning_definitions import collect_report_zone_definitions as _collect_zdefs
+            zone_class = report_data.context.parcel_zoning.zone_class if report_data.context.parcel_zoning else None
+            mock_zdefs = _collect_zdefs(zone_class, report_data.adjacent_zoning)
+            report_data.zone_definitions = [
+                {"zone_class": zd.zone_class, "name": zd.name, "code_section": zd.code_section,
+                 "far": zd.far, "max_height": zd.max_height, "lot_coverage": zd.lot_coverage,
+                 "uses": zd.uses, "notes": zd.notes, "is_fallback": zd.is_fallback}
+                for zd in mock_zdefs
+            ]
 
-    # Render HTML template
-    template_dir = Path(__file__).parent / "templates"
-    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
-    env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
-    env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
-    env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
-    from backend.retrieval.zoning_definitions import get_zone_name
-    env.filters["zone_desc"] = get_zone_name
-    template = env.get_template("zoning_report.html")
+        # Render HTML template
+        template_dir = Path(__file__).parent / "templates"
+        env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
+        env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
+        env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
+        env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
+        from backend.retrieval.zoning_definitions import get_zone_name
+        env.filters["zone_desc"] = get_zone_name
+        template = env.get_template("zoning_report.html")
 
-    html_content = template.render(
-        report=report_data,
-        report_date=date.today().strftime("%B %d, %Y"),
-    )
+        html_content = template.render(
+            report=report_data,
+            report_date=date.today().strftime("%B %d, %Y"),
+        )
 
-    # Generate PDF
-    pdf_bytes = HTML(string=html_content).write_pdf()
+        # Generate PDF. write_pdf() is synchronous CPU/C work (cairo/pango) that
+        # rasterizes every embedded map PNG and lays out 16–19 pages — offload it to
+        # a thread so it doesn't block the event loop (health/chat/other reports) for
+        # its whole duration. Combined with _REPORT_SEM, at most report_concurrency
+        # PDF threads run at once.
+        loop = asyncio.get_running_loop()
+        pdf_bytes = await loop.run_in_executor(
+            None, lambda: HTML(string=html_content).write_pdf()
+        )
 
     # Build filename
     slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")

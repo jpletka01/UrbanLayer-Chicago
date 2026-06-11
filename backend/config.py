@@ -175,6 +175,12 @@ class Settings(BaseSettings):
     zoning_extract_model: str = "claude-haiku-4-5-20251001"
     zoning_extract_max_tokens: int = 1500
 
+    # Max concurrent PDF report generations. Each in-flight report holds ~375 MB
+    # of render data (embedded map rasters + WeasyPrint layout buffers), so on the
+    # 8 GB prod container an unbounded number of concurrent reports OOM-kills the
+    # single uvicorn worker. This semaphore bounds peak render memory.
+    report_concurrency: int = 2
+
     # Stripe
     stripe_secret_key: str = ""
     stripe_public_key: str = ""
