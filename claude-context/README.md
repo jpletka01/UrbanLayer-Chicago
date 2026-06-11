@@ -18,6 +18,7 @@ Load only what you need for the current task. Don't read everything.
 - `guides/report-status.md` — **Master report feature tracker**: shipped (V3-V6), blocked/data-dependent, confirmed limitations, rejected features, future ideas
 - `guides/report-v6-improvements.md` — V6 open issues: parcel map needs real geometry, year_built data gaps, ownership limitation, comps map validation
 - `guides/report-v6-audit.md` — **Rejection audit of `report_v6g.pdf`** (2026-06-10): every finding ranked by decision-quality impact × effort, quadrant view, execution order, verified root causes. Key caveat: audited PDF was mock=true — regenerate real-data before fixing
+- `guides/selected-parcel-plan.md` — **SelectedParcel unification: canonical implementation handoff (specified 2026-06-11, NOT implemented).** Frontend identity-state primitive (pin + confidence), 4 phases: visible identity → pin-keyed handoffs → PIN-bound purchases → type enforcement. Read this first (and only this) when implementing parcel-identity work; it supersedes the audit conversation that produced it.
 - `guides/report-v6-execution-plan.md` — **Master V6 phased execution plan & status.** Phase 1 (viability: R1 zoning fallback, R2 tax/assessment, R3 comps, R4 formatting) **SHIPPED 2026-06-10 (commit f0c1996)** with verified results; Phases 2–4 (credibility, decision-quality, UX/viz) pending. Verification parcels: EX subject `14283190070000` + taxable control `14331030110000`. Read this first for current report work.
 
 ## Strategy (load only for product planning / business discussions)
