@@ -2,6 +2,32 @@
 
 Plan date: 2026-06-10.
 
+## STATUS — Phase 3 SHIPPED (2026-06-10)
+
+**Phase 3 (decision quality) complete, verified on real PDFs for both parcels.** All 8 items
+landed: cover decision box (Miss#1), land-value/comp valuation (V5-1b/P2), FAR utilization (P1),
+as-of-right unit yield (P8), consolidated key-constraint on page 1 (Exec), ownership "so what" (P5),
+always-on Advisory tier (V5-1c).
+
+| Item | Resolution | Verified |
+|------|-----------|----------|
+| Miss#1 decision box | Page-1 "Development Snapshot" — lot · zone · max buildable · value · key constraint · approval path; honest "n/a" | Control 6/6; EX 4/6 (lot/buildable genuinely n/a — institutional parcel, no land-area record) |
+| V5-1b land value | Was data-blocked, not a query bug: comps are condo-dominated (class 299) with **no land area**; even SFR `char_land_sf` often null. Best-row chars merge added; range renders only with ≥3 land-bearing comps | Both: honest "Valuation Indicators" fallback on median **sale price** (range needs ≥3 land comps; ~1 available here) |
+| P2 comp valuation | `_compute_comp_valuation`: median comp sale anchor + land range + $/buildable-sf when land comps exist; flags limit otherwise | Both: median comp sale + basis + limitation note |
+| P1 FAR utilization | "existing X sf uses Y% of FAR-allowed Z sf" (vacant variant) | Control: "2,992 sf uses 48% of 6,250 sf" |
+| P8 unit yield | From authoritative MLA-per-unit (Title 17-2-0303-A table → `min_lot_area_per_unit`); R districts only | Control RM-5: "~7 units (3,125 ÷ 400)" |
+| Exec consolidate | Decision box surfaces the single most deal-shaping constraint (binding-priority); **ARO gated** to lots that can reach 10+ units (was a false positive on a ~2-unit lot) | Control: ARO correctly suppressed; EX: "National Register district" surfaced |
+| P5 ownership | "What this means for a buyer" deal read (off-market / basis / non-arm's-length) | Template render confirmed (off-market line) |
+| V5-1c advisory | Advisory tier always renders (appraisal, validate yield w/ zoning attorney, broker comps) + conditional incentive items | Both |
+
+**Files changed (Phase 3):** `backend/retrieval/zoning_definitions.py`, `backend/retrieval/property/sales.py`,
+`backend/main.py`, `backend/models.py`, `backend/templates/zoning_report.html`, `tests/test_report_phase3_fixes.py` (+19).
+555 unit tests pass (10 live-API integration failures environmental — GIS/Socrata down during run).
+
+Remaining: Phase 4 (UX/viz) — not started.
+
+---
+
 ## STATUS — Phase 2 SHIPPED (2026-06-10)
 
 **Phase 2 (credibility) complete, verified on real PDFs for both parcels.** Two audit items

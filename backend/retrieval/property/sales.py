@@ -201,9 +201,22 @@ async def _query_comps(
 
         sales_raw, chars_raw = await asyncio.gather(sales_task, chars_task)
 
+        # The characteristics dataset has multiple rows per PIN (cards/years), and
+        # many rows null out char_land_sf/char_bldg_sf. Keep the most *complete*
+        # row per PIN (prefer non-null land, then non-null building) so we recover
+        # every dimension the dataset actually has instead of whichever row sorts first.
         chars_by_pin: dict[str, dict] = {}
         for c in chars_raw:
-            chars_by_pin.setdefault(_normalize_pin(c.get("pin", "")), c)
+            np = _normalize_pin(c.get("pin", ""))
+            prev = chars_by_pin.get(np)
+            if prev is None:
+                chars_by_pin[np] = c
+                continue
+            if not prev.get("char_land_sf") and c.get("char_land_sf"):
+                chars_by_pin[np] = c
+            elif (not prev.get("char_land_sf") and not c.get("char_land_sf")
+                  and not prev.get("char_bldg_sf") and c.get("char_bldg_sf")):
+                chars_by_pin[np] = c
 
         # Merge and build ComparableSale-shaped dicts
         seen_pins: set[str] = set()

@@ -658,6 +658,12 @@ class ReportData(BaseModel):
     envelope_summary: str | None = None
     envelope_map_b64: str | None = None
     buildable_footprint_sqft: float | None = None
+    # Phase 3 — decision-quality synthesis (all deterministic, no LLM)
+    decision_box: dict | None = None
+    far_utilization: dict | None = None
+    unit_yield: dict | None = None
+    comp_valuation: dict | None = None
+    ownership_interpretation: str | None = None
 
 
 # ---------------------------------------------------------------------------

@@ -79,7 +79,52 @@ tr { page-break-inside: avoid; }
   margin-top: 16pt;
 }
 .cover .map-img { margin-top: 20pt; }
-.cover .map-img img { max-width: 340pt; border-radius: 6pt; }
+.cover .map-img img { max-width: 300pt; border-radius: 6pt; }
+
+/* Cover decision box — the 6-number go/no-go answer (Miss#1) */
+.decision-box {
+  margin: 22pt auto 8pt auto;
+  width: 440pt;
+  border: 1.5pt solid #1e3a8a;
+  border-radius: 6pt;
+  overflow: hidden;
+}
+.decision-box .db-title {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 1.5pt;
+  text-transform: uppercase;
+  padding: 5pt 0;
+  text-align: center;
+}
+.decision-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+.decision-grid .db-cell {
+  width: 50%;
+  box-sizing: border-box;
+  padding: 8pt 12pt;
+  border-top: 0.5pt solid #dbeafe;
+  border-right: 0.5pt solid #dbeafe;
+  text-align: left;
+}
+.decision-grid .db-label {
+  font-size: 7pt;
+  letter-spacing: 0.5pt;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 2pt;
+}
+.decision-grid .db-value {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+.decision-grid .db-value.db-sm { font-size: 9.5pt; font-weight: 600; }
 
 /* Table of Contents */
 .toc { margin-top: 20pt; }
@@ -336,7 +381,23 @@ a.glossary-link {
   </div>
   {% endif %}
 
-  {% if zoning and zoning.zone_class %}
+  {% if report.decision_box %}
+  {% set db = report.decision_box %}
+  <div class="decision-box">
+    <div class="db-title">Development Snapshot</div>
+    <div class="decision-grid">
+      <div class="db-cell"><div class="db-label">Lot Size</div><div class="db-value">{{ db.lot }}</div></div>
+      <div class="db-cell"><div class="db-label">Zoning</div><div class="db-value">{{ db.zone }}</div></div>
+      <div class="db-cell"><div class="db-label">Max Buildable (as-of-right)</div><div class="db-value">{{ db.buildable }}</div></div>
+      <div class="db-cell"><div class="db-label">{{ db.value_label }}</div><div class="db-value">{{ db.value }}</div></div>
+      <div class="db-cell"><div class="db-label">Key Constraint</div><div class="db-value db-sm">{{ db.key_constraint }}</div></div>
+      <div class="db-cell"><div class="db-label">Approval Path</div><div class="db-value db-sm">{{ db.timeline }}</div></div>
+    </div>
+  </div>
+  <div style="font-size: 6.5pt; color: #9ca3af; max-width: 440pt; margin: 0 auto; text-align: left;">
+    Snapshot of key feasibility metrics — see the report body for sources, assumptions, and limitations. Figures marked &ldquo;n/a&rdquo; are unavailable in public data for this parcel.
+  </div>
+  {% elif zoning and zoning.zone_class %}
   <div class="badge">{{ zoning.zone_class }}</div>
   {% endif %}
 
@@ -522,6 +583,25 @@ a.glossary-link {
       {% if dev.development_surplus_sqft %} | Surplus: {{ dev.development_surplus_sqft|fnum }} sq ft{% endif %}
       {% if dev.max_lot_coverage_sqft %} | Max <a href="#glossary-lot-coverage" class="glossary-link">lot coverage</a>: {{ dev.max_lot_coverage_sqft|fnum }} sq ft{% endif %}
     </div>
+    {% if report.far_utilization %}
+    {% set fu = report.far_utilization %}
+    <div class="detail" style="margin-top: 6pt;">
+      <strong>FAR utilization:</strong>
+      {% if fu.vacant %}
+      Vacant lot — 0% of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }} is built; full envelope available.
+      {% else %}
+      Existing {{ fu.existing_sqft|fnum }} sq ft uses <strong>{{ fu.utilization_pct }}%</strong> of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }}{% if fu.unused_sqft > 0 %} ({{ fu.unused_sqft|fnum }} sq ft unused){% endif %}.
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if report.unit_yield %}
+    {% set uy = report.unit_yield %}
+    <div class="detail" style="margin-top: 4pt;">
+      <strong>As-of-right unit yield:</strong> up to ~{{ uy.units }} dwelling unit{{ "s" if uy.units != 1 else "" }}
+      ({{ uy.land_sqft|fnum }} sq ft ÷ {{ uy.mla_per_unit|fnum }} sq ft min. lot area per unit, {{ uy.zone_class }} per Title 17-2-0303).
+      Actual yield is also bounded by FAR, height, parking, and unit mix.
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -897,6 +977,11 @@ a.glossary-link {
     {% endfor %}
     </tbody>
   </table>
+  {% if report.ownership_interpretation %}
+  <div style="font-size: 8.5pt; margin-top: 6pt; padding: 6pt 8pt; background: #eff6ff; border-left: 3pt solid #2563eb; border-radius: 2pt;">
+    <strong>What this means for a buyer:</strong> {{ report.ownership_interpretation }}
+  </div>
+  {% endif %}
   <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Derived from public sales history and tax records. Taxpayer names are not available via open data.</p>
   {% endif %}
   {% else %}
@@ -929,18 +1014,28 @@ a.glossary-link {
   <p style="font-size: 9pt; margin-bottom: 8pt;">Price range: {{ comps.price_range_min|fcur }} — {{ comps.price_range_max|fcur }}</p>
   {% endif %}
 
-  {% if report.estimated_land_value %}
+  {% if report.comp_valuation %}
+  {% set cv = report.comp_valuation %}
   <div class="dev-potential" style="background: #fefce8; border-color: #fde68a;">
-    <div class="headline" style="color: #92400e;">Estimated Land Value</div>
+    <div class="headline" style="color: #92400e;">Valuation Indicators</div>
+    {% if cv.median_sale_price %}
     <div class="detail">
-      <strong>{{ report.estimated_land_value.low|fcur }} — {{ report.estimated_land_value.high|fcur }}</strong>
-      (${{ "%.0f"|format(report.estimated_land_value.low_per_sqft) }}–${{ "%.0f"|format(report.estimated_land_value.high_per_sqft) }}/land sq ft)
-      based on {{ report.estimated_land_value.sample_size }} arm's-length sales within 0.25mi / 3yr
+      <strong>Median comparable sale: {{ cv.median_sale_price|fcur }}</strong>
+      {% if cv.price_range_min and cv.price_range_max %} (range {{ cv.price_range_min|fcur }}–{{ cv.price_range_max|fcur }}){% endif %}
+      <span style="color: #92400e;">— {{ cv.comp_basis or "nearby arm's-length sales" }}</span>
     </div>
-    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">This is not an appraisal. Range reflects the interquartile (25th–75th percentile) of comparable $/land sq ft applied to the subject lot. An independent appraisal is recommended for transaction decisions.</div>
+    {% endif %}
+    {% if not cv.data_limited %}
+    <div class="detail" style="margin-top: 4pt;">
+      <strong>Implied land value: {{ cv.land_value_low|fcur }} — {{ cv.land_value_high|fcur }}</strong>
+      (${{ "%.0f"|format(cv.land_per_sqft_low) }}–${{ "%.0f"|format(cv.land_per_sqft_high) }}/land sq ft × subject lot, n={{ cv.land_sample_size }})
+      {% if cv.per_buildable_low is not none %}<br>≈ ${{ "%.0f"|format(cv.per_buildable_low) }}–${{ "%.0f"|format(cv.per_buildable_high) }} of land cost per buildable sq ft.{% endif %}
+    </div>
+    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">This is not an appraisal. The land-value range applies the interquartile (25th–75th percentile) of comparable $/land sq ft to the subject lot. An independent appraisal is recommended for transaction decisions.</div>
+    {% else %}
+    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">Lot-normalized land value (per land sq ft) is unavailable: in this market the comparable sales are condo/improved parcels whose land area is not reported in assessor data. The median sale price above reflects whole-property transactions, not land-only value. An independent appraisal is recommended.</div>
+    {% endif %}
   </div>
-  {% elif comps and comps.sales_volume and comps.sales_volume < 3 %}
-  <p class="section-note" style="font-style: italic;">Insufficient comparable sales ({{ comps.sales_volume }}) for automated land valuation. An independent appraisal is recommended.</p>
   {% endif %}
 
   {% if report.comps_chart_b64 %}
@@ -1289,23 +1384,28 @@ a.glossary-link {
     <li>Check Chicago Legistar for active zoning applications or planned developments affecting this property</li>
   </ul>
 
-  {% if inc and (inc.in_tif_district or inc.in_opportunity_zone or inc.in_qct or inc.in_nmtc) %}
   <h3>Advisory (Optimization)</h3>
   <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
-    {% if inc.in_tif_district %}
+    {% if inc and inc.in_tif_district %}
     <li>Contact the TIF administrator for <strong>{{ inc.tif_name }}</strong> to discuss available funding for site improvements, infrastructure, or environmental remediation</li>
     {% endif %}
-    {% if inc.in_opportunity_zone %}
+    {% if inc and inc.in_opportunity_zone %}
     <li>Consult a tax advisor regarding Qualified Opportunity Fund (QOF) structuring — this property is in a designated Opportunity Zone (Tract {{ inc.oz_tract }})</li>
     {% endif %}
-    {% if inc.in_qct %}
+    {% if inc and inc.in_qct %}
     <li>Explore LIHTC financing — QCT designation provides an enhanced 130% basis boost for affordable housing projects</li>
     {% endif %}
-    {% if inc.in_nmtc %}
+    {% if inc and inc.in_nmtc %}
     <li>Contact a CDFI allocatee to explore NMTC financing for commercial, mixed-use, or community facility development</li>
     {% endif %}
+    <li>Commission an independent appraisal to confirm land value before structuring an offer — public-data comparables are a screening tool, not a valuation</li>
+    {% if report.unit_yield %}
+    <li>Validate the as-of-right unit yield (~{{ report.unit_yield.units }} units) with a zoning attorney or expediter, accounting for parking, open-space, and unit-mix rules before underwriting</li>
+    {% else %}
+    <li>Confirm as-of-right density and bulk standards with a zoning attorney or expediter before underwriting</li>
+    {% endif %}
+    <li>Pull broker comparables and a local market study to pressure-test absorption, rents, and exit pricing for the intended product</li>
   </ul>
-  {% endif %}
 </div>
 
 <!-- SECTION 10: Glossary -->

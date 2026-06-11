@@ -309,3 +309,45 @@ def collect_report_zone_definitions(
 
     result.extend(sorted(zones.values(), key=lambda d: d.zone_class))
     return result
+
+
+# ---------------------------------------------------------------------------
+# Minimum lot area per dwelling unit (density) — Title 17, Table 17-2-0303-A
+# ---------------------------------------------------------------------------
+# Square feet of lot area required per *dwelling* unit. This is the binding
+# as-of-right density control in R districts (separate from FAR), used to
+# estimate as-of-right unit yield. Values transcribed verbatim from the indexed
+# Chicago Zoning Ordinance (Sec. 17-2-0303-A, "Dwelling units" column).
+_MIN_LOT_AREA_PER_UNIT: dict[str, int] = {
+    "RS-1": 6250,
+    "RS-2": 5000,
+    "RS-3": 2500,
+    "RT-3.5": 1250,
+    "RT-4": 1000,
+    "RM-4.5": 700,
+    "RM-5": 400,
+    "RM-5.5": 400,
+    "RM-6": 300,
+    "RM-6.5": 300,
+}
+
+
+def min_lot_area_per_unit(zone_class: str | None) -> int | None:
+    """Return the minimum lot area (sq ft) per dwelling unit for an R district.
+
+    Looks up the exact class, then the prefix family (e.g. "RM-5" for "RM-5"),
+    returning ``None`` for non-R districts or unknown classes so callers can
+    skip an as-of-right unit-yield estimate rather than fabricate one.
+    """
+    if not zone_class:
+        return None
+    norm = zone_class.strip().upper()
+    if norm in _MIN_LOT_AREA_PER_UNIT:
+        return _MIN_LOT_AREA_PER_UNIT[norm]
+    # Normalise spacing variants like "RM 5" → "RM-5".
+    prefix, num = _parse_zone_prefix(norm)
+    if num is not None:
+        candidate = f"{prefix}-{num}"
+        if candidate in _MIN_LOT_AREA_PER_UNIT:
+            return _MIN_LOT_AREA_PER_UNIT[candidate]
+    return None

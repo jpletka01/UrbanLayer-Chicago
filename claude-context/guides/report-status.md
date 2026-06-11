@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-10 (Report V6 Phase 2 — credibility — shipped)
+Last updated: 2026-06-10 (Report V6 Phase 3 — decision quality — shipped)
 
 ## Shipped Features
 
@@ -64,13 +64,13 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 |------|----|-----------------|--------|--------|--------|
 | 1 | Q3/Q4 | Zoning self-contradiction: RM-6 label (FAR 4.4) vs FAR 2.2 table + commercial uses `[mock?]` | 5 | XS/S | Needs real-data |
 | 2 | Q1/Q2 | Lot size "N/A" hero + 3 conflicting lot sizes | 5 | S | Open |
-| 3 | V5-1b | Estimated Land Value Range marked Shipped but doesn't render | 5 | S–M | Open |
-| 4 | Miss#1 | No cover decision box (6 numbers) | 5 | M | Open |
-| 5 | P2 | No comp-implied valuation for the subject lot | 5 | M–L | Open |
+| 3 | V5-1b | Estimated Land Value Range marked Shipped but doesn't render | 5 | S–M | **Fixed (Phase 3)** — root cause was missing comp land-area (condo market), not the comp query. Comp merge now keeps the most complete chars row; land range renders when ≥3 land-bearing comps, else honest "Valuation Indicators" fallback on median comp **sale price** |
+| 4 | Miss#1 | No cover decision box (6 numbers) | 5 | M | **Fixed (Phase 3)** — page-1 "Development Snapshot": lot · zone · max buildable · value · key constraint · approval path, with honest "n/a" |
+| 5 | P2 | No comp-implied valuation for the subject lot | 5 | M–L | **Fixed (Phase 3)** — `_compute_comp_valuation`: median comp sale (reliable anchor) + land value range + $/buildable-sf when land-bearing comps exist; flags the data limit otherwise |
 | 6 | V5-2a | Parcel + setback-envelope viz absent (GIS-blocked) | 5 | XL | Needs real-data |
-| 7 | P1 | No FAR-utilization framing | 4 | S | Open |
-| 8 | P8 | No as-of-right unit yield | 4 | S | Open |
-| 9 | Exec | Constraints not consolidated into one callout | 4 | S | Open |
+| 7 | P1 | No FAR-utilization framing | 4 | S | **Fixed (Phase 3)** — `_compute_far_utilization`: "existing X sf uses Y% of FAR-allowed Z sf" line in exec Dev Potential block (vacant-lot variant too) |
+| 8 | P8 | No as-of-right unit yield | 4 | S | **Fixed (Phase 3)** — `_compute_unit_yield` from authoritative min-lot-area-per-unit (Title 17-2-0303-A table added to zoning_definitions); R districts only, method note shown |
+| 9 | Exec | Constraints not consolidated into one callout | 4 | S | **Fixed (Phase 3)** — decision box surfaces the single most deal-shaping constraint on page 1 (binding-priority order); also gated the ARO constraint to lots that can actually reach 10+ units (was a false positive on small lots) |
 | 10 | P4 | 311 "high-risk" alarmism (rodent baiting) | 4 | M | **Fixed (Phase 2)** — severity taxonomy: rodent/rat → routine_service_flags, structural only stays high-risk |
 | 11 | Q9 | Lakefront Protection false positive inland | 4 | M | **Won't fix — verified TRUE positive (Phase 2)**; only the lead label changed |
 | 12 | Q7/Q8 | Map/table different neighborhoods; comps wrong section `[mock?]` | 4 | S/M | Needs real-data |
@@ -81,14 +81,14 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | Open |
 | 18 | D7 | Comps scatter plots absolute price, not $/sf | 3 | S | Open |
 | 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | **Fixed (Phase 2)** — EX → property_tax_class "exempt", consistent with R2c callout |
-| 20 | P5 | Ownership Intelligence lacks the "so what" | 3 | S | Open |
+| 20 | P5 | Ownership Intelligence lacks the "so what" | 3 | S | **Fixed (Phase 3)** — `_ownership_interpretation` renders a "What this means for a buyer" deal read (off-market / basis / non-arm's-length) under Ownership Intelligence |
 | 21 | D2 | Construction map orphaned across page break | 2 | XS–S | **Fixed (Phase 2)** — `<figure page-break-inside:avoid>` + caption binds map together |
 | 22 | V6-5 | "0.25mi" narrative contradicts "0.5mi" header | 2 | XS | Fixed (Phase 1, R4) |
 | 23 | Q10 | CAGR labeled 5yr (2020–2025) but data starts 2021 | 2 | XS | **Fixed (Phase 2)** — period already derived from real oldest/newest year + disclaimer; regression-tested |
 | 24 | Q14 | "Surplus" undefined; existing sf not shown | 2 | XS | Open |
 | 25 | P6/D11 | Crime: no benchmark, buried | 2 | S | Open |
 | 26 | P3 | Financial = five "No"s + irrelevant grant | 2 | S | Open |
-| 27 | V5-1c | Advisory tier of Next Steps missing | 2 | S | Open |
+| 27 | V5-1c | Advisory tier of Next Steps missing | 2 | S | **Fixed (Phase 3)** — Advisory (Optimization) tier now always renders (appraisal, validate unit yield w/ zoning attorney, broker comps + market study) plus the conditional incentive items |
 | 28 | D1 | Blank page 8 (orphaned footnote) | 1 | XS | **Won't fix — not reproducible (Phase 2)**; real reports (15/18pp) have no blank page (was mock-only) |
 | 29 | D4 | Tax + effective rate shown 3× | 1 | XS | Open |
 | 30 | D5 | Transit duplicated + rounding mismatch | 1 | XS | **Fixed (Phase 2)** — single canonical transit block in Market Context; regulatory dup removed |
@@ -98,6 +98,39 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 34 | Q11 | "Lakeview Historic District" on Lincoln Park property | 1 | XS | **Won't fix — verified correct (Phase 2)**; real NR district spans Wrightwood, name is authoritative |
 | 35 | D8 | Site Assessment badges mix scales | 1 | S | Open |
 | 36 | V6-2 | Year-built / nonconformity absent (CCAO-blocked) | 3 | L | Needs real-data |
+
+### Phase 3 (decision quality) SHIPPED — 2026-06-10
+
+Miss#1, V5-1b, P2, P1, P8, Exec, P5, V5-1c all **Fixed**. Verified on real PDFs for both
+parcels (EX subject 16pp / RM-5 control 19pp) + a template-render smoke test for every block.
+19 regression tests in `test_report_phase3_fixes.py`; 555 backend unit tests pass (10 live-API
+integration failures are environmental — Cook County GIS / Socrata were down during the run).
+
+**Page-1 decision box** ("Development Snapshot"): lot · zone · max buildable · value · key
+constraint · approval path. Control renders 6/6; EX renders 4/6 with honest "n/a" for
+lot/buildable (institutional parcel genuinely has no land-area record in assessor data).
+
+**Key data finding (supersedes the plan's assumption that R3 unblocked land value):** comparable
+sales in dense Lincoln Park are condo-dominated (class 299) and carry **no land area** in the
+assessor characteristics file; even SFR `char_land_sf` is frequently null. After a best-row merge
+fix, only ~1 sold parcel within 0.25mi/3yr has land area — so a land-value **range** (needs ≥3)
+is data-blocked here. The honest design: median comparable **sale price** is the reliable value
+anchor; the lot-normalized land value + $/buildable-sf render only when ≥3 land-bearing comps
+exist, otherwise a labeled "Valuation Indicators" fallback explains the limitation. Not fabricated.
+
+**Bonus credibility fix:** ARO ("affordable housing at 10+ units") was wrongly flagged as the key
+constraint on a ~2-unit lot. Now gated on estimated as-of-right unit capacity (min-lot-area-per-unit,
+else ~1,000 sf/unit) ≥ ~10 units.
+
+**Files changed (Phase 3):** `backend/retrieval/zoning_definitions.py` (Title 17-2-0303-A MLA
+table + `min_lot_area_per_unit()`), `backend/retrieval/property/sales.py` (best-row chars merge),
+`backend/main.py` (`_compute_far_utilization`, `_compute_unit_yield`, `_compute_comp_valuation`,
+`_ownership_interpretation`, `_build_decision_box`, ARO gating, wiring in real + mock paths),
+`backend/models.py` (5 ReportData fields), `backend/templates/zoning_report.html` (decision box +
+CSS, FAR/yield lines, Valuation Indicators block, ownership "so what", always-on Advisory tier),
+`backend/tests/test_report_phase3_fixes.py` (+19).
+**Next: Phase 4 (UX & visualization)** — map legends/scale/radius ring, $/sf comps chart, combined
+site-context map (GIS-blocked), badge vocabulary, crime benchmark.
 
 ### Phase 2 (credibility) SHIPPED — 2026-06-10
 

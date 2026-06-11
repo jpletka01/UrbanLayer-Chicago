@@ -2286,6 +2286,13 @@ async def _fetch_report_data(
     report.incentive_stacking_narrative = _build_incentive_stacking_narrative(report)
     report.envelope_summary = _build_envelope_summary(report)
 
+    # Phase 3 decision-quality synthesis (depends on the V5 fields above)
+    report.far_utilization = _compute_far_utilization(report)
+    report.unit_yield = _compute_unit_yield(report)
+    report.comp_valuation = _compute_comp_valuation(report)
+    report.ownership_interpretation = _ownership_interpretation(report)
+    report.decision_box = _build_decision_box(report)
+
     # Envelope map (CPU-bound matplotlib render)
     if ctx.property and ctx.property.parcel_geometry and standards:
         try:
@@ -3253,11 +3260,23 @@ def _synthesize_opportunities_constraints(
         })
 
     if reg and reg.in_aro_zone and dev and dev.max_buildable_sqft:
-        constraints.append({
-            "signal": "ARO zone — affordable housing requirement at 10+ units",
-            "detail": "Projects of 10+ units must set aside units as affordable or pay in-lieu fee (~$175K/required unit). Factor into project economics.",
-            "category": "regulatory",
-        })
+        # ARO only bites residential projects of 10+ units. Estimate the as-of-right
+        # unit capacity (min lot area per unit, else a ~1,000 sf/unit rule of thumb)
+        # and skip the flag when the lot plainly can't reach 10 units — otherwise a
+        # tiny lot wrongly surfaces ARO as a binding constraint.
+        from backend.retrieval.zoning_definitions import min_lot_area_per_unit
+        zone_class = ctx.parcel_zoning.zone_class if ctx.parcel_zoning else None
+        mla = min_lot_area_per_unit(zone_class)
+        if prop and prop.land_sqft and mla:
+            est_units = prop.land_sqft / mla
+        else:
+            est_units = dev.max_buildable_sqft / 1000.0
+        if est_units >= 9:  # within rounding of the 10-unit threshold
+            constraints.append({
+                "signal": "ARO zone — affordable housing requirement at 10+ units",
+                "detail": "Projects of 10+ units must set aside units as affordable or pay in-lieu fee (~$175K/required unit). Factor into project economics.",
+                "category": "regulatory",
+            })
 
     if reg and any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
         opportunities.append({
@@ -3397,7 +3416,192 @@ def _compute_land_value_range(report: "ReportData") -> dict | None:
         "high": high,
         "low_per_sqft": low_per_sqft,
         "high_per_sqft": high_per_sqft,
+        "sample_size": len(prices_per_sqft),
+    }
+
+
+def _compute_comp_valuation(report: "ReportData") -> dict | None:
+    """Synthesize the comparable-sales set into a subject-lot valuation read (P2).
+
+    The reliable anchor is the median comparable *sale price* (always available
+    when comps exist). When ≥3 comps carry a land area we also surface a
+    lot-normalized land-value range and a $/buildable-sf figure tied to the
+    subject's max buildable. In dense, condo-dominated markets the assessor
+    characteristics file rarely reports land area, so the land-normalized layer
+    is frequently unavailable — we flag that honestly rather than fabricate it.
+    """
+    comps = report.comparables
+    if not comps or not comps.sales or not comps.sales_volume:
+        return None
+
+    dev = report.development_potential
+    out: dict[str, Any] = {
+        "median_sale_price": comps.median_sale_price,
+        "price_range_min": comps.price_range_min,
+        "price_range_max": comps.price_range_max,
         "sample_size": comps.sales_volume,
+        "comp_basis": comps.comp_basis,
+        "data_limited": True,
+    }
+
+    land = report.estimated_land_value
+    if land:
+        out["data_limited"] = False
+        out["land_value_low"] = land["low"]
+        out["land_value_high"] = land["high"]
+        out["land_per_sqft_low"] = land["low_per_sqft"]
+        out["land_per_sqft_high"] = land["high_per_sqft"]
+        out["land_sample_size"] = land["sample_size"]
+        # P2: spread the implied land value across the max buildable envelope to
+        # express a land cost per buildable sq ft — the figure a developer uses
+        # to test a deal against construction cost + target return.
+        if dev and dev.max_buildable_sqft:
+            out["per_buildable_low"] = round(land["low"] / dev.max_buildable_sqft, 2)
+            out["per_buildable_high"] = round(land["high"] / dev.max_buildable_sqft, 2)
+
+    return out
+
+
+def _compute_far_utilization(report: "ReportData") -> dict | None:
+    """How much of the FAR-allowed floor area the existing structure uses (P1)."""
+    prop = report.context.property
+    standards = report.zoning_standards
+    if not prop or not prop.land_sqft or not standards or standards.far is None:
+        return None
+    allowed = int(standards.far * prop.land_sqft)
+    if allowed <= 0:
+        return None
+    existing = prop.bldg_sqft or 0
+    return {
+        "existing_sqft": existing,
+        "allowed_sqft": allowed,
+        "far": standards.far,
+        "utilization_pct": round(existing / allowed * 100),
+        "unused_sqft": max(0, allowed - existing),
+        "vacant": existing == 0,
+    }
+
+
+def _compute_unit_yield(report: "ReportData") -> dict | None:
+    """As-of-right dwelling-unit yield from minimum lot area per unit (P8).
+
+    Uses the binding R-district density control (Title 17 Table 17-2-0303-A),
+    not FAR, which is the actual as-of-right cap on unit count. Returns ``None``
+    for non-R districts / unknown classes so we never fabricate a yield.
+    """
+    from backend.retrieval.zoning_definitions import min_lot_area_per_unit
+    prop = report.context.property
+    zoning = report.context.parcel_zoning
+    if not prop or not prop.land_sqft or not zoning or not zoning.zone_class:
+        return None
+    mla = min_lot_area_per_unit(zoning.zone_class)
+    if not mla:
+        return None
+    units = int(prop.land_sqft // mla)
+    if units < 1:
+        return None
+    return {
+        "units": units,
+        "mla_per_unit": mla,
+        "land_sqft": prop.land_sqft,
+        "zone_class": zoning.zone_class.strip().upper(),
+    }
+
+
+def _ownership_interpretation(report: "ReportData") -> str | None:
+    """Turn raw ownership signals into a deal read — the 'so what' (P5)."""
+    sigs = report.ownership_signals
+    if not sigs:
+        return None
+    names = {s.get("signal") for s in sigs}
+    clauses: list[str] = []
+    if "Long-Term Hold" in names:
+        clauses.append(
+            "The owner has held for over a decade, so the parcel is likely off-market — "
+            "expect to initiate direct outreach with limited competitive tension, but note "
+            "the owner faces no acquisition-cost pressure to sell"
+        )
+    elif "Recent Acquisition" in names:
+        clauses.append(
+            "The owner acquired recently, so their cost basis is near current market — this "
+            "limits room for a price discount and suggests the site may not be actively for sale"
+        )
+    elif "Ownership Duration" in names:
+        clauses.append(
+            "The owner has held for several years, so the parcel is likely off-market — expect "
+            "direct outreach rather than a listed sale, with the owner's basis set a few years back"
+        )
+    if "Owner-Occupied (Homeowner Exemption)" in names:
+        clauses.append(
+            "A homeowner exemption indicates owner occupancy, so any sale hinges on the owner's "
+            "own relocation timeline"
+        )
+    if "Non-Arm's-Length Transfer" in names or "Quit Claim Deed" in names:
+        clauses.append(
+            "The most recent transfer was non-arm's-length, so the recorded price does not reflect "
+            "market value and true ownership may sit behind a trust or LLC — verify the decision-maker "
+            "before making an offer"
+        )
+    if "Rapid Turnover" in names:
+        clauses.append(
+            "The property has changed hands rapidly, which can signal investor flipping or unresolved "
+            "issues — diligence the reason for the quick resale"
+        )
+    if not clauses:
+        return None
+    return ". ".join(clauses) + "."
+
+
+def _build_decision_box(report: "ReportData") -> dict:
+    """Page-1 go/no-go box: lot · zone · buildable · value · constraint · timeline (Miss#1)."""
+    prop = report.context.property
+    zoning = report.context.parcel_zoning
+    dev = report.development_potential
+
+    lot = f"{prop.land_sqft:,} sq ft" if prop and prop.land_sqft else "n/a"
+    zone = zoning.zone_class if zoning and zoning.zone_class else "n/a"
+    buildable = f"{dev.max_buildable_sqft:,} sq ft" if dev and dev.max_buildable_sqft else "n/a"
+
+    value = "n/a"
+    value_label = "Est. Value"
+    elv = report.estimated_land_value
+    cv = report.comp_valuation
+    if elv:
+        value = f"{_fmt_money(elv['low'])}–{_fmt_money(elv['high'])}"
+        value_label = "Est. Land Value"
+    elif cv and cv.get("median_sale_price"):
+        value = _fmt_money(cv["median_sale_price"])
+        value_label = "Median Comp Sale"
+
+    # Surface the most *deal-shaping* constraint, not merely the first synthesized
+    # one — regulatory / environmental / site issues bind a project harder than a
+    # thin-comp-market caveat, so order by how much each gates a go/no-go decision.
+    key_constraint = "None identified"
+    if report.constraints:
+        _binding_order = [
+            "regulatory", "environmental", "site_condition",
+            "zoning", "financial", "incentive", "market",
+        ]
+        top = min(
+            report.constraints,
+            key=lambda c: _binding_order.index(c["category"])
+            if c.get("category") in _binding_order else 99,
+        )
+        key_constraint = top["signal"]
+
+    timeline = "n/a"
+    if report.approval_pathway:
+        ap = report.approval_pathway
+        timeline = f"{ap['complexity'].title()} · {ap['timeline']}"
+
+    return {
+        "lot": lot,
+        "zone": zone,
+        "buildable": buildable,
+        "value": value,
+        "value_label": value_label,
+        "key_constraint": key_constraint,
+        "timeline": timeline,
     }
 
 
@@ -3836,6 +4040,13 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
     report_data.development_trend = _compute_development_trend(report_data)
     report_data.incentive_stacking_narrative = _build_incentive_stacking_narrative(report_data)
     report_data.envelope_summary = _build_envelope_summary(report_data)
+
+    # Phase 3 decision-quality synthesis on mock data
+    report_data.far_utilization = _compute_far_utilization(report_data)
+    report_data.unit_yield = _compute_unit_yield(report_data)
+    report_data.comp_valuation = _compute_comp_valuation(report_data)
+    report_data.ownership_interpretation = _ownership_interpretation(report_data)
+    report_data.decision_box = _build_decision_box(report_data)
 
     # Clear partial failures since mock data is complete
     report_data.partial_failures = []
