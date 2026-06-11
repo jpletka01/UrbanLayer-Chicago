@@ -1437,6 +1437,90 @@ def _latlon_to_px(
     return (x - cx + w / 2) * 2, (y - cy + h / 2) * 2
 
 
+def _rendered_m_per_px(lat: float, zoom: int) -> float:
+    """Ground metres per rendered pixel for the report basemaps at a given zoom.
+
+    Web Mercator ground resolution is ``156543.03 * cos(lat) / 2**zoom`` metres per
+    pixel for a 256-px tile. ``_latlon_to_px`` scales its output by ``* 2`` (the maps
+    are fetched as Mapbox ``@2x`` retina images, so the actual PNG is 2× the requested
+    600×400), which halves the metres each pixel covers — hence the extra ``/ 2``.
+    Keeping this in one place ensures the scale bar and radius ring match the exact
+    projection used to place every marker.
+    """
+    from math import cos, radians
+
+    return 156543.03392804097 * cos(radians(lat)) / (2 ** zoom) / 2
+
+
+_SCALE_BAR_MILES = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0)
+
+
+def _draw_scale_and_ring(
+    ax,
+    lat: float,
+    zoom: int,
+    img_w: int,
+    img_h: int,
+    ring_mi: float | None,
+) -> None:
+    """Overlay a scale bar (bottom-left) and a distance reference ring on a report map.
+
+    Both are orientation aids drawn in the same pixel space markers use. ``ring_mi`` is
+    a *distance reference* around the subject pin (not a claimed data boundary), so it
+    stays truthful even when, e.g., the comps search widens past it. Best-effort: any
+    failure is swallowed so a map still renders without these overlays.
+    """
+    from matplotlib.patches import Circle
+
+    MI_M = 1609.344
+    try:
+        m_per_px = _rendered_m_per_px(lat, zoom)
+        if m_per_px <= 0:
+            return
+        cx, cy = img_w / 2, img_h / 2
+
+        # --- distance reference ring around the subject pin ---
+        if ring_mi:
+            r_px = ring_mi * MI_M / m_per_px
+            # only draw if it comfortably fits inside the frame
+            if 0 < r_px < min(img_w, img_h) / 2:
+                ax.add_patch(Circle(
+                    (cx, cy), r_px, fill=False,
+                    edgecolor="#ffffff", linewidth=0.8,
+                    linestyle=(0, (4, 3)), alpha=0.55, zorder=9,
+                ))
+                ax.text(
+                    cx, cy - r_px - 3, f"{ring_mi:g} mi",
+                    ha="center", va="bottom", fontsize=4.5,
+                    color="#ffffff", alpha=0.85,
+                    bbox=dict(facecolor="#0d0d0d", alpha=0.6, edgecolor="none", pad=1.5),
+                    zorder=15,
+                )
+
+        # --- scale bar (bottom-left): largest round distance under ~¼ of the width ---
+        target_m = (img_w / 4) * m_per_px
+        bar_mi = _SCALE_BAR_MILES[0]
+        for cand in _SCALE_BAR_MILES:
+            if cand * MI_M <= target_m:
+                bar_mi = cand
+        bar_px = bar_mi * MI_M / m_per_px
+        x0, y0 = 14.0, img_h - 16.0
+        ax.plot([x0, x0 + bar_px], [y0, y0], color="#ffffff",
+                linewidth=1.6, alpha=0.9, solid_capstyle="butt", zorder=16)
+        for xt in (x0, x0 + bar_px):
+            ax.plot([xt, xt], [y0 - 3, y0 + 3], color="#ffffff",
+                    linewidth=1.2, alpha=0.9, zorder=16)
+        ax.text(
+            x0 + bar_px / 2, y0 - 5, f"{bar_mi:g} mi",
+            ha="center", va="bottom", fontsize=4.5,
+            color="#ffffff", alpha=0.9,
+            bbox=dict(facecolor="#0d0d0d", alpha=0.6, edgecolor="none", pad=1.5),
+            zorder=16,
+        )
+    except Exception:
+        log.warning("Failed to draw scale bar / radius ring", exc_info=True)
+
+
 def _generate_zoning_map(
     lat: float,
     lon: float,
@@ -1625,6 +1709,8 @@ def _generate_zoning_map(
             zorder=15,
         )
 
+        _draw_scale_and_ring(ax, lat, ZOOM, img_w, img_h, ring_mi=0.25)
+
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         buf = io.BytesIO()
         fig.savefig(
@@ -1739,6 +1825,9 @@ def _generate_construction_map(
             zorder=15,
         )
 
+        # 0.5 mi ring matches the nearby-construction search radius (config 0.00725 deg)
+        _draw_scale_and_ring(ax, lat, ZOOM, img_w, img_h, ring_mi=0.5)
+
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         buf = io.BytesIO()
         fig.savefig(buf, format="png", bbox_inches="tight",
@@ -1826,6 +1915,9 @@ def _generate_comps_map(
             handletextpad=0.4, borderpad=0.4, borderaxespad=0.6,
         )
         legend.set_zorder(20)
+
+        # 0.25 mi distance reference (comps search starts at ~0.28 mi and may widen)
+        _draw_scale_and_ring(ax, lat, ZOOM, img_w, img_h, ring_mi=0.25)
 
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         buf = io.BytesIO()

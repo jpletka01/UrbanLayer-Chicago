@@ -2,7 +2,7 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0 SHIPPED** (render concurrency cap + `write_pdf` offload + GIS timeout trim); **Tier-1 now SHIPPED** — comps-section consolidation (legacy "Comparable Sales Summary" stat block removed, consolidated on "Comparable Market Activity", $/bldg-sf preserved) + Q6 tax clarity (market value persisted+rendered, market/assessed/effective-rate shown coherently, effective-rate collapsed to one value render → closes D4, assessment-history annual-tax fallback). Verified on the real taxable control PDF; 532 unit tests pass)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 SHIPPED & DEPLOYED** + prod memory validated (no OOM history, backend <1 GB); **Tier-2 D3 now SHIPPED** — scale bar + distance reference ring added to the three always-rendering maps (zoning/cover, construction, comps). Scope note: legends already existed, so D3 reduced to scale+ring. Verified visually on both QA-parcel PDFs; 542 unit tests pass (+10 in `test_report_d3_maps.py`). **Not yet deployed.**)
 
 ## Shipped Features
 
@@ -78,7 +78,7 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 14 | Q5 | Tax agency rows sum > stated total `[mock?]` | 3 | XS/S | Needs real-data |
 | 15 | P7/Q13 | Reassessment drift sold as appreciation opportunity | 3 | XS | **Fixed (Phase 2)** — synthesis signal reframed as reassessment trend + tax-burden, not "appreciation opportunity" |
 | 16 | Q6 | Effective tax rate vs assessed value; market value hidden | 3 | S | **Fixed (Tier-1)** — `market_value` persisted on `ReportData` + rendered as "Est. Market Value" between Assessed Value and Est. Annual Tax; effective rate labeled "(of market value)" so 1.9% can't be misread as ~19% of assessed. Verified on real control: $146,001 assessed → $1,460,010 market → $28,141 tax → 1.9% |
-| 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | Open |
+| 17 | D3 | Maps have no legend / scale / radius ring | 3 | S | **Fixed (Tier-2)** — legends already existed; added a bottom-left **scale bar** (auto round distance) + a dashed **distance reference ring** (zoning/comps 0.25 mi, construction 0.5 mi) to all three always-rendering maps, both derived from the basemap's actual Web Mercator m/px (`_rendered_m_per_px`, with the `@2x` ÷2 factor) so they can't misstate distance. Verified visually on both QA PDFs |
 | 18 | D7 | Comps scatter plots absolute price, not $/sf | 3 | S | Open |
 | 19 | Q12/P9 | Building class "EX" mislabeled "standard" `[mock?]` | 3 | S | **Fixed (Phase 2)** — EX → property_tax_class "exempt", consistent with R2c callout |
 | 20 | P5 | Ownership Intelligence lacks the "so what" | 3 | S | **Fixed (Phase 3)** — `_ownership_interpretation` renders a "What this means for a buyer" deal read (off-market / basis / non-arm's-length) under Ownership Intelligence |
@@ -140,8 +140,13 @@ Re-prioritized order:
    as "Est. Market Value"; market/assessed/effective-rate now read coherently; effective-rate **value**
    collapsed to one render (**closes D4**); assessment-history fallback fills estimated annual tax when the
    ptaxsim bill is missing. Verified on the real control PDF.
-4. **Tier 2 — D3 map legends/scale/radius** (the one safe, valuable viz item) — **next up.**
-5. **Tier 2 — P5 ownership-coverage validation** + **D8/Q14 cosmetic batch**.
+4. **Tier 2 — D3 map scale bar + radius ring — ✅ SHIPPED (2026-06-11).** Legends already existed, so D3
+   reduced to a scale bar + distance reference ring on the three always-rendering maps. `_rendered_m_per_px`
+   (pure, tested) + `_draw_scale_and_ring` (best-effort, swallows failure) in `backend/main.py`; called from
+   `_generate_zoning_map` (0.25 mi), `_generate_construction_map` (0.5 mi = its real search radius), and
+   `_generate_comps_map` (0.25 mi reference — comps search starts ~0.28 mi and may widen, so it's labeled a
+   *reference* not a boundary). Verified visually on both QA-parcel PDFs. **Not yet deployed.**
+5. **Tier 2 — P5 ownership-coverage validation** + **D8/Q14 cosmetic batch** — **next up.**
 6. **Optional — P6 crime benchmark.**
 **Defer:** Miss#6, V5-2a (until Tier 0 + geometry caching), V6-2 (CCAO-blocked), P3. **Resolved in passing
 by Phase 3 / mock-only (drop):** Q14, Q1/Q2 hero, Q3/Q4, Q7/Q8, Q5. **D4 reclassified:** *not* moot — it is
@@ -190,6 +195,38 @@ logic; `median_price_per_bldg_sqft` added to `_compute_comp_valuation`; `market_
 `backend/config.py` (`report_fallback_tax_rate`), `backend/templates/zoning_report.html` (comps block +
 table column; tax grid; removed exec-summary + financial-section effective-rate dups),
 `backend/tests/test_report_tier1_fixes.py` (+8). **Next: Tier-2 — D3 map legends/scale/radius ring.**
+
+### Tier-2 (D3 — map scale bar + radius ring) SHIPPED — 2026-06-11
+
+**Scope correction (stale-assumption finding):** the plan listed D3 as "legends + scale bar + radius ring,"
+but **all three always-rendering maps already built styled `ax.legend(...)`**. So D3 reduced to the two
+missing pieces — a **scale bar** and a **distance reference ring** — on `_generate_zoning_map`,
+`_generate_construction_map`, and `_generate_comps_map`. The parcel/envelope maps stay untouched (GIS
+returns no geometry → they don't render; "absent maps don't error" is satisfied by leaving them alone).
+
+**What landed.** Two helpers in `backend/main.py`:
+- `_rendered_m_per_px(lat, zoom)` — pure, unit-tested: `156543.03·cos(lat)/2**zoom / 2`. The `/2` encodes
+  the `@2x` retina factor baked into `_latlon_to_px` (its trailing `* 2`), so the scale overlays match the
+  exact projection used to place every marker — no independent constant that could drift.
+- `_draw_scale_and_ring(ax, lat, zoom, img_w, img_h, ring_mi)` — best-effort (swallows its own exceptions so
+  a map always still renders): a dashed reference ring around the subject pin (only drawn if it fits the
+  frame) + a bottom-left scale bar that auto-picks the largest round distance (0.05/0.1/0.25/0.5/1/2 mi)
+  under ~¼ of the frame width, with end ticks and a `"<d> mi"` label.
+
+Ring radii by map: **zoning/cover 0.25 mi**, **construction 0.5 mi** (= the real nearby-construction search
+radius, config `0.00725 deg`), **comps 0.25 mi** (a *distance reference*, not a claimed boundary — the comp
+search starts at ~0.28 mi and may widen, so labeling it a boundary would be false; comps appearing outside
+the ring honestly show the widening).
+
+**Verified** by regenerating both real (non-mock) PDFs and extracting the embedded map PNGs: all three maps
+on the control + the comps/construction maps on the EX subject show the dashed ring (with `mi` label), the
+bottom-left scale bar, and the pre-existing legend. No render warnings in the server log. **542 unit tests
+pass** (+10 in `backend/tests/test_report_d3_maps.py`: m/px math, helper adds ring+scalebar, round-distance
+pick, no-raise on degenerate lat, and an end-to-end smoke render of each of the three maps).
+
+**Files (Tier-2 D3):** `backend/main.py` (`_rendered_m_per_px`, `_draw_scale_and_ring`, `_SCALE_BAR_MILES`,
++3 call sites), `backend/tests/test_report_d3_maps.py` (+10). No model/template/config changes.
+**Not yet deployed** (per workflow rules). **Next: Tier-2 — P5 ownership-coverage validation + D8/Q14 batch.**
 
 ### Phase 3 credibility pass — 2026-06-11
 

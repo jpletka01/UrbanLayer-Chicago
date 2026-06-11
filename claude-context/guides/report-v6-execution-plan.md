@@ -2,6 +2,32 @@
 
 Plan date: 2026-06-10.
 
+## STATUS — Tier 2 D3 SHIPPED (2026-06-11)
+
+**D3 (map scale bar + radius ring) is implemented and verified on both real QA-parcel PDFs.** Tier-0/Tier-1
+shipped and are **deployed**; prod memory was validated afterward (no OOM history, no restarts, backend
+<1 GB, `mem_limit` still UNLIMITED — the deferred infra backstop — but not needed at current load; the
+original OOM concern was overstated). GIS still returns no geometry, so parcel/envelope maps remain absent
+and the GIS-blocked viz items (Miss#6, V5-2a) stay deferred.
+
+**Stale-assumption finding (changes D3 scope):** the plan framed D3 as "legends + scale bar + radius ring,"
+but **legends already existed** in all three always-rendering maps. D3 therefore reduced to the **scale bar +
+distance reference ring** only. Effort came in below the plan's "S."
+
+| Piece | Resolution |
+|-------|-----------|
+| Scale math | `_rendered_m_per_px(lat, zoom) = 156543.03·cos(lat)/2**zoom / 2` (pure, unit-tested). The `/2` encodes the `@2x` retina factor from `_latlon_to_px`'s trailing `* 2`, so overlays match the projection markers use |
+| Scale bar | `_draw_scale_and_ring`: bottom-left bar auto-picking the largest round distance (0.05/0.1/0.25/0.5/1/2 mi) under ~¼ frame width, with end ticks + `"<d> mi"` label |
+| Radius ring | dashed reference ring around the subject pin, drawn only if it fits the frame. Zoning/cover **0.25 mi**, construction **0.5 mi** (= real search radius, config `0.00725 deg`), comps **0.25 mi** *reference* (search starts ~0.28 mi and widens — labeled a reference, not a boundary; comps outside it honestly show widening) |
+
+**Verified:** regenerated both real PDFs, extracted embedded map PNGs — all three control maps + the EX
+comps/construction maps show ring + scale bar + legend; no render warnings in the log. **542 unit tests pass**
+(+10 in `test_report_d3_maps.py`). **Files:** `backend/main.py` (`_rendered_m_per_px`, `_draw_scale_and_ring`,
+`_SCALE_BAR_MILES`, +3 call sites), `backend/tests/test_report_d3_maps.py`. No model/template/config changes.
+**Deploy pending** (per workflow rules). **Next: Tier-2 P5 ownership-coverage validation + D8/Q14 batch.**
+
+---
+
 ## STATUS — Tier 1 SHIPPED (2026-06-11)
 
 **Both Tier-1 items (comps-section consolidation + Q6 tax clarity) are implemented and verified on the
@@ -28,7 +54,8 @@ column; tax grid; removed the exec-summary orphan + financial-section effective-
 
 **Not done / deferred:** condo (class 299) vs non-condo comp tagging (optional in the plan — skipped to stay
 low-risk; the consolidation made it unnecessary for the contradiction fix). **Deploy still pending** (per
-workflow rules). **Next: Tier 2 — D3 map legends / scale / radius ring.**
+workflow rules). **Next: Tier 2 — D3 map legends / scale / radius ring.** ✅ **D3 now SHIPPED — see the
+Tier-2 status block at the top of this file.**
 
 ---
 
@@ -500,9 +527,10 @@ not the problem; under-display is.
    to the report and render it once next to assessed + effective rate, collapse the 3 effective-rate renders
    to one, and add an assessment-history fallback for `estimated_annual_tax` so the row isn't all-or-nothing
    when ptaxsim misses. Small, real clarity win; closes D4 in passing.
-4. **D3 map legends (Tier 2).** Legend strip + scale + radius ring on the maps that already render
-   (cover zoning, comps, construction). Render-only, low regression risk.
-5. **P5 ownership-coverage validation + D8/Q14 cosmetic batch (Tier 2/3).** Validate the ownership "so
+4. **D3 map legends (Tier 2).** ✅ **SHIPPED 2026-06-11.** Legends already existed → delivered the scale bar +
+   distance reference ring on the three maps that already render (cover zoning, comps, construction).
+   Render-only, low regression risk, verified visually on both QA PDFs. See the Tier-2 status block at top.
+5. **P5 ownership-coverage validation + D8/Q14 cosmetic batch (Tier 2/3).** ← **now next.** Validate the ownership "so
    what" on a parcel that actually has signals; one-pass badge-vocabulary + "Surplus" label cleanup.
 6. **(Optional) P6 crime benchmark.** Only if time allows.
    **Defer Miss#6 and V5-2a** until the Tier-0 spike clears GIS reliability *and* parcel-geometry caching
