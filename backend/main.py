@@ -1369,6 +1369,8 @@ async def scorecard(
     data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
     data["resolved_pin"] = rl.pin
     data["resolved_confidence"] = rl.confidence
+    data["resolved_lat"] = rl.lat
+    data["resolved_lon"] = rl.lon
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
         data["comparables"] = data["comparables"].model_dump(exclude_none=True)

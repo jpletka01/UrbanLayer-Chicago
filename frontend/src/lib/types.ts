@@ -1,5 +1,20 @@
 export type Role = "user" | "assistant";
 
+// Parcel identity: pin/confidence are authoritative (backend-resolved only),
+// lat/lon are derived map anchors, address is display-only.
+export interface SelectedParcel {
+  pin: string | null;
+  confidence: "authoritative" | "approximate";
+  lat: number;
+  lon: number;
+  address: string | null;
+}
+
+export type ParcelQuery =
+  | { pin: string }
+  | { address: string }
+  | { lat: number; lon: number };
+
 export interface UploadMeta {
   id: string;
   conversation_id: string;

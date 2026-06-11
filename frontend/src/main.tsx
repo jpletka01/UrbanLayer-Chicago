@@ -24,6 +24,7 @@ import PricingPage from './components/PricingPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
 import ExplorePage from './components/ExplorePage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
+import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 
 function TrackPageView() {
@@ -36,21 +37,23 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <TrackPageView />
-        <Routes>
-          <Route path="/" element={<App />} />
-          <Route path="/c/:id" element={<App />} />
-          <Route path="/s/:shareToken" element={<App />} />
-          <Route path="/scorecard" element={<ScorecardPage />} />
-          <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/admin" element={
-            <ProtectedRoute tier="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-        </Routes>
+        <SelectedParcelProvider>
+          <TrackPageView />
+          <Routes>
+            <Route path="/" element={<App />} />
+            <Route path="/c/:id" element={<App />} />
+            <Route path="/s/:shareToken" element={<App />} />
+            <Route path="/scorecard" element={<ScorecardPage />} />
+            <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/admin" element={
+              <ProtectedRoute tier="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </SelectedParcelProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

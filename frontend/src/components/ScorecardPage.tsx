@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchScorecard, fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
+import { fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
 import { useAuthContext } from "../contexts/AuthContext";
+import { useSelectedParcel } from "../contexts/SelectedParcelContext";
 import ReportPurchasePrompt from "./ReportPurchasePrompt";
 import { ReportCTACard } from "./ReportCTACard";
 import { InvestigateButton } from "./InvestigateButton";
@@ -122,6 +123,7 @@ export default function ScorecardPage() {
   const { t } = useTranslation("pages");
   const [searchParams] = useSearchParams();
   const { user } = useAuthContext();
+  const { parcel, select } = useSelectedParcel();
   const [address, setAddress] = useState(searchParams.get("address") || "");
   const [data, setData] = useState<ScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -167,7 +169,7 @@ export default function ScorecardPage() {
     setLoading(true);
     setError(null);
     setSearched(true);
-    const result = await fetchScorecard({ address: query.trim() });
+    const result = await select({ address: query.trim() });
     if (result) {
       setData(result);
     } else {
@@ -175,13 +177,13 @@ export default function ScorecardPage() {
       setData(null);
     }
     setLoading(false);
-  }, [t]);
+  }, [t, select]);
 
   const doSearchByCoords = useCallback(async (lat: number, lon: number) => {
     setLoading(true);
     setError(null);
     setSearched(true);
-    const result = await fetchScorecard({ lat, lon });
+    const result = await select({ lat, lon });
     if (result) {
       setData(result);
       if (result.address) setAddress(result.address);
@@ -190,7 +192,7 @@ export default function ScorecardPage() {
       setData(null);
     }
     setLoading(false);
-  }, [t]);
+  }, [t, select]);
 
   useEffect(() => {
     const q = searchParams.get("address");
@@ -311,6 +313,34 @@ export default function ScorecardPage() {
                   </span>
                 )}
               </div>
+              {/* Parcel identity strip */}
+              {parcel && (
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                  {parcel.pin && (
+                    <a
+                      href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-mono text-text-secondary hover:text-accent transition-colors"
+                    >
+                      PIN {parcel.pin}
+                    </a>
+                  )}
+                  {parcel.pin === null ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400">
+                      Parcel identity unconfirmed
+                    </span>
+                  ) : parcel.confidence === "authoritative" ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/20 text-emerald-400">
+                      ✓ Exact parcel match
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400">
+                      Approximate — parcel not confirmed
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="flex items-center gap-4 mt-2 text-[10px] text-text-muted">
                 <span>{data.lat.toFixed(5)}, {data.lon.toFixed(5)}</span>
                 {data.context.data_as_of && <span>{t("scorecard.dataAsOf", { date: data.context.data_as_of })}</span>}

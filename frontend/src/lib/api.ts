@@ -531,6 +531,10 @@ export interface ScorecardResponse {
   context: ContextObject;
   comparables?: import("./types").ComparablesSummary | null;
   partial_failures: string[];
+  resolved_pin: string | null;
+  resolved_confidence: "authoritative" | "approximate";
+  resolved_lat: number;
+  resolved_lon: number;
 }
 
 export async function fetchScorecard(params: {
