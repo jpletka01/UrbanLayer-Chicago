@@ -3562,21 +3562,37 @@ def _build_decision_box(report: "ReportData") -> dict:
     zone = zoning.zone_class if zoning and zoning.zone_class else "n/a"
     buildable = f"{dev.max_buildable_sqft:,} sq ft" if dev and dev.max_buildable_sqft else "n/a"
 
+    # Value field. Credibility rule: never imply a subject valuation we can't
+    # support. Tax-exempt/institutional parcels get a status read (more decision-
+    # relevant than nearby residential sales); a real land-value range wins when
+    # available; otherwise we surface *observed nearby sales* — labeled as market
+    # context, not a valuation — and drop the word "median" below n=3 where it is
+    # statistically meaningless.
+    prop_exempt = bool(prop and (prop.tax_exempt or (prop.bldg_class or "").upper().startswith("EX")))
     value = "n/a"
-    value_label = "Est. Value"
+    value_label = "Market Context"
     elv = report.estimated_land_value
     cv = report.comp_valuation
-    if elv:
-        value = f"{_fmt_money(elv['low'])}–{_fmt_money(elv['high'])}"
+    if prop_exempt:
+        value_label = "Tax Status"
+        value = "Exempt (institutional) — verify availability"
+    elif elv:
         value_label = "Est. Land Value"
-    elif cv and cv.get("median_sale_price"):
-        value = _fmt_money(cv["median_sale_price"])
-        value_label = "Median Comp Sale"
+        value = f"{_fmt_money(elv['low'])}–{_fmt_money(elv['high'])}"
+    elif cv and cv.get("sample_size", 0) >= 3 and cv.get("median_sale_price"):
+        value_label = "Nearby Sales (median)"
+        value = f"{_fmt_money(cv['median_sale_price'])} · n={cv['sample_size']}"
+    elif cv and cv.get("sample_size", 0) >= 1 and cv.get("price_range_min"):
+        n = cv["sample_size"]
+        value_label = "Nearby Sales"
+        value = f"{_fmt_money(cv['price_range_min'])}–{_fmt_money(cv['price_range_max'])} · {n} sale{'s' if n != 1 else ''}"
 
     # Surface the most *deal-shaping* constraint, not merely the first synthesized
     # one — regulatory / environmental / site issues bind a project harder than a
     # thin-comp-market caveat, so order by how much each gates a go/no-go decision.
-    key_constraint = "None identified"
+    # "No major constraints flagged" (not "None identified") so the absence reads
+    # as "our rule set found nothing," not a guarantee the site is unencumbered.
+    key_constraint = "No major constraints flagged"
     if report.constraints:
         _binding_order = [
             "regulatory", "environmental", "site_condition",

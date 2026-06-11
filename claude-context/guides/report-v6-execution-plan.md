@@ -26,6 +26,21 @@ always-on Advisory tier (V5-1c).
 
 Remaining: Phase 4 (UX/viz) — not started.
 
+### Credibility pass (2026-06-11) — applied after a post-Phase-3 decision-quality audit
+
+Goal: the report must not imply certainty beyond the data. Highest-leverage item was the decision
+box's value field (most-read, least-qualified). Changes, verified on both real PDFs:
+- **Valuation** never implies a subject value: exempt parcels show tax status, not a comp number;
+  "Nearby Sales" framing (median only at n≥3, range + "directional only" at n<3); disclosure says
+  comps are nearby whole-property sales **not size-/condition-matched**. Heading downgrades to
+  "Comparable Market Activity" when no real land-value range exists.
+- **Unit yield** reframed "as-of-right yield" → "Indicative unit capacity (screening estimate) …
+  not a zoning determination" with min-lot-area/open-space/redevelopment caveats (math unchanged).
+- **Constraints** "None identified" → "No major constraints flagged."
+- **Labels** "Max Buildable (as-of-right)" → "(FAR-based, gross)"; FAR "unused" → "below the FAR cap."
+Left unchanged on purpose: traffic-light badges (query-backed); comp section still renders for exempt
+parcels (now with a stronger disclosure). Detail: `report-status.md` (Phase 3 credibility pass).
+
 ---
 
 ## STATUS — Phase 2 SHIPPED (2026-06-10)

@@ -388,7 +388,7 @@ a.glossary-link {
     <div class="decision-grid">
       <div class="db-cell"><div class="db-label">Lot Size</div><div class="db-value">{{ db.lot }}</div></div>
       <div class="db-cell"><div class="db-label">Zoning</div><div class="db-value">{{ db.zone }}</div></div>
-      <div class="db-cell"><div class="db-label">Max Buildable (as-of-right)</div><div class="db-value">{{ db.buildable }}</div></div>
+      <div class="db-cell"><div class="db-label">Max Buildable (FAR-based, gross)</div><div class="db-value">{{ db.buildable }}</div></div>
       <div class="db-cell"><div class="db-label">{{ db.value_label }}</div><div class="db-value">{{ db.value }}</div></div>
       <div class="db-cell"><div class="db-label">Key Constraint</div><div class="db-value db-sm">{{ db.key_constraint }}</div></div>
       <div class="db-cell"><div class="db-label">Approval Path</div><div class="db-value db-sm">{{ db.timeline }}</div></div>
@@ -588,18 +588,18 @@ a.glossary-link {
     <div class="detail" style="margin-top: 6pt;">
       <strong>FAR utilization:</strong>
       {% if fu.vacant %}
-      Vacant lot — 0% of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }} is built; full envelope available.
+      Vacant lot — 0% of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }} is built; full envelope available (before setbacks and lot-coverage limits).
       {% else %}
-      Existing {{ fu.existing_sqft|fnum }} sq ft uses <strong>{{ fu.utilization_pct }}%</strong> of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }}{% if fu.unused_sqft > 0 %} ({{ fu.unused_sqft|fnum }} sq ft unused){% endif %}.
+      Existing {{ fu.existing_sqft|fnum }} sq ft uses <strong>{{ fu.utilization_pct }}%</strong> of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }}{% if fu.unused_sqft > 0 %} — {{ fu.unused_sqft|fnum }} sq ft below the FAR cap, typically realized through addition or redevelopment{% endif %}.
       {% endif %}
     </div>
     {% endif %}
     {% if report.unit_yield %}
     {% set uy = report.unit_yield %}
     <div class="detail" style="margin-top: 4pt;">
-      <strong>As-of-right unit yield:</strong> up to ~{{ uy.units }} dwelling unit{{ "s" if uy.units != 1 else "" }}
-      ({{ uy.land_sqft|fnum }} sq ft ÷ {{ uy.mla_per_unit|fnum }} sq ft min. lot area per unit, {{ uy.zone_class }} per Title 17-2-0303).
-      Actual yield is also bounded by FAR, height, parking, and unit mix.
+      <strong>Indicative unit capacity (screening estimate):</strong> up to ~{{ uy.units }} dwelling unit{{ "s" if uy.units != 1 else "" }} total
+      ({{ uy.land_sqft|fnum }} sq ft ÷ {{ uy.mla_per_unit|fnum }} sq ft min. lot area per unit, {{ uy.zone_class }} per Title 17-2-0303), assuming redevelopment of any existing structure.
+      This is a density screen, <strong>not a zoning determination</strong> — permitted units are further limited by minimum lot area, rear-yard open space, FAR, height, parking, and unit mix.
     </div>
     {% endif %}
   </div>
@@ -1017,12 +1017,23 @@ a.glossary-link {
   {% if report.comp_valuation %}
   {% set cv = report.comp_valuation %}
   <div class="dev-potential" style="background: #fefce8; border-color: #fde68a;">
+    {% if not cv.data_limited %}
     <div class="headline" style="color: #92400e;">Valuation Indicators</div>
-    {% if cv.median_sale_price %}
+    {% else %}
+    <div class="headline" style="color: #92400e;">Comparable Market Activity</div>
+    {% endif %}
+    {% if cv.median_sale_price and cv.sample_size >= 3 %}
     <div class="detail">
-      <strong>Median comparable sale: {{ cv.median_sale_price|fcur }}</strong>
+      <strong>Median nearby sale: {{ cv.median_sale_price|fcur }}</strong>
       {% if cv.price_range_min and cv.price_range_max %} (range {{ cv.price_range_min|fcur }}–{{ cv.price_range_max|fcur }}){% endif %}
       <span style="color: #92400e;">— {{ cv.comp_basis or "nearby arm's-length sales" }}</span>
+    </div>
+    {% elif cv.sample_size >= 1 and cv.price_range_min %}
+    <div class="detail">
+      <strong>{{ cv.sample_size }} nearby arm's-length sale{{ "s" if cv.sample_size != 1 else "" }}:</strong>
+      {{ cv.price_range_min|fcur }}{% if cv.price_range_max and cv.price_range_max != cv.price_range_min %} – {{ cv.price_range_max|fcur }}{% endif %}
+      <span style="color: #92400e;">— {{ cv.comp_basis or "nearby arm's-length sales" }}</span>
+      <br><span style="font-size: 8pt; color: #92400e;">Too few sales for a reliable central estimate — treat as directional only.</span>
     </div>
     {% endif %}
     {% if not cv.data_limited %}
@@ -1033,7 +1044,7 @@ a.glossary-link {
     </div>
     <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">This is not an appraisal. The land-value range applies the interquartile (25th–75th percentile) of comparable $/land sq ft to the subject lot. An independent appraisal is recommended for transaction decisions.</div>
     {% else %}
-    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">Lot-normalized land value (per land sq ft) is unavailable: in this market the comparable sales are condo/improved parcels whose land area is not reported in assessor data. The median sale price above reflects whole-property transactions, not land-only value. An independent appraisal is recommended.</div>
+    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">These are <strong>nearby whole-property sales</strong>, not a valuation of the subject and not land-only value. The comparables' lot size, building size, and condition are not reported in public assessor data, so they are <strong>not size- or condition-matched</strong> to the subject — read them as a market-level price signal only. A lot-normalized land value (per land sq ft) cannot be computed for this market from public data. An independent appraisal is recommended for any transaction decision.</div>
     {% endif %}
   </div>
   {% endif %}

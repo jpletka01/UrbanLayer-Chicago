@@ -181,11 +181,35 @@ def test_decision_box_full():
     assert db["lot"] == "3,350 sq ft"
     assert db["zone"] == "RM-5"
     assert db["buildable"] == "6,700 sq ft"
-    # value falls back to median comp sale when no land range
-    assert "Median Comp Sale" == db["value_label"]
+    # n>=3 nearby sales → labeled as observed market activity, NOT a valuation
+    assert db["value_label"] == "Nearby Sales (median)"
+    assert "n=5" in db["value"]
     # deal-shaping constraint (regulatory) beats the market caveat
     assert "Landmark" in db["key_constraint"]
     assert db["timeline"].startswith("Moderate")
+
+
+def test_decision_box_thin_comps_no_median_label():
+    # n<3 → range + sale count, never the word "median".
+    r = _report(property=PropertySummary(pin="1", land_sqft=3000))
+    r.comparables = _comps_with_land(0)
+    r.comparables.sales_volume = 2
+    r.comp_valuation = _compute_comp_valuation(r)
+    db = _build_decision_box(r)
+    assert db["value_label"] == "Nearby Sales"
+    assert "median" not in db["value"].lower()
+    assert "2 sale" in db["value"]
+
+
+def test_decision_box_exempt_shows_status_not_value():
+    # Tax-exempt/institutional parcel must not be given a comp-derived value.
+    r = _report(property=PropertySummary(pin="1", bldg_class="EX", tax_exempt=True))
+    r.comparables = _comps_with_land(0)
+    r.comp_valuation = _compute_comp_valuation(r)
+    db = _build_decision_box(r)
+    assert db["value_label"] == "Tax Status"
+    assert "Exempt" in db["value"]
+    assert "$" not in db["value"]
 
 
 def test_decision_box_honest_na():
@@ -195,7 +219,8 @@ def test_decision_box_honest_na():
     assert db["zone"] == "n/a"
     assert db["buildable"] == "n/a"
     assert db["value"] == "n/a"
-    assert db["key_constraint"] == "None identified"
+    # absence reads as "rule set found nothing", not a guarantee
+    assert db["key_constraint"] == "No major constraints flagged"
     assert db["timeline"] == "n/a"
 
 

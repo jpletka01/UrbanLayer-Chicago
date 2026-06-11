@@ -99,6 +99,30 @@ Status values: `Open` · `In progress` · `Fixed` · `Needs real-data` · `Won't
 | 35 | D8 | Site Assessment badges mix scales | 1 | S | Open |
 | 36 | V6-2 | Year-built / nonconformity absent (CCAO-blocked) | 3 | L | Needs real-data |
 
+### Phase 3 credibility pass — 2026-06-11
+
+Post-Phase-3 decision-quality audit → targeted "don't imply certainty beyond the data" fixes.
+Verified on regenerated real PDFs for both parcels; 60 report tests pass (+5 in `test_report_phase3_fixes.py`).
+
+- **Valuation:** decision-box value field no longer implies a subject valuation. Tax-exempt/institutional
+  parcels → "Tax Status: Exempt (institutional) — verify availability" (not a residential comp number).
+  Otherwise "Nearby Sales (median) · n=N" at n≥3, or "Nearby Sales: $lo–$hi · N sales" at n<3 (no "median").
+  Section heading is "Valuation Indicators" only when a real land-value range exists, else "Comparable
+  Market Activity." n<3 prints "Too few sales for a reliable central estimate — treat as directional only."
+  Disclosure now states the comps are nearby whole-property sales **not size-/condition-matched** to the
+  subject (their lot/bldg size are unreported), not just that land area is missing.
+- **Unit yield:** "As-of-right unit yield" → "Indicative unit capacity (screening estimate) … total,
+  assuming redevelopment … **not a zoning determination** — limited by minimum lot area, rear-yard open
+  space, FAR, height, parking, unit mix." Math unchanged.
+- **Constraint language:** decision-box default "None identified" → "No major constraints flagged."
+- **General:** "Max Buildable (as-of-right)" → "Max Buildable (FAR-based, gross)"; FAR-util "X sq ft unused"
+  → "X sq ft below the FAR cap, typically realized through addition or redevelopment."
+
+Intentionally unchanged: exec Site-Assessment traffic-light badges (CLEAR/CAUTION/RISK are backed by actual
+data queries and are a recognized summary convention); the comp section still renders for exempt parcels
+(market context with the stronger disclosure) rather than being suppressed. **Files:** `backend/main.py`
+(`_build_decision_box`), `backend/templates/zoning_report.html`, `tests/test_report_phase3_fixes.py`.
+
 ### Phase 3 (decision quality) SHIPPED — 2026-06-10
 
 Miss#1, V5-1b, P2, P1, P8, Exec, P5, V5-1c all **Fixed**. Verified on real PDFs for both
