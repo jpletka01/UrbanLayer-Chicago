@@ -67,7 +67,36 @@ supplied. The dominant production path — a user **typing an address** — reso
 audit (below) shows this picks the **wrong parcel ~77% of the time**. This is now tracked as **R7**, the
 top report-correctness issue.
 
-### R7 — address-only resolution selects the WRONG parcel ~77% of the time while GIS is down (CRITICAL, OPEN — investigation 2026-06-11)
+### R7 — address-only resolution selects the WRONG parcel ~77% of the time while GIS is down (CRITICAL — **IMPLEMENTED 2026-06-11, commit `a9b7e6b`, pushed, DEPLOY-PENDING**)
+
+> **STATUS UPDATE (2026-06-11): FIX IMPLEMENTED & PUSHED. Acceptance gate PASSED. Deploy-pending (awaiting Jack's confirmation).**
+> Implements the frozen `parcel-resolution-truth-model.md` per `r7-implementation-plan.md`. `_resolve_location` is now a
+> strict-precedence resolver returning `ResolvedLocation(lat, lon, address, pin, confidence)`: explicit lat/lon → supplied PIN (R6)
+> → **address→authoritative PIN via Cook County Address Points `78yw-iddh`** (the new step) → degraded geocode+nearest-centroid
+> (flagged `"approximate"`, INV-5) → 422. The PIN is threaded through `_fetch_scorecard_data`/`_fetch_report_data` →
+> `property_domain(*, pin=)` → new `lookup_parcel_by_pin()` (pure Socrata), so identity is never re-derived from coordinates when a
+> PIN exists. New `retrieval/property/address_points.py::address_to_pin()`. Kill-switch `settings.address_point_resolution_enabled`.
+>
+> **Acceptance audit (`eval/r7_audit.py`, real portal): 98–100% exact-PIN** on held-out user-formatted Chicago addresses (target ≥90%),
+> all authoritative tier. Control parcel `14331030110000` (= **642 W Belden Ave**) resolves exactly. 565 unit tests pass; 2 live
+> integration checks pass; tsc clean.
+>
+> **Critical findings to remember:**
+> - **`78yw-iddh.st_predir` is the spelled-out word (`WEST`), not `W`.** Querying `='W'` matched nothing → would have *silently
+>   no-opped the entire feature* in production. Caught only by a **live integration probe**, not unit mocks. Now matched as
+>   `upper(st_predir) in ('W','WEST')`. Lesson: probe the real dataset schema, never assume field encodings.
+> - **EX subject `14283190070000` has NO address point in `78yw-iddh`** (exempt/institutional coverage gap). Its address path
+>   correctly degrades to `approximate` + the INV-5 cover disclosure. So the EX↔address QA can only be verified via the **control**
+>   (642 W Belden Ave); the EX subject must be QA'd by PIN or map-click, not by address.
+> - **Numbered streets** (e.g. `87TH ST` vs `87TH PL` at the same number+direction) yield ≥2 distinct PINs because `address_to_pin`
+>   does not filter on the street *suffix type* — so they conservatively fall through to `approximate` (spec-correct, never wrong).
+>   A future enhancement could thread the parsed suffix into the query; deliberately **not** done (frozen-plan scope).
+> - **Test-infra note:** `property_domain` unit tests must stub `estimate_tax` — it opens an **8.8 GB PTAXSIM SQLite DB** and hangs
+>   the test otherwise (`backend/tests/test_property_domain_pin.py` patches it).
+>
+> **Original investigation (n=111 audit) preserved below for context.**
+
+
 
 **This is the single largest report-correctness issue found to date — it outranks R5/R6 and all remaining
 Phase 4 work.** It affects the **live, paid** product: the $25 report and the scorecard render the wrong

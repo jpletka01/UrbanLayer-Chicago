@@ -1,7 +1,34 @@
 # R7 — Implementation Plan (address→PIN resolution)
 
-**Status:** IMPLEMENTATION PLAN (2026-06-11). Implements, without redesigning,
-`parcel-resolution-truth-model.md` (DESIGN OF RECORD). Scope is **R7 only**.
+**Status:** ✅ **EXECUTED 2026-06-11 — commit `a9b7e6b`, pushed, deploy-pending.**
+Acceptance audit PASSED (98–100% exact-PIN, target ≥90%). Implements, without
+redesigning, `parcel-resolution-truth-model.md` (DESIGN OF RECORD). Scope was **R7 only**.
+
+### Deltas discovered during execution (vs. the plan as written)
+- **`78yw-iddh.st_predir` is the spelled-out word (`WEST`), not the letter `W`.** The plan's
+  `upper(st_predir)='W'` would have matched nothing and silently no-opped the feature.
+  Fixed to `upper(st_predir) in ('W','WEST')` (letter+word). Caught by the **live
+  integration probe**, not unit mocks — the single most important finding of the pass.
+- **Acceptance harness built** at `eval/r7_audit.py` (samples real Chicago addresses from
+  `78yw-iddh` by PIN-prefix buckets — deep `$offset` pagination times out — reconstructs
+  user-format strings, runs the full resolver, compares PIN). Run:
+  `PYTHONPATH=. python -m eval.r7_audit --n 140`.
+- **QA addresses (were unknown in the plan):** control `14331030110000` = **642 W Belden Ave**
+  (resolves exactly). EX subject `14283190070000` has **no address point** → resolves
+  `approximate` by design (verify EX by PIN/map-click, not address).
+- **Numbered-street multi-match:** `address_to_pin` doesn't filter on the street *suffix
+  type*, so `87TH ST`/`87TH PL` at the same number collide → conservative `approximate`
+  fall-through (spec-correct). Possible future enhancement; out of frozen scope.
+- **PTAXSIM hang in tests:** `property_domain` opens an 8.8 GB PTAXSIM DB via `estimate_tax`;
+  the PIN-path unit test stubs it (`test_property_domain_pin.py`).
+- **Test-harness fix:** `test_address_points_integration.py` resets `socrata._shared_client`
+  per test (each pytest-asyncio test gets a fresh event loop → "Event loop is closed").
+
+**Remaining before this is fully done: deploy** (awaiting confirmation), then flip R7 to
+SHIPPED in `report-status.md` and archive per `claude-context/README.md`.
+
+---
+
 
 **Frozen inputs (do not revisit):** PIN is the primary key (§1). Strict-precedence
 resolver, no voting (§5). Resolution order: `pin` → deliberate `lat/lon` PIP →
