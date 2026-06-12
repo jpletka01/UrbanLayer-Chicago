@@ -86,12 +86,14 @@
       "title": "Development Feasibility Report",
       "description": "Professional PDF with AI-powered analysis for this property.",
       "features": [
-        "AI zoning bulk standards",
-        "Development potential",
-        "Comparable sales chart",
-        "Address permits & violations",
-        "Recommended next steps"
+        "Buildable envelope & setbacks for this lot",
+        "Tax projection & incentive stacking",
+        "Opportunities & constraints summary",
+        "Comparable sales chart & analysis",
+        "Approval pathway & recommended next steps"
       ],
+      "viewSample": "View a sample report",
+      "boundary": "The free Scorecard shows the public zoning table — the report computes this parcel's buildable envelope, tax projection, and approval pathway.",
       "buyReport": "Download Report — $25",
       "download": "Download Report",
       "generating": "Generating...",

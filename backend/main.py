@@ -4609,6 +4609,7 @@ _VALID_EVENT_NAMES = {
     "scorecard_bridge_click",
     "hero_address_submit",
     "hero_librarian_click",
+    "sample_report_click",
 }
 
 

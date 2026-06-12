@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createReportCheckoutSession, createCheckoutSession } from "../lib/api";
 import type { SelectedParcel } from "../lib/types";
+import { track } from "../lib/tracking";
 
 interface ReportPurchasePromptProps {
   parcel: SelectedParcel;
@@ -11,6 +13,7 @@ export default function ReportPurchasePrompt({
   parcel,
   onClose,
 }: ReportPurchasePromptProps) {
+  const { t } = useTranslation("pages");
   const [loading, setLoading] = useState<"report" | "pro" | null>(null);
 
   async function handleBuyReport() {
@@ -62,6 +65,16 @@ export default function ReportPurchasePrompt({
         >
           {loading === "report" ? "Redirecting to checkout..." : "Buy Report — $25"}
         </button>
+
+        <a
+          href="/sample-report.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track("sample_report_click", { source: "purchase_modal" })}
+          className="block mt-3 text-center text-xs text-text-secondary hover:text-accent transition-colors"
+        >
+          {t("scorecard.reportCTA.viewSample")} →
+        </a>
 
         <div className="mt-4 text-center">
           <p className="text-[11px] text-text-muted mb-1.5">

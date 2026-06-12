@@ -90,12 +90,14 @@
       "title": "Informe de Viabilidad de Desarrollo",
       "description": "PDF profesional con análisis impulsado por IA para esta propiedad.",
       "features": [
-        "Estándares de volumen de zonificación con IA",
-        "Potencial de desarrollo",
-        "Gráfico de ventas comparables",
-        "Permisos e infracciones de la dirección",
-        "Próximos pasos recomendados"
+        "Envolvente edificable y retiros para este lote",
+        "Proyección de impuestos y combinación de incentivos",
+        "Resumen de oportunidades y restricciones",
+        "Gráfico y análisis de ventas comparables",
+        "Ruta de aprobación y próximos pasos recomendados"
       ],
+      "viewSample": "Ver un informe de muestra",
+      "boundary": "La ficha gratuita muestra la tabla de zonificación pública; el informe calcula la envolvente edificable, la proyección de impuestos y la ruta de aprobación de esta parcela.",
       "buyReport": "Descargar informe — $25",
       "download": "Descargar informe",
       "generating": "Generando...",
