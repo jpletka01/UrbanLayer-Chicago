@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "motion/react";
 import type { ContextObject, MapData, SidebarView, SourceTag } from "../lib/types";
-import { deriveFilterMode } from "../lib/mapColors";
+import { deriveFilterMode, hasSpatialMapContent } from "../lib/mapColors";
 import { MapView } from "./sidebar/MapView";
 import { DataView } from "./sidebar/DataView";
 import { SourcesView } from "./sidebar/SourcesView";
@@ -37,6 +37,7 @@ interface Props {
   mapData?: MapData | null;
   mapLoading?: boolean;
   mapSources?: SourceTag[];
+  mapIntent?: string | null;
   showDataBadge?: boolean;
   showSourcesBadge?: boolean;
   showMapBadge?: boolean;
@@ -58,6 +59,7 @@ export function MobileSidebarSheet({
   mapData,
   mapLoading = false,
   mapSources = [],
+  mapIntent = null,
   showDataBadge = false,
   showSourcesBadge = false,
   showMapBadge = false,
@@ -75,11 +77,10 @@ export function MobileSidebarSheet({
   const subtitle = context?.community_area ? `CA ${context.community_area}` : undefined;
   const hasCodeChunks = (context?.code_chunks?.length ?? 0) > 0;
 
-  const hasMapData = !!(mapData && (
-    mapData.crimes.length > 0 || mapData.requests_311.length > 0 || mapData.building_permits.length > 0
-  ));
-  const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
-  const hasMapContent = hasMapData || hasZoning || mapLoading;
+  // Same spatial-content rule as the desktop sidebar: no renderable layers →
+  // no Map tab (map-relevance review, 2026-06-12).
+  const hasMapContent = mapLoading ||
+    hasSpatialMapContent(mapData, !!context?.neighborhood?.transit, context?.property?.parcel_geometry);
 
   useEffect(() => {
     if (isOpen) setSnapVh(SNAP_DEFAULT);
@@ -215,6 +216,7 @@ export function MobileSidebarSheet({
                   mapData={mapData ?? null}
                   loading={mapLoading}
                   sources={mapSources}
+                  intent={mapIntent}
                   parcelGeometry={context?.property?.parcel_geometry}
                   hasTransitContext={!!context?.neighborhood?.transit}
                   isMobile

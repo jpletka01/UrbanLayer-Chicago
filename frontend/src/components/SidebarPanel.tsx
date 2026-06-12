@@ -42,6 +42,7 @@ interface Props {
   mapData?: MapData | null;
   mapLoading?: boolean;
   mapSources?: SourceTag[];
+  mapIntent?: string | null;
   showDataBadge?: boolean;
   showSourcesBadge?: boolean;
 }
@@ -61,6 +62,7 @@ export function SidebarPanel({
   mapData,
   mapLoading = false,
   mapSources = [],
+  mapIntent = null,
   showDataBadge = false,
   showSourcesBadge = false,
 }: Props) {
@@ -230,6 +232,7 @@ export function SidebarPanel({
           mapData={mapData ?? null}
           mapLoading={mapLoading}
           mapSources={mapSources}
+          mapIntent={mapIntent}
           context={context}
           loading={loading}
         />

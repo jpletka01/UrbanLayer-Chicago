@@ -6,7 +6,7 @@ import { PathStyleExtension } from "@deck.gl/extensions";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
 import { fetchTransitStations } from "../../lib/api";
 import {
-  CRIME_TYPE_COLORS, crimeColor, deriveFilterMode, isArrested, CRIME_TYPE_ORDER,
+  CRIME_TYPE_COLORS, crimeColor, deriveFilterMode, pointsAreSubject, isArrested, CRIME_TYPE_ORDER,
   PERMIT_TYPE_ORDER, normalizePermitType, permitColor,
   srTypeMapColor, srTypeMapColorCSS, permitColorCSS, capLabel,
   zoneColor, zoneLineColor, zonePrefix,
@@ -129,12 +129,13 @@ interface Props {
   mapData: MapData | null;
   loading: boolean;
   sources: SourceTag[];
+  intent?: string | null;
   parcelGeometry?: Record<string, unknown> | null;
   hasTransitContext?: boolean;
   isMobile?: boolean;
 }
 
-export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitContext, isMobile = false }: Props) {
+export function MapView({ mapData, loading, sources, intent, parcelGeometry, hasTransitContext, isMobile = false }: Props) {
   const { t } = useTranslation("map");
   const rawFilterMode = deriveFilterMode(sources);
 
@@ -169,7 +170,9 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [showZoning, setShowZoning] = useState(true);
   const [showPoints, setShowPoints] = useState(false);
-  const [showTransit, setShowTransit] = useState(true);
+  // Off by default: transit is question-relevant context, not wallpaper —
+  // the hasTransitContext ratchet (below) turns it on when the answer used it.
+  const [showTransit, setShowTransit] = useState(false);
   const [showIncentives, setShowIncentives] = useState(true);
   const [showOverlays, setShowOverlays] = useState(true);
   const [transitStations, setTransitStations] = useState<TransitStation[]>([]);
@@ -216,12 +219,14 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
     }
   }, [hasTransitContext]);
 
-  // Points are off by default; an explicitly crime/311/permit-scoped query is the intent gate
+  // Points are off by default. The gate is two-factor: the plan is scoped to a
+  // single point source AND the question's intent is about that data (a legal
+  // question that retrieves permits as supporting context stays quiet).
   useEffect(() => {
-    if (rawFilterMode !== "overview") {
+    if (rawFilterMode !== "overview" && pointsAreSubject(intent)) {
       setShowPoints(true);
     }
-  }, [rawFilterMode]);
+  }, [rawFilterMode, intent]);
 
   useEffect(() => {
     if (showTransit && transitStations.length === 0) {

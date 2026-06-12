@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContextObject, MapData, SourceTag } from "../../lib/types";
-import { deriveFilterMode } from "../../lib/mapColors";
+import { deriveFilterMode, hasSpatialMapContent } from "../../lib/mapColors";
 import { DataView } from "./DataView";
 import { MapView } from "./MapView";
 
@@ -12,6 +12,7 @@ export interface DataMapLayoutProps {
   mapData: MapData | null;
   mapLoading: boolean;
   mapSources: SourceTag[];
+  mapIntent?: string | null;
   context: ContextObject | null;
   loading: boolean;
 }
@@ -20,6 +21,7 @@ export function DataMapLayout({
   mapData,
   mapLoading,
   mapSources,
+  mapIntent,
   context,
   loading,
 }: DataMapLayoutProps) {
@@ -129,15 +131,22 @@ export function DataMapLayout({
     };
   }, [dividerDragging]);
 
+  // No spatial content (beyond the bare address pin) → no map at all; the
+  // data panel takes the full sidebar (map-relevance review, 2026-06-12).
+  const showMap = mapLoading ||
+    hasSpatialMapContent(mapData, !!context?.neighborhood?.transit, context?.property?.parcel_geometry);
+
   return (
     <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
       {/* Map area — fills remaining space */}
-      <div className="flex-1 min-h-[100px]">
-        <MapView mapData={mapData} loading={mapLoading} sources={mapSources} parcelGeometry={context?.property?.parcel_geometry} hasTransitContext={!!context?.neighborhood?.transit} />
-      </div>
+      {showMap && (
+        <div className="flex-1 min-h-[100px]">
+          <MapView mapData={mapData} loading={mapLoading} sources={mapSources} intent={mapIntent} parcelGeometry={context?.property?.parcel_geometry} hasTransitContext={!!context?.neighborhood?.transit} />
+        </div>
+      )}
 
       {/* Drag divider */}
-      {hasData && (
+      {showMap && hasData && (
         <div
           className="shrink-0 h-1.5 cursor-row-resize group/divider relative
                      hover:bg-accent/20 active:bg-accent/30 transition-colors duration-100"
@@ -153,11 +162,11 @@ export function DataMapLayout({
       {/* Data panel */}
       {hasData && (
         <div
-          className="shrink-0 overflow-hidden"
-          style={{
+          className={showMap ? "shrink-0 overflow-hidden" : "flex-1 overflow-hidden"}
+          style={showMap ? {
             height: effectiveDataHeight,
             transition: dividerDragging ? "none" : "height 0.2s ease",
-          }}
+          } : undefined}
         >
           {/* Collapse header */}
           <button

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from typing import Any, AsyncIterator, NamedTuple
 
@@ -770,6 +771,26 @@ async def _fetch_overlay_geojson(
     return await overlay_geojson_features(lat, lon, layer_ids)
 
 
+# Land-use vocabulary that makes the zoning/overlay polygon layers a relevant
+# visualization for a chat turn. requires_disclaimer alone is NOT a signal —
+# every legal question carries it, and a violations question shouldn't paint
+# the whole community area's zoning quilt (map-relevance review, 2026-06-12).
+_LANDUSE_QUERY_RE = re.compile(
+    r"zon|land.?use|setback|\bfar\b|floor.?area|height|bulk|density|\badu\b"
+    r"|variance|overlay|landmark|historic|lakefront|planned.?development",
+    re.IGNORECASE,
+)
+
+
+def _landuse_map_relevant(plan: RetrievalPlan) -> bool:
+    """True when the turn is actually about land use, so the zoning/overlay
+    polygon layers illustrate the answer instead of diluting it."""
+    if plan.workflow_hint == "site_due_diligence":
+        return True
+    text = f"{plan.search_query or ''} {plan.location.raw or ''}"
+    return bool(_LANDUSE_QUERY_RE.search(text))
+
+
 async def _fetch_map_rows(
     plan: RetrievalPlan,
     *,
@@ -796,14 +817,16 @@ async def _fetch_map_rows(
         tasks["building_permits"] = asyncio.create_task(_limited(
             permits_for_map(ca, days=plan.time_range_days)
         ))
-    if plan.requires_disclaimer and not skip_polygons:
+    landuse_relevant = _landuse_map_relevant(plan)
+    if plan.requires_disclaimer and landuse_relevant and not skip_polygons:
         tasks["zoning"] = asyncio.create_task(_limited(
             zoning_for_map(ca)
         ))
 
     loc = plan.location
     if not skip_polygons:
-        if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+        if ("regulatory_domain" in plan.sources and landuse_relevant
+                and loc.resolved_lat and loc.resolved_lon):
             tasks["overlay_geojson"] = asyncio.create_task(_limited(
                 _fetch_overlay_geojson(loc.resolved_lat, loc.resolved_lon)
             ))

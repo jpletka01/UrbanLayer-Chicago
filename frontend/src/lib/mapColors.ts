@@ -194,6 +194,36 @@ export function deriveFilterMode(sources: SourceTag[]): FilterMode {
   return "overview";
 }
 
+// Intents whose *subject* is the point data itself — the only case where the
+// dot cloud auto-enables. A legal/overview question that happens to retrieve
+// permits as supporting context keeps the dots behind the Points toggle.
+const POINT_SUBJECT_INTENTS = new Set(["incident_lookup", "trend_analysis", "event_query"]);
+
+export function pointsAreSubject(intent: string | null | undefined): boolean {
+  return !!intent && POINT_SUBJECT_INTENTS.has(intent);
+}
+
+/** True when the map has anything renderable beyond the bare address pin —
+ *  the sidebar hides the map entirely otherwise. */
+export function hasSpatialMapContent(
+  mapData: {
+    crimes?: unknown[]; requests_311?: unknown[]; building_permits?: unknown[];
+    zoning?: Record<string, unknown> | null;
+    overlay_districts?: Record<string, unknown> | null;
+    incentive_zones?: Record<string, unknown> | null;
+  } | null | undefined,
+  transitContext: boolean,
+  parcelGeometry?: unknown,
+): boolean {
+  const feats = (g?: Record<string, unknown> | null) =>
+    !!((g?.features as unknown[] | undefined)?.length);
+  return !!(
+    (mapData?.crimes?.length || mapData?.requests_311?.length || mapData?.building_permits?.length) ||
+    feats(mapData?.zoning) || feats(mapData?.overlay_districts) || feats(mapData?.incentive_zones) ||
+    transitContext || parcelGeometry
+  );
+}
+
 export const CRIME_TYPE_ORDER = [
   "THEFT", "BATTERY", "CRIMINAL DAMAGE", "ASSAULT", "MOTOR VEHICLE THEFT",
   "OTHER OFFENSE", "DECEPTIVE PRACTICE", "NARCOTICS", "BURGLARY", "ROBBERY",

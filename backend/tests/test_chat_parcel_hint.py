@@ -79,3 +79,33 @@ async def test_pin_mismatch_keeps_router_location():
         plan = await _apply_parcel_hint(_plan("address"), PIN)
     assert plan.location.pin is None
     assert (plan.location.resolved_lat, plan.location.resolved_lon) == GEOCODED_COORDS
+
+
+# --------------------------------------------------------------------------- #
+# _landuse_map_relevant — zoning/overlay map layers only for land-use turns
+# --------------------------------------------------------------------------- #
+
+def _lu_plan(search_query=None, workflow="general", raw=""):
+    return RetrievalPlan(
+        sources=["vector_search"],
+        location=Location(raw=raw, type="address"),
+        intent="legal_question",
+        requires_disclaimer=True,
+        search_query=search_query,
+        workflow_hint=workflow,
+    )
+
+
+async def test_landuse_relevant_for_zoning_query():
+    plan = _lu_plan(search_query="allowed uses setbacks FAR C1-2 zoning")
+    assert main_mod._landuse_map_relevant(plan) is True
+
+
+async def test_landuse_relevant_for_due_diligence_workflow():
+    plan = _lu_plan(search_query="building permits", workflow="site_due_diligence")
+    assert main_mod._landuse_map_relevant(plan) is True
+
+
+async def test_violations_question_not_landuse_relevant():
+    plan = _lu_plan(search_query="building code violations remediation steps")
+    assert main_mod._landuse_map_relevant(plan) is False

@@ -97,6 +97,7 @@ export function App() {
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [mapLoading, setMapLoading] = useState(false);
   const [mapSources, setMapSources] = useState<SourceTag[]>([]);
+  const [mapIntent, setMapIntent] = useState<string | null>(null);
   const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [dataTabViewed, setDataTabViewed] = useState(true);
@@ -159,6 +160,7 @@ export function App() {
       setMapData(null);
       setMapLoading(false);
       setMapSources([]);
+      setMapIntent(null);
       setSelectedMessageIndex(null);
       setDataTabViewed(true);
       setSourcesTabViewed(true);
@@ -232,6 +234,7 @@ export function App() {
         ? relevantSources
         : (["crime_api", "311_api", "permits_api"] as SourceTag[]),
     );
+    setMapIntent(p?.intent ?? null);
     const hasSpatialData = data.crimes.length > 0 || data.requests_311.length > 0 ||
       data.building_permits.length > 0 ||
       !!(data.zoning && ((data.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
@@ -412,6 +415,7 @@ export function App() {
     setMapData(null);
     setMapLoading(false);
     setMapSources([]);
+    setMapIntent(null);
     setSelectedMessageIndex(null);
     setDataTabViewed(true);
     setSourcesTabViewed(true);
@@ -510,6 +514,7 @@ export function App() {
             ? relevantSources
             : (["crime_api", "311_api", "permits_api"] as SourceTag[]),
         );
+        setMapIntent(assistantMsg.plan.intent ?? null);
       }
 
       // Load map data with staleness check
@@ -973,6 +978,7 @@ export function App() {
                 mapData={mapData}
                 mapLoading={mapLoading}
                 mapSources={mapSources}
+                mapIntent={mapIntent}
                 showDataBadge={!dataTabViewed}
                 showSourcesBadge={!sourcesTabViewed}
               />
@@ -992,6 +998,7 @@ export function App() {
               mapData={mapData}
               mapLoading={mapLoading}
               mapSources={mapSources}
+              mapIntent={mapIntent}
               showDataBadge={!dataTabViewed}
               showSourcesBadge={!sourcesTabViewed}
               showMapBadge={!mapTabViewed}
