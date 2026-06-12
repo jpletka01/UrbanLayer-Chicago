@@ -194,13 +194,21 @@ Nothing currently built needs to be deleted from the codebase. Everything that e
 
 ## 4. Product Narrative
 
+> **SHIPPED (2026-06-12, coherence-audit step 3).** The homepage now matches this section: hero is a
+> single address-autocomplete input ("Site feasibility for any Chicago address. In seconds.") that
+> opens `/scorecard?address=` — no account, no payment, no conversation required. The code-research
+> chat (the "librarian") is a secondary entrance behind a quiet link that swaps the hero input.
+> Persona cards route by intent (Developer/Attorney → Scorecard, Architect → librarian chat).
+> The auth wall is off the front door: anonymous chat works at 3/day (IP), with sign-in asked at
+> save/share/purchase/rate-limit. See `product-coherence-audit.md` §10 for details.
+
 ### What the Homepage Should Communicate (60 seconds)
 
 **Headline:** "Site feasibility for any Chicago address. In seconds."
 
 **Subheadline:** "Zoning, tax projections, incentives, regulatory overlays, comparable sales, and municipal code analysis -- all from one search."
 
-**Hero action:** A single address input field. Type an address, hit enter, see the Scorecard.
+**Hero action:** A single address input field. Type an address, hit enter, see the Scorecard. **(Shipped.)**
 
 **Social proof section (when available):** "Used by X developers and architects for site due diligence."
 
@@ -280,6 +288,11 @@ All build items shipped. RAG at 100% A/B. Incentives at ~14 programs (Class 6b/6
 ### Phase 2: Customer Validation (4-6 weeks)
 
 **Goal:** Determine who the actual first customers are and whether they'll pay.
+
+**Sequencing decision (2026-06-12):** the homepage/auth fix (coherence-audit step 3) lands BEFORE
+these interviews. The audit's claim was that the old entry (auth-walled chat) would make
+interviewees validate the chatbot rather than the feasibility product; with the address-first
+homepage shipped, interviewees now enter through the product being validated.
 
 **Build:**
 - Nothing new at the start. Spend the first 2 weeks on customer conversations, not engineering.
