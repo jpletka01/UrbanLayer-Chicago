@@ -210,7 +210,7 @@ export function buildReportData(
   }
 
   return {
-    title: conversationTitle || `${address || communityArea || "Chicago"} Report`,
+    title: conversationTitle || `${address || communityArea || "Chicago"} Transcript`,
     address,
     communityArea,
     generatedAt: new Date().toISOString(),

@@ -407,9 +407,9 @@
     }
   },
   "report": {
-    "siteReport": "Informe de sitio UrbanLayer",
+    "siteReport": "Transcripción de conversación UrbanLayer",
     "generated": "Generado el {{date}}",
-    "reportPreview": "Vista previa del informe",
+    "reportPreview": "Vista previa de la transcripción",
     "print": "Imprimir",
     "downloadPdf": "Descargar PDF",
     "generatingPdf": "Generando PDF...",
