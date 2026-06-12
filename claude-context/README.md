@@ -22,6 +22,7 @@ Load only what you need for the current task. Don't read everything.
 
 ## Strategy (load only for product planning / business discussions)
 - `strategy/north-star.md` — **North Star Product Plan**: manifesto, wedge (per-unit reports), feature audit, development phases, customer validation plan. This is the governing strategy document.
+- `strategy/product-coherence-audit.md` — **Product Coherence Audit (2026-06-11, post-SelectedParcel)**: founder-level first-principles review. Verdict: one product ("parcel dossier machine" — find/open/interrogate/buy), front door wired to the wrong room (homepage → auth-walled chat; Scorecard orphaned; "report" vocabulary collision; map defaults inverted). Funnel map, per-surface coherence scorecard, future-state conceptual architecture. Analysis only — NO implementation done or approved. Read alongside north-star.md for any product/UX/funnel work.
 - `strategy/competitive-analysis.md` — Chicago Cityscape comparison, data gaps, structural weaknesses
 - `strategy/product-roadmap.md` — Revenue features, pricing model, target personas, open questions
 - `strategy/design-guidelines.md` — Hybrid dashboard+chat model, UX principles, when to use chat vs tools
