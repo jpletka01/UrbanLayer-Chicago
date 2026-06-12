@@ -59,7 +59,8 @@ created). Phase 2 sequencing was decided: this fix lands BEFORE the 20 customer 
   `csrf_token` cookie to anonymous visitors. Without it, CSRFMiddleware 403s anon `POST /chat` —
   the cookie was previously only issued at OAuth callback/refresh, which anon users never hit.
 - New events in `_VALID_EVENT_NAMES`: `hero_address_submit` (source: hero/chip/persona),
-  `hero_librarian_click` (source: hero/persona). Not yet charted on the admin dashboard.
+  `hero_librarian_click` (source: hero/persona). Charted on the admin dashboard since 2026-06-12
+  ("Hero Entries" card, by source).
 - Tests: `test_conversation_endpoints.py` (401s on all endpoints, cross-user 404 scoping,
   dev-mode round-trip + NULL-fallback preservation, CSRF bootstrap incl. anon /chat reaching the
   rate limiter instead of 403) and `test_rate_limit.py` (anon 429 detail contract, per-IP windows,

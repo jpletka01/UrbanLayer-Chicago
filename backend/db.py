@@ -1250,16 +1250,21 @@ async def get_engagement_stats(period: str) -> dict:
 
     ev_where = f"WHERE event_name = ? {ts_filter}"
 
-    # Investigate clicks by card
-    cur = await db.execute(
-        f"""
-        SELECT json_extract(event_data, '$.card_name') as card_name, COUNT(*) as cnt
-        FROM events {ev_where}
-        GROUP BY card_name ORDER BY cnt DESC
-        """,
-        _ev_params("investigate_click"),
-    )
-    investigate_clicks = {r["card_name"]: r["cnt"] for r in await cur.fetchall()}
+    async def _counts_by(event_name: str, json_path: str) -> dict:
+        cur = await db.execute(
+            f"""
+            SELECT json_extract(event_data, ?) as k, COUNT(*) as cnt
+            FROM events {ev_where}
+            GROUP BY k ORDER BY cnt DESC
+            """,
+            (json_path, *_ev_params(event_name)),
+        )
+        return {r["k"]: r["cnt"] for r in await cur.fetchall()}
+
+    investigate_clicks = await _counts_by("investigate_click", "$.card_name")
+    hero_address_submits = await _counts_by("hero_address_submit", "$.source")
+    hero_librarian_clicks = await _counts_by("hero_librarian_click", "$.source")
+    scorecard_bridge_clicks = await _counts_by("scorecard_bridge_click", "$.source")
 
     # Simple counts
     counts = {}
@@ -1386,6 +1391,9 @@ async def get_engagement_stats(period: str) -> dict:
 
     return {
         "investigate_clicks": investigate_clicks,
+        "hero_address_submits": hero_address_submits,
+        "hero_librarian_clicks": hero_librarian_clicks,
+        "scorecard_bridge_clicks": scorecard_bridge_clicks,
         "report_cta_clicks": counts["report_cta_click"],
         "report_purchases_count": report_purchases_count,
         "chat_messages": counts["chat_message_sent"],

@@ -423,8 +423,8 @@ Session 1 produced a structured product definition that session 2 refined but di
   no longer counterfeits — the professional-PDF sentence now points at the $25 report itself (en + es).
 - **Chat→Scorecard bridge built.** `ScorecardBridgeCard` pinned at top of the Data sidebar when the
   active message resolves a parcel (`/scorecard?pin=`, `?address=` fallback); ReportTeaser fragments
-  clickable in the chat sidebar; new `scorecard_bridge_click` analytics event (in backend allowlist;
-  not yet charted on the admin dashboard).
+  clickable in the chat sidebar; new `scorecard_bridge_click` analytics event (charted on the
+  admin dashboard since 2026-06-12).
 
 ### Done (Step 2, shipped 2026-06-12 — merge `b0921e9`, details in `archive/2026-06-12_map-defaults-and-pricing.md`)
 - **Map defaults fixed (§6).** Crime/311/permit dots OFF by default, transit stations ON. Points

@@ -464,6 +464,40 @@ export function AdminDashboard() {
                     )}
                   </section>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+                    <h2 className="text-sm font-semibold text-text-secondary mb-3">
+                      Hero Entries
+                    </h2>
+                    {Object.keys(engagement.hero_address_submits).length > 0
+                      || Object.keys(engagement.hero_librarian_clicks).length > 0 ? (
+                      <BarChart
+                        bars={[
+                          ...Object.entries(engagement.hero_address_submits).map(
+                            ([source, value]) => ({ label: `Address — ${source}`, value }),
+                          ),
+                          ...Object.entries(engagement.hero_librarian_clicks).map(
+                            ([source, value]) => ({ label: `Librarian — ${source}`, value }),
+                          ),
+                        ]}
+                      />
+                    ) : (
+                      <div className="text-text-muted text-sm text-center py-8">No data</div>
+                    )}
+                  </section>
+                  <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+                    <h2 className="text-sm font-semibold text-text-secondary mb-3">
+                      Scorecard Bridge Clicks
+                    </h2>
+                    {Object.keys(engagement.scorecard_bridge_clicks).length > 0 ? (
+                      <BarChart
+                        bars={Object.entries(engagement.scorecard_bridge_clicks).map(([label, value]) => ({ label, value }))}
+                      />
+                    ) : (
+                      <div className="text-text-muted text-sm text-center py-8">No data</div>
+                    )}
+                  </section>
+                </div>
               </>
             )}
 

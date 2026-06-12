@@ -49,8 +49,8 @@ the feasibility product instead of the chatbot.
   renders as a react-router `Link`, 11px, accent hover, trailing "→"; without it (ScorecardPage's
   `ComparablesCard`) it renders exactly as before.
 - New analytics event `scorecard_bridge_click` (`source: "bridge_card" | "teaser"`, plus
-  pin/address on the card), added to `_VALID_EVENT_NAMES` in `backend/main.py`. **Not yet charted
-  on the admin dashboard** — stored and queryable in the `events` table.
+  pin/address on the card), added to `_VALID_EVENT_NAMES` in `backend/main.py`. Charted on the
+  admin dashboard since 2026-06-12 ("Scorecard Bridge Clicks" card, by source).
 - New i18n keys: `sidebar.json` `bridge.viewScorecard`, `bridge.pin` (en + es).
 
 ## Key Decisions

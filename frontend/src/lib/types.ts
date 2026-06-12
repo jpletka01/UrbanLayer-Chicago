@@ -683,6 +683,9 @@ export interface BehaviorReturnRate {
 
 export interface EngagementMetrics {
   investigate_clicks: Record<string, number>;
+  hero_address_submits: Record<string, number>;
+  hero_librarian_clicks: Record<string, number>;
+  scorecard_bridge_clicks: Record<string, number>;
   report_cta_clicks: number;
   report_purchases_count: number;
   chat_messages: number;
