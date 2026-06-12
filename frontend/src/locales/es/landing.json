@@ -1,17 +1,25 @@
 {
-  "heroSubtitle": "Zonificación, incentivos, proyecciones de impuestos y análisis del código municipal para cualquier dirección de Chicago, en segundos.",
+  "heroSubtitle": "Estudio de viabilidad para cualquier dirección de Chicago. En segundos.",
+  "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo desde una sola búsqueda.",
   "stats": {
     "dataSources": "Fuentes de datos",
     "codeSections": "Secciones del código",
     "communityAreas": "Áreas comunitarias",
     "regulatoryLayers": "Capas regulatorias"
   },
-  "suggestions": [
-    "¿Puedo construir un edificio de 6 unidades en 4520 N Clark St?",
-    "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
-    "¿Es 2400 N Milwaukee Ave elegible para un incentivo fiscal Clase 6b?",
-    "Hábleme sobre la propiedad en 1425 N Wells St"
-  ],
+  "hero": {
+    "addressPlaceholder": "Ingresa una dirección de Chicago…",
+    "try": "Prueba:",
+    "addressExamples": ["4520 N Clark St", "2400 N Milwaukee Ave", "1425 N Wells St"],
+    "librarianLink": "¿Investigas el código, no una propiedad? Consulta al analista del código municipal →",
+    "backToAddress": "← ¿Buscas una propiedad? Ingresa una dirección",
+    "chatPlaceholder": "Pregunta sobre el código municipal…",
+    "librarianSuggestions": [
+      "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
+      "¿Qué usos están permitidos en un distrito C1-2?",
+      "¿Cuándo requiere una ampliación trasera una variación de zonificación?"
+    ]
+  },
   "intelligence": {
     "heading": "25 fuentes en una sola consulta.",
     "subheading": "Zonificación, código municipal, registros de la propiedad, incentivos, permisos y más, consultados simultáneamente.",
@@ -125,27 +133,6 @@
     "sampleLot": "3,125 pies²",
     "sampleZoneDesc": "Distrito comercial comunitario"
   },
-  "explorer": {
-    "heading": "Explorar un vecindario",
-    "subheading": "Selecciona un área comunitaria o ingresa una dirección para explorar datos municipales en tiempo real: patrones de delitos, solicitudes de servicio 311, permisos de construcción y tendencias mensuales, actualizados directamente desde el Portal de Datos de Chicago.",
-    "sampleData": "Mostrando datos de muestra",
-    "neighborhood": "Vecindario",
-    "address": "Dirección",
-    "or": "o",
-    "searchAreas": "Buscar áreas...",
-    "enterAddress": "Ingresa una dirección...",
-    "all": "Todos",
-    "crime": "Delitos",
-    "311": "311",
-    "permits": "Permisos",
-    "crimes": "Delitos",
-    "arrestRate": "Tasa de arresto",
-    "311requests": "Solicitudes 311",
-    "breakdown": "Desglose de {{label}}",
-    "crimeBreakdown": "Desglose de delitos",
-    "311Breakdown": "Desglose de solicitudes 311",
-    "permitsBreakdown": "Desglose de permisos"
-  },
   "personas": {
     "heading": "Diseñado para tomar decisiones reales",
     "subheading": "Ideal para evaluar sitios de desarrollo, verificar el cumplimiento de normativas o investigar la elegibilidad de incentivos.",
@@ -162,7 +149,9 @@
           "Proyección de impuestos",
           "Propiedades comparables"
         ],
-        "framing": "Estudio de viabilidad completo en segundos, no en días."
+        "framing": "Estudio de viabilidad completo en segundos, no en días.",
+        "action": "scorecard",
+        "address": "4520 N Clark St"
       },
       {
         "title": "El Arquitecto",
@@ -175,7 +164,8 @@
           "Cálculo de FAR",
           "Distritos superpuestos"
         ],
-        "framing": "Cada respuesta cita la sección específica del código."
+        "framing": "Cada respuesta cita la sección específica del código.",
+        "action": "chat"
       },
       {
         "title": "El Abogado",
@@ -188,7 +178,9 @@
           "Historial de avalúo",
           "Código Municipal"
         ],
-        "framing": "Auditoría de compra en una sola consulta, en lugar de múltiples solicitudes de acceso a información pública (FOIA)."
+        "framing": "Auditoría de compra en una sola consulta, en lugar de múltiples solicitudes de acceso a información pública (FOIA).",
+        "action": "scorecard",
+        "address": "2400 N Milwaukee Ave"
       }
     ]
   },
@@ -196,17 +188,17 @@
     "heading": "Cómo funciona",
     "steps": [
       {
-        "title": "Ingresa tu consulta",
-        "description": "Haz tu consulta en español, sin sintaxis compleja ni formularios.",
-        "query": "¿Puedo construir un edificio de 6 unidades en 2100 N Damen?"
+        "title": "Ingresa una dirección",
+        "description": "Empieza con la propiedad: escribe cualquier dirección de Chicago y el expediente de la parcela se abre al instante. Sin cuenta, sin formularios.",
+        "query": "2100 N Damen Ave"
       },
       {
-        "title": "Procesamiento de datos",
-        "description": "Tu consulta activa las fuentes de datos del municipio, condado y gobierno federal en paralelo."
+        "title": "Armamos el expediente",
+        "description": "Las fuentes del municipio, condado, gobierno federal y legales se consultan en paralelo: zonificación, normativas, incentivos, impuestos y propiedades comparables."
       },
       {
-        "title": "Resultados detallados",
-        "description": "Obtén respuestas documentadas con citas, mapas interactivos y análisis normativo. Exporta tu investigación como transcripción en PDF cuando quieras."
+        "title": "Recibes el dossier",
+        "description": "Una evaluación Scorecard gratuita en segundos, un analista de IA para preguntas con citas del código — y el Informe de Viabilidad de Desarrollo completo ($25) cuando necesites el entregable."
       }
     ],
     "sourceTags": [

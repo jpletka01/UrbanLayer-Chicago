@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { chatStream } from "./api";
+import { ChatStreamError, chatStream } from "./api";
 import type {
   ActivityItem,
   ContextObject,
@@ -64,6 +64,7 @@ interface UseChat {
   context: ContextObject | null;
   showDisclaimer: boolean;
   errorMsg: string | null;
+  rateLimited: boolean;
   atMessageLimit: boolean;
   activities: ActivityItem[];
   sendMessage: (text: string, attachments?: UploadMeta[]) => Promise<void>;
@@ -85,6 +86,7 @@ export function useChat({
   const [streaming, setStreaming] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const pendingContextRef = useRef<ContextObject | null>(null);
@@ -102,6 +104,7 @@ export function useChat({
     setContext(null);
     setShowDisclaimer(false);
     setErrorMsg(null);
+    setRateLimited(false);
     setActivities([]);
   }
 
@@ -145,6 +148,7 @@ export function useChat({
     const uploadIds = attachments?.map((a) => a.id);
 
     let receivedDone = false;
+    let streamErrored = false;
 
     try {
       for await (const chunk of chatStream(
@@ -241,10 +245,25 @@ export function useChat({
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         console.error(err);
-        setErrorMsg((err as Error).message);
+        streamErrored = true;
+        if (err instanceof ChatStreamError) {
+          setErrorMsg(err.detail ?? t("common:connectionLost"));
+          setRateLimited(err.status === 429);
+        } else {
+          setErrorMsg((err as Error).message);
+        }
+        // The request failed before any token arrived: drop the optimistic
+        // empty assistant bubble so the error banner sits under the question.
+        if (!hasTokenRef.current) {
+          setMessages((m) =>
+            m[m.length - 1]?.role === "assistant" && m[m.length - 1].content === ""
+              ? m.slice(0, -1)
+              : m,
+          );
+        }
       }
     } finally {
-      if (!receivedDone && !controller.signal.aborted) {
+      if (!receivedDone && !controller.signal.aborted && !streamErrored) {
         setErrorMsg(t("common:connectionLost"));
       }
       setStreaming(false);
@@ -260,6 +279,7 @@ export function useChat({
     context,
     showDisclaimer,
     errorMsg,
+    rateLimited,
     atMessageLimit,
     activities,
     sendMessage,

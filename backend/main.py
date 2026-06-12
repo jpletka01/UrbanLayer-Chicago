@@ -366,14 +366,14 @@ def _user_id(user: dict | None) -> str | None:
 
 @app.get("/api/conversations")
 async def list_conversations_endpoint(
-    user: dict | None = Depends(get_current_user),
+    user: dict = Depends(require_auth),
 ) -> list[dict]:
     return await db.list_conversations(_user_id(user))
 
 
 @app.post("/api/conversations", status_code=201)
 async def create_conversation(
-    body: dict, user: dict | None = Depends(get_current_user),
+    body: dict, user: dict = Depends(require_auth),
 ) -> dict:
     conv_id = body.get("id", f"conv_{int(time.time() * 1000)}")
     title = body.get("title", "New conversation")
@@ -383,7 +383,7 @@ async def create_conversation(
 
 @app.get("/api/conversations/{conv_id}")
 async def get_conversation(
-    conv_id: str, user: dict | None = Depends(get_current_user),
+    conv_id: str, user: dict = Depends(require_auth),
 ) -> dict:
     conv = await db.get_conversation(conv_id, _user_id(user))
     if conv is None:
@@ -393,7 +393,7 @@ async def get_conversation(
 
 @app.delete("/api/conversations/{conv_id}")
 async def delete_conversation(
-    conv_id: str, user: dict | None = Depends(get_current_user),
+    conv_id: str, user: dict = Depends(require_auth),
 ) -> dict:
     deleted = await db.delete_conversation(conv_id, _user_id(user))
     if not deleted:
@@ -404,7 +404,7 @@ async def delete_conversation(
 @app.put("/api/conversations/{conv_id}/messages")
 async def append_messages(
     conv_id: str, req: SaveMessagesRequest,
-    user: dict | None = Depends(get_current_user),
+    user: dict = Depends(require_auth),
 ) -> dict:
     conv = await db.get_conversation(conv_id, _user_id(user))
     if conv is None:
@@ -417,8 +417,11 @@ async def append_messages(
 @app.patch("/api/conversations/{conv_id}/messages/{position}")
 async def update_message(
     conv_id: str, position: int, body: dict,
-    user: dict | None = Depends(get_current_user),
+    user: dict = Depends(require_auth),
 ) -> dict:
+    conv = await db.get_conversation(conv_id, _user_id(user))
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
     if "map_data" in body:
         await db.update_message_map_data(
             conv_id, position, body["map_data"], body.get("map_fetched_at"),
@@ -428,7 +431,7 @@ async def update_message(
 
 @app.post("/api/conversations/import")
 async def import_conversations(
-    req: ImportRequest, user: dict | None = Depends(get_current_user),
+    req: ImportRequest, user: dict = Depends(require_auth),
 ) -> dict:
     count = await db.import_conversations(
         [c.model_dump() for c in req.conversations], _user_id(user),
@@ -438,7 +441,7 @@ async def import_conversations(
 
 @app.delete("/api/conversations")
 async def clear_conversations(
-    user: dict | None = Depends(get_current_user),
+    user: dict = Depends(require_auth),
 ) -> dict:
     await db.clear_all_conversations(_user_id(user))
     return {"ok": True}
@@ -462,7 +465,7 @@ async def create_share(
 
 @app.get("/api/conversations/{conv_id}/share")
 async def get_share_status(
-    conv_id: str, user: dict | None = Depends(get_current_user),
+    conv_id: str, user: dict = Depends(require_auth),
 ) -> dict:
     share = await db.get_conversation_share(conv_id)
     if not share:
@@ -502,7 +505,7 @@ async def get_shared_conversation(token: str) -> dict:
 @app.post("/api/conversations/{conv_id}/uploads", status_code=201)
 async def upload_files(
     conv_id: str, files: list[UploadFile] = File(...),
-    user: dict | None = Depends(get_current_user),
+    user: dict = Depends(require_auth),
 ) -> dict:
     settings = get_settings()
 
@@ -4565,7 +4568,15 @@ async def admin_benchmark(request: Request, _admin: dict = Depends(require_admin
         }
 
 
-_VALID_EVENT_NAMES = {"page_view", "investigate_click", "report_cta_click", "chat_message_sent", "scorecard_bridge_click"}
+_VALID_EVENT_NAMES = {
+    "page_view",
+    "investigate_click",
+    "report_cta_click",
+    "chat_message_sent",
+    "scorecard_bridge_click",
+    "hero_address_submit",
+    "hero_librarian_click",
+}
 
 
 @app.post("/api/events")

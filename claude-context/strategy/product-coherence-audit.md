@@ -4,13 +4,15 @@
 see `archive/2026-06-11_rename-and-bridge.md`): the "report"→transcript renaming and the chat→Scorecard
 bridge. **Step 2 SHIPPED 2026-06-12** (merge `b0921e9`, see `archive/2026-06-12_map-defaults-and-pricing.md`):
 map defaults flipped (points off/intent-gated, transit on) and the pricing page rebuilt to lead with the
-$25 report (3-card layout, footer Pricing link). Sections 1–7 below are the audit's point-in-time evidence
-(2026-06-11 pre-implementation) — the claims about the missing bridge, the "Chicago Report" export, the
-non-clickable ReportTeaser, the inverted map defaults (§6), and the $99-first pricing page (and its
-near-orphan status) are now resolved; see §10 for the per-item status. All other findings remain open. This
-document is the strategic interpretation that implementation work must serve. Read this *with*
-`strategy/north-star.md` (the governing strategy doc); this audit extends, sharpens, and in places
-challenges it based on what the product actually does as-built.
+$25 report (3-card layout, footer Pricing link). **Step 3 implemented 2026-06-12** (branch
+`audit/homepage-and-auth`): the address-first homepage ("Which property?" → Scorecard), the auth wall
+removed from chat, and conversation persistence hardened — see §10. Sections 1–7 below are the audit's
+point-in-time evidence (2026-06-11 pre-implementation) — the claims about the missing bridge, the
+"Chicago Report" export, the non-clickable ReportTeaser, the inverted map defaults (§6), the $99-first
+pricing page, the homepage→auth-walled-chat entry, and the OAuth-before-value wall are now resolved;
+see §10 for the per-item status. This document is the strategic interpretation that implementation work
+must serve. Read this *with* `strategy/north-star.md` (the governing strategy doc); this audit extends,
+sharpens, and in places challenges it based on what the product actually does as-built.
 
 **Origin:** Two-session founder-level product review conducted immediately after the SelectedParcel
 identity unification shipped (2026-06-11, see `archive/2026-06-11_selected-parcel.md`). Session 1 was a
@@ -433,26 +435,44 @@ Session 1 produced a structured product definition that session 2 refined but di
   link — the page's first anonymous-reachable inbound link (fuller de-orphaning belongs to the
   homepage redesign).
 
+### Done (Step 3, implemented 2026-06-12 — branch `audit/homepage-and-auth`)
+- **Homepage decided and rebuilt: pure address-input hero.** The hero asks "Which property?" — an
+  address-autocomplete input (`AddressInput.tsx` inside `landing/HeroEntrance.tsx`) that navigates to
+  `/scorecard?address=`, with "Try:" example-address chips. The librarian (code-research chat) is a
+  clearly-secondary entrance: a quiet link swaps the input to the ChatInput with code-question chips
+  and a back link. Hero headline adopts north-star §4 ("Site feasibility for any Chicago address. In
+  seconds."). How-it-works re-flavored address → file → dossier. en + es.
+- **Auth placement decided and moved: never the front door.** The `sendMessage` auth gate is gone;
+  anonymous chat works at the server-enforced 3/day IP limit. Auth is asked for where identity is
+  needed: share (require_auth), report purchase (require_auth), saving (see next bullet), and at the
+  rate-limit 429 (which now correctly displays "Sign in for higher limits" with a sign-in button —
+  previously it rendered as "Connection lost").
+- **Anonymous persistence hardened (discovered during implementation).** Conversation CRUD endpoints
+  now `require_auth` — without this, opening anon chat would have let every anonymous visitor see and
+  delete every other anon visitor's `user_id=NULL` conversations (db.py's NULL fallback is unscoped).
+  Anon chat is in-memory/session-only with a "Sign in to save your research" nudge; dev mode is
+  unaffected. Also fixed: `PATCH .../messages/{position}` had no ownership check at all.
+  One-time prod cleanup approved: `DELETE FROM conversations WHERE user_id IS NULL`.
+- **Persona cards re-route by intent.** Developer/Attorney (address-anchored) open their address's
+  Scorecard; Architect (code research) prefills the librarian chat. New analytics events:
+  `hero_address_submit`, `hero_librarian_click`.
+- **Dead landing demo code deleted.** `LandingMap`/`LandingAnalytics`/`NeighborhoodExplorer`/
+  `NeighborhoodSelector`/`DataSourceTabs` (+ `dummyData.ts`, `communityAreas.ts`, `explorer.*` i18n)
+  were unrendered since Phase 0 — the "crime demo" item is closed by deletion, not redesign.
+- **Phase 2 sequencing decided:** the homepage fix lands BEFORE the 20 customer-validation
+  interviews. With steps 1–3 shipped, every surface an interviewee touches — entry, map, vocabulary,
+  pricing — now belongs to the feasibility product; the contamination risk in §3 is addressed.
+- **North-star §4 + CLAUDE.md reconciled** (same session): north-star §4 updated to shipped reality;
+  the root CLAUDE.md killer query is now an address-assessment example.
+
 ### Still open (each requires fresh approval before implementation)
-- **No decision on what exactly the new homepage IS** (address-input hero? combined search? where
-  the librarian entrance lives?). The conceptual answer is "ask 'Which property?' and open a file in
-  2 seconds" — the concrete surface design is unresolved. Includes `LandingMap`'s crime-dot demo
-  (untouched by step 2's map work).
-- **No decision on auth placement specifics** (purchase-time? save-time? Nth chat message?).
-  Direction: defer auth past the first demonstrated value.
 - **No decision on Explorer free-teaser depth** (how many results free? which filters free?).
-- **Phase 2 (customer validation) interaction:** the audit's strongest practical claim is that the
-  current funnel would contaminate validation — interviewees would validate the chatbot. Steps 1–2
-  removed the counterfeit-report confusion, bridged chat to the assessment product, fixed the
-  crime-map first impression, and put the wedge first on pricing — but the homepage→auth-walled-chat
-  entry is untouched; whether to fix it BEFORE running the 20 interviews is a sequencing decision
-  Jack has not made.
-- **Tension with north-star to reconcile if accepted:** north-star says "hero action: a single
-  address input field → Scorecard" (already aligned with this audit) but also tolerates the current
-  chat-first homepage as shipped Phase 0. This audit says the Phase-0 repositioning was copy-only
-  and the mechanics contradict it. If this audit's direction is accepted, north-star §4 (Product
-  Narrative) should be updated, and the CLAUDE.md "killer query" line should change to an
-  address-assessment example.
+  The last remaining funnel inversion: the funnel-top is still paywalled before it can demonstrate
+  anything (§5 "free at the mouth, paid at depth").
+- **Smaller follow-ups:** TOD radii as a map layer (only stations render — §6 asks for both);
+  UpgradePrompt/ReportPurchasePrompt i18n (known-issues); `GET /api/uploads/{id}/file` is
+  unauthenticated (UUID-keyed, low risk, flagged during step 3); anonymous-friendly report purchase
+  (Stripe email → magic link) if conversion data ever shows the purchase-time sign-in costing sales.
 
 ---
 

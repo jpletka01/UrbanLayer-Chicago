@@ -9,13 +9,15 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | File | Purpose |
 |------|---------|
 | `src/App.tsx` | State machine: splash → workspace. Conversation lifecycle, per-question toggling, URL routing |
+| `src/components/AddressInput.tsx` | Hero address input: whole-value autocomplete (300ms debounce), suggestion select submits immediately, free-text Enter submits too (backend resolves) |
+| `src/components/landing/HeroEntrance.tsx` | Homepage entry surface: address mode (default — AddressInput + example-address chips → `/scorecard?address=`) ⇄ chat mode (librarian: ChatInput + code-question chips), swapped by a quiet link. `chatPrefill` prop flips to chat mode (used by persona cards) |
 | `src/lib/useChat.ts` | SSE consumption, message limit (10), activity tracking, plan/context/mapData attachment |
 | `src/lib/types.ts` | TypeScript types matching backend Pydantic models |
 | `src/lib/api.ts` | SSE streaming, conversation CRUD, map data, admin endpoints, fetchSection cache, `fetchExploreParcels()`/`fetchExploreMap()`. `fetchReport()`/`createReportCheckoutSession()`/`checkReportAccess()` accept a `SelectedParcel` and derive wire params internally (pin when present, else address/coords) — hand-constructed report identity is a compile error. All requests use `authFetch()` with `credentials: include` + CSRF |
 | `src/lib/useAuth.ts` | Auth state hook: user, isAuthenticated, authRequired, signIn/signOut/checkAuth |
 | `src/contexts/AuthContext.tsx` | React context provider wrapping `useAuth`, available app-wide |
 | `src/contexts/SelectedParcelContext.tsx` | Held parcel identity (`SelectedParcel`: pin + confidence + lat/lon + display address). `select(ParcelQuery)` is the **only** write site — fetches scorecard, commits backend-resolved identity atomically. Never construct identity client-side |
-| `src/components/AuthModal.tsx` | "Sign in with Google" modal, shown when unauth user tries to chat |
+| `src/components/AuthModal.tsx` | "Sign in with Google" modal, shown at identity moments (save/share nudge, rate-limit 429) — NOT on first chat |
 | `src/components/UserMenu.tsx` | Google avatar dropdown in workspace header (sign out, tier badge, manage subscription/upgrade link) |
 | `src/components/PricingPage.tsx` | 3-card pricing page at `/pricing`: Free / $25 Development Feasibility Report (lead card, CTA → `/scorecard`) / Pro ($99/mo, "4 reports ≈ a month of Pro" upsell). Also linked from the landing footer |
 | `src/components/UpgradePrompt.tsx` | Modal shown when free user hits premium-gated feature (Explorer, etc.) |
@@ -27,7 +29,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
 | `src/components/InfoTooltip.tsx` | Hover/tap popover for domain terms (dotted underline trigger, portal-based) |
 | `src/lib/analytics.ts` | Client-side trend/pie computation from map data |
-| `src/lib/tracking.ts` | Usage analytics: `track()`, `flush()`, `setAddress()`, `initTracking()`. 5 events (page_view, investigate_click, report_cta_click, chat_message_sent, scorecard_bridge_click). Batched flush every 30s + sendBeacon on page hide. Session ID (per tab) + visitor ID (cross-session). |
+| `src/lib/tracking.ts` | Usage analytics: `track()`, `flush()`, `setAddress()`, `initTracking()`. 7 events (page_view, investigate_click, report_cta_click, chat_message_sent, scorecard_bridge_click, hero_address_submit, hero_librarian_click). Batched flush every 30s + sendBeacon on page hide. Session ID (per tab) + visitor ID (cross-session). |
 | `src/lib/csvExport.ts` | CSV export utility: `toCSV`, `downloadCSV`, `exportCSV`, `buildScorecardCSV`. Used by Scorecard, Explorer, AnalyticsSection |
 | `src/lib/history.ts` | Async API-backed persistence + localStorage→SQLite migration |
 | `src/lib/i18n.ts` | i18next initialization, bundled resources, localStorage language persistence |
@@ -61,8 +63,8 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **Tooltip**: `position: fixed` via `createPortal` to `document.body`, viewport-clamped with `useLayoutEffect`.
 - **InfoTooltip**: Wrap term text in `<InfoTooltip term="key">{text}</InfoTooltip>` for hover/tap definitions. Uses `termDefinitions.ts` for lookups across overlays, zones, incentives, flood zones. Dotted underline trigger, 150ms hover persistence, click-away dismiss on mobile.
 - **Charts**: `PieChart` (SVG donut) and `BarChart` (SVG horizontal bars) are custom — no chart library. `BarChart` takes `DistributionBucket[]` and renders labeled horizontal bars with hover state.
-- **Routing**: `/` (splash), `/c/:id` (conversation), `/s/:shareToken` (shared read-only view), `/scorecard` (property scorecard, non-AI), `/explore` (Site Explorer, premium-gated), `/pricing` (Free vs Pro plan comparison), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
-- **Auth**: `AuthProvider` wraps the app in `main.tsx`. Auth gate on `sendMessage` in `App.tsx` — shows `AuthModal` if `authRequired && !isAuthenticated`. `UserMenu` in workspace header shows avatar + sign-out. Admin link only visible when `user.tier === "admin"`. In dev mode (`GOOGLE_CLIENT_ID` not set), auth is fully bypassed — no sign-in UI shown.
+- **Routing**: `/` (splash — address-first hero via `HeroEntrance` → `/scorecard?address=`; librarian chat secondary), `/c/:id` (conversation), `/s/:shareToken` (shared read-only view), `/scorecard` (property scorecard, non-AI), `/explore` (Site Explorer, premium-gated), `/pricing` (Free vs Pro plan comparison), `/admin` (dashboard, admin-only via `ProtectedRoute`), `/about` (technical deep dive).
+- **Auth**: `AuthProvider` wraps the app in `main.tsx`. **No gate on `sendMessage`** — anonymous chat works at the server-enforced 3/day IP limit. Anonymous = in-memory only: `canPersist` (`!authRequired || isAuthenticated`) gates conversation creation, history load, and attachments (the conversation endpoints 401 without a session); workspace header shows a "Sign in to save your research" nudge, and a 429 renders the server detail + sign-in button (`rateLimited` from `useChat`, `ChatStreamError` from `api.ts`). `AuthModal` appears at identity moments only (nudge, share, purchase, 429). `UserMenu` in workspace header shows avatar + sign-out. Admin link only visible when `user.tier === "admin"`. In dev mode (`GOOGLE_CLIENT_ID` not set), auth is fully bypassed — no sign-in UI shown.
 - **401-interceptor**: `authFetch()` in `api.ts` intercepts 401 responses, attempts `POST /api/auth/refresh` via raw `fetch` (not `authFetch` to avoid recursion), coalesces concurrent refreshes with a module-level `_refreshPromise`, re-reads CSRF cookie after refresh, retries original request once.
 - **History stripping**: `useChat.ts` sends only `{role, content}` in chat POST history (strips `context`/`plan`/`mapData` blobs) to avoid HTTP 413 from nginx's `client_max_body_size`.
 - **Stream close detection**: `useChat.ts` tracks `receivedDone` flag — if the SSE stream ends without a `done` event and wasn't user-aborted, shows "Connection lost — please try again."

@@ -8,6 +8,8 @@
   "chatHistory": "Historial de consultas",
   "noConversations": "Aún no hay conversaciones",
   "signIn": "Iniciar sesión con Google",
+  "signInShort": "Iniciar sesión",
+  "signInToSave": "Inicia sesión para guardar tu investigación",
   "signInTitle": "Inicia sesión para continuar",
   "signInDescription": "Crea una cuenta para guardar las conversaciones y acceder a todas las funciones.",
   "signInFreeNote": "Los usuarios de planes gratuitos tienen un límite de 25 consultas por día",

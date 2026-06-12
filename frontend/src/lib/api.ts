@@ -241,18 +241,15 @@ export async function fetchMapData(params: {
   }
 }
 
-export async function getCommunityAreaByPoint(
-  lat: number,
-  lon: number,
-): Promise<{ community_area: number; name: string } | null> {
-  try {
-    const resp = await authFetch(
-      `${API_BASE}/api/community-area?lat=${lat}&lon=${lon}`,
-    );
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch {
-    return null;
+export class ChatStreamError extends Error {
+  status: number;
+  detail: string | null;
+
+  constructor(status: number, statusText: string, detail: string | null) {
+    super(detail ?? `Chat request failed: ${status} ${statusText}`);
+    this.name = "ChatStreamError";
+    this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -279,7 +276,9 @@ export async function* chatStream(
   });
 
   if (!resp.ok || !resp.body) {
-    throw new Error(`Chat request failed: ${resp.status} ${resp.statusText}`);
+    const errBody = await resp.json().catch(() => null);
+    const detail = typeof errBody?.detail === "string" ? errBody.detail : null;
+    throw new ChatStreamError(resp.status, resp.statusText, detail);
   }
 
   yield* parseSSE<ChatChunk>(resp.body.getReader());

@@ -1,13 +1,12 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
+import { HeroEntrance } from "./components/landing/HeroEntrance";
 import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
-import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
 import type { PendingAttachment } from "./components/ChatInput";
@@ -105,6 +104,8 @@ export function App() {
   const [mapTabViewed, setMapTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  // Set by persona cards: prefills the hero chat (librarian) entrance.
+  const [heroChatPrefill, setHeroChatPrefill] = useState<string | null>(null);
   const [isSharedView, setIsSharedView] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const { user, isAuthenticated, authRequired, loading: authLoading, signIn, signOut } = useAuthContext();
@@ -254,6 +255,7 @@ export function App() {
     context,
     showDisclaimer,
     errorMsg,
+    rateLimited,
     atMessageLimit,
     activities,
     sendMessage: sendChat,
@@ -271,15 +273,18 @@ export function App() {
     planRef.current = plan;
   }, [plan]);
 
-  // Init: migrate localStorage, load conversations (wait for auth to resolve first)
+  // Init: migrate localStorage, load conversations (wait for auth to resolve first).
+  // Anonymous visitors have no server-side persistence — skip entirely (the
+  // conversation endpoints 401 without a session).
   useEffect(() => {
     if (authLoading) return;
+    if (authRequired && !isAuthenticated) return;
     (async () => {
       await migrateLocalStorageToSQLite();
       const convos = await loadConversations();
       setConversations(convos);
     })();
-  }, [authLoading]);
+  }, [authLoading, authRequired, isAuthenticated]);
 
   // Save messages to SQLite after stream completes
   useEffect(() => {
@@ -314,14 +319,15 @@ export function App() {
 
   const active = messages.length > 0 || streaming;
 
+  // Anonymous visitors chat in-memory only: no server-side conversation,
+  // no history, no uploads. Auth is asked for where identity is needed
+  // (save/share/purchase) — never as a precondition for the first answer.
+  const canPersist = !authRequired || isAuthenticated;
+
   async function sendMessage(text: string) {
-    if (authRequired && !isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
     setHistoryOpen(false);
     let cid = conversationId;
-    if (!cid) {
+    if (!cid && canPersist) {
       cid = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
       try {
@@ -337,7 +343,7 @@ export function App() {
     }
 
     let uploadMetas: import("./lib/types").UploadMeta[] | undefined;
-    if (pendingAttachments.length > 0) {
+    if (pendingAttachments.length > 0 && cid) {
       try {
         uploadMetas = await uploadFiles(cid, pendingAttachments.map((a) => a.file));
       } catch (err) {
@@ -692,6 +698,9 @@ export function App() {
                       <p className="text-lg text-white/80 leading-relaxed">
                         {t("heroSubtitle")}
                       </p>
+                      <p className="text-sm text-white/60 leading-relaxed mt-2">
+                        {t("heroSubline")}
+                      </p>
                     </motion.div>
 
                     <motion.div
@@ -699,22 +708,7 @@ export function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
-                      <ChatInput onSubmit={sendMessage} variant="hero" />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4, duration: 0.5 }}
-                      className="flex flex-wrap gap-2 justify-center"
-                    >
-                      {(t("suggestions", { returnObjects: true }) as string[]).map((s) => (
-                        <PromptSuggestionChip
-                          key={s}
-                          label={s}
-                          onClick={() => sendMessage(s)}
-                        />
-                      ))}
+                      <HeroEntrance onChatSubmit={sendMessage} chatPrefill={heroChatPrefill} />
                     </motion.div>
                   </div>
                 </div>
@@ -764,7 +758,12 @@ export function App() {
             <DepthShowcase />
 
             {/* Persona Scenarios — professional personas */}
-            <PersonaScenarios onAsk={sendMessage} />
+            <PersonaScenarios
+              onChatQuestion={(q) => {
+                setHeroChatPrefill(q);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
 
             {/* Story interstitial — report workflow */}
             <StorySection
@@ -891,6 +890,14 @@ export function App() {
                       </Link>
                     )}
                     <LanguageSelector variant="workspace" />
+                    {!canPersist && (
+                      <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
+                      >
+                        {tc("signInToSave")}
+                      </button>
+                    )}
                     {user && <UserMenu user={user} onSignOut={signOut} />}
                   </>
                 )}
@@ -898,8 +905,16 @@ export function App() {
             </header>
 
             {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
-              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm">
-                {errorMsg}
+              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm flex items-center justify-between gap-4">
+                <span>{errorMsg}</span>
+                {rateLimited && !canPersist && (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="shrink-0 px-3 py-1 text-xs font-medium text-white bg-accent hover:bg-accent/80 rounded-lg transition-colors"
+                  >
+                    {tc("signInShort")}
+                  </button>
+                )}
               </div>
             )}
             {loadError && (
@@ -925,7 +940,7 @@ export function App() {
                 atMessageLimit={atMessageLimit}
                 onNewChat={reset}
                 attachments={pendingAttachments}
-                onAttach={handleAttach}
+                onAttach={canPersist ? handleAttach : undefined}
                 onRemoveAttachment={handleRemoveAttachment}
                 activities={activities}
                 readOnly={isSharedView}
