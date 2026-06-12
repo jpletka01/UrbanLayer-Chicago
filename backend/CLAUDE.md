@@ -37,7 +37,7 @@ retrieval/
 ├── map_data.py             # Raw geo-located rows for map (2500/1000/500 row limits)
 ├── vector_search.py        # Async Qdrant search + synonym expansion + keyword boost + bge-reranker + keyword-aware per-section dedup
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch + adjacent_parcel_zoning()
-├── zoning_definitions.py   # Deterministic zone class lookup table (~50 entries). FAR, height, uses, code sections from Title 17. Used by PDF report for inline descriptions + definitions section. Fallback chain: exact → prefix → PD/PMD → unknown
+├── zoning_definitions.py   # Deterministic zone class lookup table (~50 entries). FAR, height, uses, code sections from Title 17. Used by PDF report for inline descriptions + definitions section AND serialized as `zone_definition` in /api/scorecard (frontend ZoningCard; contract test test_zone_definition_contract.py). Fallback chain: exact → prefix → PD/PMD → unknown
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
 ├── explore.py              # Site Explorer: bulk parcel query by community area + class prefix (Cook County Parcel Universe)
 ├── utils.py                # Shared helpers (cutoff_iso)
