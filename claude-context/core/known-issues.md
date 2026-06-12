@@ -2,6 +2,14 @@
 
 ## Open Bugs
 
+**Anon chat 403s on CSRF until hotfix `64ae13d` deploys**: Coherence-audit step 3 (live 2026-06-12,
+merge `0a408a9`) opened anonymous chat, but `CSRFMiddleware` requires the double-submit `csrf_token`
+cookie on `POST /chat` — and that cookie was only issued at OAuth callback/refresh, which anonymous
+visitors never hit. Live probe confirmed: anon `POST /chat` → 403 "CSRF token mismatch" (the old UI
+auth gate had always masked this). Hotfix `64ae13d` (committed, pending push) issues the cookie on
+`GET /api/auth/me`. The address→Scorecard primary flow is unaffected (GET). **Remove this entry
+once the hotfix is deployed and an anon chat streams on prod.**
+
 **Cook County GIS parcel lookup is intermittently down**: The ArcGIS endpoint (`gis.cookcountyil.gov/.../MapServer/44/query`) has a broken spatial/attribute index — filtered queries (spatial or by PIN) can timeout at 60s+. **Mitigation**: `parcels.py` now falls back to the Cook County Socrata Parcel Universe dataset (`pabr-t5kh`) via bounding-box query on lat/lon columns. The fallback returns a PIN plus enrichment fields (`zip_code`, `township_name`, `nbhd_code`, `tax_code`) to unblock the full property pipeline. Building/land sqft are filled in downstream by CCAO Characteristics. **Still missing on fallback**: parcel polygon geometry (map display only) and address. When GIS is up, it's used preferentially. A diagnostic integration test (`test_parcel_gis_diagnostic`) fails loudly when GIS is down.
 
 ## Known Limitations
@@ -47,7 +55,9 @@
 
 ## Gotchas
 
-**Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations.
+**Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations. **Since 2026-06-12 (audit step 3)** all `/api/conversations/*` endpoints `require_auth`, so anonymous HTTP callers can no longer reach the NULL fallback — it exists only so signed-in/dev users keep seeing legacy rows. A one-time prod cleanup (`DELETE FROM conversations WHERE user_id IS NULL`, children first — SQLite FK cascade is off) is approved but **not yet run**. NOTE: anonymous chat is intentionally NOT persisted — never "fix" anon chat by re-opening these endpoints.
+
+**`GET /api/uploads/{upload_id}/file` is unauthenticated**: Upload downloads are keyed only by UUID (needed for shared-transcript rendering). Enumeration is impractical, but there's no ownership check. Flagged during audit step 3; tighten if uploads ever carry sensitive content.
 
 **Explore pins are dash-formatted display strings**: `/api/explore` returns pins as `14-28-115-084-0000` (`_format_pin` in `retrieval/explore.py`), but `_resolve_location` rejects dashed pins with 422. Strip to 14 digits (`pin.replace(/\D/g, "")`) before using as a `?pin=` query key.
 
@@ -62,6 +72,10 @@
 **PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist. **Test gotcha**: tests that stub `property_domain` must also patch `estimate_tax`, or the test opens the 8.8GB DB (see `test_property_domain_pin.py`).
 
 **Local dev DB schema_version can run ahead of the actual schema**: Found 2026-06-11 — the local `backend/data/chicago.db` claimed v10/v11 while entirely missing the v9 `report_purchases` and v10 `events` tables (so local analytics ingestion had been silently writing to a missing table). Cause class: `executescript` implicitly commits, so a crashed init can leave the version row committed without the later migrations' tables. `init_db` trusts the version row and won't self-heal; `_migrate_v11` (and any future ALTER-based migration) will crash on such a DB. **Repair**: re-run the relevant idempotent `_migrate_vN` functions manually against the file. Production was verified unaffected.
+
+**Local `chicago-backend-1` docker container crash-loops on `ModuleNotFoundError: jwt`**: The local dev image predates the PyJWT dependency; `docker compose build backend` fixes it. Found 2026-06-12 during step-3 verification (harmless — local dev uses native uvicorn on 8001, not the container).
+
+**Dev mode rate-limits the dev user as anonymous**: `_get_tier()` treats `id == "dev"` as anonymous (3/day by IP). Useful for testing the 429 path (`RATE_LIMIT_ANON_DAY=1`), surprising if local chat suddenly 429s — bump `RATE_LIMIT_ANON_DAY` when doing chat-heavy local work (the eval README already does this).
 
 **Dev-mode Stripe checkout needs two local fixtures**: (1) `_DEV_USER`'s email must be Stripe-valid — `dev@localhost` was rejected by Stripe's `customer_email` validation, 500ing every dev checkout until it was changed to `dev@example.com` (fixed in `auth.py`, 2026-06-11). (2) The synthetic dev user has no `users` row, and `report_purchases.user_id` has a FK on it — insert an `id='dev'` row into the local DB before exercising checkout in dev mode (done on this machine during Phase 2 QA).
 
@@ -85,7 +99,7 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`, then `python -m ev
 
 ## Operational Status
 
-- **Test baseline (2026-06-11, post-SelectedParcel)** — `python -m pytest backend/tests/ -q -m "not integration"` → **577 passed, 56 deselected** (633 collected); `npx tsc --noEmit` clean. If a fresh checkout shows fewer passing, something regressed — integration tests (56) are excluded because they hit real external APIs and fail on network/GIS flakiness, not code.
+- **Test baseline (2026-06-12, post-audit-step-3)** — `python -m pytest backend/tests/ -q -m "not integration"` → **599 passed, 56 deselected**; `npx tsc --noEmit` clean. If a fresh checkout shows fewer passing, something regressed — integration tests (56) are excluded because they hit real external APIs and fail on network/GIS flakiness, not code.
 - **Sentry** — Active on production (EU region, `ingest.de.sentry.io`). Backend (FastAPI) and frontend (React) both reporting.
 - **UptimeRobot** — Configured for `/health` checks.
 - **CI/CD** — Tests + type check + auto-deploy on push to main. Claude Code review on PR open/synchronize.

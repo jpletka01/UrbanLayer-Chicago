@@ -4,9 +4,11 @@
 see `archive/2026-06-11_rename-and-bridge.md`): the "report"→transcript renaming and the chat→Scorecard
 bridge. **Step 2 SHIPPED 2026-06-12** (merge `b0921e9`, see `archive/2026-06-12_map-defaults-and-pricing.md`):
 map defaults flipped (points off/intent-gated, transit on) and the pricing page rebuilt to lead with the
-$25 report (3-card layout, footer Pricing link). **Step 3 implemented 2026-06-12** (branch
-`audit/homepage-and-auth`): the address-first homepage ("Which property?" → Scorecard), the auth wall
-removed from chat, and conversation persistence hardened — see §10. Sections 1–7 below are the audit's
+$25 report (3-card layout, footer Pricing link). **Step 3 SHIPPED 2026-06-12** (merge `0a408a9`, deploy
+verified live, see `archive/2026-06-12_homepage-and-auth.md`): the address-first homepage ("Which
+property?" → Scorecard), the auth wall removed from chat, and conversation persistence hardened.
+Caveat: anon chat needs the CSRF-bootstrap hotfix (`64ae13d`, pending push) to actually stream —
+see the archive entry and known-issues. Sections 1–7 below are the audit's
 point-in-time evidence (2026-06-11 pre-implementation) — the claims about the missing bridge, the
 "Chicago Report" export, the non-clickable ReportTeaser, the inverted map defaults (§6), the $99-first
 pricing page, the homepage→auth-walled-chat entry, and the OAuth-before-value wall are now resolved;
@@ -435,7 +437,7 @@ Session 1 produced a structured product definition that session 2 refined but di
   link — the page's first anonymous-reachable inbound link (fuller de-orphaning belongs to the
   homepage redesign).
 
-### Done (Step 3, implemented 2026-06-12 — branch `audit/homepage-and-auth`)
+### Done (Step 3, SHIPPED 2026-06-12 — merge `0a408a9`, details in `archive/2026-06-12_homepage-and-auth.md`)
 - **Homepage decided and rebuilt: pure address-input hero.** The hero asks "Which property?" — an
   address-autocomplete input (`AddressInput.tsx` inside `landing/HeroEntrance.tsx`) that navigates to
   `/scorecard?address=`, with "Try:" example-address chips. The librarian (code-research chat) is a
