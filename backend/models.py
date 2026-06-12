@@ -54,6 +54,10 @@ class Location(BaseModel):
     resolved_address: str | None = None
     resolved_lat: float | None = None
     resolved_lon: float | None = None
+    # Authoritative parcel key when the turn arrived with a parcel hint
+    # (Scorecard→chat handoff). Read-only flow: chat never writes the
+    # selection back (truth-model §3) — this only replaces text re-geocoding.
+    pin: str | None = None
 
 
 class RetrievalPlan(BaseModel):
@@ -476,6 +480,9 @@ class ChatRequest(BaseModel):
     upload_ids: list[str] = Field(default_factory=list)
     cached_community_area: int | None = None
     language: str = "en"
+    # 14-digit parcel hint from a Scorecard handoff — resolves the turn's
+    # location authoritatively instead of re-geocoding the question text.
+    parcel_pin: str | None = Field(default=None, max_length=20)
 
 
 class ChatChunk(BaseModel):

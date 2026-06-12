@@ -324,7 +324,7 @@ export function App() {
   // (save/share/purchase) — never as a precondition for the first answer.
   const canPersist = !authRequired || isAuthenticated;
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, _attachments?: undefined, opts?: { parcelPin?: string | null }) {
     setHistoryOpen(false);
     let cid = conversationId;
     if (!cid && canPersist) {
@@ -357,10 +357,12 @@ export function App() {
     }
 
     track("chat_message_sent");
-    sendChat(text, uploadMetas);
+    sendChat(text, uploadMetas, opts);
   }
 
-  // Auto-send ?q= query parameter (from Investigate buttons on Scorecard)
+  // Auto-send ?q= query parameter (from Investigate buttons on Scorecard).
+  // ?pin= rides along so the turn resolves the exact parcel instead of
+  // re-geocoding the address text (read-only handoff — truth-model §3).
   const qConsumedRef = useRef(false);
   useEffect(() => {
     const q = searchParams.get("q");
@@ -368,8 +370,9 @@ export function App() {
     if (authLoading || conversationIdFromUrl || shareTokenFromUrl) return;
     if (messages.length > 0 || streaming) return;
     qConsumedRef.current = true;
+    const pin = searchParams.get("pin");
     setSearchParams({}, { replace: true });
-    sendMessage(q);
+    sendMessage(q, undefined, pin ? { parcelPin: pin } : undefined);
   }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
 
   function handleAttach(files: File[]) {
@@ -708,7 +711,11 @@ export function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
-                      <HeroEntrance onChatSubmit={sendMessage} chatPrefill={heroChatPrefill} />
+                      <HeroEntrance
+                        onChatSubmit={sendMessage}
+                        chatPrefill={heroChatPrefill}
+                        startInChat={searchParams.get("analyst") === "1"}
+                      />
                     </motion.div>
                   </div>
                 </div>

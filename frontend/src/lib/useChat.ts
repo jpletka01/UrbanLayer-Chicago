@@ -67,7 +67,7 @@ interface UseChat {
   rateLimited: boolean;
   atMessageLimit: boolean;
   activities: ActivityItem[];
-  sendMessage: (text: string, attachments?: UploadMeta[]) => Promise<void>;
+  sendMessage: (text: string, attachments?: UploadMeta[], opts?: { parcelPin?: string | null }) => Promise<void>;
   clearTurnState: () => void;
   reset: () => void;
 }
@@ -114,7 +114,7 @@ export function useChat({
     clearTurnState();
   }
 
-  async function sendMessage(text: string, attachments?: UploadMeta[]) {
+  async function sendMessage(text: string, attachments?: UploadMeta[], opts?: { parcelPin?: string | null }) {
     if (streaming) return;
 
     if (atMessageLimit) {
@@ -159,6 +159,7 @@ export function useChat({
         uploadIds,
         cachedMapRef.current?.communityArea ?? null,
         language,
+        opts?.parcelPin ?? null,
       )) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);

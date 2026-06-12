@@ -662,7 +662,9 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
 
     if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
         tasks["property"] = asyncio.create_task(_limited(
-            property_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
+            # pin keys the property domain authoritatively when the turn came
+            # from a Scorecard handoff (INV-2 parity with /api/scorecard)
+            property_domain(loc.resolved_lat, loc.resolved_lon, pin=loc.pin, workflow=wf)
         ))
 
     if "incentives_domain" in plan.sources:
@@ -906,6 +908,38 @@ def _build_map_response(
     )
 
 
+async def _apply_parcel_hint(plan, pin: str):
+    """Replace the router's text-geocoded location with the authoritative parcel.
+
+    Scorecard→chat handoffs carry the held parcel's PIN; without it the chat
+    re-geocodes the address embedded in the question text and can land on a
+    neighboring parcel. Only address-typed plans are overridden — a question
+    the router read as a neighborhood/area query keeps its own location.
+    Read-only direction (truth-model §3): chat never writes the selection.
+    Any resolution failure leaves the plan untouched.
+    """
+    if plan.location.type != "address":
+        return plan
+    try:
+        rl = await _resolve_location(pin=pin)
+    except Exception:
+        log.warning("Parcel hint resolution failed for pin %s — keeping router location", pin)
+        return plan
+    if rl.pin != pin:
+        return plan
+    loc = plan.location
+    ca = community_area_by_point(rl.lat, rl.lon)
+    loc.resolved_lat = rl.lat
+    loc.resolved_lon = rl.lon
+    loc.pin = rl.pin
+    if rl.address:
+        loc.resolved_address = rl.address
+    if ca is not None:
+        loc.resolved_community_area = ca
+        loc.resolved_community_area_name = community_area_name(ca)
+    return plan
+
+
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
     elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
@@ -963,6 +997,8 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             request_group=request_group,
             conversation_id=req.conversation_id,
         )
+        if req.parcel_pin:
+            plan = await _apply_parcel_hint(plan, req.parcel_pin)
         timings["router"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
         log.exception("Router failed")

@@ -261,12 +261,14 @@ export async function* chatStream(
   uploadIds?: string[],
   cachedCommunityArea?: number | null,
   language?: string,
+  parcelPin?: string | null,
 ): AsyncGenerator<ChatChunk, void, unknown> {
   const body: Record<string, unknown> = { message, history };
   if (conversationId) body.conversation_id = conversationId;
   if (uploadIds?.length) body.upload_ids = uploadIds;
   if (cachedCommunityArea != null) body.cached_community_area = cachedCommunityArea;
   if (language && language !== "en") body.language = language;
+  if (parcelPin) body.parcel_pin = parcelPin;
 
   const resp = await authFetch(`${API_BASE}/chat`, {
     method: "POST",

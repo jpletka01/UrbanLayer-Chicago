@@ -473,6 +473,7 @@ export default function ScorecardPage() {
                   question={`What's going on near ${data.address}?`}
                   label={t("scorecard.fullAnalysis")}
                   cardName="full_analysis"
+                  pin={parcel?.pin}
                 />
                 <button
                   onClick={() => {
@@ -521,6 +522,7 @@ export default function ScorecardPage() {
                       question={`Tell me about the building and property characteristics at ${addr}`}
                       label={t("scorecard.investigate.buildingDetails")}
                       cardName="property"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>
@@ -533,6 +535,7 @@ export default function ScorecardPage() {
                       question={`What are the recent comparable sales near ${addr} and what do they suggest about property values?`}
                       label={t("scorecard.investigate.comparableSales")}
                       cardName="comparables"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>
@@ -545,6 +548,7 @@ export default function ScorecardPage() {
                       question={`What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`}
                       label={t("scorecard.zoningRules", { zone: zdef.zone_class })}
                       cardName="zoning"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>
@@ -562,6 +566,7 @@ export default function ScorecardPage() {
                         ? t("scorecard.investigate.tifFunding")
                         : t("scorecard.investigate.incentivePrograms")}
                       cardName="incentives"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>
@@ -575,12 +580,14 @@ export default function ScorecardPage() {
                         question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
                         label={t("scorecard.investigate.overlaysAndFlood")}
                         cardName="regulatory"
+                      pin={parcel?.pin}
                       />
                     ) : (
                       <InvestigateButton
                         question={`What are the development restrictions from regulatory overlays at ${addr}?`}
                         label={t("scorecard.investigate.overlayRestrictions")}
                         cardName="regulatory"
+                      pin={parcel?.pin}
                       />
                     )}
                   </div>
@@ -595,6 +602,7 @@ export default function ScorecardPage() {
                         question={`Explain the building violations at ${addr} and typical remediation steps`}
                         label={t("scorecard.investigate.violationDetails")}
                         cardName="violations"
+                      pin={parcel?.pin}
                       />
                     </div>
                   )}
@@ -608,6 +616,7 @@ export default function ScorecardPage() {
                       question={`What are the crime trends and safety concerns near ${addr}?`}
                       label={t("scorecard.investigate.crimeAnalysis")}
                       cardName="crime"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>
@@ -620,6 +629,7 @@ export default function ScorecardPage() {
                       question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
                       label={t("scorecard.investigate.complaints311")}
                       cardName="311"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>
@@ -633,6 +643,7 @@ export default function ScorecardPage() {
                       question={`What's the neighborhood like around ${addr}?`}
                       label={t("scorecard.investigate.neighborhoodOverview")}
                       cardName="neighborhood"
+                      pin={parcel?.pin}
                     />
                   </div>
                 </div>

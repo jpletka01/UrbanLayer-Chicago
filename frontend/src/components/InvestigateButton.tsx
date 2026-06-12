@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { track } from "../lib/tracking";
 
-export function InvestigateButton({ question, label, cardName }: { question: string; label: string; cardName?: string }) {
+export function InvestigateButton({ question, label, cardName, pin }: {
+  question: string; label: string; cardName?: string; pin?: string | null;
+}) {
   return (
     <Link
-      to={`/?q=${encodeURIComponent(question)}`}
+      to={`/?q=${encodeURIComponent(question)}${pin ? `&pin=${pin}` : ""}`}
       onClick={() => track("investigate_click", { card_name: cardName ?? label })}
       className="group inline-flex items-center gap-1 text-[10px] text-text-secondary hover:text-accent transition-colors"
     >

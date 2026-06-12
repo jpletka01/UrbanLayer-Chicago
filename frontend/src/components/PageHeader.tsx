@@ -5,7 +5,9 @@ import LanguageSelector from "./LanguageSelector";
 import UserMenu from "./UserMenu";
 
 const NAV_ITEMS: { to: string; key: string }[] = [
-  { to: "/", key: "nav.chat" },
+  // "Analyst" opens the homepage hero directly in chat mode — the cited
+  // code-research surface — not the address-first front door.
+  { to: "/?analyst=1", key: "nav.chat" },
   { to: "/scorecard", key: "nav.scorecard" },
   { to: "/explore", key: "nav.explore" },
   { to: "/pricing", key: "nav.pricing" },
@@ -36,36 +38,36 @@ export default function PageHeader({
         sticky ? "sticky top-0" : ""
       }`}
     >
+      {/* Three zones: brand | nav (centered) | utilities — navigation and
+          account/language controls are distinct groups, not one corner pile */}
       <div className={`${maxWidthClass} mx-auto px-4 py-3 flex items-center justify-between gap-4`}>
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
           <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
           <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
         </Link>
-        <div className="flex items-center gap-4 min-w-0">
-          <nav className="flex items-center gap-4 text-[11px] text-text-muted overflow-x-auto">
-            {NAV_ITEMS.map(({ to, key }) =>
-              pathname === to ? (
-                <span key={to} className="text-accent shrink-0">{t(key)}</span>
-              ) : (
-                <Link key={to} to={to} className="hover:text-text-primary transition-colors shrink-0">
-                  {t(key)}
-                </Link>
-              )
-            )}
-          </nav>
-          <div className="flex items-center gap-2 shrink-0">
-            <LanguageSelector />
-            {user ? (
-              <UserMenu user={user} onSignOut={signOut} />
-            ) : authRequired ? (
-              <button
-                onClick={signIn}
-                className="text-[11px] text-text-secondary hover:text-text-primary border border-dark-border rounded-lg px-2.5 py-1 transition-colors"
-              >
-                {tc("signInShort")}
-              </button>
-            ) : null}
-          </div>
+        <nav className="flex-1 flex items-center justify-center gap-5 text-xs text-text-muted overflow-x-auto min-w-0 px-2">
+          {NAV_ITEMS.map(({ to, key }) =>
+            pathname === to.split("?")[0] && !to.includes("?") ? (
+              <span key={to} className="text-accent shrink-0">{t(key)}</span>
+            ) : (
+              <Link key={to} to={to} className="hover:text-text-primary transition-colors shrink-0">
+                {t(key)}
+              </Link>
+            )
+          )}
+        </nav>
+        <div className="flex items-center gap-2 shrink-0">
+          <LanguageSelector />
+          {user ? (
+            <UserMenu user={user} onSignOut={signOut} />
+          ) : authRequired ? (
+            <button
+              onClick={signIn}
+              className="text-[11px] text-text-secondary hover:text-text-primary border border-dark-border rounded-lg px-2.5 py-1 transition-colors"
+            >
+              {tc("signInShort")}
+            </button>
+          ) : null}
         </div>
       </div>
     </header>

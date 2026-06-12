@@ -10,6 +10,8 @@ import { track } from "../../lib/tracking";
 interface Props {
   onChatSubmit: (text: string) => void;
   chatPrefill?: string | null;
+  /** Open directly in chat mode (the "Analyst" nav entry). */
+  startInChat?: boolean;
 }
 
 /**
@@ -17,10 +19,10 @@ interface Props {
  * property?" — and opens the parcel's Scorecard. The code-research chat
  * (the librarian) is a clearly secondary entrance behind a quiet link.
  */
-export function HeroEntrance({ onChatSubmit, chatPrefill }: Props) {
+export function HeroEntrance({ onChatSubmit, chatPrefill, startInChat = false }: Props) {
   const { t } = useTranslation("landing");
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"address" | "chat">("address");
+  const [mode, setMode] = useState<"address" | "chat">(startInChat ? "chat" : "address");
 
   // Persona cards prefill a code-research question into the hero chat.
   useEffect(() => {
