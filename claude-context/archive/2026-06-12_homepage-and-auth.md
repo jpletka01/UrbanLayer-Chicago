@@ -2,8 +2,9 @@
 
 **Completed**: 2026-06-12
 **Status**: Shipped to production (merge `0a408a9`, deploy verified live: bundle `index-B7hsOZ9h.js`,
-`GET /api/conversations` → 401). **Caveat:** the anon-chat CSRF hotfix (`64ae13d`) was committed
-after the merge — anon chat 403s on CSRF until it deploys. See Post-Deploy Findings.
+`GET /api/conversations` → 401). The anon-chat CSRF hotfix (`64ae13d`) deployed 2026-06-12 and was
+verified live: anon `GET /api/auth/me` issues the `csrf_token` cookie, anon `POST /chat` with the
+cookie+header pair streams SSE (200, `text/event-stream`). Step 3 is fully live with no caveats.
 
 ## What Was Built
 
@@ -88,11 +89,14 @@ created). Phase 2 sequencing was decided: this fix lands BEFORE the 20 customer 
 
 ## Post-Deploy Findings
 - **CSRF blocked anon chat** (found by live API probe, same lesson as R7: verify the live artifact).
-  Hotfix `64ae13d` committed; deploys with the next push.
-- **Prod NULL-row cleanup pending**: `DELETE FROM conversations WHERE user_id IS NULL` (+ orphan
-  messages/uploads/shares — SQLite FK cascade is OFF by default, delete children first). Approved
-  unconditionally. Low urgency now: the 401 hardening already makes NULL rows unreachable
-  anonymously; they remain visible to signed-in users via the legacy fallback until cleaned.
+  Hotfix `64ae13d` **deployed & verified 2026-06-12** — anon chat streams on prod.
+- **Prod NULL-row cleanup DONE (2026-06-12)**: deleted 4 `user_id IS NULL` conversations + 2 child
+  messages (0 uploads/shares) on prod, children first (SQLite FK cascade is OFF). 0 NULL rows remain;
+  9 owned conversations untouched. Pre-cleanup backup left on the server:
+  `/app/backend/data/chicago.backup-2026-06-12-prenullclean.db` (safe to delete after a while).
+  Operational note: the live backend's aiosqlite connection holds a persistent write lock —
+  `BEGIN IMMEDIATE` from a second connection times out even with `busy_timeout=30s`; the delete
+  only succeeded right after a container restart (the auto-deploy provided one).
 - Local dev: `chicago-backend-1` docker container crash-loops on `ModuleNotFoundError: jwt`
   (image predates PyJWT) — needs `docker compose build backend`. Unrelated to this change.
 

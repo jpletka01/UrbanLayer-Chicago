@@ -2,14 +2,6 @@
 
 ## Open Bugs
 
-**Anon chat 403s on CSRF until hotfix `64ae13d` deploys**: Coherence-audit step 3 (live 2026-06-12,
-merge `0a408a9`) opened anonymous chat, but `CSRFMiddleware` requires the double-submit `csrf_token`
-cookie on `POST /chat` — and that cookie was only issued at OAuth callback/refresh, which anonymous
-visitors never hit. Live probe confirmed: anon `POST /chat` → 403 "CSRF token mismatch" (the old UI
-auth gate had always masked this). Hotfix `64ae13d` (committed, pending push) issues the cookie on
-`GET /api/auth/me`. The address→Scorecard primary flow is unaffected (GET). **Remove this entry
-once the hotfix is deployed and an anon chat streams on prod.**
-
 **Cook County GIS parcel lookup is intermittently down**: The ArcGIS endpoint (`gis.cookcountyil.gov/.../MapServer/44/query`) has a broken spatial/attribute index — filtered queries (spatial or by PIN) can timeout at 60s+. **Mitigation**: `parcels.py` now falls back to the Cook County Socrata Parcel Universe dataset (`pabr-t5kh`) via bounding-box query on lat/lon columns. The fallback returns a PIN plus enrichment fields (`zip_code`, `township_name`, `nbhd_code`, `tax_code`) to unblock the full property pipeline. Building/land sqft are filled in downstream by CCAO Characteristics. **Still missing on fallback**: parcel polygon geometry (map display only) and address. When GIS is up, it's used preferentially. A diagnostic integration test (`test_parcel_gis_diagnostic`) fails loudly when GIS is down.
 
 ## Known Limitations
@@ -55,7 +47,7 @@ once the hotfix is deployed and an anon chat streams on prod.**
 
 ## Gotchas
 
-**Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations. **Since 2026-06-12 (audit step 3)** all `/api/conversations/*` endpoints `require_auth`, so anonymous HTTP callers can no longer reach the NULL fallback — it exists only so signed-in/dev users keep seeing legacy rows. A one-time prod cleanup (`DELETE FROM conversations WHERE user_id IS NULL`, children first — SQLite FK cascade is off) is approved but **not yet run**. NOTE: anonymous chat is intentionally NOT persisted — never "fix" anon chat by re-opening these endpoints.
+**Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations. **Since 2026-06-12 (audit step 3)** all `/api/conversations/*` endpoints `require_auth`, so anonymous HTTP callers can no longer reach the NULL fallback — it exists only so signed-in/dev users keep seeing legacy rows. The one-time prod cleanup (`DELETE FROM conversations WHERE user_id IS NULL`, children first — SQLite FK cascade is off) **was run 2026-06-12**: prod has 0 NULL rows (backup at `/app/backend/data/chicago.backup-2026-06-12-prenullclean.db`). Local dev DBs may still hold NULL rows. NOTE: anonymous chat is intentionally NOT persisted — never "fix" anon chat by re-opening these endpoints. Operational gotcha: the live backend's aiosqlite connection holds a persistent SQLite write lock — ad-hoc writes from a second connection need a fresh backend restart (busy_timeout alone won't get you in).
 
 **`GET /api/uploads/{upload_id}/file` is unauthenticated**: Upload downloads are keyed only by UUID (needed for shared-transcript rendering). Enumeration is impractical, but there's no ownership check. Flagged during audit step 3; tighten if uploads ever carry sensitive content.
 
