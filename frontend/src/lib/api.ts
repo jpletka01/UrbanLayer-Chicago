@@ -241,21 +241,6 @@ export async function fetchMapData(params: {
   }
 }
 
-export async function getCommunityAreaByPoint(
-  lat: number,
-  lon: number,
-): Promise<{ community_area: number; name: string } | null> {
-  try {
-    const resp = await authFetch(
-      `${API_BASE}/api/community-area?lat=${lat}&lon=${lon}`,
-    );
-    if (!resp.ok) return null;
-    return await resp.json();
-  } catch {
-    return null;
-  }
-}
-
 export class ChatStreamError extends Error {
   status: number;
   detail: string | null;

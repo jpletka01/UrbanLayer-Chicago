@@ -14,6 +14,7 @@ interface Props {
   disabled?: boolean;
   variant?: "hero" | "compact";
   placeholder?: string;
+  initialValue?: string;
   attachments?: PendingAttachment[];
   onAttach?: (files: File[]) => void;
   onRemoveAttachment?: (index: number) => void;
@@ -32,13 +33,19 @@ export function ChatInput({
   disabled,
   variant = "hero",
   placeholder,
+  initialValue,
   attachments = [],
   onAttach,
   onRemoveAttachment,
 }: Props) {
   const { t } = useTranslation("chat");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue ?? "");
+
+  // Re-seed when the prefill changes (persona cards prefill the hero chat).
+  useEffect(() => {
+    if (initialValue) setValue(initialValue);
+  }, [initialValue]);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);

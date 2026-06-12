@@ -1,13 +1,12 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ChatInput } from "./components/ChatInput";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
+import { HeroEntrance } from "./components/landing/HeroEntrance";
 import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
-import { PromptSuggestionChip } from "./components/PromptSuggestionChip";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { SourceDetailDrawer, type SectionView } from "./components/SourceDetailDrawer";
 import type { PendingAttachment } from "./components/ChatInput";
@@ -105,6 +104,8 @@ export function App() {
   const [mapTabViewed, setMapTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  // Set by persona cards: prefills the hero chat (librarian) entrance.
+  const [heroChatPrefill, setHeroChatPrefill] = useState<string | null>(null);
   const [isSharedView, setIsSharedView] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const { user, isAuthenticated, authRequired, loading: authLoading, signIn, signOut } = useAuthContext();
@@ -697,6 +698,9 @@ export function App() {
                       <p className="text-lg text-white/80 leading-relaxed">
                         {t("heroSubtitle")}
                       </p>
+                      <p className="text-sm text-white/60 leading-relaxed mt-2">
+                        {t("heroSubline")}
+                      </p>
                     </motion.div>
 
                     <motion.div
@@ -704,22 +708,7 @@ export function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
-                      <ChatInput onSubmit={sendMessage} variant="hero" />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4, duration: 0.5 }}
-                      className="flex flex-wrap gap-2 justify-center"
-                    >
-                      {(t("suggestions", { returnObjects: true }) as string[]).map((s) => (
-                        <PromptSuggestionChip
-                          key={s}
-                          label={s}
-                          onClick={() => sendMessage(s)}
-                        />
-                      ))}
+                      <HeroEntrance onChatSubmit={sendMessage} chatPrefill={heroChatPrefill} />
                     </motion.div>
                   </div>
                 </div>
@@ -769,7 +758,12 @@ export function App() {
             <DepthShowcase />
 
             {/* Persona Scenarios — professional personas */}
-            <PersonaScenarios onAsk={sendMessage} />
+            <PersonaScenarios
+              onChatQuestion={(q) => {
+                setHeroChatPrefill(q);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
 
             {/* Story interstitial — report workflow */}
             <StorySection

@@ -1,9 +1,12 @@
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { buildScorecardHref } from "../sidebar/ScorecardBridgeCard";
+import { track } from "../../lib/tracking";
 
 interface Props {
-  onAsk: (question: string) => void;
+  onChatQuestion: (question: string) => void;
 }
 
 const PERSONA_ICONS = [
@@ -24,14 +27,33 @@ const PERSONA_ICONS = [
   ),
 ];
 
-export function PersonaScenarios({ onAsk }: Props) {
+export function PersonaScenarios({ onChatQuestion }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const { t } = useTranslation("landing");
+  const navigate = useNavigate();
 
   const personas = t("personas.items", { returnObjects: true }) as {
-    title: string; question: string; domains: string[]; framing: string;
+    title: string;
+    question: string;
+    domains: string[];
+    framing: string;
+    action?: "scorecard" | "chat";
+    address?: string;
   }[];
+
+  // Address-anchored personas open the parcel's Scorecard; code-research
+  // personas open the librarian chat with the question prefilled. Missing
+  // i18n fields fall back to chat (the i18n cast is unchecked at runtime).
+  function handleClick(p: (typeof personas)[number], index: number) {
+    if (p.action === "scorecard" && p.address) {
+      track("hero_address_submit", { source: "persona", persona: index, address: p.address });
+      navigate(buildScorecardHref(null, p.address)!);
+    } else {
+      track("hero_librarian_click", { source: "persona", persona: index });
+      onChatQuestion(p.question);
+    }
+  }
 
   return (
     <section ref={ref} className="py-24 px-6">
@@ -58,7 +80,7 @@ export function PersonaScenarios({ onAsk }: Props) {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.1 + i * 0.1, duration: 0.5, ease: "easeOut" }}
               className="bg-dark-surface/80 backdrop-blur-md border border-white/10 border-l-2 border-l-accent rounded-xl p-6 space-y-5 cursor-pointer hover:border-l-accent-hover hover:bg-dark-surface transition-all group"
-              onClick={() => onAsk(p.question)}
+              onClick={() => handleClick(p, i)}
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center text-accent">

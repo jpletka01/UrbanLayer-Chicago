@@ -1,17 +1,25 @@
 {
-  "heroSubtitle": "Zoning, incentives, tax projections, and municipal code analysis for any Chicago address — in seconds.",
+  "heroSubtitle": "Site feasibility for any Chicago address. In seconds.",
+  "heroSubline": "Zoning, incentives, tax projections, comparable sales, and municipal code analysis — all from one search.",
   "stats": {
     "dataSources": "Data sources",
     "codeSections": "Code sections",
     "communityAreas": "Community areas",
     "regulatoryLayers": "Regulatory layers"
   },
-  "suggestions": [
-    "Can I build a 6-unit building at 4520 N Clark St?",
-    "What are the setback requirements for B3-2 zoning?",
-    "Is 2400 N Milwaukee Ave eligible for a Class 6b incentive?",
-    "Tell me about the property at 1425 N Wells St"
-  ],
+  "hero": {
+    "addressPlaceholder": "Enter a Chicago address…",
+    "try": "Try:",
+    "addressExamples": ["4520 N Clark St", "2400 N Milwaukee Ave", "1425 N Wells St"],
+    "librarianLink": "Researching the code, not a property? Ask the municipal-code analyst →",
+    "backToAddress": "← Looking up a property? Enter an address",
+    "chatPlaceholder": "Ask about the municipal code…",
+    "librarianSuggestions": [
+      "What are the setback requirements for B3-2 zoning?",
+      "What uses are allowed in a C1-2 district?",
+      "When does a rear addition need a zoning variance?"
+    ]
+  },
   "intelligence": {
     "heading": "One question. Twenty-five sources.",
     "subheading": "Zoning, municipal code, property records, incentives, permits, and more — queried simultaneously.",
@@ -101,27 +109,6 @@
     "sampleLot": "3,125 sq ft",
     "sampleZoneDesc": "Community Shopping District"
   },
-  "explorer": {
-    "heading": "Explore a neighborhood",
-    "subheading": "Pick a community area or enter an address to explore live city data — crime patterns, 311 service requests, building permits, and month-over-month trends, updated from the Chicago Data Portal.",
-    "sampleData": "Showing sample data",
-    "neighborhood": "Neighborhood",
-    "address": "Address",
-    "or": "or",
-    "searchAreas": "Search areas...",
-    "enterAddress": "Enter an address...",
-    "all": "All",
-    "crime": "Crime",
-    "311": "311",
-    "permits": "Permits",
-    "crimes": "Crimes",
-    "arrestRate": "Arrest rate",
-    "311requests": "311 requests",
-    "breakdown": "{{label}} breakdown",
-    "crimeBreakdown": "Crime breakdown",
-    "311Breakdown": "311 Requests breakdown",
-    "permitsBreakdown": "Permits breakdown"
-  },
   "personas": {
     "heading": "Built for real decisions",
     "subheading": "Whether you're evaluating a development site, checking code compliance, or researching incentive eligibility.",
@@ -131,19 +118,24 @@
         "title": "The Developer",
         "question": "Can I build a 6-unit residential building at 4520 N Clark St?",
         "domains": ["Zoning Analysis", "Bulk Standards", "Overlay Compliance", "Incentive Eligibility", "Tax Projection", "Comparable Sales"],
-        "framing": "Complete site feasibility in seconds, not days."
+        "framing": "Complete site feasibility in seconds, not days.",
+        "action": "scorecard",
+        "address": "4520 N Clark St"
       },
       {
         "title": "The Architect",
         "question": "What are the setback requirements for a mixed-use building in B3-2 adjacent to an RS-3 district?",
         "domains": ["Cited Municipal Code", "Transition Zone Rules", "Parking Requirements", "Height & Bulk Standards", "FAR Calculation", "Overlay Districts"],
-        "framing": "Every answer cites the specific code section."
+        "framing": "Every answer cites the specific code section.",
+        "action": "chat"
       },
       {
         "title": "The Attorney",
         "question": "Is the property at 2400 N Milwaukee Ave eligible for a Class 6b tax incentive?",
         "domains": ["Property Classification", "Incentive Eligibility", "TIF District Status", "Applicable Programs", "Assessment History", "Municipal Code"],
-        "framing": "Due diligence research in one query, not ten FOIA requests."
+        "framing": "Due diligence research in one query, not ten FOIA requests.",
+        "action": "scorecard",
+        "address": "2400 N Milwaukee Ave"
       }
     ]
   },
@@ -151,17 +143,17 @@
     "heading": "How it works",
     "steps": [
       {
-        "title": "You ask",
-        "description": "Ask in plain English — no query language, no filters to configure, no forms to fill out.",
-        "query": "Can I build a 6-flat at 2100 N Damen?"
+        "title": "Enter an address",
+        "description": "Start with the property — type any Chicago address and the parcel's file opens instantly. No account, no forms.",
+        "query": "2100 N Damen Ave"
       },
       {
-        "title": "We retrieve",
-        "description": "Your question activates the right combination of city, county, federal, and legal data sources — in parallel."
+        "title": "We assemble the file",
+        "description": "City, county, federal, and legal sources are queried in parallel — zoning, overlays, incentives, taxes, and comparable sales."
       },
       {
-        "title": "You get answers",
-        "description": "A sourced, cited answer with interactive maps, regulatory analysis, and linked code references. Export your research as a PDF transcript anytime."
+        "title": "You get the dossier",
+        "description": "A free Scorecard assessment in seconds, an AI analyst for cited follow-up questions — and the full Development Feasibility Report ($25) when you need the deliverable."
       }
     ],
     "sourceTags": ["Zoning", "Overlays", "Property", "Permits", "TIF", "Code", "Incentives", "Tax Est."],
