@@ -18,7 +18,6 @@ Load only what you need for the current task. Don't read everything.
 - `guides/report-status.md` — **Master report feature tracker**: shipped (V3-V6), blocked/data-dependent, confirmed limitations, rejected features, future ideas
 - `guides/report-v6-improvements.md` — V6 open issues: parcel map needs real geometry, year_built data gaps, ownership limitation, comps map validation
 - `guides/report-v6-audit.md` — **Rejection audit of `report_v6g.pdf`** (2026-06-10): every finding ranked by decision-quality impact × effort, quadrant view, execution order, verified root causes. Key caveat: audited PDF was mock=true — regenerate real-data before fixing
-- `guides/selected-parcel-plan.md` — **SelectedParcel unification: COMPLETE. All phases (0–3) implemented & verified 2026-06-11 (commits 7a610d6, 2b0c8b1, 82fd399, 4c78986; 577 unit tests + Stripe test-mode e2e pass), merged to main 2026-06-11 → auto-deploy. Archive after live-API deploy verification.** Frontend identity-state primitive (pin + confidence); purchases PIN-keyed (db schema v11); report API functions take SelectedParcel. Read this first (and only this) for parcel-identity work, including §8 "Implementation status & findings" for binding deviations from §5's literal steps.
 - `guides/report-v6-execution-plan.md` — **Master V6 phased execution plan & status.** Phase 1 (viability: R1 zoning fallback, R2 tax/assessment, R3 comps, R4 formatting) **SHIPPED 2026-06-10 (commit f0c1996)** with verified results; Phases 2–4 (credibility, decision-quality, UX/viz) pending. Verification parcels: EX subject `14283190070000` + taxable control `14331030110000`. Read this first for current report work.
 
 ## Strategy (load only for product planning / business discussions)
@@ -28,6 +27,7 @@ Load only what you need for the current task. Don't read everything.
 - `strategy/design-guidelines.md` — Hybrid dashboard+chat model, UX principles, when to use chat vs tools
 
 ## Archive (historical — don't load unless asked about past decisions)
+- `archive/2026-06-11_selected-parcel.md` — SelectedParcel unification (shipped 2026-06-11): frontend parcel-identity primitive, pin-keyed handoffs + canonical `?pin=` URLs, PIN-bound purchases (db schema v11), SelectedParcel-typed report API. Includes the full spec, verification results, and binding findings.
 - `archive/2026-06-09_a-la-carte-reports.md` — A la carte $25 report purchases via Stripe one-time payment (code complete 2026-06-09)
 - `archive/2026-06-08_i18n-spanish.md` — Full i18n implementation plan (shipped 2026-06-08)
 - `archive/2026-06-05_deployment.md` — Phase-by-phase deployment log (all phases complete)
