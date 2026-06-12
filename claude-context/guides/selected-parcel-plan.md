@@ -1,6 +1,6 @@
 # SelectedParcel Unification — Canonical Handoff Artifact
 
-Plan date: 2026-06-11. Status: **ALL PHASES (0–3) implemented & verified 2026-06-11 on branch `selected-parcel` — not pushed, awaiting Jack's review. See §8 for implementation findings that amend §5's literal steps.**
+Plan date: 2026-06-11. Status: **COMPLETE — all phases (0–3) implemented & verified 2026-06-11; reviewed by Jack; merged to `main` 2026-06-11 (push = auto-deploy). Archive this guide after live-API deploy verification. See §8 for implementation findings that amend §5's literal steps.**
 Origin: full product/architecture audit → identity-fragmentation analysis → state-model grounding (this document is the compressed output; it supersedes the conversation that produced it).
 This artifact is the sole input for the implementation session. Where it conflicts with code comments, older docs, or intuition, this artifact wins.
 

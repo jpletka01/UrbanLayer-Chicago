@@ -83,6 +83,7 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`, then `python -m ev
 
 ## Operational Status
 
+- **Test baseline (2026-06-11, post-SelectedParcel)** — `python -m pytest backend/tests/ -q -m "not integration"` → **577 passed, 56 deselected** (633 collected); `npx tsc --noEmit` clean. If a fresh checkout shows fewer passing, something regressed — integration tests (56) are excluded because they hit real external APIs and fail on network/GIS flakiness, not code.
 - **Sentry** — Active on production (EU region, `ingest.de.sentry.io`). Backend (FastAPI) and frontend (React) both reporting.
 - **UptimeRobot** — Configured for `/health` checks.
 - **CI/CD** — Tests + type check + auto-deploy on push to main. Claude Code review on PR open/synchronize.
