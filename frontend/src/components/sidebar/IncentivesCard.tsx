@@ -43,7 +43,7 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
   );
 }
 
-export function IncentivesCard({ data }: { data: IncentivesSummary }) {
+export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummary; scorecardHref?: string | null }) {
   const { t } = useTranslation("data");
   const [showFinancials, setShowFinancials] = useState(false);
 
@@ -281,7 +281,7 @@ export function IncentivesCard({ data }: { data: IncentivesSummary }) {
             ) : data.census_tract}
           </p>
         )}
-        <ReportTeaser text={t("incentives.reportTeaser")} />
+        <ReportTeaser text={t("incentives.reportTeaser")} href={scorecardHref} />
       </div>
     </CollapsibleCard>
   );

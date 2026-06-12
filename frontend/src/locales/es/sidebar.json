@@ -7,5 +7,9 @@
   "loadingSection": "Cargando sección...",
   "sourceCount_one": "{{count}} fuente",
   "sourceCount_other": "{{count}} fuentes",
-  "sectionNotFound": "Sección no encontrada"
+  "sectionNotFound": "Sección no encontrada",
+  "bridge": {
+    "viewScorecard": "Ver Scorecard",
+    "pin": "PIN {{pin}}"
+  }
 }
