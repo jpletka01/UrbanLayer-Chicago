@@ -28,6 +28,10 @@
 
 **Cloudflare Insights beacon CORS**: Cloudflare-injected beacon intermittently fails with CORS and subresource integrity hash mismatches. Harmless console noise, not fixable by us.
 
+**UpgradePrompt / ReportPurchasePrompt copy is hardcoded English**: Both paywall modals (`UpgradePrompt.tsx`, `ReportPurchasePrompt.tsx`) have no i18n keys — Spanish users see English. Pre-existing; surfaced during coherence-audit step 2 (2026-06-12), which fixed the related untranslated `es/pages.json` `scorecard.reportCTA` block but left the modals as-is (north-star says don't expand Spanish by default; fix if/when pricing copy changes again).
+
+**TOD radii don't exist as a map layer**: Coherence audit §6 calls for "transit stations + TOD radii" in the default map; only stations render (`MapView.tsx` transit layer). Radii around CTA stations (the literal zoning-bonus determinant distance) would be new feature work.
+
 **Census data vintage**: ACS 5-year estimates have a ~2-year lag (2023 data = 2019-2023 period). Labeled as estimates in the UI.
 
 **Assessment lag**: CCAO assessments are triennial by township. Recent years may show $0 or stale values. UI shows the most recent non-zero assessment year.

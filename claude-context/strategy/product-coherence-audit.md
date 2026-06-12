@@ -2,9 +2,12 @@
 
 **Status:** Analysis complete; implementation underway. **Step 1 SHIPPED 2026-06-11** (merge `c3f68c3`,
 see `archive/2026-06-11_rename-and-bridge.md`): the "report"→transcript renaming and the chat→Scorecard
-bridge. Sections 1 and 3 below are the audit's point-in-time evidence (2026-06-11 pre-implementation) —
-the claims "chat→Scorecard bridge does not exist", "chat export titled Chicago Report", and "ReportTeaser
-non-clickable" are now resolved; see §10 for the per-item status. All other findings remain open. This
+bridge. **Step 2 SHIPPED 2026-06-12** (merge `b0921e9`, see `archive/2026-06-12_map-defaults-and-pricing.md`):
+map defaults flipped (points off/intent-gated, transit on) and the pricing page rebuilt to lead with the
+$25 report (3-card layout, footer Pricing link). Sections 1–7 below are the audit's point-in-time evidence
+(2026-06-11 pre-implementation) — the claims about the missing bridge, the "Chicago Report" export, the
+non-clickable ReportTeaser, the inverted map defaults (§6), and the $99-first pricing page (and its
+near-orphan status) are now resolved; see §10 for the per-item status. All other findings remain open. This
 document is the strategic interpretation that implementation work must serve. Read this *with*
 `strategy/north-star.md` (the governing strategy doc); this audit extends, sharpens, and in places
 challenges it based on what the product actually does as-built.
@@ -419,20 +422,31 @@ Session 1 produced a structured product definition that session 2 refined but di
   clickable in the chat sidebar; new `scorecard_bridge_click` analytics event (in backend allowlist;
   not yet charted on the admin dashboard).
 
+### Done (Step 2, shipped 2026-06-12 — merge `b0921e9`, details in `archive/2026-06-12_map-defaults-and-pricing.md`)
+- **Map defaults fixed (§6).** Crime/311/permit dots OFF by default, transit stations ON. Points
+  auto-enable behind explicit intent (query sources resolve to exactly one of crime/311/permits),
+  mirroring the `hasTransitContext` pattern. Caveat: TOD *radii* still don't exist as a layer —
+  only stations render; radii are future feature work.
+- **Pricing emphasis fixed (§8 geometry).** 3-card layout: Free / $25 Development Feasibility Report
+  (lead, "Start here" badge, CTA → `/scorecard`) / Pro $99 (badge removed, "4 reports ≈ a month of
+  Pro" arithmetic upsell). The hardcoded a-la-carte footnote is gone. Landing footer gained a Pricing
+  link — the page's first anonymous-reachable inbound link (fuller de-orphaning belongs to the
+  homepage redesign).
+
 ### Still open (each requires fresh approval before implementation)
 - **No decision on what exactly the new homepage IS** (address-input hero? combined search? where
   the librarian entrance lives?). The conceptual answer is "ask 'Which property?' and open a file in
-  2 seconds" — the concrete surface design is unresolved.
+  2 seconds" — the concrete surface design is unresolved. Includes `LandingMap`'s crime-dot demo
+  (untouched by step 2's map work).
 - **No decision on auth placement specifics** (purchase-time? save-time? Nth chat message?).
   Direction: defer auth past the first demonstrated value.
 - **No decision on Explorer free-teaser depth** (how many results free? which filters free?).
-- **Map defaults unchanged** (crime/311/permit dots on, transit/TOD off — still inverted per §6).
-- **Pricing page unchanged** ($99 "Recommended" lead, $25 wedge a footnote, page near-orphaned).
 - **Phase 2 (customer validation) interaction:** the audit's strongest practical claim is that the
-  current funnel would contaminate validation — interviewees would validate the chatbot. Step 1
-  removed the counterfeit-report confusion and gave chat a route to the assessment product, but the
-  homepage→auth-walled-chat entry is untouched; whether to fix the rest of the funnel BEFORE running
-  the 20 interviews is a sequencing decision Jack has not made.
+  current funnel would contaminate validation — interviewees would validate the chatbot. Steps 1–2
+  removed the counterfeit-report confusion, bridged chat to the assessment product, fixed the
+  crime-map first impression, and put the wedge first on pricing — but the homepage→auth-walled-chat
+  entry is untouched; whether to fix it BEFORE running the 20 interviews is a sequencing decision
+  Jack has not made.
 - **Tension with north-star to reconcile if accepted:** north-star says "hero action: a single
   address input field → Scorecard" (already aligned with this audit) but also tolerates the current
   chat-first homepage as shipped Phase 0. This audit says the Phase-0 repositioning was copy-only
