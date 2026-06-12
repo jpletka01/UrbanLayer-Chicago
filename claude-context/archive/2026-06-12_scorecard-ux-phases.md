@@ -36,7 +36,8 @@ A four-phase improvement pass over `/scorecard`, driven by a full production UX 
 
 ## Key Decisions
 
-- **Rejected**: masonry layout (symptom; unbounded card depth was the disease), letter-grade "scores" (a wrong grade is a liability; verdict stays facts-only), question-based card *merging* (shared sidebar components, high regression surface — reorder+collapse got most of the value), live GL map thumbnail (static image suffices).
+- **Rejected**: letter-grade "scores" (a wrong grade is a liability; verdict stays facts-only), question-based card *merging* (shared sidebar components, high regression surface — reorder+collapse got most of the value), live GL map thumbnail (static image suffices).
+- **Masonry: initially rejected, then adopted as CSS multicol** (`967d283`, same day). The collapse pass shrank card-height variance but the 2-col grid still row-snapped, leaving gaps Jack flagged on the live page. Final layout: `columns-1 md:columns-2` + `break-inside-avoid mb-4` per card block — columns flow independently, reading order is column-major (Property→Comps→Zoning→Incentives left; Regulatory→Violations→Crime→311→Neighborhood right). Known trade-off: expanding a section can reflow a card across columns.
 - Coordinates for pin resolution stay Parcel Universe (truth-model §5 / INV-2); Address Points is display-only.
 - The free zoning table deliberately shows *published* Title-17 values; the report keeps interpretation (envelope math, setbacks, parking, approval pathway). Validate in Phase-2 interviews whether the free table cannibalizes purchases.
 
