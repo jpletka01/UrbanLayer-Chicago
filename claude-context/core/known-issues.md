@@ -4,7 +4,7 @@
 
 **Cook County GIS parcel lookup is intermittently down**: The ArcGIS endpoint (`gis.cookcountyil.gov/.../MapServer/44/query`) has a broken spatial/attribute index — filtered queries (spatial or by PIN) can timeout at 60s+. **Mitigation**: `parcels.py` now falls back to the Cook County Socrata Parcel Universe dataset (`pabr-t5kh`) via bounding-box query on lat/lon columns. The fallback returns a PIN plus enrichment fields (`zip_code`, `township_name`, `nbhd_code`, `tax_code`) to unblock the full property pipeline. Building/land sqft are filled in downstream by CCAO Characteristics. **Still missing on fallback**: parcel polygon geometry (map display only) and address. When GIS is up, it's used preferentially. A diagnostic integration test (`test_parcel_gis_diagnostic`) fails loudly when GIS is down.
 
-**Address Points can resolve an address to a neighboring parcel with `authoritative` confidence**: Observed 2026-06-11 during SelectedParcel QA — "443 W Wrightwood Ave" (the EX subject's address, previously believed to have *no* address point) resolves authoritative → pin `14283180570000`, an adjacent parcel, not the EX subject `14283190070000`. The same query returned approximate/no-pin on one cold-cache probe, so the address path also falls through nondeterministically under transient Socrata failures. Means an address search can confidently land on the wrong adjacent parcel. Investigate before keying purchases on address-resolved pins (SelectedParcel Phase 2 keys on the pin the user *saw*, which mitigates but doesn't fix mis-resolution at search time).
+**Address Points can resolve an address to a neighboring parcel with `authoritative` confidence**: Observed 2026-06-11 during SelectedParcel QA — "443 W Wrightwood Ave" (the EX subject's address, previously believed to have *no* address point) resolves authoritative → pin `14283180570000`, an adjacent parcel, not the EX subject `14283190070000`. The same query returned approximate/no-pin on one cold-cache probe, so the address path also falls through nondeterministically under transient Socrata failures. Means an address search can confidently land on the wrong adjacent parcel. SelectedParcel Phase 2 (shipped to branch 2026-06-11) keys purchases on the pin the user *saw* on the Scorecard, which mitigates but doesn't fix mis-resolution at search time — still worth investigating the Address Points match logic.
 
 ## Known Limitations
 
@@ -53,7 +53,11 @@
 
 **Municipal Code is gitignored**: `chicago-il-codes.html` (~100MB) is not in version control. Anyone cloning needs to obtain it from American Legal Publishing.
 
-**PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist.
+**PTAXSIM database is large**: 8.8GB uncompressed. Download script at `scripts/download_ptaxsim.py`. Optional — tax estimation is skipped if the DB doesn't exist. **Test gotcha**: tests that stub `property_domain` must also patch `estimate_tax`, or the test opens the 8.8GB DB (see `test_property_domain_pin.py`).
+
+**Local dev DB schema_version can run ahead of the actual schema**: Found 2026-06-11 — the local `backend/data/chicago.db` claimed v10/v11 while entirely missing the v9 `report_purchases` and v10 `events` tables (so local analytics ingestion had been silently writing to a missing table). Cause class: `executescript` implicitly commits, so a crashed init can leave the version row committed without the later migrations' tables. `init_db` trusts the version row and won't self-heal; `_migrate_v11` (and any future ALTER-based migration) will crash on such a DB. **Repair**: re-run the relevant idempotent `_migrate_vN` functions manually against the file. Production was verified unaffected.
+
+**Dev-mode Stripe checkout needs two local fixtures**: (1) `_DEV_USER`'s email must be Stripe-valid — `dev@localhost` was rejected by Stripe's `customer_email` validation, 500ing every dev checkout until it was changed to `dev@example.com` (fixed in `auth.py`, 2026-06-11). (2) The synthetic dev user has no `users` row, and `report_purchases.user_id` has a FK on it — insert an `id='dev'` row into the local DB before exercising checkout in dev mode (done on this machine during Phase 2 QA).
 
 ## Source Coverage Benchmark (2026-06-06, run 3)
 

@@ -12,7 +12,7 @@
 | `assembler.py` | Context assembly with configurable caps + capped-result detection + partial_failures + tax class interpretation + negative signals for missing data |
 | `analytics.py` | Server-side MoM trend computation from raw Socrata rows |
 | `auth.py` | Google OAuth2 + JWT sessions. Dev-mode bypass when `GOOGLE_CLIENT_ID` empty. Dependencies: `get_current_user`, `require_admin`, `require_tier(minimum)` |
-| `payments.py` | Stripe integration: subscription checkout + a la carte report checkout (`mode=payment`), webhook handler dispatches on session mode (subscription vs one-time), billing portal, subscription status |
+| `payments.py` | Stripe integration: subscription checkout + a la carte report checkout (`mode=payment`; PIN carried in session metadata, purchase row, and `?pin=` success/cancel URLs when known), webhook handler dispatches on session mode (subscription vs one-time) and matches purchases by `stripe_session_id`, billing portal, subscription status |
 | `rate_limit.py` | Per-user sliding window rate limiting + daily API budget cap. Applied to `/chat` only |
 | `db.py` | SQLite persistence (aiosqlite, WAL, schema v11). Tables: conversations (user-scoped), messages, uploads, llm_calls, request_logs, users (with stripe_customer_id, stripe_subscription_id), refresh_tokens, conversation_shares, report_purchases (a la carte $25 reports, entitlement keyed on parcel PIN when known; legacy pin-less rows matched by lat/lon rounded to 4 decimals), events (usage analytics: page_view, investigate_click, report_cta_click, chat_message_sent) |
 | `llm.py` | Shared Anthropic client + `tracked_create()`/`tracked_stream()` wrappers (token/cost/latency logging) + automatic prompt caching via `_enable_prompt_caching()` |
