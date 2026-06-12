@@ -78,7 +78,7 @@ function countDataCategories(ctx: ContextObject | null): number {
 export function App() {
   const { t } = useTranslation("landing");
   const { t: tc } = useTranslation("common");
-  const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace } =
+  const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace, navigateBack } =
     useConversationRouter();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -364,12 +364,18 @@ export function App() {
   // ?pin= rides along so the turn resolves the exact parcel instead of
   // re-geocoding the address text (read-only handoff — truth-model §3).
   const qConsumedRef = useRef(false);
+  // True when this chat visit is a handoff from another page (?q= deep link).
+  // If the user then declines the sign-in modal without ever getting an
+  // answer, dismissing returns them to the page they came from instead of
+  // stranding them on an empty workspace.
+  const handoffOriginRef = useRef(false);
   useEffect(() => {
     const q = searchParams.get("q");
     if (!q || qConsumedRef.current) return;
     if (authLoading || conversationIdFromUrl || shareTokenFromUrl) return;
     if (messages.length > 0 || streaming) return;
     qConsumedRef.current = true;
+    handoffOriginRef.current = true;
     const pin = searchParams.get("pin");
     setSearchParams({}, { replace: true });
     sendMessage(q, undefined, pin ? { parcelPin: pin } : undefined);
@@ -1012,7 +1018,17 @@ export function App() {
       {showAuthModal && (
         <AuthModal
           onSignIn={signIn}
-          onClose={() => setShowAuthModal(false)}
+          onClose={() => {
+            setShowAuthModal(false);
+            // Dead-end handoff: arrived via ?q= from another page and never
+            // received an answer (rate-limited / failed). Declining sign-in
+            // returns the user to where they actually were.
+            const gotAnswer = messages.some((m) => m.role === "assistant" && m.content);
+            if (handoffOriginRef.current && !gotAnswer) {
+              handoffOriginRef.current = false;
+              navigateBack();
+            }
+          }}
         />
       )}
 

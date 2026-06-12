@@ -23,11 +23,17 @@ export function useConversationRouter() {
     [navigate],
   );
 
+  const navigateBack = useCallback(
+    () => navigate(-1),
+    [navigate],
+  );
+
   return {
     conversationIdFromUrl,
     shareTokenFromUrl,
     navigateToConversation,
     navigateToSplash,
     navigateReplace,
+    navigateBack,
   };
 }
