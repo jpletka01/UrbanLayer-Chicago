@@ -253,7 +253,18 @@ async def refresh_token(request: Request):
 
 
 @app.get("/api/auth/me")
-async def auth_me(request: Request):
+async def auth_me(request: Request, response: Response):
+    # Anonymous visitors need the (JS-readable, double-submit) CSRF cookie
+    # too: anon chat is open, and CSRFMiddleware checks POST /chat. The
+    # cookie is otherwise only issued at OAuth callback/refresh.
+    if not request.cookies.get("csrf_token"):
+        import secrets
+        from backend.auth import get_settings as _auth_settings
+        response.set_cookie(
+            "csrf_token", secrets.token_urlsafe(16),
+            httponly=False, secure=_auth_settings().auth_cookie_secure,
+            samesite="lax", path="/",
+        )
     return await handle_me(request)
 
 

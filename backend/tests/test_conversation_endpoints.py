@@ -173,6 +173,40 @@ class TestOwnership:
 
 
 # ---------------------------------------------------------------------------
+# CSRF bootstrap: anonymous visitors get the double-submit cookie on /me
+# (without it, anon POST /chat is blocked by CSRFMiddleware in production)
+# ---------------------------------------------------------------------------
+
+class TestCsrfBootstrap:
+    async def test_me_issues_csrf_cookie_to_anonymous(self, _auth_enabled, test_db):
+        client = TestClient(app)
+        resp = client.get("/api/auth/me")
+        assert resp.status_code == 200
+        assert resp.cookies.get("csrf_token")
+
+    async def test_me_keeps_existing_csrf_cookie(self, _auth_enabled, test_db):
+        client = TestClient(app)
+        client.cookies.set("csrf_token", "existing-token")
+        resp = client.get("/api/auth/me")
+        assert resp.status_code == 200
+        assert "csrf_token" not in resp.cookies  # not re-issued
+
+    async def test_anon_chat_passes_csrf_with_bootstrap_pair(self, _auth_enabled, test_db):
+        """The cookie+header pair from the bootstrap must satisfy the middleware
+        (the request then proceeds into /chat — rate limiting, not 403)."""
+        client = TestClient(app)
+        token = client.get("/api/auth/me").cookies["csrf_token"]
+        client.cookies.set("csrf_token", token)
+        # Pre-fill the anon rate-limit window so /chat 429s instead of
+        # invoking the real pipeline; 429 proves CSRF passed.
+        from backend import rate_limit
+        for _ in range(5):
+            rate_limit._windows["ip:testclient"].record()
+        resp = client.post("/chat", json={"message": "hi"}, headers={"x-csrf-token": token})
+        assert resp.status_code == 429  # not 403
+
+
+# ---------------------------------------------------------------------------
 # Dev mode (auth disabled): everything keeps working, NULL rows visible
 # ---------------------------------------------------------------------------
 
