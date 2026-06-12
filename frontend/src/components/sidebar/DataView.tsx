@@ -5,6 +5,7 @@ import type { FilterMode } from "../../lib/mapColors";
 import { zonePrefix, zoneColorCSS, zonePrefixLabel } from "../../lib/mapColors";
 import { InfoTooltip } from "../InfoTooltip";
 import { AnalyticsSection } from "./AnalyticsSection";
+import { ScorecardBridgeCard, buildScorecardHref } from "./ScorecardBridgeCard";
 import { PropertyCard } from "./PropertyCard";
 import { RegulatoryCard } from "./RegulatoryCard";
 import { IncentivesCard } from "./IncentivesCard";
@@ -124,9 +125,16 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
   const hasZoning = !!(mapData?.zoning && ((mapData.zoning as Record<string, unknown>).features as unknown[] | undefined)?.length);
   const hasDomainData = !!(context?.property || context?.regulatory || context?.incentives || context?.neighborhood
     || context?.violations || context?.crime_last_90d || context?.open_311_requests || context?.permits || context?.businesses);
+  const parcelPin = context?.property?.pin14 ?? null;
+  const parcelAddress = context?.resolved_address ?? context?.property?.address ?? null;
+  const scorecardHref = buildScorecardHref(parcelPin, parcelAddress);
 
   return (
     <div className="space-y-4">
+      {(parcelPin || parcelAddress) && (
+        <ScorecardBridgeCard pin={parcelPin} address={parcelAddress} />
+      )}
+
       {context?.data_lag_note && (
         <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400/90 text-xs">
           {context.data_lag_days && context.data_lag_cutoff
@@ -162,9 +170,9 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
         <p className="text-sm text-text-muted">{t("states.noDatasets")}</p>
       )}
 
-      {context?.property && <PropertyCard data={context.property} />}
+      {context?.property && <PropertyCard data={context.property} scorecardHref={scorecardHref} />}
       {context?.regulatory && <RegulatoryCard data={context.regulatory} />}
-      {context?.incentives && <IncentivesCard data={context.incentives} />}
+      {context?.incentives && <IncentivesCard data={context.incentives} scorecardHref={scorecardHref} />}
       {context?.neighborhood && <NeighborhoodCard data={context.neighborhood} />}
       {context?.violations && <ViolationsCard data={context.violations} />}
 

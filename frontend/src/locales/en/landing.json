@@ -52,7 +52,7 @@
     "feasibilityTitle": "Evaluate any site in seconds",
     "feasibilitySubtitle": "Zoning classification, regulatory overlays, incentive eligibility, tax projections, and comparable sales — assembled from 25+ sources for any Chicago address. The due diligence that used to take a week.",
     "reportTitle": "From question to report",
-    "reportSubtitle": "Ask a question in plain English. Get a sourced analysis with cited municipal code, interactive maps, and trend data. Download a professional PDF report you can hand to a client, investor, or lender."
+    "reportSubtitle": "Ask a question in plain English. Get a sourced analysis with cited municipal code, interactive maps, and trend data — then get the full Development Feasibility Report, a professional PDF you can hand to a client, investor, or lender. $25 per parcel."
   },
   "depth": {
     "heading": "Ask one question. Get the full picture.",
@@ -161,7 +161,7 @@
       },
       {
         "title": "You get answers",
-        "description": "A sourced, cited answer with interactive maps, regulatory analysis, and linked code references. Download a professional report."
+        "description": "A sourced, cited answer with interactive maps, regulatory analysis, and linked code references. Export your research as a PDF transcript anytime."
       }
     ],
     "sourceTags": ["Zoning", "Overlays", "Property", "Permits", "TIF", "Code", "Incentives", "Tax Est."],

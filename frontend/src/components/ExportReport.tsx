@@ -367,7 +367,7 @@ export function ExportReport({ report, onClose }: Props) {
         .toLowerCase()
         .slice(0, 40);
       const date = new Date().toISOString().slice(0, 10);
-      await downloadPDF(reportRef.current, `${slug}_${date}_report.pdf`);
+      await downloadPDF(reportRef.current, `${slug}_${date}_transcript.pdf`);
     } finally {
       setExporting(false);
     }

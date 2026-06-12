@@ -602,7 +602,7 @@ export function App() {
       if (canvas) mapScreenshot = canvas.toDataURL("image/png");
     } catch { /* WebGL context lost — skip map */ }
 
-    const title = context?.resolved_address || context?.community_area_name || "Chicago Report";
+    const title = context?.resolved_address || context?.community_area_name || "Chicago Transcript";
     const report = buildReportData(messages, mapScreenshot, title);
     setExportReport(report);
   }
@@ -841,12 +841,12 @@ export function App() {
                   <button
                     onClick={handleExport}
                     className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                    title={tc("report")}
+                    title={tc("export")}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                     </svg>
-                    <span className="hidden md:inline">{tc("report")}</span>
+                    <span className="hidden md:inline">{tc("export")}</span>
                   </button>
                 )}
                 {!isSharedView && !streaming && isAuthenticated && conversationId && messages.some((m) => m.role === "assistant" && m.context) && (

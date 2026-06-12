@@ -75,8 +75,8 @@
   "story": {
     "feasibilityTitle": "Evalúa cualquier sitio en segundos",
     "feasibilitySubtitle": "Clasificación de zonificación, normativas superpuestas, elegibilidad de incentivos, proyecciones de impuestos y propiedades comparables consolidadas desde más de 25 fuentes. Auditoría de compra en segundos, no en semanas de trabajo.",
-    "reportTitle": "Generación de informes a partir de análisis",
-    "reportSubtitle": "Haz tu consulta en español y obtén un análisis detallado con fuentes citadas del código municipal, mapas interactivos y tendencias de datos. Descarga un informe profesional en PDF para clientes, inversores o prestamistas."
+    "reportTitle": "De la consulta al informe",
+    "reportSubtitle": "Haz tu consulta en español y obtén un análisis detallado con fuentes citadas del código municipal, mapas interactivos y tendencias de datos — y luego obtén el Informe de Viabilidad de Desarrollo completo, un PDF profesional para entregar a clientes, inversores o prestamistas. $25 por parcela."
   },
   "depth": {
     "heading": "Haz tu consulta y obtén el panorama completo.",
@@ -206,7 +206,7 @@
       },
       {
         "title": "Resultados detallados",
-        "description": "Obtén respuestas documentadas con citas, mapas interactivos y análisis normativo. Descarga directa de informes profesionales."
+        "description": "Obtén respuestas documentadas con citas, mapas interactivos y análisis normativo. Exporta tu investigación como transcripción en PDF cuando quieras."
       }
     ],
     "sourceTags": [

@@ -4565,7 +4565,7 @@ async def admin_benchmark(request: Request, _admin: dict = Depends(require_admin
         }
 
 
-_VALID_EVENT_NAMES = {"page_view", "investigate_click", "report_cta_click", "chat_message_sent"}
+_VALID_EVENT_NAMES = {"page_view", "investigate_click", "report_cta_click", "chat_message_sent", "scorecard_bridge_click"}
 
 
 @app.post("/api/events")

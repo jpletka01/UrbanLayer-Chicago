@@ -66,7 +66,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function PropertyCard({ data }: { data: PropertySummary }) {
+export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; scorecardHref?: string | null }) {
   const { t } = useTranslation("data");
   const [showAssessments, setShowAssessments] = useState(false);
   const [showTax, setShowTax] = useState(false);
@@ -207,7 +207,7 @@ export function PropertyCard({ data }: { data: PropertySummary }) {
             )}
           </div>
         )}
-        <ReportTeaser text={t("property.reportTeaser")} />
+        <ReportTeaser text={t("property.reportTeaser")} href={scorecardHref} />
       </div>
     </CollapsibleCard>
   );
