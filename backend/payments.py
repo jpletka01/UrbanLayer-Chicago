@@ -61,27 +61,36 @@ async def create_billing_portal_session(user: dict) -> str:
 
 
 async def create_report_checkout_session(
-    user: dict, address: str, lat: float, lon: float,
+    user: dict, address: str | None, lat: float, lon: float,
+    pin: str | None = None,
 ) -> str:
-    """Create a one-time Stripe Checkout session for a single report ($25)."""
+    """Create a one-time Stripe Checkout session for a single report ($25).
+
+    ``pin`` keys the purchase to the parcel when known; the address/coord
+    fields remain for display and for legacy coordinate-matched entitlement.
+    """
     _configure_stripe()
     s = get_settings()
 
     if not s.stripe_price_id_report:
         raise HTTPException(status_code=503, detail="Report purchase not configured")
 
-    encoded_address = quote_plus(address)
+    if pin:
+        return_query = f"pin={quote_plus(pin)}"
+    else:
+        return_query = f"address={quote_plus(address or '')}"
     params: dict = {
         "mode": "payment",
         "line_items": [{"price": s.stripe_price_id_report, "quantity": 1}],
-        "success_url": f"{s.frontend_url}/scorecard?address={encoded_address}&report_purchased=1",
-        "cancel_url": f"{s.frontend_url}/scorecard?address={encoded_address}",
+        "success_url": f"{s.frontend_url}/scorecard?{return_query}&report_purchased=1",
+        "cancel_url": f"{s.frontend_url}/scorecard?{return_query}",
         "metadata": {
             "user_id": user["id"],
             "purchase_type": "report",
-            "address": address,
+            "address": address or "",
             "lat": str(round(lat, 4)),
             "lon": str(round(lon, 4)),
+            **({"pin": pin} if pin else {}),
         },
     }
 
@@ -99,6 +108,7 @@ async def create_report_checkout_session(
         address=address,
         lat=lat,
         lon=lon,
+        pin=pin,
     )
 
     return session.url

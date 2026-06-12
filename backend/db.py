@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 10
+_SCHEMA_VERSION = 11
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -139,6 +139,19 @@ CREATE TABLE IF NOT EXISTS conversation_shares (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_shares_token ON conversation_shares(token);
 CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_id);
 """
+
+
+async def _migrate_v11(db: aiosqlite.Connection) -> None:
+    """Add nullable pin column to report_purchases — entitlement keys on the
+    parcel PIN when known. Legacy pin-less rows stay entitled via the
+    coordinate match in has_purchased_report; no backfill."""
+    cur = await db.execute("PRAGMA table_info(report_purchases)")
+    cols = {row[1] for row in await cur.fetchall()}
+    if "pin" not in cols:
+        await db.execute("ALTER TABLE report_purchases ADD COLUMN pin TEXT")
+    await db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_rp_user_pin ON report_purchases(user_id, pin)"
+    )
 
 
 async def _migrate_v10(db: aiosqlite.Connection) -> None:
@@ -266,6 +279,7 @@ async def init_db() -> None:
         await _migrate_v8(_db)
         await _migrate_v9(_db)
         await _migrate_v10(_db)
+        await _migrate_v11(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -296,6 +310,9 @@ async def init_db() -> None:
         if version < 10:
             await _migrate_v10(_db)
             version = 10
+        if version < 11:
+            await _migrate_v11(_db)
+            version = 11
         if version != _SCHEMA_VERSION:
             await _db.execute(
                 "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
@@ -1098,17 +1115,18 @@ async def save_report_purchase(
     lat: float,
     lon: float,
     amount_cents: int = 2500,
+    pin: str | None = None,
 ) -> int:
     """Insert a pending report purchase. Returns the row id."""
     conn = _get_db()
     cur = await conn.execute(
         """
         INSERT INTO report_purchases
-          (user_id, stripe_session_id, address, lat, lon, amount_cents, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+          (user_id, stripe_session_id, address, lat, lon, amount_cents, status, created_at, pin)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
         """,
         (user_id, stripe_session_id, address, round(lat, 4), round(lon, 4),
-         amount_cents, _now_ms()),
+         amount_cents, _now_ms(), pin),
     )
     await conn.commit()
     return cur.lastrowid  # type: ignore[return-value]
@@ -1145,17 +1163,27 @@ async def complete_report_purchase(
     return dict(row) if row else None
 
 
-async def has_purchased_report(user_id: str, lat: float, lon: float) -> bool:
-    """Check if user has a completed purchase for this location."""
+async def has_purchased_report(
+    user_id: str, lat: float, lon: float, pin: str | None = None,
+) -> bool:
+    """Check if user has a completed purchase for this parcel.
+
+    PIN is the primary entitlement key. The coordinate clause is retained
+    permanently so legacy pin-less purchase rows stay entitled (no backfill);
+    pin=NULL rows never match the pin clause (SQL NULL comparison), so they
+    fall through to the coordinate match.
+    """
     conn = _get_db()
     cur = await conn.execute(
         """
         SELECT 1 FROM report_purchases
-        WHERE user_id = ? AND ROUND(lat, 4) = ROUND(?, 4) AND ROUND(lon, 4) = ROUND(?, 4)
+        WHERE user_id = ?
+          AND (pin = ?
+               OR (ROUND(lat, 4) = ROUND(?, 4) AND ROUND(lon, 4) = ROUND(?, 4)))
           AND status = 'completed'
         LIMIT 1
         """,
-        (user_id, lat, lon),
+        (user_id, pin, lat, lon),
     )
     return await cur.fetchone() is not None
 

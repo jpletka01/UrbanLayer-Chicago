@@ -5,6 +5,7 @@ interface ReportPurchasePromptProps {
   address: string;
   lat: number;
   lon: number;
+  pin?: string | null;
   onClose: () => void;
 }
 
@@ -12,6 +13,7 @@ export default function ReportPurchasePrompt({
   address,
   lat,
   lon,
+  pin,
   onClose,
 }: ReportPurchasePromptProps) {
   const [loading, setLoading] = useState<"report" | "pro" | null>(null);
@@ -19,7 +21,7 @@ export default function ReportPurchasePrompt({
   async function handleBuyReport() {
     setLoading("report");
     try {
-      const { url } = await createReportCheckoutSession({ address, lat, lon });
+      const { url } = await createReportCheckoutSession({ address, lat, lon, pin: pin ?? undefined });
       window.location.href = url;
     } catch {
       setLoading(null);

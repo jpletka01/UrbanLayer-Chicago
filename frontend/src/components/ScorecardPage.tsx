@@ -561,6 +561,7 @@ export default function ScorecardPage() {
           address={data.address || ""}
           lat={data.lat}
           lon={data.lon}
+          pin={parcel?.pin}
           onClose={() => setShowPurchasePrompt(false)}
         />
       )}

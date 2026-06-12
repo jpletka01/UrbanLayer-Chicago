@@ -143,7 +143,9 @@ async def get_google_userinfo(access_token: str) -> dict:
 
 _DEV_USER = {
     "id": "dev",
-    "email": "dev@localhost",
+    # example.com, not localhost — Stripe rejects "dev@localhost" as an invalid
+    # email, which 500s every dev-mode checkout before the session is created.
+    "email": "dev@example.com",
     "name": "Developer",
     "picture_url": None,
     "google_id": "dev",
@@ -340,11 +342,11 @@ async def handle_me(request: Request) -> dict:
             "authenticated": True,
             "auth_required": False,
             "user": {
-                "id": "dev",
-                "email": "dev@localhost",
-                "name": "Developer",
-                "picture_url": None,
-                "tier": "admin",
+                "id": _DEV_USER["id"],
+                "email": _DEV_USER["email"],
+                "name": _DEV_USER["name"],
+                "picture_url": _DEV_USER["picture_url"],
+                "tier": _DEV_USER["tier"],
             },
         }
 

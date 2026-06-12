@@ -144,6 +144,7 @@ export async function createReportCheckoutSession(params: {
   address: string;
   lat: number;
   lon: number;
+  pin?: string;
 }): Promise<{ url: string }> {
   const resp = await authFetch(`${API_BASE}/api/checkout/report`, {
     method: "POST",

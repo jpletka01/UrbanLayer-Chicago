@@ -4289,7 +4289,9 @@ async def report(
     resolved_lat, resolved_lon, resolved_address = rl.lat, rl.lon, rl.address
 
     if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER["premium"]:
-        if not await db.has_purchased_report(user["id"], resolved_lat, resolved_lon):
+        if not await db.has_purchased_report(
+            user["id"], resolved_lat, resolved_lon, pin=rl.pin
+        ):
             raise HTTPException(
                 status_code=403,
                 detail={"error": "report_purchase_required"},
@@ -4413,9 +4415,20 @@ async def checkout_report(request: Request, user: dict = Depends(require_auth)) 
     address = body.get("address")
     lat = body.get("lat")
     lon = body.get("lon")
-    if not address or lat is None or lon is None:
-        raise HTTPException(status_code=400, detail="address, lat, and lon are required")
-    url = await create_report_checkout_session(user, address, float(lat), float(lon))
+    pin = body.get("pin")
+    if not pin and (not address or lat is None or lon is None):
+        raise HTTPException(
+            status_code=400, detail="pin or (address, lat, lon) is required"
+        )
+    if pin and (lat is None or lon is None):
+        # Pin-only checkout: resolve the parcel centroid so the purchase row's
+        # NOT NULL lat/lon (legacy coordinate entitlement) stays populated.
+        rl = await _resolve_location(pin=pin)
+        lat, lon = rl.lat, rl.lon
+        address = address or rl.address
+    url = await create_report_checkout_session(
+        user, address, float(lat), float(lon), pin=pin
+    )
     return {"url": url}
 
 
@@ -4433,7 +4446,7 @@ async def check_report_access(
     if _TIER_ORDER.get(user["tier"], 0) >= _TIER_ORDER["premium"]:
         return {"has_access": True, "reason": "subscription"}
     rl = await _resolve_location(address, lat, lon, pin)
-    purchased = await db.has_purchased_report(user["id"], rl.lat, rl.lon)
+    purchased = await db.has_purchased_report(user["id"], rl.lat, rl.lon, pin=rl.pin)
     return {"has_access": purchased, "reason": "purchased" if purchased else "none"}
 
 
