@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import PageHeader from "./PageHeader";
 
 const SECTIONS = [
   { id: "overview", title: "Project Overview" },
@@ -147,16 +147,10 @@ export function AboutPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
-      {/* Header */}
-      <header className="h-14 border-b border-dark-border flex items-center px-6 sticky top-0 z-30 bg-dark-bg/95 backdrop-blur-sm">
-        <h1 className="text-lg font-semibold tracking-tight">
-          <Link to="/" className="text-accent hover:text-accent-hover transition-colors">UrbanLayer</Link>
-          <span className="text-text-muted ml-2">About</span>
-        </h1>
-      </header>
+      <PageHeader />
 
       {/* Mobile TOC toggle */}
-      <div className="lg:hidden sticky top-14 z-20 bg-dark-bg border-b border-dark-border">
+      <div className="lg:hidden sticky top-12 z-20 bg-dark-bg border-b border-dark-border">
         <button
           onClick={() => setTocOpen(!tocOpen)}
           className="w-full flex items-center justify-between px-6 py-3 text-sm text-text-secondary"
@@ -191,7 +185,7 @@ export function AboutPage() {
 
       <div className="max-w-6xl mx-auto flex">
         {/* Desktop sidebar TOC */}
-        <nav className="hidden lg:block w-56 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-8 pr-6 pl-6">
+        <nav className="hidden lg:block w-56 shrink-0 sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto py-8 pr-6 pl-6">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Contents</p>
           {SECTIONS.map((s) => (
             <button

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { fetchReport, checkReportAccess, type ScorecardResponse, type ZoneDefinition } from "../lib/api";
 import type { ParcelQuery } from "../lib/types";
@@ -19,6 +19,7 @@ import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExp
 import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
 import { humanizeShoutyCase } from "../lib/format";
 import { ReportTeaser } from "./sidebar/ReportTeaser";
+import PageHeader from "./PageHeader";
 
 // Dash-format a 14-digit PIN for display (assessor convention: 2-2-3-3-4).
 function formatPin(pin: string): string {
@@ -359,21 +360,7 @@ export default function ScorecardPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
-      {/* Header */}
-      <header className="border-b border-dark-border bg-dark-surface/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
-            <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
-          </Link>
-          <nav className="flex items-center gap-4 text-[11px] text-text-muted">
-            <Link to="/" className="hover:text-text-primary transition-colors">{t("nav.chat")}</Link>
-            <span className="text-accent">{t("nav.scorecard")}</span>
-            <Link to="/explore" className="hover:text-text-primary transition-colors">{t("nav.explore")}</Link>
-            <Link to="/about" className="hover:text-text-primary transition-colors">{t("nav.about")}</Link>
-          </nav>
-        </div>
-      </header>
+      <PageHeader />
 
       {/* pb-24 clears the sticky report bar so the last card is never hidden behind it */}
       <main className={`max-w-7xl mx-auto px-4 py-8 ${data && !loading ? "pb-24" : ""}`}>

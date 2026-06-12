@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useAuthContext } from "../contexts/AuthContext";
@@ -11,6 +11,7 @@ import {
   type ExploreResponse,
 } from "../lib/api";
 import UpgradePrompt from "./UpgradePrompt";
+import PageHeader from "./PageHeader";
 import { exportCSV, buildFilenameSlug } from "../lib/csvExport";
 
 const COMMUNITY_AREAS: Record<number, string> = {
@@ -189,21 +190,7 @@ export default function ExplorePage() {
 
   return (
     <div className="h-screen flex flex-col bg-dark-bg text-text-primary">
-      {/* Header */}
-      <header className="border-b border-dark-border bg-dark-surface/80 backdrop-blur-sm z-50 flex-shrink-0">
-        <div className="max-w-[1920px] mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
-            <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
-          </Link>
-          <nav className="flex items-center gap-4 text-[11px] text-text-muted">
-            <Link to="/" className="hover:text-text-primary transition-colors">{t("nav.chat")}</Link>
-            <Link to="/scorecard" className="hover:text-text-primary transition-colors">{t("nav.scorecard")}</Link>
-            <span className="text-accent">{t("nav.explore")}</span>
-            <Link to="/about" className="hover:text-text-primary transition-colors">{t("nav.about")}</Link>
-          </nav>
-        </div>
-      </header>
+      <PageHeader sticky={false} maxWidthClass="max-w-[1920px]" />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">

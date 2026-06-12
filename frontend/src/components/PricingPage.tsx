@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
+import PageHeader from "./PageHeader";
 import { createCheckoutSession } from "../lib/api";
 
 export default function PricingPage() {
@@ -31,18 +32,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
-      <header className="border-b border-dark-border px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
-          <span className="font-semibold text-sm">UrbanLayer</span>
-        </Link>
-        <Link
-          to="/"
-          className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-        >
-          {t("nav.backToApp")}
-        </Link>
-      </header>
+      <PageHeader />
 
       <main className="max-w-5xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-center mb-3">
