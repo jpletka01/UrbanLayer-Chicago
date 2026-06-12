@@ -521,10 +521,13 @@ export default function ScorecardPage() {
               incentives={ctx.incentives}
             />
 
-            {/* Card grid — ordered for developer evaluation flow */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card columns — ordered for developer evaluation flow. CSS multicol
+                instead of grid: each column flows independently, so a short card
+                never strands empty space beside a tall neighbor. break-inside-avoid
+                keeps a card and its ask-link together. */}
+            <div className="columns-1 md:columns-2 gap-4">
               {ctx.property && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <PropertyCard data={ctx.property} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
@@ -536,7 +539,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {data.comparables && data.comparables.sales.length > 0 && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <ComparablesCard data={data.comparables} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
@@ -548,7 +551,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {zdef && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <ZoningCard def={zdef} mapUrl={zoning?.zoning_map_url} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
@@ -560,7 +563,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {ctx.incentives && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <IncentivesCard data={ctx.incentives} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
@@ -577,7 +580,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {ctx.regulatory && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <RegulatoryCard data={ctx.regulatory} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" ? (
@@ -597,7 +600,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {ctx.violations && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <ViolationsCard data={ctx.violations} />
                   {ctx.violations.total > 0 && (
                     <div className="flex flex-wrap gap-2 mt-1.5 px-1">
@@ -610,9 +613,9 @@ export default function ScorecardPage() {
                   )}
                 </div>
               )}
-              <div>
-                <CrimeYoYCard data={data} />
-                {data.context.crime_last_90d && (
+              {data.context.crime_last_90d && (
+                <div className="break-inside-avoid mb-4">
+                  <CrimeYoYCard data={data} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
                       question={`What are the crime trends and safety concerns near ${addr}?`}
@@ -620,11 +623,11 @@ export default function ScorecardPage() {
                       cardName="crime"
                     />
                   </div>
-                )}
-              </div>
-              <div>
-                <Address311Card data={data} />
-                {data.context.address_311 && (
+                </div>
+              )}
+              {data.context.address_311 && (
+                <div className="break-inside-avoid mb-4">
+                  <Address311Card data={data} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
                       question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
@@ -632,12 +635,11 @@ export default function ScorecardPage() {
                       cardName="311"
                     />
                   </div>
-                )}
-              </div>
-              {/* Neighborhood last: the deepest card pairs with the trailing edge of the
-                  grid, where an unmatched column height costs the least empty space */}
+                </div>
+              )}
+              {/* Neighborhood last: deepest card flows at the trailing edge */}
               {ctx.neighborhood && (
-                <div>
+                <div className="break-inside-avoid mb-4">
                   <NeighborhoodCard data={ctx.neighborhood} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
