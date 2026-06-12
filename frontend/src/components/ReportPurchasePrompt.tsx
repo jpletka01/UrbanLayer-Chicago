@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { createReportCheckoutSession, createCheckoutSession } from "../lib/api";
+import type { SelectedParcel } from "../lib/types";
 
 interface ReportPurchasePromptProps {
-  address: string;
-  lat: number;
-  lon: number;
-  pin?: string | null;
+  parcel: SelectedParcel;
   onClose: () => void;
 }
 
 export default function ReportPurchasePrompt({
-  address,
-  lat,
-  lon,
-  pin,
+  parcel,
   onClose,
 }: ReportPurchasePromptProps) {
   const [loading, setLoading] = useState<"report" | "pro" | null>(null);
@@ -21,7 +16,7 @@ export default function ReportPurchasePrompt({
   async function handleBuyReport() {
     setLoading("report");
     try {
-      const { url } = await createReportCheckoutSession({ address, lat, lon, pin: pin ?? undefined });
+      const { url } = await createReportCheckoutSession(parcel);
       window.location.href = url;
     } catch {
       setLoading(null);
@@ -57,7 +52,7 @@ export default function ReportPurchasePrompt({
         </h2>
         <p className="text-sm text-text-secondary text-center mb-6">
           Download a professional development feasibility report for{" "}
-          <span className="text-text-primary font-medium">{address}</span>.
+          <span className="text-text-primary font-medium">{parcel.address}</span>.
         </p>
 
         <button

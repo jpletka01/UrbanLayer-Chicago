@@ -143,7 +143,7 @@ export default function ScorecardPage() {
     if (!parcel || (!parcel.pin && !parcel.address)) return;
     setDownloading(true);
     try {
-      const blob = await fetchReport(parcel.pin ? { pin: parcel.pin } : { address: parcel.address! });
+      const blob = await fetchReport(parcel);
       if (blob) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -220,8 +220,8 @@ export default function ScorecardPage() {
 
   // Fetch report access when scorecard data loads (for non-pro users)
   useEffect(() => {
-    if (!data || isPro) return;
-    checkReportAccess({ lat: data.lat, lon: data.lon, pin: parcel?.pin ?? undefined }).then(setReportAccess);
+    if (!data || !parcel || isPro) return;
+    checkReportAccess(parcel).then(setReportAccess);
   }, [data, isPro, parcel]);
 
   useEffect(() => {
@@ -556,12 +556,9 @@ export default function ScorecardPage() {
         </div>
       )}
 
-      {showPurchasePrompt && data && (
+      {showPurchasePrompt && data && parcel && (
         <ReportPurchasePrompt
-          address={data.address || ""}
-          lat={data.lat}
-          lon={data.lon}
-          pin={parcel?.pin}
+          parcel={parcel}
           onClose={() => setShowPurchasePrompt(false)}
         />
       )}

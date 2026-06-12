@@ -12,6 +12,10 @@
 
 **Report envelope map skipped for zero-setback zones**: Some commercial zones (C1, B3, etc.) have front_setback_ft=0 and side_setback_ft=0 with only a rear setback. When all three setbacks are 0, the envelope map won't render. When only rear is non-zero, the visualization is technically correct but less visually informative.
 
+**Condo stacks remain pin10-ambiguous**: A street address in a condo building maps to the 10-digit parcel stem, not a specific 14-digit unit PIN. Address Points returns one pin14 for the stack, so an address search for a condo can land on an arbitrary unit. SelectedParcel (2026-06) guarantees the pin the user *sees* is the pin that's queried, purchased, and reported on — it does not disambiguate units. Entering by explicit `?pin=` is the workaround.
+
+**Chat does not read or write the selected parcel — by design**: Chat's per-message `pin14` is conversation history, not the current selection; promoting it would create a second identity write path (SelectedParcel truth-model §3: chat is read-only, `SelectedParcelContext.select()` is the only write site). Don't "fix" this by syncing chat answers into the selection.
+
 **Demographics median values are estimated**: The Socrata ACS dataset (`t68z-cikk`) provides income bracket distributions, not pre-computed medians. Median household income is interpolated from the bracket containing the 50th percentile. Poverty rate and unemployment come from a second dataset (`kn9c-c2s2`). Census tract-level demographics (via Census Reporter API) provide housing fields: median home value, median gross rent, owner-occupied %, vacancy rate, and bachelor's degree %.
 
 **Violation categories are homegrown**: Chicago's violations dataset has no standard category field — only free-text `violation_description`. `_categorize_violation()` does first-match keyword bucketing into 18 custom categories, supplemented by code-prefix mapping (EV→Elevator, BR→Boiler) using the `violation_code` field.

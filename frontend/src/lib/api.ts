@@ -15,6 +15,7 @@ import type {
   MapData,
   Message,
   RequestLogEntry,
+  SelectedParcel,
   TimeseriesBucket,
   UploadMeta,
 } from "./types";
@@ -140,31 +141,35 @@ export async function getSubscription(): Promise<{
   return resp.json();
 }
 
-export async function createReportCheckoutSession(params: {
-  address: string;
-  lat: number;
-  lon: number;
-  pin?: string;
-}): Promise<{ url: string }> {
+export async function createReportCheckoutSession(
+  parcel: SelectedParcel,
+): Promise<{ url: string }> {
+  // pin+address+lat+lon travel together: lat/lon let the backend skip
+  // re-resolution, address stays display-only metadata on the purchase row.
   const resp = await authFetch(`${API_BASE}/api/checkout/report`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      address: parcel.address ?? "",
+      lat: parcel.lat,
+      lon: parcel.lon,
+      pin: parcel.pin ?? undefined,
+    }),
   });
   if (!resp.ok) throw new Error("Failed to create report checkout session");
   return resp.json();
 }
 
-export async function checkReportAccess(params: {
-  lat: number;
-  lon: number;
-  pin?: string;
-}): Promise<{ has_access: boolean; reason: string }> {
+export async function checkReportAccess(
+  parcel: SelectedParcel,
+): Promise<{ has_access: boolean; reason: string }> {
+  // lat/lon accompany the pin so _resolve_location short-circuits on the
+  // explicit point instead of re-resolving the pin server-side.
   const qs = new URLSearchParams({
-    lat: String(params.lat),
-    lon: String(params.lon),
+    lat: String(parcel.lat),
+    lon: String(parcel.lon),
   });
-  if (params.pin) qs.set("pin", params.pin);
+  if (parcel.pin) qs.set("pin", parcel.pin);
   try {
     const resp = await authFetch(`${API_BASE}/api/report/access?${qs}`);
     if (!resp.ok) return { has_access: false, reason: "error" };
@@ -561,17 +566,17 @@ export async function fetchScorecard(params: {
   } catch { return null; }
 }
 
-export async function fetchReport(params: {
-  address?: string;
-  lat?: number;
-  lon?: number;
-  pin?: string;
-}): Promise<Blob | null> {
+export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> {
+  // Highest-fidelity key only: pin → address → coords (never downgrade).
   const qs = new URLSearchParams();
-  if (params.address) qs.set("address", params.address);
-  if (params.lat != null) qs.set("lat", String(params.lat));
-  if (params.lon != null) qs.set("lon", String(params.lon));
-  if (params.pin) qs.set("pin", params.pin);
+  if (parcel.pin) {
+    qs.set("pin", parcel.pin);
+  } else if (parcel.address) {
+    qs.set("address", parcel.address);
+  } else {
+    qs.set("lat", String(parcel.lat));
+    qs.set("lon", String(parcel.lon));
+  }
   try {
     const resp = await authFetch(`${API_BASE}/api/report?${qs}`);
     if (!resp.ok) return null;

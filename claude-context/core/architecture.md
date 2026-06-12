@@ -45,6 +45,16 @@ User Message
 | Rate Limiting | In-memory sliding window + daily budget cap | Tier-based (anon 3/day, free 25/day, admin unlimited) + API cost guard |
 | Domain | `urbanlayerchicago.com` via Namecheap | Registered, NS migration to Cloudflare pending |
 
+## Parcel Identity
+
+One producer, one holder, four consumers:
+
+- **Producer**: `_resolve_location` (`backend/main.py`) → `ResolvedLocation(lat, lon, address, pin, confidence)`. Strict precedence: explicit lat/lon → supplied PIN → address→PIN via Cook County Address Points → degraded geocode → 422. Confidence is two-valued: `"authoritative" | "approximate"` — no other tier exists.
+- **Holder**: `SelectedParcel` (`frontend/src/lib/types.ts`) held in `SelectedParcelContext`. `select(ParcelQuery)` is the **only** write site in the frontend — it fetches `/api/scorecard` and commits the backend's `resolved_pin`/`resolved_confidence`/`resolved_lat`/`resolved_lon`/`address` atomically. Identity is never constructed client-side from input, URL params, or Explorer rows.
+- **Consumers**: Scorecard renders pin + confidence badge (sole creation surface); Report request/entitlement/purchase key on `SelectedParcel.pin` when present (api.ts report functions accept the whole `SelectedParcel` and derive wire params internally); chat reads per-message pins as history only (read-only by design, no write path to the selection); Explorer emits intent only (`?pin=` navigation, no read path).
+
+Invariants: no silent re-resolution when pin is known; no fidelity downgrade at handoffs (never coords when pin exists, never address when either exists); money/entitlement keyed on pin when pin exists (legacy pin-less purchase rows stay entitled via 4-decimal coordinate match, permanently); a pin is never displayed detached from its confidence tier. Canonical URL form is `?pin=&address=` (address display-only); legacy `?address=` and `?lat&lon` URLs keep working.
+
 ## Domain Architecture
 
 Four domain orchestrators handle complex multi-source retrievals. Each runs as a single `asyncio.gather` task alongside existing flat sources.
