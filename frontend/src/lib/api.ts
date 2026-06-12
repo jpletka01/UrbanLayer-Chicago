@@ -256,6 +256,18 @@ export async function getCommunityAreaByPoint(
   }
 }
 
+export class ChatStreamError extends Error {
+  status: number;
+  detail: string | null;
+
+  constructor(status: number, statusText: string, detail: string | null) {
+    super(detail ?? `Chat request failed: ${status} ${statusText}`);
+    this.name = "ChatStreamError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 export async function* chatStream(
   message: string,
   history: Message[],
@@ -279,7 +291,9 @@ export async function* chatStream(
   });
 
   if (!resp.ok || !resp.body) {
-    throw new Error(`Chat request failed: ${resp.status} ${resp.statusText}`);
+    const errBody = await resp.json().catch(() => null);
+    const detail = typeof errBody?.detail === "string" ? errBody.detail : null;
+    throw new ChatStreamError(resp.status, resp.statusText, detail);
   }
 
   yield* parseSSE<ChatChunk>(resp.body.getReader());

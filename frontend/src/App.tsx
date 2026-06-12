@@ -254,6 +254,7 @@ export function App() {
     context,
     showDisclaimer,
     errorMsg,
+    rateLimited,
     atMessageLimit,
     activities,
     sendMessage: sendChat,
@@ -271,15 +272,18 @@ export function App() {
     planRef.current = plan;
   }, [plan]);
 
-  // Init: migrate localStorage, load conversations (wait for auth to resolve first)
+  // Init: migrate localStorage, load conversations (wait for auth to resolve first).
+  // Anonymous visitors have no server-side persistence — skip entirely (the
+  // conversation endpoints 401 without a session).
   useEffect(() => {
     if (authLoading) return;
+    if (authRequired && !isAuthenticated) return;
     (async () => {
       await migrateLocalStorageToSQLite();
       const convos = await loadConversations();
       setConversations(convos);
     })();
-  }, [authLoading]);
+  }, [authLoading, authRequired, isAuthenticated]);
 
   // Save messages to SQLite after stream completes
   useEffect(() => {
@@ -314,14 +318,15 @@ export function App() {
 
   const active = messages.length > 0 || streaming;
 
+  // Anonymous visitors chat in-memory only: no server-side conversation,
+  // no history, no uploads. Auth is asked for where identity is needed
+  // (save/share/purchase) — never as a precondition for the first answer.
+  const canPersist = !authRequired || isAuthenticated;
+
   async function sendMessage(text: string) {
-    if (authRequired && !isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
     setHistoryOpen(false);
     let cid = conversationId;
-    if (!cid) {
+    if (!cid && canPersist) {
       cid = generateId();
       const title = text.length > 50 ? text.slice(0, 47) + "..." : text;
       try {
@@ -337,7 +342,7 @@ export function App() {
     }
 
     let uploadMetas: import("./lib/types").UploadMeta[] | undefined;
-    if (pendingAttachments.length > 0) {
+    if (pendingAttachments.length > 0 && cid) {
       try {
         uploadMetas = await uploadFiles(cid, pendingAttachments.map((a) => a.file));
       } catch (err) {
@@ -891,6 +896,14 @@ export function App() {
                       </Link>
                     )}
                     <LanguageSelector variant="workspace" />
+                    {!canPersist && (
+                      <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
+                      >
+                        {tc("signInToSave")}
+                      </button>
+                    )}
                     {user && <UserMenu user={user} onSignOut={signOut} />}
                   </>
                 )}
@@ -898,8 +911,16 @@ export function App() {
             </header>
 
             {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
-              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm">
-                {errorMsg}
+              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm flex items-center justify-between gap-4">
+                <span>{errorMsg}</span>
+                {rateLimited && !canPersist && (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="shrink-0 px-3 py-1 text-xs font-medium text-white bg-accent hover:bg-accent/80 rounded-lg transition-colors"
+                  >
+                    {tc("signInShort")}
+                  </button>
+                )}
               </div>
             )}
             {loadError && (
@@ -925,7 +946,7 @@ export function App() {
                 atMessageLimit={atMessageLimit}
                 onNewChat={reset}
                 attachments={pendingAttachments}
-                onAttach={handleAttach}
+                onAttach={canPersist ? handleAttach : undefined}
                 onRemoveAttachment={handleRemoveAttachment}
                 activities={activities}
                 readOnly={isSharedView}

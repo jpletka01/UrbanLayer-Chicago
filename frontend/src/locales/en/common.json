@@ -8,6 +8,8 @@
   "chatHistory": "Chat history",
   "noConversations": "No conversations yet",
   "signIn": "Sign in with Google",
+  "signInShort": "Sign in",
+  "signInToSave": "Sign in to save your research",
   "signInTitle": "Sign in to continue",
   "signInDescription": "Create an account to save your conversations and access all features.",
   "signInFreeNote": "Free users get 25 queries per day",
