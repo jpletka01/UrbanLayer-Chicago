@@ -25,13 +25,13 @@ def _patch_socrata(rows=None, *, raises=None):
 
 async def test_unique_match_returns_pin_and_coords():
     """One row → {pin14, lat, lon}; the dataset's `long` column maps to `lon`."""
-    rows = [{"pin": "14283190070000", "lat": "41.92874", "long": "-87.64145"}]
+    rows = [{"pin": "14283180570000", "lat": "41.93060", "long": "-87.64083"}]
     with _patch_socrata(rows):
         result = await address_points.address_to_pin("443 W Wrightwood Ave")
     assert result == {
-        "pin14": "14283190070000",
-        "lat": 41.92874,
-        "lon": -87.64145,
+        "pin14": "14283180570000",
+        "lat": 41.93060,
+        "lon": -87.64083,
         "address": "443 W Wrightwood Ave",
     }
 
@@ -54,8 +54,8 @@ async def test_zero_rows_returns_none():
 async def test_multi_match_distinct_pins_returns_none():
     """Two distinct PINs for the same address components is NOT confident."""
     rows = [
-        {"pin": "14283190070000", "lat": "41.9", "long": "-87.6"},
-        {"pin": "14283190080000", "lat": "41.9", "long": "-87.6"},
+        {"pin": "14283180570000", "lat": "41.9", "long": "-87.6"},
+        {"pin": "14283180580000", "lat": "41.9", "long": "-87.6"},
     ]
     with _patch_socrata(rows):
         result = await address_points.address_to_pin("443 W Wrightwood Ave")
@@ -65,20 +65,20 @@ async def test_multi_match_distinct_pins_returns_none():
 async def test_duplicate_same_pin_treated_as_single_match():
     """Two rows, same PIN (duplicate point) → still a confident single match."""
     rows = [
-        {"pin": "14283190070000", "lat": "41.92874", "long": "-87.64145"},
-        {"pin": "14-28-319-007-0000", "lat": "41.92874", "long": "-87.64145"},
+        {"pin": "14283180570000", "lat": "41.93060", "long": "-87.64083"},
+        {"pin": "14-28-318-057-0000", "lat": "41.93060", "long": "-87.64083"},
     ]
     with _patch_socrata(rows):
         result = await address_points.address_to_pin("443 W Wrightwood Ave")
     assert result is not None
-    assert result["pin14"] == "14283190070000"
+    assert result["pin14"] == "14283180570000"
 
 
 async def test_pin_is_normalized_to_14_digits():
-    rows = [{"pin": "14-28-319-007-0000", "lat": "41.9", "long": "-87.6"}]
+    rows = [{"pin": "14-28-318-057-0000", "lat": "41.9", "long": "-87.6"}]
     with _patch_socrata(rows):
         result = await address_points.address_to_pin("443 W Wrightwood Ave")
-    assert result["pin14"] == "14283190070000"
+    assert result["pin14"] == "14283180570000"
 
 
 async def test_socrata_error_returns_none():
@@ -89,7 +89,7 @@ async def test_socrata_error_returns_none():
 
 async def test_match_with_null_coords_returns_none():
     """Authoritative PIN but unusable point → None (caller will geocode)."""
-    rows = [{"pin": "14283190070000", "lat": None, "long": None}]
+    rows = [{"pin": "14283180570000", "lat": None, "long": None}]
     with _patch_socrata(rows):
         result = await address_points.address_to_pin("443 W Wrightwood Ave")
     assert result is None
@@ -97,7 +97,7 @@ async def test_match_with_null_coords_returns_none():
 
 async def test_query_uses_address_point_columns_and_limit():
     """Lock the query shape: parsed components + the `long` select + $limit guard."""
-    rows = [{"pin": "14283190070000", "lat": "41.9", "long": "-87.6"}]
+    rows = [{"pin": "14283180570000", "lat": "41.9", "long": "-87.6"}]
     mock = AsyncMock(return_value=rows)
     with patch.object(address_points, "socrata_get", new=mock):
         await address_points.address_to_pin("443 W Wrightwood Ave")
