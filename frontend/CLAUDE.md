@@ -27,7 +27,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
 | `src/components/InfoTooltip.tsx` | Hover/tap popover for domain terms (dotted underline trigger, portal-based) |
 | `src/lib/analytics.ts` | Client-side trend/pie computation from map data |
-| `src/lib/tracking.ts` | Usage analytics: `track()`, `flush()`, `setAddress()`, `initTracking()`. 4 events (page_view, investigate_click, report_cta_click, chat_message_sent). Batched flush every 30s + sendBeacon on page hide. Session ID (per tab) + visitor ID (cross-session). |
+| `src/lib/tracking.ts` | Usage analytics: `track()`, `flush()`, `setAddress()`, `initTracking()`. 5 events (page_view, investigate_click, report_cta_click, chat_message_sent, scorecard_bridge_click). Batched flush every 30s + sendBeacon on page hide. Session ID (per tab) + visitor ID (cross-session). |
 | `src/lib/csvExport.ts` | CSV export utility: `toCSV`, `downloadCSV`, `exportCSV`, `buildScorecardCSV`. Used by Scorecard, Explorer, AnalyticsSection |
 | `src/lib/history.ts` | Async API-backed persistence + localStorage→SQLite migration |
 | `src/lib/i18n.ts` | i18next initialization, bundled resources, localStorage language persistence |
@@ -54,6 +54,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **Sidebar (desktop)**: drag-to-resize, collapsed rail (44px). Data tab (map + analytics) / Sources tab (code chunks). Auto-opens when context arrives.
 - **Sidebar (mobile)**: `MobileSidebarSheet` bottom sheet with 3 snap heights (20vh peek / 70vh default / 90vh full). 3-tab layout: Map / Data / Sources (bypasses `DataMapLayout`, renders `MapView` and `DataView` independently at full height). MapView stays mounted when switching tabs to preserve GL context. Smart default tab: Map for spatial queries, Data for domain queries, Sources for legal questions. Map controls use compact layer toggles + filter popover (vs inline desktop controls). `isMobile` prop on `MapView` drives mobile-specific rendering.
 - **New sidebar card**: use `CollapsibleCard` pattern from `sidebar/CollapsibleCard.tsx`.
+- **Chat→Scorecard bridge**: `sidebar/ScorecardBridgeCard.tsx` pinned at top of `DataView` when the active message's context resolves a parcel (`property.pin14` → `/scorecard?pin=`, else `resolved_address` → `?address=`). `ReportTeaser` takes optional `href` — clickable in the chat sidebar, static on ScorecardPage. Both fire `scorecard_bridge_click`. The word "report" is reserved for the paid Development Feasibility Report; the free chat export is the "transcript" (button: "Export").
 - **Citations**: `[N]` → `CitationPill` (§ section reference), `[data:X]` → `DataPill` (opens Data tab).
 - **Map layer order** (bottom → top): zoning polygons → overlay districts → incentive zones → parcel boundary → data dots (crime/311/permits) → transit stations → address pin.
 - **Tooltip**: `position: fixed` via `createPortal` to `document.body`, viewport-clamped with `useLayoutEffect`.

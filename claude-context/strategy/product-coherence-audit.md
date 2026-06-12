@@ -1,9 +1,13 @@
 # Product Coherence Audit — Post-Identity-Unification (2026-06-11)
 
-**Status:** Analysis complete. NO implementation work has been done or approved. The user (Jack) explicitly
-deferred implementation — this document is the strategic interpretation that future implementation work
-must serve. Read this *with* `strategy/north-star.md` (the governing strategy doc); this audit extends,
-sharpens, and in places challenges it based on what the product actually does as-built.
+**Status:** Analysis complete; implementation underway. **Step 1 SHIPPED 2026-06-11** (merge `c3f68c3`,
+see `archive/2026-06-11_rename-and-bridge.md`): the "report"→transcript renaming and the chat→Scorecard
+bridge. Sections 1 and 3 below are the audit's point-in-time evidence (2026-06-11 pre-implementation) —
+the claims "chat→Scorecard bridge does not exist", "chat export titled Chicago Report", and "ReportTeaser
+non-clickable" are now resolved; see §10 for the per-item status. All other findings remain open. This
+document is the strategic interpretation that implementation work must serve. Read this *with*
+`strategy/north-star.md` (the governing strategy doc); this audit extends, sharpens, and in places
+challenges it based on what the product actually does as-built.
 
 **Origin:** Two-session founder-level product review conducted immediately after the SelectedParcel
 identity unification shipped (2026-06-11, see `archive/2026-06-11_selected-parcel.md`). Session 1 was a
@@ -404,22 +408,31 @@ Session 1 produced a structured product definition that session 2 refined but di
 
 ---
 
-## 10. What Was Explicitly NOT Done / Open Questions
+## 10. Implementation Status / Open Questions
 
-- **No implementation.** No code, copy, routing, or pricing changes were made or designed. The user
-  asked for strategic interpretation only, twice, explicitly. Next session may begin translating
-  this into a plan — that requires fresh approval of scope.
+### Done (Step 1, shipped 2026-06-11 — merge `c3f68c3`, details in `archive/2026-06-11_rename-and-bridge.md`)
+- **Renaming executed.** "Report" is reserved for the paid Development Feasibility Report. Chat export:
+  button "Export", PDF "UrbanLayer Conversation Transcript", filename `*_transcript.pdf`. Landing copy
+  no longer counterfeits — the professional-PDF sentence now points at the $25 report itself (en + es).
+- **Chat→Scorecard bridge built.** `ScorecardBridgeCard` pinned at top of the Data sidebar when the
+  active message resolves a parcel (`/scorecard?pin=`, `?address=` fallback); ReportTeaser fragments
+  clickable in the chat sidebar; new `scorecard_bridge_click` analytics event (in backend allowlist;
+  not yet charted on the admin dashboard).
+
+### Still open (each requires fresh approval before implementation)
 - **No decision on what exactly the new homepage IS** (address-input hero? combined search? where
   the librarian entrance lives?). The conceptual answer is "ask 'Which property?' and open a file in
   2 seconds" — the concrete surface design is unresolved.
 - **No decision on auth placement specifics** (purchase-time? save-time? Nth chat message?).
   Direction: defer auth past the first demonstrated value.
 - **No decision on Explorer free-teaser depth** (how many results free? which filters free?).
-- **No renaming executed** ("Chicago Report" → transcript; reserving "report" for the paid artifact)
-  — direction agreed in analysis, not implemented.
+- **Map defaults unchanged** (crime/311/permit dots on, transit/TOD off — still inverted per §6).
+- **Pricing page unchanged** ($99 "Recommended" lead, $25 wedge a footnote, page near-orphaned).
 - **Phase 2 (customer validation) interaction:** the audit's strongest practical claim is that the
-  current funnel would contaminate validation — interviewees would validate the chatbot. Whether to
-  fix funnel-coherence BEFORE running the 20 interviews is a sequencing decision Jack has not made.
+  current funnel would contaminate validation — interviewees would validate the chatbot. Step 1
+  removed the counterfeit-report confusion and gave chat a route to the assessment product, but the
+  homepage→auth-walled-chat entry is untouched; whether to fix the rest of the funnel BEFORE running
+  the 20 interviews is a sequencing decision Jack has not made.
 - **Tension with north-star to reconcile if accepted:** north-star says "hero action: a single
   address input field → Scorecard" (already aligned with this audit) but also tolerates the current
   chat-first homepage as shipped Phase 0. This audit says the Phase-0 repositioning was copy-only
