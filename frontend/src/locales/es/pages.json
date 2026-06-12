@@ -72,6 +72,7 @@
     "investigate": {
       "buildingDetails": "Detalles de la construcción",
       "overlayRestrictions": "Normativas superpuestas",
+      "overlaysAndFlood": "Normativas superpuestas y riesgo de inundación",
       "floodRisk": "Riesgo de inundaciones",
       "tifFunding": "Fondos TIF",
       "incentivePrograms": "Programas de incentivos",

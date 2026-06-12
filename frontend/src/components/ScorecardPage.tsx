@@ -371,10 +371,11 @@ export default function ScorecardPage() {
                   )}
                 </div>
               )}
-              <div className="flex items-center gap-4 mt-2 text-[10px] text-text-muted">
-                <span>{data.lat.toFixed(5)}, {data.lon.toFixed(5)}</span>
-                {data.context.data_as_of && <span>{t("scorecard.dataAsOf", { date: data.context.data_as_of })}</span>}
-              </div>
+              {data.context.data_as_of && (
+                <div className="mt-2 text-[10px] text-text-muted">
+                  {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
+                </div>
+              )}
               {data.partial_failures.length > 0 && (
                 <div className="mt-2 text-[11px] text-amber-400">
                   {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
@@ -400,7 +401,7 @@ export default function ScorecardPage() {
                     const date = new Date().toISOString().slice(0, 10);
                     downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
                   }}
-                  className="inline-flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover transition-colors"
+                  className="inline-flex items-center gap-1 text-[10px] text-text-secondary hover:text-accent transition-colors"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -457,16 +458,14 @@ export default function ScorecardPage() {
                 <div>
                   <IncentivesCard data={ctx.incentives} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    {ctx.incentives.in_tif_district && ctx.incentives.tif_name && (
-                      <InvestigateButton
-                        question={`How much TIF funding is available in ${ctx.incentives.tif_name} and what projects qualify?`}
-                        label={t("scorecard.investigate.tifFunding")}
-                        cardName="incentives"
-                      />
-                    )}
+                    {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
                     <InvestigateButton
-                      question={`What tax incentives and grant programs are available near ${addr}?`}
-                      label={t("scorecard.investigate.incentivePrograms")}
+                      question={ctx.incentives.in_tif_district && ctx.incentives.tif_name
+                        ? `How much TIF funding is available in ${ctx.incentives.tif_name} and what projects qualify?`
+                        : `What tax incentives and grant programs are available near ${addr}?`}
+                      label={ctx.incentives.in_tif_district && ctx.incentives.tif_name
+                        ? t("scorecard.investigate.tifFunding")
+                        : t("scorecard.investigate.incentivePrograms")}
                       cardName="incentives"
                     />
                   </div>
@@ -476,30 +475,19 @@ export default function ScorecardPage() {
                 <div>
                   <RegulatoryCard data={ctx.regulatory} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`What are the development restrictions from regulatory overlays at ${addr}?`}
-                      label={t("scorecard.investigate.overlayRestrictions")}
-                      cardName="regulatory"
-                    />
-                    {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" && (
+                    {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" ? (
                       <InvestigateButton
-                        question={`What are the flood insurance requirements for FEMA zone ${ctx.regulatory.flood_zone} at ${addr}?`}
-                        label={t("scorecard.investigate.floodRisk")}
+                        question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
+                        label={t("scorecard.investigate.overlaysAndFlood")}
+                        cardName="regulatory"
+                      />
+                    ) : (
+                      <InvestigateButton
+                        question={`What are the development restrictions from regulatory overlays at ${addr}?`}
+                        label={t("scorecard.investigate.overlayRestrictions")}
                         cardName="regulatory"
                       />
                     )}
-                  </div>
-                </div>
-              )}
-              {ctx.neighborhood && (
-                <div>
-                  <NeighborhoodCard data={ctx.neighborhood} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`What's the neighborhood like around ${addr}?`}
-                      label={t("scorecard.investigate.neighborhoodOverview")}
-                      cardName="neighborhood"
-                    />
                   </div>
                 </div>
               )}
@@ -541,6 +529,20 @@ export default function ScorecardPage() {
                   </div>
                 )}
               </div>
+              {/* Neighborhood last: the deepest card pairs with the trailing edge of the
+                  grid, where an unmatched column height costs the least empty space */}
+              {ctx.neighborhood && (
+                <div>
+                  <NeighborhoodCard data={ctx.neighborhood} />
+                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                    <InvestigateButton
+                      question={`What's the neighborhood like around ${addr}?`}
+                      label={t("scorecard.investigate.neighborhoodOverview")}
+                      cardName="neighborhood"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

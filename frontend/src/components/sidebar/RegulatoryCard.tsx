@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
@@ -41,6 +42,7 @@ function flagCore(s: string): string {
 
 export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
   const { t } = useTranslation("data");
+  const [showAroProjects, setShowAroProjects] = useState(false);
   const overlayCores = new Set(data.overlays.map(ov => flagCore(ov.layer_type)));
   const activeFlags = FLAG_KEYS.filter(
     k => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k))
@@ -141,7 +143,21 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                 <span className="text-text-muted text-[11px]">{t("regulatory.totalUnits")}</span>
                 <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_units.toLocaleString()}</span>
               </div>
-              {data.aro_housing.projects.slice(0, 5).map((proj, i) => (
+              {data.aro_housing.projects.length > 0 && (
+                <button
+                  onClick={() => setShowAroProjects(p => !p)}
+                  className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors pt-1"
+                >
+                  <svg
+                    className={`w-2.5 h-2.5 transition-transform duration-150 ${showAroProjects ? "" : "-rotate-90"}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {t("regulatory.nearbyProjects")} ({Math.min(data.aro_housing.projects.length, 5)})
+                </button>
+              )}
+              {showAroProjects && data.aro_housing.projects.slice(0, 5).map((proj, i) => (
                 <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border mt-1">
                   <p className="text-text-primary">{proj.name}</p>
                   <div className="flex gap-2 text-text-muted">

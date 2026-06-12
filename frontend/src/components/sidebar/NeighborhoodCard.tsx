@@ -122,6 +122,9 @@ function DistSection({ title, bars, defaultOpen = false }: { title: string; bars
 
 function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
   const { t } = useTranslation("data");
+  // Collapsed by default: tract stats largely restate the area stats above, and
+  // the distribution charts are deep-dive material (scorecard cognitive-load pass).
+  const [open, setOpen] = useState(false);
   const tractNum = ct.tract_name || `Tract ${ct.tract_fips}`;
   const incomeContext = ct.city_median_income && ct.median_household_income
     ? ct.median_household_income > ct.city_median_income
@@ -133,8 +136,22 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
 
   return (
     <div className="space-y-2 border-t border-dark-border pt-2">
-      <span className="text-[10px] text-text-muted uppercase tracking-wider">{tractNum}</span>
-
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 w-full text-left group"
+      >
+        <svg
+          className={`w-2.5 h-2.5 text-text-muted transition-transform ${open ? "rotate-90" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-[10px] text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
+          {t("neighborhood.tractDetail", { tract: tractNum })}
+        </span>
+      </button>
+      {!open ? null : (
+      <>
       <div className="grid grid-cols-3 gap-2 py-0.5">
         <StatBox label={t("neighborhood.population")} value={fmtNum(ct.population)} />
         <div className="text-center">
@@ -158,7 +175,7 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
       </div>
 
       <div className="space-y-1.5">
-        <DistSection title={t("neighborhood.ageDistribution")} bars={translateBars(ct.age_distribution, "age", t)} defaultOpen />
+        <DistSection title={t("neighborhood.ageDistribution")} bars={translateBars(ct.age_distribution, "age", t)} />
         <DistSection title={t("neighborhood.householdIncome")} bars={translateBars(ct.income_distribution, "income", t)} />
         <DistSection title={t("neighborhood.raceEthnicity")} bars={translateBars(ct.race_distribution, "race", t)} />
         <DistSection title={t("neighborhood.education")} bars={translateBars(ct.education_distribution, "education", t)} />
@@ -177,6 +194,8 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </a>
+      )}
+      </>
       )}
     </div>
   );

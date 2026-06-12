@@ -46,6 +46,7 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
 export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummary; scorecardHref?: string | null }) {
   const { t } = useTranslation("data");
   const [showFinancials, setShowFinancials] = useState(false);
+  const [showProjects, setShowProjects] = useState(false);
 
   const hasAnyIncentive = data.in_tif_district || data.in_opportunity_zone || data.in_enterprise_zone || data.in_qct || data.in_nmtc || !!data.property_tax_class;
 
@@ -230,10 +231,19 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
             </div>
             {data.grant_programs.recent_projects.length > 0 && (
               <div className="space-y-1.5">
-                <span className="text-[10px] text-text-muted uppercase tracking-wider">
-                  {t("incentives.recentProjects")}
-                </span>
-                {data.grant_programs.recent_projects.slice(0, 5).map((proj, i) => (
+                <button
+                  onClick={() => setShowProjects(p => !p)}
+                  className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+                >
+                  <svg
+                    className={`w-2.5 h-2.5 transition-transform duration-150 ${showProjects ? "" : "-rotate-90"}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {t("incentives.recentProjects")} ({Math.min(data.grant_programs.recent_projects.length, 5)})
+                </button>
+                {showProjects && data.grant_programs.recent_projects.slice(0, 5).map((proj, i) => (
                   <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border">
                     <p className="text-text-primary">{proj.name}</p>
                     <div className="flex gap-2 text-text-muted">

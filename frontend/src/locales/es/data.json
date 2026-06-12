@@ -49,6 +49,7 @@
     "totalUnits": "Total de unidades",
     "units": "unidades",
     "nearbyBrownfield": "Sitios contaminados cercanos ({{count}})",
+    "nearbyProjects": "Proyectos cercanos",
     "unknownSite": "Sitio desconocido",
     "ord": "Ord.",
     "flags": {
@@ -158,6 +159,7 @@
     "belowChicago": "{{pct}}% bajo Chicago",
     "atChicagoMedian": "en la mediana de Chicago",
     "viewCensusReporter": "Ver perfil completo en Census Reporter",
+    "tractDetail": "{{tract}} — detalle",
     "ageDistribution": "Distribución por edad",
     "householdIncome": "Ingreso del hogar",
     "raceEthnicity": "Raza y etnicidad",

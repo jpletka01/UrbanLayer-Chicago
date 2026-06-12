@@ -51,6 +51,7 @@
     "totalUnits": "Total Units",
     "units": "units",
     "nearbyBrownfield": "Nearby Brownfield Sites ({{count}})",
+    "nearbyProjects": "Nearby projects",
     "unknownSite": "Unknown site",
     "ord": "Ord.",
     "flags": {
@@ -165,6 +166,7 @@
     "belowChicago": "{{pct}}% below Chicago",
     "atChicagoMedian": "at Chicago median",
     "viewCensusReporter": "View full profile on Census Reporter",
+    "tractDetail": "{{tract}} — detail",
     "ageDistribution": "Age Distribution",
     "householdIncome": "Household Income",
     "raceEthnicity": "Race & Ethnicity",
