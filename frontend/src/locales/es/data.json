@@ -1,4 +1,8 @@
 {
+  "na": {
+    "value": "n/d",
+    "title": "No disponible en las fuentes de datos del condado para esta parcela en este momento."
+  },
   "property": {
     "title": "Propiedad",
     "address": "Dirección",

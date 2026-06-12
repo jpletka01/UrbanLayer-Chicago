@@ -20,7 +20,7 @@ export function ReportCTACard({
   if (hasReportAccess) {
     return (
       <div className="rounded-xl bg-dark-surface/80 backdrop-blur-sm border border-dark-border overflow-hidden">
-        <div className="px-5 py-4 flex items-center justify-between gap-4">
+        <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
               <svg className="w-4.5 h-4.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -59,7 +59,7 @@ export function ReportCTACard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 mb-4 ml-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 mb-4 ml-0 sm:ml-12">
           {Array.isArray(features) && features.map((feature, i) => (
             <div key={i} className="flex items-center gap-1.5 text-[11px] text-text-secondary">
               <svg className="w-3 h-3 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -70,7 +70,7 @@ export function ReportCTACard({
           ))}
         </div>
 
-        <div className="flex items-center gap-3 ml-12">
+        <div className="flex items-center gap-3 ml-0 sm:ml-12">
           <button
             onClick={() => { track("report_cta_click"); onShowPurchase(); }}
             disabled={downloading}

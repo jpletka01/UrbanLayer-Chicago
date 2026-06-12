@@ -12,6 +12,7 @@ we never pick a parcel arbitrarily (truth-model §5 fallback rule, INV-3).
 """
 
 import logging
+import re
 
 import httpx
 
@@ -110,5 +111,74 @@ async def address_to_pin(
         return None
 
     result = {"pin14": pin14, "lat": lat, "lon": lon, "address": address}
+    _cache.set(key, result)
+    return result
+
+
+_ORDINAL_RE = re.compile(r"^(\d+)(ST|ND|RD|TH)$")
+
+
+def _format_display_address(raw: str) -> str:
+    """Format an ALL-CAPS Address Points address for display.
+
+    "642 W BELDEN AVE" → "642 W Belden Ave"; keeps single-letter directionals
+    uppercase and lowercases ordinal suffixes ("63RD" → "63rd").
+    """
+    words = []
+    for w in raw.split():
+        m = _ORDINAL_RE.match(w)
+        if m:
+            words.append(f"{m.group(1)}{m.group(2).lower()}")
+        elif len(w) == 1 or w.isdigit():
+            words.append(w)
+        else:
+            words.append(w.capitalize())
+    return " ".join(words)
+
+
+async def pin_to_address(
+    pin: str,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> str | None:
+    """Reverse lookup: 14-digit PIN → display address via Address Points.
+
+    Display-only — never used for coordinate or identity resolution (the parcel
+    centroid stays Parcel Universe per truth-model §5). A parcel may carry
+    several address points (corner/multi-address buildings); the lowest house
+    number is returned for determinism. Returns None on no match or any error.
+    """
+    key = f"pin_addr:{pin}"
+    cached = _cache.get(key)
+    if cached is _NOT_FOUND:
+        return None
+    if cached is not None:
+        return cached
+
+    settings = get_settings()
+    params = {
+        "$where": f"pin='{pin}'",
+        "$select": "cmpaddabrv",
+        "$order": "addrnocom",
+        "$limit": 1,
+    }
+    try:
+        rows = await socrata_get(
+            settings.dataset_address_points,
+            params,
+            client=client,
+            base_url=settings.cook_county_socrata_base,
+            app_token=settings.cook_county_socrata_token or None,
+        )
+    except Exception as exc:
+        log.warning("Address-point reverse lookup failed for pin %s: %s", pin, exc)
+        return None
+
+    raw = (rows[0].get("cmpaddabrv") or "").strip() if rows else ""
+    if not raw:
+        _cache.set(key, _NOT_FOUND)
+        return None
+
+    result = _format_display_address(raw)
     _cache.set(key, result)
     return result

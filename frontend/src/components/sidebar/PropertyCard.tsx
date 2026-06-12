@@ -57,10 +57,18 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: (string | null)
   );
 }
 
-function StatBox({ label, value }: { label: string; value: string }) {
+function StatBox({ label, value, naLabel, naTitle }: {
+  label: string; value: string | null; naLabel?: string; naTitle?: string;
+}) {
+  const na = value == null;
   return (
     <div className="text-center">
-      <div className="text-sm font-semibold text-text-primary">{value}</div>
+      <div
+        className={`text-sm font-semibold ${na ? "text-text-muted cursor-help" : "text-text-primary"}`}
+        title={na ? naTitle : undefined}
+      >
+        {na ? (naLabel ?? "n/a") : value}
+      </div>
       <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
     </div>
   );
@@ -73,8 +81,8 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
   const [showSales, setShowSales] = useState(false);
 
   const baths = [
-    data.full_baths != null ? `${data.full_baths}F` : null,
-    data.half_baths != null ? `${data.half_baths}H` : null,
+    data.full_baths ? `${data.full_baths}F` : null,
+    data.half_baths ? `${data.half_baths}H` : null,
   ].filter(Boolean).join(" / ") || null;
 
   const classLabel = [data.bldg_class, data.bldg_class_description].filter(Boolean).join(" — ");
@@ -92,9 +100,12 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
       <div className="space-y-3">
         {hasFinancials && (
           <div className="grid grid-cols-3 gap-2 py-1">
-            <StatBox label={t("property.assessedValue")} value={fmtDollar(assessed)} />
-            <StatBox label={t("property.annualTax")} value={fmtDollar(tax)} />
-            <StatBox label={t("property.effectiveRate")} value={effectiveRate ?? "—"} />
+            <StatBox label={t("property.assessedValue")} value={assessed != null ? fmtDollar(assessed) : null}
+              naLabel={t("na.value")} naTitle={t("na.title")} />
+            <StatBox label={t("property.annualTax")} value={tax != null ? fmtDollar(tax) : null}
+              naLabel={t("na.value")} naTitle={t("na.title")} />
+            <StatBox label={t("property.effectiveRate")} value={effectiveRate}
+              naLabel={t("na.value")} naTitle={t("na.title")} />
           </div>
         )}
 
@@ -102,12 +113,13 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
           <KV label={t("property.address")} value={data.address} />
           <KV label={t("property.pin")} value={data.pin14} />
           {classLabel && <KV label={t("property.class")} value={classLabel} />}
-          <KV label={t("property.buildingSqft")} value={fmt(data.bldg_sqft)} />
-          <KV label={t("property.landSqft")} value={fmt(data.land_sqft)} />
-          <KV label={t("property.stories")} value={data.stories != null ? String(data.stories) : null} />
-          <KV label={t("property.units")} value={data.units != null ? String(data.units) : null} />
-          <KV label={t("property.rooms")} value={data.rooms != null ? String(data.rooms) : null} />
-          <KV label={t("property.bedrooms")} value={data.bedrooms != null ? String(data.bedrooms) : null} />
+          {/* zeroes in the assessor characteristics feed are placeholders, not measurements — hide them */}
+          <KV label={t("property.buildingSqft")} value={data.bldg_sqft ? fmt(data.bldg_sqft) : null} />
+          <KV label={t("property.landSqft")} value={data.land_sqft ? fmt(data.land_sqft) : null} />
+          <KV label={t("property.stories")} value={data.stories ? String(data.stories) : null} />
+          <KV label={t("property.units")} value={data.units ? String(data.units) : null} />
+          <KV label={t("property.rooms")} value={data.rooms ? String(data.rooms) : null} />
+          <KV label={t("property.bedrooms")} value={data.bedrooms ? String(data.bedrooms) : null} />
           <KV label={t("property.baths")} value={baths} />
           <KV label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null} />
         </div>

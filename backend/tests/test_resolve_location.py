@@ -54,6 +54,14 @@ def _addr_point_hit(lat_lon, pin="14283180570000"):
     return {"pin14": pin, "lat": lat_lon[0], "lon": lat_lon[1], "address": "x"}
 
 
+def _patch_pin_to_address(result):
+    """Patch the lazily-imported PIN→display-address reverse lookup (step 2)."""
+    return patch(
+        "backend.retrieval.property.address_points.pin_to_address",
+        new=AsyncMock(return_value=result),
+    )
+
+
 def _patch_geocode(lat_lon):
     return patch.object(
         main_mod, "geocode_address", new=AsyncMock(return_value=lat_lon)
@@ -84,13 +92,34 @@ async def test_pin_wins_over_address():
 
 
 async def test_pin_only_still_resolves():
-    """pin alone → PIN coords, authoritative."""
-    with _patch_pin_lookup(PIN_COORDS):
+    """pin alone → PIN coords, authoritative, display address backfilled."""
+    with _patch_pin_lookup(PIN_COORDS), _patch_pin_to_address("481 W Deming Pl"):
         rl = await main_mod._resolve_location(pin="14283190070000")
     assert (rl.lat, rl.lon) == PIN_COORDS
     assert rl.pin == "14283190070000"
     assert rl.confidence == "authoritative"
+    assert rl.address == "481 W Deming Pl"
+
+
+async def test_pin_only_backfill_miss_keeps_address_none():
+    """pin alone, no address point for the parcel → resolves with address=None."""
+    with _patch_pin_lookup(PIN_COORDS), _patch_pin_to_address(None):
+        rl = await main_mod._resolve_location(pin="14283190070000")
+    assert (rl.lat, rl.lon) == PIN_COORDS
     assert rl.address is None
+    assert rl.confidence == "authoritative"
+
+
+async def test_pin_with_address_skips_backfill():
+    """A supplied address is never overridden by the reverse lookup."""
+    backfill = AsyncMock(return_value="999 Wrong St")
+    with _patch_pin_lookup(PIN_COORDS), \
+            patch("backend.retrieval.property.address_points.pin_to_address", new=backfill):
+        rl = await main_mod._resolve_location(
+            address="642 W Belden Ave", pin="14331030110000"
+        )
+    assert rl.address == "642 W Belden Ave"
+    backfill.assert_not_called()
 
 
 # --------------------------------------------------------------------------- #

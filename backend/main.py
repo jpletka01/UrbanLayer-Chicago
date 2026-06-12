@@ -1167,17 +1167,30 @@ async def _resolve_location(
     #    centroid directly, never overridden by a co-supplied address.
     if pin:
         from backend.retrieval.socrata import socrata_get
-        rows = await socrata_get(
+        from backend.retrieval.property.address_points import pin_to_address
+        coord_coro = socrata_get(
             settings.dataset_ccao_parcels,
             # Parcel Universe (pabr-t5kh) exposes coordinates as lat/lon, not
             # latitude/longitude — the latter 400s and breaks PIN-only resolution.
             {"$where": f"pin='{pin}'", "$select": "lat,lon", "$limit": 1},
             base_url=settings.cook_county_socrata_base,
         )
+        display_address = resolved_address
+        if resolved_address:
+            rows = await coord_coro
+        else:
+            # Pin-keyed entry (Explorer/chat handoff, canonical URLs) carries no
+            # address — backfill a display address so the artifact isn't headed
+            # "Unknown Address". Display-only: coordinates stay Parcel Universe,
+            # and `resolved_address` is left untouched so the fallback steps
+            # below behave exactly as before when the PIN has no coordinates.
+            rows, display_address = await asyncio.gather(
+                coord_coro, pin_to_address(pin)
+            )
         if rows and rows[0].get("lat") and rows[0].get("lon"):
             return ResolvedLocation(
                 float(rows[0]["lat"]), float(rows[0]["lon"]),
-                resolved_address, pin, "authoritative",
+                display_address, pin, "authoritative",
             )
 
     # 3. Address → authoritative PIN via Address Points. Resolving the parcel by

@@ -33,7 +33,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-dark-bg text-text-primary">
       <header className="border-b border-dark-border px-6 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/favicon.svg" alt="" className="w-6 h-6" />
+          <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
           <span className="font-semibold text-sm">UrbanLayer</span>
         </Link>
         <Link

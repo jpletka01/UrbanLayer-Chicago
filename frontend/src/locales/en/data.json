@@ -1,4 +1,8 @@
 {
+  "na": {
+    "value": "n/a",
+    "title": "Not available from county data sources for this parcel right now."
+  },
   "property": {
     "title": "Property",
     "address": "Address",

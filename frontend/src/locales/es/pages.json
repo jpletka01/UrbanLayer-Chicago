@@ -52,7 +52,7 @@
   },
   "scorecard": {
     "title": "Ficha de la propiedad",
-    "subtitle": "Inteligencia de propiedades al instante. Ingresa una dirección de Chicago.",
+    "subtitle": "Resumen instantáneo y gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y ventas comparables. Ingresa una dirección.",
     "search": "Buscar",
     "loading": "Cargando...",
     "addressNotFound": "No se pudo encontrar esa dirección. Intente con un formato diferente (ej. \"2400 N Milwaukee Ave\").",
@@ -101,6 +101,16 @@
       "orUpgrade": "o actualice a Pro — $99/mes",
       "ready": "Su informe está listo",
       "stickyTitle": "Informe de Viabilidad de Desarrollo"
+    },
+    "addressUnavailable": "Dirección no disponible",
+    "vsPrior": "vs {{count}}",
+    "badges": {
+      "exact": "Parcela exacta confirmada",
+      "exactTitle": "Resuelto a esta parcela fiscal exacta del Condado de Cook. Las cifras siguientes son específicas de la parcela cuando están disponibles.",
+      "unconfirmed": "Datos del área — parcela no confirmada",
+      "unconfirmedTitle": "No pudimos confirmar la parcela fiscal exacta para esta dirección en este momento (servicio de parcelas del condado). Las cifras siguientes describen esta ubicación y sus alrededores.",
+      "approximate": "Ubicación aproximada",
+      "approximateTitle": "Esta dirección se ubicó por geocodificación de calles, por lo que la parcela mostrada podría ser una vecina cercana. Verifique las cifras específicas de la parcela antes de usarlas."
     }
   },
   "explore": {

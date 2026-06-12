@@ -112,3 +112,47 @@ async def test_query_uses_address_point_columns_and_limit():
     assert "upper(st_name)='WRIGHTWOOD'" in where
     assert params["$select"] == "pin,lat,long"
     assert "$limit" in params
+
+
+# --------------------------------------------------------------------------- #
+# pin_to_address — display-only PIN → address reverse lookup
+# --------------------------------------------------------------------------- #
+
+async def test_pin_to_address_formats_display_address():
+    """cmpaddabrv is ALL-CAPS; the result is display-cased."""
+    rows = [{"cmpaddabrv": "642 W BELDEN AVE"}]
+    with _patch_socrata(rows):
+        result = await address_points.pin_to_address("14331030110000")
+    assert result == "642 W Belden Ave"
+
+
+async def test_pin_to_address_no_rows_returns_none():
+    with _patch_socrata([]):
+        result = await address_points.pin_to_address("14283190070000")
+    assert result is None
+
+
+async def test_pin_to_address_error_returns_none():
+    with _patch_socrata(raises=RuntimeError("portal down")):
+        result = await address_points.pin_to_address("14331030110000")
+    assert result is None
+
+
+async def test_pin_to_address_query_shape():
+    """Lock the query: pin filter, display column, deterministic order, limit 1."""
+    mock = AsyncMock(return_value=[{"cmpaddabrv": "642 W BELDEN AVE"}])
+    with patch.object(address_points, "socrata_get", new=mock):
+        await address_points.pin_to_address("14331030110000")
+    params = mock.call_args.args[1]
+    assert params["$where"] == "pin='14331030110000'"
+    assert params["$select"] == "cmpaddabrv"
+    assert params["$order"] == "addrnocom"
+    assert params["$limit"] == 1
+
+
+async def test_format_display_address_cases():
+    f = address_points._format_display_address
+    assert f("642 W BELDEN AVE") == "642 W Belden Ave"
+    assert f("2400 N MILWAUKEE AVE") == "2400 N Milwaukee Ave"
+    assert f("123 E 63RD ST") == "123 E 63rd St"
+    assert f("1 S STATE ST") == "1 S State St"

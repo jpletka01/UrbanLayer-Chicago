@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 import { InfoTooltip } from "../InfoTooltip";
+import { humanizeShoutyCase } from "../../lib/format";
 
 const ShieldIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -21,9 +22,29 @@ function formatLayerType(t: string): string {
   return t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// Loose-equality helpers so each overlay is communicated once: the dataset's
+// name/description often just restate the layer type ("PEDESTRIAN STREET" /
+// "Pedestrian Streets"), and most status flags mirror an overlay entry.
+function normLabel(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/s$/, "");
+}
+
+const GENERIC_TOKENS = new Set(["area", "zone", "district", "street", "cta", "metra"]);
+
+function flagCore(s: string): string {
+  return s
+    .replace(/^(in|on|is)_/, "")
+    .split("_")
+    .filter(w => !GENERIC_TOKENS.has(w))
+    .join(" ");
+}
+
 export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
   const { t } = useTranslation("data");
-  const activeFlags = FLAG_KEYS.filter(k => data[k as keyof RegulatorySummary] === true);
+  const overlayCores = new Set(data.overlays.map(ov => flagCore(ov.layer_type)));
+  const activeFlags = FLAG_KEYS.filter(
+    k => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k))
+  );
 
   return (
     <CollapsibleCard title={t("regulatory.title")} icon={ShieldIcon}>
@@ -31,22 +52,30 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
         {data.overlays.length > 0 && (
           <div className="space-y-1.5">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.overlays")}</span>
-            {data.overlays.map((ov, i) => (
-              <div key={i} className="rounded-lg bg-dark-elevated/60 border-l-2 border-accent/60 px-3 py-2">
-                <span className="text-[10px] text-accent/80 uppercase tracking-wider">
-                  <InfoTooltip term={ov.layer_type}>{formatLayerType(ov.layer_type)}</InfoTooltip>
-                </span>
-                {ov.name && (
-                  <p className="text-[11px] text-text-primary mt-0.5">{ov.name}</p>
-                )}
-                {ov.description && (
-                  <p className="text-[10px] text-text-muted mt-0.5">{ov.description}</p>
-                )}
-                {ov.ordinance && (
-                  <p className="text-[10px] text-text-muted mt-0.5">{t("regulatory.ord")} {ov.ordinance}</p>
-                )}
-              </div>
-            ))}
+            {data.overlays.map((ov, i) => {
+              const typeLabel = formatLayerType(ov.layer_type);
+              const name = ov.name && normLabel(ov.name) !== normLabel(typeLabel) ? humanizeShoutyCase(ov.name) : null;
+              const description = ov.description &&
+                normLabel(ov.description) !== normLabel(typeLabel) &&
+                (!ov.name || normLabel(ov.description) !== normLabel(ov.name))
+                ? ov.description : null;
+              return (
+                <div key={i} className="rounded-lg bg-dark-elevated/60 border-l-2 border-accent/60 px-3 py-2">
+                  <span className="text-[10px] text-accent/80 uppercase tracking-wider">
+                    <InfoTooltip term={ov.layer_type}>{typeLabel}</InfoTooltip>
+                  </span>
+                  {name && (
+                    <p className="text-[11px] text-text-primary mt-0.5">{name}</p>
+                  )}
+                  {description && (
+                    <p className="text-[10px] text-text-muted mt-0.5">{description}</p>
+                  )}
+                  {ov.ordinance && (
+                    <p className="text-[10px] text-text-muted mt-0.5">{t("regulatory.ord")} {ov.ordinance}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

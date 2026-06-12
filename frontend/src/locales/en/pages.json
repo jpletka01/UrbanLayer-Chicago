@@ -52,7 +52,7 @@
   },
   "scorecard": {
     "title": "Property Scorecard",
-    "subtitle": "Instant property intelligence — no AI cost. Enter a Chicago address.",
+    "subtitle": "Free instant snapshot of any Chicago parcel — zoning, taxes, incentives, comps. Enter an address.",
     "search": "Search",
     "loading": "Loading...",
     "addressNotFound": "Could not find that address. Try a different format (e.g., \"2400 N Milwaukee Ave\").",
@@ -102,7 +102,17 @@
     "downloadCsv": "Download CSV",
     "generating": "Generating...",
     "dataAsOf": "Data as of {{date}}",
-    "someDataUnavailable": "Some data unavailable: {{sources}}"
+    "someDataUnavailable": "Some data unavailable: {{sources}}",
+    "addressUnavailable": "Address unavailable",
+    "vsPrior": "vs {{count}}",
+    "badges": {
+      "exact": "Exact parcel match",
+      "exactTitle": "Resolved to this exact Cook County tax parcel. Figures below are parcel-specific where available.",
+      "unconfirmed": "Area data — exact parcel not confirmed",
+      "unconfirmedTitle": "We couldn't confirm the exact tax parcel for this address right now (county parcel service). Figures below describe this location and the surrounding area.",
+      "approximate": "Approximate location",
+      "approximateTitle": "This address was placed by street geocoding, so the parcel shown may be a close neighbor. Verify parcel-specific figures before relying on them."
+    }
   },
   "explore": {
     "title": "Site Explorer",

@@ -24,10 +24,18 @@ function fmtDollarFull(n: number | null | undefined): string {
   return `$${n.toLocaleString()}`;
 }
 
-function StatBox({ label, value }: { label: string; value: string }) {
+function StatBox({ label, value, naLabel, naTitle }: {
+  label: string; value: string | null; naLabel?: string; naTitle?: string;
+}) {
+  const na = value == null;
   return (
     <div className="text-center">
-      <div className="text-sm font-semibold text-text-primary">{value}</div>
+      <div
+        className={`text-sm font-semibold ${na ? "text-text-muted cursor-help" : "text-text-primary"}`}
+        title={na ? naTitle : undefined}
+      >
+        {na ? (naLabel ?? "n/a") : value}
+      </div>
       <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
     </div>
   );
@@ -63,8 +71,10 @@ export function ComparablesCard({ data }: { data: ComparablesSummary }) {
     <CollapsibleCard title={t("comparables.title")} icon={ChartIcon}>
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2 py-1">
-          <StatBox label={t("comparables.medianPrice")} value={fmtDollar(data.median_sale_price)} />
-          <StatBox label={t("comparables.priceLandSqft")} value={data.median_price_per_land_sqft != null ? `$${data.median_price_per_land_sqft.toFixed(0)}` : "—"} />
+          <StatBox label={t("comparables.medianPrice")} value={data.median_sale_price != null ? fmtDollar(data.median_sale_price) : null}
+            naLabel={t("na.value")} naTitle={t("na.title")} />
+          <StatBox label={t("comparables.priceLandSqft")} value={data.median_price_per_land_sqft != null ? `$${data.median_price_per_land_sqft.toFixed(0)}` : null}
+            naLabel={t("na.value")} naTitle={t("na.title")} />
           <StatBox label={t("comparables.salesVolume")} value={String(data.sales_volume)} />
         </div>
 

@@ -17,12 +17,13 @@ import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
 import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
+import { humanizeShoutyCase } from "../lib/format";
 
-const StarIcon = (
-  <svg className="w-5 h-5 text-accent" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
-  </svg>
-);
+// Dash-format a 14-digit PIN for display (assessor convention: 2-2-3-3-4).
+function formatPin(pin: string): string {
+  if (pin.length !== 14) return pin;
+  return `${pin.slice(0, 2)}-${pin.slice(2, 4)}-${pin.slice(4, 7)}-${pin.slice(7, 10)}-${pin.slice(10)}`;
+}
 
 function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
@@ -49,8 +50,12 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
             <div className="space-y-1">
               {yoy.slice(0, 6).map((item) => (
                 <div key={item.category} className="flex items-center justify-between text-[11px]">
-                  <span className="text-text-secondary truncate flex-1 mr-2">{item.category}</span>
+                  <span className="text-text-secondary truncate flex-1 mr-2">{humanizeShoutyCase(item.category)}</span>
                   <span className="font-mono text-text-primary w-8 text-right">{item.current_count}</span>
+                  {/* prior-year base makes large percentage swings honest (54 → 209 reads differently than +287%) */}
+                  <span className="font-mono text-text-muted w-14 text-right text-[10px]">
+                    {t("scorecard.vsPrior", { count: item.prior_year_count })}
+                  </span>
                   <span className={`font-mono w-14 text-right ${
                     item.change_pct > 0 ? "text-rose-400" : item.change_pct < 0 ? "text-emerald-400" : "text-text-muted"
                   }`}>
@@ -89,7 +94,7 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
             {addr311.high_risk_flags.map((flag) => (
               <div key={flag} className="text-[11px] text-rose-300 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
-                {flag}
+                {humanizeShoutyCase(flag)}
               </div>
             ))}
           </div>
@@ -98,7 +103,7 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
           <div className="space-y-1">
             {Object.entries(addr311.by_type).slice(0, 5).map(([type, count]) => (
               <div key={type} className="flex items-center justify-between text-[11px]">
-                <span className="text-text-secondary truncate flex-1 mr-2">{type}</span>
+                <span className="text-text-secondary truncate flex-1 mr-2">{humanizeShoutyCase(type)}</span>
                 <span className="font-mono text-text-primary">{count}</span>
               </div>
             ))}
@@ -266,7 +271,7 @@ export default function ScorecardPage() {
       <header className="border-b border-dark-border bg-dark-surface/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            {StarIcon}
+            <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
             <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
           </Link>
           <nav className="flex items-center gap-4 text-[11px] text-text-muted">
@@ -278,7 +283,8 @@ export default function ScorecardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* pb-24 clears the sticky report bar so the last card is never hidden behind it */}
+      <main className={`max-w-7xl mx-auto px-4 py-8 ${data && !loading ? "pb-24" : ""}`}>
         {/* Search */}
         <div className="max-w-2xl mx-auto mb-8">
           <h1 className="text-2xl font-semibold tracking-tight mb-2">{t("scorecard.title")}</h1>
@@ -315,7 +321,10 @@ export default function ScorecardPage() {
             {/* Address header */}
             <div className="mb-6 pb-4 border-b border-dark-border">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <h2 className="text-lg font-semibold">{data.address || ctx.property?.address || "Unknown Address"}</h2>
+                <h2 className="text-lg font-semibold">
+                  {data.address || ctx.property?.address ||
+                    (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
+                </h2>
                 {data.community_area_name && (
                   <span className="text-sm text-text-muted">{data.community_area_name}</span>
                 )}
@@ -335,20 +344,29 @@ export default function ScorecardPage() {
                       rel="noopener noreferrer"
                       className="text-xs font-mono text-text-secondary hover:text-accent transition-colors"
                     >
-                      PIN {parcel.pin}
+                      PIN {formatPin(parcel.pin)}
                     </a>
                   )}
                   {parcel.pin === null ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400">
-                      Parcel identity unconfirmed
+                    <span
+                      title={t("scorecard.badges.unconfirmedTitle")}
+                      className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400 cursor-help"
+                    >
+                      {t("scorecard.badges.unconfirmed")}
                     </span>
                   ) : parcel.confidence === "authoritative" ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/20 text-emerald-400">
-                      ✓ Exact parcel match
+                    <span
+                      title={t("scorecard.badges.exactTitle")}
+                      className="text-[10px] px-2 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 cursor-help"
+                    >
+                      ✓ {t("scorecard.badges.exact")}
                     </span>
                   ) : (
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400">
-                      Approximate — parcel not confirmed
+                    <span
+                      title={t("scorecard.badges.approximateTitle")}
+                      className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400 cursor-help"
+                    >
+                      {t("scorecard.badges.approximate")}
                     </span>
                   )}
                 </div>

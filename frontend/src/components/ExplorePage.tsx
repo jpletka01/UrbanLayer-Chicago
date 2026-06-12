@@ -67,12 +67,6 @@ const CLASS_LABEL_KEYS: Record<string, string> = {
 
 const PAGE_SIZE = 200;
 
-const StarIcon = (
-  <svg className="w-5 h-5 text-accent" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
-  </svg>
-);
-
 export default function ExplorePage() {
   const { t } = useTranslation("pages");
   const { user } = useAuthContext();
@@ -199,7 +193,7 @@ export default function ExplorePage() {
       <header className="border-b border-dark-border bg-dark-surface/80 backdrop-blur-sm z-50 flex-shrink-0">
         <div className="max-w-[1920px] mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            {StarIcon}
+            <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
             <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
           </Link>
           <nav className="flex items-center gap-4 text-[11px] text-text-muted">
