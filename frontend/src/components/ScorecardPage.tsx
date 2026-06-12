@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
+import type { ParcelQuery } from "../lib/types";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSelectedParcel } from "../contexts/SelectedParcelContext";
 import ReportPurchasePrompt from "./ReportPurchasePrompt";
@@ -121,7 +122,7 @@ function ScorecardSkeleton() {
 
 export default function ScorecardPage() {
   const { t } = useTranslation("pages");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuthContext();
   const { parcel, select } = useSelectedParcel();
   const [address, setAddress] = useState(searchParams.get("address") || "");
@@ -138,79 +139,90 @@ export default function ScorecardPage() {
   const isPro = user?.tier === "premium" || user?.tier === "admin";
   const hasReportAccess = isPro || reportAccess?.has_access === true;
 
-  const triggerDownload = useCallback(async (addr: string) => {
+  const triggerDownload = useCallback(async () => {
+    if (!parcel || (!parcel.pin && !parcel.address)) return;
     setDownloading(true);
     try {
-      const blob = await fetchReport({ address: addr });
+      const blob = await fetchReport(parcel.pin ? { pin: parcel.pin } : { address: parcel.address! });
       if (blob) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${addr.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}_zoning_report.pdf`;
+        const slug = (parcel.address ?? `pin_${parcel.pin}`).replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+        a.download = `${slug}_zoning_report.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       }
     } finally {
       setDownloading(false);
     }
-  }, []);
+  }, [parcel]);
 
   const handleDownloadPdf = useCallback(async () => {
-    if (!data?.address) return;
+    if (!parcel || (!parcel.pin && !parcel.address)) return;
     if (hasReportAccess) {
-      await triggerDownload(data.address);
+      await triggerDownload();
     } else {
       setShowPurchasePrompt(true);
     }
-  }, [data, hasReportAccess, triggerDownload]);
+  }, [parcel, hasReportAccess, triggerDownload]);
 
-  const doSearch = useCallback(async (query: string) => {
-    if (!query.trim()) return;
+  const runQuery = useCallback(async (query: ParcelQuery) => {
     setLoading(true);
     setError(null);
     setSearched(true);
-    const result = await select({ address: query.trim() });
-    if (result) {
-      setData(result);
-    } else {
-      setError(t("scorecard.addressNotFound"));
-      setData(null);
-    }
-    setLoading(false);
-  }, [t, select]);
-
-  const doSearchByCoords = useCallback(async (lat: number, lon: number) => {
-    setLoading(true);
-    setError(null);
-    setSearched(true);
-    const result = await select({ lat, lon });
+    const result = await select(query);
     if (result) {
       setData(result);
       if (result.address) setAddress(result.address);
+      // Canonicalize the URL on a confirmed parcel; pin-less results keep
+      // their original params. report_purchased survives the rewrite so the
+      // post-purchase auto-download still fires.
+      if (result.resolved_pin) {
+        setSearchParams((prev) => {
+          const next = new URLSearchParams({ pin: result.resolved_pin! });
+          // address is display-only; keep the previous one when a pin-keyed
+          // re-entry resolves without an address so the canonical URL is stable
+          const displayAddress = result.address ?? prev.get("address");
+          if (displayAddress) next.set("address", displayAddress);
+          const purchased = prev.get("report_purchased");
+          if (purchased) next.set("report_purchased", purchased);
+          return next;
+        }, { replace: true });
+      }
     } else {
-      setError(t("scorecard.locationNotFound"));
+      setError(t("address" in query ? "scorecard.addressNotFound" : "scorecard.locationNotFound"));
       setData(null);
     }
     setLoading(false);
-  }, [t, select]);
+  }, [t, select, setSearchParams]);
+
+  const doSearch = useCallback((query: string) => {
+    if (!query.trim()) return;
+    runQuery({ address: query.trim() });
+  }, [runQuery]);
 
   useEffect(() => {
+    const pin = searchParams.get("pin");
     const q = searchParams.get("address");
     const lat = searchParams.get("lat");
     const lon = searchParams.get("lon");
-    if (q) {
+    if (pin) {
+      if (q) setAddress(q);
+      runQuery({ pin });
+    } else if (q) {
       setAddress(q);
-      doSearch(q);
+      runQuery({ address: q });
     } else if (lat && lon) {
-      doSearchByCoords(parseFloat(lat), parseFloat(lon));
+      runQuery({ lat: parseFloat(lat), lon: parseFloat(lon) });
     }
   }, []);
 
   // Fetch report access when scorecard data loads (for non-pro users)
   useEffect(() => {
     if (!data || isPro) return;
-    checkReportAccess({ lat: data.lat, lon: data.lon }).then(setReportAccess);
-  }, [data, isPro]);
+    checkReportAccess({ lat: data.lat, lon: data.lon, pin: parcel?.pin ?? undefined }).then(setReportAccess);
+  }, [data, isPro, parcel]);
 
   useEffect(() => {
     if (data?.address) setTrackingAddress(data.address);
@@ -219,14 +231,14 @@ export default function ScorecardPage() {
 
   // Handle post-purchase redirect: auto-download the report
   useEffect(() => {
-    if (!data?.address) return;
+    if (!data || !parcel || (!parcel.pin && !parcel.address)) return;
     if (searchParams.get("report_purchased") !== "1") return;
     setReportAccess({ has_access: true, reason: "purchased" });
-    triggerDownload(data.address);
+    triggerDownload();
     const url = new URL(window.location.href);
     url.searchParams.delete("report_purchased");
     window.history.replaceState({}, "", url.toString());
-  }, [data, searchParams, triggerDownload]);
+  }, [data, parcel, searchParams, triggerDownload]);
 
   useEffect(() => {
     const el = ctaRef.current;

@@ -176,7 +176,8 @@ export default function ExplorePage() {
       onClick: (info) => {
         if (info.object) {
           const p = info.object as ExploreParcel;
-          navigate(`/scorecard?lat=${p.lat}&lon=${p.lon}`);
+          // pins are dash-formatted for display; the resolver takes 14 digits
+          navigate(`/scorecard?pin=${p.pin.replace(/\D/g, "")}`);
         }
       },
     });
@@ -322,7 +323,7 @@ export default function ExplorePage() {
                     {tableData.parcels.map((p) => (
                       <tr
                         key={p.pin}
-                        onClick={() => navigate(`/scorecard?lat=${p.lat}&lon=${p.lon}`)}
+                        onClick={() => navigate(`/scorecard?pin=${p.pin.replace(/\D/g, "")}`)}
                         onMouseEnter={() => setHoveredPin(p.pin)}
                         onMouseLeave={() => setHoveredPin(null)}
                         className={`cursor-pointer border-t border-dark-border/50 transition-colors ${

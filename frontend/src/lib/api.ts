@@ -157,11 +157,13 @@ export async function createReportCheckoutSession(params: {
 export async function checkReportAccess(params: {
   lat: number;
   lon: number;
+  pin?: string;
 }): Promise<{ has_access: boolean; reason: string }> {
   const qs = new URLSearchParams({
     lat: String(params.lat),
     lon: String(params.lon),
   });
+  if (params.pin) qs.set("pin", params.pin);
   try {
     const resp = await authFetch(`${API_BASE}/api/report/access?${qs}`);
     if (!resp.ok) return { has_access: false, reason: "error" };
