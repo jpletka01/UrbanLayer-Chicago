@@ -14,13 +14,14 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/lib/api.ts` | SSE streaming, conversation CRUD, map data, admin endpoints, fetchSection cache, `fetchExploreParcels()`/`fetchExploreMap()`, `createReportCheckoutSession()`/`checkReportAccess()` for a la carte reports. All requests use `authFetch()` with `credentials: include` + CSRF |
 | `src/lib/useAuth.ts` | Auth state hook: user, isAuthenticated, authRequired, signIn/signOut/checkAuth |
 | `src/contexts/AuthContext.tsx` | React context provider wrapping `useAuth`, available app-wide |
+| `src/contexts/SelectedParcelContext.tsx` | Held parcel identity (`SelectedParcel`: pin + confidence + lat/lon + display address). `select(ParcelQuery)` is the **only** write site — fetches scorecard, commits backend-resolved identity atomically. Never construct identity client-side |
 | `src/components/AuthModal.tsx` | "Sign in with Google" modal, shown when unauth user tries to chat |
 | `src/components/UserMenu.tsx` | Google avatar dropdown in workspace header (sign out, tier badge, manage subscription/upgrade link) |
 | `src/components/PricingPage.tsx` | Free vs Pro ($99/mo) pricing comparison page at `/pricing`, a la carte callout |
 | `src/components/UpgradePrompt.tsx` | Modal shown when free user hits premium-gated feature (Explorer, etc.) |
 | `src/components/ReportPurchasePrompt.tsx` | Modal for a la carte report purchase ($25 one-time) with dual CTA: buy single report or upgrade to Pro |
-| `src/components/ScorecardPage.tsx` | Property Scorecard page. Supports `?address=`, `?lat=...&lon=...`, `?report_purchased=1` (post-purchase auto-download). Report button shows "$25" for free users without purchase |
-| `src/components/ExplorePage.tsx` | Site Explorer: split-screen CA parcel browser with filter panel + deck.gl map. Premium-gated. Click parcel → Scorecard via lat/lon |
+| `src/components/ScorecardPage.tsx` | Property Scorecard page. Param precedence `?pin=` → `?address=` → `?lat=&lon=`; pin-confirmed results canonicalize the URL to `?pin=&address=` (legacy URLs still work). Renders identity strip (PIN → assessor link + confidence badge). `?report_purchased=1` post-purchase auto-download. Report download/access keyed on `parcel.pin` when present |
+| `src/components/ExplorePage.tsx` | Site Explorer: split-screen CA parcel browser with filter panel + deck.gl map. Premium-gated. Click parcel → Scorecard via `?pin=` (display pins are dash-formatted; handoff strips to 14 digits) |
 | `src/components/ProtectedRoute.tsx` | Route guard for auth + tier checks (used for `/admin`) |
 | `src/lib/mapColors.ts` | Shared colors for map + charts + zone categories + OVERLAY_INFO/ZONE_INFO definitions + hash-based incentive zone colors |
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |

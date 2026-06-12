@@ -1,6 +1,6 @@
 # SelectedParcel Unification — Canonical Handoff Artifact
 
-Plan date: 2026-06-11. Status: **specified, not implemented.**
+Plan date: 2026-06-11. Status: **Phases 0+1 implemented & verified 2026-06-11 on branch `selected-parcel` (commits `7a610d6`, `2b0c8b1`) — not pushed, awaiting Jack's review. Phases 2+3 not started. See §8 for implementation findings that amend §5's literal steps.**
 Origin: full product/architecture audit → identity-fragmentation analysis → state-model grounding (this document is the compressed output; it supersedes the conversation that produced it).
 This artifact is the sole input for the implementation session. Where it conflicts with code comments, older docs, or intuition, this artifact wins.
 
@@ -118,6 +118,25 @@ Each phase = one commit, independently shippable, fully reversible by revert. Le
 6. Run the §5 per-phase verifications plus the QA parcels (control `14331030110000` / 642 W Belden Ave → authoritative; EX `14283190070000` → by-address approximate, by-PIN exact) before declaring a phase complete.
 7. Commit each phase separately with conventional messages on a branch. Do not push to `main` without explicit user confirmation. Report test results faithfully, including failures.
 8. Where this artifact conflicts with code comments, older docs, or intuition, this artifact wins. Where it is silent, choose the minimal change that satisfies §2's "must never happen" list.
+
+---
+
+## 8. Implementation status & findings (added 2026-06-11 after Phases 0+1)
+
+**Done, on branch `selected-parcel` (not pushed — push = production deploy, needs Jack's confirmation):**
+- Phase 0 (`7a610d6`): `resolved_lat`/`resolved_lon` on `/api/scorecard`; `SelectedParcel`/`ParcelQuery` in `types.ts`; `SelectedParcelContext.tsx` (sole write site); provider mounted in `main.tsx`; ScorecardPage searches via `select()`; identity strip (PIN mono → assessor link + confidence badge) under the address header.
+- Phase 1 (`2b0c8b1`): Explorer map+table clicks navigate `?pin=`; ScorecardPage mount precedence pin → address → lat/lon through a single `runQuery(ParcelQuery)`; canonical `?pin=&address=` URL on pin-confirmed results; report download + access check keyed on `parcel.pin`; `checkReportAccess` passes `pin` through.
+
+**Verified:** tsc clean; 565 backend unit tests pass; control 14331030110000 by address → PIN + authoritative badge + canonical URL; EX 14283190070000 by PIN → authoritative; Explorer row pin = URL pin = badge pin (browser-driven); `/api/report?pin=` request intercepted from the download button; legacy `?address=` and `?lat&lon` URLs work (coords → amber "Parcel identity unconfirmed").
+
+**Findings that amend §5's literal steps (binding for Phases 2+3):**
+1. `ScorecardResponse` lives in `frontend/src/lib/api.ts`, not `types.ts`; the `resolved_*` fields were added there.
+2. **Explorer pins are dash-formatted display strings** (`14-28-115-084-0000`, from `_format_pin` in `retrieval/explore.py`); the backend resolver 422s on that form. Handoffs normalize with `.replace(/\D/g, "")`. Any future pin-emitting surface must do the same (or the resolver should learn to strip non-digits).
+3. URL canonicalization **carries over `report_purchased`** (the literal `setSearchParams({pin, address})` would break post-purchase auto-download) and keeps the previous `address` param when a pin-keyed re-entry resolves without one (pin-only scorecard responses have `address: null`). Address stays display-only.
+4. `triggerDownload` reads identity from `parcel` (no address argument); filename falls back to `pin_<pin>` for address-less parcels. Phase 2's checkout call sites should follow the same pattern.
+5. **QA expectation drift:** "443 W Wrightwood Ave" (EX subject's address) now resolves *authoritative* to **neighboring pin `14283180570000`** via Address Points — §1's "no address point" claim no longer holds. One cold-cache probe returned approximate/no-pin, so the address path falls through nondeterministically under transient Socrata failures. Backend resolver behavior, out of this plan's scope, but it means an address search can confidently land on an adjacent parcel — worth investigating before money is keyed on pins resolved this way. QA the approximate badge via `?lat&lon` instead.
+
+**Dev-environment notes:** local backend on :8001 must be restarted to pick up backend changes if long-running; dev auth bypass active locally (no `GOOGLE_CLIENT_ID`), dev user has subscription-level access; `@playwright/test` is installed in `frontend/` for browser verification (run scripts from `frontend/`, screenshots pattern in git history of this session's QA).
 
 ---
 

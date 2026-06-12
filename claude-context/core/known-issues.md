@@ -4,6 +4,8 @@
 
 **Cook County GIS parcel lookup is intermittently down**: The ArcGIS endpoint (`gis.cookcountyil.gov/.../MapServer/44/query`) has a broken spatial/attribute index — filtered queries (spatial or by PIN) can timeout at 60s+. **Mitigation**: `parcels.py` now falls back to the Cook County Socrata Parcel Universe dataset (`pabr-t5kh`) via bounding-box query on lat/lon columns. The fallback returns a PIN plus enrichment fields (`zip_code`, `township_name`, `nbhd_code`, `tax_code`) to unblock the full property pipeline. Building/land sqft are filled in downstream by CCAO Characteristics. **Still missing on fallback**: parcel polygon geometry (map display only) and address. When GIS is up, it's used preferentially. A diagnostic integration test (`test_parcel_gis_diagnostic`) fails loudly when GIS is down.
 
+**Address Points can resolve an address to a neighboring parcel with `authoritative` confidence**: Observed 2026-06-11 during SelectedParcel QA — "443 W Wrightwood Ave" (the EX subject's address, previously believed to have *no* address point) resolves authoritative → pin `14283180570000`, an adjacent parcel, not the EX subject `14283190070000`. The same query returned approximate/no-pin on one cold-cache probe, so the address path also falls through nondeterministically under transient Socrata failures. Means an address search can confidently land on the wrong adjacent parcel. Investigate before keying purchases on address-resolved pins (SelectedParcel Phase 2 keys on the pin the user *saw*, which mitigates but doesn't fix mis-resolution at search time).
+
 ## Known Limitations
 
 **Report envelope map depends on parcel geometry**: The V5 development envelope visualization (`_generate_envelope_map()`) requires parcel polygon geometry from Cook County GIS. When GIS is down and the Socrata fallback is used, no geometry is available — the envelope map section silently omits. Edge classification assumes roughly rectangular lots; irregular parcels (5+ distinct edges, L-shapes) fall back to uniform minimum setback.
@@ -40,6 +42,8 @@
 ## Gotchas
 
 **Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations.
+
+**Explore pins are dash-formatted display strings**: `/api/explore` returns pins as `14-28-115-084-0000` (`_format_pin` in `retrieval/explore.py`), but `_resolve_location` rejects dashed pins with 422. Strip to 14 digits (`pin.replace(/\D/g, "")`) before using as a `?pin=` query key.
 
 **Port must be 8001**: Frontend proxy config and API URLs assume backend on 8001. Changing it requires updating `vite.config.ts` proxy + frontend API base URL.
 
