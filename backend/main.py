@@ -1398,6 +1398,15 @@ async def scorecard(
     data["resolved_confidence"] = rl.confidence
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon
+    # Deterministic Title-17 bulk standards for the parcel's zone (same table
+    # the PDF report uses) — powers the free "Zoning at a glance" card.
+    zoning_summary = data["context"].parcel_zoning
+    if zoning_summary:
+        from dataclasses import asdict
+        from backend.retrieval.zoning_definitions import get_zone_definition
+        data["zone_definition"] = asdict(get_zone_definition(zoning_summary.zone_class))
+    else:
+        data["zone_definition"] = None
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
         data["comparables"] = data["comparables"].model_dump(exclude_none=True)

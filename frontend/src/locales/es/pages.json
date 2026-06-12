@@ -105,6 +105,23 @@
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
+    "zoningCard": {
+      "title": "Zonificación",
+      "far": "FAR máx.",
+      "maxHeight": "Altura máx.",
+      "lotCoverage": "Cobertura máx. del lote",
+      "viewMap": "Ver mapa de zonificación",
+      "reportTeaser": "Envolvente edificable, retiros y estacionamiento en el informe"
+    },
+    "verdict": {
+      "inTif": "en el TIF {{name}}",
+      "opportunityZone": "Zona de Oportunidad",
+      "todEligible": "elegible para TOD",
+      "aduEligible": "elegible para ADU",
+      "aroApplies": "aplica ARO",
+      "minimalFlood": "riesgo de inundación mínimo",
+      "floodZone": "zona de inundación FEMA {{zone}}"
+    },
     "badges": {
       "exact": "Parcela exacta confirmada",
       "exactTitle": "Resuelto a esta parcela fiscal exacta del Condado de Cook. Las cifras siguientes son específicas de la parcela cuando están disponibles.",

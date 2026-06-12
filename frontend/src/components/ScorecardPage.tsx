@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
+import { fetchReport, checkReportAccess, type ScorecardResponse, type ZoneDefinition } from "../lib/api";
 import type { ParcelQuery } from "../lib/types";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSelectedParcel } from "../contexts/SelectedParcelContext";
@@ -18,11 +18,86 @@ import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
 import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
 import { humanizeShoutyCase } from "../lib/format";
+import { ReportTeaser } from "./sidebar/ReportTeaser";
 
 // Dash-format a 14-digit PIN for display (assessor convention: 2-2-3-3-4).
 function formatPin(pin: string): string {
   if (pin.length !== 14) return pin;
   return `${pin.slice(0, 2)}-${pin.slice(2, 4)}-${pin.slice(4, 7)}-${pin.slice(7, 10)}-${pin.slice(10)}`;
+}
+
+// Static location thumbnail (Mapbox Static Images API). Pin-only by design:
+// parcel polygon geometry isn't reliably available (county GIS), so the
+// default state must not depend on it. Hidden entirely if the image fails.
+function MapThumb({ lat, lon }: { lat: number; lon: number }) {
+  const [failed, setFailed] = useState(false);
+  const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+  if (!token || failed) return null;
+  const pt = `${lon.toFixed(5)},${lat.toFixed(5)}`;
+  const url = `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+c96442(${pt})/${pt},15/224x224@2x?access_token=${token}&logo=false`;
+  return (
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="hidden sm:block w-28 h-28 rounded-lg border border-dark-border object-cover shrink-0"
+    />
+  );
+}
+
+function ZoningCard({ def, mapUrl }: { def: ZoneDefinition; mapUrl?: string | null }) {
+  const { t } = useTranslation("pages");
+  return (
+    <div className="bg-dark-surface border border-dark-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-dark-border flex items-center gap-2">
+        <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+        </svg>
+        <span className="text-[11px] font-medium text-text-primary">{t("scorecard.zoningCard.title")}</span>
+        <span className="ml-auto text-[10px] font-mono text-accent">{def.zone_class}</span>
+      </div>
+      <div className="px-4 py-3 space-y-2">
+        <p className="text-[12px] font-medium text-text-primary">{def.name}</p>
+        <div className="space-y-1">
+          {def.far != null && (
+            <div className="flex justify-between items-baseline gap-2 text-[11px]">
+              <span className="text-text-muted">{t("scorecard.zoningCard.far")}</span>
+              <span className="text-text-primary font-mono">{def.far}</span>
+            </div>
+          )}
+          {def.max_height && (
+            <div className="flex justify-between items-baseline gap-2 text-[11px]">
+              <span className="text-text-muted">{t("scorecard.zoningCard.maxHeight")}</span>
+              <span className="text-text-primary font-mono text-right">{def.max_height}</span>
+            </div>
+          )}
+          {def.lot_coverage && (
+            <div className="flex justify-between items-baseline gap-2 text-[11px]">
+              <span className="text-text-muted">{t("scorecard.zoningCard.lotCoverage")}</span>
+              <span className="text-text-primary font-mono text-right">{def.lot_coverage}</span>
+            </div>
+          )}
+        </div>
+        {def.uses && <p className="text-[11px] text-text-secondary leading-snug">{def.uses}</p>}
+        {def.notes && <p className="text-[10px] text-text-muted leading-snug">{def.notes}</p>}
+        <div className="flex items-center justify-between gap-2 text-[10px] text-text-muted">
+          <span className="font-mono">{def.code_section}</span>
+          {mapUrl && (
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-text-secondary hover:text-accent transition-colors"
+            >
+              {t("scorecard.zoningCard.viewMap")}
+            </a>
+          )}
+        </div>
+        <ReportTeaser text={t("scorecard.zoningCard.reportTeaser")} />
+      </div>
+    </div>
+  );
 }
 
 function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
@@ -265,6 +340,23 @@ export default function ScorecardPage() {
   const zoning = ctx?.parcel_zoning;
   const addr = data?.address || ctx?.property?.address || "";
 
+  // Facts-only verdict line: every clause restates a flag that is already
+  // rendered in a card below — no scoring, no interpretation.
+  const zdef = data?.zone_definition;
+  const verdictClauses: string[] = [];
+  if (ctx) {
+    if (zdef) verdictClauses.push(`${zdef.zone_class} ${zdef.name}`);
+    const inc = ctx.incentives;
+    const reg = ctx.regulatory;
+    if (inc?.in_tif_district && inc.tif_name) verdictClauses.push(t("scorecard.verdict.inTif", { name: inc.tif_name }));
+    if (inc?.in_opportunity_zone) verdictClauses.push(t("scorecard.verdict.opportunityZone"));
+    if (reg?.in_tod_area || ctx.neighborhood?.transit?.tod_eligible) verdictClauses.push(t("scorecard.verdict.todEligible"));
+    if (reg?.in_adu_area) verdictClauses.push(t("scorecard.verdict.aduEligible"));
+    if (reg?.in_aro_zone) verdictClauses.push(t("scorecard.verdict.aroApplies"));
+    if (reg?.flood_zone === "X") verdictClauses.push(t("scorecard.verdict.minimalFlood"));
+    else if (reg?.flood_zone) verdictClauses.push(t("scorecard.verdict.floodZone", { zone: reg.flood_zone }));
+  }
+
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
       {/* Header */}
@@ -319,7 +411,9 @@ export default function ScorecardPage() {
         {data && ctx && !loading && (
           <div>
             {/* Address header */}
-            <div className="mb-6 pb-4 border-b border-dark-border">
+            <div className="mb-6 pb-4 border-b border-dark-border flex gap-4 items-start">
+              <MapThumb lat={data.lat} lon={data.lon} />
+              <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-3 flex-wrap">
                 <h2 className="text-lg font-semibold">
                   {data.address || ctx.property?.address ||
@@ -371,6 +465,11 @@ export default function ScorecardPage() {
                   )}
                 </div>
               )}
+              {verdictClauses.length > 0 && (
+                <p className="mt-2 text-[12px] text-text-secondary leading-snug">
+                  {verdictClauses.join(" · ")}
+                </p>
+              )}
               {data.context.data_as_of && (
                 <div className="mt-2 text-[10px] text-text-muted">
                   {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
@@ -388,13 +487,6 @@ export default function ScorecardPage() {
                   label={t("scorecard.fullAnalysis")}
                   cardName="full_analysis"
                 />
-                {zoning && (
-                  <InvestigateButton
-                    question={`What are the allowed uses, setbacks, and FAR for ${zoning.zone_class} zoning?`}
-                    label={t("scorecard.zoningRules", { zone: zoning.zone_class })}
-                    cardName="zoning"
-                  />
-                )}
                 <button
                   onClick={() => {
                     const slug = buildFilenameSlug(data.address || "property");
@@ -408,6 +500,7 @@ export default function ScorecardPage() {
                   </svg>
                   {t("scorecard.downloadCsv")}
                 </button>
+              </div>
               </div>
             </div>
 
@@ -450,6 +543,18 @@ export default function ScorecardPage() {
                       question={`What are the recent comparable sales near ${addr} and what do they suggest about property values?`}
                       label={t("scorecard.investigate.comparableSales")}
                       cardName="comparables"
+                    />
+                  </div>
+                </div>
+              )}
+              {zdef && (
+                <div>
+                  <ZoningCard def={zdef} mapUrl={zoning?.zoning_map_url} />
+                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                    <InvestigateButton
+                      question={`What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`}
+                      label={t("scorecard.zoningRules", { zone: zdef.zone_class })}
+                      cardName="zoning"
                     />
                   </div>
                 </div>

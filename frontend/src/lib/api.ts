@@ -529,6 +529,19 @@ export async function fetchJudgeResults(): Promise<JudgeResults | null> {
   } catch { return null; }
 }
 
+// Deterministic Title-17 bulk standards (backend zoning_definitions.py via asdict)
+export interface ZoneDefinition {
+  zone_class: string;
+  name: string;
+  code_section: string;
+  far: number | null;
+  max_height: string | null;
+  lot_coverage: string | null;
+  uses: string;
+  notes: string;
+  is_fallback: boolean;
+}
+
 export interface ScorecardResponse {
   address: string | null;
   lat: number;
@@ -542,6 +555,7 @@ export interface ScorecardResponse {
   resolved_confidence: "authoritative" | "approximate";
   resolved_lat: number;
   resolved_lon: number;
+  zone_definition?: ZoneDefinition | null;
 }
 
 export async function fetchScorecard(params: {
