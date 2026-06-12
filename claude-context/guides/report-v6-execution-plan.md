@@ -226,14 +226,16 @@ directly contradicts the new Tax-Exempt callout. See "Phase 2" section below.
 Original plan date: 2026-06-10. Status when written: **strategy only — no implementation started.**
 
 Sources of truth: `report-status.md`, `report-v6-audit.md`, `report-v6-improvements.md`.
-Subject parcel for all diagnostics: **PIN 14283190070000** (443 W Wrightwood Ave, Lincoln Park / Lake View township, **class EX**).
+Subject parcel for all diagnostics: **PIN 14283190070000** (**481 W Deming Pl** — NOT 443 W Wrightwood Ave as earlier V6 docs said; that address belongs to unrelated pin `14283180570000` per the Assessor. Corrected 2026-06-11, see `archive/2026-06-11_selected-parcel.md` finding 3. Lincoln Park / Lake View township, **class EX**).
 
 This plan is sequential and verifiable: after each phase, regenerate a real (non-mock) report for the
 subject PIN (and one taxable control PIN) and re-audit against the acceptance criteria before moving on.
 
 ```bash
 # Standard verification command per phase (real data, not mock):
-curl -o /tmp/report_phaseN.pdf "http://localhost:8001/api/report?pin=14283190070000&address=443+W+Wrightwood+Ave" -H "Cookie: session=dev"
+# (address corrected 2026-06-11 — earlier runs passed 443 W Wrightwood Ave, which is a different
+#  parcel's address, so address-keyed sections [permits, Walk Score label] showed the wrong building)
+curl -o /tmp/report_phaseN.pdf "http://localhost:8001/api/report?pin=14283190070000&address=481+W+Deming+Pl" -H "Cookie: session=dev"
 # Plus a taxable control parcel (chosen in Phase 1, see R2):
 curl -o /tmp/report_control.pdf  "http://localhost:8001/api/report?pin=<TAXABLE_PIN>" -H "Cookie: session=dev"
 ```

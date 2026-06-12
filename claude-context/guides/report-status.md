@@ -490,7 +490,7 @@ Regenerated real (non-mock) report for the same parcel → `/tmp/report_v6_real.
 **NEW critical real findings (top of the real backlog):**
 
 **Verification parcels (use both after every change; mock=true banned from data QA):**
-- **Subject / failure-path:** PIN `14283190070000` (443 W Wrightwood Ave) — class **EX, tax-exempt institutional**, RM-6. Exercises R1/R2/R3 + exemption labeling.
+- **Subject / failure-path:** PIN `14283190070000` (**481 W Deming Pl** — earlier docs mislabeled it 443 W Wrightwood Ave, which belongs to unrelated pin `14283180570000`; corrected 2026-06-11) — class **EX, tax-exempt institutional**, RM-6. Exercises R1/R2/R3 + exemption labeling.
 - **Taxable control / happy-path:** PIN `14331030110000` (Lincoln Park, ~0.3mi, RM-5 — same RM family). 2024 tax $23,024 / AV $114,600, non-zero assessment history, yrblt 1888 (→ nonconformity), 2023 sale $1.207M, abundant class-2 comps. See `report-v6-execution-plan.md` + memory `project_report_verification_parcels`.
 
 | ID | Finding | Impact | Effort | Status |
