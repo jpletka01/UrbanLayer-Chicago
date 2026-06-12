@@ -8,18 +8,24 @@
   },
   "pricing": {
     "title": "Planes y precios",
-    "subtitle": "Inteligencia urbana impulsada por IA para profesionales inmobiliarios de Chicago. Obtenga respuestas instantáneas sobre zonificación, propiedad y normativas.",
+    "subtitle": "Fichas gratuitas para cualquier parcela de Chicago. Un informe de viabilidad de $25 cuando necesite el panorama completo. Pro para informes ilimitados y prospección.",
     "free": "Gratis",
     "forExploration": "Para exploración",
     "perMonth": "/mes",
+    "perReport": "por informe",
     "currentPlan": "Plan actual",
-    "recommended": "Recomendado",
+    "startHere": "Empiece aquí",
+    "reportTier": "Informe de Viabilidad de Desarrollo",
+    "perParcelNoSub": "Por parcela — sin suscripción",
+    "getReport": "Obtener un informe",
+    "scorecardHint": "Abra la ficha gratuita de cualquier parcela y compre su informe completo.",
     "pro": "Pro",
     "forProfessionals": "Para profesionales",
+    "proMath": "4 informes ≈ un mes de Pro — pase a ilimitado.",
     "active": "Activo",
     "redirecting": "Redirigiendo...",
     "upgradeToPro": "Actualizar a Pro",
-    "billingNote": "Las suscripciones se facturan mensualmente a través de Stripe. Cancele en cualquier momento.",
+    "billingNote": "Los informes son compras únicas. Las suscripciones Pro se facturan mensualmente a través de Stripe. Cancele en cualquier momento.",
     "freeFeatures": [
       "25 consultas de IA por día",
       "Búsquedas de fichas de propiedades",
@@ -29,9 +35,16 @@
       "Historial de consultas",
       "Enlaces de conversaciones para compartir"
     ],
+    "reportFeatures": [
+      "Informe de Viabilidad de Desarrollo completo (PDF)",
+      "Análisis de zonificación con IA y secciones del código citadas",
+      "Ventas comparables e historial de avalúos",
+      "Proyección de impuestos y elegibilidad de incentivos",
+      "Un entregable para presentar a un prestamista o cliente"
+    ],
     "proFeatures": [
       "Consultas de IA ilimitadas",
-      "Informes de zonificación en PDF",
+      "Informes de Viabilidad de Desarrollo ilimitados",
       "Explorador de sitios (próximamente)",
       "Soporte prioritario",
       "Todas las funciones gratuitas incluidas"
@@ -73,21 +86,21 @@
     "dataAsOf": "Datos al {{date}}",
     "someDataUnavailable": "Algunos datos no están disponibles: {{sources}}",
     "reportCTA": {
-      "title": "Development Feasibility Report",
-      "description": "Professional PDF with AI-powered analysis for this property.",
+      "title": "Informe de Viabilidad de Desarrollo",
+      "description": "PDF profesional con análisis impulsado por IA para esta propiedad.",
       "features": [
-        "AI zoning bulk standards",
-        "Development potential",
-        "Comparable sales chart",
-        "Address permits & violations",
-        "Recommended next steps"
+        "Estándares de volumen de zonificación con IA",
+        "Potencial de desarrollo",
+        "Gráfico de ventas comparables",
+        "Permisos e infracciones de la dirección",
+        "Próximos pasos recomendados"
       ],
-      "buyReport": "Download Report — $25",
-      "download": "Download Report",
-      "generating": "Generating...",
-      "orUpgrade": "or upgrade to Pro — $99/mo",
-      "ready": "Your report is ready",
-      "stickyTitle": "Development Feasibility Report"
+      "buyReport": "Descargar informe — $25",
+      "download": "Descargar informe",
+      "generating": "Generando...",
+      "orUpgrade": "o actualice a Pro — $99/mes",
+      "ready": "Su informe está listo",
+      "stickyTitle": "Informe de Viabilidad de Desarrollo"
     }
   },
   "explore": {

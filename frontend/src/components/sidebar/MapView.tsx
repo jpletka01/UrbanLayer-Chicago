@@ -168,8 +168,8 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
   const [dateBounds, setDateBounds] = useState<{ min: number; max: number } | null>(null);
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [showZoning, setShowZoning] = useState(true);
-  const [showPoints, setShowPoints] = useState(true);
-  const [showTransit, setShowTransit] = useState(false);
+  const [showPoints, setShowPoints] = useState(false);
+  const [showTransit, setShowTransit] = useState(true);
   const [showIncentives, setShowIncentives] = useState(true);
   const [showOverlays, setShowOverlays] = useState(true);
   const [transitStations, setTransitStations] = useState<TransitStation[]>([]);
@@ -215,6 +215,13 @@ export function MapView({ mapData, loading, sources, parcelGeometry, hasTransitC
       setShowTransit(true);
     }
   }, [hasTransitContext]);
+
+  // Points are off by default; an explicitly crime/311/permit-scoped query is the intent gate
+  useEffect(() => {
+    if (rawFilterMode !== "overview") {
+      setShowPoints(true);
+    }
+  }, [rawFilterMode]);
 
   useEffect(() => {
     if (showTransit && transitStations.length === 0) {

@@ -8,18 +8,24 @@
   },
   "pricing": {
     "title": "Plans & Pricing",
-    "subtitle": "AI-powered urban intelligence for Chicago real estate professionals. Get instant answers about zoning, property, and regulatory data.",
+    "subtitle": "Free Scorecards for any Chicago parcel. A $25 feasibility report when you need the full picture. Pro for unlimited reports and discovery.",
     "free": "Free",
     "forExploration": "For exploration",
     "perMonth": "/month",
+    "perReport": "per report",
     "currentPlan": "Current plan",
-    "recommended": "Recommended",
+    "startHere": "Start here",
+    "reportTier": "Development Feasibility Report",
+    "perParcelNoSub": "Per parcel — no subscription",
+    "getReport": "Get a report",
+    "scorecardHint": "Open any parcel's free Scorecard, then buy its full report.",
     "pro": "Pro",
     "forProfessionals": "For professionals",
+    "proMath": "4 reports ≈ a month of Pro — go unlimited.",
     "active": "Active",
     "redirecting": "Redirecting...",
     "upgradeToPro": "Upgrade to Pro",
-    "billingNote": "Subscriptions are billed monthly via Stripe. Cancel anytime.",
+    "billingNote": "Reports are one-time purchases. Pro subscriptions are billed monthly via Stripe. Cancel anytime.",
     "freeFeatures": [
       "25 AI queries per day",
       "Property scorecard lookups",
@@ -29,9 +35,16 @@
       "Conversation history",
       "Shareable conversation links"
     ],
+    "reportFeatures": [
+      "Full Development Feasibility Report (PDF)",
+      "AI zoning analysis with cited code sections",
+      "Comparable sales & assessment history",
+      "Tax projection & incentive eligibility",
+      "A deliverable you can hand to a lender or client"
+    ],
     "proFeatures": [
       "Unlimited AI queries",
-      "PDF zoning reports",
+      "Unlimited Development Feasibility Reports",
       "Site Explorer (coming soon)",
       "Priority support",
       "All Free features included"
