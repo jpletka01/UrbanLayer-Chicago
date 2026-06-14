@@ -15,9 +15,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import bisect
 import datetime
+import json
 import logging
+import math
 import time
+from collections import defaultdict
 from typing import Any, Iterable
 
 import httpx
@@ -25,6 +29,7 @@ from shapely.geometry import Point, shape
 
 from backend.config import get_settings
 from backend.discovery.parcel_index import default_index_path, write_index
+from backend.discovery.registry import load as load_registry
 from backend.retrieval.explore import _format_pin
 from backend.retrieval.geo import community_area_bounds, community_area_by_point
 from backend.retrieval.incentives.enterprise_zones import _load_ez_boundaries
@@ -106,6 +111,32 @@ def _zone_at(zoning_polys: list[tuple[str, Any]], lat: float, lon: float) -> str
     return None
 
 
+# --- derived "intelligence" fields (round-4 spec) ----------------------------
+
+_TEARDOWN_IMP_SHARE_MAX = 0.25    # building <= 25% of total assessed value -> land play
+_SALE_RECENCY_MAX_DAYS = 1095     # "qualifying" sale window for value_percentile (~36 months)
+_VALUE_PERCENTILE_MIN_PEERS = 30  # below this, widen to citywide; below that too -> NULL
+_UPSIDE_FAR_WEIGHT = 0.6          # v1 heuristic blend (FAR headroom vs land share); tune in PR-VAL
+_UPSIDE_LAND_WEIGHT = 0.4
+
+
+def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 3958.8
+    dlat, dlon = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    )
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _nearest_rail_mi(rail_stations: list[tuple[float, float]], lat: float, lon: float) -> float | None:
+    """Miles to the nearest CTA rail station, or None when no station list is loaded."""
+    if not rail_stations:
+        return None
+    return round(min(_haversine_mi(lat, lon, s_lat, s_lon) for s_lat, s_lon in rail_stations), 2)
+
+
 def assemble_parcel(
     spine: dict,
     chars: dict | None,
@@ -115,6 +146,7 @@ def assemble_parcel(
     zoning_polys: list[tuple[str, Any]],
     tif_polys: Iterable[Any],
     ez_polys: Iterable[Any],
+    rail_stations: list[tuple[float, float]],
     neighborhood_ca: int | None,
     as_of: datetime.date,
 ) -> tuple[str, float, float, dict[str, Any], list[str]]:
@@ -126,6 +158,7 @@ def assemble_parcel(
         "land_use_class": _land_use(cls),
         "is_vacant": _is_vacant(cls),
     }
+    imp_share: float | None = None  # building's share of total assessed value (0-1), for derived fields
 
     if chars:
         attrs["land_sqft"] = _num(chars.get("char_land_sf"))
@@ -140,7 +173,11 @@ def assemble_parcel(
         bldg = _num(assess.get("mailed_bldg") or assess.get("certified_bldg"))
         land = _num(assess.get("mailed_land") or assess.get("certified_land"))
         if bldg is not None and land:
-            attrs["improvement_ratio"] = round(bldg / land, 4)
+            attrs["improvement_ratio"] = round(bldg / land, 4)  # shipped field: building-to-land (unchanged)
+        # Building's share of TOTAL value (0-1) — a clean basis for the derived metrics below,
+        # independent of improvement_ratio's building-to-land definition (which can exceed 1).
+        if bldg is not None and land is not None and (bldg + land) > 0:
+            imp_share = bldg / (bldg + land)
 
     if sale:
         price = _num(sale.get("sale_price"))
@@ -158,6 +195,32 @@ def assemble_parcel(
         attrs["zoning_group"] = _zoning_group(zone)
         zdef = get_zone_definition(zone)
         attrs["density_band"] = zdef.far if zdef else None
+
+    # --- derived intelligence fields (value_percentile is a cross-parcel 2nd pass) ---
+    rail_mi = _nearest_rail_mi(rail_stations, lat, lon)
+    if rail_mi is not None:
+        attrs["cta_rail_distance_mi"] = rail_mi
+
+    land_share = (1.0 - imp_share) if imp_share is not None else None
+    bsf = attrs.get("bldg_sqft")
+    lsf = attrs.get("land_sqft")
+
+    # Teardown candidate: the building is a small share of total value (land dominates) AND a
+    # real structure exists. Stored only when determinable; otherwise NULL (excluded by policy).
+    if imp_share is not None and bsf and bsf > 0 and attrs.get("year_built") is not None:
+        attrs["is_teardown_candidate"] = imp_share <= _TEARDOWN_IMP_SHARE_MAX
+
+    # Redevelopment upside (0-100): unused FAR capacity + land-dominant value. NULL (kept
+    # DISTINCT from a low score) when zoning capacity, sizes, or assessment are missing.
+    allowed_far = attrs.get("density_band")
+    far_headroom = None
+    if allowed_far and bsf is not None and lsf and lsf > 0:
+        built_far = bsf / lsf
+        far_headroom = max(0.0, min(1.0, (allowed_far - built_far) / allowed_far))
+    if far_headroom is not None and land_share is not None:
+        attrs["upside_score"] = round(
+            100 * (_UPSIDE_FAR_WEIGHT * far_headroom + _UPSIDE_LAND_WEIGHT * land_share)
+        )
 
     regions = [f"neighborhood:{neighborhood_ca}"] if neighborhood_ca is not None else []
     return spine["pin"], lat, lon, attrs, regions
@@ -258,6 +321,104 @@ def _zoning_index(fc: dict) -> list[tuple[str, Any]]:
     return out
 
 
+def _load_rail_stations() -> list[tuple[float, float]]:
+    """CTA rail station coords from transit_stations.json (built by `build_transit_stations`)."""
+    path = get_settings().data_dir / "transit_stations.json"
+    try:
+        data = json.loads(path.read_text())
+    except Exception as exc:
+        log.warning(
+            "discovery index: transit stations unavailable (%s); cta_rail_distance_mi stays NULL", exc
+        )
+        return []
+    return [
+        (s["lat"], s["lon"])
+        for s in data
+        if s.get("type") == "cta_rail" and s.get("lat") is not None and s.get("lon") is not None
+    ]
+
+
+def _ca_of(regions: list[str]) -> int | None:
+    for r in regions:
+        if r.startswith("neighborhood:"):
+            try:
+                return int(r.split(":", 1)[1])
+            except ValueError:
+                return None
+    return None
+
+
+def _compute_value_percentile(rows: list[tuple], *, min_peers: int = _VALUE_PERCENTILE_MIN_PEERS) -> None:
+    """In-place 2nd pass: percentile-rank each parcel's SALE-based $/sqft among same-use peers.
+
+    Peer set = community_area x land_use among parcels with a qualifying recent sale, so the
+    distribution is purely sale-based — assessed $/sqft is never pooled in. Below `min_peers`
+    the peer set widens to citywide x land_use; still below, value_percentile stays NULL (no
+    noise). Deterministic (sorted + bisect, no clock/RNG). Lower percentile = cheaper than peers.
+    """
+
+    def qualifies(attrs: dict) -> bool:
+        ppsf = attrs.get("price_per_sf")
+        rec = attrs.get("sale_recency_days")
+        return ppsf is not None and ppsf > 0 and rec is not None and rec <= _SALE_RECENCY_MAX_DAYS
+
+    ca_ppsf: dict[tuple[int, str], list[float]] = defaultdict(list)
+    city_ppsf: dict[str, list[float]] = defaultdict(list)
+    for (_pin, _lat, _lon, attrs, regions) in rows:
+        if not qualifies(attrs):
+            continue
+        lu = attrs.get("land_use_class")
+        if lu is None:
+            continue
+        ppsf = attrs["price_per_sf"]
+        city_ppsf[lu].append(ppsf)
+        ca = _ca_of(regions)
+        if ca is not None:
+            ca_ppsf[(ca, lu)].append(ppsf)
+
+    for grp in ca_ppsf.values():
+        grp.sort()
+    for grp in city_ppsf.values():
+        grp.sort()
+
+    for (_pin, _lat, _lon, attrs, regions) in rows:
+        if not qualifies(attrs):
+            continue  # no qualifying sale -> NULL (never back-filled from assessment)
+        lu = attrs.get("land_use_class")
+        if lu is None:
+            continue
+        ppsf = attrs["price_per_sf"]
+        ca = _ca_of(regions)
+        peers = ca_ppsf.get((ca, lu)) if ca is not None else None
+        if peers is None or len(peers) < min_peers:
+            peers = city_ppsf.get(lu)  # widen to citywide x use
+        if peers is None or len(peers) < min_peers:
+            continue  # still too thin -> NULL
+        rank = bisect.bisect_left(peers, ppsf)  # parcels strictly cheaper than this one
+        attrs["value_percentile"] = round(100 * rank / len(peers))
+
+
+def _populated_fields(rows: list[tuple]) -> list[str]:
+    """Filter ids this build actually populated (>=1 non-null value) — drives registry.populatedFields.
+
+    Derived from the assembled data, so a field that degraded to NULL everywhere (e.g. a thin
+    `value_percentile`) is automatically OMITTED — its recipe then shows NEEDS-DATA rather than
+    silently returning 0, and the rest read "coming with the next data update".
+    """
+    present: set[str] = set()
+    has_neighborhood = False
+    for (_pin, _lat, _lon, attrs, regions) in rows:
+        for k, v in attrs.items():
+            if v is not None:
+                present.add(k)
+        if not has_neighborhood and any(r.startswith("neighborhood:") for r in regions):
+            has_neighborhood = True
+    ids = [f.id for f in load_registry().filters if f.field in present]
+    if has_neighborhood:
+        ids.append("neighborhood")
+    return sorted(set(ids))
+
+
 async def build_index(
     community_areas: list[int],
     *,
@@ -272,6 +433,7 @@ async def build_index(
     # rather than aborting the whole (possibly 77-CA) build.
     tif_polys = await _safe_polys(_load_tif_boundaries, "TIF", client)
     ez_polys = await _safe_polys(_load_ez_boundaries, "enterprise zone", client)
+    rail_stations = _load_rail_stations()
 
     rows: list[tuple] = []
     for ca in community_areas:
@@ -294,18 +456,25 @@ async def build_index(
             rows.append(assemble_parcel(
                 s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
                 zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
-                neighborhood_ca=ca_real, as_of=as_of,
+                rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
             ))
         log.info("discovery index: CA %s — assembled %s parcels", ca, len(spine))
+
+    # Cross-parcel pass + the field-readiness manifest (drives coverage / populatedFields).
+    _compute_value_percentile(rows)
+    populated = _populated_fields(rows)
 
     built_at = int(time.time())
     data_version = f"idx-{as_of:%Y%m%d}-{built_at}-{len(rows)}p"
     total = write_index(
         default_index_path(),
         data_version=data_version, built_at=built_at,
-        community_areas=community_areas, rows=rows,
+        community_areas=community_areas, rows=rows, populated_fields=populated,
     )
-    log.info("discovery index: wrote %s parcels (total %s) as %s", len(rows), total, data_version)
+    log.info(
+        "discovery index: wrote %s parcels (total %s) as %s; populated fields: %s",
+        len(rows), total, data_version, ", ".join(populated),
+    )
     return data_version, total
 
 
