@@ -54,6 +54,32 @@ export type FilterCategory =
 
 export type PredicateKind = "enum" | "range" | "flag" | "region";
 
+// Range control metadata (PR2) — presentation only; the evaluator never reads it.
+export type RangeDisplay =
+  | "number"
+  | "usd"
+  | "percent"
+  | "far"
+  | "mi"
+  | "score"
+  | "count"
+  | "year";
+export type BoundMode = "min" | "max" | "both";
+
+export interface RangePreset {
+  label: string;
+  min?: number | null;
+  max?: number | null;
+}
+
+export interface RangeMeta {
+  domain: [number, number];
+  step: number;
+  boundMode: BoundMode;
+  display: RangeDisplay;
+  presets?: RangePreset[] | null;
+}
+
 export interface FilterDef {
   id: string;
   category: FilterCategory;
@@ -63,10 +89,18 @@ export interface FilterDef {
   enumValues?: string[] | null;
   unit?: string | null;
   contradicts?: string[];
+  // PR2 display + control metadata (consumed by the panel in PR4)
+  range?: RangeMeta | null;
+  requires?: string[];
+  label?: string | null;
+  help?: string | null;
+  enumLabels?: Record<string, string> | null;
 }
 
 export interface TopicDef {
   id: string;
+  label?: string | null;
+  description?: string | null;
   presets: Record<FilterId, Predicate>;
   defaultSort?: SortSpec | null;
 }

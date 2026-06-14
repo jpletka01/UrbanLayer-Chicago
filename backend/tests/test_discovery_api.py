@@ -37,8 +37,8 @@ def test_registry_endpoint(client):
     assert r.status_code == 200
     body = r.json()
     assert body["version"]
-    assert len(body["filters"]) == 29
-    assert body["defaultSort"] == {"key": "pin", "dir": "asc"}
+    assert len(body["filters"]) == 32
+    assert body["defaultSort"] == {"key": "assessed_value", "dir": "asc"}
 
 
 # --- POST /api/discovery/search -------------------------------------------------
