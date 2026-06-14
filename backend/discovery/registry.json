@@ -1,5 +1,5 @@
 {
-  "version": "2026-06-13.1",
+  "version": "2026-06-14.1",
   "broadMinFilters": 2,
   "defaultSort": { "key": "pin", "dir": "asc" },
   "sortKeys": [
@@ -7,7 +7,7 @@
     { "key": "lot_size", "field": "land_sqft" },
     { "key": "building_size", "field": "bldg_sqft" },
     { "key": "year_built", "field": "year_built" },
-    { "key": "assessed_value", "field": "total_assessed_value" },
+    { "key": "assessed_value", "field": "total_assessed_value_sortkey" },
     { "key": "last_sale_price", "field": "last_sale_price" }
   ],
   "topics": [],

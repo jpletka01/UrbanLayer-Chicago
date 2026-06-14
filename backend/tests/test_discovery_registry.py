@@ -92,7 +92,10 @@ def test_accessors():
     assert r.filter_def("lot_size").field == "land_sqft"
     assert r.filter_def("tif").kind == "flag"
     assert "pin" in r.sortable_keys()
-    assert r.sort_field("assessed_value") == "total_assessed_value"
+    # The assessed_value SORT key points at the sort-only field (null for exempt/$0);
+    # the assessed_value FILTER stays on the real value (PR3 0/exempt reconciliation).
+    assert r.sort_field("assessed_value") == "total_assessed_value_sortkey"
+    assert r.filter_def("assessed_value").field == "total_assessed_value"
     with pytest.raises(KeyError):
         r.filter_def("nope")
     with pytest.raises(KeyError):

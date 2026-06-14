@@ -148,8 +148,8 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
         address=g("address"),
         community_area=g("community_area"),
         land_use=g("land_use_class"),
-        # exempt/$0 assessments are already absent at the snapshot seam
-        # (parcel_index.normalize_value_fields), so this reads None for them.
+        # Display reads the REAL assessed value (exempt/$0 included); only the sort key
+        # is nulled for exempt/$0, via parcel_index.derive_sort_fields.
         assessed_value=g("total_assessed_value"),
         **{"class": g("class")},
         lot_sqft=g("land_sqft"),

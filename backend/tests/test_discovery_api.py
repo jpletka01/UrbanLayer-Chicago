@@ -172,11 +172,9 @@ def test_search_paginates_with_limit_offset():
         default_source.clear()
 
 
-def test_exempt_and_zero_assessed_sort_last_via_hydration_seam(tmp_path):
-    # PR3 0/exempt rule: exempt or $0 assessments are normalized to absent at the
-    # snapshot-hydration seam (read_index), so the evaluator's existing missing-last
-    # ordering puts them last under an ascending assessed_value sort — comparator
-    # untouched. Exercises the real production path: write_index -> read_index.
+def _exempt_snapshot(tmp_path):
+    """West-Town-ish fixture with an exempt parcel and a $0 parcel, via the real
+    write_index -> read_index path (so derive_sort_fields runs)."""
     from backend.discovery.parcel_index import read_index, write_index
 
     path = tmp_path / "discovery_index.db"
@@ -194,18 +192,50 @@ def test_exempt_and_zero_assessed_sort_last_via_hydration_seam(tmp_path):
     )
     data_version, parcels = read_index(path)
     parcel_source.set_snapshot(data_version, parcels)
+
+
+def test_exempt_and_zero_assessed_sort_last(tmp_path):
+    # PR3 0/exempt rule (reconciled): a sort-only field (total_assessed_value_sortkey) is
+    # null for exempt/$0, so the evaluator's existing missing-last ordering puts them last
+    # under an ascending assessed_value sort — comparator untouched, real value preserved.
+    _exempt_snapshot(tmp_path)
     try:
         client = TestClient(app)
-        body = client.post("/api/discovery/search", json={
+        rows = client.post("/api/discovery/search", json={
             "sort": {"key": "assessed_value", "dir": "asc"},
-        }).json()
-        rows = body["result"]["rows"]
+        }).json()["result"]["rows"]
         # 100k, 200k, then exempt + $0 last (tie broken by PIN asc: c before d).
         assert [r["pin"] for r in rows] == ["b", "a", "c", "d"]
-        # exempt/$0 hydrate as null assessed_value (consistent with being sorted last).
-        assert rows[2]["assessed_value"] is None  # c (exempt, despite a 9M raw value)
-        assert rows[3]["assessed_value"] is None  # d ($0)
-        assert rows[0]["assessed_value"] == 100000
+        # Display keeps the TRUE value — exempt shows its real 9M, $0 shows 0, and they
+        # remain distinguishable from genuinely-missing data (which would be null).
+        assert rows[0]["assessed_value"] == 100000  # b
+        assert rows[2]["assessed_value"] == 9_000_000  # c (exempt, real value shown)
+        assert rows[3]["assessed_value"] == 0  # d ($0, real value shown)
+        # sortValue mirrors the sort key (null for the exempt/$0 rows that sort last).
+        assert rows[2]["sortValue"] is None and rows[3]["sortValue"] is None
+        assert rows[0]["sortValue"] == 100000
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_assessed_value_filter_matches_exempt_and_zero_by_true_value(tmp_path):
+    # The assessed_value FILTER stays on the real value: exempt/$0 are NOT silently
+    # excluded — they match by their true assessed value. (If we later decide the filter
+    # SHOULD exclude them, that is a separate signed-off product change.)
+    _exempt_snapshot(tmp_path)
+    try:
+        client = TestClient(app)
+        # High floor → only the exempt parcel's true 9M qualifies.
+        hi = client.post("/api/discovery/search", json={
+            "userFilters": {"assessed_value": {"kind": "range", "min": 5_000_000}},
+        }).json()
+        assert [r["pin"] for r in hi["result"]["rows"]] == ["c"]
+        # Exact-$0 band → the $0 parcel qualifies by its true value.
+        zero = client.post("/api/discovery/search", json={
+            "userFilters": {"assessed_value": {"kind": "range", "min": 0, "max": 0}},
+        }).json()
+        assert [r["pin"] for r in zero["result"]["rows"]] == ["d"]
     finally:
         parcel_source._current_version = None
         default_source.clear()
