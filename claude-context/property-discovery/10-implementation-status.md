@@ -1,26 +1,27 @@
 # 10 — Implementation Status & Decisions Record
 
-**Status: SHIPPED to production in two waves, still DORMANT by design.**
-- **Wave 1 (2026-06-13, `f192d57`)** — build-plan `08` steps 1–10: the invariant core,
-  compilers, evaluator, diagnostics, offline index builder, and a list-first frontend.
-- **Wave 2 (2026-06-14, merge `8c279c6`)** — the **result.rows workbench (PR1–PR10)**: turned
-  the dormant filter form into a goal-first, map-backed prospecting workbench. See the new
-  section **"The result.rows workbench"** below for the full record.
+**Status: LIVE ON PRODUCTION (2026-06-14) — three waves; no longer dormant.**
+- **Wave 1 (2026-06-13, `f192d57`)** — the invariant core, compilers, evaluator, diagnostics,
+  offline index builder, list-first frontend.
+- **Wave 2 (2026-06-14, merge `8c279c6`)** — the **result.rows workbench (PR1–PR10)**: the
+  goal-first, map-backed prospecting workbench (shipped dark — no index yet).
+- **Wave 3 (2026-06-14, merges `78294d8` + `8d3ae07` + `731aca6`)** — **PR-INDEX → live launch.**
+  Built the prod index for real, caught + fixed a launch-blocking assessment bug, added
+  recipe-count honesty + 3-tier addresses + index persistence + a self-activating nav link +
+  follow-ups (perf, PR-VAL, periodic rebuild), then expanded coverage to **25 community areas
+  (~482k parcels)**. Full record in the **"Wave 3"** section below.
 
-**Dormant by design (still true after Wave 2):** premium-gated for the full experience,
-**unlinked from nav**, and the prod **index is still empty** (`/api/discovery/search` returns
-the empty-index fallback) — so coverage reads "none", every filter/recipe reads "coming", and
-the page is honestly inert until the prod index is built. The real launch is gated on
-**PR-INDEX → PR-VAL → PR-LIVE** (see "What remains"), which are blocked by the 2026-06-13
-Socrata 503 outage.
+**LIVE on prod as of 2026-06-14:** `/api/discovery/registry` → coverage `partial`, **25
+liveAreas**, 19 `populatedFields`, `recipeCounts` serving; Discovery is **nav-linked** (the PR-LIVE
+conditional link self-activated when coverage flipped off "none"). Backend runtime ~1.86 GB with
+the 482k-parcel index loaded; box has ~4.4 GB free. Monthly rebuild timer installed (next
+2026-07-01). The index persists on the `backend/data` volume across deploys.
 
-This doc records **what was actually built, the decisions made during implementation that
-were not fully pinned by the spec (00–09), and what remains.** The spec docs 00–09 stay the
-normative design; this is the reality + rationale log for future sessions.
+This doc records **what was actually built, the decisions made during implementation that were not
+fully pinned by the spec (00–09), and what remains.** The spec docs 00–09 stay the normative design.
 
-Tests after Wave 2: backend **166 discovery tests** (full backend **unit** suite 782, no
-regressions — the only full-suite failures are live external-API integration tests down on the
-Socrata/ArcGIS outage); frontend **48 vitest** tests; `tsc --noEmit` clean.
+Tests: backend **190 discovery tests** (full **unit** suite 806, no regressions — only live-API
+integration tests fail offline); frontend **51 vitest**; `tsc --noEmit` clean.
 
 ---
 
@@ -71,6 +72,128 @@ blocked by it. So PR1 broke that contract first; the rest layer on top.
   surface is still hardcoded English (a known gap from the original review).
 - **O(N) pin lookup** — `_pin_lookup` rebuilds a `{pin:parcel}` dict per request over the whole
   snapshot. Fine while dark/small; memoize before the full-city (~1.8M) index goes live.
+  *(Done in Wave 3 — see below.)*
+
+---
+
+## Wave 3 — PR-INDEX → live launch (2026-06-14, merges `78294d8` + `8d3ae07` + `731aca6`)
+
+The 2026-06-13 Socrata 503 cleared, so this session built the index for real and took the page from
+dormant to LIVE. **This session was the implementer directly** (no separate session). The single
+most important working lesson, and the source of every real bug below: **build the index, run it,
+and LOOK at the actual output before trusting it. Every launch-blocking bug this session was caught
+by eyeballing a real build, not by tests.** Validate locally before prod.
+
+### PR-INDEX — derived fields + the field-readiness manifest (`d89d845`)
+`index_build.py` now computes, per parcel:
+- `is_teardown_candidate` (flag): building ≤25% of total value (`imp_share ≤ 0.25`) AND a real
+  structure (bldg_sqft>0, year_built present); else NULL.
+- `upside_score` (0–100): `round(100·(0.6·FAR_headroom + 0.4·land_share))`, NULL kept **DISTINCT
+  from a low score** when zoning/sizes/assessment are missing (the map's no-data swatch depends on
+  it). **Decision: `land_share` is derived from a clean `land/total`, NOT `1 − improvement_ratio`** —
+  the shipped `improvement_ratio` is building-to-land and can exceed 1, which would make `1 − ir`
+  negative. The shipped field is left untouched.
+- `cta_rail_distance_mi`: nearest CTA rail haversine (stations loaded once from
+  `transit_stations.json`, passed into `assemble_parcel` to keep it a pure function).
+- `value_percentile` (a cross-parcel **2nd pass**, can't live in per-parcel assembly): SALE-based
+  $/sqft percentile within `community_area × land_use`; N≥30 floor → citywide×use fallback → NULL.
+  Deterministic (sorted + bisect, no clock/RNG). **Never blocks the publish** — a thin metric just
+  nulls and drops out of `populated_fields`. **Decision: assessed-based $/sqft is NEVER pooled in**
+  (the round-4 concern) — only sale-based; non-qualifying parcels get NULL, never an assessment
+  backfill.
+- `meta.populated_fields` is **derived from the attrs actually present** → a NULL-everywhere field
+  is auto-omitted → its recipe shows NEEDS-DATA. This manifest is the switch that de-dormants the page.
+
+### The assessment-join bug — the biggest catch, found by local validation (`e3147d5`)
+First local build: `total_assessed_value` came back **0% populated**, silently killing
+`assessed_value` / `improvement_ratio` / `upside_score` / `is_teardown_candidate` AND the default
+`assessed_value asc` sort. Root cause: the builder ordered assessments `year DESC` and grabbed the
+**in-progress year (2026)** whose value columns are still null — and **Socrata omits null fields
+from JSON**, so the row returned valueless. Fix: AND `(mailed_tot OR certified_tot OR board_tot IS
+NOT NULL)` so "latest" means the latest year that actually carries values (`_batch_latest` gained a
+`where_extra` arg). **0% → 99%.** ⚠️ **CARRY-FORWARD LESSON: the latest CCAO assessment year is
+valueless until mailed. Anything that takes "the latest CCAO assessment" must filter for a present
+value — the same trap likely lurks in the scorecard/report assessment path (UNVERIFIED).**
+
+### Recipe-count honesty — killing LIVE-but-empty (`02e5898`)
+Field-level `populatedFields` can't tell that a recipe whose FIELDS are populated still returns 0
+for its SUBSET: `value_percentile` is populated (by condos), but **0 multifamily had one**, so
+`undervalued_mf` badged LIVE and returned nothing — the silent-zero trust failure again. Fix: the
+builder evaluates each recipe against the just-built snapshot and writes `meta.recipe_counts`;
+`get_registry` injects `recipeCounts`; `RecipeShelf` badge is now **3-state**: "Needs data" (a field
+unpopulated) / "No matches yet" (fields ready, subset empty) / "Live · N". Meta schema-evolves via an
+ALTER guard so an older index upgrades on the next build.
+
+### Addresses 28% → 99% — what Jack pushed back on twice (`90bf8a8` + `62bbeb3` + `f582831`)
+Row-cards are address-first but the index stored neither a street address nor the class code. The
+parcels dataset (`pabr-t5kh`) has **no street address**; **Address Points (`78yw-iddh`) has
+`cmpaddabrv`** ("1915 N KEDZIE AVE"). A direct PIN join resolved only **28%** (condo unit-PINs have
+no address point of their own). Jack rejected 28% as too low for the map. **3-tier resolver
+`_address_for`:** own Address Point → **building base PIN** (10-digit prefix + 0000 → recovers
+condos → 70%) → **nearest Address Point** via a per-CA shapely `STRtree`, marked approximate with a
+`~` prefix and rendered "near 1915 N Kedzie Ave" (recovers vacant lots → **99%**). Vacant lots
+matter most for a development tool and their nearest address point is ~30 ft away (adjacent
+frontage), so approximate-but-marked beats a bare PIN. Class stored as "2-11". ⚠️ **CARRY-FORWARD
+LESSON: a sampled coverage % misleads — a 300-row sample read 74%, the full set was 28%. Measure the
+full set AND the subsets that matter (recipe results), not the global number.**
+
+### Index persistence — caught before the first prod build (`8d3ae07`)
+The index wrote to `ingestion/data`, which is **not a mounted volume** — a prod-built index would be
+wiped on the next image rebuild (every deploy would silently re-dormant the page). Caught by checking
+the compose volume config *before* SSH-ing to build. Fix: `settings.discovery_index_path` points the
+index at `backend/data` (the persistent `backend_data` volume, alongside `chicago.db`). `--all` will
+make this file large — watch disk.
+
+### PR-LIVE — conditional, self-activating nav-link (`fa100da`)
+Discovery is added to `PageHeader` nav **only when `coverage.mode != "none"`** (read via the cached
+`registryClient`, so it's one shared fetch). Merging the code (dark) + later building the prod index
+makes the link appear automatically — no second deploy. While dormant it stays unlinked.
+
+### Follow-ups (`731aca6`)
+- **Perf:** `parcel_source.pin_lookup` memoizes the `{pin:parcel}` map per dataVersion (was O(N),
+  rebuilt every request) — invalidated when the snapshot changes. Prereq for scale.
+- **PR-VAL:** `index_validate.py` — a NON-BLOCKING CLI (`python -m backend.discovery.index_validate`)
+  that reports the upside / value_percentile distributions (degeneracy guard) + a DIRECTIONAL
+  redev-permit cross-check (do parcels with a recent new-construction/demo permit skew high on
+  upside?). Permits join via the **10-digit parcel key** (permits carry 10-digit PINs in `pin_list`,
+  the index has 14-digit unit-PINs — same condo-prefix idea as the address fallback). First read:
+  upside distribution healthy; cross-check **median 54.7 pctile → weak**. BUT it's confounded +
+  pessimistic (a parcel redeveloped a year+ ago now shows its built-out low-upside state, dragging
+  the median down). ⚠️ **DECISION: `upside_score` is a PLAUSIBLE v1, NOT validated. The 0.6/0.4
+  weighting stays a documented v1 heuristic — deliberately NOT tuned against this noisy signal (that
+  would fit noise). Don't oversell upside in UI copy.** A rigorous validation needs pre-redevelopment
+  (temporal) state the index doesn't hold.
+- **Periodic rebuild:** `index_build --refresh` rebuilds whatever CAs are already in the index (reads
+  `meta.community_areas`), so a scheduled rebuild auto-follows coverage with no hardcoded CA list.
+  `deploy/discovery-index-rebuild.{service,timer}` (monthly, 1st @ 04:17 UTC) installed on prod; next
+  run **2026-07-01**. Install steps in `deploy/README.md`.
+
+### The launch + coverage expansion
+Sequence executed: dark-merge Wave-3 code → deploy the persistence fix → **build prod index (5 CAs)**
+→ restart → verified live (coverage `partial`, recipe counts **EXACTLY matching local** — no env
+drift) → then expanded to **25 CAs (~482k parcels)**. Live `recipeCounts`: teardown 902,
+vacant_mf_transit 548, fresh_comps 197, underused_commercial_tif 153, undervalued_mf 31, adu_2flats 0
+(honest NEEDS-DATA — `adu_eligible` is deferred).
+
+### ⚠️ Known problems / limitations discovered (carry forward)
+- **`--all` (77 CAs / ~1.8M parcels) is UNSAFE on the current 8 GB box — not just slow.** The build
+  runs *inside* the backend container (`docker compose exec`) and holds every assembled row in memory
+  before writing; at ~10× the parcels that spike (~3–4 GB) lands on top of the running backend → OOM
+  risk *during the build*, and again at runtime load. Measured: **25 CAs = 482k parcels = 1.86 GB
+  runtime, ~4.4 GB free** (comfortable). `--all` needs the build moved off-box (or chunked/streamed
+  writes), or a bigger instance, FIRST.
+- **`undervalued_mf` is structurally thin (~29–31 across 25 CAs) — NOT a bug.** `value_percentile`
+  needs a recent (≤36mo) arm's-length sale and multifamily trades slowly: of 9,047 multifamily
+  parcels only **108 (~1.2%) sold in 3 years**; a quarter of those is the recipe. Arguably a feature
+  (a high-signal small list). The one tuning knob is the 36-month sale window. Sale-comp-free recipes
+  (teardown, vacant_mf_transit) are fat by contrast.
+- **Characteristics are condo-sparse** — building sizes/year only ~28% in these condo-heavy
+  north-side CAs, which gates `upside_score`/teardown coverage (denser in low-rise neighborhoods).
+- **`units` is dormant** — `char_apts` is empty across these CAs, so the `units` filter + `adu_2flats`
+  recipe stay honest NEEDS-DATA.
+- **bbox spillover** — a CA build by bounding box also indexes some neighbor-CA parcels (tagged to
+  their true CA), so `coverage.liveAreas` under-claims (safe under-claim). The `data_version` string
+  counts pre-dedup rows (cosmetic; e.g. "584602p" for 481,873 unique).
 
 ---
 
@@ -216,46 +339,39 @@ invariants literally true. **Revisit here first** if behavior surprises you late
 
 ## What remains
 
-The frontend + wire are **feature-complete and dark**. The launch gate is now entirely about
-**data + de-dormancy**, in this order (all blocked by the 2026-06-13 Socrata 503 outage):
+The launch is **done** — PR-INDEX, PR-VAL, and PR-LIVE all shipped (Wave 3), and coverage is live
+for 25 community areas. What's left is expansion + polish.
 
-**PR-INDEX (blocked) — build the prod index so there's anything to show.**
-The offline builder (`index_build.py`) must compute + write the Wave-2 derived fields and the
-`meta` that drives coverage/populatedFields. Specifically it needs to:
-- Populate the MVP fields (land_use/vacancy, lot/building size, year_built, units, assessed
-  value, sale + recency, price/sf, improvement_ratio, TIF/EZ, zoning_group + density, the
-  `neighborhood:<ca>` region) **plus `transit_proximity`** (promoted into MVP — cheap station
-  haversine, needed by recipe `vacant_mf_transit`).
-- Compute the **3 derived fields** the registry now exposes: `value_percentile` (percentile of
-  $/sqft within community-area × land_use; precise basis/min-N rules in the conversation
-  record), `upside_score` (0.6·FAR-headroom + 0.4·land-share, 0–100), `is_teardown_candidate`
-  (improvement_ratio ≤ 0.25). All offline, deterministic, a `data_version` bump — **no evaluator
-  change** (the point of the registry/index split).
-- Write `meta.populated_fields` = the filter ids actually populated, and the `community_areas`
-  set (drives `coverage`). Until then `read_meta` → None → coverage "none" + empty
-  populatedFields (the safe dormant default).
-- Run on prod: SSH `178.105.184.66` (`/opt/urbanlayer`), `python -m
-  backend.discovery.index_build --community-areas 24` (or `--all`), restart backend so
-  `ensure_loaded()` picks it up.
+**Coverage / scale:**
+- **Expand toward citywide** by running `index_build --community-areas <set>` on prod (the monthly
+  `--refresh` then auto-follows). **`--all` is NOT safe on the 8 GB box as-is** — the in-container
+  build spike OOMs (see Wave-3 known problems). To go full city, first do ONE of: move the build off
+  the backend container (a one-off build container / host venv writing to the same `backend/data`
+  volume), or chunk/stream `write_index`, or use a bigger instance. Until then, incremental CA sets.
+- Then **retire `/explore`** — Discovery is now a strict superset *with real data* (the gate the
+  convergence plan waited on is met): redirect `/explore → /discovery`, drop the page + `/api/explore*`
+  once nothing references them.
 
-**PR-VAL (blocked, code can be written now) — validate the derived metrics before they sort.**
-Non-blocking telemetry harnesses (warn, never refuse to publish fresh parcel data): for
-`value_percentile`, assert min-N≥30 peer sets + monotonic percentile→$/sqft + plausible
-p10/p50/p90 vs known comps; for `upside_score`, label-vs-AUC against actual redevelopment
-outcomes derived from demolition + new-construction permits (`buildings.py`). The 0.6/0.4
-weighting is a v1 heuristic to tune from that label set (a `data_version` recompute, no code).
+**Data quality / metrics:**
+- **Validate `upside_score` properly** when temporal (pre-redevelopment) data is available — PR-VAL's
+  permit cross-check is confounded by post-redevelopment state (median 54.7, weak). Until then 0.6/0.4
+  is documented v1; **don't oversell upside in copy.**
+- **`undervalued_mf` thinness** is structural (recent-multifamily-sale gating) — if more inventory is
+  wanted, the only lever is the 36-month sale window (staler comps). Default stays 36mo.
+- **Deferred index fields** (each a `data_version` bump, no evaluator change): OZ tracts, ward
+  polygons, overlay/adu/aro layers, floodplain, brownfield, per-PIN rollups
+  (open_violations/f311/crime), sbif_nof, and `units` (needs a real unit-count source — `char_apts`
+  is empty).
 
-**PR-LIVE (blocked on the above) — de-dormancy.** Nav-link Discovery in `PageHeader`; the
-coverage banner flips from "being prepared" to "live in West Town"; recipes/filters light up as
-their fields populate. The free teaser becomes meaningful (real totals behind the wall).
+**FE polish (from Wave 2, still open):**
+- Continuous **slider** control + `aria-valuetext` (non-preset ranges keep min/max boxes).
+- **Whole-page i18n** (only the PR9 teaser/export strings are keyed).
+- Saved searches.
 
-**Smaller follow-ups (not launch-blocking):**
-- Continuous **slider** control + `aria-valuetext` (non-preset ranges keep min/max boxes today).
-- **Whole-page i18n** (only PR9 teaser/export strings are keyed).
-- Memoize `_pin_lookup` before the full-city index.
-- Saved searches; the remaining deferred index fields (OZ tracts, ward polygons, overlay/adu/aro
-  layers, floodplain, brownfield, the per-PIN rollups open_violations/f311/crime, sbif_nof) —
-  each a `data_version` bump.
+**Ops:**
+- Monthly rebuild timer is live (next **2026-07-01**); confirm the first automated run succeeds.
+- ⚠️ Verify the **scorecard/report assessment path** isn't hitting the same CCAO valueless-latest-year
+  trap the Wave-3 index fix addressed.
 
 ---
 
@@ -279,20 +395,29 @@ real data — it's the only working parcel-browser until the index lands.
 
 ## Verification quick-reference
 ```bash
-# backend
+# tests
 source .venv/bin/activate
-python -m pytest backend/tests/test_discovery_*.py -q          # 166 tests
-python -m pytest backend/tests/ -q -m "not integration"       # 782 unit (the 8 full-suite
-                                                              # failures are live-API only)
-# frontend
-cd frontend && npx tsc --noEmit && npm test                    # 48 vitest
+python -m pytest backend/tests/ -k discovery -q               # 190 discovery
+python -m pytest backend/tests/ -q -m "not integration"      # 806 unit (live-API tests fail offline)
+cd frontend && npx tsc --noEmit && npm test                   # 51 vitest
 
-# live wire (backend running on :8001) — registry now carries coverage + populatedFields
-curl -s localhost:8001/api/discovery/registry | jq '.version, (.filters|length), .coverage, .populatedFields'
-# search returns rows + gated; pins returns the full coord set; export is premium-only (403 free)
-curl -s -X POST localhost:8001/api/discovery/search -H 'content-type: application/json' \
-  -d '{"userFilters":{"tif":{"kind":"flag","value":true}},"text":"vacant"}' \
-  | jq '.result.total, .result.gated, (.result.rows|length), (.cqs.filters|keys)'
-curl -s -X POST localhost:8001/api/discovery/search/pins -H 'content-type: application/json' \
-  -d '{}' | jq '.total, .truncated, (.points|length)'
+# LIVE PROD — registry carries coverage + populatedFields + recipeCounts (GET, no CSRF)
+curl -s https://urbanlayerchicago.com/api/discovery/registry \
+  | python3 -c "import sys,json;r=json.load(sys.stdin);print(r['coverage'],len(r['populatedFields']),r['recipeCounts'])"
+# /search + /search/export are CSRF-protected POSTs → raw curl returns 403 (= backend reached, OK).
+# The FE (authFetch w/ CSRF) exercises them.
+
+# Validate a built index (non-blocking; run locally or on prod)
+python -m backend.discovery.index_validate                    # upside/value_pctile dist + redev cross-check
+
+# REBUILD / EXPAND COVERAGE ON PROD (ssh root@178.105.184.66)
+cd /opt/urbanlayer
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -d backend \
+  python -m backend.discovery.index_build --community-areas <set>   # or --refresh (current CAs)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend   # load it
+# monthly auto-rebuild: systemctl status discovery-index-rebuild.timer
 ```
+
+> **Live as of 2026-06-14:** coverage `partial`, 25 liveAreas, recipeCounts
+> {teardown 902, vacant_mf_transit 548, fresh_comps 197, underused_commercial_tif 153,
+> undervalued_mf 31, adu_2flats 0}. Index at `backend/data/discovery_index.db` (persistent volume).

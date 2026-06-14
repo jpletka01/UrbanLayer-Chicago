@@ -36,6 +36,10 @@
 
 **Assessment lag**: CCAO assessments are triennial by township. Recent years may show $0 or stale values. UI shows the most recent non-zero assessment year.
 
+**Discovery index `--all` OOMs the 8 GB box** (2026-06-14): the prospecting index is built via `docker compose exec backend python -m backend.discovery.index_build`, which runs *inside* the backend container and holds every assembled row in memory before writing. 25 CAs (~482k parcels) = 1.86 GB runtime, comfortable; `--all` (77 CAs / ~1.8M) would spike ~3–4 GB on top of the running backend → OOM during the build (and again at load). Expand coverage by CA set (`--community-areas …`); for full-city, first move the build off-container (one-off build container/host venv writing to the same `backend/data` volume) or chunk/stream `write_index`, or get a bigger instance. Index persists on the `backend/data` volume (`settings.discovery_index_path`); monthly `--refresh` timer auto-follows the current CA footprint.
+
+**Discovery `value_percentile` / `undervalued_mf` is structurally thin** (2026-06-14): the metric needs a recent (≤36mo) arm's-length sale, and multifamily trades slowly (~1.2% of multifamily sold in 3 years), so `undervalued_mf` returns only ~30 across 25 CAs. Not a bug — the recipe correctly refuses to invent a $/sqft percentile without a comp. Only lever is the 36-month window (staler comps). `upside_score` is a documented v1 heuristic (0.6/0.4), validated only weakly/confoundedly by the PR-VAL permit cross-check — **don't oversell it in copy**.
+
 ## Fragile Heuristics
 
 - **Sub-header detection inside tables** — length cap (<80 chars) and min-chars threshold (400 chars before splitting)
@@ -46,6 +50,10 @@
 - **Section dedup score threshold (0.05)** — keyword-aware dedup only activates when two chunks from the same section are within 0.05 blended score; wider thresholds cause regressions (e.g. m1_setbacks)
 
 ## Gotchas
+
+**CCAO latest assessment year is VALUELESS until mailed** (found 2026-06-14 building the Discovery index): the CCAO Assessed Values dataset (`uzyt-m557`) carries an in-progress year (e.g. `2026`) whose value columns (`mailed_tot`/`certified_tot`/`board_tot`/`*_bldg`/`*_land`) are still NULL — and **Socrata omits NULL fields from JSON**, so the row comes back with no value columns at all. Any join that orders `year DESC` and takes the first row resolves every parcel to a valueless row (in the Discovery builder this made `total_assessed_value` 0% populated). **Fix pattern: AND `(mailed_tot IS NOT NULL OR certified_tot IS NOT NULL OR board_tot IS NOT NULL)`** so "latest" means the latest year that actually carries values. ⚠️ The scorecard/report assessment path (`retrieval/property/assessments.py`) likely hits the same trap — **UNVERIFIED**; check it.
+
+**Permits carry 10-digit parcel PINs, the index has 14-digit unit-PINs**: Chicago building permits (`ydr8-5enu`) `pin_list` holds 10-digit parcel ids; CCAO/Discovery use 14-digit (parcel + 4-digit unit suffix). Match on the shared **10-digit prefix**, never zero-pad the 10-digit to 14 (left-padding gives `00001708320016`, which matches nothing). Same condo-prefix idea as the Discovery address fallback.
 
 **Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations. **Since 2026-06-12 (audit step 3)** all `/api/conversations/*` endpoints `require_auth`, so anonymous HTTP callers can no longer reach the NULL fallback — it exists only so signed-in/dev users keep seeing legacy rows. The one-time prod cleanup (`DELETE FROM conversations WHERE user_id IS NULL`, children first — SQLite FK cascade is off) **was run 2026-06-12**: prod has 0 NULL rows (backup at `/app/backend/data/chicago.backup-2026-06-12-prenullclean.db`). Local dev DBs may still hold NULL rows. NOTE: anonymous chat is intentionally NOT persisted — never "fix" anon chat by re-opening these endpoints. Operational gotcha: the live backend's aiosqlite connection holds a persistent SQLite write lock — ad-hoc writes from a second connection need a fresh backend restart (busy_timeout alone won't get you in).
 

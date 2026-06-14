@@ -88,14 +88,22 @@ experience, unlinked from nav, empty prod index). Spec + decisions:
     by land-use + view-only).
   - `POST /api/discovery/search/export` — streams ALL `result.total` rows as CSV,
     **`require_tier("premium")`** (free 403), human headers from registry labels.
-- **Tests:** `backend/tests/test_discovery_*.py` (**166**). Mock Socrata + polygon layers;
+  - `meta.recipe_counts` (built per-recipe) → `registry.recipeCounts` → shelf "Live · N" / "No
+    matches yet" badges. `parcel_source.pin_lookup` is **memoized per dataVersion** (was O(N)/req).
+- **Builder** `index_build.py` computes the derived fields (`is_teardown_candidate`, `upside_score`
+  = 0.6·FAR-headroom + 0.4·land-share, `cta_rail_distance_mi`, cross-parcel `value_percentile`),
+  3-tier addresses (`_address_for`: own → building base-PIN → nearest-approx `~` via shapely STRtree),
+  `populated_fields` + `recipe_counts` manifest. **`--refresh`** rebuilds the current `meta.community_areas`
+  (monthly timer). **Assessment join filters for a present value** (latest CCAO year is valueless — see
+  known-issues). `index_validate.py` = non-blocking validation CLI.
+- **Tests:** `backend/tests/test_discovery_*.py` (**190**). Mock Socrata + polygon layers;
   premium/free gating via FastAPI `dependency_overrides` (the `Depends` callable is captured at
   decoration, so monkeypatching the module attr does NOT work — override the dependency).
-- **Remaining (launch gate):** **PR-INDEX** (build prod index incl. the 3 derived fields
-  `value_percentile`/`upside_score`/`is_teardown_candidate` + `transit_proximity` + write
-  `meta.populated_fields`/`community_areas`) → **PR-VAL** (non-blocking metric validation) →
-  **PR-LIVE** (nav-link + de-dormancy). All blocked by the 2026-06-13 Socrata 503. New index
-  fields are a `data_version` bump, **no evaluator change**.
+- **LIVE ON PROD 2026-06-14** (Wave 3) — coverage `partial`, **25 CAs / ~482k parcels**, nav-linked.
+  Index persists on `backend/data` volume; monthly rebuild timer (`deploy/`). **Remaining:** expand
+  toward citywide (`--all` OOMs the 8 GB box — see known-issues; needs off-box build first); retire
+  `/explore`; deferred index fields (each a `data_version` bump, no evaluator change). Full record:
+  `claude-context/property-discovery/10-implementation-status.md` (Wave 3 section).
 
 ## Production Configuration
 
