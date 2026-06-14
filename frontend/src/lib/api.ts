@@ -1,5 +1,10 @@
 import { parseSSE } from "./sse";
 import type {
+  Registry as DiscoveryRegistry,
+  SearchRequest as DiscoverySearchRequest,
+  SearchResponse as DiscoverySearchResponse,
+} from "../discovery/types";
+import type {
   AddressSuggestion,
   AdminOverview,
   BenchmarkResults,
@@ -651,6 +656,30 @@ export async function fetchExploreMap(params: {
   if (params.class_prefix) qs.set("class_prefix", params.class_prefix);
   try {
     const resp = await authFetch(`${API_BASE}/api/explore/map?${qs}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// --- Property Discovery (filter/search) ---
+
+export async function fetchDiscoveryRegistry(): Promise<DiscoveryRegistry | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/discovery/registry`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function discoverySearch(
+  req: DiscoverySearchRequest,
+): Promise<DiscoverySearchResponse | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/discovery/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
