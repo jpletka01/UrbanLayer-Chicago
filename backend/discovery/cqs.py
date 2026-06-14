@@ -78,6 +78,20 @@ class CQS(BaseModel):
     meta: QueryMeta = Field(default_factory=QueryMeta)
 
 
+class CqsFragment(BaseModel):
+    """A compiler output (04): a partial filters map + optional sort/scope/meta.
+
+    Each assignment carries its `source`. Fragments are merged into the canonical
+    CQS by the precedence merge (06). `sort`/`scope` are absent unless the compiler
+    sets them.
+    """
+
+    filters: dict[str, FilterAssignment] = Field(default_factory=dict)
+    sort: SortSpec | None = None
+    scope: SpatialScope | None = None
+    meta: QueryMeta = Field(default_factory=QueryMeta)
+
+
 # --- Predicate validity (R1/R6) ---------------------------------------------
 
 
