@@ -16,6 +16,7 @@ from backend.discovery.index_build import (
     _populated_fields,
     _recency_days,
     _recipe_counts,
+    _resolve_address,
     _zoning_group,
     assemble_parcel,
 )
@@ -152,6 +153,18 @@ def test_assemble_minimal_parcel_no_joins_no_layers():
     assert "cta_rail_distance_mi" not in attrs    # empty station list
     assert "address" not in attrs                 # no address-points row
     assert regions == ["neighborhood:24"]
+
+
+def test_resolve_address_falls_back_to_building_base_pin():
+    base = {"13363160480000": {"cmpaddabrv": "1755 N KEDZIE AVE"}}
+    # a condo unit-PIN with no own address point -> its building's base PIN
+    assert _resolve_address("13363160481002", {}, base)["cmpaddabrv"] == "1755 N KEDZIE AVE"
+    # an exact match wins over the base fallback
+    assert _resolve_address("p1", {"p1": {"cmpaddabrv": "10 MAIN ST"}}, base)["cmpaddabrv"] == "10 MAIN ST"
+    # an exact row with no usable address still falls back to the building
+    assert _resolve_address("13363160481003", {"13363160481003": {"cmpaddabrv": ""}}, base)["cmpaddabrv"] == "1755 N KEDZIE AVE"
+    # nothing anywhere -> None
+    assert _resolve_address("99999999990000", {}, {}) is None
 
 
 def test_nearest_rail_mi():

@@ -360,6 +360,19 @@ def _load_rail_stations() -> list[tuple[float, float]]:
     ]
 
 
+def _resolve_address(pin_digits: str, exact: dict[str, dict], base: dict[str, dict]) -> dict | None:
+    """A parcel's Address Points row, else its building's (base PIN = 10-digit prefix + 0000).
+
+    Condo unit-PINs (suffix != 0000) usually have no address point of their own; falling back
+    to the building's base PIN recovers the building street address instead of a bare PIN
+    (~72% of the otherwise-unaddressed parcels in dense condo neighborhoods).
+    """
+    a = exact.get(pin_digits)
+    if a and (a.get("cmpaddabrv") or a.get("addrdeliv")):
+        return a
+    return base.get(pin_digits[:10] + "0000")
+
+
 def _ca_of(regions: list[str]) -> int | None:
     for r in regions:
         if r.startswith("neighborhood:"):
@@ -513,13 +526,20 @@ async def build_index(
         )
         sales = await _batch_latest(settings.dataset_ccao_sales, pins, "sale_date", client, settings)
         addrs = await _batch_latest(settings.dataset_address_points, pins, "objectid", client, settings)
+        # Building-address fallback for unaddressed (mostly condo unit) PINs: join the base PINs
+        # (10-digit prefix + 0000) for the misses; deduped to buildings, so far fewer queries.
+        base_pins = sorted({p[:10] + "0000" for p in pins if not (addrs.get(p) or {}).get("cmpaddabrv")})
+        base_addrs = (
+            await _batch_latest(settings.dataset_address_points, base_pins, "objectid", client, settings)
+            if base_pins else {}
+        )
         zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
 
         for s in spine:
             ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
             rows.append(assemble_parcel(
                 s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
-                addr=addrs.get(s["pin_digits"]),
+                addr=_resolve_address(s["pin_digits"], addrs, base_addrs),
                 zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
                 rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
             ))
