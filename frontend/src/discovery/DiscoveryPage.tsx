@@ -55,6 +55,10 @@ export default function DiscoveryPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  // Mobile (below md): single column with a List|Map toggle (map stays mounted) + a
+  // bottom-sheet filter drawer. No effect on the desktop split.
+  const [mobileTab, setMobileTab] = useState<"list" | "map">("list");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // The inputs of the *issued* search, so loadMore re-issues the same query (later page) —
   // independent of any edits the user makes to the panel before scrolling.
   const lastInputs = useRef<SearchInputs | null>(null);
@@ -172,7 +176,7 @@ export default function DiscoveryPage() {
       {registry && <CoverageBanner registry={registry} />}
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-        {/* Left: inputs */}
+        {/* Inputs column (desktop left rail; mobile top controls) */}
         <div className="flex w-full flex-shrink-0 flex-col overflow-hidden border-r border-dark-border md:w-[420px] lg:w-[460px]">
           <div className="flex-shrink-0 space-y-3 border-b border-dark-border p-4">
             <div>
@@ -189,6 +193,7 @@ export default function DiscoveryPage() {
                 if (e.key === "Enter") runWith(panelState, text, sort, topicId);
               }}
               placeholder='Describe what you want — e.g. "vacant multifamily near the L, built after 1990"'
+              aria-label="Describe what you're looking for"
               className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
             <div className="flex items-center gap-2">
@@ -204,9 +209,31 @@ export default function DiscoveryPage() {
                 <SortControl registry={registry} sort={sort} onChange={setSort} />
               )}
             </div>
+            {/* Mobile-only: List|Map toggle + Edit-filters (opens the bottom sheet) */}
+            <div className="flex items-center gap-2 md:hidden">
+              <MobileTabToggle value={mobileTab} onChange={setMobileTab} />
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(true)}
+                className="ml-auto rounded-md border border-dark-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-text-muted"
+              >
+                Edit filters
+                {Object.keys(panelState).length > 0 && (
+                  <span className="ml-1 text-accent">({Object.keys(panelState).length})</span>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 space-y-5 overflow-y-auto p-4">
+          {/* Mobile-only: recipes as a horizontal scroll-snap row */}
+          {registry && (
+            <div className="flex-shrink-0 border-b border-dark-border p-3 md:hidden">
+              <RecipeShelf registry={registry} onPick={onPickRecipe} horizontal />
+            </div>
+          )}
+
+          {/* Desktop-only: recipe shelf + the inline refinement drawer */}
+          <div className="hidden flex-1 space-y-5 overflow-y-auto p-4 md:block">
             {registry ? (
               <>
                 <RecipeShelf registry={registry} onPick={onPickRecipe} />
@@ -223,8 +250,12 @@ export default function DiscoveryPage() {
           </div>
         </div>
 
-        {/* Middle: summary + chips + results list */}
-        <div className="flex min-w-0 flex-col overflow-hidden border-r border-dark-border md:w-[500px] md:flex-shrink-0 lg:w-[560px]">
+        {/* Results column: desktop always; mobile only when the List tab is active */}
+        <div
+          className={`${
+            mobileTab === "list" ? "flex" : "hidden"
+          } min-w-0 flex-1 flex-col overflow-hidden border-r border-dark-border md:flex md:w-[500px] md:flex-1 md:flex-shrink-0 lg:w-[560px]`}
+        >
           {response && registry && (
             <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
               <p className="text-sm text-text-secondary">{summarize(response.cqs, registry)}</p>
@@ -253,9 +284,10 @@ export default function DiscoveryPage() {
           </div>
         </div>
 
-        {/* Right: results map (full coord set). Hidden on mobile — the mobile List|Map
-            toggle is PR10; here the map is desktop-only so it doesn't stack giant. */}
-        <div className="hidden min-w-0 flex-1 md:block">
+        {/* Map column: desktop always; mobile only when the Map tab is active. A SINGLE
+            instance — hidden via CSS (not unmounted) when on List, so the GL context is
+            preserved across toggles (mirrors MobileSidebarSheet's kept-mounted map). */}
+        <div className={`${mobileTab === "map" ? "block" : "hidden"} min-w-0 flex-1 md:block`}>
           <DiscoveryMap
             points={mapPoints}
             truncated={mapTruncated}
@@ -269,9 +301,56 @@ export default function DiscoveryPage() {
         </div>
       </div>
 
+      {/* Mobile filter bottom sheet (full-height refinement drawer) */}
+      {filtersOpen && registry && (
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Filters">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setFiltersOpen(false)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-dark-border bg-dark-surface p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Filters</h3>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white"
+              >
+                Done
+              </button>
+            </div>
+            <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
+          </div>
+        </div>
+      )}
+
       {showUpgrade && (
         <UpgradePrompt feature="Property Discovery" onClose={() => setShowUpgrade(false)} />
       )}
+    </div>
+  );
+}
+
+function MobileTabToggle({
+  value,
+  onChange,
+}: {
+  value: "list" | "map";
+  onChange: (v: "list" | "map") => void;
+}) {
+  const opts: Array<"list" | "map"> = ["list", "map"];
+  return (
+    <div role="group" aria-label="View" className="inline-flex rounded-md border border-dark-border">
+      {opts.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          aria-pressed={value === opt}
+          onClick={() => onChange(opt)}
+          className={`px-3 py-1.5 text-xs capitalize transition-colors ${
+            value === opt ? "bg-accent/15 text-accent" : "text-text-secondary hover:text-text-primary"
+          } ${opt === "list" ? "rounded-l-md" : "rounded-r-md"}`}
+        >
+          {opt}
+        </button>
+      ))}
     </div>
   );
 }

@@ -96,6 +96,14 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
   );
 }
 
+function chipCls(active: boolean): string {
+  return `rounded-md border px-2.5 py-1 text-[11px] transition-colors ${
+    active
+      ? "border-accent bg-accent/10 text-accent"
+      : "border-dark-border text-text-secondary hover:border-text-muted"
+  }`;
+}
+
 function Control({
   def,
   value,
@@ -107,11 +115,14 @@ function Control({
   populated: boolean;
   onChange: (id: string, p: Predicate | null) => void;
 }) {
-  const label = (
-    <label className="mb-1 block text-xs text-text-secondary">
-      {def.label ?? humanize(def.id)}
+  const name = def.label ?? humanize(def.id);
+  // Visible group label (a <span>, not a <label> — pill/preset groups have no single
+  // form control to associate; their accessible name comes from role+aria-label).
+  const labelNode = (
+    <span className="mb-1 block text-xs text-text-secondary">
+      {name}
       {def.unit ? <span className="text-text-muted"> ({def.unit})</span> : null}
-    </label>
+    </span>
   );
 
   // PR4: a filter whose index field isn't populated yet reads "coming" — never a live
@@ -120,7 +131,7 @@ function Control({
   if (!populated) {
     return (
       <div className="opacity-50">
-        {label}
+        {labelNode}
         <p className="text-[11px] text-text-muted">Coming with the next data update</p>
       </div>
     );
@@ -131,18 +142,15 @@ function Control({
     const opts: Array<[string, boolean | null]> = [["Any", null], ["Yes", true], ["No", false]];
     return (
       <div>
-        {label}
-        <div className="flex gap-1.5">
+        {labelNode}
+        <div role="group" aria-label={name} className="flex gap-1.5">
           {opts.map(([txt, val]) => (
             <button
               key={txt}
               type="button"
+              aria-pressed={v === val}
               onClick={() => onChange(def.id, val === null ? null : { kind: "flag", value: val })}
-              className={`rounded-md border px-2.5 py-1 text-[11px] transition-colors ${
-                v === val
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-dark-border text-text-secondary hover:border-text-muted"
-              }`}
+              className={chipCls(v === val)}
             >
               {txt}
             </button>
@@ -158,22 +166,20 @@ function Control({
       const next = selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v];
       onChange(def.id, next.length ? { kind: "enum", values: next } : null);
     };
+    const enumLabel = (v: string) => def.enumLabels?.[v] ?? humanize(v);
     return (
       <div>
-        {label}
-        <div className="flex flex-wrap gap-1.5">
+        {labelNode}
+        <div role="group" aria-label={name} className="flex flex-wrap gap-1.5">
           {(def.enumValues ?? []).map((v) => (
             <button
               key={v}
               type="button"
+              aria-pressed={selected.includes(v)}
               onClick={() => toggle(v)}
-              className={`rounded-md border px-2 py-0.5 text-[11px] transition-colors ${
-                selected.includes(v)
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-dark-border text-text-secondary hover:border-text-muted"
-              }`}
+              className={chipCls(selected.includes(v))}
             >
-              {humanize(v)}
+              {enumLabel(v)}
             </button>
           ))}
         </div>
@@ -182,39 +188,90 @@ function Control({
   }
 
   if (def.kind === "range") {
-    const cur = value?.kind === "range" ? value : { min: undefined, max: undefined };
+    const r = value?.kind === "range" ? value : undefined;
+
+    // Preset-backed ranges (transit/recency/percentile/upside) → a radiogroup of chips
+    // (PR2 metadata). A continuous slider control for the remaining ranges is not built —
+    // those keep labeled min/max inputs (see below); slider a11y is deferred with it.
+    if (def.range?.presets?.length) {
+      const anyChecked = !r || (r.min == null && r.max == null);
+      const isChecked = (p: { min?: number | null; max?: number | null }) =>
+        !!r && r.min === (p.min ?? undefined) && r.max === (p.max ?? undefined);
+      return (
+        <div>
+          {labelNode}
+          <div role="radiogroup" aria-label={name} className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={anyChecked}
+              onClick={() => onChange(def.id, null)}
+              className={chipCls(anyChecked)}
+            >
+              Any
+            </button>
+            {def.range.presets.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                role="radio"
+                aria-checked={isChecked(p)}
+                onClick={() =>
+                  onChange(def.id, { kind: "range", min: p.min ?? undefined, max: p.max ?? undefined })
+                }
+                className={chipCls(isChecked(p))}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     const set = (min: number | undefined, max: number | undefined) =>
       onChange(def.id, min == null && max == null ? null : { kind: "range", min, max });
     const parse = (s: string) => (s === "" ? undefined : Number(s));
+    const dom = def.range?.domain;
+    const inputCls =
+      "w-full rounded-md border border-dark-border bg-dark-elevated px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none";
     return (
       <div>
-        {label}
+        {labelNode}
         <div className="flex items-center gap-2">
           <input
             type="number"
+            aria-label={`minimum ${name}`}
             placeholder="min"
-            value={cur.min ?? ""}
-            onChange={(e) => set(parse(e.target.value), cur.max)}
-            className="w-full rounded-md border border-dark-border bg-dark-elevated px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
+            min={dom?.[0]}
+            max={dom?.[1]}
+            step={def.range?.step}
+            value={r?.min ?? ""}
+            onChange={(e) => set(parse(e.target.value), r?.max)}
+            className={inputCls}
           />
-          <span className="text-text-muted">–</span>
+          <span aria-hidden className="text-text-muted">–</span>
           <input
             type="number"
+            aria-label={`maximum ${name}`}
             placeholder="max"
-            value={cur.max ?? ""}
-            onChange={(e) => set(cur.min, parse(e.target.value))}
-            className="w-full rounded-md border border-dark-border bg-dark-elevated px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
+            min={dom?.[0]}
+            max={dom?.[1]}
+            step={def.range?.step}
+            value={r?.max ?? ""}
+            onChange={(e) => set(r?.min, parse(e.target.value))}
+            className={inputCls}
           />
         </div>
       </div>
     );
   }
 
-  // region
+  // region — only `neighborhood` has a built control (a real labeled multi-select).
   if (def.id !== "neighborhood") {
     return (
       <div className="opacity-50">
-        {label}
+        {labelNode}
         <p className="text-[11px] text-text-muted">Not available yet</p>
       </div>
     );
@@ -224,10 +281,14 @@ function Control({
     const refs = Array.from(e.target.selectedOptions, (o) => NEIGHBORHOOD_PREFIX + o.value);
     onChange(def.id, refs.length ? { kind: "region", regions: refs } : null);
   };
+  const selectId = `disc-${def.id}`;
   return (
     <div>
-      {label}
+      <label htmlFor={selectId} className="mb-1 block text-xs text-text-secondary">
+        {name}
+      </label>
       <select
+        id={selectId}
         multiple
         value={selected.map((r) => r.replace(NEIGHBORHOOD_PREFIX, ""))}
         onChange={onSelect}

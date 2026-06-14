@@ -14,9 +14,11 @@ function labelsFor(registry: Registry, ids: string[]): string[] {
 export function RecipeShelf({
   registry,
   onPick,
+  horizontal = false,
 }: {
   registry: Registry;
   onPick: (topic: TopicDef) => void;
+  horizontal?: boolean; // mobile: a horizontal scroll-snap row instead of a stacked grid
 }) {
   if (!registry.topics.length) return null;
   const coverage = coverageOf(registry);
@@ -27,7 +29,13 @@ export function RecipeShelf({
       <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
         Common recipes{coverageNote}
       </h3>
-      <div className="grid grid-cols-1 gap-2">
+      <div
+        className={
+          horizontal
+            ? "flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1"
+            : "grid grid-cols-1 gap-2"
+        }
+      >
         {registry.topics.map((topic) => {
           const missing = missingFieldsFor(registry, Object.keys(topic.presets));
           const live = missing.length === 0;
@@ -40,7 +48,7 @@ export function RecipeShelf({
               title={live ? undefined : `Needs data: ${missingLabels.join(", ")}`}
               className={`rounded-lg border border-dark-border p-2.5 text-left transition-colors hover:border-text-muted ${
                 live ? "" : "opacity-70"
-              }`}
+              } ${horizontal ? "min-w-[200px] flex-shrink-0 snap-start" : ""}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-xs font-medium text-text-primary">{topic.label}</span>
