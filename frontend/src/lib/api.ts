@@ -1,5 +1,6 @@
 import { parseSSE } from "./sse";
 import type {
+  PinsResponse as DiscoveryPinsResponse,
   Registry as DiscoveryRegistry,
   SearchRequest as DiscoverySearchRequest,
   SearchResponse as DiscoverySearchResponse,
@@ -683,6 +684,46 @@ export async function discoverySearch(
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
+}
+
+// Full ordered coord set for the map (PR6) — decoupled from the paginated list.
+export async function discoverySearchPins(
+  req: DiscoverySearchRequest,
+): Promise<DiscoveryPinsResponse | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/search/pins`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// Full-match-set CSV export (PR7). Premium-gated server-side (free tier → 403). Streams the
+// whole result set; the browser downloads it. Returns false on failure (e.g. not premium).
+export async function discoveryExportCsv(req: DiscoverySearchRequest): Promise<boolean> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/search/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!resp.ok) return false;
+    const blob = await resp.blob();
+    const cd = resp.headers.get("Content-Disposition") ?? "";
+    const filename = /filename="?([^"]+)"?/.exec(cd)?.[1] ?? "discovery.csv";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return true;
+  } catch { return false; }
 }
 
 // --- Transit Stations ---

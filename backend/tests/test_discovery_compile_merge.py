@@ -59,7 +59,7 @@ def test_topic_id_is_telemetry_only_and_does_not_inject_filters():
 
 def test_default_sort_when_no_override():
     cqs, _ = merge(_frag({}), _frag({}))
-    assert cqs.sort == SortSpec(key="pin", dir="asc")
+    assert cqs.sort == SortSpec(key="assessed_value", dir="asc")  # PR2 registry default
     assert cqs.scope == SpatialScope(mode="all")
 
 

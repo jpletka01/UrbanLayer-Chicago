@@ -9,14 +9,19 @@ from pydantic import ValidationError
 
 from backend.discovery import registry as reg
 
-# The 30 filters declared in 03-filter-registry.md, grouped by category.
+# The 32 filters (29 original + PR2's value_percentile/upside_score/is_teardown_candidate),
+# grouped by category.
 EXPECTED_BY_CATEGORY = {
     "location": {"neighborhood", "ward", "radius", "transit_proximity"},
     "property_use": {"land_use", "vacancy", "lot_size", "building_size", "year_built", "units"},
-    "zoning_dev": {"zoning_group", "density_band", "overlay", "adu_eligible", "aro_zone"},
+    "zoning_dev": {
+        "zoning_group", "density_band", "overlay", "adu_eligible", "aro_zone",
+        "upside_score", "is_teardown_candidate"
+    },
     "incentives": {"tif", "opportunity_zone", "enterprise_zone", "sbif_nof"},
     "financial": {
-        "assessed_value", "last_sale_price", "sale_recency", "price_per_sf", "improvement_ratio"
+        "assessed_value", "last_sale_price", "sale_recency", "price_per_sf",
+        "improvement_ratio", "value_percentile"
     },
     "condition_risk": {
         "open_violations", "f311_redflags", "floodplain", "brownfield", "crime_index"
@@ -33,6 +38,7 @@ EXPECTED_KINDS = {
     "last_sale_price": "range", "sale_recency": "range", "price_per_sf": "range",
     "improvement_ratio": "range", "open_violations": "range", "f311_redflags": "range",
     "floodplain": "flag", "brownfield": "flag", "crime_index": "range",
+    "upside_score": "range", "is_teardown_candidate": "flag", "value_percentile": "range",
 }
 
 
@@ -46,8 +52,8 @@ def raw():
 def test_shipped_registry_loads_and_validates():
     r = reg.load()
     assert r.version
-    # 4 location + 6 property_use + 5 zoning_dev + 4 incentives + 5 financial + 5 condition_risk
-    assert len(r.filters) == 29
+    # 4 location + 6 property_use + 7 zoning_dev + 4 incentives + 6 financial + 5 condition_risk
+    assert len(r.filters) == 32
 
 
 def test_all_expected_filters_present_with_correct_category_and_kind():
@@ -92,7 +98,10 @@ def test_accessors():
     assert r.filter_def("lot_size").field == "land_sqft"
     assert r.filter_def("tif").kind == "flag"
     assert "pin" in r.sortable_keys()
-    assert r.sort_field("assessed_value") == "total_assessed_value"
+    # The assessed_value SORT key points at the sort-only field (null for exempt/$0);
+    # the assessed_value FILTER stays on the real value (PR3 0/exempt reconciliation).
+    assert r.sort_field("assessed_value") == "total_assessed_value_sortkey"
+    assert r.filter_def("assessed_value").field == "total_assessed_value"
     with pytest.raises(KeyError):
         r.filter_def("nope")
     with pytest.raises(KeyError):
@@ -142,5 +151,87 @@ def test_dangling_contradicts_raises(raw):
 
 def test_default_sort_not_in_sort_keys_raises(raw):
     raw["defaultSort"] = {"key": "not_a_sort_key", "dir": "asc"}
+    with pytest.raises(ValidationError):
+        reg.Registry.model_validate(raw)
+
+
+# --- PR2: range metadata + requires + hand-authored labels ------------------
+
+
+def test_default_sort_is_assessed_value_asc():
+    # PR2 flips the default off the meaningless pin order to cheapest-first.
+    assert reg.load().defaultSort == reg.SortSpec(key="assessed_value", dir="asc")
+
+
+def test_every_filter_has_a_hand_authored_label():
+    # Labels kill humanize() for display — every filter must carry one.
+    for f in reg.load().filters:
+        assert f.label, f.id
+
+
+def test_range_filters_carry_range_metadata():
+    r = reg.load()
+    for f in r.filters:
+        if f.kind == "range":
+            assert f.range is not None, f.id
+            assert f.range.domain[0] <= f.range.domain[1], f.id
+
+
+def test_single_bound_controls_are_declared():
+    r = reg.load()
+    assert r.filter_def("transit_proximity").range.boundMode == "max"
+    assert r.filter_def("sale_recency").range.boundMode == "max"
+    assert r.filter_def("value_percentile").range.boundMode == "max"
+    assert r.filter_def("upside_score").range.boundMode == "min"
+
+
+def test_density_band_declares_its_dependency():
+    assert reg.load().filter_def("density_band").requires == ["zoning_group"]
+
+
+def test_enum_labels_cover_their_values():
+    r = reg.load()
+    land_use = r.filter_def("land_use")
+    assert set(land_use.enumLabels) == set(land_use.enumValues)
+    assert land_use.enumLabels["multi_family"] == "Multifamily"
+
+
+def test_topics_present_and_reference_known_filters_and_sortkeys():
+    r = reg.load()
+    assert len(r.topics) == 6
+    ids = {f.id for f in r.filters}
+    keys = r.sortable_keys()
+    for t in r.topics:
+        assert t.label and t.description, t.id
+        for fid in t.presets:
+            assert fid in ids, f"{t.id} -> {fid}"
+        if t.defaultSort:
+            assert t.defaultSort.key in keys, t.id
+
+
+def test_new_derived_filters_present():
+    r = reg.load()
+    for fid in ("value_percentile", "upside_score", "is_teardown_candidate"):
+        assert r.filter_def(fid)  # raises KeyError if missing
+    assert r.sort_field("value_percentile") == "value_percentile"
+    assert r.sort_field("upside_score") == "upside_score"
+
+
+def test_range_metadata_on_non_range_raises(raw):
+    vacancy = next(f for f in raw["filters"] if f["id"] == "vacancy")
+    vacancy["range"] = {"domain": [0, 1], "step": 1, "boundMode": "both", "display": "number"}
+    with pytest.raises(ValidationError):
+        reg.Registry.model_validate(raw)
+
+
+def test_enum_labels_for_unknown_value_raises(raw):
+    land_use = next(f for f in raw["filters"] if f["id"] == "land_use")
+    land_use["enumLabels"]["not_a_value"] = "Nope"
+    with pytest.raises(ValidationError):
+        reg.Registry.model_validate(raw)
+
+
+def test_dangling_requires_raises(raw):
+    raw["filters"][0]["requires"] = ["does_not_exist"]
     with pytest.raises(ValidationError):
         reg.Registry.model_validate(raw)

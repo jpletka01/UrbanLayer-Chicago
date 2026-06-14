@@ -30,6 +30,20 @@ describe("Chips (renders from response.cqs — INV-4)", () => {
     expect(onRemove).toHaveBeenCalledWith("tif");
   });
 
+  it("renders neighborhood regions by community-area name, not raw id", () => {
+    const c: CQS = {
+      filters: {
+        neighborhood: { predicate: { kind: "region", regions: ["neighborhood:24"] }, source: "user" },
+      },
+      sort: { key: "pin", dir: "asc" },
+      scope: { mode: "all" },
+      meta: {},
+    };
+    render(<Chips cqs={c} registry={REG} onRemove={() => {}} />);
+    expect(screen.getByText(/West Town/)).toBeTruthy();
+    expect(screen.queryByText(/neighborhood:24/)).toBeNull();
+  });
+
   it("renders nothing when there are no filters", () => {
     const { container } = render(
       <Chips

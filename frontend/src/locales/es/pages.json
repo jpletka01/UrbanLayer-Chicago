@@ -160,5 +160,12 @@
     "selectCAMap": "Seleccione un área comunitaria",
     "parcelsOnMap": "Las propiedads aparecerán en el mapa",
     "downloadCsv": "Descargar CSV"
+  },
+  "discovery": {
+    "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",
+    "teaserUnlock": "Desbloquea la lista completa, el mapa de potencial, el refinado y la exportación — Pro, $99/mes.",
+    "unlockCta": "Desbloquear con Pro — $99/mes",
+    "exportCsv": "Exportar CSV",
+    "exportPro": "Exportar (Pro)"
   }
 }

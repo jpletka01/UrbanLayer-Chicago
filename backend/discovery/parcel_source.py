@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 
 from backend.discovery.parcel import Parcel, default_source
-from backend.discovery.parcel_index import default_index_path, read_index
+from backend.discovery.parcel_index import IndexMeta, default_index_path, read_index, read_meta
 
 log = logging.getLogger(__name__)
 
@@ -23,19 +23,31 @@ log = logging.getLogger(__name__)
 EMPTY_VERSION = "discovery-empty-0"
 
 _current_version: str | None = None
+# The loaded index's meta (coverage + populatedFields source). None = no index / dormant.
+_current_meta: IndexMeta | None = None
 
 
-def set_snapshot(version: str, parcels: list[Parcel]) -> None:
-    """Register a snapshot and make it the current one (used by the loader + tests)."""
-    global _current_version
+def set_snapshot(version: str, parcels: list[Parcel], *, meta: IndexMeta | None = None) -> None:
+    """Register a snapshot and make it the current one (used by the loader + tests).
+
+    `meta` carries coverage + populatedFields; omitting it (the default) leaves the
+    registry reporting coverage "none" + empty populatedFields — the safe dormant state.
+    """
+    global _current_version, _current_meta
     default_source.register(version, parcels)
     _current_version = version
+    _current_meta = meta
 
 
 def current_version() -> str:
     if _current_version is None:
         raise RuntimeError("discovery: no parcel snapshot loaded; call ensure_loaded() first")
     return _current_version
+
+
+def current_meta() -> IndexMeta | None:
+    """The loaded index's meta, or None when no index is built (→ dormant defaults)."""
+    return _current_meta
 
 
 def ensure_loaded() -> None:
@@ -46,12 +58,13 @@ def ensure_loaded() -> None:
     """
     if _current_version is not None:
         return
-    data_version, parcels = read_index(default_index_path())
+    path = default_index_path()
+    data_version, parcels = read_index(path)
     if data_version is not None:
-        set_snapshot(data_version, parcels)
+        set_snapshot(data_version, parcels, meta=read_meta(path))
         log.info("discovery: loaded %s parcels from index %s", len(parcels), data_version)
         return
-    set_snapshot(EMPTY_VERSION, [])
+    set_snapshot(EMPTY_VERSION, [], meta=None)
     log.warning(
         "discovery: no prospecting index built — /discovery/search will return empty. "
         "Build one with `python -m backend.discovery.index_build --community-areas <ids>`."

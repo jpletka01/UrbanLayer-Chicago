@@ -27,6 +27,29 @@ FilterCategory = Literal[
 ]
 PredicateKind = Literal["enum", "range", "flag", "region"]
 UnknownPolicy = Literal["exclude", "include"]
+# How a range control is presented (drives FE formatting + adornments, not evaluation).
+RangeDisplay = Literal["number", "usd", "percent", "far", "mi", "score", "count", "year"]
+# Which bounds a range control exposes ("within X" = max only; "≥ X" = min only).
+BoundMode = Literal["min", "max", "both"]
+
+
+class RangePreset(BaseModel):
+    """A one-tap bound preset (e.g. "Bottom 25%" → {max: 25})."""
+
+    label: str
+    min: float | None = None
+    max: float | None = None
+
+
+class RangeMeta(BaseModel):
+    """Display/control metadata for a range filter (PR2). Pure presentation — the
+    evaluator never reads it; it bounds + shapes the FE control."""
+
+    domain: tuple[float, float]  # [lo, hi] slider/preset bounds
+    step: float
+    boundMode: BoundMode
+    display: RangeDisplay
+    presets: list[RangePreset] | None = None
 
 
 class FilterDef(BaseModel):
@@ -39,19 +62,36 @@ class FilterDef(BaseModel):
     enumValues: list[str] | None = None  # required iff kind == "enum"
     unit: str | None = None  # display only, for range filters
     contradicts: list[str] = Field(default_factory=list)  # static contradiction table (06)
+    # --- PR2 display + control metadata (presentation only; never read by the evaluator) ---
+    range: RangeMeta | None = None  # control metadata, range kind only
+    requires: list[str] = Field(default_factory=list)  # filter ids that must co-occur (FE-declared)
+    label: str | None = None  # hand-authored display label — kills humanize() on the FE
+    help: str | None = None  # one-line tooltip copy
+    enumLabels: dict[str, str] | None = None  # enum value -> display label (enum only)
 
     @model_validator(mode="after")
-    def _check_enum_values(self) -> "FilterDef":
+    def _check_fields(self) -> "FilterDef":
         if self.kind == "enum":
             if not self.enumValues:
                 raise ValueError(f"filter {self.id!r}: enum kind requires non-empty enumValues")
-        elif self.enumValues is not None:
-            raise ValueError(f"filter {self.id!r}: enumValues only valid for enum kind")
+            if self.enumLabels:
+                unknown = set(self.enumLabels) - set(self.enumValues)
+                if unknown:
+                    raise ValueError(f"filter {self.id!r}: enumLabels for non-values {sorted(unknown)}")
+        else:
+            if self.enumValues is not None:
+                raise ValueError(f"filter {self.id!r}: enumValues only valid for enum kind")
+            if self.enumLabels is not None:
+                raise ValueError(f"filter {self.id!r}: enumLabels only valid for enum kind")
+        if self.kind != "range" and self.range is not None:
+            raise ValueError(f"filter {self.id!r}: range metadata only valid for range kind")
         return self
 
 
 class TopicDef(BaseModel):
     id: str
+    label: str | None = None  # recipe-shelf title (PR2)
+    description: str | None = None  # one-line recipe description (PR2)
     presets: dict[str, dict] = Field(default_factory=dict)  # FilterId -> raw predicate (04)
     defaultSort: SortSpec | None = None
 
@@ -61,6 +101,19 @@ class SortKeyDef(BaseModel):
     field: str
 
 
+class Coverage(BaseModel):
+    """What geography the current index covers (PR4). Presentation only — it drives a
+    standalone scope banner and is NEVER part of the CQS / chip array.
+
+    `mode` "none" is the safe default (no index built → page reads dormant); "partial"
+    = a subset of community areas; "all" = the full city.
+    """
+
+    mode: Literal["none", "partial", "all"] = "none"
+    liveAreas: list[int] = Field(default_factory=list)  # community-area ids that are indexed
+    asOf: str | None = None  # ISO date the index was built
+
+
 class Registry(BaseModel):
     version: str
     filters: list[FilterDef]
@@ -68,6 +121,10 @@ class Registry(BaseModel):
     sortKeys: list[SortKeyDef]
     defaultSort: SortSpec
     broadMinFilters: int
+    # --- PR4 dynamic, index-derived fields (injected by the /registry endpoint, not the
+    # static artifact). Defaults = dormant: no coverage, nothing populated. ---
+    coverage: Coverage = Field(default_factory=Coverage)
+    populatedFields: list[str] = Field(default_factory=list)  # filter ids with real data
 
     @model_validator(mode="after")
     def _check_integrity(self) -> "Registry":
@@ -80,6 +137,9 @@ class Registry(BaseModel):
             for c in f.contradicts:
                 if c not in id_set:
                     raise ValueError(f"filter {f.id!r}: contradicts unknown filter {c!r}")
+            for r in f.requires:
+                if r not in id_set:
+                    raise ValueError(f"filter {f.id!r}: requires unknown filter {r!r}")
 
         keys = [sk.key for sk in self.sortKeys]
         if len(set(keys)) != len(keys):
