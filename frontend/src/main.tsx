@@ -1,6 +1,6 @@
 import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './lib/i18n'
@@ -22,7 +22,6 @@ import { AboutPage } from './components/AboutPage.tsx'
 import { AdminDashboard } from './components/AdminDashboard.tsx'
 import PricingPage from './components/PricingPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
-import ExplorePage from './components/ExplorePage.tsx'
 import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
@@ -45,7 +44,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/c/:id" element={<App />} />
             <Route path="/s/:shareToken" element={<App />} />
             <Route path="/scorecard" element={<ScorecardPage />} />
-            <Route path="/explore" element={<ExplorePage />} />
+            {/* /explore retired 2026-06-14 — Discovery is a strict superset. Redirect legacy links. */}
+            <Route path="/explore" element={<Navigate to="/discovery" replace />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/about" element={<AboutPage />} />

@@ -1481,59 +1481,6 @@ async def scorecard(
     return data
 
 
-@app.get("/api/explore")
-async def explore(
-    community_area: int,
-    class_prefix: str | None = None,
-    limit: int = 200,
-    offset: int = 0,
-    _user: dict = Depends(require_tier("premium")),
-) -> dict:
-    """Bulk parcel exploration by community area and property class."""
-    from backend.retrieval.explore import explore_parcels
-    from backend.retrieval.geo import community_area_bounds as _ca_bounds
-
-    settings = get_settings()
-    limit = min(limit, settings.limit_explore_max)
-
-    parcels, total, ca_name = await explore_parcels(
-        community_area, class_prefix=class_prefix, limit=limit, offset=offset
-    )
-
-    bounds = _ca_bounds(community_area)
-
-    return {
-        "community_area": community_area,
-        "community_area_name": ca_name,
-        "bounds": list(bounds) if bounds else None,
-        "parcels": parcels,
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
-
-
-@app.get("/api/explore/map")
-async def explore_map(
-    community_area: int,
-    class_prefix: str | None = None,
-    _user: dict = Depends(require_tier("premium")),
-) -> dict:
-    """All parcels for the map layer (up to 5000). Separate from paginated table."""
-    from backend.retrieval.explore import explore_parcels
-
-    settings = get_settings()
-    parcels, total, _ = await explore_parcels(
-        community_area, class_prefix=class_prefix,
-        limit=settings.limit_explore_map, offset=0,
-    )
-
-    return {
-        "parcels": parcels,
-        "total": total,
-    }
-
-
 _ZONE_PREFIX_COLORS: dict[str, tuple[int, int, int]] = {
     "RS": (255, 235, 59),
     "RT": (255, 224, 130),

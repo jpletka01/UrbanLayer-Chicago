@@ -348,9 +348,11 @@ for 25 community areas. What's left is expansion + polish.
   build spike OOMs (see Wave-3 known problems). To go full city, first do ONE of: move the build off
   the backend container (a one-off build container / host venv writing to the same `backend/data`
   volume), or chunk/stream `write_index`, or use a bigger instance. Until then, incremental CA sets.
-- Then **retire `/explore`** — Discovery is now a strict superset *with real data* (the gate the
-  convergence plan waited on is met): redirect `/explore → /discovery`, drop the page + `/api/explore*`
-  once nothing references them.
+- ✅ **`/explore` RETIRED (2026-06-14).** Discovery is a strict superset with real data, so `/explore`
+  now redirects to `/discovery`; `ExplorePage.tsx`, the `/api/explore*` endpoints, `retrieval/explore.py`,
+  the `fetchExplore*` client fns, and the `explore.*` i18n blocks are deleted. The one survivor,
+  `_format_pin`, moved to `retrieval/utils.py` as `format_pin` (the Discovery index builder still uses it).
+  Nav: Discovery took Explore's old slot (after Scorecard). Verified: backend 807 unit, tsc, 51 vitest.
 
 **Data quality / metrics:**
 - **Validate `upside_score` properly** when temporal (pre-redevelopment) data is available — PR-VAL's
@@ -370,8 +372,13 @@ for 25 community areas. What's left is expansion + polish.
 
 **Ops:**
 - Monthly rebuild timer is live (next **2026-07-01**); confirm the first automated run succeeds.
-- ⚠️ Verify the **scorecard/report assessment path** isn't hitting the same CCAO valueless-latest-year
-  trap the Wave-3 index fix addressed.
+- ✅ **Scorecard/report assessment path VERIFIED SAFE (2026-06-14)** — it does NOT hit the CCAO
+  valueless-latest-year trap. Unlike the index builder (which grabbed the raw first `year DESC` row),
+  `_build_summary` (`retrieval/property/__init__.py`) iterates and takes the first row with a non-null
+  total, so the headline value, trend, and tax derivation all correctly skip the in-progress
+  valueless year. Confirmed against live `uzyt-m557` data. Locked with a regression test
+  (`test_build_summary_skips_valueless_latest_year`) + a guard that drops the phantom valueless
+  current-year record from `assessment_history` (it had been polluting the synthesizer context).
 
 ---
 

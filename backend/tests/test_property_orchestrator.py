@@ -241,3 +241,27 @@ def test_build_summary_assessment_fallback_values():
     assert summary.assessment_history[0].total == 40000.0
     assert summary.assessment_history[1].total == 38000.0
     assert summary.total_assessed_value == 40000.0
+
+
+def test_build_summary_skips_valueless_latest_year():
+    """The CCAO's in-progress year (e.g. 2026) returns with NULL value columns
+    omitted by Socrata. The headline value must come from the latest year that
+    actually carries a value, and the valueless row must not pollute history.
+
+    Mirrors the live shape verified against dataset uzyt-m557 (2026-06-14):
+    the 2026 row has only {pin, year, class, township...}, no value columns.
+    """
+    parcel = {"pin14": "14331030110000", "address": "642 W BELDEN AVE"}
+    assessments = [
+        # latest year — valueless (class present, no value columns)
+        {"year": "2026", "class": "205"},
+        {"year": "2025", "mailed_tot": "114600", "mailed_land": "51925",
+         "mailed_bldg": "62675"},
+        {"year": "2024", "mailed_tot": "135000"},
+    ]
+    summary = _build_summary(parcel, None, assessments, [])
+    # Headline value is the latest year that actually carries a value.
+    assert summary.total_assessed_value == 114600.0
+    # The valueless 2026 row is dropped from history entirely.
+    assert [r.year for r in summary.assessment_history] == [2025, 2024]
+    assert summary.assessment_history[0].total == 114600.0
