@@ -319,6 +319,26 @@ def test_registry_empty_populated_fields_when_meta_absent():
     assert body["coverage"]["mode"] == "partial"  # geography known, but no fields populated
 
 
+def test_pin_lookup_is_memoized_and_invalidates_on_snapshot_change():
+    # Same dataVersion -> same cached dict object (not rebuilt O(N) per request).
+    parcel_source.set_snapshot("mz-v1", [DictParcel("p1", {"land_use_class": "residential"})])
+    try:
+        first = parcel_source.pin_lookup("mz-v1")
+        assert parcel_source.pin_lookup("mz-v1") is first  # cached, identical object
+        assert set(first) == {"p1"}
+        # A new snapshot invalidates the cache -> rebuilt with the new parcels.
+        parcel_source.set_snapshot("mz-v2", [DictParcel("p2"), DictParcel("p3")])
+        rebuilt = parcel_source.pin_lookup("mz-v2")
+        assert rebuilt is not first
+        assert set(rebuilt) == {"p2", "p3"}
+    finally:
+        parcel_source._current_version = None
+        parcel_source._current_meta = None
+        parcel_source._pin_index = None
+        parcel_source._pin_index_version = None
+        default_source.clear()
+
+
 def test_coverage_never_enters_the_cqs_path(client):
     # Guardrail #1: coverage is a registry-only presentational concern. It must never
     # appear in the search response's CQS (chips) nor as a top-level result field.

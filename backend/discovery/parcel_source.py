@@ -26,6 +26,12 @@ _current_version: str | None = None
 # The loaded index's meta (coverage + populatedFields source). None = no index / dormant.
 _current_meta: IndexMeta | None = None
 
+# Memoized pin→parcel map for the current snapshot. The snapshot is immutable per dataVersion,
+# so this is built once and reused across requests rather than rebuilt O(N) on every hydrate —
+# which matters at the ~1.8M-parcel (`--all`) scale. Invalidated whenever the snapshot changes.
+_pin_index: dict[str, Parcel] | None = None
+_pin_index_version: str | None = None
+
 
 def set_snapshot(version: str, parcels: list[Parcel], *, meta: IndexMeta | None = None) -> None:
     """Register a snapshot and make it the current one (used by the loader + tests).
@@ -33,10 +39,21 @@ def set_snapshot(version: str, parcels: list[Parcel], *, meta: IndexMeta | None 
     `meta` carries coverage + populatedFields; omitting it (the default) leaves the
     registry reporting coverage "none" + empty populatedFields — the safe dormant state.
     """
-    global _current_version, _current_meta
+    global _current_version, _current_meta, _pin_index, _pin_index_version
     default_source.register(version, parcels)
     _current_version = version
     _current_meta = meta
+    _pin_index = None  # invalidate the memoized pin→parcel map (snapshot changed)
+    _pin_index_version = None
+
+
+def pin_lookup(version: str) -> dict[str, Parcel]:
+    """Cached pin→parcel map for `version`, rebuilt only when the dataVersion changes."""
+    global _pin_index, _pin_index_version
+    if _pin_index is None or _pin_index_version != version:
+        _pin_index = {p.pin: p for p in default_source.get(version)}
+        _pin_index_version = version
+    return _pin_index
 
 
 def current_version() -> str:
