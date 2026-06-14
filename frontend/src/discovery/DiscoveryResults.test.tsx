@@ -125,3 +125,39 @@ describe("DiscoveryResults row-cards", () => {
     expect(screen.queryByText(/Export CSV/)).toBeNull();
   });
 });
+
+describe("PR9 free-tier teaser", () => {
+  const tenRows: ResultRow[] = Array.from({ length: 10 }, (_, i) => ({
+    pin: `p${i}`, lat: null, lon: null, address: `${i} St`, community_area: 24,
+    land_use: "multi_family", class: "3-13", lot_sqft: null, bldg_sqft: null, year_built: null,
+    units: null, assessed_value: null, price_per_sf: null, last_sale_price: null,
+    last_sale_date: null, improvement_ratio: null, value_percentile: null, upside_score: 80,
+    is_teardown_candidate: false, sortValue: null,
+  }));
+
+  function gatedResponse() {
+    return resp(
+      { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
+      { result: { rows: tenRows, total: 847, nextOffset: null, gated: true } },
+    );
+  }
+
+  it("renders the query-aware teaser wall and fires onUpgrade", () => {
+    const onUpgrade = vi.fn();
+    render(
+      <DiscoveryResults {...baseProps} registry={reg()} rows={tenRows} response={gatedResponse()} onRelax={noop} onUpgrade={onUpgrade} exportLocked />,
+    );
+    expect(screen.getByText(/847 parcels match — you're seeing 10/)).toBeTruthy();
+    fireEvent.click(screen.getByText(/Unlock with Pro/));
+    expect(onUpgrade).toHaveBeenCalled();
+  });
+
+  it("shows a locked Export button for free users that routes to upgrade", () => {
+    const onUpgrade = vi.fn();
+    render(
+      <DiscoveryResults {...baseProps} registry={reg()} rows={tenRows} response={gatedResponse()} onRelax={noop} onUpgrade={onUpgrade} exportLocked onExport={() => { throw new Error("must not export"); }} />,
+    );
+    fireEvent.click(screen.getByText(/Export \(Pro\)/));
+    expect(onUpgrade).toHaveBeenCalled();
+  });
+});

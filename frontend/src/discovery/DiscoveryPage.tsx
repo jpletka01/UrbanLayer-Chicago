@@ -69,10 +69,8 @@ export default function DiscoveryPage() {
   const runWith = useCallback(
     async (state: PanelState, txt: string, srt: SortSpec | null, tid: string | null = null) => {
       if (!registry) return;
-      if (!isPro) {
-        setShowUpgrade(true);
-        return;
-      }
+      // PR9: free users RUN the search and hit the teaser (top 10 + wall), not a pre-search
+      // wall. The server enforces the cap; the FE renders the teaser from result.gated.
       const inputs: SearchInputs = { panelState: state, text: txt, sort: srt, topicId: tid };
       lastInputs.current = inputs;
       setLoading(true);
@@ -165,6 +163,8 @@ export default function DiscoveryPage() {
     [navigate],
   );
 
+  const onUpgrade = useCallback(() => setShowUpgrade(true), []);
+
   return (
     <div className="flex h-screen flex-col bg-dark-bg text-text-primary">
       <PageHeader sticky={false} maxWidthClass="max-w-[1920px]" />
@@ -246,6 +246,8 @@ export default function DiscoveryPage() {
                 hoveredPin={hoveredPin}
                 onHoverPin={setHoveredPin}
                 onExport={onExport}
+                exportLocked={!isPro}
+                onUpgrade={onUpgrade}
               />
             )}
           </div>
@@ -261,6 +263,8 @@ export default function DiscoveryPage() {
             hoveredPin={hoveredPin}
             onHoverPin={setHoveredPin}
             onOpenParcel={onOpenParcel}
+            colorBy={isPro ? "upside" : "land_use"}
+            interactive={isPro}
           />
         </div>
       </div>

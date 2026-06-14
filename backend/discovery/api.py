@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.auth import require_tier
+from backend.auth import get_current_user, require_tier
 from backend.discovery import parcel as parcel_mod
 from backend.discovery import parcel_source
 from backend.discovery.compile_merge import merge
@@ -43,6 +43,14 @@ log = logging.getLogger(__name__)
 # Default page window for the result list (infinite scroll fetches subsequent windows).
 DEFAULT_PAGE_LIMIT = 50
 MAX_PAGE_LIMIT = 200
+# Free-tier teaser: non-premium users get the top N ranked rows (with full fields incl.
+# upside) + the TRUE total + a gated flag — then the upgrade wall. Enforced server-side so
+# devtools can't page past it. The full ranked list / map intelligence / export are Pro.
+FREE_ROW_CAP = 10
+
+
+def _is_pro(user: dict | None) -> bool:
+    return bool(user) and user.get("tier") in ("premium", "admin")
 
 # Mounted under /api so the production nginx (which proxies only /api/, /chat, /health,
 # /autocomplete, /section/ to the backend) routes it — and so it never collides with the
@@ -102,6 +110,7 @@ class SearchResult(BaseModel):
     rows: list[ResultRow]  # the requested page window, in evaluated order
     total: int  # full match count (drives count + teaser; independent of the window)
     nextOffset: int | None = None  # cursor for the next window; None when exhausted
+    gated: bool = False  # True for free tier — rows are the capped teaser, total is the real count
 
 
 class SearchResponse(BaseModel):
@@ -119,7 +128,8 @@ class PinPoint(BaseModel):
     pin: str
     lat: float | None
     lon: float | None
-    upside: float | None  # upside_score → drives map color (null = "no data", distinct swatch)
+    upside: float | None  # upside_score → Pro map color (null = "no data" swatch)
+    landUse: str | None  # land_use_class → free-tier map color (view-only, use-colored)
 
 
 class PinsResponse(BaseModel):
@@ -229,22 +239,28 @@ def _hydrate_window(pins: list[str], data_version: str, sort_key: str) -> list[R
 
 
 @router.post("/search", response_model=SearchResponse)
-def search(req: SearchRequest) -> SearchResponse:
+def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) -> SearchResponse:
     # Defined sync so FastAPI runs the (CPU-bound) evaluation in a worker thread
     # rather than blocking the event loop.
     cqs, result, dropped, data_version = _resolve(req)
     diagnostics = build(cqs, data_version, evaluate, result=result, dropped=dropped)
 
-    limit = min(req.limit or DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT)
-    offset = max(req.offset, 0)
+    if _is_pro(user):
+        limit = min(req.limit or DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT)
+        offset = max(req.offset, 0)
+        next_offset = offset + limit if offset + limit < result.total else None
+        gated = False
+    else:
+        # Free teaser (server-enforced): top FREE_ROW_CAP, no paging past it, real total.
+        limit, offset, next_offset, gated = FREE_ROW_CAP, 0, None, True
+
     window = result.pins[offset : offset + limit]
     rows = _hydrate_window(window, data_version, cqs.sort.key)
-    next_offset = offset + limit if offset + limit < result.total else None
 
     return SearchResponse(
         dataVersion=data_version,
         cqs=cqs,
-        result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset),
+        result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset, gated=gated),
         diagnostics=diagnostics,
     )
 
@@ -254,8 +270,9 @@ def search_pins(req: SearchRequest) -> PinsResponse:
     # Same _resolve path as /search → identical ordered PIN sequence by construction (the
     # map prefix matches the list prefix; sort/scope/topicId can't drift between them).
     # Returns the FULL ordered coord set (capped), NOT the list's paginated window — the
-    # map is never sourced from the infinite-scroll rows. No tier gating here (PR9 owns the
-    # free/paid line); this is the authenticated map.
+    # map is never sourced from the infinite-scroll rows. NOT tier-capped: free users see
+    # ALL match dots (the FE colors free by land use + makes it view-only — a presentational
+    # gate; upside rides along since it isn't secret).
     _cqs, result, _dropped, data_version = _resolve(req)
     by_pin = _pin_lookup(data_version)
     points: list[PinPoint] = []
@@ -263,7 +280,13 @@ def search_pins(req: SearchRequest) -> PinsResponse:
         parcel = by_pin.get(pin)
         if parcel is not None:
             points.append(
-                PinPoint(pin=parcel.pin, lat=parcel.lat, lon=parcel.lon, upside=parcel.get("upside_score"))
+                PinPoint(
+                    pin=parcel.pin,
+                    lat=parcel.lat,
+                    lon=parcel.lon,
+                    upside=parcel.get("upside_score"),
+                    landUse=parcel.get("land_use_class"),
+                )
             )
     return PinsResponse(
         dataVersion=data_version,

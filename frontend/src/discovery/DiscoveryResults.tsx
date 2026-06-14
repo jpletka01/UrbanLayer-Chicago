@@ -7,8 +7,10 @@
 // + premium-gated (PR7 /search/export + PR9 gate); never assembled from this rows window.
 
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { coverageOf, isPopulated } from "./coverage";
+import { summarize } from "./summary";
 import type { Registry, ResultRow, SearchResponse } from "./types";
 
 function humanize(s: string): string {
@@ -40,7 +42,9 @@ interface ResultsProps {
   onOpenParcel: (pin: string) => void;
   hoveredPin?: string | null; // bidirectional hover sync with the map
   onHoverPin?: (pin: string | null) => void;
-  onExport?: () => void; // full-match-set CSV (server-side, premium). PR9 adds the free-tier lock.
+  onExport?: () => void; // full-match-set CSV (server-side, premium)
+  exportLocked?: boolean; // free tier — show the Export button as a Pro conversion lever
+  onUpgrade?: () => void; // teaser CTA + locked-export click
 }
 
 export function DiscoveryResults({
@@ -56,7 +60,10 @@ export function DiscoveryResults({
   hoveredPin = null,
   onHoverPin,
   onExport,
+  exportLocked = false,
+  onUpgrade,
 }: ResultsProps) {
+  const { t } = useTranslation("pages");
   if (loading) {
     return <p className="p-4 text-sm text-text-muted">Searching…</p>;
   }
@@ -76,16 +83,22 @@ export function DiscoveryResults({
             <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
             {result.total === 1 ? "parcel" : "parcels"}
           </p>
-          {onExport && result.total > 0 && (
+          {result.total > 0 && (exportLocked ? onUpgrade : onExport) && (
             <button
               type="button"
-              onClick={onExport}
+              onClick={exportLocked ? onUpgrade : onExport}
               className="inline-flex items-center gap-1 text-[11px] text-accent transition-colors hover:text-accent/80"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              Export CSV
+              {exportLocked ? (
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              ) : (
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              )}
+              {exportLocked ? t("discovery.exportPro") : t("discovery.exportCsv")}
             </button>
           )}
         </div>
@@ -139,10 +152,21 @@ export function DiscoveryResults({
           />
         ))}
         <InfiniteScrollSentinel hasMore={hasMore} loadingMore={loadingMore} onLoadMore={onLoadMore} />
-        {!hasMore && rows.length > 0 && (
-          <p className="px-4 py-3 text-[11px] text-text-muted">
-            Showing all {rows.length.toLocaleString()}.
-          </p>
+        {!hasMore && rows.length > 0 && result.gated && result.total > rows.length ? (
+          <TeaserWall
+            total={result.total}
+            shown={rows.length}
+            summary={summarize(response.cqs, registry)}
+            onUpgrade={onUpgrade}
+            t={t}
+          />
+        ) : (
+          !hasMore &&
+          rows.length > 0 && (
+            <p className="px-4 py-3 text-[11px] text-text-muted">
+              Showing all {rows.length.toLocaleString()}.
+            </p>
+          )
         )}
       </div>
     </div>
@@ -268,6 +292,44 @@ function InfiniteScrollSentinel({
   return (
     <div ref={ref} className="px-4 py-3 text-[11px] text-text-muted">
       {loadingMore ? "Loading more…" : "Scroll for more"}
+    </div>
+  );
+}
+
+// Free-tier teaser (PR9): the query-aware conversion wall over the "N more match" region.
+// The 10 shown rows above are real (with scores); this gates the full ranked list + map
+// intelligence + refine + export. Copy is built from the canonical CQS via summarize().
+function TeaserWall({
+  total,
+  shown,
+  summary,
+  onUpgrade,
+  t,
+}: {
+  total: number;
+  shown: number;
+  summary: string;
+  onUpgrade?: () => void;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}) {
+  return (
+    <div className="border-t border-dark-border bg-dark-elevated/40 px-4 py-4 text-center backdrop-blur-[1px]">
+      <p className="text-sm font-medium text-text-primary">
+        {t("discovery.teaserCount", { total: total.toLocaleString(), shown })}
+      </p>
+      <p className="mx-auto mt-1 max-w-xs text-[11px] text-text-muted">{summary}</p>
+      <p className="mx-auto mt-1 max-w-xs text-[11px] text-text-secondary">
+        {t("discovery.teaserUnlock")}
+      </p>
+      {onUpgrade && (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          className="mt-3 rounded-lg bg-accent px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+        >
+          {t("discovery.unlockCta")}
+        </button>
+      )}
     </div>
   );
 }

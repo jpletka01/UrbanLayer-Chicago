@@ -199,6 +199,7 @@ export interface SearchResult {
   rows: ResultRow[];
   total: number;
   nextOffset: number | null;
+  gated?: boolean; // true for free tier — rows are the capped teaser; total is the real count
 }
 
 // Map coord set (PR6) — the FULL ordered match set (capped), decoupled from the list window.
@@ -206,7 +207,8 @@ export interface PinPoint {
   pin: string;
   lat: number | null;
   lon: number | null;
-  upside: number | null; // upside_score; null → distinct "no data" map color
+  upside: number | null; // upside_score; null → distinct "no data" map color (Pro coloring)
+  landUse: string | null; // land_use_class — free-tier (view-only) map coloring
 }
 
 export interface PinsResponse {

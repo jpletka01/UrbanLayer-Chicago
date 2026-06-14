@@ -6,7 +6,7 @@
 import { useEffect, useMemo } from "react";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useMapboxOverlay } from "../lib/useMapboxOverlay";
-import { upsideColor, UPSIDE_LEGEND } from "./upsideColor";
+import { landUseColor, LAND_USE_LEGEND, upsideColor, UPSIDE_LEGEND } from "./upsideColor";
 import type { PinPoint } from "./types";
 
 interface DiscoveryMapProps {
@@ -16,6 +16,9 @@ interface DiscoveryMapProps {
   hoveredPin: string | null;
   onHoverPin: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
+  // PR9 gate: Pro gets upside coloring + interactivity; free gets land-use color, view-only.
+  colorBy: "upside" | "land_use";
+  interactive: boolean;
 }
 
 const HIGHLIGHT: [number, number, number, number] = [238, 238, 238, 255];
@@ -27,6 +30,8 @@ export function DiscoveryMap({
   hoveredPin,
   onHoverPin,
   onOpenParcel,
+  colorBy,
+  interactive,
 }: DiscoveryMapProps) {
   const { containerRef, mapRef, overlayRef, mapReady } = useMapboxOverlay({
     center: [-87.6298, 41.8781],
@@ -38,11 +43,10 @@ export function DiscoveryMap({
     [points],
   );
 
-  // Row → dot: highlight the hovered pin via deck.gl's highlightedObjectIndex (cheap; no
-  // recolor of the whole layer).
+  // Row → dot highlight only when interactive (Pro); free is view-only.
   const highlightedIndex = useMemo(
-    () => (hoveredPin ? mappable.findIndex((p) => p.pin === hoveredPin) : -1),
-    [mappable, hoveredPin],
+    () => (interactive && hoveredPin ? mappable.findIndex((p) => p.pin === hoveredPin) : -1),
+    [mappable, hoveredPin, interactive],
   );
 
   const layer = useMemo(() => {
@@ -51,20 +55,29 @@ export function DiscoveryMap({
       id: "discovery-pins",
       data: mappable,
       getPosition: (d: PinPoint) => [d.lon as number, d.lat as number],
-      getFillColor: (d: PinPoint) => upsideColor(d.upside),
+      getFillColor: (d: PinPoint) =>
+        colorBy === "upside" ? upsideColor(d.upside) : landUseColor(d.landUse),
       getRadius: 8,
       radiusMinPixels: 2,
       radiusMaxPixels: 9,
-      pickable: true,
-      autoHighlight: true,
+      pickable: interactive,
+      autoHighlight: interactive,
       highlightColor: HIGHLIGHT,
       highlightedObjectIndex: highlightedIndex,
-      onHover: (info) => onHoverPin(info.object ? (info.object as PinPoint).pin : null),
-      onClick: (info) => {
-        if (info.object) onOpenParcel((info.object as PinPoint).pin);
-      },
+      onHover: interactive
+        ? (info) => onHoverPin(info.object ? (info.object as PinPoint).pin : null)
+        : undefined,
+      onClick: interactive
+        ? (info) => {
+            if (info.object) onOpenParcel((info.object as PinPoint).pin);
+          }
+        : undefined,
+      updateTriggers: { getFillColor: [colorBy] },
     });
-  }, [mappable, highlightedIndex, onHoverPin, onOpenParcel]);
+  }, [mappable, highlightedIndex, colorBy, interactive, onHoverPin, onOpenParcel]);
+
+  const legend = colorBy === "upside" ? UPSIDE_LEGEND : LAND_USE_LEGEND;
+  const legendTitle = colorBy === "upside" ? "Redevelopment upside" : "Property use";
 
   useEffect(() => {
     if (!overlayRef.current) return;
@@ -91,13 +104,13 @@ export function DiscoveryMap({
     <div className="relative h-full w-full">
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Legend (includes the no-data swatch) */}
+      {/* Legend — upside (Pro) or land use (free), each named */}
       {mappable.length > 0 && (
         <div className="absolute bottom-6 left-3 z-10 space-y-1 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2">
           <div className="mb-1 text-[9px] uppercase tracking-wider text-text-muted">
-            Redevelopment upside
+            {legendTitle}
           </div>
-          {UPSIDE_LEGEND.map((item) => (
+          {legend.map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-[10px] text-text-secondary">
               <span
                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"

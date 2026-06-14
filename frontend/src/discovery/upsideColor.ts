@@ -29,3 +29,27 @@ export const UPSIDE_LEGEND: { label: string; color: string }[] = [
   { label: "< 50", color: css(LOW) },
   { label: "No data", color: css(NO_DATA) },
 ];
+
+// --- Free-tier (view-only) map: color by land use, not the gated upside intelligence. ---
+const LAND_USE_COLORS: Record<string, RGBA> = {
+  vacant: [120, 144, 156, 190],
+  residential: [79, 195, 247, 200],
+  multi_family: [126, 87, 194, 205],
+  commercial: [255, 213, 79, 205],
+  industrial: [239, 83, 80, 205],
+  mixed_use: [38, 198, 218, 205],
+  institutional: [102, 187, 106, 200],
+  exempt: [120, 120, 120, 170],
+};
+
+export function landUseColor(landUse: string | null | undefined): RGBA {
+  return (landUse && LAND_USE_COLORS[landUse]) || NO_DATA;
+}
+
+export const LAND_USE_LEGEND: { label: string; color: string }[] = [
+  { label: "Residential", color: css(LAND_USE_COLORS.residential) },
+  { label: "Multifamily", color: css(LAND_USE_COLORS.multi_family) },
+  { label: "Commercial", color: css(LAND_USE_COLORS.commercial) },
+  { label: "Industrial", color: css(LAND_USE_COLORS.industrial) },
+  { label: "Vacant", color: css(LAND_USE_COLORS.vacant) },
+];

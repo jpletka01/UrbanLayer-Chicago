@@ -336,7 +336,7 @@ def test_search_pins_sequence_matches_search(client):
 def test_search_pins_carries_coords_and_upside(client):
     pins = client.post("/api/discovery/search/pins", json={}).json()
     p = pins["points"][0]
-    assert set(p.keys()) == {"pin", "lat", "lon", "upside"}
+    assert set(p.keys()) == {"pin", "lat", "lon", "upside", "landUse"}
     assert p["upside"] is None  # not computed until PR-INDEX → FE renders a "no data" swatch
 
 
@@ -448,3 +448,91 @@ def test_export_requires_auth(client, monkeypatch):
     monkeypatch.setattr(auth, "get_current_user", _anon)
     r = client.post("/api/discovery/search/export", json={})
     assert r.status_code == 401
+
+
+# --- PR9: free-tier teaser cap (server-enforced) + gated flag ---------------------------
+
+
+# /search uses Depends(get_current_user) (captured at decoration) → override the
+# dependency rather than monkeypatching the module attr (which wouldn't take effect).
+def _as_free():
+    import backend.discovery.api as api
+
+    app.dependency_overrides[api.get_current_user] = lambda: {"id": "u", "email": "e", "tier": "free"}
+
+
+def _restore_tier():
+    app.dependency_overrides.clear()
+
+
+def test_search_free_tier_is_capped_and_gated():
+    parcel_source.set_snapshot("free-v1", [
+        DictParcel(f"f{i:02d}", {"land_use_class": "residential", "land_sqft": i}) for i in range(25)
+    ])
+    _as_free()
+    try:
+        body = TestClient(app).post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "limit": 50,  # request 50 — must be ignored
+        }).json()
+        rows = body["result"]["rows"]
+        assert len(rows) == 10  # FREE_ROW_CAP, regardless of requested limit
+        assert body["result"]["total"] == 25  # TRUE total, not the capped count
+        assert body["result"]["gated"] is True
+        assert body["result"]["nextOffset"] is None  # no paging past the wall
+        # The 10 shown are the TOP ranked (the teaser is "your 10 best leads").
+        assert [r["pin"] for r in rows] == [f"f{i:02d}" for i in range(10)]
+    finally:
+        _restore_tier()
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_search_free_tier_cannot_page_past_the_cap():
+    parcel_source.set_snapshot("free-v2", [
+        DictParcel(f"f{i:02d}", {"land_use_class": "residential", "land_sqft": i}) for i in range(25)
+    ])
+    _as_free()
+    try:
+        # Even with an explicit offset, the server refuses to serve rows 11+.
+        body = TestClient(app).post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "offset": 10, "limit": 10,
+        }).json()
+        assert [r["pin"] for r in body["result"]["rows"]] == [f"f{i:02d}" for i in range(10)]
+        assert body["result"]["gated"] is True
+    finally:
+        _restore_tier()
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_search_premium_is_not_gated(client):
+    # Dev mode → admin (pro). Full window, not gated.
+    body = client.post("/api/discovery/search", json={}).json()
+    assert body["result"]["gated"] is False
+
+
+def test_free_tier_top_rows_keep_upside_and_full_fields():
+    parcel_source.set_snapshot("free-v3", [
+        DictParcel("f0", {"land_use_class": "multi_family", "upside_score": 86, "total_assessed_value": 118400}),
+    ])
+    _as_free()
+    try:
+        body = TestClient(app).post("/api/discovery/search", json={}).json()
+        assert body["result"]["gated"] is True
+        row = body["result"]["rows"][0]
+        assert row["upside_score"] == 86  # NOT stripped on free rows (Jack's call)
+        assert row["assessed_value"] == 118400
+    finally:
+        _restore_tier()
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_search_pins_carries_landuse_for_free_map_coloring(client):
+    parcel_source.set_snapshot("lu-v1", [DictParcel("p9", {"land_use_class": "commercial"})])
+    try:
+        pts = TestClient(app).post("/api/discovery/search/pins", json={}).json()["points"]
+        assert pts[0]["landUse"] == "commercial"
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
