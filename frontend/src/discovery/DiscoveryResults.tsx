@@ -40,6 +40,7 @@ interface ResultsProps {
   onOpenParcel: (pin: string) => void;
   hoveredPin?: string | null; // bidirectional hover sync with the map
   onHoverPin?: (pin: string | null) => void;
+  onExport?: () => void; // full-match-set CSV (server-side, premium). PR9 adds the free-tier lock.
 }
 
 export function DiscoveryResults({
@@ -54,6 +55,7 @@ export function DiscoveryResults({
   onOpenParcel,
   hoveredPin = null,
   onHoverPin,
+  onExport,
 }: ResultsProps) {
   if (loading) {
     return <p className="p-4 text-sm text-text-muted">Searching…</p>;
@@ -69,10 +71,24 @@ export function DiscoveryResults({
   return (
     <div className="flex h-full flex-col">
       <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
-        <p className="text-sm text-text-primary">
-          <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
-          {result.total === 1 ? "parcel" : "parcels"}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-text-primary">
+            <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
+            {result.total === 1 ? "parcel" : "parcels"}
+          </p>
+          {onExport && result.total > 0 && (
+            <button
+              type="button"
+              onClick={onExport}
+              className="inline-flex items-center gap-1 text-[11px] text-accent transition-colors hover:text-accent/80"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Export CSV
+            </button>
+          )}
+        </div>
 
         {diagnostics.droppedInvalid.length > 0 && (
           <p className="text-[11px] text-amber-400/80">

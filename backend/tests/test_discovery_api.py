@@ -365,3 +365,86 @@ def test_search_pins_returns_json_not_spa_fallback(client):
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
     assert "points" in r.json()
+
+
+# --- PR7: /search/export (full match set, server-side, premium-gated CSV) ----------------
+
+
+def _csv_rows(text: str) -> list[list[str]]:
+    import csv as _csv
+    import io as _io
+
+    return list(_csv.reader(_io.StringIO(text)))
+
+
+def test_export_streams_full_match_set_with_human_headers(client):
+    # Premium gate passes in dev mode (admin). Exports ALL matches, not a window.
+    r = client.post("/api/discovery/search/export", json={
+        "userFilters": {"land_use": {"kind": "enum", "values": ["residential"]}},
+        "limit": 1,  # a tiny list window must NOT shrink the export
+    })
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "attachment; filename=" in r.headers["content-disposition"]
+    rows = _csv_rows(r.text)
+    header, *data = rows
+    # Hand-authored labels, not snake_case field ids.
+    assert "PIN" in header and "Property use" in header and "Assessed value" in header
+    assert "land_use" not in header and "land_use_class" not in header
+    # Full set: both residential parcels (p1, p3), regardless of the limit:1 window.
+    assert {row[0] for row in data} == {"p1", "p3"}
+
+
+def test_export_order_matches_search(client):
+    payload = {"sort": {"key": "lot_size", "dir": "desc"}}
+    search = client.post("/api/discovery/search", json=payload).json()
+    exported = _csv_rows(client.post("/api/discovery/search/export", json=payload).text)
+    pins_in_csv = [row[0] for row in exported[1:]]
+    assert pins_in_csv == [r["pin"] for r in search["result"]["rows"]] == ["p2", "p1", "p3"]
+
+
+def test_export_keeps_real_assessed_value_for_exempt(tmp_path):
+    _exempt_snapshot(tmp_path)  # c = exempt w/ real 9M, d = $0
+    try:
+        rows = _csv_rows(TestClient(app).post("/api/discovery/search/export", json={}).text)
+        header = rows[0]
+        av_col = header.index("Assessed value")
+        by_pin = {row[0]: row for row in rows[1:]}
+        assert by_pin["c"][av_col] == "9000000"  # exempt → true value, honest
+        assert by_pin["d"][av_col] == "0"  # $0 → true value
+    finally:
+        parcel_source._current_version = None
+        parcel_source._current_meta = None
+        default_source.clear()
+
+
+def test_export_filename_reflects_filters_and_version(client):
+    r = client.post("/api/discovery/search/export", json={
+        "userFilters": {"tif": {"kind": "flag", "value": True}},
+    })
+    cd = r.headers["content-disposition"]
+    assert "discovery_tif_" in cd
+    assert "api-test-v1" in cd and cd.endswith('.csv"')
+
+
+def test_export_is_premium_gated(client, monkeypatch):
+    import backend.auth as auth
+
+    async def _free(_request):
+        return {"id": "u", "email": "e", "tier": "free"}
+
+    monkeypatch.setattr(auth, "get_current_user", _free)
+    r = client.post("/api/discovery/search/export", json={})
+    assert r.status_code == 403
+    assert r.json()["detail"]["error"] == "upgrade_required"
+
+
+def test_export_requires_auth(client, monkeypatch):
+    import backend.auth as auth
+
+    async def _anon(_request):
+        return None
+
+    monkeypatch.setattr(auth, "get_current_user", _anon)
+    r = client.post("/api/discovery/search/export", json={})
+    assert r.status_code == 401

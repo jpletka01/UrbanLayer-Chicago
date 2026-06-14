@@ -13,7 +13,7 @@ import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
 import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { loadRegistry } from "./registryClient";
-import { runPins, runSearch, type SearchInputs } from "./searchClient";
+import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
 import { summarize } from "./summary";
 import type {
   PanelState,
@@ -124,6 +124,12 @@ export default function DiscoveryPage() {
     [response, sort, runWith],
   );
 
+  // Full-match-set CSV of the issued query (server-side, premium-gated). loadMore's window
+  // is irrelevant — the export re-runs the same envelope server-side.
+  const onExport = useCallback(() => {
+    if (registry && lastInputs.current) exportCsv(lastInputs.current, registry);
+  }, [registry]);
+
   const onOpenParcel = useCallback(
     (pin: string) => navigate(`/scorecard?pin=${pin.replace(/\D/g, "")}`),
     [navigate],
@@ -201,6 +207,7 @@ export default function DiscoveryPage() {
                 onOpenParcel={onOpenParcel}
                 hoveredPin={hoveredPin}
                 onHoverPin={setHoveredPin}
+                onExport={onExport}
               />
             )}
           </div>

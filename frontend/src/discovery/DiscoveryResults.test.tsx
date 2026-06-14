@@ -101,4 +101,27 @@ describe("DiscoveryResults row-cards", () => {
     expect(screen.getByText("17-06-426-013-0000")).toBeTruthy(); // PIN still present, demoted
     expect(screen.getByText(/Upside 86/)).toBeTruthy();
   });
+
+  it("shows the Export CSV button (with results) and fires onExport", () => {
+    const response = resp(
+      { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
+      { result: { rows: [], total: 5, nextOffset: null } },
+    );
+    const onExport = vi.fn();
+    render(
+      <DiscoveryResults {...baseProps} registry={reg()} rows={[]} response={response} onRelax={noop} onExport={onExport} />,
+    );
+    fireEvent.click(screen.getByText(/Export CSV/));
+    expect(onExport).toHaveBeenCalled();
+  });
+
+  it("hides the Export CSV button when there are zero results", () => {
+    const response = resp(
+      { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
+    ); // total 0
+    render(
+      <DiscoveryResults {...baseProps} registry={reg({ populatedFields: ["land_use"] })} rows={[]} response={response} onRelax={noop} onExport={() => {}} />,
+    );
+    expect(screen.queryByText(/Export CSV/)).toBeNull();
+  });
 });

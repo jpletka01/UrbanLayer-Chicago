@@ -2,7 +2,7 @@
 // The envelope carries raw inputs (userFilters + topicId + text + sort + scope) — the
 // backend compiles, merges, evaluates, and echoes back the canonical CQS.
 
-import { discoverySearch, discoverySearchPins } from "../lib/api";
+import { discoveryExportCsv, discoverySearch, discoverySearchPins } from "../lib/api";
 import { compilePanel } from "./uiCompiler";
 import type {
   PanelState,
@@ -53,4 +53,10 @@ export async function runPins(
   registry: Registry,
 ): Promise<PinsResponse | null> {
   return discoverySearchPins(buildRequest(inputs, registry));
+}
+
+/** Download the full match set as CSV (server-side, premium-gated). Same envelope, so the
+ * export is exactly what was filtered, in the same order. */
+export async function exportCsv(inputs: SearchInputs, registry: Registry): Promise<boolean> {
+  return discoveryExportCsv(buildRequest(inputs, registry));
 }

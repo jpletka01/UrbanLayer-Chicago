@@ -701,6 +701,31 @@ export async function discoverySearchPins(
   } catch { return null; }
 }
 
+// Full-match-set CSV export (PR7). Premium-gated server-side (free tier → 403). Streams the
+// whole result set; the browser downloads it. Returns false on failure (e.g. not premium).
+export async function discoveryExportCsv(req: DiscoverySearchRequest): Promise<boolean> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/search/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!resp.ok) return false;
+    const blob = await resp.blob();
+    const cd = resp.headers.get("Content-Disposition") ?? "";
+    const filename = /filename="?([^"]+)"?/.exec(cd)?.[1] ?? "discovery.csv";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return true;
+  } catch { return false; }
+}
+
 // --- Transit Stations ---
 
 let _transitStationsCache: import("./types").TransitStation[] | null = null;

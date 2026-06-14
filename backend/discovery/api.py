@@ -8,11 +8,18 @@ that knows nothing about the wire (09).
 
 from __future__ import annotations
 
+import csv
+import io
 import logging
+import re
+from datetime import datetime, timezone
+from typing import Iterator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from backend.auth import require_tier
 from backend.discovery import parcel as parcel_mod
 from backend.discovery import parcel_source
 from backend.discovery.compile_merge import merge
@@ -263,4 +270,99 @@ def search_pins(req: SearchRequest) -> PinsResponse:
         total=result.total,
         points=points,
         truncated=result.total > MAX_MAP_POINTS,
+    )
+
+
+# CSV export columns: (ResultRow attr, header). A header given as ("filter", id) is sourced
+# from that filter's hand-authored registry label — never a snake_case field id. The CSV is
+# the deliverable a prospector takes to a spreadsheet, so every header reads in English.
+_EXPORT_COLUMNS: list[tuple[str, str | tuple[str, str]]] = [
+    ("pin", "PIN"),
+    ("address", "Address"),
+    ("community_area", "Community area"),
+    ("land_use", ("filter", "land_use")),
+    ("parcel_class", "Class"),
+    ("lot_sqft", ("filter", "lot_size")),
+    ("bldg_sqft", ("filter", "building_size")),
+    ("year_built", ("filter", "year_built")),
+    ("units", ("filter", "units")),
+    ("assessed_value", ("filter", "assessed_value")),
+    ("price_per_sf", ("filter", "price_per_sf")),
+    ("last_sale_price", ("filter", "last_sale_price")),
+    ("last_sale_date", "Last sale date"),
+    ("improvement_ratio", ("filter", "improvement_ratio")),
+    ("value_percentile", ("filter", "value_percentile")),
+    ("upside_score", ("filter", "upside_score")),
+    ("is_teardown_candidate", ("filter", "is_teardown_candidate")),
+    ("lat", "Latitude"),
+    ("lon", "Longitude"),
+]
+
+
+def _export_headers(registry: Registry) -> list[str]:
+    out: list[str] = []
+    for _attr, header in _EXPORT_COLUMNS:
+        if isinstance(header, tuple):
+            out.append(registry.filter_def(header[1]).label or header[1])
+        else:
+            out.append(header)
+    return out
+
+
+def _csv_cell(row: ResultRow, attr: str) -> object:
+    value = getattr(row, attr)
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, float) and value.is_integer():
+        return int(value)  # 9000000 not 9000000.0 — clean for a spreadsheet
+    return "" if value is None else value
+
+
+def _export_filename(cqs: CQS, data_version: str) -> str:
+    # Slug from the canonical CQS filter ids — the same source the FE summarize() reads, so
+    # the filename reflects exactly what was filtered. Plus dataVersion + date.
+    ids = sorted(cqs.filters.keys())
+    raw = "-".join(ids) if ids else "all"
+    slug = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-") or "all"
+    date = datetime.now(timezone.utc).date().isoformat()
+    name = f"discovery_{slug[:60]}_{data_version}_{date}.csv"
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", name)
+
+
+def _export_stream(cqs: CQS, result: OrderedResult, data_version: str) -> Iterator[str]:
+    """Yield the FULL match set as CSV, in evaluated order — never the list window."""
+    registry = load_registry()
+    sort_field = registry.sort_field(cqs.sort.key)
+    by_pin = _pin_lookup(data_version)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    def flush() -> str:
+        out = buf.getvalue()
+        buf.seek(0)
+        buf.truncate(0)
+        return out
+
+    writer.writerow(_export_headers(registry))
+    yield flush()
+    for pin in result.pins:  # ALL rows, no limit/offset
+        parcel = by_pin.get(pin)
+        if parcel is None:
+            continue
+        row = _row_from_parcel(parcel, sort_field)
+        writer.writerow([_csv_cell(row, attr) for attr, _h in _EXPORT_COLUMNS])
+        yield flush()
+
+
+@router.post("/search/export")
+def search_export(req: SearchRequest, _user: dict = Depends(require_tier("premium"))) -> StreamingResponse:
+    # Premium-gated (free tier → 403). Exports the FULL match set, server-side, via the same
+    # _resolve path as /search and /search/pins — so the CSV is exactly what the user
+    # filtered, in the same order, independent of any list pagination.
+    cqs, result, _dropped, data_version = _resolve(req)
+    filename = _export_filename(cqs, data_version)
+    return StreamingResponse(
+        _export_stream(cqs, result, data_version),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
