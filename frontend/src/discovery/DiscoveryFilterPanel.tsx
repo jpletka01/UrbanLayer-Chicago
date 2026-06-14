@@ -3,7 +3,7 @@
 // PanelState. Region filters: only `neighborhood` is wired to data today (community-area
 // multiselect); `ward`/`radius` are shown disabled until the index populates them.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   COMMUNITY_AREAS,
   NEIGHBORHOOD_PREFIX,
@@ -44,27 +44,51 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
     return map;
   }, [registry]);
 
+  // PR8 IA: categories collapse by default (refinement drawer, not the front door). A
+  // category auto-expands when it holds an active filter — so a recipe's set fields are
+  // visible — and the user can toggle any category open/closed.
+  const [openCats, setOpenCats] = useState<Set<FilterCategory>>(new Set());
+  const toggle = (cat: FilterCategory) =>
+    setOpenCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {CATEGORY_ORDER.map((cat) => {
         const defs = byCategory.get(cat);
         if (!defs?.length) return null;
+        const activeCount = defs.filter((d) => state[d.id]).length;
+        const expanded = activeCount > 0 || openCats.has(cat);
         return (
           <div key={cat}>
-            <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
-              {CATEGORY_LABELS[cat]}
-            </h3>
-            <div className="space-y-3">
-              {defs.map((def) => (
-                <Control
-                  key={def.id}
-                  def={def}
-                  value={state[def.id]}
-                  populated={isPopulated(registry, def.id)}
-                  onChange={onChange}
-                />
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={() => toggle(cat)}
+              aria-expanded={expanded}
+              className="flex w-full items-center justify-between text-[10px] uppercase tracking-wider text-text-muted transition-colors hover:text-text-secondary"
+            >
+              <span>
+                {CATEGORY_LABELS[cat]}
+                {activeCount > 0 && <span className="ml-1 text-accent">({activeCount})</span>}
+              </span>
+              <span aria-hidden>{expanded ? "−" : "+"}</span>
+            </button>
+            {expanded && (
+              <div className="mt-2 space-y-3">
+                {defs.map((def) => (
+                  <Control
+                    key={def.id}
+                    def={def}
+                    value={state[def.id]}
+                    populated={isPopulated(registry, def.id)}
+                    onChange={onChange}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         );
       })}

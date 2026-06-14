@@ -12,9 +12,11 @@ import { CoverageBanner } from "./CoverageBanner";
 import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
 import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
+import { RecipeShelf } from "./RecipeShelf";
 import { loadRegistry } from "./registryClient";
 import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
 import { summarize } from "./summary";
+import { expandTopic, panelFromCqs } from "./topicCompiler";
 import type {
   PanelState,
   PinPoint,
@@ -23,6 +25,7 @@ import type {
   ResultRow,
   SearchResponse,
   SortSpec,
+  TopicDef,
 } from "./types";
 
 export default function DiscoveryPage() {
@@ -34,6 +37,9 @@ export default function DiscoveryPage() {
   const [panelState, setPanelState] = useState<PanelState>({});
   const [text, setText] = useState("");
   const [sort, setSort] = useState<SortSpec | null>(null);
+  // Active recipe id — telemetry only (sent as topicId; the backend never re-expands).
+  // Cleared the moment the user edits the panel/text, so it never misreports the query.
+  const [topicId, setTopicId] = useState<string | null>(null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   // The accumulated result-list window (page 0 + appended pages, deduped by pin). This is
   // the list ONLY — the map (PR6) fetches the full coord set separately; the list is never
@@ -61,13 +67,13 @@ export default function DiscoveryPage() {
   }, []);
 
   const runWith = useCallback(
-    async (state: PanelState, txt: string, srt: SortSpec | null) => {
+    async (state: PanelState, txt: string, srt: SortSpec | null, tid: string | null = null) => {
       if (!registry) return;
       if (!isPro) {
         setShowUpgrade(true);
         return;
       }
-      const inputs: SearchInputs = { panelState: state, text: txt, sort: srt };
+      const inputs: SearchInputs = { panelState: state, text: txt, sort: srt, topicId: tid };
       lastInputs.current = inputs;
       setLoading(true);
       // List + map fetched in parallel: list is the paginated window; map is the full
@@ -99,7 +105,9 @@ export default function DiscoveryPage() {
     setLoadingMore(false);
   }, [registry, nextOffset, loadingMore]);
 
+  // Any manual panel edit means the query is no longer "the recipe" → drop the telemetry id.
   const onPanelChange = useCallback((id: string, predicate: Predicate | null) => {
+    setTopicId(null);
     setPanelState((prev) => {
       const next = { ...prev };
       if (predicate === null) delete next[id];
@@ -108,18 +116,40 @@ export default function DiscoveryPage() {
     });
   }, []);
 
+  const onTextChange = useCallback((value: string) => {
+    setTopicId(null);
+    setText(value);
+  }, []);
+
+  // Recipe click (PR8): expand the topic's presets into panel state as plain user filters
+  // (editable/removable), apply its sort, send topicId for telemetry, and search. The
+  // backend does NOT re-expand — userFilters carries the expanded set.
+  const onPickRecipe = useCallback(
+    (topic: TopicDef) => {
+      if (!registry) return;
+      const presets = expandTopic(topic.id, registry);
+      const srt = topic.defaultSort ?? registry.defaultSort;
+      setPanelState(presets);
+      setText("");
+      setSort(srt);
+      setTopicId(topic.id);
+      runWith(presets, "", srt, topic.id);
+    },
+    [registry, runWith],
+  );
+
   // One-tap re-issue (06): fold the evaluated CQS back into the panel (so text-derived
-  // constraints persist + stay editable), drop the chosen filter, and re-search.
+  // constraints persist + stay editable), drop the chosen filter, and re-search. Never
+  // re-expands a topic; clears the telemetry id since the query is now user-edited.
   const onRelax = useCallback(
     (filterId: string) => {
       if (!response) return;
-      const next: PanelState = {};
-      for (const [fid, a] of Object.entries(response.cqs.filters)) {
-        if (fid !== filterId) next[fid] = a.predicate;
-      }
+      const next = panelFromCqs(response.cqs);
+      delete next[filterId];
       setPanelState(next);
       setText("");
-      runWith(next, "", sort);
+      setTopicId(null);
+      runWith(next, "", sort, null);
     },
     [response, sort, runWith],
   );
@@ -148,23 +178,23 @@ export default function DiscoveryPage() {
             <div>
               <h1 className="text-lg font-semibold tracking-tight">Property Discovery</h1>
               <p className="text-[11px] text-text-muted">
-                Filter Chicago parcels by use, zoning, incentives, and more.
+                Start with a goal or describe what you're looking for — then refine.
               </p>
             </div>
             <input
               type="text"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => onTextChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") runWith(panelState, text, sort);
+                if (e.key === "Enter") runWith(panelState, text, sort, topicId);
               }}
-              placeholder='Try "vacant multifamily in a tif zone, built after 1990"'
+              placeholder='Describe what you want — e.g. "vacant multifamily near the L, built after 1990"'
               className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => runWith(panelState, text, sort)}
+                onClick={() => runWith(panelState, text, sort, topicId)}
                 disabled={!registry || loading}
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
@@ -176,9 +206,17 @@ export default function DiscoveryPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 space-y-5 overflow-y-auto p-4">
             {registry ? (
-              <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
+              <>
+                <RecipeShelf registry={registry} onPick={onPickRecipe} />
+                <div>
+                  <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
+                    Refine
+                  </h3>
+                  <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
+                </div>
+              </>
             ) : (
               <p className="text-sm text-text-muted">Loading filters…</p>
             )}
