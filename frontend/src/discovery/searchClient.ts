@@ -12,6 +12,8 @@ export interface SearchInputs {
   text?: string | null;
   sort?: SortSpec | null;
   scope?: SpatialScope | null;
+  offset?: number; // infinite-scroll window start (omitted = page 0)
+  limit?: number; // window size (omitted = server default)
 }
 
 /** Build the wire envelope. `userFilters` is the compiled panel (cleared controls dropped). */
@@ -24,6 +26,8 @@ export function buildRequest(inputs: SearchInputs, registry: Registry): SearchRe
   if (inputs.text && inputs.text.trim()) req.text = inputs.text.trim();
   if (inputs.sort) req.sort = inputs.sort;
   if (inputs.scope && inputs.scope.mode !== "all") req.scope = inputs.scope;
+  if (inputs.offset != null) req.offset = inputs.offset;
+  if (inputs.limit != null) req.limit = inputs.limit;
   return req;
 }
 

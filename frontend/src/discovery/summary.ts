@@ -1,21 +1,26 @@
 // Plain-English summary (08) — pure, rendered from response.cqs (INV-4), never from
 // pre-send panel state. Deterministic: equal CQS → equal text.
 
+import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import type { CQS, FilterDef, Predicate, Registry } from "./types";
 
 function humanize(s: string): string {
   return s.replace(/_/g, " ");
 }
 
+function regionName(ref: string): string {
+  return ref.startsWith(NEIGHBORHOOD_PREFIX) ? caName(ref) : humanize(ref);
+}
+
 function phrase(id: string, p: Predicate, def?: FilterDef): string {
-  const label = humanize(id);
+  const label = def?.label ?? humanize(id);
   switch (p.kind) {
     case "flag":
       return p.value ? label : `not ${label}`;
     case "enum":
       return `${label}: ${p.values.map(humanize).join(" or ")}`;
     case "region":
-      return `${label}: ${p.regions.map(humanize).join(" or ")}`;
+      return `${label}: ${p.regions.map(regionName).join(" or ")}`;
     case "range": {
       const unit = def?.unit ? ` ${def.unit}` : "";
       if (p.min != null && p.max != null) return `${label} ${p.min}–${p.max}${unit}`;

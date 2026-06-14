@@ -30,4 +30,18 @@ describe("summarize", () => {
     const b = summarize({ ...cqs, meta: { topicId: "x", rawText: "y" } }, REG);
     expect(a).toBe(b);
   });
+
+  it("names neighborhood regions (West Town, not neighborhood:24)", () => {
+    const c: CQS = {
+      filters: {
+        neighborhood: { predicate: { kind: "region", regions: ["neighborhood:24"] }, source: "user" },
+      },
+      sort: { key: "pin", dir: "asc" },
+      scope: { mode: "all" },
+      meta: {},
+    };
+    const s = summarize(c, REG);
+    expect(s).toContain("West Town");
+    expect(s).not.toContain("neighborhood:24");
+  });
 });

@@ -1,6 +1,7 @@
 // Filter chips (08) — rendered from response.cqs (INV-4: display == evaluated), each with a
 // remove button that fires a one-tap re-issue (drop that filter, re-search; 06).
 
+import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import type { CQS, FilterDef, Predicate, Registry } from "./types";
 
 function humanize(s: string): string {
@@ -8,13 +9,14 @@ function humanize(s: string): string {
 }
 
 function regionLabel(ref: string): string {
-  // "neighborhood:24" / "ward:1" / "radius:..." → human-ish
+  // "neighborhood:24" → "West Town"; "ward:1"/"radius:..." → human-ish
+  if (ref.startsWith(NEIGHBORHOOD_PREFIX)) return caName(ref);
   const [kind, rest] = ref.split(":", 2);
   return rest ? `${humanize(kind)} ${rest}` : humanize(ref);
 }
 
 export function chipLabel(id: string, p: Predicate, def?: FilterDef): string {
-  const label = humanize(id);
+  const label = def?.label ?? humanize(id);
   switch (p.kind) {
     case "flag":
       return p.value ? label : `no ${label}`;

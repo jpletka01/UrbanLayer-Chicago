@@ -2,7 +2,7 @@
 // the search, and renders summary + chips + results FROM response.cqs (INV-4). Premium-gated
 // like the Site Explorer. The page never evaluates or filters — that is the backend's job.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../contexts/AuthContext";
 import PageHeader from "./../components/PageHeader";
@@ -12,9 +12,9 @@ import { CoverageBanner } from "./CoverageBanner";
 import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { loadRegistry } from "./registryClient";
-import { runSearch } from "./searchClient";
+import { runSearch, type SearchInputs } from "./searchClient";
 import { summarize } from "./summary";
-import type { PanelState, Predicate, Registry, SearchResponse, SortSpec } from "./types";
+import type { PanelState, Predicate, Registry, ResultRow, SearchResponse, SortSpec } from "./types";
 
 export default function DiscoveryPage() {
   const { user } = useAuthContext();
@@ -26,8 +26,17 @@ export default function DiscoveryPage() {
   const [text, setText] = useState("");
   const [sort, setSort] = useState<SortSpec | null>(null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
+  // The accumulated result-list window (page 0 + appended pages, deduped by pin). This is
+  // the list ONLY — the map (PR6) fetches the full coord set separately; the list is never
+  // the source of truth for the map.
+  const [rows, setRows] = useState<ResultRow[]>([]);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  // The inputs of the *issued* search, so loadMore re-issues the same query (later page) —
+  // independent of any edits the user makes to the panel before scrolling.
+  const lastInputs = useRef<SearchInputs | null>(null);
 
   useEffect(() => {
     loadRegistry().then((reg) => {
@@ -43,13 +52,32 @@ export default function DiscoveryPage() {
         setShowUpgrade(true);
         return;
       }
+      const inputs: SearchInputs = { panelState: state, text: txt, sort: srt };
+      lastInputs.current = inputs;
       setLoading(true);
-      const resp = await runSearch({ panelState: state, text: txt, sort: srt }, registry);
+      const resp = await runSearch(inputs, registry);
       setResponse(resp);
+      setRows(resp?.result.rows ?? []);
+      setNextOffset(resp?.result.nextOffset ?? null);
       setLoading(false);
     },
     [registry, isPro],
   );
+
+  // Infinite scroll: fetch the next window, append + dedupe by pin, advance the cursor.
+  const loadMore = useCallback(async () => {
+    if (!registry || nextOffset == null || loadingMore || !lastInputs.current) return;
+    setLoadingMore(true);
+    const resp = await runSearch({ ...lastInputs.current, offset: nextOffset }, registry);
+    if (resp) {
+      setRows((prev) => {
+        const seen = new Set(prev.map((r) => r.pin));
+        return [...prev, ...resp.result.rows.filter((r) => !seen.has(r.pin))];
+      });
+      setNextOffset(resp.result.nextOffset);
+    }
+    setLoadingMore(false);
+  }, [registry, nextOffset, loadingMore]);
 
   const onPanelChange = useCallback((id: string, predicate: Predicate | null) => {
     setPanelState((prev) => {
@@ -143,8 +171,12 @@ export default function DiscoveryPage() {
             {registry && (
               <DiscoveryResults
                 response={response}
-                loading={loading}
+                rows={rows}
                 registry={registry}
+                loading={loading}
+                loadingMore={loadingMore}
+                hasMore={nextOffset != null}
+                onLoadMore={loadMore}
                 onRelax={onRelax}
                 onOpenParcel={onOpenParcel}
               />
