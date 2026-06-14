@@ -1,4 +1,4 @@
-"""Step 7 tests — wire contracts for /discovery/registry and /discovery/search (07)."""
+"""Step 7 tests — wire contracts for /api/discovery/registry and /api/discovery/search (07)."""
 
 from __future__ import annotations
 
@@ -24,11 +24,11 @@ def client():
     default_source.clear()
 
 
-# --- GET /discovery/registry ------------------------------------------------
+# --- GET /api/discovery/registry ------------------------------------------------
 
 
 def test_registry_endpoint(client):
-    r = client.get("/discovery/registry")
+    r = client.get("/api/discovery/registry")
     assert r.status_code == 200
     body = r.json()
     assert body["version"]
@@ -36,11 +36,11 @@ def test_registry_endpoint(client):
     assert body["defaultSort"] == {"key": "pin", "dir": "asc"}
 
 
-# --- POST /discovery/search -------------------------------------------------
+# --- POST /api/discovery/search -------------------------------------------------
 
 
 def test_search_ui_filter(client):
-    r = client.post("/discovery/search", json={
+    r = client.post("/api/discovery/search", json={
         "userFilters": {"land_use": {"kind": "enum", "values": ["residential"]}},
     })
     assert r.status_code == 200
@@ -54,7 +54,7 @@ def test_search_ui_filter(client):
 
 
 def test_search_text_is_compiled_server_side(client):
-    r = client.post("/discovery/search", json={"text": "tif"})
+    r = client.post("/api/discovery/search", json={"text": "tif"})
     body = r.json()
     assert body["result"]["pins"] == ["p1", "p2"]
     assert body["cqs"]["filters"]["tif"]["source"] == "text"
@@ -62,7 +62,7 @@ def test_search_text_is_compiled_server_side(client):
 
 
 def test_search_user_and_text_merge(client):
-    r = client.post("/discovery/search", json={
+    r = client.post("/api/discovery/search", json={
         "userFilters": {"land_use": {"kind": "enum", "values": ["residential"]}},
         "text": "tif",
     })
@@ -72,7 +72,7 @@ def test_search_user_and_text_merge(client):
 
 
 def test_search_empty_returns_all_and_broad(client):
-    r = client.post("/discovery/search", json={})
+    r = client.post("/api/discovery/search", json={})
     body = r.json()
     assert body["result"]["total"] == 3
     assert body["diagnostics"]["broad"] is True  # 0 filters < broadMinFilters
@@ -80,7 +80,7 @@ def test_search_empty_returns_all_and_broad(client):
 
 
 def test_search_sort_override(client):
-    r = client.post("/discovery/search", json={"sort": {"key": "lot_size", "dir": "desc"}})
+    r = client.post("/api/discovery/search", json={"sort": {"key": "lot_size", "dir": "desc"}})
     body = r.json()
     # 8000(p2), 5000(p1), 4000(p3)
     assert body["result"]["pins"] == ["p2", "p1", "p3"]
@@ -88,7 +88,7 @@ def test_search_sort_override(client):
 
 
 def test_search_drops_invalid_predicate_and_reports_it(client):
-    r = client.post("/discovery/search", json={
+    r = client.post("/api/discovery/search", json={
         "userFilters": {"land_use": {"kind": "enum", "values": []}},  # empty enum → dropped
     })
     body = r.json()
@@ -98,7 +98,7 @@ def test_search_drops_invalid_predicate_and_reports_it(client):
 
 
 def test_search_zero_result_includes_most_restrictive(client):
-    r = client.post("/discovery/search", json={
+    r = client.post("/api/discovery/search", json={
         "userFilters": {
             "land_use": {"kind": "enum", "values": ["industrial"]},  # none match
             "tif": {"kind": "flag", "value": True},
@@ -112,7 +112,7 @@ def test_search_zero_result_includes_most_restrictive(client):
 
 def test_search_is_deterministic_across_the_wire(client):
     payload = {"userFilters": {"land_use": {"kind": "enum", "values": ["residential"]}}}
-    first = client.post("/discovery/search", json=payload).json()
-    second = client.post("/discovery/search", json=payload).json()
+    first = client.post("/api/discovery/search", json=payload).json()
+    second = client.post("/api/discovery/search", json=payload).json()
     assert first["cqs"] == second["cqs"]
     assert first["result"]["pins"] == second["result"]["pins"]

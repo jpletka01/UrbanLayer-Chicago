@@ -71,7 +71,7 @@ branch `feat/discovery-evaluator-core` (not deployed). Spec + decisions:
 - **Data** `parcel_index.py` (`IndexedParcel` + SQLite) + `index_build.py` (offline builder CLI:
   `python -m backend.discovery.index_build --community-areas 24 | --all`) → `discovery_index.db`
   under `ingestion/data/`. `parcel_source.ensure_loaded()` loads it (empty fallback until built).
-- **API** `api.py`: `GET /discovery/registry`, `POST /discovery/search` (mounted in `main.py`,
+- **API** `api.py`: `GET /api/discovery/registry`, `POST /api/discovery/search` (mounted in `main.py`,
   `ensure_loaded()` at startup). Wire: `parse → merge → evaluate → build`, echoes canonical CQS.
 - **Tests:** `backend/tests/test_discovery_*.py` (131). Mock Socrata + polygon layers.
 - **Remaining:** live index build (blocked by 2026-06-13 Socrata 503 outage); deferred index

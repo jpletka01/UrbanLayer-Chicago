@@ -665,7 +665,7 @@ export async function fetchExploreMap(params: {
 
 export async function fetchDiscoveryRegistry(): Promise<DiscoveryRegistry | null> {
   try {
-    const resp = await authFetch(`${API_BASE}/discovery/registry`);
+    const resp = await authFetch(`${API_BASE}/api/discovery/registry`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
@@ -675,7 +675,7 @@ export async function discoverySearch(
   req: DiscoverySearchRequest,
 ): Promise<DiscoverySearchResponse | null> {
   try {
-    const resp = await authFetch(`${API_BASE}/discovery/search`, {
+    const resp = await authFetch(`${API_BASE}/api/discovery/search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),

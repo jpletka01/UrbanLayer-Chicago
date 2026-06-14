@@ -24,7 +24,10 @@ from backend.discovery.registry import load as load_registry
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/discovery", tags=["discovery"])
+# Mounted under /api so the production nginx (which proxies only /api/, /chat, /health,
+# /autocomplete, /section/ to the backend) routes it — and so it never collides with the
+# frontend's /discovery page route.
+router = APIRouter(prefix="/api/discovery", tags=["discovery"])
 
 
 class SearchRequest(BaseModel):

@@ -12,7 +12,7 @@
 | `discovery/diagnostics.py` | broad, conflicts, droppedInvalid, excludedUnknown, mostRestrictive | evaluator (black-box), registry |
 | `discovery/compile_text.py` | deterministic text → fragment + residual | registry |
 | `discovery/compile_merge.py` | precedence merge + compile-time validation → canonical CQS | registry |
-| `discovery/api.py` | `/discovery/registry`, `/discovery/search` | all above |
+| `discovery/api.py` | `/api/discovery/registry`, `/api/discovery/search` | all above |
 
 ### Frontend (React / TS)
 | Module | Responsibility |
@@ -20,7 +20,7 @@
 | `discovery/registryClient.ts` | fetch/cache registry; staleness check |
 | `discovery/uiCompiler.ts` | panel control state → `userFilters` (source:user) |
 | `discovery/topicCompiler.ts` | topicId → preset values (static registry expand) |
-| `discovery/searchClient.ts` | build `SearchRequest`, call `/discovery/search` |
+| `discovery/searchClient.ts` | build `SearchRequest`, call `/api/discovery/search` |
 | `discovery/chips.tsx` + `summary.ts` | render chips + plain-English summary **from response.cqs** |
 | `discovery/results/` | map + list rendering, render-cap, empty/broad/conflict affordances |
 

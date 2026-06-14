@@ -30,7 +30,7 @@ frontend **17 tests** (new vitest runner). `tsc --noEmit` clean; production buil
 | `parcel_index.py` | index | `IndexedParcel` (concrete Parcel) + SQLite read/write of the prospecting index |
 | `index_build.py` | index | Offline builder CLI (`--community-areas` / `--all`): spine → batch joins → local spatial pass → assemble → upsert |
 | `parcel_source.py` | 7/index | Production snapshot seam + current-dataVersion pointer; `ensure_loaded()` loads `discovery_index.db` else empty fallback |
-| `api.py` | 7 | `GET /discovery/registry`, `POST /discovery/search` — wires parse→merge→evaluate→build |
+| `api.py` | 7 | `GET /api/discovery/registry`, `POST /api/discovery/search` — wires parse→merge→evaluate→build |
 
 Mounted in `backend/main.py` (router include + `ensure_loaded()` in `@app.on_event("startup")`).
 
@@ -137,6 +137,16 @@ invariants literally true. **Revisit here first** if behavior surprises you late
     `@vitejs/plugin-react` path left the classic runtime expecting React in scope). Test files
     excluded from `tsconfig.app.json` so the prod build never depends on test-only type deps.
 
+19. **API mounted at `/api/discovery/*`, not `/discovery/*`** (caught at first deploy). The
+    spec (03/07) wrote `/discovery/registry` + `/discovery/search`, but the production nginx
+    only proxies `/api/`, `/chat`, `/health`, `/autocomplete`, `/section/` to the backend — so
+    `/discovery/*` fell through to the SPA fallback (returned `index.html`, not JSON) and never
+    reached FastAPI. The bare `/discovery` route is also the **frontend page**, so the `/api`
+    prefix avoids that collision too. Fixed: router prefix + `api.ts` URLs + spec docs now use
+    `/api/discovery/*`. Lesson: **put new endpoints under `/api/`** (or add an nginx `location`
+    in both `nginx.conf` + `nginx.prod.conf`), and verify a deploy by asserting the response is
+    **JSON**, not just HTTP 200 (a 200 can be the SPA fallback).
+
 ---
 
 ## What remains
@@ -146,7 +156,7 @@ invariants literally true. **Revisit here first** if behavior surprises you late
   **503** across the board on 2026-06-13, blocking the live one-CA proof — the pipeline logic
   is fully covered by mocked tests). `python -m backend.discovery.index_build
   --community-areas 24` (or `--all`), then restart backend so `ensure_loaded()` picks it up.
-  Until then `/discovery/search` correctly returns the empty-index fallback (`dataVersion
+  Until then `/api/discovery/search` correctly returns the empty-index fallback (`dataVersion
   discovery-empty-0`, total 0).
 - **Push `feat/discovery-evaluator-core` to `main`** (= deploy) — needs Jack's approval.
 
@@ -172,7 +182,7 @@ python -m pytest backend/tests/test_discovery_*.py -q          # 131 tests
 # frontend
 cd frontend && npx tsc --noEmit && npm test                    # 17 tests
 # live wire (backend running on :8001)
-curl -s localhost:8001/discovery/registry | jq '.version, (.filters|length)'
-curl -s -X POST localhost:8001/discovery/search -H 'content-type: application/json' \
+curl -s localhost:8001/api/discovery/registry | jq '.version, (.filters|length)'
+curl -s -X POST localhost:8001/api/discovery/search -H 'content-type: application/json' \
   -d '{"userFilters":{"tif":{"kind":"flag","value":true}},"text":"vacant"}' | jq '.result.total, (.cqs.filters|keys)'
 ```

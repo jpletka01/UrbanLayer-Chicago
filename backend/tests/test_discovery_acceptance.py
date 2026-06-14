@@ -32,7 +32,7 @@ def client():
 
 
 def _search(client, **payload) -> dict:
-    r = client.post("/discovery/search", json=payload)
+    r = client.post("/api/discovery/search", json=payload)
     assert r.status_code == 200
     return r.json()
 

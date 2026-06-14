@@ -1,7 +1,7 @@
 # 03 — Filter Registry
 
 The registry is a **single, versioned, static artifact** authored once, served by the backend at
-`GET /discovery/registry`, and consumed by both backend (compile + evaluate) and frontend (UI + topic
+`GET /api/discovery/registry`, and consumed by both backend (compile + evaluate) and frontend (UI + topic
 compile). One source ⇒ no FE/BE drift on predicate kinds or topic definitions.
 
 ## Registry schema

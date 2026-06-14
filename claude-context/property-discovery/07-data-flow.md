@@ -2,7 +2,7 @@
 
 ## Wire contracts
 
-### Request — `POST /discovery/search`
+### Request — `POST /api/discovery/search`
 The frontend sends a **pre-CQS envelope** (raw inputs), not a CQS. The backend compiles + merges +
 evaluates and returns the canonical CQS.
 
@@ -27,7 +27,7 @@ interface SearchResponse {
 }
 ```
 
-`GET /discovery/registry` → `Registry` (03). Cached by the FE; `registryVersion` mismatch on a search
+`GET /api/discovery/registry` → `Registry` (03). Cached by the FE; `registryVersion` mismatch on a search
 triggers a refetch.
 
 ## End-to-end sequence
@@ -37,7 +37,7 @@ triggers a refetch.
      - UI compiler (04.1) turns panel state into userFilters (source:user)
      - Topic compiler (04.2) pre-filled those values earlier; user edits already merged in
      - free text stays raw in `text`
-2. FE → POST /discovery/search { userFilters, topicId?, text?, sort?, scope?, registryVersion }
+2. FE → POST /api/discovery/search { userFilters, topicId?, text?, sort?, scope?, registryVersion }
 3. BE text compiler (04.3) parses `text` → text fragment (source:text) + residual
 4. BE merge (04.4): default ⊂ text ⊂ user  →  canonical CQS  (+ droppedInvalid/validation diagnostics)
 5. BE evaluate (05): filter → sort → OrderedResult, stamped with dataVersion
