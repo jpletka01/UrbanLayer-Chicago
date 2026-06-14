@@ -56,6 +56,27 @@ retrieval/
 - **External queries**: always use TTLCache, `httpx.AsyncClient`, return `None` on failure. All modules use shared HTTP clients (module-level `_get_X_client()` pattern, same as `socrata.py:get_shared_client()`). Functions accept optional `client` parameter for testing.
 - **Tests**: mock external APIs in unit tests, `@pytest.mark.integration` for real-API tests. Cache-clearing autouse fixture in `conftest.py`.
 
+## Property Discovery (`discovery/`)
+
+Deterministic parcel **filter + single-key sort** engine (no scoring). Built 2026-06-13 on
+branch `feat/discovery-evaluator-core` (not deployed). Spec + decisions:
+`claude-context/property-discovery/` (read `10-implementation-status.md` first).
+
+- **Invariant core:** `registry.py` (+`registry.json`, 29 filters) → `cqs.py` (CQS/Predicate
+  models, canonical equality) + `predicates.py` (`satisfies`/`within_scope`) → `evaluator.py`
+  (`evaluate(cqs, data_version)` — the ONLY result producer, INV-1, pure leaf).
+- **Diagnostics** `diagnostics.py` (advisory; `mostRestrictive` calls evaluate as a black box).
+- **Compilers** `compile_text.py` (deterministic rule-based text→fragment, never the LLM) +
+  `compile_merge.py` (the only writer of canonical CQS; precedence user>text>default).
+- **Data** `parcel_index.py` (`IndexedParcel` + SQLite) + `index_build.py` (offline builder CLI:
+  `python -m backend.discovery.index_build --community-areas 24 | --all`) → `discovery_index.db`
+  under `ingestion/data/`. `parcel_source.ensure_loaded()` loads it (empty fallback until built).
+- **API** `api.py`: `GET /discovery/registry`, `POST /discovery/search` (mounted in `main.py`,
+  `ensure_loaded()` at startup). Wire: `parse → merge → evaluate → build`, echoes canonical CQS.
+- **Tests:** `backend/tests/test_discovery_*.py` (131). Mock Socrata + polygon layers.
+- **Remaining:** live index build (blocked by 2026-06-13 Socrata 503 outage); deferred index
+  fields (OZ/ward/overlay/flood/transit/rollups) ship as a `data_version` bump, no code change.
+
 ## Production Configuration
 
 - **Retrieval concurrency**: `_RETRIEVAL_SEM = asyncio.Semaphore(8)` in `main.py` limits concurrent retrieval tasks in `_retrieve()` and `_fetch_map_rows()`. Increased from 4→8 after server upgrade to 8GB RAM (2026-06-06).

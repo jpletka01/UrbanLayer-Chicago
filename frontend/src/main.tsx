@@ -23,6 +23,7 @@ import { AdminDashboard } from './components/AdminDashboard.tsx'
 import PricingPage from './components/PricingPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
 import ExplorePage from './components/ExplorePage.tsx'
+import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
@@ -45,6 +46,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/s/:shareToken" element={<App />} />
             <Route path="/scorecard" element={<ScorecardPage />} />
             <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={

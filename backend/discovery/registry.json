@@ -1,0 +1,53 @@
+{
+  "version": "2026-06-13.1",
+  "broadMinFilters": 2,
+  "defaultSort": { "key": "pin", "dir": "asc" },
+  "sortKeys": [
+    { "key": "pin", "field": "pin" },
+    { "key": "lot_size", "field": "land_sqft" },
+    { "key": "building_size", "field": "bldg_sqft" },
+    { "key": "year_built", "field": "year_built" },
+    { "key": "assessed_value", "field": "total_assessed_value" },
+    { "key": "last_sale_price", "field": "last_sale_price" }
+  ],
+  "topics": [],
+  "filters": [
+    { "id": "neighborhood", "category": "location", "kind": "region", "field": "neighborhood", "unknownPolicy": "exclude" },
+    { "id": "ward", "category": "location", "kind": "region", "field": "ward", "unknownPolicy": "exclude" },
+    { "id": "radius", "category": "location", "kind": "region", "field": "centroid", "unknownPolicy": "exclude" },
+    { "id": "transit_proximity", "category": "location", "kind": "range", "field": "cta_rail_distance_mi", "unit": "mi", "unknownPolicy": "exclude" },
+
+    { "id": "land_use", "category": "property_use", "kind": "enum", "field": "land_use_class", "unknownPolicy": "exclude",
+      "enumValues": ["vacant", "residential", "multi_family", "commercial", "industrial", "mixed_use", "institutional", "exempt"] },
+    { "id": "vacancy", "category": "property_use", "kind": "flag", "field": "is_vacant", "unknownPolicy": "exclude", "contradicts": ["building_size"] },
+    { "id": "lot_size", "category": "property_use", "kind": "range", "field": "land_sqft", "unit": "sqft", "unknownPolicy": "exclude" },
+    { "id": "building_size", "category": "property_use", "kind": "range", "field": "bldg_sqft", "unit": "sqft", "unknownPolicy": "exclude" },
+    { "id": "year_built", "category": "property_use", "kind": "range", "field": "year_built", "unit": "year", "unknownPolicy": "exclude" },
+    { "id": "units", "category": "property_use", "kind": "range", "field": "units", "unit": "units", "unknownPolicy": "exclude" },
+
+    { "id": "zoning_group", "category": "zoning_dev", "kind": "enum", "field": "zoning_group", "unknownPolicy": "exclude",
+      "enumValues": ["residential", "business", "commercial", "manufacturing", "downtown", "planned_development"] },
+    { "id": "density_band", "category": "zoning_dev", "kind": "range", "field": "density_band", "unit": "far", "unknownPolicy": "exclude", "contradicts": [] },
+    { "id": "overlay", "category": "zoning_dev", "kind": "enum", "field": "overlay", "unknownPolicy": "exclude",
+      "enumValues": ["planned_development", "landmark", "historic", "pedestrian_street", "pmd"] },
+    { "id": "adu_eligible", "category": "zoning_dev", "kind": "flag", "field": "in_adu_area", "unknownPolicy": "exclude" },
+    { "id": "aro_zone", "category": "zoning_dev", "kind": "flag", "field": "in_aro_zone", "unknownPolicy": "exclude" },
+
+    { "id": "tif", "category": "incentives", "kind": "flag", "field": "in_tif_district", "unknownPolicy": "exclude" },
+    { "id": "opportunity_zone", "category": "incentives", "kind": "flag", "field": "in_opportunity_zone", "unknownPolicy": "exclude" },
+    { "id": "enterprise_zone", "category": "incentives", "kind": "flag", "field": "in_enterprise_zone", "unknownPolicy": "exclude" },
+    { "id": "sbif_nof", "category": "incentives", "kind": "flag", "field": "in_sbif_nof_area", "unknownPolicy": "exclude" },
+
+    { "id": "assessed_value", "category": "financial", "kind": "range", "field": "total_assessed_value", "unit": "usd", "unknownPolicy": "exclude" },
+    { "id": "last_sale_price", "category": "financial", "kind": "range", "field": "last_sale_price", "unit": "usd", "unknownPolicy": "exclude" },
+    { "id": "sale_recency", "category": "financial", "kind": "range", "field": "sale_recency_days", "unit": "days", "unknownPolicy": "exclude" },
+    { "id": "price_per_sf", "category": "financial", "kind": "range", "field": "price_per_sf", "unit": "usd", "unknownPolicy": "exclude" },
+    { "id": "improvement_ratio", "category": "financial", "kind": "range", "field": "improvement_ratio", "unit": "ratio", "unknownPolicy": "exclude" },
+
+    { "id": "open_violations", "category": "condition_risk", "kind": "range", "field": "open_violation_count", "unit": "count", "unknownPolicy": "exclude" },
+    { "id": "f311_redflags", "category": "condition_risk", "kind": "range", "field": "f311_redflag_count", "unit": "count", "unknownPolicy": "exclude" },
+    { "id": "floodplain", "category": "condition_risk", "kind": "flag", "field": "in_special_flood_hazard", "unknownPolicy": "exclude" },
+    { "id": "brownfield", "category": "condition_risk", "kind": "flag", "field": "near_brownfield", "unknownPolicy": "exclude" },
+    { "id": "crime_index", "category": "condition_risk", "kind": "range", "field": "crime_index", "unit": "index", "unknownPolicy": "exclude" }
+  ]
+}

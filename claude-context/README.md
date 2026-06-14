@@ -7,6 +7,9 @@ Load only what you need for the current task. Don't read everything.
 - `core/data-sources.md` — All datasets (Socrata, ArcGIS, external APIs), endpoint reference, PIN system
 - `core/known-issues.md` — Active bugs, known limitations, fragile heuristics, gotchas, operational status
 
+## Property Discovery (filter/search — BUILT 2026-06-13, not deployed)
+- `property-discovery/` — Engineering handoff spec + implementation record for the filter/search system. **Status: built end-to-end on branch `feat/discovery-evaluator-core` (not pushed/deployed).** Start with **`10-implementation-status.md`** (what was built, in-build decisions/reasoning, what remains). Normative spec docs 00–09: `01-invariants.md` (single evaluator, determinism, CQS-only-source-of-truth), `02-cqs-schema.md`, `03-filter-registry.md` (29 filters; predicate kinds + `unknownPolicy`), `04-compilers.md` (UI/topic/text → CQS + precedence merge), `05-evaluator.md`, `06-diagnostics.md`, `07-data-flow.md` (wire contracts), `08-build-plan.md`, `09-module-contracts.md` (FE/BE boundary). Filter+sort only; no scoring layer. Implementation: `backend/discovery/` + `frontend/src/discovery/`. Strategy/why lives in `strategy/property-discovery-filters.md` (Part B = the prospecting index, now built for MVP fields). Remaining: live index build (blocked by a 2026-06-13 Socrata outage) + deploy approval.
+
 ## Guides (load when working in a specific area)
 - `guides/backend-guide.md` — Router, assembler, synthesizer, caching, HTTP clients, concurrency, testing, eval
 - `guides/frontend-guide.md` — Components, design tokens, state management, map system, responsive, animations
@@ -25,6 +28,7 @@ Load only what you need for the current task. Don't read everything.
 - `strategy/product-coherence-audit.md` — **Product Coherence Audit (2026-06-11, post-SelectedParcel)**: founder-level first-principles review. Verdict: one product ("parcel dossier machine" — find/open/interrogate/buy), front door wired to the wrong room. Funnel map, per-surface coherence scorecard, future-state conceptual architecture. Steps 1 (renaming + bridge), 2 (map defaults + pricing), and 3 (address-first homepage + auth off the front door + Phase 2 sequencing) SHIPPED 2026-06-11/12 — see §10 for per-item status; remaining: Explorer free-teaser depth (needs fresh approval) + small follow-ups. Read alongside north-star.md for any product/UX/funnel work.
 - `strategy/phase2-interview-kit.md` — **Phase 2 customer-validation interview kit (2026-06)**: recruiting channels + outreach template per segment, expanded interview script, observation checklist, per-interview log template, demo-day pre-flight (cold-load latency, rate limits, known data quirks verified against prod 2026-06-12). Companion to north-star Phase 2.
 - `strategy/competitive-analysis.md` — Chicago Cityscape comparison, data gaps, structural weaknesses
+- `strategy/property-discovery-filters.md` — **Filter/search expansion plan** (2026-06-13, not started): candidate filters, 6-filter MVP (class, neighborhood, zoning group, incentive, vacancy, lot size), prioritization, rollout. Part A = architecture-independent product answer (use this to decide filters); Part B = downstream "prospecting index" note; Part C = self-critique on why the index is a dependency, not a premise. Verdict ⚠️ on the original architecture-led framing.
 - `strategy/product-roadmap.md` — Revenue features, pricing model, target personas, open questions
 - `strategy/design-guidelines.md` — Hybrid dashboard+chat model, UX principles, when to use chat vs tools
 
