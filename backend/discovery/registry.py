@@ -125,6 +125,7 @@ class Registry(BaseModel):
     # static artifact). Defaults = dormant: no coverage, nothing populated. ---
     coverage: Coverage = Field(default_factory=Coverage)
     populatedFields: list[str] = Field(default_factory=list)  # filter ids with real data
+    recipeCounts: dict[str, int] = Field(default_factory=dict)  # recipe id -> result count in the index
 
     @model_validator(mode="after")
     def _check_integrity(self) -> "Registry":

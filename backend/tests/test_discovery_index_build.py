@@ -14,6 +14,7 @@ from backend.discovery.index_build import (
     _nearest_rail_mi,
     _populated_fields,
     _recency_days,
+    _recipe_counts,
     _zoning_group,
     assemble_parcel,
 )
@@ -239,6 +240,37 @@ def test_populated_fields_lists_real_fields_and_omits_thin_ones():
     assert "neighborhood" in fields        # region present
     assert "value_percentile" not in fields  # nobody got one -> recipe auto-downgrades
     assert "floodplain" not in fields        # deferred field, never populated
+
+
+# --- recipe result counts (honest "Live · N" / "No matches yet") -------------
+
+
+def test_recipe_counts_evaluates_recipes_against_the_snapshot():
+    rows = [
+        ("p1", 41.9, -87.7, {"land_use_class": "multi_family", "sale_recency_days": 30}, ["neighborhood:24"]),
+        ("p2", 41.9, -87.7, {"land_use_class": "commercial", "sale_recency_days": 100}, ["neighborhood:24"]),
+        ("p3", 41.9, -87.7, {"land_use_class": "multi_family", "sale_recency_days": 900}, ["neighborhood:24"]),
+    ]
+    counts = _recipe_counts(rows)
+    # fresh_comps = (multi_family|commercial) AND sale within 180d -> p1 + p2 (p3 stale)
+    assert counts["fresh_comps"] == 2
+    # undervalued_mf = multi_family AND value_percentile <= 25; none have a percentile -> 0.
+    # This is the LIVE-but-empty case: its FIELDS may be populated yet the recipe returns 0.
+    assert counts["undervalued_mf"] == 0
+
+
+def test_write_read_meta_roundtrips_recipe_counts(tmp_path):
+    from backend.discovery.parcel_index import write_index
+    p = tmp_path / "idx.db"
+    write_index(
+        p, data_version="v1", built_at=1, community_areas=[24],
+        rows=[("p1", 41.9, -87.7, {"land_use_class": "multi_family"}, ["neighborhood:24"])],
+        populated_fields=["land_use"], recipe_counts={"teardown": 5, "fresh_comps": 0},
+    )
+    meta = read_meta(p)
+    assert meta is not None
+    assert meta.recipe_counts == {"teardown": 5, "fresh_comps": 0}
+    assert meta.populated_fields == ["land_use"]
 
 
 # --- assessment join: skip the in-progress (valueless) year ------------------

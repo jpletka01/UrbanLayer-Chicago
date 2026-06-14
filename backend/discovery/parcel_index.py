@@ -13,7 +13,7 @@ import json
 import logging
 import math
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -28,6 +28,9 @@ class IndexMeta:
     community_areas: list[int]
     populated_fields: list[str]  # filter ids the build actually populated (empty = none)
     built_at: int
+    # recipe id -> result count in this index; drives "Live · N" / "No matches yet" on the
+    # shelf so a recipe whose FIELDS are populated but whose subset is empty isn't mislabeled.
+    recipe_counts: dict[str, int] = field(default_factory=dict)
 
 
 def default_index_path() -> Path:
@@ -97,7 +100,8 @@ CREATE TABLE IF NOT EXISTS meta (
     built_at         INTEGER NOT NULL,
     community_areas  TEXT NOT NULL,
     parcel_count     INTEGER NOT NULL,
-    populated_fields TEXT NOT NULL DEFAULT '[]'
+    populated_fields TEXT NOT NULL DEFAULT '[]',
+    recipe_counts    TEXT NOT NULL DEFAULT '{}'
 );
 """
 
@@ -110,18 +114,25 @@ def write_index(
     community_areas: list[int],
     rows: Iterable[tuple[str, float | None, float | None, dict[str, Any], list[str]]],
     populated_fields: list[str] | None = None,
+    recipe_counts: dict[str, int] | None = None,
 ) -> int:
     """Upsert parcel rows (incremental by PIN) and refresh the meta row.
 
     `rows` are (pin, lat, lon, attrs, regions). Only non-empty attrs are stored so a
     missing field reads back as None (driving `unknownPolicy`). `populated_fields` are the
     filter ids this build actually populated (drives the registry's populatedFields — the
-    rest read "coming with the next data update"). Returns the total parcel count.
+    rest read "coming with the next data update"). `recipe_counts` is per-recipe result
+    counts for honest "Live · N" / "No matches yet" shelf badges. Returns the total parcel count.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     try:
         conn.executescript(_SCHEMA)
+        # Schema evolution: add newer meta columns to a pre-existing table (CREATE IF NOT
+        # EXISTS won't), so an index built under an older schema upgrades on the next build.
+        existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(meta)")}
+        if "recipe_counts" not in existing_cols:
+            conn.execute("ALTER TABLE meta ADD COLUMN recipe_counts TEXT NOT NULL DEFAULT '{}'")
         conn.executemany(
             "INSERT OR REPLACE INTO parcels (pin, lat, lon, attrs, regions) VALUES (?, ?, ?, ?, ?)",
             [
@@ -138,11 +149,12 @@ def write_index(
         total = conn.execute("SELECT COUNT(*) FROM parcels").fetchone()[0]
         cas = ",".join(str(c) for c in sorted(set(community_areas)))
         pf = json.dumps(sorted(set(populated_fields or [])))
+        rc = json.dumps(recipe_counts or {}, sort_keys=True)
         conn.execute(
             "INSERT OR REPLACE INTO meta "
-            "(id, data_version, built_at, community_areas, parcel_count, populated_fields) "
-            "VALUES (1, ?, ?, ?, ?, ?)",
-            (data_version, built_at, cas, total, pf),
+            "(id, data_version, built_at, community_areas, parcel_count, populated_fields, recipe_counts) "
+            "VALUES (1, ?, ?, ?, ?, ?, ?)",
+            (data_version, built_at, cas, total, pf, rc),
         )
         conn.commit()
         return total
@@ -161,16 +173,20 @@ def read_meta(path: Path) -> IndexMeta | None:
         return None
     conn = sqlite3.connect(path)
     try:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(meta)")}
+        rc_col = "recipe_counts" if "recipe_counts" in cols else "'{}'"  # tolerate older schema
         row = conn.execute(
-            "SELECT data_version, built_at, community_areas, populated_fields FROM meta WHERE id = 1"
+            f"SELECT data_version, built_at, community_areas, populated_fields, {rc_col} FROM meta WHERE id = 1"
         ).fetchone()
         if not row:
             return None
-        data_version, built_at, cas, pf = row
+        data_version, built_at, cas, pf, rc = row
         areas = [int(x) for x in cas.split(",") if x != ""] if cas else []
         fields = json.loads(pf) if pf else []
+        recipe_counts = json.loads(rc) if rc else {}
         return IndexMeta(
-            data_version=data_version, community_areas=areas, populated_fields=fields, built_at=built_at
+            data_version=data_version, community_areas=areas, populated_fields=fields,
+            built_at=built_at, recipe_counts=recipe_counts,
         )
     except (sqlite3.DatabaseError, ValueError, json.JSONDecodeError) as exc:
         log.warning("discovery: failed to read index meta at %s: %s", path, exc)

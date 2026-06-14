@@ -160,7 +160,11 @@ def get_registry() -> Registry:
     areas = sorted(set(meta.community_areas))
     mode = "all" if len(areas) >= ALL_COMMUNITY_AREAS else ("partial" if areas else "none")
     coverage = Coverage(mode=mode, liveAreas=areas, asOf=_iso_date(meta.built_at))
-    return base.model_copy(update={"coverage": coverage, "populatedFields": sorted(meta.populated_fields)})
+    return base.model_copy(update={
+        "coverage": coverage,
+        "populatedFields": sorted(meta.populated_fields),
+        "recipeCounts": meta.recipe_counts,
+    })
 
 
 def _resolve(req: SearchRequest) -> tuple[CQS, OrderedResult, list[DroppedInvalid], str]:

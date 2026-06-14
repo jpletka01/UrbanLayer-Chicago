@@ -259,7 +259,7 @@ def test_search_returns_json_not_spa_fallback(client):
 # --- PR4: coverage + populatedFields (registry response, sourced from index meta) ------
 
 
-def _registry_with_meta(community_areas, populated_fields):
+def _registry_with_meta(community_areas, populated_fields, recipe_counts=None):
     from backend.discovery.parcel_index import IndexMeta
 
     parcel_source.set_snapshot(
@@ -270,6 +270,7 @@ def _registry_with_meta(community_areas, populated_fields):
             community_areas=community_areas,
             populated_fields=populated_fields,
             built_at=1_700_000_000,
+            recipe_counts=recipe_counts or {},
         ),
     )
     try:
@@ -287,6 +288,21 @@ def test_registry_partial_coverage_echoes_meta():
     assert body["coverage"]["asOf"]  # ISO date present
     # populatedFields drives BOTH consumers (panel disable + recipe badges) from one source.
     assert body["populatedFields"] == ["assessed_value", "land_use", "lot_size"]
+
+
+def test_registry_echoes_recipe_counts():
+    # Recipe result counts ride the registry response so the shelf shows "Live · N" /
+    # "No matches yet" instead of inferring LIVE from field-presence (which mislabels a
+    # recipe whose fields are populated but whose subset is empty).
+    body = _registry_with_meta([24], ["land_use"], recipe_counts={"teardown": 12, "undervalued_mf": 0})
+    assert body["recipeCounts"] == {"teardown": 12, "undervalued_mf": 0}
+
+
+def test_registry_recipe_counts_default_empty_when_dormant():
+    parcel_source._current_version = None  # no index -> dormant
+    parcel_source._current_meta = None
+    body = TestClient(app).get("/api/discovery/registry").json()
+    assert body["recipeCounts"] == {}
 
 
 def test_registry_full_coverage_is_mode_all():

@@ -62,19 +62,35 @@ describe("recipe → userFilters contract (FE expands; backend never re-expands)
   });
 });
 
-describe("RecipeShelf badges (honest LIVE vs NEEDS-DATA)", () => {
+describe("RecipeShelf badges (Needs data / No matches yet / Live · N)", () => {
   it("reads NEEDS-DATA when the recipe's fields aren't populated (pre-index)", () => {
     render(<RecipeShelf registry={reg({ populatedFields: [] })} onPick={() => {}} />);
     expect(screen.getByText("Needs data")).toBeTruthy();
-    expect(screen.queryByText("● Live")).toBeNull();
+    expect(screen.queryByText(/Live/)).toBeNull();
   });
 
-  it("reads LIVE only when every field the recipe touches is populated", () => {
+  it("reads LIVE · N when fields are populated AND the recipe has results", () => {
     render(
-      <RecipeShelf registry={reg({ populatedFields: ["land_use", "value_percentile"] })} onPick={() => {}} />,
+      <RecipeShelf
+        registry={reg({ populatedFields: ["land_use", "value_percentile"], recipeCounts: { undervalued_mf: 42 } })}
+        onPick={() => {}}
+      />,
     );
-    expect(screen.getByText("● Live")).toBeTruthy();
+    expect(screen.getByText(/● Live · 42/)).toBeTruthy();
     expect(screen.queryByText("Needs data")).toBeNull();
+  });
+
+  it("reads NO MATCHES YET when fields are populated but the recipe's subset is empty", () => {
+    // The LIVE-but-empty trap: value_percentile is populated (by condos), but no multifamily
+    // has one, so undervalued_mf returns 0. It must NOT badge Live.
+    render(
+      <RecipeShelf
+        registry={reg({ populatedFields: ["land_use", "value_percentile"], recipeCounts: { undervalued_mf: 0 } })}
+        onPick={() => {}}
+      />,
+    );
+    expect(screen.getByText("No matches yet")).toBeTruthy();
+    expect(screen.queryByText(/Live/)).toBeNull();
   });
 
   it("fires onPick with the topic when clicked", () => {

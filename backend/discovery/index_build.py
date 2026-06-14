@@ -425,6 +425,42 @@ def _populated_fields(rows: list[tuple]) -> list[str]:
     return sorted(set(ids))
 
 
+def _recipe_counts(rows: list[tuple]) -> dict[str, int]:
+    """Evaluate each recipe against the just-built snapshot and count results.
+
+    Stored in meta so the shelf can show "Live · N" / "No matches yet" rather than inferring
+    LIVE from field-presence alone — which mislabels a recipe whose FIELDS are populated but
+    whose specific subset is empty (e.g. multifamily value_percentile in a thin neighborhood).
+    """
+    from backend.discovery import parcel as parcel_mod
+    from backend.discovery.compile_merge import merge
+    from backend.discovery.cqs import CqsFragment
+    from backend.discovery.evaluator import evaluate
+    from backend.discovery.parcel_index import IndexedParcel, derive_sort_fields
+
+    registry = load_registry()
+    if not registry.topics:
+        return {}
+    parcels = [
+        IndexedParcel(pin, lat, lon, derive_sort_fields(attrs), regions)
+        for (pin, lat, lon, attrs, regions) in rows
+    ]
+    version = "__recipe_count__"
+    parcel_mod.default_source.register(version, parcels)
+    try:
+        counts: dict[str, int] = {}
+        empty = CqsFragment()
+        for topic in registry.topics:
+            user_frag = CqsFragment.model_validate(
+                {"filters": {fid: {"predicate": p, "source": "user"} for fid, p in topic.presets.items()}}
+            )
+            cqs, _dropped = merge(user_frag, empty, sort=topic.defaultSort)
+            counts[topic.id] = evaluate(cqs, version).total
+        return counts
+    finally:
+        parcel_mod.default_source._snapshots.pop(version, None)
+
+
 async def build_index(
     community_areas: list[int],
     *,
@@ -471,20 +507,23 @@ async def build_index(
             ))
         log.info("discovery index: CA %s — assembled %s parcels", ca, len(spine))
 
-    # Cross-parcel pass + the field-readiness manifest (drives coverage / populatedFields).
+    # Cross-parcel pass + the field-readiness manifest (drives coverage / populatedFields) +
+    # per-recipe result counts (drives honest "Live · N" / "No matches yet" shelf badges).
     _compute_value_percentile(rows)
     populated = _populated_fields(rows)
+    recipe_counts = _recipe_counts(rows)
 
     built_at = int(time.time())
     data_version = f"idx-{as_of:%Y%m%d}-{built_at}-{len(rows)}p"
     total = write_index(
         default_index_path(),
         data_version=data_version, built_at=built_at,
-        community_areas=community_areas, rows=rows, populated_fields=populated,
+        community_areas=community_areas, rows=rows,
+        populated_fields=populated, recipe_counts=recipe_counts,
     )
     log.info(
-        "discovery index: wrote %s parcels (total %s) as %s; populated fields: %s",
-        len(rows), total, data_version, ", ".join(populated),
+        "discovery index: wrote %s parcels (total %s) as %s; populated: %s; recipe counts: %s",
+        len(rows), total, data_version, ", ".join(populated), recipe_counts,
     )
     return data_version, total
 

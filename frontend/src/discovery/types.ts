@@ -128,6 +128,10 @@ export interface Registry {
   // PR4 index-derived: drive the coverage banner + the panel/recipe "coming" affordances.
   coverage: Coverage;
   populatedFields: string[];
+  // recipe id -> result count in the current index. Drives honest "Live · N" /
+  // "No matches yet" badges so a recipe whose fields are populated but whose subset is
+  // empty isn't shown as Live. Absent/empty when dormant.
+  recipeCounts?: Record<string, number>;
 }
 
 // --- Diagnostics (06) ---
