@@ -284,16 +284,22 @@ async def _fetch_spine(ca: int, *, client: httpx.AsyncClient | None) -> list[dic
 
 
 async def _batch_latest(
-    dataset: str, pins: list[str], order_field: str, client, settings
+    dataset: str, pins: list[str], order_field: str, client, settings, *, where_extra: str | None = None
 ) -> dict[str, dict]:
-    """Latest row per PIN across chunked `pin in (...)` queries (DESC + first-seen wins)."""
+    """Latest row per PIN across chunked `pin in (...)` queries (DESC + first-seen wins).
+
+    `where_extra` ANDs an extra predicate into the query — used by the assessment join to skip
+    the in-progress assessment year (whose value columns are still null and so are omitted by
+    Socrata), so "latest" means the latest year that actually carries values.
+    """
     out: dict[str, dict] = {}
     for chunk in _chunks(pins, _BATCH):
         in_list = ",".join(f"'{p}'" for p in chunk)
+        where = f"pin in ({in_list})" + (f" AND {where_extra}" if where_extra else "")
         try:
             rows = await socrata_get(
                 dataset,
-                {"$where": f"pin in ({in_list})", "$order": f"{order_field} DESC", "$limit": 50000},
+                {"$where": where, "$order": f"{order_field} DESC", "$limit": 50000},
                 client=client,
                 base_url=settings.cook_county_socrata_base,
                 app_token=settings.cook_county_socrata_token or None,
@@ -447,7 +453,12 @@ async def build_index(
             continue
         pins = [s["pin_digits"] for s in spine]
         chars = await _batch_latest(settings.dataset_ccao_characteristics, pins, "year", client, settings)
-        assess = await _batch_latest(settings.dataset_ccao_assessments, pins, "year", client, settings)
+        assess = await _batch_latest(
+            settings.dataset_ccao_assessments, pins, "year", client, settings,
+            # Skip the in-progress assessment year (value columns still null → omitted by Socrata);
+            # take the latest year that actually has a total value.
+            where_extra="(mailed_tot IS NOT NULL OR certified_tot IS NOT NULL OR board_tot IS NOT NULL)",
+        )
         sales = await _batch_latest(settings.dataset_ccao_sales, pins, "sale_date", client, settings)
         zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
 

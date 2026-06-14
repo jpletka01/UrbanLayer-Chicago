@@ -241,6 +241,33 @@ def test_populated_fields_lists_real_fields_and_omits_thin_ones():
     assert "floodplain" not in fields        # deferred field, never populated
 
 
+# --- assessment join: skip the in-progress (valueless) year ------------------
+
+
+async def test_batch_latest_passes_where_extra():
+    """The assessment join ANDs a value-present predicate so it skips the null in-progress year."""
+    seen_where: list[str] = []
+
+    async def fake_socrata_get(dataset, params, **kw):
+        seen_where.append(params["$where"])
+        return [{"pin": "p1", "mailed_tot": "62000"}]
+
+    import backend.discovery.index_build as mod
+
+    orig = mod.socrata_get
+    mod.socrata_get = fake_socrata_get
+    try:
+        out = await ib._batch_latest(
+            "ds", ["p1"], "year", None, ib.get_settings(),
+            where_extra="(mailed_tot IS NOT NULL OR certified_tot IS NOT NULL OR board_tot IS NOT NULL)",
+        )
+    finally:
+        mod.socrata_get = orig
+    assert out["p1"]["mailed_tot"] == "62000"
+    assert "mailed_tot IS NOT NULL" in seen_where[0]
+    assert "pin in (" in seen_where[0]
+
+
 # --- build_index (network mocked) -------------------------------------------
 
 
@@ -258,7 +285,7 @@ async def test_build_index_writes_loadable_index(tmp_path, monkeypatch):
         return [{"pin": "14-31-100-001-0000", "pin_digits": "14311000010000",
                  "class": "311", "lat": lat, "lon": lon}]
 
-    async def fake_batch(dataset, pins, order_field, client, settings):
+    async def fake_batch(dataset, pins, order_field, client, settings, *, where_extra=None):
         return {}  # no joins in this test
 
     async def fake_zoning(ca, *, client=None):
@@ -303,7 +330,7 @@ async def test_build_index_degrades_when_a_layer_fails(tmp_path, monkeypatch):
         return [{"pin": "p1", "pin_digits": "14311000010000", "class": "311",
                  "lat": 41.9, "lon": -87.7}]
 
-    async def fake_batch(dataset, pins, order_field, client, settings):
+    async def fake_batch(dataset, pins, order_field, client, settings, *, where_extra=None):
         return {}
 
     async def fake_zoning(ca, *, client=None):
