@@ -152,13 +152,16 @@ invariants literally true. **Revisit here first** if behavior surprises you late
 ## What remains
 
 **Operational (no code):**
-- **Run the live index build** once the city/county Socrata portals recover (they returned
-  **503** across the board on 2026-06-13, blocking the live one-CA proof — the pipeline logic
-  is fully covered by mocked tests). `python -m backend.discovery.index_build
-  --community-areas 24` (or `--all`), then restart backend so `ensure_loaded()` picks it up.
-  Until then `/api/discovery/search` correctly returns the empty-index fallback (`dataVersion
+- ✅ **Shipped to production 2026-06-13** (merge `a15ce81` + path hotfix `f192d57`; deploy
+  verified via live JSON). Feature is LIVE but **dormant**: premium-gated, **not nav-linked**,
+  empty-index fallback until an index is built on prod.
+- **Run the live index build ON THE PROD SERVER** once the city/county Socrata portals recover
+  (they returned **503** across the board on 2026-06-13). SSH to `178.105.184.66`
+  (`/opt/urbanlayer`), `python -m backend.discovery.index_build --community-areas 24` (or
+  `--all`), restart backend so `ensure_loaded()` picks it up. Until then
+  `/api/discovery/search` correctly returns the empty-index fallback (`dataVersion
   discovery-empty-0`, total 0).
-- **Push `feat/discovery-evaluator-core` to `main`** (= deploy) — needs Jack's approval.
+- (Optional) add a nav link in `PageHeader` — admin-only while data-less, public once real.
 
 **Deferred features (later index version / PR):**
 - **Map markers** for results — requires the versioned `result.rows` coords extension to the
@@ -171,6 +174,27 @@ invariants literally true. **Revisit here first** if behavior surprises you late
 - **Topics:** `registry.topics` is `[]` today; the topic compiler machinery exists. Adding
   topic presets is a registry edit (e.g. a "vacant multifamily incentive" preset).
 - **Free-teaser gating** variant; saved searches; the full 77-CA build run.
+
+---
+
+## Product direction — Discovery supersedes Explore (decided 2026-06-13)
+
+**Discovery is what the Site Explorer (`/explore`) was meant to be.** Its 29-filter CQS engine
+is a strict superset of Explore's two filters (`land_use` ⊃ class, `neighborhood` ⊃ community
+area). The intent: Discovery converges with and **eventually retires Explore.**
+
+The deliberate gap today is the **map** — Discovery is list-first by design while the index
+is empty. The plan: once there's real data, add a map to Discovery that **looks like Explore's**
+(reuse Explore's deck.gl `ScatterplotLayer` + `useMapboxOverlay` + `classColor` from
+`frontend/src/components/ExplorePage.tsx`). That requires the deferred `result.rows`
+(pin + lat/lon [+ a few display fields]) extension to `SearchResponse` (a reviewed contract
+change, 07). At that point Explore is redundant → **retire `/explore`** (redirect to
+`/discovery`, drop the page + `/api/explore*` once nothing references them).
+
+Sequence: (1) build the prod index → real results; (2) `result.rows` coords extension + port
+Explore's map into `DiscoveryResults`; (3) nav-link Discovery; (4) redirect/retire Explore.
+Until (2), the two coexist on purpose. Don't delete Explore before Discovery has the map +
+real data — Explore is the only working parcel-browser in the meantime.
 
 ---
 
