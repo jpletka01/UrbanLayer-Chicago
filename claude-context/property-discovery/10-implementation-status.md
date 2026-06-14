@@ -1,9 +1,10 @@
 # 10 — Implementation Status & Decisions Record
 
-**Status:** Built end-to-end, **not yet deployed.** All of build-plan `08` (steps 1–10) plus
-the offline prospecting index (`strategy/property-discovery-filters.md` Part B) and the
-frontend are implemented on branch **`feat/discovery-evaluator-core`** (8 commits, **not
-pushed** — push = deploy, needs approval). Built 2026-06-13.
+**Status: SHIPPED to production 2026-06-13** (merged to `main`; deploy-verified via live JSON;
+HEAD `f192d57`). All of build-plan `08` (steps 1–10) plus the offline prospecting index
+(`strategy/property-discovery-filters.md` Part B) and the frontend are live. **Dormant by
+design:** premium-gated, unlinked from nav, and `/api/discovery/search` returns the empty-index
+fallback until a prospecting index is built on the prod server (see "What remains").
 
 This doc records **what was actually built, the decisions made during implementation that
 were not fully pinned by the spec (00–09), and what remains.** The spec docs 00–09 stay the

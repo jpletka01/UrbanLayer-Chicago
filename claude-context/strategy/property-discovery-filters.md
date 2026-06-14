@@ -1,6 +1,8 @@
 # Property Discovery — Search & Filter Expansion
 
-**Status:** Planning / not started. **Created:** 2026-06-13.
+**Status:** ✅ **SHIPPED to production 2026-06-13** (this was the strategy/why; the system is built
++ deployed). For implementation reality + what remains, see
+`claude-context/property-discovery/10-implementation-status.md`. **Created:** 2026-06-13.
 **Context:** Today the product supports exactly one filter — zoning district. This doc defines
 the candidate filter set, an MVP, a prioritization, and a rollout for expanding property
 discovery. It also contains a self-critique that separates the *product* answer (what filters

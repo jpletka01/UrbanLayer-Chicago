@@ -3,10 +3,11 @@
 This folder is the **engineering handoff spec** for the Property Discovery (filter/search) system.
 Design is locked. Docs 00–09 are normative; code from them directly.
 
-> **Status (2026-06-13): BUILT end-to-end, not yet deployed** — backend (steps 1–10) + offline
-> prospecting index + frontend, on branch `feat/discovery-evaluator-core` (not pushed). See
-> **`10-implementation-status.md`** for what was built, the in-build decisions/reasoning, and what
-> remains. Read that doc first when resuming this work.
+> **Status (2026-06-13): SHIPPED TO PRODUCTION** (main `f192d57`, deploy-verified) — backend
+> (steps 1–10) + offline prospecting index + premium-gated frontend. LIVE but **dormant**:
+> unlinked from nav + empty-index fallback until an index is built on the prod server (blocked by
+> a Socrata outage). See **`10-implementation-status.md`** for what was built, the in-build
+> decisions/reasoning, and what remains. Read that doc first when resuming this work.
 
 **Reading order:**
 
