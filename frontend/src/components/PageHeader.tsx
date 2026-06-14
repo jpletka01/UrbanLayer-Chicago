@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
+import { loadRegistry } from "../discovery/registryClient";
 import LanguageSelector from "./LanguageSelector";
 import UserMenu from "./UserMenu";
 
@@ -13,6 +15,16 @@ const NAV_ITEMS: { to: string; key: string }[] = [
   { to: "/pricing", key: "nav.pricing" },
   { to: "/about", key: "nav.about" },
 ];
+
+// Discovery is linked only once its index actually has data (coverage != "none"); while
+// dormant it stays unlinked. The check rides the cached discovery registry, so it's one
+// shared fetch, not per-page work.
+const DISCOVERY_ITEM = { to: "/discovery", key: "nav.discovery" };
+
+export function navItemsFor(discoveryLive: boolean): { to: string; key: string }[] {
+  if (!discoveryLive) return NAV_ITEMS;
+  return [...NAV_ITEMS.slice(0, 3), DISCOVERY_ITEM, ...NAV_ITEMS.slice(3)]; // after Explore
+}
 
 /**
  * Standard header for the non-chat pages (Scorecard, Explore, Pricing, About):
@@ -32,6 +44,18 @@ export default function PageHeader({
   const { user, authRequired, signIn, signOut } = useAuthContext();
   const { pathname } = useLocation();
 
+  const [discoveryLive, setDiscoveryLive] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadRegistry()
+      .then((r) => alive && setDiscoveryLive(!!r && r.coverage?.mode !== "none"))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const navItems = navItemsFor(discoveryLive);
+
   return (
     <header
       className={`border-b border-dark-border bg-dark-surface/80 backdrop-blur-sm z-50 flex-shrink-0 ${
@@ -46,7 +70,7 @@ export default function PageHeader({
           <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
         </Link>
         <nav className="flex-1 flex items-center justify-center gap-5 text-xs text-text-muted overflow-x-auto min-w-0 px-2">
-          {NAV_ITEMS.map(({ to, key }) =>
+          {navItems.map(({ to, key }) =>
             pathname === to.split("?")[0] && !to.includes("?") ? (
               <span key={to} className="text-accent shrink-0">{t(key)}</span>
             ) : (
