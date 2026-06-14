@@ -38,6 +38,8 @@ interface ResultsProps {
   onLoadMore: () => void;
   onRelax: (filterId: string) => void;
   onOpenParcel: (pin: string) => void;
+  hoveredPin?: string | null; // bidirectional hover sync with the map
+  onHoverPin?: (pin: string | null) => void;
 }
 
 export function DiscoveryResults({
@@ -50,6 +52,8 @@ export function DiscoveryResults({
   onLoadMore,
   onRelax,
   onOpenParcel,
+  hoveredPin = null,
+  onHoverPin,
 }: ResultsProps) {
   if (loading) {
     return <p className="p-4 text-sm text-text-muted">Searching…</p>;
@@ -113,6 +117,8 @@ export function DiscoveryResults({
             key={row.pin}
             row={row}
             activeSortKey={activeSortKey}
+            hovered={hoveredPin === row.pin}
+            onHoverPin={onHoverPin}
             onOpenParcel={onOpenParcel}
           />
         ))}
@@ -253,10 +259,14 @@ function InfiniteScrollSentinel({
 function ResultCard({
   row,
   activeSortKey,
+  hovered,
+  onHoverPin,
   onOpenParcel,
 }: {
   row: ResultRow;
   activeSortKey: string;
+  hovered: boolean;
+  onHoverPin?: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
 }) {
   const title = row.address ?? row.pin;
@@ -280,7 +290,11 @@ function ResultCard({
     <button
       type="button"
       onClick={() => onOpenParcel(row.pin)}
-      className="block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors hover:bg-dark-elevated"
+      onMouseEnter={() => onHoverPin?.(row.pin)}
+      onMouseLeave={() => onHoverPin?.(null)}
+      className={`block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors ${
+        hovered ? "bg-dark-elevated" : "hover:bg-dark-elevated"
+      }`}
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="truncate text-sm text-text-primary">{title}</span>

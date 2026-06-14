@@ -201,6 +201,21 @@ export interface SearchResult {
   nextOffset: number | null;
 }
 
+// Map coord set (PR6) — the FULL ordered match set (capped), decoupled from the list window.
+export interface PinPoint {
+  pin: string;
+  lat: number | null;
+  lon: number | null;
+  upside: number | null; // upside_score; null → distinct "no data" map color
+}
+
+export interface PinsResponse {
+  dataVersion: string;
+  total: number;
+  points: PinPoint[];
+  truncated: boolean; // total > cap → some matches omitted from the map
+}
+
 export interface SearchResponse {
   dataVersion: string;
   cqs: CQS;

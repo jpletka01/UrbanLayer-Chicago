@@ -10,11 +10,20 @@ import UpgradePrompt from "./../components/UpgradePrompt";
 import { Chips } from "./chips";
 import { CoverageBanner } from "./CoverageBanner";
 import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
+import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { loadRegistry } from "./registryClient";
-import { runSearch, type SearchInputs } from "./searchClient";
+import { runPins, runSearch, type SearchInputs } from "./searchClient";
 import { summarize } from "./summary";
-import type { PanelState, Predicate, Registry, ResultRow, SearchResponse, SortSpec } from "./types";
+import type {
+  PanelState,
+  PinPoint,
+  Predicate,
+  Registry,
+  ResultRow,
+  SearchResponse,
+  SortSpec,
+} from "./types";
 
 export default function DiscoveryPage() {
   const { user } = useAuthContext();
@@ -31,6 +40,12 @@ export default function DiscoveryPage() {
   // the source of truth for the map.
   const [rows, setRows] = useState<ResultRow[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(null);
+  // Map state — the FULL ordered coord set from /search/pins, fetched once per search
+  // (NOT from the rows window). loadMore never touches this.
+  const [mapPoints, setMapPoints] = useState<PinPoint[]>([]);
+  const [mapTruncated, setMapTruncated] = useState(false);
+  const [mapTotal, setMapTotal] = useState(0);
+  const [hoveredPin, setHoveredPin] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -55,10 +70,15 @@ export default function DiscoveryPage() {
       const inputs: SearchInputs = { panelState: state, text: txt, sort: srt };
       lastInputs.current = inputs;
       setLoading(true);
-      const resp = await runSearch(inputs, registry);
+      // List + map fetched in parallel: list is the paginated window; map is the full
+      // ordered coord set. They share the same request envelope → sequence-consistent.
+      const [resp, pins] = await Promise.all([runSearch(inputs, registry), runPins(inputs, registry)]);
       setResponse(resp);
       setRows(resp?.result.rows ?? []);
       setNextOffset(resp?.result.nextOffset ?? null);
+      setMapPoints(pins?.points ?? []);
+      setMapTruncated(pins?.truncated ?? false);
+      setMapTotal(pins?.total ?? 0);
       setLoading(false);
     },
     [registry, isPro],
@@ -159,8 +179,8 @@ export default function DiscoveryPage() {
           </div>
         </div>
 
-        {/* Right: summary + chips + results */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Middle: summary + chips + results list */}
+        <div className="flex min-w-0 flex-col overflow-hidden border-r border-dark-border md:w-[500px] md:flex-shrink-0 lg:w-[560px]">
           {response && registry && (
             <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
               <p className="text-sm text-text-secondary">{summarize(response.cqs, registry)}</p>
@@ -179,9 +199,24 @@ export default function DiscoveryPage() {
                 onLoadMore={loadMore}
                 onRelax={onRelax}
                 onOpenParcel={onOpenParcel}
+                hoveredPin={hoveredPin}
+                onHoverPin={setHoveredPin}
               />
             )}
           </div>
+        </div>
+
+        {/* Right: results map (full coord set). Hidden on mobile — the mobile List|Map
+            toggle is PR10; here the map is desktop-only so it doesn't stack giant. */}
+        <div className="hidden min-w-0 flex-1 md:block">
+          <DiscoveryMap
+            points={mapPoints}
+            truncated={mapTruncated}
+            total={mapTotal}
+            hoveredPin={hoveredPin}
+            onHoverPin={setHoveredPin}
+            onOpenParcel={onOpenParcel}
+          />
         </div>
       </div>
 

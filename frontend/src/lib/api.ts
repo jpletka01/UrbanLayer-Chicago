@@ -1,5 +1,6 @@
 import { parseSSE } from "./sse";
 import type {
+  PinsResponse as DiscoveryPinsResponse,
   Registry as DiscoveryRegistry,
   SearchRequest as DiscoverySearchRequest,
   SearchResponse as DiscoverySearchResponse,
@@ -676,6 +677,21 @@ export async function discoverySearch(
 ): Promise<DiscoverySearchResponse | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/discovery/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// Full ordered coord set for the map (PR6) — decoupled from the paginated list.
+export async function discoverySearchPins(
+  req: DiscoverySearchRequest,
+): Promise<DiscoveryPinsResponse | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/search/pins`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),

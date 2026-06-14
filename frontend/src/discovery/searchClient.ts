@@ -2,9 +2,17 @@
 // The envelope carries raw inputs (userFilters + topicId + text + sort + scope) — the
 // backend compiles, merges, evaluates, and echoes back the canonical CQS.
 
-import { discoverySearch } from "../lib/api";
+import { discoverySearch, discoverySearchPins } from "../lib/api";
 import { compilePanel } from "./uiCompiler";
-import type { PanelState, Registry, SearchRequest, SearchResponse, SortSpec, SpatialScope } from "./types";
+import type {
+  PanelState,
+  PinsResponse,
+  Registry,
+  SearchRequest,
+  SearchResponse,
+  SortSpec,
+  SpatialScope,
+} from "./types";
 
 export interface SearchInputs {
   panelState: PanelState;
@@ -36,4 +44,13 @@ export async function runSearch(
   registry: Registry,
 ): Promise<SearchResponse | null> {
   return discoverySearch(buildRequest(inputs, registry));
+}
+
+/** Fetch the full ordered coord set for the map. Same buildRequest envelope as runSearch
+ * (so the backend's shared _resolve yields a sequence-identical ordering). */
+export async function runPins(
+  inputs: SearchInputs,
+  registry: Registry,
+): Promise<PinsResponse | null> {
+  return discoverySearchPins(buildRequest(inputs, registry));
 }

@@ -312,3 +312,56 @@ def test_coverage_never_enters_the_cqs_path(client):
     assert "coverage" not in body  # not on the SearchResponse
     assert "coverage" not in body["cqs"]  # not in the canonical CQS
     assert "coverage" not in body["cqs"]["filters"]  # not a filter/chip
+
+
+# --- PR6: /search/pins (full ordered coord set, single-resolver sequence parity) --------
+
+
+def test_search_pins_sequence_matches_search(client):
+    # Guardrail #1: /search/pins goes through the same _resolve path, so its ordered PIN
+    # sequence is identical to /search's — under a NON-default sort, so a dropped-sort bug
+    # (which total-parity would miss) would desync the order and fail here.
+    payload = {"sort": {"key": "lot_size", "dir": "desc"}}
+    search = client.post("/api/discovery/search", json=payload).json()
+    pins = client.post("/api/discovery/search/pins", json=payload).json()
+    search_seq = [r["pin"] for r in search["result"]["rows"]]
+    pins_seq = [p["pin"] for p in pins["points"]]
+    assert search_seq == ["p2", "p1", "p3"]  # lot_size desc
+    # The /search window is a prefix of the full /search/pins sequence — exact, not just total.
+    assert pins_seq[: len(search_seq)] == search_seq
+    assert pins["total"] == search["result"]["total"] == 3
+    assert pins["truncated"] is False
+
+
+def test_search_pins_carries_coords_and_upside(client):
+    pins = client.post("/api/discovery/search/pins", json={}).json()
+    p = pins["points"][0]
+    assert set(p.keys()) == {"pin", "lat", "lon", "upside"}
+    assert p["upside"] is None  # not computed until PR-INDEX → FE renders a "no data" swatch
+
+
+def test_search_pins_caps_and_flags_truncation(monkeypatch):
+    import backend.discovery.api as api
+
+    monkeypatch.setattr(api, "MAX_MAP_POINTS", 2)
+    parcel_source.set_snapshot("cap-v1", [
+        DictParcel(f"c{i}", {"land_use_class": "residential", "land_sqft": i}) for i in range(5)
+    ])
+    try:
+        pins = TestClient(app).post(
+            "/api/discovery/search/pins", json={"sort": {"key": "lot_size", "dir": "asc"}}
+        ).json()
+        assert pins["total"] == 5
+        assert len(pins["points"]) == 2  # capped
+        assert [p["pin"] for p in pins["points"]] == ["c0", "c1"]  # the ordered prefix
+        assert pins["truncated"] is True  # "refine to map the rest"
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_search_pins_returns_json_not_spa_fallback(client):
+    r = client.post("/api/discovery/search/pins", json={})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/json")
+    assert "points" in r.json()

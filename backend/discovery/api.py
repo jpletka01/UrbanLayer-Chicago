@@ -104,6 +104,24 @@ class SearchResponse(BaseModel):
     diagnostics: Diagnostics
 
 
+# Map = the FULL ordered match set (not the list window), capped so the browser stays sane.
+MAX_MAP_POINTS = 5000
+
+
+class PinPoint(BaseModel):
+    pin: str
+    lat: float | None
+    lon: float | None
+    upside: float | None  # upside_score → drives map color (null = "no data", distinct swatch)
+
+
+class PinsResponse(BaseModel):
+    dataVersion: str
+    total: int  # full match count
+    points: list[PinPoint]  # full ordered coord set, capped at MAX_MAP_POINTS
+    truncated: bool  # True when total > cap → some matches are off the map ("refine to see all")
+
+
 ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
 
 
@@ -186,9 +204,14 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
     )
 
 
+def _pin_lookup(data_version: str) -> dict[str, parcel_mod.Parcel]:
+    """A pin→parcel map over the dataVersion snapshot (shared by /search + /search/pins)."""
+    return {p.pin: p for p in parcel_mod.default_source.get(data_version)}
+
+
 def _hydrate_window(pins: list[str], data_version: str, sort_key: str) -> list[ResultRow]:
     """Hydrate the windowed PINs into ResultRows from the dataVersion snapshot."""
-    by_pin = {p.pin: p for p in parcel_mod.default_source.get(data_version)}
+    by_pin = _pin_lookup(data_version)
     sort_field = load_registry().sort_field(sort_key)
     rows: list[ResultRow] = []
     for pin in pins:
@@ -216,4 +239,28 @@ def search(req: SearchRequest) -> SearchResponse:
         cqs=cqs,
         result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset),
         diagnostics=diagnostics,
+    )
+
+
+@router.post("/search/pins", response_model=PinsResponse)
+def search_pins(req: SearchRequest) -> PinsResponse:
+    # Same _resolve path as /search → identical ordered PIN sequence by construction (the
+    # map prefix matches the list prefix; sort/scope/topicId can't drift between them).
+    # Returns the FULL ordered coord set (capped), NOT the list's paginated window — the
+    # map is never sourced from the infinite-scroll rows. No tier gating here (PR9 owns the
+    # free/paid line); this is the authenticated map.
+    _cqs, result, _dropped, data_version = _resolve(req)
+    by_pin = _pin_lookup(data_version)
+    points: list[PinPoint] = []
+    for pin in result.pins[:MAX_MAP_POINTS]:
+        parcel = by_pin.get(pin)
+        if parcel is not None:
+            points.append(
+                PinPoint(pin=parcel.pin, lat=parcel.lat, lon=parcel.lon, upside=parcel.get("upside_score"))
+            )
+    return PinsResponse(
+        dataVersion=data_version,
+        total=result.total,
+        points=points,
+        truncated=result.total > MAX_MAP_POINTS,
     )
