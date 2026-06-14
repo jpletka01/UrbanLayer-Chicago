@@ -120,11 +120,40 @@ export interface SearchRequest {
   sort?: SortSpec;
   scope?: SpatialScope;
   registryVersion: string;
+  limit?: number; // page-window size (default server-side); infinite scroll fetches more
+  offset?: number; // window start into the ordered result
+}
+
+// One hydrated result parcel. `pin` is the frozen identity; the rest is hydrated from the
+// dataVersion snapshot. Derived fields (value_percentile/upside_score/is_teardown_candidate)
+// stay null until the index computes them (PR-INDEX).
+export interface ResultRow {
+  pin: string;
+  lat: number | null;
+  lon: number | null;
+  address: string | null;
+  community_area: number | null;
+  land_use: string | null;
+  class: string | null;
+  lot_sqft: number | null;
+  bldg_sqft: number | null;
+  year_built: number | null;
+  units: number | null;
+  assessed_value: number | null;
+  price_per_sf: number | null;
+  last_sale_price: number | null;
+  last_sale_date: string | null;
+  improvement_ratio: number | null;
+  value_percentile: number | null;
+  upside_score: number | null;
+  is_teardown_candidate: boolean;
+  sortValue: number | string | null; // value of the active sort key, for row display
 }
 
 export interface SearchResult {
-  pins: string[];
+  rows: ResultRow[];
   total: number;
+  nextOffset: number | null;
 }
 
 export interface SearchResponse {

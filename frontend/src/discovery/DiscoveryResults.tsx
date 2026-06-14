@@ -1,14 +1,20 @@
 // Results panel (08): result count, diagnostics affordances (broad / dropped / conflict /
-// zero-result mostRestrictive — all driving one-tap re-issue, 06), and a capped list of
-// result PINs that hand off to the Scorecard. The frozen contract returns PINs only, so
-// this is list-first; map markers are a deferred follow-up.
+// zero-result mostRestrictive — all driving one-tap re-issue, 06), and a list of hydrated
+// result rows (PR1: rows carry address/use/size/value/upside) that hand off to the
+// Scorecard. Full infinite scroll over `nextOffset` lands in PR5; this renders the window.
 
-import type { Registry, SearchResponse } from "./types";
-
-const RENDER_CAP = 100;
+import type { Registry, ResultRow, SearchResponse } from "./types";
 
 function humanize(s: string): string {
   return s.replace(/_/g, " ");
+}
+
+function fmtMoney(n: number | null): string | null {
+  return n == null ? null : `$${Math.round(n).toLocaleString()}`;
+}
+
+function fmtNum(n: number | null): string | null {
+  return n == null ? null : Math.round(n).toLocaleString();
 }
 
 interface ResultsProps {
@@ -28,7 +34,8 @@ export function DiscoveryResults({ response, loading, onRelax, onOpenParcel }: R
   }
 
   const { result, diagnostics } = response;
-  const shown = result.pins.slice(0, RENDER_CAP);
+  const rows = result.rows;
+  const activeSortKey = response.cqs.sort.key;
   const excludedTotal = Object.values(diagnostics.excludedUnknown).reduce((a, b) => a + b, 0);
 
   return (
@@ -93,23 +100,83 @@ export function DiscoveryResults({ response, loading, onRelax, onOpenParcel }: R
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {shown.map((pin) => (
-          <button
-            key={pin}
-            type="button"
-            onClick={() => onOpenParcel(pin)}
-            className="flex w-full items-center justify-between border-b border-dark-border px-4 py-2 text-left text-sm transition-colors hover:bg-dark-elevated"
-          >
-            <span className="font-mono text-text-primary">{pin}</span>
-            <span className="text-[11px] text-accent">View Scorecard →</span>
-          </button>
+        {rows.map((row) => (
+          <ResultCard
+            key={row.pin}
+            row={row}
+            activeSortKey={activeSortKey}
+            onOpenParcel={onOpenParcel}
+          />
         ))}
-        {result.total > shown.length && (
+        {result.total > rows.length && (
           <p className="px-4 py-3 text-[11px] text-text-muted">
-            Showing {shown.length} of {result.total.toLocaleString()}.
+            Showing {rows.length.toLocaleString()} of {result.total.toLocaleString()}.
           </p>
         )}
       </div>
     </div>
+  );
+}
+
+function ResultCard({
+  row,
+  activeSortKey,
+  onOpenParcel,
+}: {
+  row: ResultRow;
+  activeSortKey: string;
+  onOpenParcel: (pin: string) => void;
+}) {
+  const title = row.address ?? row.pin;
+  const useLine = [
+    row.land_use ? humanize(row.land_use) : null,
+    row.class,
+    row.units != null ? `${row.units} units` : null,
+  ].filter(Boolean);
+  const sizeLine = [
+    row.lot_sqft != null ? `Lot ${fmtNum(row.lot_sqft)}` : null,
+    row.bldg_sqft != null ? `Bldg ${fmtNum(row.bldg_sqft)} sf` : null,
+    row.year_built != null ? String(row.year_built) : null,
+  ].filter(Boolean);
+
+  // Surface "what you sorted by": bold assessed value when sorting by it, else $/sqft.
+  const sortIsAssessed = activeSortKey === "assessed_value";
+  const assessed = fmtMoney(row.assessed_value);
+  const ppsf = row.price_per_sf != null ? `${fmtMoney(row.price_per_sf)}/sqft` : null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenParcel(row.pin)}
+      className="block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors hover:bg-dark-elevated"
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-sm text-text-primary">{title}</span>
+        {row.upside_score != null && (
+          <span className="flex-shrink-0 text-[11px] text-accent">● Upside {Math.round(row.upside_score)}</span>
+        )}
+      </div>
+      {useLine.length > 0 && (
+        <div className="mt-0.5 text-[11px] text-text-secondary">{useLine.join(" · ")}</div>
+      )}
+      {sizeLine.length > 0 && (
+        <div className="text-[11px] text-text-muted">{sizeLine.join(" · ")}</div>
+      )}
+      {(assessed || ppsf) && (
+        <div className="text-[11px] text-text-muted">
+          {assessed && (
+            <span className={sortIsAssessed ? "font-semibold text-text-secondary" : undefined}>
+              AV {assessed}
+            </span>
+          )}
+          {assessed && ppsf ? " · " : null}
+          {ppsf && (
+            <span className={!sortIsAssessed ? "font-semibold text-text-secondary" : undefined}>
+              {ppsf}
+            </span>
+          )}
+        </div>
+      )}
+    </button>
   );
 }

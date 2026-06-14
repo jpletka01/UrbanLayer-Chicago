@@ -12,6 +12,11 @@ from backend.main import app
 VERSION = "api-test-v1"
 
 
+def _pins(body: dict) -> list[str]:
+    """Ordered pins from the hydrated rows (the wire returns rows, not bare pins)."""
+    return [row["pin"] for row in body["result"]["rows"]]
+
+
 @pytest.fixture
 def client():
     parcel_source.set_snapshot(VERSION, [
@@ -46,7 +51,7 @@ def test_search_ui_filter(client):
     assert r.status_code == 200
     body = r.json()
     assert body["dataVersion"] == VERSION
-    assert body["result"]["pins"] == ["p1", "p3"]
+    assert _pins(body) == ["p1", "p3"]
     assert body["result"]["total"] == 2
     # INV-4: canonical CQS echoed with source tagged user
     assert body["cqs"]["filters"]["land_use"]["source"] == "user"
@@ -56,7 +61,7 @@ def test_search_ui_filter(client):
 def test_search_text_is_compiled_server_side(client):
     r = client.post("/api/discovery/search", json={"text": "tif"})
     body = r.json()
-    assert body["result"]["pins"] == ["p1", "p2"]
+    assert _pins(body) == ["p1", "p2"]
     assert body["cqs"]["filters"]["tif"]["source"] == "text"
     assert body["cqs"]["meta"]["rawText"] == "tif"
 
@@ -68,7 +73,7 @@ def test_search_user_and_text_merge(client):
     })
     body = r.json()
     # residential AND tif → p1 only
-    assert body["result"]["pins"] == ["p1"]
+    assert _pins(body) == ["p1"]
 
 
 def test_search_empty_returns_all_and_broad(client):
@@ -83,7 +88,7 @@ def test_search_sort_override(client):
     r = client.post("/api/discovery/search", json={"sort": {"key": "lot_size", "dir": "desc"}})
     body = r.json()
     # 8000(p2), 5000(p1), 4000(p3)
-    assert body["result"]["pins"] == ["p2", "p1", "p3"]
+    assert _pins(body) == ["p2", "p1", "p3"]
     assert body["cqs"]["sort"] == {"key": "lot_size", "dir": "desc"}
 
 
@@ -115,4 +120,102 @@ def test_search_is_deterministic_across_the_wire(client):
     first = client.post("/api/discovery/search", json=payload).json()
     second = client.post("/api/discovery/search", json=payload).json()
     assert first["cqs"] == second["cqs"]
-    assert first["result"]["pins"] == second["result"]["pins"]
+    assert _pins(first) == _pins(second)
+
+
+# --- PR1: result.rows hydration + pagination + 0/exempt sort ---------------------
+
+
+def test_search_hydrates_rows_from_snapshot(client):
+    # Rows carry the hydrated display fields, in evaluated order, keyed off the snapshot.
+    body = client.post("/api/discovery/search", json={
+        "userFilters": {"land_use": {"kind": "enum", "values": ["residential"]}},
+        "sort": {"key": "lot_size", "dir": "desc"},
+    }).json()
+    rows = body["result"]["rows"]
+    assert [r["pin"] for r in rows] == ["p1", "p3"]  # 5000 then 4000, desc
+    assert rows[0]["land_use"] == "residential"
+    assert rows[0]["lot_sqft"] == 5000
+    # sortValue surfaces the active sort key's value (land_sqft here).
+    assert rows[0]["sortValue"] == 5000
+    # Derived fields (not yet computed by the index) hydrate as null.
+    assert rows[0]["upside_score"] is None
+    assert rows[0]["is_teardown_candidate"] is False
+    assert body["result"]["nextOffset"] is None  # all rows fit one window
+
+
+def test_search_paginates_with_limit_offset():
+    parcel_source.set_snapshot("pg-v1", [
+        DictParcel(f"x{i}", {"land_use_class": "residential", "land_sqft": i})
+        for i in range(5)
+    ])
+    try:
+        client = TestClient(app)
+        first = client.post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "limit": 2, "offset": 0,
+        }).json()
+        assert [r["pin"] for r in first["result"]["rows"]] == ["x0", "x1"]
+        assert first["result"]["total"] == 5
+        assert first["result"]["nextOffset"] == 2
+        second = client.post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "limit": 2, "offset": 2,
+        }).json()
+        assert [r["pin"] for r in second["result"]["rows"]] == ["x2", "x3"]
+        assert second["result"]["nextOffset"] == 4
+        last = client.post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "limit": 2, "offset": 4,
+        }).json()
+        assert [r["pin"] for r in last["result"]["rows"]] == ["x4"]
+        assert last["result"]["nextOffset"] is None  # window reaches the end
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_exempt_and_zero_assessed_sort_last_via_hydration_seam(tmp_path):
+    # PR3 0/exempt rule: exempt or $0 assessments are normalized to absent at the
+    # snapshot-hydration seam (read_index), so the evaluator's existing missing-last
+    # ordering puts them last under an ascending assessed_value sort — comparator
+    # untouched. Exercises the real production path: write_index -> read_index.
+    from backend.discovery.parcel_index import read_index, write_index
+
+    path = tmp_path / "discovery_index.db"
+    write_index(
+        path,
+        data_version="exempt-v1",
+        built_at=1,
+        community_areas=[24],
+        rows=[
+            ("a", 41.9, -87.6, {"land_use_class": "residential", "total_assessed_value": 200000}, []),
+            ("b", 41.9, -87.6, {"land_use_class": "residential", "total_assessed_value": 100000}, []),
+            ("c", 41.9, -87.6, {"land_use_class": "exempt", "total_assessed_value": 9_000_000}, []),
+            ("d", 41.9, -87.6, {"land_use_class": "residential", "total_assessed_value": 0}, []),
+        ],
+    )
+    data_version, parcels = read_index(path)
+    parcel_source.set_snapshot(data_version, parcels)
+    try:
+        client = TestClient(app)
+        body = client.post("/api/discovery/search", json={
+            "sort": {"key": "assessed_value", "dir": "asc"},
+        }).json()
+        rows = body["result"]["rows"]
+        # 100k, 200k, then exempt + $0 last (tie broken by PIN asc: c before d).
+        assert [r["pin"] for r in rows] == ["b", "a", "c", "d"]
+        # exempt/$0 hydrate as null assessed_value (consistent with being sorted last).
+        assert rows[2]["assessed_value"] is None  # c (exempt, despite a 9M raw value)
+        assert rows[3]["assessed_value"] is None  # d ($0)
+        assert rows[0]["assessed_value"] == 100000
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_search_returns_json_not_spa_fallback(client):
+    # Guards the /api-prefix lesson: a 200 can be the SPA index.html fallback. Assert the
+    # response is real JSON from FastAPI, not HTML.
+    r = client.post("/api/discovery/search", json={})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/json")
+    assert "<!doctype html" not in r.text.lower()
+    assert "rows" in r.json()["result"]

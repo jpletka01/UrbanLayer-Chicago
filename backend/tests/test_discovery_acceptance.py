@@ -37,6 +37,11 @@ def _search(client, **payload) -> dict:
     return r.json()
 
 
+def _pins(resp: dict) -> list[str]:
+    """Ordered pins from the hydrated rows — the wire now returns rows, not bare pins."""
+    return [row["pin"] for row in resp["result"]["rows"]]
+
+
 def test_topic_text_and_ui_equal_cqs_return_identical_pins(client):
     # UI mode: panel selections → userFilters.
     ui = _search(client, userFilters={
@@ -52,7 +57,7 @@ def test_topic_text_and_ui_equal_cqs_return_identical_pins(client):
     }, topicId="vacant_multifamily")
 
     # Identical results across all three modes.
-    assert ui["result"]["pins"] == text["result"]["pins"] == topic["result"]["pins"] == ["m1"]
+    assert _pins(ui) == _pins(text) == _pins(topic) == ["m1"]
 
     # And their canonical CQS are equal (source/meta excluded by canonical form).
     ui_cqs = CQS.model_validate(ui["cqs"])
@@ -67,7 +72,7 @@ def test_equal_cqs_implies_equal_pins_is_the_only_difference_source(client):
     a = _search(client, userFilters={"tif": {"kind": "flag", "value": True}})
     b = _search(client, text="tif")  # same constraint, different source
     assert cqs_equal(CQS.model_validate(a["cqs"]), CQS.model_validate(b["cqs"]))
-    assert a["result"]["pins"] == b["result"]["pins"] == ["m1", "m3"]
+    assert _pins(a) == _pins(b) == ["m1", "m3"]
 
 
 def test_repeated_envelope_is_byte_identical_across_the_wire(client):

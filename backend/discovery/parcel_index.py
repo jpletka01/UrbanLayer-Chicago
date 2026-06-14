@@ -134,6 +134,26 @@ def write_index(
         conn.close()
 
 
+def normalize_value_fields(attrs: dict[str, Any]) -> dict[str, Any]:
+    """Treat a $0 / tax-exempt assessment as *absent* (PR3 0/exempt rule).
+
+    A $0 or exempt assessed value is not a meaningful number to sort or filter on. By
+    dropping it here — at the snapshot-hydration seam, where the immutable parcel view
+    the evaluator reads is built — the evaluator's existing missing-last ordering
+    (`evaluator.py` compare: missing sorts last in both dirs) handles these rows with
+    NO change to the pure comparator and NO change to `evaluate()`.
+
+    Confined to the value field: every other genuine 0 (e.g. `open_violation_count` 0,
+    `units` 0) stays honest. Deliberate consequence: an explicit `assessed_value` range
+    filter also treats exempt/$0 as missing (excluded under `unknownPolicy=exclude`),
+    which is coherent — there is no meaningful assessed value to compare against.
+    """
+    av = attrs.get("total_assessed_value")
+    if attrs.get("land_use_class") == "exempt" or av == 0 or av is None:
+        return {k: v for k, v in attrs.items() if k != "total_assessed_value"}
+    return attrs
+
+
 def read_index(path: Path) -> tuple[str | None, list[IndexedParcel]]:
     """Load the index → (data_version, parcels). Returns (None, []) if absent/empty."""
     if not path.exists():
@@ -145,7 +165,7 @@ def read_index(path: Path) -> tuple[str | None, list[IndexedParcel]]:
             return None, []
         data_version = meta[0]
         parcels = [
-            IndexedParcel(pin, lat, lon, json.loads(attrs), json.loads(regions))
+            IndexedParcel(pin, lat, lon, normalize_value_fields(json.loads(attrs)), json.loads(regions))
             for pin, lat, lon, attrs, regions in conn.execute(
                 "SELECT pin, lat, lon, attrs, regions FROM parcels"
             )
