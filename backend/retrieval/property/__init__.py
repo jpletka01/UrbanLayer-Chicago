@@ -195,6 +195,14 @@ def _build_summary(
                 or row.get("board_tot")
             ),
         )
+        # The CCAO's in-progress year (e.g. 2026) carries NULL value columns until
+        # values are mailed, and Socrata omits NULL fields — so the latest row comes
+        # back valueless (land/building/total all None). Skip it: every consumer
+        # already filters null totals, but a phantom valueless record would still
+        # pollute assessment_history (and the synthesizer context). See known-issues
+        # "CCAO latest assessment year is VALUELESS until mailed".
+        if rec.total is None and rec.land is None and rec.building is None:
+            continue
         assessment_history.append(rec)
         if total_assessed_value is None and rec.total is not None:
             total_assessed_value = rec.total

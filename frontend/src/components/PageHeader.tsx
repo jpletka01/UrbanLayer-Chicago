@@ -11,23 +11,23 @@ const NAV_ITEMS: { to: string; key: string }[] = [
   // code-research surface — not the address-first front door.
   { to: "/?analyst=1", key: "nav.chat" },
   { to: "/scorecard", key: "nav.scorecard" },
-  { to: "/explore", key: "nav.explore" },
   { to: "/pricing", key: "nav.pricing" },
   { to: "/about", key: "nav.about" },
 ];
 
 // Discovery is linked only once its index actually has data (coverage != "none"); while
 // dormant it stays unlinked. The check rides the cached discovery registry, so it's one
-// shared fetch, not per-page work.
+// shared fetch, not per-page work. (It took Explore's old nav slot — after Scorecard —
+// when /explore was retired 2026-06-14.)
 const DISCOVERY_ITEM = { to: "/discovery", key: "nav.discovery" };
 
 export function navItemsFor(discoveryLive: boolean): { to: string; key: string }[] {
   if (!discoveryLive) return NAV_ITEMS;
-  return [...NAV_ITEMS.slice(0, 3), DISCOVERY_ITEM, ...NAV_ITEMS.slice(3)]; // after Explore
+  return [...NAV_ITEMS.slice(0, 2), DISCOVERY_ITEM, ...NAV_ITEMS.slice(2)]; // after Scorecard
 }
 
 /**
- * Standard header for the non-chat pages (Scorecard, Explore, Pricing, About):
+ * Standard header for the non-chat pages (Scorecard, Discovery, Pricing, About):
  * logo, nav with active highlight, and a consistent top-right of language
  * selector + auth (UserMenu when signed in, sign-in button when the deployment
  * has auth enabled). The chat workspace and splash keep their own headers.

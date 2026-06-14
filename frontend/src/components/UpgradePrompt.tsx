@@ -39,7 +39,7 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
         <p className="text-sm text-text-secondary text-center mb-6">
           {feature
             ? `${feature} is a Pro feature. Upgrade to unlock it along with unlimited queries, PDF reports, and more.`
-            : "Unlock unlimited queries, PDF zoning reports, Site Explorer, and priority support for $99/month."}
+            : "Unlock unlimited queries, PDF zoning reports, Property Discovery, and priority support for $99/month."}
         </p>
 
         <button

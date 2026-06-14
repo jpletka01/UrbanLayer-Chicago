@@ -2,7 +2,6 @@
   "nav": {
     "chat": "Analyst",
     "scorecard": "Scorecard",
-    "explore": "Explore",
     "discovery": "Discovery",
     "pricing": "Pricing",
     "about": "About",
@@ -135,33 +134,6 @@
       "approximate": "Approximate location",
       "approximateTitle": "This address was placed by street geocoding, so the parcel shown may be a close neighbor. Verify parcel-specific figures before relying on them."
     }
-  },
-  "explore": {
-    "title": "Site Explorer",
-    "subtitle": "Browse parcels by community area and property class.",
-    "communityArea": "Community Area",
-    "selectCA": "Select a community area...",
-    "propertyClass": "Property Class",
-    "all": "All",
-    "residential": "Residential",
-    "multiFamily": "Multi-family",
-    "commercial": "Commercial",
-    "industrial": "Industrial",
-    "vacant": "Vacant",
-    "selectCAPrompt": "Select a community area to explore parcels",
-    "parcels": "parcels",
-    "in": "in",
-    "mapShown": "Map: {{count}} shown",
-    "pin": "PIN",
-    "class": "Class",
-    "description": "Description",
-    "previous": "Previous",
-    "next": "Next",
-    "pageOf": "Page {{current}} of {{total}}",
-    "loadingParcels": "Loading parcels...",
-    "selectCAMap": "Select a community area",
-    "parcelsOnMap": "Parcels will appear on the map",
-    "downloadCsv": "Download CSV"
   },
   "discovery": {
     "teaserCount": "{{total}} parcels match — you're seeing {{shown}}.",

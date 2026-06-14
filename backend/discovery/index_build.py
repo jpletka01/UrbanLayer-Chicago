@@ -31,8 +31,8 @@ from shapely.strtree import STRtree
 from backend.config import get_settings
 from backend.discovery.parcel_index import default_index_path, write_index
 from backend.discovery.registry import load as load_registry
-from backend.retrieval.explore import _format_pin
 from backend.retrieval.geo import community_area_bounds, community_area_by_point
+from backend.retrieval.utils import format_pin
 from backend.retrieval.incentives.enterprise_zones import _load_ez_boundaries
 from backend.retrieval.incentives.tif import _load_tif_boundaries
 from backend.retrieval.socrata import socrata_get
@@ -288,7 +288,7 @@ async def _fetch_spine(ca: int, *, client: httpx.AsyncClient | None) -> list[dic
             if not pin_raw or lat is None or lon is None:
                 continue
             out.append({
-                "pin": _format_pin(pin_raw),
+                "pin": format_pin(pin_raw),
                 "pin_digits": pin_raw.zfill(14),
                 "class": r.get("class", ""),
                 "lat": float(lat),

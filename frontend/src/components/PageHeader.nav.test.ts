@@ -7,9 +7,11 @@ describe("PageHeader nav — Discovery linked only when its index is live", () =
     expect(keys).not.toContain("nav.discovery");
   });
 
-  it("inserts Discovery after Explore once live", () => {
+  it("inserts Discovery after Scorecard once live", () => {
     const keys = navItemsFor(true).map((n) => n.key);
     expect(keys).toContain("nav.discovery");
-    expect(keys.indexOf("nav.discovery")).toBe(keys.indexOf("nav.explore") + 1);
+    expect(keys.indexOf("nav.discovery")).toBe(keys.indexOf("nav.scorecard") + 1);
+    // Explore was retired — it should no longer appear in nav at all.
+    expect(keys).not.toContain("nav.explore");
   });
 });

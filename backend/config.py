@@ -78,9 +78,6 @@ class Settings(BaseSettings):
     # parcels; 2000 covers that with headroom. (Condo towers can still exceed it —
     # those are inherently coord-ambiguous; the fallback logs a truncation warning.)
     limit_ccao_parcels: int = 2000
-    limit_explore_parcels: int = 200
-    limit_explore_max: int = 500
-    limit_explore_map: int = 5000
 
     # Census Reporter API (tract-level ACS demographics)
     census_reporter_base: str = "https://api.censusreporter.org/1.0"

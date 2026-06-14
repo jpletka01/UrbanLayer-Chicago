@@ -2,7 +2,6 @@
   "nav": {
     "chat": "Analista",
     "scorecard": "Ficha",
-    "explore": "Explorar",
     "discovery": "Descubrir",
     "pricing": "Precios",
     "about": "Acerca de",
@@ -134,33 +133,6 @@
       "approximate": "Ubicación aproximada",
       "approximateTitle": "Esta dirección se ubicó por geocodificación de calles, por lo que la parcela mostrada podría ser una vecina cercana. Verifique las cifras específicas de la parcela antes de usarlas."
     }
-  },
-  "explore": {
-    "title": "Explorador de sitios",
-    "subtitle": "Explora parcelas por área comunitaria y clase de propiedad.",
-    "communityArea": "Área comunitaria",
-    "selectCA": "Seleccione un área comunitaria...",
-    "propertyClass": "Clase de propiedad",
-    "all": "Todas",
-    "residential": "Residencial",
-    "multiFamily": "Multifamiliar",
-    "commercial": "Comercial",
-    "industrial": "Industrial",
-    "vacant": "Desocupado",
-    "selectCAPrompt": "Seleccione un área comunitaria para explorar propiedads",
-    "parcels": "propiedads",
-    "in": "en",
-    "mapShown": "Mostradas en el mapa: {{count}}",
-    "pin": "PIN",
-    "class": "Clase",
-    "description": "Descripción",
-    "previous": "Anterior",
-    "next": "Siguiente",
-    "pageOf": "Página {{current}} de {{total}}",
-    "loadingParcels": "Cargando propiedads...",
-    "selectCAMap": "Seleccione un área comunitaria",
-    "parcelsOnMap": "Las propiedads aparecerán en el mapa",
-    "downloadCsv": "Descargar CSV"
   },
   "discovery": {
     "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",
