@@ -1,17 +1,76 @@
 # 10 — Implementation Status & Decisions Record
 
-**Status: SHIPPED to production 2026-06-13** (merged to `main`; deploy-verified via live JSON;
-HEAD `f192d57`). All of build-plan `08` (steps 1–10) plus the offline prospecting index
-(`strategy/property-discovery-filters.md` Part B) and the frontend are live. **Dormant by
-design:** premium-gated, unlinked from nav, and `/api/discovery/search` returns the empty-index
-fallback until a prospecting index is built on the prod server (see "What remains").
+**Status: SHIPPED to production in two waves, still DORMANT by design.**
+- **Wave 1 (2026-06-13, `f192d57`)** — build-plan `08` steps 1–10: the invariant core,
+  compilers, evaluator, diagnostics, offline index builder, and a list-first frontend.
+- **Wave 2 (2026-06-14, merge `8c279c6`)** — the **result.rows workbench (PR1–PR10)**: turned
+  the dormant filter form into a goal-first, map-backed prospecting workbench. See the new
+  section **"The result.rows workbench"** below for the full record.
+
+**Dormant by design (still true after Wave 2):** premium-gated for the full experience,
+**unlinked from nav**, and the prod **index is still empty** (`/api/discovery/search` returns
+the empty-index fallback) — so coverage reads "none", every filter/recipe reads "coming", and
+the page is honestly inert until the prod index is built. The real launch is gated on
+**PR-INDEX → PR-VAL → PR-LIVE** (see "What remains"), which are blocked by the 2026-06-13
+Socrata 503 outage.
 
 This doc records **what was actually built, the decisions made during implementation that
 were not fully pinned by the spec (00–09), and what remains.** The spec docs 00–09 stay the
 normative design; this is the reality + rationale log for future sessions.
 
-Tests: backend **131 discovery tests** (full backend unit suite 747, no regressions);
-frontend **17 tests** (new vitest runner). `tsc --noEmit` clean; production build OK.
+Tests after Wave 2: backend **166 discovery tests** (full backend **unit** suite 782, no
+regressions — the only full-suite failures are live external-API integration tests down on the
+Socrata/ArcGIS outage); frontend **48 vitest** tests; `tsc --noEmit` clean.
+
+---
+
+## The result.rows workbench (PR1–PR10, merged 2026-06-14 `8c279c6`)
+
+Wave 1 shipped a *dormant filter form*. A design review (recorded in conversation, founder-led)
+concluded the **output, the cold-start honesty, the paywall, and the IA** were the real problems
+— not the filter labels. Wave 2 rebuilt around that, in ten independently-shippable PRs on
+branch `feat/discovery-result-rows`. **Each PR was reviewed + guardrailed before the next.**
+
+### The thesis (why these PRs, in this order)
+The keystone was the **frozen wire `result = {pins, total}`** — a list of opaque PINs with no
+attributes, no map, no export. Everything downstream (scannable list, map, CSV, teaser) was
+blocked by it. So PR1 broke that contract first; the rest layer on top.
+
+### The PRs
+| PR | What | Key contract/decision |
+|---|---|---|
+| **PR1** | `result.rows` wire keystone | `SearchResult{pins,total}` → `{rows,total,nextOffset}`; `SearchRequest +limit/offset`. `evaluate()` UNTOUCHED — still returns the full ordered pin list; the API slices the window and hydrates rows from the same snapshot. Extracted **`_resolve(req)`** = the single parse→merge→evaluate path so `/search`, `/search/pins`, `/search/export` can't drift by construction. |
+| **PR1-fix** | 0/exempt sort reconcile | The locked "null sort input, no evaluator change" was *unrealizable* (the comparator reads the snapshot). Reconciled: keep `total_assessed_value` real (filter + display honest), add a **sort-only field `total_assessed_value_sortkey`** (null for exempt/$0); the `assessed_value` SORT key points at it, the FILTER stays on the real field. Comparator's existing missing-last path does the rest. Stated plainly: this is an evaluator-**input** change, not "no evaluator change." Filter stays **inclusive** of exempt/$0 (Jack's call). |
+| **PR2** | Registry metadata + content | `RangeMeta{domain,step,boundMode,display,presets}` + `requires`/`label`/`help`/`enumLabels` (presentation only; evaluator never reads them). Hand-authored labels for all **32 filters** (kills `humanize()` display). **3 new derived filters** (`value_percentile`, `upside_score`, `is_teardown_candidate` — nullable until PR-INDEX). New sortKeys; **6 prospecting recipes** in `topics`; `defaultSort → assessed_value asc`. |
+| **PR4** | Coverage + populatedFields | `registry.coverage{mode,liveAreas,asOf}` + `populatedFields[]`, **injected by `/registry` from index `meta`** (cached artifact stays pure via `model_copy`). Coverage is a standalone banner sourced ONLY from `registry.coverage` — **never enters the CQS/chips** (tested). `populatedFields` drives BOTH consumers (panel "coming" disable + recipe badges). **Critical safe default: missing meta → coverage "none" + empty populatedFields** (dormant), never "all available". |
+| **PR5** | Results surface | Address-first row-cards (PIN demoted, active sort bolded); infinite scroll over `nextOffset` (append + dedupe by pin; list never the map's source); **three-way zero state** from PR4 selectors (NULL-backed field / non-live area / too-tight); `caName()` region fix ("West Town" not "neighborhood 24") in chips + summary. CSV deferred to PR7. |
+| **PR6** | Map split + `/search/pins` | Reuses Explore's deck.gl `ScatterplotLayer` + `useMapboxOverlay`. `/search/pins` shares `_resolve`/`_pin_lookup` → **pin-SEQUENCE identity** with `/search` (tested under a non-default sort). Returns the FULL ordered coord set (pin+lat/lon+upside+landUse), capped 5000 + `truncated`. **Null upside → a DISTINCT no-data swatch**, never the low end. Bidirectional row↔dot hover sync. |
+| **PR7** | `/search/export` CSV | Streams ALL `result.total` rows (no limit/offset) via `_resolve`; **premium-gated** (`require_tier("premium")` → free 403). Human headers from registry labels; exempt/$0 keep TRUE value; filename from canonical-CQS slug. |
+| **PR8** | Recipe shelf + query-first IA | Recipe click = `expandTopic` → fold presets into panel as USER filters (editable), apply sort, send `topicId` as **telemetry only** (backend never re-expands; cleared on edit). Honest LIVE/NEEDS-DATA badges from `missingFieldsFor`. NL box promoted; 6 filter categories collapse into a refinement drawer. |
+| **PR9** | Free teaser + gate | **Jack's calls, server-enforced:** free = top **10** rows (`FREE_ROW_CAP`, server-capped off the auth dependency, true total + `gated` flag, no paging past), **upside shown** on free rows, **all map dots** but **land-use colored + view-only** (Pro = upside-colored + interactive), **Export shown but locked** → upgrade. Query-aware teaser wall from `summarize()`. Replaced the hard pre-search wall — free users now run a search and hit the teaser. i18n keys (`discovery.*`, en+es). |
+| **PR10** | Mobile + a11y | Below md: single column, sticky `[List\|Map]` toggle (map stays MOUNTED — GL context preserved), "Edit filters" bottom sheet, scroll-snap recipe row. a11y: `aria-pressed` flag/enum pills, `role=radiogroup`+`aria-checked` preset chips, labeled min/max inputs, `<label htmlFor>` select. |
+
+### Structural guarantees worth remembering
+- **Single resolver.** All three search endpoints go through `_resolve(req)`. Tests assert
+  pin-SEQUENCE (not just total) parity, because a dropped sort/scope/topic arg desyncs ORDER
+  while total-parity still passes — the exact bug class we grounded on.
+- **Coverage is presentational only.** It was *almost* injected into the CQS as a default
+  filter; that was retracted as not invariant-safe (precedence + cleared-field would corrupt
+  it, and `compile_merge` has no default-precedence layer for filters anyway). It lives only on
+  the registry response → a banner outside `response.cqs`.
+- **`evaluate()` is still the sole result producer (INV-1).** PR1 pagination/hydration and the
+  PR9 tier cap all live in `api.py`, consuming the evaluator's output; the pure leaf is unchanged
+  except the PR1-fix sort-key field (an input change, declared as such).
+
+### Deferred from Wave 2 (stated, not hidden)
+- **Continuous slider control + `aria-valuetext`** — only preset chips + min/max inputs are
+  built; the non-preset ranges (e.g. `improvement_ratio`) keep min/max boxes. A slider is a
+  small dedicated follow-up.
+- **Map-dot keyboard navigation** — the result list is the accessible path to every parcel.
+- **Whole-page i18n** — only the PR9 teaser/export strings are keyed; the rest of the discovery
+  surface is still hardcoded English (a known gap from the original review).
+- **O(N) pin lookup** — `_pin_lookup` rebuilds a `{pin:parcel}` dict per request over the whole
+  snapshot. Fine while dark/small; memoize before the full-city (~1.8M) index goes live.
 
 ---
 
@@ -30,18 +89,23 @@ frontend **17 tests** (new vitest runner). `tsc --noEmit` clean; production buil
 | `compile_merge.py` | 6 | `merge(...)` — the only writer of canonical CQS; precedence + validity + validation drops |
 | `parcel_index.py` | index | `IndexedParcel` (concrete Parcel) + SQLite read/write of the prospecting index |
 | `index_build.py` | index | Offline builder CLI (`--community-areas` / `--all`): spine → batch joins → local spatial pass → assemble → upsert |
-| `parcel_source.py` | 7/index | Production snapshot seam + current-dataVersion pointer; `ensure_loaded()` loads `discovery_index.db` else empty fallback |
-| `api.py` | 7 | `GET /api/discovery/registry`, `POST /api/discovery/search` — wires parse→merge→evaluate→build |
+| `parcel_source.py` | 7/index | Production snapshot seam + current-dataVersion pointer + **`current_meta()`** (coverage/populatedFields source); `ensure_loaded()` loads `discovery_index.db` + `read_meta` else empty fallback |
+| `parcel_index.py` | index | `IndexedParcel` + SQLite r/w; **`IndexMeta`/`read_meta`** (PR4); **`derive_sort_fields`** (PR1-fix sort-only key); `write_index` `populated_fields` column |
+| `api.py` | 7 / Wave 2 | `GET /api/discovery/registry` (injects coverage+populatedFields), `POST /api/discovery/search` (rows window + free-tier cap + `gated`), **`POST /api/discovery/search/pins`** (full coord set, PR6), **`POST /api/discovery/search/export`** (premium CSV, PR7). **`_resolve(req)`** = the shared parse→merge→evaluate path; `_pin_lookup`, `_hydrate_window`, `ResultRow`/`PinPoint`/`Coverage` models, `FREE_ROW_CAP`/`MAX_MAP_POINTS`. |
 
 Mounted in `backend/main.py` (router include + `ensure_loaded()` in `@app.on_event("startup")`).
 
 ### Frontend — `frontend/src/discovery/`
-`types.ts` (wire mirrors) · `registryClient.ts` (cache + staleness) · pure `uiCompiler.ts` /
-`topicCompiler.ts` / `summary.ts` · `searchClient.ts` · `chips.tsx` (renders from
-`response.cqs`, INV-4) · `DiscoveryFilterPanel.tsx` / `DiscoveryResults.tsx` /
-`DiscoveryPage.tsx` · `communityAreas.ts`. Route `/discovery` in `main.tsx`; wire calls
-`fetchDiscoveryRegistry`/`discoverySearch` in `lib/api.ts`. Added **vitest + jsdom +
-@testing-library/react** (no FE unit runner existed before; `vitest.config.ts`, `npm test`).
+**Wave 1:** `types.ts` (wire mirrors) · `registryClient.ts` · pure `uiCompiler.ts` /
+`topicCompiler.ts` (now also `panelFromCqs`) / `summary.ts` · `searchClient.ts` (now `runPins`/
+`exportCsv`) · `chips.tsx` (INV-4) · `DiscoveryFilterPanel.tsx` / `DiscoveryResults.tsx` /
+`DiscoveryPage.tsx` · `communityAreas.ts`.
+**Wave 2 additions:** `coverage.ts` (coverage/populatedFields selectors, safe defaults) ·
+`CoverageBanner.tsx` · `DiscoveryMap.tsx` (deck.gl, colorBy upside/land_use, view-only when
+free) · `upsideColor.ts` (upside ramp + no-data swatch + land-use ramp/legends) ·
+`RecipeShelf.tsx`. Wire calls `discoverySearch`/`discoverySearchPins`/`discoveryExportCsv`/
+`fetchDiscoveryRegistry` in `lib/api.ts`. Vitest setup (`src/test-setup.ts` inits i18n) in
+`vitest.config.ts`; **48 tests**.
 
 ---
 
@@ -152,29 +216,46 @@ invariants literally true. **Revisit here first** if behavior surprises you late
 
 ## What remains
 
-**Operational (no code):**
-- ✅ **Shipped to production 2026-06-13** (merge `a15ce81` + path hotfix `f192d57`; deploy
-  verified via live JSON). Feature is LIVE but **dormant**: premium-gated, **not nav-linked**,
-  empty-index fallback until an index is built on prod.
-- **Run the live index build ON THE PROD SERVER** once the city/county Socrata portals recover
-  (they returned **503** across the board on 2026-06-13). SSH to `178.105.184.66`
-  (`/opt/urbanlayer`), `python -m backend.discovery.index_build --community-areas 24` (or
-  `--all`), restart backend so `ensure_loaded()` picks it up. Until then
-  `/api/discovery/search` correctly returns the empty-index fallback (`dataVersion
-  discovery-empty-0`, total 0).
-- (Optional) add a nav link in `PageHeader` — admin-only while data-less, public once real.
+The frontend + wire are **feature-complete and dark**. The launch gate is now entirely about
+**data + de-dormancy**, in this order (all blocked by the 2026-06-13 Socrata 503 outage):
 
-**Deferred features (later index version / PR):**
-- **Map markers** for results — requires the versioned `result.rows` coords extension to the
-  frozen `SearchResponse` (a reviewed contract change).
-- **Index fields:** opportunity_zone (needs OZ tract polygons), ward (ward polygons),
-  overlay/adu/aro (overlay layers), floodplain, brownfield, transit_proximity (cheap — station
-  distance), and the expensive per-PIN rollups (open_violations, f311_redflags, crime_index),
-  sbif_nof. Each is a `data_version` bump + new `meta`, **no evaluator change** (that's the
-  point of the registry/index split).
-- **Topics:** `registry.topics` is `[]` today; the topic compiler machinery exists. Adding
-  topic presets is a registry edit (e.g. a "vacant multifamily incentive" preset).
-- **Free-teaser gating** variant; saved searches; the full 77-CA build run.
+**PR-INDEX (blocked) — build the prod index so there's anything to show.**
+The offline builder (`index_build.py`) must compute + write the Wave-2 derived fields and the
+`meta` that drives coverage/populatedFields. Specifically it needs to:
+- Populate the MVP fields (land_use/vacancy, lot/building size, year_built, units, assessed
+  value, sale + recency, price/sf, improvement_ratio, TIF/EZ, zoning_group + density, the
+  `neighborhood:<ca>` region) **plus `transit_proximity`** (promoted into MVP — cheap station
+  haversine, needed by recipe `vacant_mf_transit`).
+- Compute the **3 derived fields** the registry now exposes: `value_percentile` (percentile of
+  $/sqft within community-area × land_use; precise basis/min-N rules in the conversation
+  record), `upside_score` (0.6·FAR-headroom + 0.4·land-share, 0–100), `is_teardown_candidate`
+  (improvement_ratio ≤ 0.25). All offline, deterministic, a `data_version` bump — **no evaluator
+  change** (the point of the registry/index split).
+- Write `meta.populated_fields` = the filter ids actually populated, and the `community_areas`
+  set (drives `coverage`). Until then `read_meta` → None → coverage "none" + empty
+  populatedFields (the safe dormant default).
+- Run on prod: SSH `178.105.184.66` (`/opt/urbanlayer`), `python -m
+  backend.discovery.index_build --community-areas 24` (or `--all`), restart backend so
+  `ensure_loaded()` picks it up.
+
+**PR-VAL (blocked, code can be written now) — validate the derived metrics before they sort.**
+Non-blocking telemetry harnesses (warn, never refuse to publish fresh parcel data): for
+`value_percentile`, assert min-N≥30 peer sets + monotonic percentile→$/sqft + plausible
+p10/p50/p90 vs known comps; for `upside_score`, label-vs-AUC against actual redevelopment
+outcomes derived from demolition + new-construction permits (`buildings.py`). The 0.6/0.4
+weighting is a v1 heuristic to tune from that label set (a `data_version` recompute, no code).
+
+**PR-LIVE (blocked on the above) — de-dormancy.** Nav-link Discovery in `PageHeader`; the
+coverage banner flips from "being prepared" to "live in West Town"; recipes/filters light up as
+their fields populate. The free teaser becomes meaningful (real totals behind the wall).
+
+**Smaller follow-ups (not launch-blocking):**
+- Continuous **slider** control + `aria-valuetext` (non-preset ranges keep min/max boxes today).
+- **Whole-page i18n** (only PR9 teaser/export strings are keyed).
+- Memoize `_pin_lookup` before the full-city index.
+- Saved searches; the remaining deferred index fields (OZ tracts, ward polygons, overlay/adu/aro
+  layers, floodplain, brownfield, the per-PIN rollups open_violations/f311/crime, sbif_nof) —
+  each a `data_version` bump.
 
 ---
 
@@ -184,18 +265,15 @@ invariants literally true. **Revisit here first** if behavior surprises you late
 is a strict superset of Explore's two filters (`land_use` ⊃ class, `neighborhood` ⊃ community
 area). The intent: Discovery converges with and **eventually retires Explore.**
 
-The deliberate gap today is the **map** — Discovery is list-first by design while the index
-is empty. The plan: once there's real data, add a map to Discovery that **looks like Explore's**
-(reuse Explore's deck.gl `ScatterplotLayer` + `useMapboxOverlay` + `classColor` from
-`frontend/src/components/ExplorePage.tsx`). That requires the deferred `result.rows`
-(pin + lat/lon [+ a few display fields]) extension to `SearchResponse` (a reviewed contract
-change, 07). At that point Explore is redundant → **retire `/explore`** (redirect to
-`/discovery`, drop the page + `/api/explore*` once nothing references them).
+**Wave 2 closed the map gap.** Discovery now has the deck.gl map (`DiscoveryMap.tsx`, reusing
+Explore's `ScatterplotLayer` + `useMapboxOverlay`) fed by `/search/pins`, so it is now a strict
+superset of Explore (filters ⊃ Explore's two, **plus** a map, plus recipes/export/teaser). The
+only thing left before Explore is redundant is **real data**.
 
-Sequence: (1) build the prod index → real results; (2) `result.rows` coords extension + port
-Explore's map into `DiscoveryResults`; (3) nav-link Discovery; (4) redirect/retire Explore.
-Until (2), the two coexist on purpose. Don't delete Explore before Discovery has the map +
-real data — Explore is the only working parcel-browser in the meantime.
+Updated sequence: ✅ (map + `result.rows`/`/search/pins` built, Wave 2) → **build the prod
+index (PR-INDEX)** → nav-link Discovery (PR-LIVE) → **redirect/retire `/explore`** (drop the
+page + `/api/explore*` once nothing references them). Don't delete Explore before Discovery has
+real data — it's the only working parcel-browser until the index lands.
 
 ---
 
@@ -203,11 +281,18 @@ real data — Explore is the only working parcel-browser in the meantime.
 ```bash
 # backend
 source .venv/bin/activate
-python -m pytest backend/tests/test_discovery_*.py -q          # 131 tests
+python -m pytest backend/tests/test_discovery_*.py -q          # 166 tests
+python -m pytest backend/tests/ -q -m "not integration"       # 782 unit (the 8 full-suite
+                                                              # failures are live-API only)
 # frontend
-cd frontend && npx tsc --noEmit && npm test                    # 17 tests
-# live wire (backend running on :8001)
-curl -s localhost:8001/api/discovery/registry | jq '.version, (.filters|length)'
+cd frontend && npx tsc --noEmit && npm test                    # 48 vitest
+
+# live wire (backend running on :8001) — registry now carries coverage + populatedFields
+curl -s localhost:8001/api/discovery/registry | jq '.version, (.filters|length), .coverage, .populatedFields'
+# search returns rows + gated; pins returns the full coord set; export is premium-only (403 free)
 curl -s -X POST localhost:8001/api/discovery/search -H 'content-type: application/json' \
-  -d '{"userFilters":{"tif":{"kind":"flag","value":true}},"text":"vacant"}' | jq '.result.total, (.cqs.filters|keys)'
+  -d '{"userFilters":{"tif":{"kind":"flag","value":true}},"text":"vacant"}' \
+  | jq '.result.total, .result.gated, (.result.rows|length), (.cqs.filters|keys)'
+curl -s -X POST localhost:8001/api/discovery/search/pins -H 'content-type: application/json' \
+  -d '{}' | jq '.total, .truncated, (.points|length)'
 ```

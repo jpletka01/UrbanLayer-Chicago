@@ -58,24 +58,42 @@ retrieval/
 
 ## Property Discovery (`discovery/`)
 
-Deterministic parcel **filter + single-key sort** engine (no scoring). Built 2026-06-13 on
-branch `feat/discovery-evaluator-core` (not deployed). Spec + decisions:
-`claude-context/property-discovery/` (read `10-implementation-status.md` first).
+Deterministic parcel **filter + single-key sort** engine (no scoring) → a goal-first, map-backed
+prospecting **workbench**. Shipped to prod in 2 waves, **dormant** (premium-gated full
+experience, unlinked from nav, empty prod index). Spec + decisions:
+`claude-context/property-discovery/` — **read `10-implementation-status.md` first**, esp. the
+"result.rows workbench (PR1–PR10)" section.
 
-- **Invariant core:** `registry.py` (+`registry.json`, 29 filters) → `cqs.py` (CQS/Predicate
-  models, canonical equality) + `predicates.py` (`satisfies`/`within_scope`) → `evaluator.py`
-  (`evaluate(cqs, data_version)` — the ONLY result producer, INV-1, pure leaf).
+- **Invariant core:** `registry.py` (+`registry.json`, **32 filters** + `RangeMeta`/`requires`/
+  `label`/`help`/`enumLabels` + 6 `topics` + `Coverage`) → `cqs.py` → `predicates.py` →
+  `evaluator.py` (`evaluate(cqs, data_version)` — the ONLY result producer, INV-1, pure leaf;
+  unchanged by Wave 2 except it reads the sort-only `total_assessed_value_sortkey` field).
 - **Diagnostics** `diagnostics.py` (advisory; `mostRestrictive` calls evaluate as a black box).
-- **Compilers** `compile_text.py` (deterministic rule-based text→fragment, never the LLM) +
-  `compile_merge.py` (the only writer of canonical CQS; precedence user>text>default).
-- **Data** `parcel_index.py` (`IndexedParcel` + SQLite) + `index_build.py` (offline builder CLI:
-  `python -m backend.discovery.index_build --community-areas 24 | --all`) → `discovery_index.db`
-  under `ingestion/data/`. `parcel_source.ensure_loaded()` loads it (empty fallback until built).
-- **API** `api.py`: `GET /api/discovery/registry`, `POST /api/discovery/search` (mounted in `main.py`,
-  `ensure_loaded()` at startup). Wire: `parse → merge → evaluate → build`, echoes canonical CQS.
-- **Tests:** `backend/tests/test_discovery_*.py` (131). Mock Socrata + polygon layers.
-- **Remaining:** live index build (blocked by 2026-06-13 Socrata 503 outage); deferred index
-  fields (OZ/ward/overlay/flood/transit/rollups) ship as a `data_version` bump, no code change.
+- **Compilers** `compile_text.py` (rule-based, never the LLM) + `compile_merge.py` (only writer
+  of canonical CQS; precedence user>text>default; `topicId` is telemetry-only, never re-expanded).
+- **Data** `parcel_index.py` (`IndexedParcel` + SQLite; `IndexMeta`/`read_meta`;
+  `derive_sort_fields` = the 0/exempt sort-only key, real value kept) + `index_build.py` (offline
+  builder CLI) → `discovery_index.db` under `ingestion/data/`. `parcel_source.ensure_loaded()`
+  loads it + `read_meta`; `current_meta()` feeds coverage/populatedFields; empty fallback until built.
+- **API** `api.py` — **one shared `_resolve(req)`** (parse→merge→evaluate) behind every endpoint:
+  - `GET /api/discovery/registry` — static artifact + **coverage + populatedFields injected from
+    index `meta`** (safe default: no meta → coverage "none", empty populatedFields).
+  - `POST /api/discovery/search` — `{rows,total,nextOffset,gated}`. Rows hydrated from the snapshot;
+    `limit/offset` paging. **Free tier (Depends(get_current_user), `FREE_ROW_CAP=10`) is
+    server-capped** to the top 10 + `gated=true` + true total + `nextOffset=null`.
+  - `POST /api/discovery/search/pins` — FULL ordered coord set (pin+lat/lon+upside+landUse),
+    capped `MAX_MAP_POINTS=5000` + `truncated`. NOT tier-capped (free sees all dots; FE colors
+    by land-use + view-only).
+  - `POST /api/discovery/search/export` — streams ALL `result.total` rows as CSV,
+    **`require_tier("premium")`** (free 403), human headers from registry labels.
+- **Tests:** `backend/tests/test_discovery_*.py` (**166**). Mock Socrata + polygon layers;
+  premium/free gating via FastAPI `dependency_overrides` (the `Depends` callable is captured at
+  decoration, so monkeypatching the module attr does NOT work — override the dependency).
+- **Remaining (launch gate):** **PR-INDEX** (build prod index incl. the 3 derived fields
+  `value_percentile`/`upside_score`/`is_teardown_candidate` + `transit_proximity` + write
+  `meta.populated_fields`/`community_areas`) → **PR-VAL** (non-blocking metric validation) →
+  **PR-LIVE** (nav-link + de-dormancy). All blocked by the 2026-06-13 Socrata 503. New index
+  fields are a `data_version` bump, **no evaluator change**.
 
 ## Production Configuration
 
