@@ -19,10 +19,12 @@ from typing import Callable
 from pydantic import BaseModel, Field
 
 from backend.discovery import parcel as parcel_mod
-from backend.discovery.cqs import CQS
+from backend.discovery.cqs import CQS, DroppedInvalid
 from backend.discovery.evaluator import OrderedResult
 from backend.discovery.predicates import satisfies, within_scope
 from backend.discovery.registry import load as load_registry
+
+__all__ = ["Conflict", "DroppedInvalid", "MostRestrictive", "Diagnostics", "build"]
 
 # Missing-value concept applies to scalar attributes only; region membership is a
 # computed determination (never a NULL field), so it does not contribute to D4.
@@ -31,11 +33,6 @@ _SCALAR_KINDS = {"enum", "range", "flag"}
 
 class Conflict(BaseModel):
     filters: list[str]  # sorted pair of statically-contradictory applied filter ids
-
-
-class DroppedInvalid(BaseModel):
-    filterId: str
-    reason: str
 
 
 class MostRestrictive(BaseModel):

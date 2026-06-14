@@ -92,6 +92,14 @@ class CqsFragment(BaseModel):
     meta: QueryMeta = Field(default_factory=QueryMeta)
 
 
+class DroppedInvalid(BaseModel):
+    """A predicate the merge dropped — empty enum/region, bad kind, or a failed
+    compile-time validation (04 step 4/5; surfaced as diagnostics D3)."""
+
+    filterId: str
+    reason: str
+
+
 # --- Predicate validity (R1/R6) ---------------------------------------------
 
 
