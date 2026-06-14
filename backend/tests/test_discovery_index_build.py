@@ -70,6 +70,29 @@ def test_is_vacant():
     assert _is_vacant("299") is False
 
 
+def test_resolve_cas_modes(monkeypatch):
+    import argparse
+
+    import pytest
+
+    from backend.discovery import parcel_index
+    from backend.discovery.parcel_index import IndexMeta
+
+    def ns(**k):
+        return argparse.Namespace(**{"community_areas": None, "all": False, "refresh": False, **k})
+
+    assert ib._resolve_cas(ns(all=True)) == list(range(1, 78))
+    assert ib._resolve_cas(ns(community_areas="22,24")) == [22, 24]
+    # --refresh reads the current index's footprint (so a scheduled rebuild auto-follows coverage)
+    monkeypatch.setattr(parcel_index, "read_meta",
+                        lambda p: IndexMeta("v", [6, 7, 24], ["land_use"], 1))
+    assert ib._resolve_cas(ns(refresh=True)) == [6, 7, 24]
+    # --refresh with no index built yet -> hard error (don't silently rebuild nothing)
+    monkeypatch.setattr(parcel_index, "read_meta", lambda p: None)
+    with pytest.raises(SystemExit):
+        ib._resolve_cas(ns(refresh=True))
+
+
 def test_format_class():
     assert _format_class("211") == "2-11"
     assert _format_class("313") == "3-13"

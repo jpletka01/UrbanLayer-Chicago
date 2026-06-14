@@ -638,11 +638,27 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--community-areas", help="comma-separated CA ids, e.g. 22,24")
     g.add_argument("--all", action="store_true", help="all 77 community areas (~1.8M parcels)")
+    g.add_argument("--refresh", action="store_true",
+                   help="rebuild the community areas already in the current index (for the periodic timer)")
     return ap.parse_args(argv)
 
 
+def _resolve_cas(args: argparse.Namespace) -> list[int]:
+    """CA list from args. --refresh reads the current index's footprint so a scheduled rebuild
+    auto-follows the live coverage (no hardcoded CA list to keep in sync)."""
+    if args.refresh:
+        from backend.discovery.parcel_index import read_meta
+        meta = read_meta(default_index_path())
+        if not meta or not meta.community_areas:
+            raise SystemExit("--refresh: no existing index to refresh — build one first with --community-areas")
+        return meta.community_areas
+    if args.all:
+        return list(range(1, 78))
+    return [int(x) for x in args.community_areas.split(",")]
+
+
 async def _amain(args: argparse.Namespace) -> None:
-    cas = list(range(1, 78)) if args.all else [int(x) for x in args.community_areas.split(",")]
+    cas = _resolve_cas(args)
     async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
         data_version, total = await build_index(cas, client=client)
     print(f"Built index {data_version}: {total} parcels across {len(cas)} community area(s)")

@@ -1,0 +1,11 @@
+[Unit]
+Description=Monthly Property Discovery index rebuild
+
+[Timer]
+# 1st of each month at 04:17 local — off the :00 mark, low-traffic hour. The CCAO data
+# (assessments/sales/characteristics) changes slowly, so monthly is ample.
+OnCalendar=*-*-01 04:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

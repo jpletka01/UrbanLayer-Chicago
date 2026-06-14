@@ -1,0 +1,15 @@
+[Unit]
+Description=Rebuild the Property Discovery prospecting index (monthly, refreshes the live CA footprint)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/urbanlayer
+# --refresh rebuilds exactly the community areas already in the index, so expanding coverage
+# (a one-off --community-areas / --all run) automatically carries into the monthly refresh.
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python -m backend.discovery.index_build --refresh
+# Reload so ensure_loaded() picks up the freshly written index (it persists on the backend/data volume).
+ExecStartPost=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
+# A full-city rebuild can run long; allow up to 6h before systemd considers it failed.
+TimeoutStartSec=21600
