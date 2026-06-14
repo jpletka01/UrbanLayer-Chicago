@@ -4,7 +4,7 @@
 
 | File | Purpose |
 |------|---------|
-| `main.py` | FastAPI app: `/chat` SSE, `/api/scorecard`, `/api/explore` + `/api/explore/map` (premium-gated), `/api/report` (PDF V5 feasibility report with synthesis intelligence, envelope visualization, approval pathway), `/api/report/access`, `/api/checkout` (subscription), `/api/checkout/report` (one-time $25 report purchase), `/api/webhook/stripe`, `/api/subscription`, `/api/billing/portal`, `/api/conversations/*`, `/api/admin/*` (includes `/api/admin/engagement`), `/api/events` (CSRF-exempt, fire-and-forget analytics ingestion), `/api/map-data`, `/api/transit-stations`. Report V5 functions: `_synthesize_opportunities_constraints()`, `_compute_land_value_range()`, `_compute_approval_pathway()`, `_compute_development_trend()`, `_build_incentive_stacking_narrative()`, `_build_envelope_summary()`, `_generate_envelope_map()` (all deterministic, no LLM calls) |
+| `main.py` | FastAPI app: `/chat` SSE, `/api/scorecard`, `/api/report` (PDF V5 feasibility report with synthesis intelligence, envelope visualization, approval pathway), `/api/report/access`, `/api/checkout` (subscription), `/api/checkout/report` (one-time $25 report purchase), `/api/webhook/stripe`, `/api/subscription`, `/api/billing/portal`, `/api/conversations/*`, `/api/admin/*` (includes `/api/admin/engagement`), `/api/events` (CSRF-exempt, fire-and-forget analytics ingestion), `/api/map-data`, `/api/transit-stations`. Report V5 functions: `_synthesize_opportunities_constraints()`, `_compute_land_value_range()`, `_compute_approval_pathway()`, `_compute_development_trend()`, `_build_incentive_stacking_narrative()`, `_build_envelope_summary()`, `_generate_envelope_map()` (all deterministic, no LLM calls) |
 | `router.py` | Claude router → `RetrievalPlan` JSON (sources, location, intent, workflow_hint, search_query) |
 | — parcel hint | `ChatRequest.parcel_pin` (Scorecard→chat handoff): `_apply_parcel_hint()` in `main.py` overrides address-typed plans with the authoritative parcel point (`Location.pin` → property domain keyed by PIN, INV-2). Tests: `test_chat_parcel_hint.py` |
 | `synthesizer.py` | Claude streaming synthesis with `[N]` citation markers + `[data:*]` data markers + analytics. `LANGUAGE_NAMES` dict + `LANGUAGE_INSTRUCTION` for i18n — appends language instruction to system prompt when `language != "en"` |
@@ -40,8 +40,7 @@ retrieval/
 ├── zoning.py               # ArcGIS zoning point lookup + polygon fetch + adjacent_parcel_zoning()
 ├── zoning_definitions.py   # Deterministic zone class lookup table (~50 entries). FAR, height, uses, code sections from Title 17. Used by PDF report for inline descriptions + definitions section AND serialized as `zone_definition` in /api/scorecard (frontend ZoningCard; contract test test_zone_definition_contract.py). Fallback chain: exact → prefix → PD/PMD → unknown
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
-├── explore.py              # Site Explorer: bulk parcel query by community area + class prefix (Cook County Parcel Universe)
-├── utils.py                # Shared helpers (cutoff_iso)
+├── utils.py                # Shared helpers (cutoff_iso, format_pin)
 ├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel. sales.py also has nearby_comparable_sales() (3-hop: Parcel Universe → Sales → Characteristics)
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA, triggered by any domain not just regulatory)
 ├── incentives/             # Orchestrator: point-based [TIF, EZ, grants] parallel → conditional [financials, OZ]; OR community-area-based TIF + grants. grant_programs.py queries SBIF + NOF
@@ -101,8 +100,9 @@ experience, unlinked from nav, empty prod index). Spec + decisions:
   decoration, so monkeypatching the module attr does NOT work — override the dependency).
 - **LIVE ON PROD 2026-06-14** (Wave 3) — coverage `partial`, **25 CAs / ~482k parcels**, nav-linked.
   Index persists on `backend/data` volume; monthly rebuild timer (`deploy/`). **Remaining:** expand
-  toward citywide (`--all` OOMs the 8 GB box — see known-issues; needs off-box build first); retire
-  `/explore`; deferred index fields (each a `data_version` bump, no evaluator change). Full record:
+  toward citywide (`--all` OOMs the 8 GB box — see known-issues; needs off-box build first);
+  deferred index fields (each a `data_version` bump, no evaluator change). `/explore` **retired
+  2026-06-14** (Discovery is a strict superset; `/explore` now redirects to `/discovery`). Full record:
   `claude-context/property-discovery/10-implementation-status.md` (Wave 3 section).
 
 ## Production Configuration
