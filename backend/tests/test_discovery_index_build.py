@@ -13,6 +13,9 @@ from backend.discovery.index_build import (
     _is_vacant,
     _land_use,
     _nearest_rail_mi,
+    _address_for,
+    _address_tree,
+    _nearest_address,
     _populated_fields,
     _recency_days,
     _recipe_counts,
@@ -26,6 +29,11 @@ AS_OF = datetime.date(2025, 1, 1)
 
 # A CTA rail station ~0.5 mi north of the test parcels at (41.9, -87.7).
 _RAIL = [(41.9072, -87.7)]
+
+
+async def _async(val):
+    """Wrap a value in a coroutine for mocking async functions."""
+    return val
 
 
 def _assemble(spine, chars=None, assess=None, sale=None, **kw):
@@ -101,7 +109,7 @@ def test_assemble_full_parcel():
 
     pin, out_lat, out_lon, attrs, regions = assemble_parcel(
         spine, chars, assess, sale,
-        addr={"cmpaddabrv": "481 W DEMING PL"},
+        address="481 W DEMING PL",
         zoning_polys=[("RM-5", _box_around(lat, lon))],
         tif_polys=[_box_around(lat, lon)],
         ez_polys=[],
@@ -165,6 +173,25 @@ def test_resolve_address_falls_back_to_building_base_pin():
     assert _resolve_address("13363160481003", {"13363160481003": {"cmpaddabrv": ""}}, base)["cmpaddabrv"] == "1755 N KEDZIE AVE"
     # nothing anywhere -> None
     assert _resolve_address("99999999990000", {}, {}) is None
+
+
+def test_nearest_address_snaps_to_closest_point():
+    # points: (lon, lat, address)
+    pts = [(-87.70, 41.90, "100 N FIRST ST"), (-87.69, 41.91, "200 N SECOND ST")]
+    tree, addrs = _address_tree(pts)
+    assert _nearest_address(tree, addrs, 41.901, -87.701) == "100 N FIRST ST"  # closest to pt 1
+    assert _nearest_address(tree, addrs, 41.909, -87.691) == "200 N SECOND ST"
+    assert _nearest_address(None, [], 41.9, -87.7) is None  # no points indexed
+
+
+def test_address_for_prefers_own_then_building_then_nearest_approx():
+    tree, addrs = _address_tree([(-87.70, 41.90, "1735 N TROY ST")])
+    # own address wins, no "~"
+    assert _address_for("p1", 41.9, -87.7, {"p1": {"cmpaddabrv": "10 MAIN ST"}}, {}, tree, addrs) == "10 MAIN ST"
+    # no own/building -> nearest, marked approximate with "~"
+    assert _address_for("v1", 41.901, -87.701, {}, {}, tree, addrs) == "~1735 N TROY ST"
+    # nothing resolvable at all -> None
+    assert _address_for("z1", 41.9, -87.7, {}, {}, None, []) is None
 
 
 def test_nearest_rail_mi():
@@ -355,6 +382,7 @@ async def test_build_index_writes_loadable_index(tmp_path, monkeypatch):
     monkeypatch.setattr(ib, "_fetch_spine", fake_spine)
     monkeypatch.setattr(ib, "_batch_latest", fake_batch)
     monkeypatch.setattr(ib, "zoning_polygons_for_map", fake_zoning)
+    monkeypatch.setattr(ib, "_fetch_address_points", lambda ca, *, client=None: _async([]))
     monkeypatch.setattr(ib, "community_area_by_point", lambda lat, lon: 24)
     monkeypatch.setattr(ib, "default_index_path", lambda: tmp_path / "idx.db")
 
@@ -400,6 +428,7 @@ async def test_build_index_degrades_when_a_layer_fails(tmp_path, monkeypatch):
     monkeypatch.setattr(ib, "_fetch_spine", fake_spine)
     monkeypatch.setattr(ib, "_batch_latest", fake_batch)
     monkeypatch.setattr(ib, "zoning_polygons_for_map", fake_zoning)
+    monkeypatch.setattr(ib, "_fetch_address_points", lambda ca, *, client=None: _async([]))
     monkeypatch.setattr(ib, "community_area_by_point", lambda lat, lon: 24)
     monkeypatch.setattr(ib, "default_index_path", lambda: tmp_path / "idx.db")
 

@@ -348,7 +348,12 @@ function ResultCard({
   onHoverPin?: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
 }) {
-  const title = row.address ? humanizeShoutyCase(row.address) : row.pin;
+  // A "~" prefix marks an approximate (nearest) address — shown as "near <addr>".
+  const title = row.address
+    ? row.address.startsWith("~")
+      ? `near ${humanizeShoutyCase(row.address.slice(1))}`
+      : humanizeShoutyCase(row.address)
+    : row.pin;
   const useLine = [
     row.land_use ? humanize(row.land_use) : null,
     row.class,

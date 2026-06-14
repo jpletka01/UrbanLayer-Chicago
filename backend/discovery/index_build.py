@@ -26,6 +26,7 @@ from typing import Any, Iterable
 
 import httpx
 from shapely.geometry import Point, shape
+from shapely.strtree import STRtree
 
 from backend.config import get_settings
 from backend.discovery.parcel_index import default_index_path, write_index
@@ -151,7 +152,7 @@ def assemble_parcel(
     assess: dict | None,
     sale: dict | None,
     *,
-    addr: dict | None = None,
+    address: str | None = None,
     zoning_polys: list[tuple[str, Any]],
     tif_polys: Iterable[Any],
     ez_polys: Iterable[Any],
@@ -170,10 +171,10 @@ def assemble_parcel(
     cls_display = _format_class(cls)  # display-only Cook County class ("2-11"); row-card shows it
     if cls_display:
         attrs["class"] = cls_display
-    if addr:
-        # Display-only street address (Address Points cmpaddabrv, e.g. "1915 N KEDZIE AVE");
-        # the row-card identity. Not a filter field — never read by the evaluator.
-        attrs["address"] = addr.get("cmpaddabrv") or addr.get("addrdeliv")
+    if address:
+        # Display-only street address (Address Points; a "~" prefix marks an approximate
+        # nearest-address for parcels with none of their own). Never read by the evaluator.
+        attrs["address"] = address
     imp_share: float | None = None  # building's share of total assessed value (0-1), for derived fields
 
     if chars:
@@ -330,6 +331,55 @@ async def _batch_latest(
     return out
 
 
+async def _fetch_address_points(ca: int, *, client: httpx.AsyncClient | None) -> list[tuple[float, float, str]]:
+    """All Address Points in a CA's bounding box as (lon, lat, cmpaddabrv) — for the
+    nearest-address fallback that locates parcels (esp. vacant lots) with no address of their own."""
+    bounds = community_area_bounds(ca)
+    if bounds is None:
+        return []
+    settings = get_settings()
+    min_lat, min_lon, max_lat, max_lon = bounds
+    where = f"lat between '{min_lat}' and '{max_lat}' and long between '{min_lon}' and '{max_lon}'"
+    out: list[tuple[float, float, str]] = []
+    offset, page = 0, 50000
+    while True:
+        rows = await socrata_get(
+            settings.dataset_address_points,
+            {"$select": "cmpaddabrv,lat,long", "$where": where, "$order": "objectid",
+             "$limit": page, "$offset": offset},
+            client=client, base_url=settings.cook_county_socrata_base,
+            app_token=settings.cook_county_socrata_token or None,
+        )
+        if not rows:
+            break
+        for r in rows:
+            a, la, lo = r.get("cmpaddabrv"), r.get("lat"), r.get("long")
+            if a and la is not None and lo is not None:
+                try:
+                    out.append((float(lo), float(la), a))
+                except (TypeError, ValueError):
+                    continue
+        if len(rows) < page:
+            break
+        offset += page
+    return out
+
+
+def _address_tree(points: list[tuple[float, float, str]]) -> tuple[STRtree | None, list[str]]:
+    """Spatial index of address points → (STRtree of Points, parallel address list)."""
+    if not points:
+        return None, []
+    return STRtree([Point(lon, lat) for lon, lat, _a in points]), [a for _lo, _la, a in points]
+
+
+def _nearest_address(tree: STRtree | None, addrs: list[str], lat: float, lon: float) -> str | None:
+    """Nearest address point's street address, or None when no points are indexed."""
+    if tree is None:
+        return None
+    idx = tree.nearest(Point(lon, lat))
+    return addrs[idx] if idx is not None else None
+
+
 def _zoning_index(fc: dict) -> list[tuple[str, Any]]:
     out: list[tuple[str, Any]] = []
     for feat in fc.get("features", []):
@@ -371,6 +421,20 @@ def _resolve_address(pin_digits: str, exact: dict[str, dict], base: dict[str, di
     if a and (a.get("cmpaddabrv") or a.get("addrdeliv")):
         return a
     return base.get(pin_digits[:10] + "0000")
+
+
+def _address_for(
+    pin_digits: str, lat: float, lon: float,
+    exact: dict[str, dict], base: dict[str, dict], tree: STRtree | None, addrs: list[str],
+) -> str | None:
+    """Final display address: own/building Address Point, else the nearest one prefixed "~"
+    (approximate — used for vacant lots & parcels with no assigned address; the nearest point
+    is typically the adjacent frontage, ~30 ft away)."""
+    a = _resolve_address(pin_digits, exact, base)
+    if a:
+        return a.get("cmpaddabrv") or a.get("addrdeliv")
+    near = _nearest_address(tree, addrs, lat, lon)
+    return f"~{near}" if near else None
 
 
 def _ca_of(regions: list[str]) -> int | None:
@@ -533,13 +597,16 @@ async def build_index(
             await _batch_latest(settings.dataset_address_points, base_pins, "objectid", client, settings)
             if base_pins else {}
         )
+        addr_tree, addr_list = _address_tree(await _fetch_address_points(ca, client=client))
         zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
 
         for s in spine:
             ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
             rows.append(assemble_parcel(
                 s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
-                addr=_resolve_address(s["pin_digits"], addrs, base_addrs),
+                address=_address_for(
+                    s["pin_digits"], s["lat"], s["lon"], addrs, base_addrs, addr_tree, addr_list
+                ),
                 zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
                 rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
             ))
