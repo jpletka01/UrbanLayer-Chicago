@@ -139,6 +139,10 @@ class Settings(BaseSettings):
 
     data_dir: Path = PROJECT_ROOT / "ingestion" / "data"
     db_path: Path = PROJECT_ROOT / "backend" / "data" / "chicago.db"
+    # The prospecting index lives on the SAME persistent volume as chicago.db (backend/data),
+    # NOT in ingestion/data (which is ephemeral in the container) — so a prod-built index
+    # survives redeploys instead of being wiped on the next image rebuild.
+    discovery_index_path: Path = PROJECT_ROOT / "backend" / "data" / "discovery_index.db"
 
     message_limit: int = 10
 

@@ -73,8 +73,10 @@ experience, unlinked from nav, empty prod index). Spec + decisions:
   of canonical CQS; precedence user>text>default; `topicId` is telemetry-only, never re-expanded).
 - **Data** `parcel_index.py` (`IndexedParcel` + SQLite; `IndexMeta`/`read_meta`;
   `derive_sort_fields` = the 0/exempt sort-only key, real value kept) + `index_build.py` (offline
-  builder CLI) → `discovery_index.db` under `ingestion/data/`. `parcel_source.ensure_loaded()`
-  loads it + `read_meta`; `current_meta()` feeds coverage/populatedFields; empty fallback until built.
+  builder CLI) → `discovery_index.db` under `backend/data/` (the PERSISTENT volume, via
+  `settings.discovery_index_path` — survives redeploys, unlike `ingestion/data/`).
+  `parcel_source.ensure_loaded()` loads it + `read_meta`; `current_meta()` feeds
+  coverage/populatedFields; empty fallback until built.
 - **API** `api.py` — **one shared `_resolve(req)`** (parse→merge→evaluate) behind every endpoint:
   - `GET /api/discovery/registry` — static artifact + **coverage + populatedFields injected from
     index `meta`** (safe default: no meta → coverage "none", empty populatedFields).

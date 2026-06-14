@@ -34,10 +34,11 @@ class IndexMeta:
 
 
 def default_index_path() -> Path:
-    """Location of the prospecting-index SQLite file (sibling of chicago.db)."""
+    """Location of the prospecting-index SQLite file — on the persistent backend/data volume
+    (sibling of chicago.db), so a prod-built index survives redeploys."""
     from backend.config import get_settings
 
-    return get_settings().data_dir / "discovery_index.db"
+    return get_settings().discovery_index_path
 
 
 def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
