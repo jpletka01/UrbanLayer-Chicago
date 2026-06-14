@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { coverageOf, isPopulated } from "./coverage";
 import { summarize } from "./summary";
+import { humanizeShoutyCase } from "../lib/format";
 import type { Registry, ResultRow, SearchResponse } from "./types";
 
 function humanize(s: string): string {
@@ -347,7 +348,12 @@ function ResultCard({
   onHoverPin?: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
 }) {
-  const title = row.address ?? row.pin;
+  // A "~" prefix marks an approximate (nearest) address — shown as "near <addr>".
+  const title = row.address
+    ? row.address.startsWith("~")
+      ? `near ${humanizeShoutyCase(row.address.slice(1))}`
+      : humanizeShoutyCase(row.address)
+    : row.pin;
   const useLine = [
     row.land_use ? humanize(row.land_use) : null,
     row.class,
