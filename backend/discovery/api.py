@@ -226,8 +226,11 @@ def _row_from_parcel(parcel: parcel_mod.Parcel, sort_field: str) -> ResultRow:
 
 
 def _pin_lookup(data_version: str) -> dict[str, parcel_mod.Parcel]:
-    """A pin→parcel map over the dataVersion snapshot (shared by /search + /search/pins)."""
-    return {p.pin: p for p in parcel_mod.default_source.get(data_version)}
+    """A pin→parcel map over the dataVersion snapshot (shared by /search + /search/pins).
+
+    Memoized in parcel_source (built once per dataVersion) — not rebuilt O(N) per request.
+    """
+    return parcel_source.pin_lookup(data_version)
 
 
 def _hydrate_window(pins: list[str], data_version: str, sort_key: str) -> list[ResultRow]:
