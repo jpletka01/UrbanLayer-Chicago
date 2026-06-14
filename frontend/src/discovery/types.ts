@@ -110,6 +110,14 @@ export interface SortKeyDef {
   field: string;
 }
 
+// Coverage (PR4) — what geography the index covers. Presentation only; sourced from the
+// registry response and rendered as a standalone banner OUTSIDE the response.cqs chips.
+export interface Coverage {
+  mode: "none" | "partial" | "all";
+  liveAreas: number[];
+  asOf?: string | null;
+}
+
 export interface Registry {
   version: string;
   filters: FilterDef[];
@@ -117,6 +125,9 @@ export interface Registry {
   sortKeys: SortKeyDef[];
   defaultSort: SortSpec;
   broadMinFilters: number;
+  // PR4 index-derived: drive the coverage banner + the panel/recipe "coming" affordances.
+  coverage: Coverage;
+  populatedFields: string[];
 }
 
 // --- Diagnostics (06) ---

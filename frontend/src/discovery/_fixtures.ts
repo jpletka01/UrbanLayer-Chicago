@@ -29,4 +29,6 @@ export const REG: Registry = {
   ],
   defaultSort: { key: "pin", dir: "asc" },
   broadMinFilters: 2,
+  coverage: { mode: "none", liveAreas: [] },
+  populatedFields: [],
 };

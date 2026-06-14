@@ -9,6 +9,7 @@ import {
   NEIGHBORHOOD_PREFIX,
   SORTED_CAS,
 } from "./communityAreas";
+import { isPopulated } from "./coverage";
 import type { FilterCategory, FilterDef, PanelState, Predicate, Registry } from "./types";
 
 const CATEGORY_ORDER: FilterCategory[] = [
@@ -55,7 +56,13 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
             </h3>
             <div className="space-y-3">
               {defs.map((def) => (
-                <Control key={def.id} def={def} value={state[def.id]} onChange={onChange} />
+                <Control
+                  key={def.id}
+                  def={def}
+                  value={state[def.id]}
+                  populated={isPopulated(registry, def.id)}
+                  onChange={onChange}
+                />
               ))}
             </div>
           </div>
@@ -68,18 +75,32 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
 function Control({
   def,
   value,
+  populated,
   onChange,
 }: {
   def: FilterDef;
   value: Predicate | undefined;
+  populated: boolean;
   onChange: (id: string, p: Predicate | null) => void;
 }) {
   const label = (
     <label className="mb-1 block text-xs text-text-secondary">
-      {humanize(def.id)}
+      {def.label ?? humanize(def.id)}
       {def.unit ? <span className="text-text-muted"> ({def.unit})</span> : null}
     </label>
   );
+
+  // PR4: a filter whose index field isn't populated yet reads "coming" — never a live
+  // control that would silently return 0. (Pre-index, populatedFields is empty → all of
+  // these, so the whole panel is honestly dormant.)
+  if (!populated) {
+    return (
+      <div className="opacity-50">
+        {label}
+        <p className="text-[11px] text-text-muted">Coming with the next data update</p>
+      </div>
+    );
+  }
 
   if (def.kind === "flag") {
     const v = value?.kind === "flag" ? value.value : null;

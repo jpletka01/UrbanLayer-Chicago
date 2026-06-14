@@ -8,6 +8,7 @@ import { useAuthContext } from "../contexts/AuthContext";
 import PageHeader from "./../components/PageHeader";
 import UpgradePrompt from "./../components/UpgradePrompt";
 import { Chips } from "./chips";
+import { CoverageBanner } from "./CoverageBanner";
 import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { loadRegistry } from "./registryClient";
@@ -83,6 +84,8 @@ export default function DiscoveryPage() {
   return (
     <div className="flex h-screen flex-col bg-dark-bg text-text-primary">
       <PageHeader sticky={false} maxWidthClass="max-w-[1920px]" />
+
+      {registry && <CoverageBanner registry={registry} />}
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         {/* Left: inputs */}

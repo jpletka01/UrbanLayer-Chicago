@@ -101,6 +101,19 @@ class SortKeyDef(BaseModel):
     field: str
 
 
+class Coverage(BaseModel):
+    """What geography the current index covers (PR4). Presentation only — it drives a
+    standalone scope banner and is NEVER part of the CQS / chip array.
+
+    `mode` "none" is the safe default (no index built → page reads dormant); "partial"
+    = a subset of community areas; "all" = the full city.
+    """
+
+    mode: Literal["none", "partial", "all"] = "none"
+    liveAreas: list[int] = Field(default_factory=list)  # community-area ids that are indexed
+    asOf: str | None = None  # ISO date the index was built
+
+
 class Registry(BaseModel):
     version: str
     filters: list[FilterDef]
@@ -108,6 +121,10 @@ class Registry(BaseModel):
     sortKeys: list[SortKeyDef]
     defaultSort: SortSpec
     broadMinFilters: int
+    # --- PR4 dynamic, index-derived fields (injected by the /registry endpoint, not the
+    # static artifact). Defaults = dormant: no coverage, nothing populated. ---
+    coverage: Coverage = Field(default_factory=Coverage)
+    populatedFields: list[str] = Field(default_factory=list)  # filter ids with real data
 
     @model_validator(mode="after")
     def _check_integrity(self) -> "Registry":

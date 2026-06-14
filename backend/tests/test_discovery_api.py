@@ -39,6 +39,11 @@ def test_registry_endpoint(client):
     assert body["version"]
     assert len(body["filters"]) == 32
     assert body["defaultSort"] == {"key": "assessed_value", "dir": "asc"}
+    # PR4 critical default: the api fixture loads a snapshot with NO meta, so coverage is
+    # "none" and populatedFields is empty — the page reads fully dormant, never "all".
+    assert body["coverage"]["mode"] == "none"
+    assert body["coverage"]["liveAreas"] == []
+    assert body["populatedFields"] == []
 
 
 # --- POST /api/discovery/search -------------------------------------------------
@@ -249,3 +254,61 @@ def test_search_returns_json_not_spa_fallback(client):
     assert r.headers["content-type"].startswith("application/json")
     assert "<!doctype html" not in r.text.lower()
     assert "rows" in r.json()["result"]
+
+
+# --- PR4: coverage + populatedFields (registry response, sourced from index meta) ------
+
+
+def _registry_with_meta(community_areas, populated_fields):
+    from backend.discovery.parcel_index import IndexMeta
+
+    parcel_source.set_snapshot(
+        "cov-v1",
+        [DictParcel("p1", {"land_use_class": "residential"})],
+        meta=IndexMeta(
+            data_version="cov-v1",
+            community_areas=community_areas,
+            populated_fields=populated_fields,
+            built_at=1_700_000_000,
+        ),
+    )
+    try:
+        return TestClient(app).get("/api/discovery/registry").json()
+    finally:
+        parcel_source._current_version = None
+        parcel_source._current_meta = None
+        default_source.clear()
+
+
+def test_registry_partial_coverage_echoes_meta():
+    body = _registry_with_meta([24], ["land_use", "lot_size", "assessed_value"])
+    assert body["coverage"]["mode"] == "partial"
+    assert body["coverage"]["liveAreas"] == [24]
+    assert body["coverage"]["asOf"]  # ISO date present
+    # populatedFields drives BOTH consumers (panel disable + recipe badges) from one source.
+    assert body["populatedFields"] == ["assessed_value", "land_use", "lot_size"]
+
+
+def test_registry_full_coverage_is_mode_all():
+    body = _registry_with_meta(list(range(1, 78)), ["land_use"])  # all 77 CAs
+    assert body["coverage"]["mode"] == "all"
+    assert len(body["coverage"]["liveAreas"]) == 77
+
+
+def test_registry_empty_populated_fields_when_meta_absent():
+    # Guardrail: a built index whose meta carries NO populated fields → everything reads
+    # "coming". Never defaults to all-available.
+    body = _registry_with_meta([24], [])
+    assert body["populatedFields"] == []
+    assert body["coverage"]["mode"] == "partial"  # geography known, but no fields populated
+
+
+def test_coverage_never_enters_the_cqs_path(client):
+    # Guardrail #1: coverage is a registry-only presentational concern. It must never
+    # appear in the search response's CQS (chips) nor as a top-level result field.
+    body = client.post("/api/discovery/search", json={
+        "userFilters": {"land_use": {"kind": "enum", "values": ["residential"]}},
+    }).json()
+    assert "coverage" not in body  # not on the SearchResponse
+    assert "coverage" not in body["cqs"]  # not in the canonical CQS
+    assert "coverage" not in body["cqs"]["filters"]  # not a filter/chip

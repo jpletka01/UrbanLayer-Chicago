@@ -28,7 +28,7 @@ from backend.discovery.cqs import (
 )
 from backend.discovery.diagnostics import Diagnostics, build
 from backend.discovery.evaluator import OrderedResult, evaluate
-from backend.discovery.registry import Registry
+from backend.discovery.registry import Coverage, Registry
 from backend.discovery.registry import load as load_registry
 
 log = logging.getLogger(__name__)
@@ -104,9 +104,28 @@ class SearchResponse(BaseModel):
     diagnostics: Diagnostics
 
 
+ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
+
+
+def _iso_date(epoch: int) -> str:
+    from datetime import datetime, timezone
+
+    return datetime.fromtimestamp(epoch, tz=timezone.utc).date().isoformat()
+
+
 @router.get("/registry", response_model=Registry)
 def get_registry() -> Registry:
-    return load_registry()
+    # The static artifact + the current index's coverage/populatedFields. With no index
+    # (current_meta None) we return the artifact's defaults: coverage "none" + empty
+    # populatedFields — i.e. fully dormant. NEVER infer "all available" from missing meta.
+    base = load_registry()
+    meta = parcel_source.current_meta()
+    if meta is None:
+        return base
+    areas = sorted(set(meta.community_areas))
+    mode = "all" if len(areas) >= ALL_COMMUNITY_AREAS else ("partial" if areas else "none")
+    coverage = Coverage(mode=mode, liveAreas=areas, asOf=_iso_date(meta.built_at))
+    return base.model_copy(update={"coverage": coverage, "populatedFields": sorted(meta.populated_fields)})
 
 
 def _resolve(req: SearchRequest) -> tuple[CQS, OrderedResult, list[DroppedInvalid], str]:

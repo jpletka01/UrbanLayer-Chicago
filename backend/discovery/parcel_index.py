@@ -13,10 +13,21 @@ import json
 import logging
 import math
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class IndexMeta:
+    """The index's `meta` row — drives the registry response's coverage + populatedFields."""
+
+    data_version: str
+    community_areas: list[int]
+    populated_fields: list[str]  # filter ids the build actually populated (empty = none)
+    built_at: int
 
 
 def default_index_path() -> Path:
@@ -81,11 +92,12 @@ CREATE TABLE IF NOT EXISTS parcels (
     regions TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS meta (
-    id              INTEGER PRIMARY KEY CHECK (id = 1),
-    data_version    TEXT NOT NULL,
-    built_at        INTEGER NOT NULL,
-    community_areas TEXT NOT NULL,
-    parcel_count    INTEGER NOT NULL
+    id               INTEGER PRIMARY KEY CHECK (id = 1),
+    data_version     TEXT NOT NULL,
+    built_at         INTEGER NOT NULL,
+    community_areas  TEXT NOT NULL,
+    parcel_count     INTEGER NOT NULL,
+    populated_fields TEXT NOT NULL DEFAULT '[]'
 );
 """
 
@@ -97,12 +109,14 @@ def write_index(
     built_at: int,
     community_areas: list[int],
     rows: Iterable[tuple[str, float | None, float | None, dict[str, Any], list[str]]],
+    populated_fields: list[str] | None = None,
 ) -> int:
     """Upsert parcel rows (incremental by PIN) and refresh the meta row.
 
     `rows` are (pin, lat, lon, attrs, regions). Only non-empty attrs are stored so a
-    missing field reads back as None (driving `unknownPolicy`). Returns the total
-    parcel count after the upsert.
+    missing field reads back as None (driving `unknownPolicy`). `populated_fields` are the
+    filter ids this build actually populated (drives the registry's populatedFields — the
+    rest read "coming with the next data update"). Returns the total parcel count.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
@@ -123,13 +137,44 @@ def write_index(
         )
         total = conn.execute("SELECT COUNT(*) FROM parcels").fetchone()[0]
         cas = ",".join(str(c) for c in sorted(set(community_areas)))
+        pf = json.dumps(sorted(set(populated_fields or [])))
         conn.execute(
-            "INSERT OR REPLACE INTO meta (id, data_version, built_at, community_areas, parcel_count) "
-            "VALUES (1, ?, ?, ?, ?)",
-            (data_version, built_at, cas, total),
+            "INSERT OR REPLACE INTO meta "
+            "(id, data_version, built_at, community_areas, parcel_count, populated_fields) "
+            "VALUES (1, ?, ?, ?, ?, ?)",
+            (data_version, built_at, cas, total, pf),
         )
         conn.commit()
         return total
+    finally:
+        conn.close()
+
+
+def read_meta(path: Path) -> IndexMeta | None:
+    """Load the index `meta` row → IndexMeta, or None if absent / unreadable / old-schema.
+
+    Returning None is the SAFE default: the registry then reports coverage "none" and
+    EMPTY populatedFields, so a pre-index (or schema-mismatched) state reads as fully
+    dormant — never as "everything available."
+    """
+    if not path.exists():
+        return None
+    conn = sqlite3.connect(path)
+    try:
+        row = conn.execute(
+            "SELECT data_version, built_at, community_areas, populated_fields FROM meta WHERE id = 1"
+        ).fetchone()
+        if not row:
+            return None
+        data_version, built_at, cas, pf = row
+        areas = [int(x) for x in cas.split(",") if x != ""] if cas else []
+        fields = json.loads(pf) if pf else []
+        return IndexMeta(
+            data_version=data_version, community_areas=areas, populated_fields=fields, built_at=built_at
+        )
+    except (sqlite3.DatabaseError, ValueError, json.JSONDecodeError) as exc:
+        log.warning("discovery: failed to read index meta at %s: %s", path, exc)
+        return None
     finally:
         conn.close()
 
