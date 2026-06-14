@@ -131,11 +131,18 @@ if _settings.cors_origins:
     )
 app.add_middleware(CSRFMiddleware)
 
+# Property Discovery (filter/search) wire endpoints — see backend/discovery/.
+from backend.discovery.api import router as discovery_router  # noqa: E402
+
+app.include_router(discovery_router)
+
 
 @app.on_event("startup")
 async def _startup() -> None:
     get_settings()
     await db.init_db()
+    from backend.discovery import parcel_source
+    parcel_source.ensure_loaded()
     await _preload_datasets()
 
 
