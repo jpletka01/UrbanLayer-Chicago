@@ -69,6 +69,14 @@ def _land_use(class_code: str | None) -> str | None:
     return _LAND_USE_BY_PREFIX.get((class_code or "").strip()[:1])
 
 
+def _format_class(class_code: str | None) -> str | None:
+    """Cook County class code for display: "211" -> "2-11" (major-minor). Raw otherwise."""
+    z = (class_code or "").strip()
+    if len(z) == 3 and z.isdigit():
+        return f"{z[0]}-{z[1:]}"
+    return z or None
+
+
 def _is_vacant(class_code: str | None) -> bool:
     return (class_code or "").strip().startswith("1")
 
@@ -143,6 +151,7 @@ def assemble_parcel(
     assess: dict | None,
     sale: dict | None,
     *,
+    addr: dict | None = None,
     zoning_polys: list[tuple[str, Any]],
     tif_polys: Iterable[Any],
     ez_polys: Iterable[Any],
@@ -158,6 +167,13 @@ def assemble_parcel(
         "land_use_class": _land_use(cls),
         "is_vacant": _is_vacant(cls),
     }
+    cls_display = _format_class(cls)  # display-only Cook County class ("2-11"); row-card shows it
+    if cls_display:
+        attrs["class"] = cls_display
+    if addr:
+        # Display-only street address (Address Points cmpaddabrv, e.g. "1915 N KEDZIE AVE");
+        # the row-card identity. Not a filter field — never read by the evaluator.
+        attrs["address"] = addr.get("cmpaddabrv") or addr.get("addrdeliv")
     imp_share: float | None = None  # building's share of total assessed value (0-1), for derived fields
 
     if chars:
@@ -496,12 +512,14 @@ async def build_index(
             where_extra="(mailed_tot IS NOT NULL OR certified_tot IS NOT NULL OR board_tot IS NOT NULL)",
         )
         sales = await _batch_latest(settings.dataset_ccao_sales, pins, "sale_date", client, settings)
+        addrs = await _batch_latest(settings.dataset_address_points, pins, "objectid", client, settings)
         zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
 
         for s in spine:
             ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
             rows.append(assemble_parcel(
                 s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
+                addr=addrs.get(s["pin_digits"]),
                 zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
                 rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
             ))

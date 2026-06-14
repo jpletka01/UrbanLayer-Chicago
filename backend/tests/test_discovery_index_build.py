@@ -9,6 +9,7 @@ from shapely.geometry import Polygon
 from backend.discovery import index_build as ib
 from backend.discovery.index_build import (
     _compute_value_percentile,
+    _format_class,
     _is_vacant,
     _land_use,
     _nearest_rail_mi,
@@ -60,6 +61,15 @@ def test_is_vacant():
     assert _is_vacant("299") is False
 
 
+def test_format_class():
+    assert _format_class("211") == "2-11"
+    assert _format_class("313") == "3-13"
+    assert _format_class("100") == "1-00"
+    assert _format_class("EX") == "EX"   # non-3-digit left raw
+    assert _format_class("") is None
+    assert _format_class(None) is None
+
+
 def test_zoning_group():
     assert _zoning_group("RM-5") == "residential"
     assert _zoning_group("B2-3") == "business"
@@ -90,6 +100,7 @@ def test_assemble_full_parcel():
 
     pin, out_lat, out_lon, attrs, regions = assemble_parcel(
         spine, chars, assess, sale,
+        addr={"cmpaddabrv": "481 W DEMING PL"},
         zoning_polys=[("RM-5", _box_around(lat, lon))],
         tif_polys=[_box_around(lat, lon)],
         ez_polys=[],
@@ -98,6 +109,8 @@ def test_assemble_full_parcel():
         as_of=AS_OF,
     )
 
+    assert attrs["address"] == "481 W DEMING PL"  # Address Points cmpaddabrv (display only)
+    assert attrs["class"] == "2-99"  # raw class "299" -> display "2-99"
     assert pin == "14-31-100-001-0000"
     assert (out_lat, out_lon) == (lat, lon)
     assert attrs["land_use_class"] == "residential"
@@ -137,6 +150,7 @@ def test_assemble_minimal_parcel_no_joins_no_layers():
     assert "is_teardown_candidate" not in attrs  # no assessment / sizes
     assert "upside_score" not in attrs           # no zoning / sizes
     assert "cta_rail_distance_mi" not in attrs    # empty station list
+    assert "address" not in attrs                 # no address-points row
     assert regions == ["neighborhood:24"]
 
 
