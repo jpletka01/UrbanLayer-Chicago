@@ -104,14 +104,14 @@ experience, unlinked from nav, empty prod index). Spec + decisions:
 - **Tests:** `backend/tests/test_discovery_*.py` (**193**). Mock Socrata + polygon layers;
   premium/free gating via FastAPI `dependency_overrides` (the `Depends` callable is captured at
   decoration, so monkeypatching the module attr does NOT work — override the dependency).
-- **LIVE ON PROD 2026-06-14** (Wave 3) — coverage `partial`, **25 CAs / ~482k parcels**, nav-linked.
-  Index persists on `backend/data` volume; monthly rebuild timer (`deploy/`, now `run --rm`).
-  **Remaining:** expand coverage in measured batches — the build is memory-safe now, but the backend
-  loads the whole index into RAM at startup, so expansion is **runtime-RSS-bounded** on the 8 GB box
-  (hard-capped ~5.5 GB; full 77 CAs not expected to fit — accepted; see known-issues + `deploy/README.md`);
-  deferred index fields (each a `data_version` bump, no evaluator change). `/explore` **retired
-  2026-06-14** (Discovery is a strict superset; `/explore` now redirects to `/discovery`). Full record:
-  `claude-context/property-discovery/10-implementation-status.md` (Wave 3 section).
+- **LIVE ON PROD — FULL CITYWIDE (2026-06-15) — coverage `all`, ALL 77 CAs / ~949k parcels**,
+  nav-linked. Reached via measured off-box batches (25→37→57→77); runtime **2.98 GB RSS (39% of the
+  8 GB box)** at ~2.37 KB/parcel — the "~1.8M won't fit" worry was a unit error (that's Cook County +
+  suburbs; Chicago = ~949k). Index persists on `backend/data` volume; monthly `--refresh` timer
+  (`deploy/`, `run --rm`, off-box) auto-follows all 77. **Remaining:** deferred index fields (each a
+  `data_version` bump, no evaluator change — OZ/ward/overlay/adu/aro/flood/brownfield/rollups + a real
+  `units` source). `/explore` **retired 2026-06-14** (Discovery is a strict superset; redirects to
+  `/discovery`). Full record: `claude-context/property-discovery/10-implementation-status.md`.
 
 ## Production Configuration
 

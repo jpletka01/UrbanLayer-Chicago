@@ -176,13 +176,12 @@ vacant_mf_transit 548, fresh_comps 197, underused_commercial_tif 153, undervalue
 (honest NEEDS-DATA — `adu_eligible` is deferred).
 
 ### ⚠️ Known problems / limitations discovered (carry forward)
-- **~~`--all` build OOM~~ → FIXED (2026-06-14, robust refactor).** The build no longer holds the
-  whole set in memory (per-CA ingest + streaming finalize) and runs off-box (`run --rm`), so
-  `--all`/`--refresh` are memory-safe at any size; the coupled meta-clobber bug is fixed too (meta is
-  recomputed cumulatively). **The surviving limit is RUNTIME:** the backend loads the whole index into
-  RAM at startup (~2 KB/parcel; measured 25 CAs = 482k = 1.86 GB), so coverage is capped by serving
-  RSS. Decision: **hard-cap at 8 GB** — expand in measured batches, stop at ~5.5 GB RSS (full 77 CAs
-  likely won't fit; accepted). See `deploy/README.md` + known-issues.
+- **~~`--all` build OOM~~ → FIXED, and FULL CITY now LIVE (2026-06-15).** The build is memory-safe
+  (per-CA ingest + streaming finalize, off-box `run --rm`) and the coupled meta-clobber bug is fixed
+  (meta recomputed cumulatively). Part C expanded to **all 77 CAs / 949k parcels at 2.98 GB RSS (39% of
+  the box)** via measured batches — the runtime full-index-in-RAM model fit comfortably. **The "~1.8M /
+  won't fit" worry was a unit error: that's Cook County WITH suburbs; Chicago = ~949k parcels.** Slope
+  ~2.37 KB/parcel. No box bump needed.
 - **`undervalued_mf` is structurally thin (~29–31 across 25 CAs) — NOT a bug.** `value_percentile`
   needs a recent (≤36mo) arm's-length sale and multifamily trades slowly: of 9,047 multifamily
   parcels only **108 (~1.2%) sold in 3 years**; a quarter of those is the recipe. Arguably a feature
@@ -353,11 +352,17 @@ for 25 community areas. What's left is expansion + polish.
   `--all`/`--refresh` are safe at any size. Run **off-box**: `docker compose run --rm --no-deps
   backend python -m backend.discovery.index_build --community-areas <batch>`. Locked by an
   incremental-vs-combined equivalence test + finalize-parity + chunk-invariance tests.
-- **Remaining = RUNTIME-bounded expansion (8 GB hard cap).** The backend loads the whole index into
-  RAM at startup (~2 KB/parcel), so expansion is limited by serving RSS, not the build. Procedure:
-  expand +~15 CAs/batch off-box, `restart backend`, measure RSS (`docker stats`), **stop at ≈5.5 GB**
-  (decision: no box bump → full 77 CAs likely won't fit; accepted). Steps + stop rule in
-  `deploy/README.md`; the monthly `--refresh` timer (now `run --rm`) auto-follows the live footprint.
+- ✅ **FULL CITYWIDE COVERAGE LIVE (2026-06-15) — all 77 CAs / 948,991 parcels.** Part C ran as
+  measured off-box batches (25→37→57→77), restarting + measuring backend RSS after each. The curve was
+  dead-linear at **~2.37 KB/parcel**: 25 CA=1.86 GB, 37=2.20, 57=2.49, **77=2.98 GB (39% of the 8 GB
+  box)** — a full 2.5 GB under the ≈5.5 GB stop line. Registry now reports **`coverage: "all"`, 77
+  liveAreas**; citywide recipe counts: vacant_mf_transit 1418, teardown 1191, fresh_comps 316,
+  underused_commercial_tif 226, undervalued_mf 42, adu_2flats 0. ⚠️ **CORRECTION: the old "~1.8M
+  parcels / won't fit on 8 GB" assumption was WRONG — that was Cook County INCLUDING suburbs. Chicago's
+  77 community areas total ~949k parcels (~3.0 GB RSS), comfortable on the box.** The runtime
+  full-index-in-RAM model never needed re-architecting and the box never needed a bump. The monthly
+  `--refresh` timer (now `run --rm`, off-box) auto-follows all 77 CAs. Expand/rebuild steps in
+  `deploy/README.md`.
 - ✅ **`/explore` RETIRED (2026-06-14).** Discovery is a strict superset with real data, so `/explore`
   now redirects to `/discovery`; `ExplorePage.tsx`, the `/api/explore*` endpoints, `retrieval/explore.py`,
   the `fetchExplore*` client fns, and the `explore.*` i18n blocks are deleted. The one survivor,
