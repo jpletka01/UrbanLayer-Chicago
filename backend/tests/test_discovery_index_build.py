@@ -461,6 +461,95 @@ async def test_build_index_degrades_when_a_layer_fails(tmp_path, monkeypatch):
     assert parcels[0].get("in_tif_district") is False  # flag degraded, not crashed
 
 
+# --- chunked ingest + streaming finalize (memory-safe build) ----------------
+
+
+def _av(rows):
+    """Give every row a total_assessed_value so populated_fields includes assessed_value."""
+    for (_p, _la, _lo, a, _r) in rows:
+        a["total_assessed_value"] = 100000.0
+    return rows
+
+
+def test_finalize_index_matches_in_memory_helpers(tmp_path):
+    """The streaming finalize over SQLite produces the SAME value_percentile / populated_fields /
+    recipe_counts as the in-memory helpers on the same rows (guards against divergence)."""
+    import copy
+    from backend.discovery.index_build import finalize_index
+    from backend.discovery.parcel_index import upsert_parcels
+
+    rows = _av([_ppsf_row(f"p{i}", ppsf=float(i + 1)) for i in range(35)])  # >= min_peers
+    path = tmp_path / "idx.db"
+    upsert_parcels(path, rows)
+    finalize_index(path, community_areas=[24], as_of=AS_OF)
+
+    ref = copy.deepcopy(rows)
+    _compute_value_percentile(ref)
+    ref_pct = {p: a.get("value_percentile") for (p, _la, _lo, a, _r) in ref}
+    ref_populated = set(_populated_fields(ref))
+    ref_counts = _recipe_counts(ref)
+
+    _, parcels = read_index(path)
+    meta = read_meta(path)
+    assert {p.pin: p.get("value_percentile") for p in parcels} == ref_pct
+    assert set(meta.populated_fields) == ref_populated
+    assert meta.recipe_counts == ref_counts
+    assert "value_percentile" in meta.populated_fields  # the build actually exercised it
+
+
+def test_incremental_build_equals_combined(tmp_path):
+    """THE key safety net: building CA A then CA B in separate finalize passes yields the SAME
+    parcels AND meta as building [A, B] together — locks the meta-merge fix (the old write_index
+    clobbered community_areas / recipe_counts to the last batch)."""
+    from backend.discovery.index_build import finalize_index
+    from backend.discovery.parcel_index import upsert_parcels
+
+    rows_a = _av([_ppsf_row(f"a{i}", ppsf=float(i + 1), ca=24) for i in range(20)])
+    rows_b = _av([_ppsf_row(f"b{i}", ppsf=float(i + 1), ca=8) for i in range(20)])
+
+    combined = tmp_path / "combined.db"
+    upsert_parcels(combined, rows_a + rows_b)
+    finalize_index(combined, community_areas=[24, 8], as_of=AS_OF)
+
+    incr = tmp_path / "incr.db"
+    upsert_parcels(incr, rows_a)
+    finalize_index(incr, community_areas=[24], as_of=AS_OF)  # A's percentiles computed over A only
+    upsert_parcels(incr, rows_b)
+    finalize_index(incr, community_areas=[8], as_of=AS_OF)   # recomputed over A+B (idempotent)
+
+    def snapshot(path):
+        _, parcels = read_index(path)
+        return {p.pin: (p.get("value_percentile"), p.get("land_use_class")) for p in parcels}
+
+    assert snapshot(combined) == snapshot(incr)
+    mc, mi = read_meta(combined), read_meta(incr)
+    assert mc.community_areas == mi.community_areas == [8, 24]  # union, not last-batch-only
+    assert mc.populated_fields == mi.populated_fields
+    assert mc.recipe_counts == mi.recipe_counts
+
+
+def test_finalize_is_chunk_size_invariant(tmp_path):
+    """recipe_counts (chunked evaluate, summed) and value_percentile (batched UPDATE) are identical
+    at chunk_size=1 vs a chunk larger than the dataset — partition-additivity holds."""
+    from backend.discovery.index_build import finalize_index
+    from backend.discovery.parcel_index import upsert_parcels
+
+    rows = _av([_ppsf_row(f"p{i}", ppsf=float(i + 1)) for i in range(35)])
+    one = tmp_path / "one.db"
+    upsert_parcels(one, rows)
+    finalize_index(one, community_areas=[24], as_of=AS_OF, chunk_size=1)
+    big = tmp_path / "big.db"
+    upsert_parcels(big, rows)
+    finalize_index(big, community_areas=[24], as_of=AS_OF, chunk_size=1000)
+
+    def snapshot(path):
+        _, parcels = read_index(path)
+        return {p.pin: p.get("value_percentile") for p in parcels}
+
+    assert snapshot(one) == snapshot(big)
+    assert read_meta(one).recipe_counts == read_meta(big).recipe_counts
+
+
 def test_ensure_loaded_reads_built_index(tmp_path, monkeypatch):
     """Loader wiring: a built index becomes the current snapshot the evaluator reads."""
     from backend.discovery import parcel_source

@@ -176,12 +176,13 @@ vacant_mf_transit 548, fresh_comps 197, underused_commercial_tif 153, undervalue
 (honest NEEDS-DATA — `adu_eligible` is deferred).
 
 ### ⚠️ Known problems / limitations discovered (carry forward)
-- **`--all` (77 CAs / ~1.8M parcels) is UNSAFE on the current 8 GB box — not just slow.** The build
-  runs *inside* the backend container (`docker compose exec`) and holds every assembled row in memory
-  before writing; at ~10× the parcels that spike (~3–4 GB) lands on top of the running backend → OOM
-  risk *during the build*, and again at runtime load. Measured: **25 CAs = 482k parcels = 1.86 GB
-  runtime, ~4.4 GB free** (comfortable). `--all` needs the build moved off-box (or chunked/streamed
-  writes), or a bigger instance, FIRST.
+- **~~`--all` build OOM~~ → FIXED (2026-06-14, robust refactor).** The build no longer holds the
+  whole set in memory (per-CA ingest + streaming finalize) and runs off-box (`run --rm`), so
+  `--all`/`--refresh` are memory-safe at any size; the coupled meta-clobber bug is fixed too (meta is
+  recomputed cumulatively). **The surviving limit is RUNTIME:** the backend loads the whole index into
+  RAM at startup (~2 KB/parcel; measured 25 CAs = 482k = 1.86 GB), so coverage is capped by serving
+  RSS. Decision: **hard-cap at 8 GB** — expand in measured batches, stop at ~5.5 GB RSS (full 77 CAs
+  likely won't fit; accepted). See `deploy/README.md` + known-issues.
 - **`undervalued_mf` is structurally thin (~29–31 across 25 CAs) — NOT a bug.** `value_percentile`
   needs a recent (≤36mo) arm's-length sale and multifamily trades slowly: of 9,047 multifamily
   parcels only **108 (~1.2%) sold in 3 years**; a quarter of those is the recipe. Arguably a feature
@@ -343,11 +344,20 @@ The launch is **done** — PR-INDEX, PR-VAL, and PR-LIVE all shipped (Wave 3), a
 for 25 community areas. What's left is expansion + polish.
 
 **Coverage / scale:**
-- **Expand toward citywide** by running `index_build --community-areas <set>` on prod (the monthly
-  `--refresh` then auto-follows). **`--all` is NOT safe on the 8 GB box as-is** — the in-container
-  build spike OOMs (see Wave-3 known problems). To go full city, first do ONE of: move the build off
-  the backend container (a one-off build container / host venv writing to the same `backend/data`
-  volume), or chunk/stream `write_index`, or use a bigger instance. Until then, incremental CA sets.
+- ✅ **Build is memory-safe now (2026-06-14, robust refactor).** The OOM was coupled to a meta bug:
+  `write_index` held all rows in one process AND clobbered `meta` to the last batch (so coverage
+  could only grow by rebuilding everything at once). Refactored: per-CA `_assemble_ca`→`upsert_parcels`
+  ingest (peak = one CA) + a streaming `finalize_index` (value_percentile float-maps, chunked
+  `evaluate()` recipe counts, stream-union populated_fields) that recomputes meta **cumulatively**
+  (CAs unioned). `write_index` is now a thin wrapper. `--community-areas <batch>` correctly *adds*;
+  `--all`/`--refresh` are safe at any size. Run **off-box**: `docker compose run --rm --no-deps
+  backend python -m backend.discovery.index_build --community-areas <batch>`. Locked by an
+  incremental-vs-combined equivalence test + finalize-parity + chunk-invariance tests.
+- **Remaining = RUNTIME-bounded expansion (8 GB hard cap).** The backend loads the whole index into
+  RAM at startup (~2 KB/parcel), so expansion is limited by serving RSS, not the build. Procedure:
+  expand +~15 CAs/batch off-box, `restart backend`, measure RSS (`docker stats`), **stop at ≈5.5 GB**
+  (decision: no box bump → full 77 CAs likely won't fit; accepted). Steps + stop rule in
+  `deploy/README.md`; the monthly `--refresh` timer (now `run --rm`) auto-follows the live footprint.
 - ✅ **`/explore` RETIRED (2026-06-14).** Discovery is a strict superset with real data, so `/explore`
   now redirects to `/discovery`; `ExplorePage.tsx`, the `/api/explore*` endpoints, `retrieval/explore.py`,
   the `fetchExplore*` client fns, and the `explore.*` i18n blocks are deleted. The one survivor,

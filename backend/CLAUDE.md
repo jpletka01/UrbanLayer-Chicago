@@ -95,12 +95,20 @@ experience, unlinked from nav, empty prod index). Spec + decisions:
   `populated_fields` + `recipe_counts` manifest. **`--refresh`** rebuilds the current `meta.community_areas`
   (monthly timer). **Assessment join filters for a present value** (latest CCAO year is valueless — see
   known-issues). `index_validate.py` = non-blocking validation CLI.
-- **Tests:** `backend/tests/test_discovery_*.py` (**190**). Mock Socrata + polygon layers;
+  **Memory-bounded by construction (2026-06-14):** per-CA `_assemble_ca`→`upsert_parcels` ingest
+  (peak = one CA) then a streaming `finalize_index` that recomputes the cross-parcel fields + meta
+  over the SQLite index in chunks (value_percentile float-maps, chunked `evaluate()` recipe counts,
+  stream-union populated_fields). `write_index` is now a thin `upsert_parcels`+`write_meta` wrapper.
+  Meta is recomputed **cumulatively** (CAs unioned), so `--community-areas <batch>` correctly *adds*
+  instead of clobbering coverage to the last batch. Run **off-box** via `docker compose run --rm`.
+- **Tests:** `backend/tests/test_discovery_*.py` (**193**). Mock Socrata + polygon layers;
   premium/free gating via FastAPI `dependency_overrides` (the `Depends` callable is captured at
   decoration, so monkeypatching the module attr does NOT work — override the dependency).
 - **LIVE ON PROD 2026-06-14** (Wave 3) — coverage `partial`, **25 CAs / ~482k parcels**, nav-linked.
-  Index persists on `backend/data` volume; monthly rebuild timer (`deploy/`). **Remaining:** expand
-  toward citywide (`--all` OOMs the 8 GB box — see known-issues; needs off-box build first);
+  Index persists on `backend/data` volume; monthly rebuild timer (`deploy/`, now `run --rm`).
+  **Remaining:** expand coverage in measured batches — the build is memory-safe now, but the backend
+  loads the whole index into RAM at startup, so expansion is **runtime-RSS-bounded** on the 8 GB box
+  (hard-capped ~5.5 GB; full 77 CAs not expected to fit — accepted; see known-issues + `deploy/README.md`);
   deferred index fields (each a `data_version` bump, no evaluator change). `/explore` **retired
   2026-06-14** (Discovery is a strict superset; `/explore` now redirects to `/discovery`). Full record:
   `claude-context/property-discovery/10-implementation-status.md` (Wave 3 section).
