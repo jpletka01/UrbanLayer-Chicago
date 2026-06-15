@@ -107,33 +107,22 @@ CREATE TABLE IF NOT EXISTS meta (
 """
 
 
-def write_index(
+def upsert_parcels(
     path: Path,
-    *,
-    data_version: str,
-    built_at: int,
-    community_areas: list[int],
     rows: Iterable[tuple[str, float | None, float | None, dict[str, Any], list[str]]],
-    populated_fields: list[str] | None = None,
-    recipe_counts: dict[str, int] | None = None,
-) -> int:
-    """Upsert parcel rows (incremental by PIN) and refresh the meta row.
+) -> None:
+    """Upsert parcel rows (incremental by PIN). No meta, no cross-parcel fields.
 
-    `rows` are (pin, lat, lon, attrs, regions). Only non-empty attrs are stored so a
-    missing field reads back as None (driving `unknownPolicy`). `populated_fields` are the
-    filter ids this build actually populated (drives the registry's populatedFields — the
-    rest read "coming with the next data update"). `recipe_counts` is per-recipe result
-    counts for honest "Live · N" / "No matches yet" shelf badges. Returns the total parcel count.
+    `rows` are (pin, lat, lon, attrs, regions). Only non-empty attrs are stored so a missing
+    field reads back as None (driving `unknownPolicy`). This is the per-batch ingest half of a
+    build: the chunked builder calls it once per community area so peak memory is one CA's rows,
+    never the whole set. Cross-parcel fields (e.g. `value_percentile`) and the meta row are added
+    afterward by the finalize pass (`index_build.finalize_index`).
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     try:
         conn.executescript(_SCHEMA)
-        # Schema evolution: add newer meta columns to a pre-existing table (CREATE IF NOT
-        # EXISTS won't), so an index built under an older schema upgrades on the next build.
-        existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(meta)")}
-        if "recipe_counts" not in existing_cols:
-            conn.execute("ALTER TABLE meta ADD COLUMN recipe_counts TEXT NOT NULL DEFAULT '{}'")
         conn.executemany(
             "INSERT OR REPLACE INTO parcels (pin, lat, lon, attrs, regions) VALUES (?, ?, ?, ?, ?)",
             [
@@ -147,6 +136,36 @@ def write_index(
                 for (pin, lat, lon, attrs, regions) in rows
             ],
         )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def write_meta(
+    path: Path,
+    *,
+    data_version: str,
+    built_at: int,
+    community_areas: list[int],
+    populated_fields: list[str] | None = None,
+    recipe_counts: dict[str, int] | None = None,
+) -> int:
+    """Write/refresh the index `meta` row. Returns the current total parcel count.
+
+    `populated_fields` are the filter ids the build actually populated (drives the registry's
+    populatedFields — the rest read "coming with the next data update"). `recipe_counts` is
+    per-recipe result counts for honest "Live · N" / "No matches yet" shelf badges. Both are
+    cumulative over the whole index (the finalize pass computes them over every parcel present).
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path)
+    try:
+        conn.executescript(_SCHEMA)
+        # Schema evolution: add newer meta columns to a pre-existing table (CREATE IF NOT
+        # EXISTS won't), so an index built under an older schema upgrades on the next build.
+        existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(meta)")}
+        if "recipe_counts" not in existing_cols:
+            conn.execute("ALTER TABLE meta ADD COLUMN recipe_counts TEXT NOT NULL DEFAULT '{}'")
         total = conn.execute("SELECT COUNT(*) FROM parcels").fetchone()[0]
         cas = ",".join(str(c) for c in sorted(set(community_areas)))
         pf = json.dumps(sorted(set(populated_fields or [])))
@@ -161,6 +180,33 @@ def write_index(
         return total
     finally:
         conn.close()
+
+
+def write_index(
+    path: Path,
+    *,
+    data_version: str,
+    built_at: int,
+    community_areas: list[int],
+    rows: Iterable[tuple[str, float | None, float | None, dict[str, Any], list[str]]],
+    populated_fields: list[str] | None = None,
+    recipe_counts: dict[str, int] | None = None,
+) -> int:
+    """Upsert parcel rows and refresh the meta row in one shot. Returns the total parcel count.
+
+    Thin wrapper over `upsert_parcels` + `write_meta` — convenient for small/test builds that
+    have all rows in memory. The production chunked builder calls the two halves separately
+    (per-CA `upsert_parcels`, then one `finalize_index` that ends in `write_meta`).
+    """
+    upsert_parcels(path, rows)
+    return write_meta(
+        path,
+        data_version=data_version,
+        built_at=built_at,
+        community_areas=community_areas,
+        populated_fields=populated_fields,
+        recipe_counts=recipe_counts,
+    )
 
 
 def read_meta(path: Path) -> IndexMeta | None:
@@ -237,5 +283,48 @@ def read_index(path: Path) -> tuple[str | None, list[IndexedParcel]]:
     except sqlite3.DatabaseError as exc:
         log.warning("discovery: failed to read index at %s: %s", path, exc)
         return None, []
+    finally:
+        conn.close()
+
+
+def iter_parcel_rows(
+    path: Path,
+) -> Iterable[tuple[str, float | None, float | None, dict[str, Any], list[str]]]:
+    """Stream stored parcel rows as (pin, lat, lon, attrs, regions) — bounded memory.
+
+    Yields the RAW stored attrs (no `derive_sort_fields`), so the finalize pass can compute
+    cross-parcel fields and write them straight back. Uses a SQLite cursor (rows are pulled
+    lazily), so it works over the full ~1.8M-parcel index without materializing it.
+    """
+    if not path.exists():
+        return
+    conn = sqlite3.connect(path)
+    try:
+        for pin, lat, lon, attrs, regions in conn.execute(
+            "SELECT pin, lat, lon, attrs, regions FROM parcels"
+        ):
+            yield pin, lat, lon, json.loads(attrs), json.loads(regions)
+    finally:
+        conn.close()
+
+
+def update_parcel_attrs(path: Path, updates: Iterable[tuple[str, dict[str, Any]]]) -> None:
+    """Overwrite the stored attrs of specific parcels: `updates` = (pin, attrs) pairs (executemany).
+
+    Used by the cross-parcel finalize pass to persist computed fields (e.g. `value_percentile`):
+    finalize already holds each row's attrs from its streamed scan, so it passes the merged dict
+    back here directly — no per-row read needed. Only non-null attrs are stored (a value set to
+    None drops the key, matching `upsert_parcels`).
+    """
+    conn = sqlite3.connect(path)
+    try:
+        conn.executemany(
+            "UPDATE parcels SET attrs = ? WHERE pin = ?",
+            [
+                (json.dumps({k: v for k, v in attrs.items() if v is not None}, sort_keys=True), pin)
+                for pin, attrs in updates
+            ],
+        )
+        conn.commit()
     finally:
         conn.close()

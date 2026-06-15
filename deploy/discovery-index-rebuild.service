@@ -7,9 +7,14 @@ Requires=docker.service
 Type=oneshot
 WorkingDirectory=/opt/urbanlayer
 # --refresh rebuilds exactly the community areas already in the index, so expanding coverage
-# (a one-off --community-areas / --all run) automatically carries into the monthly refresh.
-ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python -m backend.discovery.index_build --refresh
+# (a one-off --community-areas run) automatically carries into the monthly refresh.
+# Runs in a SEPARATE ephemeral container (`run --rm`, own cgroup) rather than `exec` inside the
+# live backend, so the build's memory never stacks on the serving process. The builder is
+# memory-bounded by construction (per-CA ingest + streaming finalize), so this is safe at any
+# coverage. `--no-deps` skips qdrant (the builder never touches the vector store); the new
+# container inherits the backend service's backend_data volume mount and writes the shared index.
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend python -m backend.discovery.index_build --refresh
 # Reload so ensure_loaded() picks up the freshly written index (it persists on the backend/data volume).
 ExecStartPost=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
-# A full-city rebuild can run long; allow up to 6h before systemd considers it failed.
+# A wide rebuild can run long; allow up to 6h before systemd considers it failed.
 TimeoutStartSec=21600

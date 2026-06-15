@@ -29,7 +29,13 @@ from shapely.geometry import Point, shape
 from shapely.strtree import STRtree
 
 from backend.config import get_settings
-from backend.discovery.parcel_index import default_index_path, write_index
+from backend.discovery.parcel_index import (
+    default_index_path,
+    iter_parcel_rows,
+    update_parcel_attrs,
+    upsert_parcels,
+    write_meta,
+)
 from backend.discovery.registry import load as load_registry
 from backend.retrieval.geo import community_area_bounds, community_area_by_point
 from backend.retrieval.utils import format_pin
@@ -447,24 +453,56 @@ def _ca_of(regions: list[str]) -> int | None:
     return None
 
 
-def _compute_value_percentile(rows: list[tuple], *, min_peers: int = _VALUE_PERCENTILE_MIN_PEERS) -> None:
-    """In-place 2nd pass: percentile-rank each parcel's SALE-based $/sqft among same-use peers.
+# --- value_percentile shared core (used by both the in-memory pass and the streaming finalize) ---
 
-    Peer set = community_area x land_use among parcels with a qualifying recent sale, so the
-    distribution is purely sale-based — assessed $/sqft is never pooled in. Below `min_peers`
-    the peer set widens to citywide x land_use; still below, value_percentile stays NULL (no
-    noise). Deterministic (sorted + bisect, no clock/RNG). Lower percentile = cheaper than peers.
+
+def _value_ppsf_qualifies(attrs: dict) -> bool:
+    """A parcel contributes to / receives a value_percentile only with a qualifying recent sale."""
+    ppsf = attrs.get("price_per_sf")
+    rec = attrs.get("sale_recency_days")
+    return ppsf is not None and ppsf > 0 and rec is not None and rec <= _SALE_RECENCY_MAX_DAYS
+
+
+def _value_percentile_for(
+    attrs: dict,
+    ca: int | None,
+    ca_ppsf: dict[tuple[int, str], list[float]],
+    city_ppsf: dict[str, list[float]],
+    *,
+    min_peers: int,
+) -> int | None:
+    """Percentile-rank a parcel's $/sqft among same-use peers, given prebuilt SORTED peer maps.
+
+    Peer set = community_area x land_use; below `min_peers` it widens to citywide x land_use;
+    still below → None (NULL, no noise). Pure + deterministic (bisect). Lower = cheaper than peers.
     """
+    if not _value_ppsf_qualifies(attrs):
+        return None  # no qualifying sale -> NULL (never back-filled from assessment)
+    lu = attrs.get("land_use_class")
+    if lu is None:
+        return None
+    ppsf = attrs["price_per_sf"]
+    peers = ca_ppsf.get((ca, lu)) if ca is not None else None
+    if peers is None or len(peers) < min_peers:
+        peers = city_ppsf.get(lu)  # widen to citywide x use
+    if peers is None or len(peers) < min_peers:
+        return None  # still too thin -> NULL
+    rank = bisect.bisect_left(peers, ppsf)  # parcels strictly cheaper than this one
+    return round(100 * rank / len(peers))
 
-    def qualifies(attrs: dict) -> bool:
-        ppsf = attrs.get("price_per_sf")
-        rec = attrs.get("sale_recency_days")
-        return ppsf is not None and ppsf > 0 and rec is not None and rec <= _SALE_RECENCY_MAX_DAYS
 
+def _value_ppsf_groups(
+    rows: Iterable[tuple],
+) -> tuple[dict[tuple[int, str], list[float]], dict[str, list[float]]]:
+    """Collect SORTED $/sqft peer maps (community_area x use, and citywide x use) from `rows`.
+
+    Only the floats are held — bounded (~MBs even at ~1.8M parcels) — so this is safe to run over
+    a streamed scan of the whole index, not just an in-memory batch.
+    """
     ca_ppsf: dict[tuple[int, str], list[float]] = defaultdict(list)
     city_ppsf: dict[str, list[float]] = defaultdict(list)
     for (_pin, _lat, _lon, attrs, regions) in rows:
-        if not qualifies(attrs):
+        if not _value_ppsf_qualifies(attrs):
             continue
         lu = attrs.get("land_use_class")
         if lu is None:
@@ -474,27 +512,26 @@ def _compute_value_percentile(rows: list[tuple], *, min_peers: int = _VALUE_PERC
         ca = _ca_of(regions)
         if ca is not None:
             ca_ppsf[(ca, lu)].append(ppsf)
-
     for grp in ca_ppsf.values():
         grp.sort()
     for grp in city_ppsf.values():
         grp.sort()
+    return ca_ppsf, city_ppsf
 
+
+def _compute_value_percentile(rows: list[tuple], *, min_peers: int = _VALUE_PERCENTILE_MIN_PEERS) -> None:
+    """In-place 2nd pass: percentile-rank each parcel's SALE-based $/sqft among same-use peers.
+
+    Peer set = community_area x land_use among parcels with a qualifying recent sale, so the
+    distribution is purely sale-based — assessed $/sqft is never pooled in. Below `min_peers`
+    the peer set widens to citywide x land_use; still below, value_percentile stays NULL (no
+    noise). Deterministic (sorted + bisect, no clock/RNG). Lower percentile = cheaper than peers.
+    """
+    ca_ppsf, city_ppsf = _value_ppsf_groups(rows)
     for (_pin, _lat, _lon, attrs, regions) in rows:
-        if not qualifies(attrs):
-            continue  # no qualifying sale -> NULL (never back-filled from assessment)
-        lu = attrs.get("land_use_class")
-        if lu is None:
-            continue
-        ppsf = attrs["price_per_sf"]
-        ca = _ca_of(regions)
-        peers = ca_ppsf.get((ca, lu)) if ca is not None else None
-        if peers is None or len(peers) < min_peers:
-            peers = city_ppsf.get(lu)  # widen to citywide x use
-        if peers is None or len(peers) < min_peers:
-            continue  # still too thin -> NULL
-        rank = bisect.bisect_left(peers, ppsf)  # parcels strictly cheaper than this one
-        attrs["value_percentile"] = round(100 * rank / len(peers))
+        pct = _value_percentile_for(attrs, _ca_of(regions), ca_ppsf, city_ppsf, min_peers=min_peers)
+        if pct is not None:
+            attrs["value_percentile"] = pct
 
 
 def _populated_fields(rows: list[tuple]) -> list[str]:
@@ -518,6 +555,40 @@ def _populated_fields(rows: list[tuple]) -> list[str]:
     return sorted(set(ids))
 
 
+def _recipe_cqs_list() -> list[tuple[str, Any]]:
+    """The merged canonical CQS for each prospecting recipe → [(topic_id, cqs)]. Built once."""
+    from backend.discovery.compile_merge import merge
+    from backend.discovery.cqs import CqsFragment
+
+    registry = load_registry()
+    empty = CqsFragment()
+    out: list[tuple[str, Any]] = []
+    for topic in registry.topics:
+        user_frag = CqsFragment.model_validate(
+            {"filters": {fid: {"predicate": p, "source": "user"} for fid, p in topic.presets.items()}}
+        )
+        cqs, _dropped = merge(user_frag, empty, sort=topic.defaultSort)
+        out.append((topic.id, cqs))
+    return out
+
+
+def _count_recipes(parcels: list, recipe_cqs: list[tuple[str, Any]], *, version: str) -> dict[str, int]:
+    """Evaluate each recipe CQS against `parcels` (registered under `version`) → result counts.
+
+    Recipe counts are row-local (each parcel independently matches a recipe's filters), so a
+    caller can sum counts across disjoint parcel partitions — which is how the streaming finalize
+    counts the whole index in bounded-memory chunks while reusing the one true `evaluate()`.
+    """
+    from backend.discovery import parcel as parcel_mod
+    from backend.discovery.evaluator import evaluate
+
+    parcel_mod.default_source.register(version, parcels)
+    try:
+        return {tid: evaluate(cqs, version).total for tid, cqs in recipe_cqs}
+    finally:
+        parcel_mod.default_source._snapshots.pop(version, None)
+
+
 def _recipe_counts(rows: list[tuple]) -> dict[str, int]:
     """Evaluate each recipe against the just-built snapshot and count results.
 
@@ -525,33 +596,172 @@ def _recipe_counts(rows: list[tuple]) -> dict[str, int]:
     LIVE from field-presence alone — which mislabels a recipe whose FIELDS are populated but
     whose specific subset is empty (e.g. multifamily value_percentile in a thin neighborhood).
     """
-    from backend.discovery import parcel as parcel_mod
-    from backend.discovery.compile_merge import merge
-    from backend.discovery.cqs import CqsFragment
-    from backend.discovery.evaluator import evaluate
     from backend.discovery.parcel_index import IndexedParcel, derive_sort_fields
 
-    registry = load_registry()
-    if not registry.topics:
+    recipe_cqs = _recipe_cqs_list()
+    if not recipe_cqs:
         return {}
     parcels = [
         IndexedParcel(pin, lat, lon, derive_sort_fields(attrs), regions)
         for (pin, lat, lon, attrs, regions) in rows
     ]
-    version = "__recipe_count__"
-    parcel_mod.default_source.register(version, parcels)
+    return _count_recipes(parcels, recipe_cqs, version="__recipe_count__")
+
+
+async def _assemble_ca(
+    ca: int,
+    *,
+    settings,
+    tif_polys,
+    ez_polys,
+    rail_stations,
+    as_of: datetime.date,
+    client: httpx.AsyncClient | None,
+) -> list[tuple]:
+    """Assemble one community area's parcel rows (the per-CA half of a build).
+
+    Pure-ish per-CA work: spine → chunked batch joins → local spatial pass → `assemble_parcel`.
+    Returns the CA's row tuples; the caller upserts and drops them, so build memory is bounded by
+    one CA, never the whole set. A transient spine failure warns + returns [] (does not abort the
+    larger run).
+    """
     try:
-        counts: dict[str, int] = {}
-        empty = CqsFragment()
-        for topic in registry.topics:
-            user_frag = CqsFragment.model_validate(
-                {"filters": {fid: {"predicate": p, "source": "user"} for fid, p in topic.presets.items()}}
-            )
-            cqs, _dropped = merge(user_frag, empty, sort=topic.defaultSort)
-            counts[topic.id] = evaluate(cqs, version).total
-        return counts
-    finally:
-        parcel_mod.default_source._snapshots.pop(version, None)
+        spine = await _fetch_spine(ca, client=client)
+    except Exception as exc:
+        log.warning("discovery index: spine fetch for CA %s failed: %s", ca, exc)
+        return []
+    if not spine:
+        log.info("discovery index: CA %s — no parcels", ca)
+        return []
+    pins = [s["pin_digits"] for s in spine]
+    chars = await _batch_latest(settings.dataset_ccao_characteristics, pins, "year", client, settings)
+    assess = await _batch_latest(
+        settings.dataset_ccao_assessments, pins, "year", client, settings,
+        # Skip the in-progress assessment year (value columns still null → omitted by Socrata);
+        # take the latest year that actually has a total value.
+        where_extra="(mailed_tot IS NOT NULL OR certified_tot IS NOT NULL OR board_tot IS NOT NULL)",
+    )
+    sales = await _batch_latest(settings.dataset_ccao_sales, pins, "sale_date", client, settings)
+    addrs = await _batch_latest(settings.dataset_address_points, pins, "objectid", client, settings)
+    # Building-address fallback for unaddressed (mostly condo unit) PINs: join the base PINs
+    # (10-digit prefix + 0000) for the misses; deduped to buildings, so far fewer queries.
+    base_pins = sorted({p[:10] + "0000" for p in pins if not (addrs.get(p) or {}).get("cmpaddabrv")})
+    base_addrs = (
+        await _batch_latest(settings.dataset_address_points, base_pins, "objectid", client, settings)
+        if base_pins else {}
+    )
+    addr_tree, addr_list = _address_tree(await _fetch_address_points(ca, client=client))
+    zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
+
+    rows: list[tuple] = []
+    for s in spine:
+        ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
+        rows.append(assemble_parcel(
+            s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
+            address=_address_for(
+                s["pin_digits"], s["lat"], s["lon"], addrs, base_addrs, addr_tree, addr_list
+            ),
+            zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
+            rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
+        ))
+    log.info("discovery index: CA %s — assembled %s parcels", ca, len(rows))
+    return rows
+
+
+# Parcels per chunk in the streaming finalize. Bounds peak memory of the recipe-count pass (which
+# materializes a chunk of IndexedParcels) and the value_percentile UPDATE batch — independent of
+# total index size.
+_FINALIZE_CHUNK = 50_000
+
+
+def finalize_index(
+    path,
+    *,
+    community_areas: list[int],
+    as_of: datetime.date,
+    chunk_size: int = _FINALIZE_CHUNK,
+) -> tuple[str, int]:
+    """Cross-parcel pass + manifest + meta, computed by STREAMING the index (bounded memory).
+
+    Runs after the per-CA upserts. Recomputes the cross-parcel fields over the WHOLE accumulated
+    index (so incremental `--community-areas` adds are correct, not just the last batch):
+      * value_percentile — collect SORTED $/sqft peer maps (floats only) over a streamed scan,
+        then a second streamed pass assigns + persists each parcel's percentile in batches.
+      * populated_fields — stream-union of non-null attr keys (drives registry.populatedFields).
+      * recipe_counts — `evaluate()` over fixed-size chunks, summed (counts are partition-additive).
+    Meta's `community_areas` is the UNION of the existing footprint and the just-built set.
+    Returns (data_version, total_parcel_count).
+    """
+    from backend.discovery.parcel_index import IndexedParcel, derive_sort_fields, read_meta
+
+    # 1) value_percentile — global peer maps (bounded: floats only), assign, then persist.
+    # Collect updates while streaming but apply them only AFTER the read cursor is exhausted: a
+    # writer on a second connection would otherwise hit "database is locked" mid-scan. Only
+    # qualifying parcels (a recent-sale subset) carry an update, so the held set stays small.
+    ca_ppsf, city_ppsf = _value_ppsf_groups(iter_parcel_rows(path))
+    pct_updates: list[tuple[str, dict]] = []
+    for (pin, _lat, _lon, attrs, regions) in iter_parcel_rows(path):
+        pct = _value_percentile_for(
+            attrs, _ca_of(regions), ca_ppsf, city_ppsf, min_peers=_VALUE_PERCENTILE_MIN_PEERS
+        )
+        if pct is None:
+            continue
+        attrs["value_percentile"] = pct
+        pct_updates.append((pin, attrs))
+    for i in range(0, len(pct_updates), chunk_size):
+        update_parcel_attrs(path, pct_updates[i:i + chunk_size])
+
+    # 2) populated_fields (stream union) + recipe_counts (chunked evaluate) over the finalized rows.
+    recipe_cqs = _recipe_cqs_list()
+    counts = {tid: 0 for tid, _ in recipe_cqs}
+    present: set[str] = set()
+    has_neighborhood = False
+    total = 0
+    chunk: list = []
+    chunk_idx = 0
+
+    def _flush_chunk() -> None:
+        nonlocal chunk_idx
+        if recipe_cqs and chunk:
+            sub = _count_recipes(chunk, recipe_cqs, version=f"__finalize_{chunk_idx}__")
+            for tid, n in sub.items():
+                counts[tid] += n
+        chunk_idx += 1
+        chunk.clear()
+
+    for (pin, lat, lon, attrs, regions) in iter_parcel_rows(path):
+        total += 1
+        for k, v in attrs.items():
+            if v is not None:
+                present.add(k)
+        if not has_neighborhood and any(r.startswith("neighborhood:") for r in regions):
+            has_neighborhood = True
+        chunk.append(IndexedParcel(pin, lat, lon, derive_sort_fields(attrs), regions))
+        if len(chunk) >= chunk_size:
+            _flush_chunk()
+    _flush_chunk()
+
+    ids = [f.id for f in load_registry().filters if f.field in present]
+    if has_neighborhood:
+        ids.append("neighborhood")
+    populated = sorted(set(ids))
+
+    # 3) meta — union the just-built CAs with the existing footprint so an incremental add doesn't
+    # under-claim coverage (the clobber bug the old write_index had).
+    existing = read_meta(path)
+    cas = sorted(set(community_areas) | set(existing.community_areas if existing else []))
+    built_at = int(time.time())
+    data_version = f"idx-{as_of:%Y%m%d}-{built_at}-{total}p"
+    written = write_meta(
+        path,
+        data_version=data_version, built_at=built_at,
+        community_areas=cas, populated_fields=populated, recipe_counts=counts,
+    )
+    log.info(
+        "discovery index: finalized %s parcels as %s; CAs %s; populated: %s; recipe counts: %s",
+        written, data_version, cas, ", ".join(populated), counts,
+    )
+    return data_version, written
 
 
 async def build_index(
@@ -560,7 +770,12 @@ async def build_index(
     client: httpx.AsyncClient | None = None,
     as_of: datetime.date | None = None,
 ) -> tuple[str, int]:
-    """Build/refresh the index for the given community areas. Returns (data_version, count)."""
+    """Build/refresh the index for the given community areas. Returns (data_version, count).
+
+    Memory-bounded by construction: each CA is assembled + upserted then dropped (peak = one CA),
+    and the cross-parcel pass + meta are computed by `finalize_index` streaming the SQLite index
+    (peak = one chunk + the $/sqft float maps). Safe for `--all`/`--refresh` regardless of total size.
+    """
     settings = get_settings()
     as_of = as_of or datetime.date.today()
 
@@ -570,67 +785,17 @@ async def build_index(
     ez_polys = await _safe_polys(_load_ez_boundaries, "enterprise zone", client)
     rail_stations = _load_rail_stations()
 
-    rows: list[tuple] = []
+    path = default_index_path()
     for ca in community_areas:
-        try:
-            spine = await _fetch_spine(ca, client=client)
-        except Exception as exc:
-            log.warning("discovery index: spine fetch for CA %s failed: %s", ca, exc)
-            continue
-        if not spine:
-            log.info("discovery index: CA %s — no parcels", ca)
-            continue
-        pins = [s["pin_digits"] for s in spine]
-        chars = await _batch_latest(settings.dataset_ccao_characteristics, pins, "year", client, settings)
-        assess = await _batch_latest(
-            settings.dataset_ccao_assessments, pins, "year", client, settings,
-            # Skip the in-progress assessment year (value columns still null → omitted by Socrata);
-            # take the latest year that actually has a total value.
-            where_extra="(mailed_tot IS NOT NULL OR certified_tot IS NOT NULL OR board_tot IS NOT NULL)",
+        rows = await _assemble_ca(
+            ca, settings=settings, tif_polys=tif_polys, ez_polys=ez_polys,
+            rail_stations=rail_stations, as_of=as_of, client=client,
         )
-        sales = await _batch_latest(settings.dataset_ccao_sales, pins, "sale_date", client, settings)
-        addrs = await _batch_latest(settings.dataset_address_points, pins, "objectid", client, settings)
-        # Building-address fallback for unaddressed (mostly condo unit) PINs: join the base PINs
-        # (10-digit prefix + 0000) for the misses; deduped to buildings, so far fewer queries.
-        base_pins = sorted({p[:10] + "0000" for p in pins if not (addrs.get(p) or {}).get("cmpaddabrv")})
-        base_addrs = (
-            await _batch_latest(settings.dataset_address_points, base_pins, "objectid", client, settings)
-            if base_pins else {}
-        )
-        addr_tree, addr_list = _address_tree(await _fetch_address_points(ca, client=client))
-        zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
+        if rows:
+            upsert_parcels(path, rows)
+        # rows dropped here — peak build memory is one CA, not the whole set.
 
-        for s in spine:
-            ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
-            rows.append(assemble_parcel(
-                s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
-                address=_address_for(
-                    s["pin_digits"], s["lat"], s["lon"], addrs, base_addrs, addr_tree, addr_list
-                ),
-                zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
-                rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
-            ))
-        log.info("discovery index: CA %s — assembled %s parcels", ca, len(spine))
-
-    # Cross-parcel pass + the field-readiness manifest (drives coverage / populatedFields) +
-    # per-recipe result counts (drives honest "Live · N" / "No matches yet" shelf badges).
-    _compute_value_percentile(rows)
-    populated = _populated_fields(rows)
-    recipe_counts = _recipe_counts(rows)
-
-    built_at = int(time.time())
-    data_version = f"idx-{as_of:%Y%m%d}-{built_at}-{len(rows)}p"
-    total = write_index(
-        default_index_path(),
-        data_version=data_version, built_at=built_at,
-        community_areas=community_areas, rows=rows,
-        populated_fields=populated, recipe_counts=recipe_counts,
-    )
-    log.info(
-        "discovery index: wrote %s parcels (total %s) as %s; populated: %s; recipe counts: %s",
-        len(rows), total, data_version, ", ".join(populated), recipe_counts,
-    )
-    return data_version, total
+    return finalize_index(path, community_areas=community_areas, as_of=as_of)
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
