@@ -4,6 +4,7 @@
 // the result list via shared hoveredPin. No tier gating here — PR9 owns the free/paid line.
 
 import { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { useMapboxOverlay } from "../lib/useMapboxOverlay";
 import { landUseColor, LAND_USE_LEGEND, upsideColor, UPSIDE_LEGEND } from "./upsideColor";
@@ -33,6 +34,7 @@ export function DiscoveryMap({
   colorBy,
   interactive,
 }: DiscoveryMapProps) {
+  const { t } = useTranslation("pages");
   const { containerRef, mapRef, overlayRef, mapReady } = useMapboxOverlay({
     center: [-87.6298, 41.8781],
     zoom: 10,
@@ -77,7 +79,7 @@ export function DiscoveryMap({
   }, [mappable, highlightedIndex, colorBy, interactive, onHoverPin, onOpenParcel]);
 
   const legend = colorBy === "upside" ? UPSIDE_LEGEND : LAND_USE_LEGEND;
-  const legendTitle = colorBy === "upside" ? "Redevelopment upside" : "Property use";
+  const legendTitle = colorBy === "upside" ? t("discovery.legendUpside") : t("discovery.legendLandUse");
 
   useEffect(() => {
     if (!overlayRef.current) return;
@@ -111,12 +113,12 @@ export function DiscoveryMap({
             {legendTitle}
           </div>
           {legend.map((item) => (
-            <div key={item.label} className="flex items-center gap-2 text-[10px] text-text-secondary">
+            <div key={item.i18nKey} className="flex items-center gap-2 text-[10px] text-text-secondary">
               <span
                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              {item.label}
+              {t(`discovery.${item.i18nKey}`, item.label)}
             </div>
           ))}
         </div>
@@ -125,8 +127,7 @@ export function DiscoveryMap({
       {/* Honest cap note: the map shows the first MAX_MAP_POINTS of a larger set. */}
       {truncated && (
         <div className="absolute left-3 top-3 z-10 rounded-lg border border-dark-border bg-dark-surface/90 px-3 py-1.5 text-[11px] text-text-secondary">
-          Mapping {mappable.length.toLocaleString()} of {total.toLocaleString()} — refine to map
-          the rest.
+          {t("discovery.mapTruncated", { shown: mappable.length.toLocaleString(), total: total.toLocaleString() })}
         </div>
       )}
     </div>

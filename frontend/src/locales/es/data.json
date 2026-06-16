@@ -34,7 +34,9 @@
     "agency": "Agencia",
     "rate": "Tasa",
     "amount": "Monto",
-    "reportTeaser": "Tax projections + development potential in report"
+    "reportTeaser": "Proyecciones de impuestos + potencial de desarrollo en el informe",
+    "annualTax": "Impuesto anual",
+    "effectiveRate": "Tasa impositiva efect."
   },
   "regulatory": {
     "title": "Normativo",
@@ -98,7 +100,12 @@
     "standardClassDescription": "Clasificación estándar — no aplica reducción de incentivo fiscal.",
     "unavailableClassDescription": "El código de clase de propiedad no está disponible del Condado de Cook — no se puede determinar la clasificación de incentivo fiscal.",
     "censusTract": "Tramo censal:",
-    "reportTeaser": "AI eligibility analysis + next steps in report"
+    "reportTeaser": "Análisis de elegibilidad con IA + próximos pasos en el informe",
+    "qct": "Distrito censal calificado (LIHTC)",
+    "nmtcEligible": "Comunidad de bajos ingresos NMTC",
+    "notInQct": "No está en un distrito censal calificado",
+    "notNmtcEligible": "No elegible para NMTC",
+    "severeDistress": "Gravemente desfavorecida — prioridad de asignación NMTC mejorada"
   },
   "neighborhood": {
     "title": "Vecindario",
@@ -306,11 +313,11 @@
     "exportCsv": "CSV"
   },
   "financialSnapshot": {
-    "assessedValue": "Assessed Value",
-    "annualTax": "Annual Tax",
-    "medianCompSale": "Median Comp Sale",
-    "tifFundBalance": "TIF Fund Balance",
-    "activeIncentives": "Active Incentives",
+    "assessedValue": "Valor de avalúo",
+    "annualTax": "Impuesto anual",
+    "medianCompSale": "Venta comp. mediana",
+    "tifFundBalance": "Saldo del fondo TIF",
+    "activeIncentives": "Incentivos activos",
     "zonesCount": "{{count}} of 3 zones"
   },
   "terms": {
@@ -343,6 +350,26 @@
           "Créditos fiscales estatales por inversión",
           "Exenciones de impuestos de servicios públicos disponibles",
           "Debe crear o retener empleos para calificar"
+        ]
+      },
+      "nmtc": {
+        "label": "Crédito Fiscal para Nuevos Mercados (NMTC)",
+        "description": "Programa federal que ofrece incentivos de crédito fiscal para la inversión privada en comunidades de bajos ingresos a través de Instituciones Financieras de Desarrollo Comunitario (CDFI).",
+        "bullets": [
+          "Crédito fiscal del 39% reclamado durante 7 años sobre inversiones calificadas",
+          "Financia proyectos comerciales, industriales y comunitarios",
+          "Préstamos a tasas por debajo del mercado a través de asignatarios CDFI",
+          "Los distritos gravemente desfavorecidos reciben prioridad de asignación"
+        ]
+      },
+      "qct": {
+        "label": "Distrito Censal Calificado (QCT)",
+        "description": "Distrito censal designado por HUD donde el 50% o más de los hogares ganan menos del 60% del ingreso medio del área. Los proyectos LIHTC en QCT reciben un aumento de base mejorado.",
+        "bullets": [
+          "Aumento de base de hasta el 130% para proyectos LIHTC",
+          "Permite el crédito fiscal del 9% sobre una mayor parte de los costos elegibles",
+          "Designado anualmente por HUD según datos de ingresos",
+          "Factor clave para la viabilidad del desarrollo de vivienda asequible"
         ]
       }
     },
@@ -484,6 +511,24 @@
     "disclaimerText": "Este informe es solo para fines informativos y no constituye asesoramiento legal, de zonificación o financiero. Siempre verifique la información con los registros oficiales de la ciudad y consulte a profesionales calificados antes de tomar decisiones.",
     "dataAsOf": "Datos al: {{date}}",
     "generatedBy": "Generado por UrbanLayer — Plataforma de inteligencia urbana de Chicago",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "yes": "Sí",
+    "questionPrefix": "P:"
+  },
+  "comparables": {
+    "title": "Ventas comparables",
+    "medianPrice": "Precio mediano",
+    "priceLandSqft": "$/pie² de terreno",
+    "salesVolume": "Ventas",
+    "priceRange": "Rango de precios",
+    "priceBldgSqft": "$/pie² construido",
+    "recentSales": "Ventas recientes",
+    "date": "Fecha",
+    "price": "Precio",
+    "distance": "Dist.",
+    "priceSqft": "$/pie²",
+    "noData": "No se encontraron ventas comparables cercanas.",
+    "radius": "En 0.25 mi, últimos 3 años",
+    "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe"
   }
 }

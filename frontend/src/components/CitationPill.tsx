@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 import { Tooltip } from "./Tooltip";
@@ -10,9 +11,10 @@ interface Props {
 }
 
 export function CitationPill({ index, chunk, onClick }: Props) {
+  const { t } = useTranslation("chat");
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const reference = chunk?.section ? `§ ${chunk.section}` : `Source ${index + 1}`;
+  const reference = chunk?.section ? `§ ${chunk.section}` : t("citation.sourceN", { n: index + 1 });
   const preview = chunk ? stripHeader(chunk.text).slice(0, 150) : "";
 
   return (
@@ -26,7 +28,7 @@ export function CitationPill({ index, chunk, onClick }: Props) {
                    bg-accent/15 text-accent border border-accent/30
                    hover:bg-accent/25 hover:border-accent/50
                    transition-colors cursor-pointer align-baseline"
-        title={`View ${reference}`}
+        title={t("citation.view", { ref: reference })}
       >
         {reference}
         <span className="self-start text-[9px] font-sans font-bold leading-none mt-0.5">
@@ -52,7 +54,7 @@ export function CitationPill({ index, chunk, onClick }: Props) {
             {preview}{preview.length >= 150 ? "..." : ""}
           </div>
           <div className="text-xs text-accent/70 mt-2 flex items-center gap-1">
-            <span>Click to open full source</span>
+            <span>{t("citation.openSource")}</span>
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>

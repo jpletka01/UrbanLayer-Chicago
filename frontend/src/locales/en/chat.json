@@ -29,5 +29,25 @@
     "property_domain": "Looking up property records",
     "incentives_domain": "Checking TIF & incentive zones",
     "neighborhood_domain": "Loading demographics, census data & transit"
+  },
+  "thinking": "Thinking",
+  "citation": {
+    "sourceN": "Source {{n}}",
+    "view": "View {{ref}}",
+    "openSource": "Click to open full source"
+  },
+  "crossref": {
+    "view": "View § {{id}}",
+    "loading": "Loading preview…",
+    "unavailable": "Full text not available for this reference.",
+    "openSection": "Click to open full section"
+  },
+  "dataPill": {
+    "crime": "Crime Data",
+    "311": "311 Requests",
+    "permits": "Building Permits",
+    "violations": "Building Violations",
+    "business": "Business Licenses",
+    "portal": "Chicago Data Portal"
   }
 }

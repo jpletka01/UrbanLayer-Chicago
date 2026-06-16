@@ -1,4 +1,5 @@
 import { createRef, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SOURCE_FLASH_MS } from "../../lib/constants";
 import type { CodeChunk } from "../../lib/types";
 import { SourceCitation } from "../SourceCitation";
@@ -18,6 +19,7 @@ export function SourcesView({
   onSourceClick,
   onCrossRefClick,
 }: Props) {
+  const { t } = useTranslation("sidebar");
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [flashingIndex, setFlashingIndex] = useState<number | null>(null);
   const flashTimer = useRef<number | null>(null);
@@ -61,9 +63,9 @@ export function SourcesView({
             />
           </svg>
         </div>
-        <p className="text-sm text-text-muted">No code references found</p>
+        <p className="text-sm text-text-muted">{t("noCodeRefs")}</p>
         <p className="text-xs text-text-muted mt-1">
-          Ask about zoning or municipal code to see sources
+          {t("noCodeRefsHint")}
         </p>
       </div>
     );
@@ -77,7 +79,7 @@ export function SourcesView({
   return (
     <div className="space-y-3">
       <p className="text-xs text-text-muted mb-4">
-        {codeChunks.length} code section{codeChunks.length !== 1 ? "s" : ""} referenced
+        {t("sectionsReferenced", { count: codeChunks.length })}
       </p>
       {codeChunks.map((chunk, i) => (
         <SourceCitation

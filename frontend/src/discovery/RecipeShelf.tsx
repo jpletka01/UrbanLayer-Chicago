@@ -6,12 +6,9 @@
 // "Live · N" with the real result count. Coverage copy is read from registry.coverage
 // (presentational) — recipes never touch the CQS coverage path.
 
+import { useTranslation } from "react-i18next";
 import { coverageOf, liveAreaNames, missingFieldsFor } from "./coverage";
 import type { Registry, TopicDef } from "./types";
-
-function labelsFor(registry: Registry, ids: string[]): string[] {
-  return ids.map((id) => registry.filters.find((f) => f.id === id)?.label ?? id);
-}
 
 export function RecipeShelf({
   registry,
@@ -22,14 +19,17 @@ export function RecipeShelf({
   onPick: (topic: TopicDef) => void;
   horizontal?: boolean; // mobile: a horizontal scroll-snap row instead of a stacked grid
 }) {
+  const { t } = useTranslation("pages");
+  const labelsFor = (ids: string[]): string[] =>
+    ids.map((id) => t(`discovery.filter.${id}`, registry.filters.find((f) => f.id === id)?.label ?? id));
   if (!registry.topics.length) return null;
   const coverage = coverageOf(registry);
-  const coverageNote = coverage.mode === "partial" ? ` · live in ${liveAreaNames(registry)}` : "";
+  const coverageNote = coverage.mode === "partial" ? t("discovery.liveIn", { areas: liveAreaNames(registry) }) : "";
 
   return (
     <div>
       <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
-        Common recipes{coverageNote}
+        {t("discovery.commonRecipes")}{coverageNote}
       </h3>
       <div
         className={
@@ -43,21 +43,21 @@ export function RecipeShelf({
           const fieldsReady = missing.length === 0;
           const count = registry.recipeCounts?.[topic.id] ?? 0;
           const live = fieldsReady && count > 0;
-          const missingLabels = labelsFor(registry, missing);
+          const missingLabels = labelsFor(missing);
 
           let badge: string;
           let badgeClass: string;
           let title: string | undefined;
           if (!fieldsReady) {
-            badge = "Needs data";
+            badge = t("discovery.needsData");
             badgeClass = "text-amber-400/80";
-            title = `Needs data: ${missingLabels.join(", ")}`;
+            title = t("discovery.needsDataTitle", { labels: missingLabels.join(", ") });
           } else if (count === 0) {
-            badge = "No matches yet";
+            badge = t("discovery.noMatchesYet");
             badgeClass = "text-text-muted";
-            title = "No parcels match this recipe in the indexed area yet.";
+            title = t("discovery.noMatchesTitle");
           } else {
-            badge = `● Live · ${count.toLocaleString()}`;
+            badge = t("discovery.liveBadge", { count: count.toLocaleString() });
             badgeClass = "text-emerald-400/90";
           }
           return (
@@ -71,11 +71,15 @@ export function RecipeShelf({
               } ${horizontal ? "min-w-[200px] flex-shrink-0 snap-start" : ""}`}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="text-xs font-medium text-text-primary">{topic.label}</span>
+                <span className="text-xs font-medium text-text-primary">
+                  {t(`discovery.topic.${topic.id}.label`, { defaultValue: topic.label ?? "" })}
+                </span>
                 <span className={`flex-shrink-0 text-[10px] ${badgeClass}`}>{badge}</span>
               </div>
               {topic.description && (
-                <p className="mt-0.5 text-[11px] text-text-muted">{topic.description}</p>
+                <p className="mt-0.5 text-[11px] text-text-muted">
+                  {t(`discovery.topic.${topic.id}.description`, topic.description)}
+                </p>
               )}
             </button>
           );

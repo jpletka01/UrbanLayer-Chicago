@@ -1,4 +1,5 @@
 import { Children, cloneElement, isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getUploadUrl } from "../lib/api";
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect, activities }: Props) {
+  const { t } = useTranslation("common");
   const isUser = message.role === "user";
   const [hovered, setHovered] = useState(false);
   const { copied, copy } = useCopyButton(message.content);
@@ -160,7 +162,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
             ${onSelect ? "cursor-pointer hover:ring-1 hover:ring-white/20" : ""}
             ${isSelected ? "ring-1 ring-accent/40" : ""}`}
           onClick={onSelect}
-          title={onSelect ? "Click to view this question's data" : undefined}
+          title={onSelect ? t("viewQuestionData") : undefined}
         >
           {hovered && (
             <button
@@ -169,7 +171,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
                          bg-dark-surface/80 border border-dark-border
                          text-text-muted hover:text-text-primary hover:bg-dark-elevated
                          transition-all"
-              title="Copy message"
+              title={t("copyMessage")}
             >
               {copied ? (
                 <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -229,7 +231,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
                          bg-dark-surface/80 border border-dark-border
                          text-text-muted hover:text-text-primary hover:bg-dark-elevated
                          transition-all"
-              title="Copy message"
+              title={t("copyMessage")}
             >
               {copied ? (
                 <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

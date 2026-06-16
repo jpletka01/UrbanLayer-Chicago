@@ -19,14 +19,14 @@ const cqs: CQS = {
 describe("Chips (renders from response.cqs — INV-4)", () => {
   it("renders one chip per applied filter", () => {
     render(<Chips cqs={cqs} registry={REG} onRemove={() => {}} />);
-    expect(screen.getByText("land use: multi family")).toBeTruthy();
-    expect(screen.getByText("tif")).toBeTruthy();
+    expect(screen.getByText("Property use: Multifamily")).toBeTruthy();
+    expect(screen.getByText("TIF district")).toBeTruthy();
   });
 
   it("remove fires the re-issue callback with the canonical filterId", () => {
     const onRemove = vi.fn();
     render(<Chips cqs={cqs} registry={REG} onRemove={onRemove} />);
-    fireEvent.click(screen.getByLabelText("Remove tif filter"));
+    fireEvent.click(screen.getByLabelText("Remove TIF district filter"));
     expect(onRemove).toHaveBeenCalledWith("tif");
   });
 

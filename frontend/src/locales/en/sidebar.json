@@ -11,5 +11,20 @@
   "bridge": {
     "viewScorecard": "View Scorecard",
     "pin": "PIN {{pin}}"
-  }
+  },
+  "semanticMatchScore": "Semantic match score",
+  "relatedSections": "Related sections",
+  "sourceLabel": "Source:",
+  "readFullText": "Read full text",
+  "collapse": "Collapse",
+  "noCodeRefs": "No code references found",
+  "noCodeRefsHint": "Ask about zoning or municipal code to see sources",
+  "noDatasets": "No live datasets were queried for this answer.",
+  "crossRefUnavailable": "This cross-referenced section couldn't be retrieved.",
+  "sectionsReferenced_one": "{{count}} code section referenced",
+  "sectionsReferenced_other": "{{count}} code sections referenced",
+  "openPanel": "Open panel (⌘B)",
+  "closePanel": "Close panel (⌘B)",
+  "dragToResize": "Drag to resize · Double-click to collapse",
+  "contextAndData": "Context & Data"
 }

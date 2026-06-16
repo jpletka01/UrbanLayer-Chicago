@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createCheckoutSession } from "../lib/api";
 
 interface UpgradePromptProps {
@@ -7,6 +8,7 @@ interface UpgradePromptProps {
 }
 
 export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
 
   async function handleUpgrade() {
@@ -34,12 +36,12 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
         </div>
 
         <h2 className="text-lg font-semibold text-text-primary text-center mb-2">
-          Upgrade to Pro
+          {t("upgradeToPro")}
         </h2>
         <p className="text-sm text-text-secondary text-center mb-6">
           {feature
-            ? `${feature} is a Pro feature. Upgrade to unlock it along with unlimited queries, PDF reports, and more.`
-            : "Unlock unlimited queries, PDF zoning reports, Property Discovery, and priority support for $99/month."}
+            ? t("upgradePrompt.featureBody", { feature })
+            : t("upgradePrompt.genericBody")}
         </p>
 
         <button
@@ -47,14 +49,14 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
           disabled={loading}
           className="w-full py-2.5 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
         >
-          {loading ? "Redirecting to checkout..." : "Upgrade — $99/month"}
+          {loading ? t("upgradePrompt.redirecting") : t("upgradePrompt.cta")}
         </button>
 
         <button
           onClick={onClose}
           className="w-full mt-3 text-xs text-text-muted hover:text-text-secondary transition-colors text-center py-2"
         >
-          Maybe later
+          {t("maybeLater")}
         </button>
       </div>
     </div>

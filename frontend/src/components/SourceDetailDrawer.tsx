@@ -91,7 +91,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                   onClick={onClose}
                   className="p-2 rounded-lg bg-dark-surface border border-dark-border
                              text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-all"
-                  title="Close"
+                  title={t("common:close")}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -112,7 +112,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
 
               {!view.loading && !chunk && (
                 <p className="text-sm text-text-muted">
-                  This cross-referenced section couldn't be retrieved.
+                  {t("crossRefUnavailable")}
                 </p>
               )}
 
@@ -126,7 +126,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                   {chunk.cross_references.length > 0 && (
                     <div className="mt-4">
                       <p className="text-[11px] uppercase tracking-wider text-text-muted mb-1.5">
-                        Related sections
+                        {t("relatedSections")}
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {chunk.cross_references.map((ref, i) =>

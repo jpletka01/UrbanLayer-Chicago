@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ContextObject, MapData, SourceTag } from "../../lib/types";
 import { deriveFilterMode, hasSpatialMapContent } from "../../lib/mapColors";
 import { DataView } from "./DataView";
@@ -25,6 +26,7 @@ export function DataMapLayout({
   context,
   loading,
 }: DataMapLayoutProps) {
+  const { t } = useTranslation("sidebar");
   const containerRef = useRef<HTMLDivElement>(null);
   const [dataHeight, setDataHeight] = useState<number | null>(null);
   const [dataCollapsed, setDataCollapsed] = useState(false);
@@ -153,7 +155,7 @@ export function DataMapLayout({
           onMouseDown={handleDividerDrag}
           onTouchStart={handleDividerTouchDrag}
           onDoubleClick={() => setDataCollapsed((c) => !c)}
-          title="Drag to resize · Double-click to collapse"
+          title={t("dragToResize")}
         >
           <div className="absolute inset-x-0 top-0 h-px bg-dark-border group-hover/divider:bg-accent/50 transition-colors" />
         </div>
@@ -183,7 +185,7 @@ export function DataMapLayout({
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
             </svg>
-            Data
+            {t("data")}
           </button>
 
           {/* Scrollable data content */}
@@ -203,7 +205,7 @@ export function DataMapLayout({
       {/* When no data, map fills everything */}
       {!hasData && context && !loading && !hasDomainData && (
         <div className="shrink-0 px-4 py-3 border-t border-dark-border">
-          <p className="text-xs text-text-muted">No live datasets were queried for this answer.</p>
+          <p className="text-xs text-text-muted">{t("noDatasets")}</p>
         </div>
       )}
     </div>

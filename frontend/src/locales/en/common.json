@@ -45,5 +45,29 @@
   "upgradeToPro": "Upgrade to Pro",
   "followUpPlaceholder": "Ask a follow-up...",
   "messageLimitReached": "You've reached the 10-message limit for this conversation.",
-  "shared": "Shared"
+  "shared": "Shared",
+  "openDataPanel": "Open data panel",
+  "submit": "Submit",
+  "addAttachment": "Add attachment",
+  "deleteConversation": "Delete conversation",
+  "copyMessage": "Copy message",
+  "maybeLater": "Maybe later",
+  "upgradePrompt": {
+    "featureBody": "{{feature}} is a Pro feature. Upgrade to unlock it along with unlimited queries, PDF reports, and more.",
+    "genericBody": "Unlock unlimited queries, PDF zoning reports, Property Discovery, and priority support for $99/month.",
+    "cta": "Upgrade — $99/month",
+    "redirecting": "Redirecting to checkout…"
+  },
+  "reportPrompt": {
+    "title": "Get This Report",
+    "buy": "Buy Report — $25",
+    "redirecting": "Redirecting to checkout…",
+    "orPro": "Or get unlimited reports with Pro",
+    "upgrade": "Upgrade — $99/month",
+    "redirectingShort": "Redirecting…",
+    "bodyPrefix": "Download a professional development feasibility report for"
+  },
+  "loadConversationError": "Couldn't load conversation. It may have been deleted or you may not have access.",
+  "transcriptTitle": "Chicago Transcript",
+  "viewQuestionData": "Click to view this question's data"
 }

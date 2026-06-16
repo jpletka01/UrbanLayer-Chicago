@@ -454,7 +454,7 @@ export function App() {
     setLoadError(null);
     const detail = await getConversation(conv.id);
     if (!detail) {
-      setLoadError("Couldn't load conversation. It may have been deleted or you may not have access.");
+      setLoadError(tc("loadConversationError"));
       return;
     }
 
@@ -648,7 +648,7 @@ export function App() {
       if (canvas) mapScreenshot = canvas.toDataURL("image/png");
     } catch { /* WebGL context lost — skip map */ }
 
-    const title = context?.resolved_address || context?.community_area_name || "Chicago Transcript";
+    const title = context?.resolved_address || context?.community_area_name || tc("transcriptTitle");
     const report = buildReportData(messages, mapScreenshot, title);
     setExportReport(report);
   }
@@ -862,7 +862,7 @@ export function App() {
                 <button
                   onClick={() => setMobileSidebarOpen(true)}
                   className="md:hidden relative w-9 h-9 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
-                  aria-label="Open data panel"
+                  aria-label={tc("openDataPanel")}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />

@@ -22,12 +22,13 @@ function css([r, g, b]: RGBA): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-// Legend rows (top → bottom), including the no-data swatch.
-export const UPSIDE_LEGEND: { label: string; color: string }[] = [
-  { label: "Upside 80+", color: css(HIGH) },
-  { label: "50–79", color: css(MID) },
-  { label: "< 50", color: css(LOW) },
-  { label: "No data", color: css(NO_DATA) },
+// Legend rows (top → bottom), including the no-data swatch. `i18nKey` is the
+// `discovery.*`-relative key DiscoveryMap resolves at render; `label` is the English fallback.
+export const UPSIDE_LEGEND: { i18nKey: string; label: string; color: string }[] = [
+  { i18nKey: "legendUpsideHigh", label: "Upside 80+", color: css(HIGH) },
+  { i18nKey: "legendUpsideMid", label: "50–79", color: css(MID) },
+  { i18nKey: "legendUpsideLow", label: "< 50", color: css(LOW) },
+  { i18nKey: "legendUpsideNoData", label: "No data", color: css(NO_DATA) },
 ];
 
 // --- Free-tier (view-only) map: color by land use, not the gated upside intelligence. ---
@@ -46,10 +47,10 @@ export function landUseColor(landUse: string | null | undefined): RGBA {
   return (landUse && LAND_USE_COLORS[landUse]) || NO_DATA;
 }
 
-export const LAND_USE_LEGEND: { label: string; color: string }[] = [
-  { label: "Residential", color: css(LAND_USE_COLORS.residential) },
-  { label: "Multifamily", color: css(LAND_USE_COLORS.multi_family) },
-  { label: "Commercial", color: css(LAND_USE_COLORS.commercial) },
-  { label: "Industrial", color: css(LAND_USE_COLORS.industrial) },
-  { label: "Vacant", color: css(LAND_USE_COLORS.vacant) },
+export const LAND_USE_LEGEND: { i18nKey: string; label: string; color: string }[] = [
+  { i18nKey: "enum.land_use.residential", label: "Residential", color: css(LAND_USE_COLORS.residential) },
+  { i18nKey: "enum.land_use.multi_family", label: "Multifamily", color: css(LAND_USE_COLORS.multi_family) },
+  { i18nKey: "enum.land_use.commercial", label: "Commercial", color: css(LAND_USE_COLORS.commercial) },
+  { i18nKey: "enum.land_use.industrial", label: "Industrial", color: css(LAND_USE_COLORS.industrial) },
+  { i18nKey: "enum.land_use.vacant", label: "Vacant", color: css(LAND_USE_COLORS.vacant) },
 ];
