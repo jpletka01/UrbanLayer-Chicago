@@ -102,6 +102,25 @@ Respond with ONLY a JSON object matching this schema:
 }"""
 
 
+def _json_from_model_text(text: str) -> str:
+    """Return bare JSON from a model response that may be ```json-fenced or wrapped
+    in prose.
+
+    Haiku commonly fences its JSON (```json … ```); a naive ``json.loads`` then
+    fails at char 0 — the historical reason every zoning extraction silently fell
+    back to the deterministic Title-17 table instead of using the AI values.
+    """
+    t = text.strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", t, re.DOTALL)
+    if fence:
+        return fence.group(1).strip()
+    if not t.startswith("{"):
+        obj = re.search(r"\{.*\}", t, re.DOTALL)
+        if obj:
+            return obj.group(0)
+    return t
+
+
 async def extract_zoning_standards(
     zone_class: str,
     *,
@@ -167,7 +186,7 @@ async def extract_zoning_standards(
     )
 
     try:
-        data = json.loads(text)
+        data = json.loads(_json_from_model_text(text))
         return ZoningStandards(**data)
     except (json.JSONDecodeError, Exception) as exc:
         log.warning("Failed to parse extraction JSON for zone %s: %s", zone_class, exc)
