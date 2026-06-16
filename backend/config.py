@@ -191,14 +191,14 @@ class Settings(BaseSettings):
     zoning_extract_model: str = "claude-haiku-4-5-20251001"
     zoning_extract_max_tokens: int = 1500
 
-    # Max concurrent PDF report generations. Each in-flight report spikes ~2.8 GB
-    # (WeasyPrint layout of the ~18-page, image-embedded doc); on the 8 GB prod
-    # container, stacked on the ~5 GB resident baseline (citywide discovery index +
-    # ML models), even two at once OOM-kills the single uvicorn worker. Pinned to 1
-    # so at most one render spike is ever in flight. The render now also runs in an
-    # isolated child process (backend/report_render.py), but serializing the spikes
-    # keeps total memory predictable. Reports are paid + infrequent, so a second
-    # concurrent request simply queues on this semaphore.
+    # Max concurrent PDF report renders. The memory-heavy WeasyPrint span now runs
+    # in an isolated child process (backend/report_render.py); measured peak is
+    # ~118 MB per render (2026-06-16 prod), so render memory itself is no longer an
+    # OOM risk. Pinned to 1 because the parent still does per-request work
+    # (matplotlib map generation + HTML assembly) whose glibc-retained memory crept
+    # ~17 MB/render in testing; serializing keeps that growth predictable on the
+    # 8 GB box (also see MALLOC_ARENA_MAX=2 in docker-compose.prod.yml). Reports are
+    # paid + infrequent, so a second concurrent request simply queues.
     report_concurrency: int = 1
 
     # Wall-clock budget (seconds) for the isolated PDF render child. If write_pdf

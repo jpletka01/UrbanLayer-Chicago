@@ -1,12 +1,19 @@
 services:
   backend:
     environment:
-      # Disabled 2026-06-16: bge-reranker-v2-m3 cross-encoder inference hangs/crawls
-      # (>40s per semantic_search) on this box, and the report's extract_zoning_standards
-      # fires 5 reranked searches in parallel → /api/report hangs past 180s → 504. With
-      # the reranker off, semantic_search is 0.2–1.4s and the report renders. Re-enable
-      # only after the reranker hang is root-caused (torch thread/CPU contention suspected).
+      # Disabled 2026-06-16: report's extract_zoning_standards fires 5 reranked
+      # semantic_searches in parallel; with torch at 4 threads on this 4-core box
+      # that oversubscribes (~20 threads) and each rerank crawls → /api/report
+      # hangs past the 180s ceiling → 504. (Reranker inference itself is fine —
+      # predict(4 pairs)=0.3s — it's the thread contention under parallel load.)
+      # Re-enable only after capping torch threads (set_num_threads(1)/
+      # OMP_NUM_THREADS=1) and/or serializing the 5 searches. With it off,
+      # semantic_search is 0.2–1.4s and reports render in ~10s.
       - RERANKER_ENABLED=false
+      # Cap glibc arenas to bound per-request memory retained by the parent's
+      # matplotlib/HTML work (measured RSS crept ~17 MB/render); keeps the
+      # long-lived worker's footprint flat on the 8 GB box.
+      - MALLOC_ARENA_MAX=2
 
   frontend:
     build:

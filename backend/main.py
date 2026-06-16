@@ -4423,14 +4423,13 @@ async def report(
         )
 
         # Generate the PDF in an ISOLATED CHILD PROCESS. write_pdf() (cairo/pango
-        # laying out 16–19 image-embedded pages) spikes ~2.8 GB; in the long-lived
-        # worker that stacks on the ~5 GB resident baseline (citywide discovery
-        # index + ML models) and OOM-kills the single prod worker. Running it in a
-        # short-lived child gives a fresh address space that's fully reclaimed on
-        # exit — flattening both the render peak and cross-request glibc retention —
-        # and the child can be killed (timeout / oom_score_adj) without taking the
-        # worker down. See backend/report_render.py. Still inside _REPORT_SEM, so
-        # at most report_concurrency child renders run at once.
+        # laying out 16–19 image-embedded pages) is the heaviest single step of a
+        # report; running it in a short-lived child gives a fresh address space
+        # fully reclaimed on exit, so its memory (measured ~118 MB peak, 2026-06-16
+        # prod) can never accumulate in or OOM the long-lived worker, and a runaway
+        # render can be killed (timeout / oom_score_adj) without taking the worker
+        # down. See backend/report_render.py. Still inside _REPORT_SEM, so at most
+        # report_concurrency (=1) child renders run at once.
         from backend.report_render import PdfRenderError, render_pdf
         try:
             pdf_bytes = await render_pdf(

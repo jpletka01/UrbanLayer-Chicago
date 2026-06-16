@@ -1,13 +1,16 @@
 """Isolated PDF render worker.
 
-WeasyPrint's ``write_pdf()`` is the memory-heavy span of report generation:
-laying out the ~18-page, image-embedded feasibility report spikes RSS by
-~2.8 GB. In the long-lived uvicorn worker that spike stacks on the ~5 GB
-resident baseline (citywide discovery index + ML models) and, on the 8 GB prod
-box, OOM-kills the *whole* worker — taking chat/scorecard/discovery down with it
-for the ~10–30 s it takes to restart.
+WeasyPrint's ``write_pdf()`` is the heaviest single step of report generation
+(cairo/pango laying out the ~18-page, image-embedded feasibility report).
+Measured in isolation it peaks ~118 MB (2026-06-16 prod) — modest on its own,
+but run inline in the long-lived uvicorn worker it allocates against the resident
+baseline (citywide discovery index + ML models) and leaves glibc-retained memory
+that never returns to the OS, so its footprint ratchets the worker's RSS up
+across requests. (A 6.8 GB OOM-kill was observed on this box; its trigger was the
+worker's *accumulated* footprint under load, not a single render — reports were
+in fact hanging upstream on the reranker and rarely reached write_pdf at all.)
 
-The durable fix is to run ``write_pdf`` in a SHORT-LIVED CHILD PROCESS:
+Running ``write_pdf`` in a SHORT-LIVED CHILD PROCESS contains all of that:
 
 * **Fresh address space, fully reclaimed on exit.** This — not the kill
   heuristics below — is the real protection. It flattens both the per-render
