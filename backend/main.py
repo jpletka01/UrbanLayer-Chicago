@@ -78,11 +78,13 @@ _RETRIEVAL_SEM = asyncio.Semaphore(8)
 # Tier-0 investigation in claude-context/guides/report-v6-execution-plan.md.
 _REPORT_SEM = asyncio.Semaphore(get_settings().report_concurrency)
 
-# Return freed heap to the OS after a report. glibc keeps freed chunks in per-arena
-# free lists (RSS doesn't drop), so the parent's per-request matplotlib/HTML
-# allocations accumulate ~20 MB/render; malloc_trim(0) releases top-of-heap free
-# space. glibc-only — a caught no-op elsewhere (e.g. macOS dev). MALLOC_ARENA_MAX
-# alone does NOT do this; this is the lever that actually flattens the creep.
+# Best-effort: return top-of-heap free space to the OS after each report via
+# malloc_trim(0). glibc-only — a caught no-op elsewhere (e.g. macOS dev).
+# NOTE (measured 2026-06-16): this did NOT visibly flatten the parent's ~20 MB/
+# render RSS creep — that growth is evidently live caches (matplotlib/fonts) or
+# fragmentation malloc_trim can't reach, not reclaimable top-of-heap space. Kept as
+# a cheap, harmless mitigation; the creep is benign (ample headroom + 8 GB swap,
+# decelerates, worker restarts each deploy).
 try:
     import ctypes as _ctypes
     import ctypes.util as _ctypes_util
