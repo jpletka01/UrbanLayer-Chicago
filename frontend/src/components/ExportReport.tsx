@@ -185,7 +185,7 @@ function RegulatoryTable({ data, t }: { data: RegulatorySummary; t: (key: string
   const flags = flagKeys
     .filter(([, v]) => v)
     .map(([k]) => t(`regulatory.flags.${k}`));
-  if (data.in_ssa) flags.push(`${t("regulatory.flags.in_ssa")}: ${data.ssa_name || "Yes"}`);
+  if (data.in_ssa) flags.push(`${t("regulatory.flags.in_ssa")}: ${data.ssa_name || t("report.yes")}`);
 
   return (
     <div>
@@ -299,7 +299,7 @@ function NeighborhoodTable({ data, t }: { data: NeighborhoodSummary; t: (key: st
             {tr.nearest_cta_rail && <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.nearestCtaRail")}</td><td style={s.td}>{tr.nearest_cta_rail} ({tr.cta_rail_distance_mi?.toFixed(2)} mi)</td></tr>}
             {tr.cta_lines.length > 0 && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.ctaLines")}</td><td style={s.td}>{tr.cta_lines.join(", ")}</td></tr>}
             {tr.nearest_metra && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.nearestMetra")}</td><td style={s.td}>{tr.nearest_metra} ({tr.metra_distance_mi?.toFixed(2)} mi)</td></tr>}
-            {tr.tod_eligible && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.todEligible")}</td><td style={s.td}>{tr.tod_type || "Yes"}</td></tr>}
+            {tr.tod_eligible && <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.todEligible")}</td><td style={s.td}>{tr.tod_type || t("report.yes")}</td></tr>}
           </tbody>
         </table>
       )}
@@ -467,7 +467,7 @@ export function ExportReport({ report, onClose }: Props) {
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
-                    <img src={section.content as string} alt="Map" style={s.map} />
+                    <img src={section.content as string} alt={t("sidebar:map")} style={s.map} />
                   </div>
                 );
               case "property":
@@ -512,7 +512,7 @@ export function ExportReport({ report, onClose }: Props) {
                     <h2 style={s.h2}>{section.title}</h2>
                     {pairs.map((qa, j) => (
                       <div key={j} style={s.qa}>
-                        <p style={s.question}>Q: {qa.question}</p>
+                        <p style={s.question}>{t("report.questionPrefix")} {qa.question}</p>
                         <p style={s.answer}>{qa.answer}</p>
                       </div>
                     ))}

@@ -11,5 +11,20 @@
   "bridge": {
     "viewScorecard": "Ver Scorecard",
     "pin": "PIN {{pin}}"
-  }
+  },
+  "semanticMatchScore": "Puntuación de coincidencia semántica",
+  "relatedSections": "Secciones relacionadas",
+  "sourceLabel": "Fuente:",
+  "readFullText": "Leer texto completo",
+  "collapse": "Contraer",
+  "noCodeRefs": "No se encontraron referencias al código",
+  "noCodeRefsHint": "Pregunta sobre zonificación o el código municipal para ver fuentes",
+  "noDatasets": "No se consultaron conjuntos de datos en vivo para esta respuesta.",
+  "crossRefUnavailable": "No se pudo recuperar esta sección con referencia cruzada.",
+  "sectionsReferenced_one": "{{count}} sección del código referenciada",
+  "sectionsReferenced_other": "{{count}} secciones del código referenciadas",
+  "openPanel": "Abrir panel (⌘B)",
+  "closePanel": "Cerrar panel (⌘B)",
+  "dragToResize": "Arrastra para redimensionar · Doble clic para contraer",
+  "contextAndData": "Contexto y datos"
 }

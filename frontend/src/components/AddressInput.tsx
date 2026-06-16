@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { getAutocomplete } from "../lib/api";
 import { AUTOCOMPLETE_DEBOUNCE_MS, MIN_AUTOCOMPLETE_CHARS } from "../lib/constants";
 import type { AddressSuggestion } from "../lib/types";
@@ -15,6 +16,7 @@ interface Props {
  * submits; the backend resolves it server-side.
  */
 export function AddressInput({ onSubmit, placeholder }: Props) {
+  const { t } = useTranslation("common");
   const [value, setValue] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -126,7 +128,7 @@ export function AddressInput({ onSubmit, placeholder }: Props) {
               ? "bg-accent hover:bg-accent-hover text-white"
               : "bg-white/10 hover:bg-white/20 text-white/70"
           } disabled:opacity-30`}
-          aria-label="Submit"
+          aria-label={t("submit")}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />

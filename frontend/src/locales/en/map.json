@@ -71,7 +71,8 @@
     "na": "N/A",
     "estCost": "Est. Cost",
     "issueDate": "Issue Date",
-    "ord": "Ord."
+    "ord": "Ord.",
+    "status": "Status"
   },
   "states": {
     "loadingMapData": "Loading map data...",

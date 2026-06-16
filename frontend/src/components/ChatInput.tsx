@@ -180,7 +180,7 @@ export function ChatInput({
                 ? "bg-accent hover:bg-accent-hover text-white"
                 : "bg-white/10 hover:bg-white/20 text-white/70"
             } disabled:opacity-30`}
-            aria-label="Submit"
+            aria-label={t("common:submit")}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -265,7 +265,7 @@ export function ChatInput({
             <button
               type="button"
               className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-secondary hover:bg-dark-elevated transition-colors shrink-0"
-              aria-label="Add attachment"
+              aria-label={t("common:addAttachment")}
               onClick={() => fileInputRef.current?.click()}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -294,7 +294,7 @@ export function ChatInput({
             type="submit"
             disabled={disabled || !value.trim()}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-accent hover:bg-accent-hover disabled:bg-dark-elevated disabled:text-text-muted text-white shrink-0"
-            aria-label="Submit"
+            aria-label={t("common:submit")}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />

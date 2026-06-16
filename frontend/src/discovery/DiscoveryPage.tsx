@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
 import PageHeader from "./../components/PageHeader";
 import UpgradePrompt from "./../components/UpgradePrompt";
@@ -29,6 +30,7 @@ import type {
 } from "./types";
 
 export default function DiscoveryPage() {
+  const { t } = useTranslation("pages");
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const isPro = user?.tier === "premium" || user?.tier === "admin";
@@ -180,9 +182,9 @@ export default function DiscoveryPage() {
         <div className="flex w-full flex-shrink-0 flex-col overflow-hidden border-r border-dark-border md:w-[420px] lg:w-[460px]">
           <div className="flex-shrink-0 space-y-3 border-b border-dark-border p-4">
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">Property Discovery</h1>
+              <h1 className="text-lg font-semibold tracking-tight">{t("discovery.title")}</h1>
               <p className="text-[11px] text-text-muted">
-                Start with a goal or describe what you're looking for — then refine.
+                {t("discovery.subtitle")}
               </p>
             </div>
             <input
@@ -192,8 +194,8 @@ export default function DiscoveryPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") runWith(panelState, text, sort, topicId);
               }}
-              placeholder='Describe what you want — e.g. "vacant multifamily near the L, built after 1990"'
-              aria-label="Describe what you're looking for"
+              placeholder={t("discovery.searchPlaceholder")}
+              aria-label={t("discovery.searchAria")}
               className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
             <div className="flex items-center gap-2">
@@ -203,7 +205,7 @@ export default function DiscoveryPage() {
                 disabled={!registry || loading}
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {loading ? "Searching…" : "Search"}
+                {loading ? t("discovery.searching") : t("discovery.search")}
               </button>
               {registry && sort && (
                 <SortControl registry={registry} sort={sort} onChange={setSort} />
@@ -217,7 +219,7 @@ export default function DiscoveryPage() {
                 onClick={() => setFiltersOpen(true)}
                 className="ml-auto rounded-md border border-dark-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-text-muted"
               >
-                Edit filters
+                {t("discovery.editFilters")}
                 {Object.keys(panelState).length > 0 && (
                   <span className="ml-1 text-accent">({Object.keys(panelState).length})</span>
                 )}
@@ -239,13 +241,13 @@ export default function DiscoveryPage() {
                 <RecipeShelf registry={registry} onPick={onPickRecipe} />
                 <div>
                   <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
-                    Refine
+                    {t("discovery.refine")}
                   </h3>
                   <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
                 </div>
               </>
             ) : (
-              <p className="text-sm text-text-muted">Loading filters…</p>
+              <p className="text-sm text-text-muted">{t("discovery.loadingFilters")}</p>
             )}
           </div>
         </div>
@@ -303,17 +305,17 @@ export default function DiscoveryPage() {
 
       {/* Mobile filter bottom sheet (full-height refinement drawer) */}
       {filtersOpen && registry && (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Filters">
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label={t("discovery.filtersAria")}>
           <div className="absolute inset-0 bg-black/50" onClick={() => setFiltersOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-dark-border bg-dark-surface p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Filters</h3>
+              <h3 className="text-sm font-semibold">{t("discovery.filtersHeading")}</h3>
               <button
                 type="button"
                 onClick={() => setFiltersOpen(false)}
                 className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white"
               >
-                Done
+                {t("common:done")}
               </button>
             </div>
             <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
@@ -322,7 +324,7 @@ export default function DiscoveryPage() {
       )}
 
       {showUpgrade && (
-        <UpgradePrompt feature="Property Discovery" onClose={() => setShowUpgrade(false)} />
+        <UpgradePrompt feature={t("discovery.title")} onClose={() => setShowUpgrade(false)} />
       )}
     </div>
   );
@@ -335,20 +337,21 @@ function MobileTabToggle({
   value: "list" | "map";
   onChange: (v: "list" | "map") => void;
 }) {
+  const { t } = useTranslation("pages");
   const opts: Array<"list" | "map"> = ["list", "map"];
   return (
-    <div role="group" aria-label="View" className="inline-flex rounded-md border border-dark-border">
+    <div role="group" aria-label={t("discovery.viewAria")} className="inline-flex rounded-md border border-dark-border">
       {opts.map((opt) => (
         <button
           key={opt}
           type="button"
           aria-pressed={value === opt}
           onClick={() => onChange(opt)}
-          className={`px-3 py-1.5 text-xs capitalize transition-colors ${
+          className={`px-3 py-1.5 text-xs transition-colors ${
             value === opt ? "bg-accent/15 text-accent" : "text-text-secondary hover:text-text-primary"
           } ${opt === "list" ? "rounded-l-md" : "rounded-r-md"}`}
         >
-          {opt}
+          {opt === "list" ? t("discovery.viewList") : t("discovery.viewMap")}
         </button>
       ))}
     </div>
@@ -364,6 +367,7 @@ function SortControl({
   sort: SortSpec;
   onChange: (s: SortSpec) => void;
 }) {
+  const { t } = useTranslation("pages");
   return (
     <div className="flex items-center gap-1.5 text-xs">
       <select
@@ -373,7 +377,7 @@ function SortControl({
       >
         {registry.sortKeys.map((sk) => (
           <option key={sk.key} value={sk.key}>
-            {sk.key.replace(/_/g, " ")}
+            {t(`discovery.sort.${sk.key}`, sk.key.replace(/_/g, " "))}
           </option>
         ))}
       </select>
@@ -381,7 +385,7 @@ function SortControl({
         type="button"
         onClick={() => onChange({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })}
         className="rounded-md border border-dark-border px-2 py-1.5 text-text-secondary transition-colors hover:border-text-muted"
-        aria-label="Toggle sort direction"
+        aria-label={t("discovery.toggleSortAria")}
       >
         {sort.dir === "asc" ? "↑" : "↓"}
       </button>

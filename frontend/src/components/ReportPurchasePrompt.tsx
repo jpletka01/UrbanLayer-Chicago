@@ -13,7 +13,7 @@ export default function ReportPurchasePrompt({
   parcel,
   onClose,
 }: ReportPurchasePromptProps) {
-  const { t } = useTranslation("pages");
+  const { t } = useTranslation(["pages", "common"]);
   const [loading, setLoading] = useState<"report" | "pro" | null>(null);
 
   async function handleBuyReport() {
@@ -51,10 +51,10 @@ export default function ReportPurchasePrompt({
         </div>
 
         <h2 className="text-lg font-semibold text-text-primary text-center mb-2">
-          Get This Report
+          {t("common:reportPrompt.title")}
         </h2>
         <p className="text-sm text-text-secondary text-center mb-6">
-          Download a professional development feasibility report for{" "}
+          {t("common:reportPrompt.bodyPrefix")}{" "}
           <span className="text-text-primary font-medium">{parcel.address}</span>.
         </p>
 
@@ -63,7 +63,7 @@ export default function ReportPurchasePrompt({
           disabled={loading !== null}
           className="w-full py-2.5 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
         >
-          {loading === "report" ? "Redirecting to checkout..." : "Buy Report — $25"}
+          {loading === "report" ? t("common:reportPrompt.redirecting") : t("common:reportPrompt.buy")}
         </button>
 
         <a
@@ -78,14 +78,14 @@ export default function ReportPurchasePrompt({
 
         <div className="mt-4 text-center">
           <p className="text-[11px] text-text-muted mb-1.5">
-            Or get unlimited reports with Pro
+            {t("common:reportPrompt.orPro")}
           </p>
           <button
             onClick={handleUpgradePro}
             disabled={loading !== null}
             className="text-xs text-accent hover:text-accent-hover transition-colors disabled:opacity-50"
           >
-            {loading === "pro" ? "Redirecting..." : "Upgrade — $99/month"}
+            {loading === "pro" ? t("common:reportPrompt.redirectingShort") : t("common:reportPrompt.upgrade")}
           </button>
         </div>
 
@@ -93,7 +93,7 @@ export default function ReportPurchasePrompt({
           onClick={onClose}
           className="w-full mt-4 text-xs text-text-muted hover:text-text-secondary transition-colors text-center py-2"
         >
-          Maybe later
+          {t("common:maybeLater")}
         </button>
       </div>
     </div>

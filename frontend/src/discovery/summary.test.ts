@@ -16,7 +16,7 @@ const cqs: CQS = {
 describe("summarize", () => {
   it("renders plain-English from the CQS (ids sorted, with sort clause)", () => {
     expect(summarize(cqs, REG)).toBe(
-      "Parcels where land use: multi family; tif, sorted by lot size (descending).",
+      "Parcels where Property use: Multifamily; TIF district, sorted by lot size (descending).",
     );
   });
 

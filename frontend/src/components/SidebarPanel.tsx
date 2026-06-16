@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ContextObject, MapData, SidebarView, SourceTag } from "../lib/types";
 import { SidebarHeader } from "./SidebarHeader";
 import { DataMapLayout } from "./sidebar/DataMapLayout";
@@ -66,11 +67,12 @@ export function SidebarPanel({
   showDataBadge = false,
   showSourcesBadge = false,
 }: Props) {
+  const { t } = useTranslation("sidebar");
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isDragging, setIsDragging] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
 
-  const title = context?.community_area_name ?? "Context & Data";
+  const title = context?.community_area_name ?? t("contextAndData");
   const subtitle = context?.community_area ? `CA ${context.community_area}` : undefined;
   const hasCodeChunks = (context?.code_chunks?.length ?? 0) > 0;
   const dataCount = countDataCategories(context);
@@ -138,7 +140,7 @@ export function SidebarPanel({
                    hover:bg-dark-surface/60 transition-colors duration-150"
         style={{ width: RAIL_WIDTH }}
         onClick={onToggle}
-        title="Open panel (⌘B)"
+        title={t("openPanel")}
       >
         <div className="flex flex-col items-center gap-3 pt-4">
           {/* icon */}
@@ -173,7 +175,7 @@ export function SidebarPanel({
           className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted mt-6"
           style={{ writingMode: "vertical-lr" }}
         >
-          Sources
+          {t("sources")}
         </span>
       </aside>
     );
@@ -196,7 +198,7 @@ export function SidebarPanel({
                    transition-colors duration-100"
         onMouseDown={handleDragStart}
         onDoubleClick={onToggle}
-        title="Drag to resize · Double-click to collapse"
+        title={t("dragToResize")}
       >
         <div className="absolute left-0 top-0 bottom-0 w-px bg-dark-border group-hover/handle:bg-accent/50 transition-colors" />
       </div>
@@ -218,7 +220,7 @@ export function SidebarPanel({
           onClick={onToggle}
           className="p-1.5 rounded-lg text-text-muted hover:text-text-primary
                      hover:bg-dark-elevated transition-colors shrink-0"
-          title="Close panel (⌘B)"
+          title={t("closePanel")}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />

@@ -2,17 +2,19 @@
 // registry.coverage — never from response.cqs. It is NOT a chip: it cannot be removed,
 // never enters the CQS / userFilters / panelState, and renders even before any search.
 
+import { useTranslation } from "react-i18next";
 import { coverageOf, liveAreaNames } from "./coverage";
 import type { Registry } from "./types";
 
 export function CoverageBanner({ registry }: { registry: Registry }) {
+  const { t } = useTranslation("pages");
   const coverage = coverageOf(registry);
   if (coverage.mode === "all") return null; // full city — no scope caveat needed
 
   const text =
     coverage.mode === "none"
-      ? "Discovery is being prepared — no parcels are indexed yet. Results will appear once the index is built."
-      : `Indexed area: ${liveAreaNames(registry)}. More neighborhoods are being added — results are limited to live areas.`;
+      ? t("discovery.coverageNone")
+      : t("discovery.coveragePartial", { areas: liveAreaNames(registry) });
 
   return (
     <div

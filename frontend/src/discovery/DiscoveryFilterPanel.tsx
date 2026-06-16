@@ -4,6 +4,7 @@
 // multiselect); `ward`/`radius` are shown disabled until the index populates them.
 
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   COMMUNITY_AREAS,
   NEIGHBORHOOD_PREFIX,
@@ -36,6 +37,7 @@ interface PanelProps {
 }
 
 export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) {
+  const { t } = useTranslation("pages");
   const byCategory = useMemo(() => {
     const map = new Map<FilterCategory, FilterDef[]>();
     for (const f of registry.filters) {
@@ -71,7 +73,7 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
               className="flex w-full items-center justify-between text-[10px] uppercase tracking-wider text-text-muted transition-colors hover:text-text-secondary"
             >
               <span>
-                {CATEGORY_LABELS[cat]}
+                {t(`discovery.category.${cat}`, CATEGORY_LABELS[cat])}
                 {activeCount > 0 && <span className="ml-1 text-accent">({activeCount})</span>}
               </span>
               <span aria-hidden>{expanded ? "−" : "+"}</span>
@@ -115,13 +117,15 @@ function Control({
   populated: boolean;
   onChange: (id: string, p: Predicate | null) => void;
 }) {
-  const name = def.label ?? humanize(def.id);
+  const { t } = useTranslation("pages");
+  const name = t(`discovery.filter.${def.id}`, def.label ?? humanize(def.id));
+  const unit = def.unit ? t(`discovery.unit.${def.unit}`, def.unit) : null;
   // Visible group label (a <span>, not a <label> — pill/preset groups have no single
   // form control to associate; their accessible name comes from role+aria-label).
   const labelNode = (
     <span className="mb-1 block text-xs text-text-secondary">
       {name}
-      {def.unit ? <span className="text-text-muted"> ({def.unit})</span> : null}
+      {unit ? <span className="text-text-muted"> ({unit})</span> : null}
     </span>
   );
 
@@ -132,14 +136,18 @@ function Control({
     return (
       <div className="opacity-50">
         {labelNode}
-        <p className="text-[11px] text-text-muted">Coming with the next data update</p>
+        <p className="text-[11px] text-text-muted">{t("discovery.comingSoon")}</p>
       </div>
     );
   }
 
   if (def.kind === "flag") {
     const v = value?.kind === "flag" ? value.value : null;
-    const opts: Array<[string, boolean | null]> = [["Any", null], ["Yes", true], ["No", false]];
+    const opts: Array<[string, boolean | null]> = [
+      [t("discovery.flagAny"), null],
+      [t("discovery.flagYes"), true],
+      [t("discovery.flagNo"), false],
+    ];
     return (
       <div>
         {labelNode}
@@ -166,7 +174,7 @@ function Control({
       const next = selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v];
       onChange(def.id, next.length ? { kind: "enum", values: next } : null);
     };
-    const enumLabel = (v: string) => def.enumLabels?.[v] ?? humanize(v);
+    const enumLabel = (v: string) => t(`discovery.enum.${def.id}.${v}`, def.enumLabels?.[v] ?? humanize(v));
     return (
       <div>
         {labelNode}
@@ -208,7 +216,7 @@ function Control({
               onClick={() => onChange(def.id, null)}
               className={chipCls(anyChecked)}
             >
-              Any
+              {t("discovery.flagAny")}
             </button>
             {def.range.presets.map((p) => (
               <button
@@ -221,7 +229,7 @@ function Control({
                 }
                 className={chipCls(isChecked(p))}
               >
-                {p.label}
+                {t(`discovery.preset.${p.label}`, p.label)}
               </button>
             ))}
           </div>
@@ -241,8 +249,8 @@ function Control({
         <div className="flex items-center gap-2">
           <input
             type="number"
-            aria-label={`minimum ${name}`}
-            placeholder="min"
+            aria-label={t("discovery.minAria", { name })}
+            placeholder={t("discovery.minPlaceholder")}
             min={dom?.[0]}
             max={dom?.[1]}
             step={def.range?.step}
@@ -253,8 +261,8 @@ function Control({
           <span aria-hidden className="text-text-muted">–</span>
           <input
             type="number"
-            aria-label={`maximum ${name}`}
-            placeholder="max"
+            aria-label={t("discovery.maxAria", { name })}
+            placeholder={t("discovery.maxPlaceholder")}
             min={dom?.[0]}
             max={dom?.[1]}
             step={def.range?.step}
@@ -272,7 +280,7 @@ function Control({
     return (
       <div className="opacity-50">
         {labelNode}
-        <p className="text-[11px] text-text-muted">Not available yet</p>
+        <p className="text-[11px] text-text-muted">{t("discovery.notAvailable")}</p>
       </div>
     );
   }

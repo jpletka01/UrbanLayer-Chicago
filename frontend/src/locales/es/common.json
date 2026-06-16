@@ -45,5 +45,29 @@
   "upgradeToPro": "Mejorar a Pro",
   "followUpPlaceholder": "Escribe una consulta de seguimiento...",
   "messageLimitReached": "Ha alcanzado el límite de 10 mensajes para esta conversación.",
-  "shared": "Compartida"
+  "shared": "Compartida",
+  "openDataPanel": "Abrir panel de datos",
+  "submit": "Enviar",
+  "addAttachment": "Adjuntar archivo",
+  "deleteConversation": "Eliminar conversación",
+  "copyMessage": "Copiar mensaje",
+  "maybeLater": "Quizás más tarde",
+  "upgradePrompt": {
+    "featureBody": "{{feature}} es una función Pro. Actualiza para desbloquearla junto con consultas ilimitadas, informes en PDF y más.",
+    "genericBody": "Desbloquea consultas ilimitadas, informes de zonificación en PDF, Descubrimiento de propiedades y soporte prioritario por $99/mes.",
+    "cta": "Actualizar — $99/mes",
+    "redirecting": "Redirigiendo al pago…"
+  },
+  "reportPrompt": {
+    "title": "Obtén este informe",
+    "buy": "Comprar informe — $25",
+    "redirecting": "Redirigiendo al pago…",
+    "orPro": "O obtén informes ilimitados con Pro",
+    "upgrade": "Actualizar — $99/mes",
+    "redirectingShort": "Redirigiendo…",
+    "bodyPrefix": "Descarga un informe profesional de viabilidad de desarrollo para"
+  },
+  "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tengas acceso.",
+  "transcriptTitle": "Transcripción de Chicago",
+  "viewQuestionData": "Haz clic para ver los datos de esta pregunta"
 }

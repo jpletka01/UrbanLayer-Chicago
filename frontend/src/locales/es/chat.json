@@ -29,5 +29,25 @@
     "property_domain": "Consultando registros de propiedad",
     "incentives_domain": "Consultando zonas TIF e incentivos",
     "neighborhood_domain": "Cargando datos demográficos, censales y de transporte"
+  },
+  "thinking": "Pensando",
+  "citation": {
+    "sourceN": "Fuente {{n}}",
+    "view": "Ver {{ref}}",
+    "openSource": "Haz clic para abrir la fuente completa"
+  },
+  "crossref": {
+    "view": "Ver § {{id}}",
+    "loading": "Cargando vista previa…",
+    "unavailable": "Texto completo no disponible para esta referencia.",
+    "openSection": "Haz clic para abrir la sección completa"
+  },
+  "dataPill": {
+    "crime": "Datos de delitos",
+    "311": "Solicitudes 311",
+    "permits": "Permisos de construcción",
+    "violations": "Infracciones de construcción",
+    "business": "Licencias comerciales",
+    "portal": "Portal de Datos de Chicago"
   }
 }

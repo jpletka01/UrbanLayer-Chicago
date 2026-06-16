@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchSection } from "../lib/api";
 import { stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
@@ -16,6 +17,7 @@ type Preview =
   | { status: "missing" };
 
 export function CrossRefPill({ sectionId, onClick }: Props) {
+  const { t } = useTranslation("chat");
   const [showTooltip, setShowTooltip] = useState(false);
   const [preview, setPreview] = useState<Preview>({ status: "idle" });
   const loadedRef = useRef(false);
@@ -43,7 +45,7 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
         onMouseEnter={handleEnter}
         onMouseLeave={() => setShowTooltip(false)}
         className="inline-flex items-center gap-1 text-xs font-mono text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20 hover:bg-accent/20 hover:border-accent/40 transition-colors"
-        title={`View § ${sectionId}`}
+        title={t("crossref.view", { id: sectionId })}
       >
         § {sectionId}
         <svg className="w-3 h-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -54,10 +56,10 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
         <Tooltip className="w-64 p-3 rounded-lg shadow-2xl text-left">
           <div className="text-xs font-mono font-medium text-accent mb-1">§&nbsp;{sectionId}</div>
           {preview.status === "loading" && (
-            <div className="text-xs text-text-muted">Loading preview…</div>
+            <div className="text-xs text-text-muted">{t("crossref.loading")}</div>
           )}
           {preview.status === "missing" && (
-            <div className="text-xs text-text-muted">Full text not available for this reference.</div>
+            <div className="text-xs text-text-muted">{t("crossref.unavailable")}</div>
           )}
           {preview.status === "ok" && (
             <>
@@ -73,7 +75,7 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
                 {previewText}…
               </div>
               <div className="text-xs text-accent/70 mt-2 flex items-center gap-1">
-                <span>Click to open full section</span>
+                <span>{t("crossref.openSection")}</span>
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>

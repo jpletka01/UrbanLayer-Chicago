@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { forwardRef } from "react";
+import { useTranslation } from "react-i18next";
 import { isResolvableSection, stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
@@ -17,6 +18,7 @@ interface Props {
 }
 
 function ScorePill({ score }: { score: number }) {
+  const { t } = useTranslation("sidebar");
   const pct = Math.round(score * 100);
   const tone =
     pct >= 85
@@ -27,7 +29,7 @@ function ScorePill({ score }: { score: number }) {
   return (
     <span
       className={`px-1.5 py-0.5 rounded text-[10px] font-medium border tabular-nums ${tone}`}
-      title="Semantic match score"
+      title={t("semanticMatchScore")}
     >
       {pct}%
     </span>
@@ -39,6 +41,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
     { chunk, index, highlighted, flashing, expanded, onToggleExpand, onCrossRefClick },
     ref
   ) {
+    const { t } = useTranslation("sidebar");
     const { copied, copy } = useCopyButton(chunk.text);
     const preview = stripHeader(chunk.text);
 
@@ -73,7 +76,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
               onClick={handleCopy}
               className={`p-1 rounded text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-all
                          ${expanded ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-              title="Copy full text"
+              title={t("copyFullText")}
             >
               {copied ? (
                 <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -120,7 +123,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
                 {chunk.cross_references.length > 0 && (
                   <div>
                     <p className="text-[11px] uppercase tracking-wider text-text-muted mb-1.5">
-                      Related sections
+                      {t("relatedSections")}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {chunk.cross_references.map((xref, i) =>
@@ -140,7 +143,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
                 )}
 
                 <div className="flex items-center gap-2 text-[11px] text-text-muted">
-                  <span>Source:</span>
+                  <span>{t("sourceLabel")}</span>
                   <span className="font-mono">{chunk.source_document}</span>
                 </div>
               </div>
@@ -159,7 +162,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
-          {expanded ? "Collapse" : "Read full text"}
+          {expanded ? t("collapse") : t("readFullText")}
         </div>
       </div>
     );

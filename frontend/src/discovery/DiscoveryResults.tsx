@@ -18,9 +18,11 @@ function humanize(s: string): string {
   return s.replace(/_/g, " ");
 }
 
-function filterLabel(registry: Registry, id: string): string {
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function filterLabel(t: TFn, registry: Registry, id: string): string {
   const def = registry.filters.find((f) => f.id === id);
-  return def?.label ?? humanize(id);
+  return t(`discovery.filter.${id}`, { defaultValue: def?.label ?? humanize(id) });
 }
 
 function fmtMoney(n: number | null): string | null {
@@ -66,10 +68,10 @@ export function DiscoveryResults({
 }: ResultsProps) {
   const { t } = useTranslation("pages");
   if (loading) {
-    return <p className="p-4 text-sm text-text-muted">Searching…</p>;
+    return <p className="p-4 text-sm text-text-muted">{t("discovery.searching")}</p>;
   }
   if (!response) {
-    return <p className="p-4 text-sm text-text-muted">Set filters and run a search.</p>;
+    return <p className="p-4 text-sm text-text-muted">{t("discovery.setFilters")}</p>;
   }
 
   const { result, diagnostics } = response;
@@ -82,7 +84,7 @@ export function DiscoveryResults({
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-text-primary">
             <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
-            {result.total === 1 ? "parcel" : "parcels"}
+            {t("discovery.parcelCount", { count: result.total })}
           </p>
           {result.total > 0 && (exportLocked ? onUpgrade : onExport) && (
             <button
@@ -106,16 +108,16 @@ export function DiscoveryResults({
 
         {diagnostics.droppedInvalid.length > 0 && (
           <p className="text-[11px] text-amber-400/80">
-            Ignored:{" "}
+            {t("discovery.ignored")}{" "}
             {diagnostics.droppedInvalid
-              .map((d) => `${filterLabel(registry, d.filterId)} (${d.reason})`)
+              .map((d) => `${filterLabel(t, registry,d.filterId)} (${d.reason})`)
               .join(", ")}
           </p>
         )}
 
         {diagnostics.conflicts.map((c) => (
           <div key={c.filters.join("|")} className="text-[11px] text-amber-400/80">
-            {c.filters.map((f) => filterLabel(registry, f)).join(" conflicts with ")} —{" "}
+            {c.filters.map((f) => filterLabel(t, registry, f)).join(` ${t("discovery.conflictsConnector")} `)} —{" "}
             {c.filters.map((f) => (
               <button
                 key={f}
@@ -123,7 +125,7 @@ export function DiscoveryResults({
                 onClick={() => onRelax(f)}
                 className="underline transition-colors hover:text-accent"
               >
-                remove {filterLabel(registry, f)}
+                {t("discovery.remove", { label: filterLabel(t, registry, f) })}
               </button>
             ))}
           </div>
@@ -132,11 +134,11 @@ export function DiscoveryResults({
         {result.total === 0 && <ZeroState response={response} registry={registry} onRelax={onRelax} />}
 
         {result.total > 0 && diagnostics.broad && (
-          <p className="text-[11px] text-text-muted">Broad search — add filters to narrow.</p>
+          <p className="text-[11px] text-text-muted">{t("discovery.broadSearch")}</p>
         )}
         {excludedTotal > 0 && (
           <p className="text-[11px] text-text-muted">
-            {excludedTotal.toLocaleString()} excluded for missing data.
+            {t("discovery.excludedMissing", { count: excludedTotal.toLocaleString() })}
           </p>
         )}
       </div>
@@ -165,7 +167,7 @@ export function DiscoveryResults({
           !hasMore &&
           rows.length > 0 && (
             <p className="px-4 py-3 text-[11px] text-text-muted">
-              Showing all {rows.length.toLocaleString()}.
+              {t("discovery.showingAll", { count: rows.length.toLocaleString() })}
             </p>
           )
         )}
@@ -189,6 +191,7 @@ function ZeroState({
   registry: Registry;
   onRelax: (filterId: string) => void;
 }) {
+  const { t } = useTranslation("pages");
   const filterIds = Object.keys(response.cqs.filters);
 
   // (1) NULL-backed: filters set on fields the index hasn't populated.
@@ -197,15 +200,14 @@ function ZeroState({
     return (
       <div className="space-y-1 text-[11px] text-text-muted">
         <p>
-          No matches — {nullBacked.length === 1 ? "the" : ""}{" "}
-          <span className="text-text-secondary">
-            {nullBacked.map((id) => filterLabel(registry, id)).join(", ")}
-          </span>{" "}
-          {nullBacked.length === 1 ? "filter has" : "filters have"} no data in this dataset yet.
+          {t("discovery.zeroNullBacked", {
+            count: nullBacked.length,
+            labels: nullBacked.map((id) => filterLabel(t, registry, id)).join(", "),
+          })}
         </p>
         <div className="flex flex-wrap gap-1.5">
           {nullBacked.map((id) => (
-            <RelaxChip key={id} label={filterLabel(registry, id)} onClick={() => onRelax(id)} />
+            <RelaxChip key={id} label={filterLabel(t, registry, id)} onClick={() => onRelax(id)} />
           ))}
         </div>
       </div>
@@ -225,9 +227,11 @@ function ZeroState({
       const names = offCoverage.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", ");
       return (
         <p className="text-[11px] text-text-muted">
-          No matches — <span className="text-text-secondary">{names}</span>{" "}
-          {offCoverage.length === 1 ? "isn't" : "aren't"} indexed yet. Indexed area:{" "}
-          {coverage.liveAreas.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", ")}.
+          {t("discovery.zeroNonLive", {
+            count: offCoverage.length,
+            names,
+            live: coverage.liveAreas.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", "),
+          })}
         </p>
       );
     }
@@ -237,13 +241,13 @@ function ZeroState({
   const removable = response.diagnostics.mostRestrictive.filter((m) => m.countWithoutIt > 0);
   return (
     <div className="space-y-1">
-      <p className="text-[11px] text-text-muted">No matches. Try removing:</p>
+      <p className="text-[11px] text-text-muted">{t("discovery.zeroTooTight")}</p>
       {removable.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {removable.map((m) => (
             <RelaxChip
               key={m.filterId}
-              label={`${filterLabel(registry, m.filterId)} (+${m.countWithoutIt.toLocaleString()})`}
+              label={`${filterLabel(t, registry, m.filterId)} (+${m.countWithoutIt.toLocaleString()})`}
               onClick={() => onRelax(m.filterId)}
             />
           ))}
@@ -274,6 +278,7 @@ function InfiniteScrollSentinel({
   loadingMore: boolean;
   onLoadMore: () => void;
 }) {
+  const { t } = useTranslation("pages");
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = ref.current;
@@ -292,7 +297,7 @@ function InfiniteScrollSentinel({
   if (!hasMore) return null;
   return (
     <div ref={ref} className="px-4 py-3 text-[11px] text-text-muted">
-      {loadingMore ? "Loading more…" : "Scroll for more"}
+      {loadingMore ? t("discovery.loadingMore") : t("discovery.scrollMore")}
     </div>
   );
 }
@@ -348,27 +353,28 @@ function ResultCard({
   onHoverPin?: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
 }) {
+  const { t } = useTranslation("pages");
   // A "~" prefix marks an approximate (nearest) address — shown as "near <addr>".
   const title = row.address
     ? row.address.startsWith("~")
-      ? `near ${humanizeShoutyCase(row.address.slice(1))}`
+      ? t("discovery.near", { addr: humanizeShoutyCase(row.address.slice(1)) })
       : humanizeShoutyCase(row.address)
     : row.pin;
   const useLine = [
-    row.land_use ? humanize(row.land_use) : null,
+    row.land_use ? t(`discovery.enum.land_use.${row.land_use}`, { defaultValue: humanize(row.land_use) }) : null,
     row.class,
-    row.units != null ? `${row.units} units` : null,
+    row.units != null ? t("discovery.unitsCount", { count: row.units }) : null,
   ].filter(Boolean);
   const sizeLine = [
-    row.lot_sqft != null ? `Lot ${fmtNum(row.lot_sqft)}` : null,
-    row.bldg_sqft != null ? `Bldg ${fmtNum(row.bldg_sqft)} sf` : null,
+    row.lot_sqft != null ? t("discovery.lot", { n: fmtNum(row.lot_sqft) }) : null,
+    row.bldg_sqft != null ? t("discovery.bldg", { n: fmtNum(row.bldg_sqft) }) : null,
     row.year_built != null ? String(row.year_built) : null,
   ].filter(Boolean);
 
   // Surface "what you sorted by": bold assessed value when sorting by it, else $/sqft.
   const sortIsAssessed = activeSortKey === "assessed_value";
   const assessed = fmtMoney(row.assessed_value);
-  const ppsf = row.price_per_sf != null ? `${fmtMoney(row.price_per_sf)}/sqft` : null;
+  const ppsf = row.price_per_sf != null ? t("discovery.perSqft", { money: fmtMoney(row.price_per_sf) }) : null;
 
   return (
     <button
@@ -384,7 +390,7 @@ function ResultCard({
         <span className="truncate text-sm text-text-primary">{title}</span>
         {row.upside_score != null && (
           <span className="flex-shrink-0 text-[11px] text-accent">
-            ● Upside {Math.round(row.upside_score)}
+            ● {t("discovery.upsideShort", { n: Math.round(row.upside_score) })}
           </span>
         )}
       </div>
@@ -400,7 +406,7 @@ function ResultCard({
         <div className="text-[11px] text-text-muted">
           {assessed && (
             <span className={sortIsAssessed ? "font-semibold text-text-secondary" : undefined}>
-              AV {assessed}
+              {t("discovery.av", { money: assessed })}
             </span>
           )}
           {assessed && ppsf ? " · " : null}
