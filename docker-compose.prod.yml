@@ -1,7 +1,12 @@
 services:
   backend:
     environment:
-      - RERANKER_ENABLED=true
+      # Disabled 2026-06-16: bge-reranker-v2-m3 cross-encoder inference hangs/crawls
+      # (>40s per semantic_search) on this box, and the report's extract_zoning_standards
+      # fires 5 reranked searches in parallel → /api/report hangs past 180s → 504. With
+      # the reranker off, semantic_search is 0.2–1.4s and the report renders. Re-enable
+      # only after the reranker hang is root-caused (torch thread/CPU contention suspected).
+      - RERANKER_ENABLED=false
 
   frontend:
     build:
