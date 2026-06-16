@@ -72,11 +72,32 @@ log = logging.getLogger(__name__)
 
 _RETRIEVAL_SEM = asyncio.Semaphore(8)
 
-# Bounds concurrent PDF report renders. Each report holds ~375 MB of render data
-# (embedded map rasters + WeasyPrint buffers) on top of the resident embed/reranker
-# models; unbounded concurrency OOM-kills the single prod worker. See the Tier-0
-# investigation in claude-context/guides/report-v6-execution-plan.md.
+# Bounds concurrent PDF report renders (report_concurrency=1). The heavy WeasyPrint
+# render now runs in an isolated child (~118 MB, backend/report_render.py); serializing
+# keeps the parent's per-request matplotlib/HTML allocations predictable. See the
+# Tier-0 investigation in claude-context/guides/report-v6-execution-plan.md.
 _REPORT_SEM = asyncio.Semaphore(get_settings().report_concurrency)
+
+# Return freed heap to the OS after a report. glibc keeps freed chunks in per-arena
+# free lists (RSS doesn't drop), so the parent's per-request matplotlib/HTML
+# allocations accumulate ~20 MB/render; malloc_trim(0) releases top-of-heap free
+# space. glibc-only — a caught no-op elsewhere (e.g. macOS dev). MALLOC_ARENA_MAX
+# alone does NOT do this; this is the lever that actually flattens the creep.
+try:
+    import ctypes as _ctypes
+    import ctypes.util as _ctypes_util
+
+    _LIBC = _ctypes.CDLL(_ctypes_util.find_library("c"))
+except Exception:  # pragma: no cover - exotic platforms
+    _LIBC = None
+
+
+def _trim_malloc() -> None:
+    if _LIBC is not None and hasattr(_LIBC, "malloc_trim"):
+        try:
+            _LIBC.malloc_trim(0)
+        except Exception:  # pragma: no cover
+            pass
 
 
 async def _limited(coro):
@@ -4448,10 +4469,15 @@ async def report(
     slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
     filename = f"{slug}_{date.today().isoformat()}_feasibility_report.pdf"
 
+    # Trim glibc free lists back to the OS *after* the response is sent, so the
+    # request's matplotlib/HTML allocations don't ratchet the worker's RSS up.
+    from starlette.background import BackgroundTask
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        background=BackgroundTask(_trim_malloc),
     )
 
 
