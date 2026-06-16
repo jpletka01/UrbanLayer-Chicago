@@ -1,14 +1,15 @@
 services:
   backend:
     environment:
-      # Re-enabled 2026-06-16 after capping torch intra-op threads to 1 in
-      # vector_search._cap_torch_threads(). The report fires 5 reranked searches in
-      # parallel; at torch's default 4 threads on this 4-core box that oversubscribed
-      # (~20 threads), thrashed, and hung /api/report past 180s → 504. Pinning torch
-      # to 1 thread keeps total threads ≈ concurrency. (Reranker inference itself was
-      # always fine — predict(4 pairs)=0.3s.) If reports hang again, set this back to
-      # false (the documented escape valve).
-      - RERANKER_ENABLED=true
+      # Disabled 2026-06-16: a single reranked semantic_search hangs >40-60s on this
+      # box regardless of torch thread count (tested 4 AND 1 — capping to 1 made it
+      # WORSE, so it is NOT thread oversubscription as first guessed). The report
+      # fires 5 of these in parallel → /api/report hangs past 180s → 504. Curiously a
+      # direct reranker.predict(4 pairs) is 0.3s, so the slowness is in the rerank
+      # path over reranker_candidate_count pairs (or its executor interaction), not
+      # raw inference — needs profiling (candidate_count, run_in_executor, batching)
+      # before re-enabling. With it off, semantic_search is 0.2-1.4s, reports ~10s.
+      - RERANKER_ENABLED=false
       # Cap glibc arenas (reduces per-thread arena VM/fragmentation). NOTE: this does
       # NOT return freed memory to the OS, so on its own it did not flatten the parent
       # RSS creep (~20 MB/render from matplotlib/HTML work) — the actual lever for

@@ -149,29 +149,10 @@ _STOPWORDS = frozenset({
 _WORD_RE = re.compile(r"[a-z0-9]+(?:[-'][a-z0-9]+)*")
 
 
-def _cap_torch_threads() -> None:
-    """Pin torch intra-op parallelism to 1 thread.
-
-    The report fires 5 reranked ``semantic_search`` calls in parallel (each rerank
-    runs in the default executor thread pool). With torch's default thread count
-    (= CPU cores) every rerank fans out across all cores, so 5 concurrent reranks
-    oversubscribe the box (~20 threads on 4 cores), thrash, and each crawls — which
-    hung ``/api/report`` past its timeout and forced us to disable the reranker.
-    One intra-op thread per rerank keeps total threads ≈ concurrency, which the
-    cores can actually serve. Idempotent + process-global.
-    """
-    try:
-        import torch
-        torch.set_num_threads(1)
-    except Exception:  # torch missing / already finalized — fall back to defaults
-        pass
-
-
 @lru_cache
 def _model():
     from sentence_transformers import SentenceTransformer
 
-    _cap_torch_threads()
     settings = get_settings()
     log.info("Loading sentence-transformers model %s", settings.embedding_model)
     return SentenceTransformer(settings.embedding_model)
@@ -181,7 +162,6 @@ def _model():
 def _reranker():
     from sentence_transformers import CrossEncoder
 
-    _cap_torch_threads()
     settings = get_settings()
     log.info("Loading cross-encoder model %s", settings.reranker_model)
     return CrossEncoder(settings.reranker_model)
