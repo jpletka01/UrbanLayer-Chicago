@@ -2426,6 +2426,10 @@ async def _fetch_report_data(
                     )
                 except Exception:
                     log.warning("Failed to generate parcel map", exc_info=True)
+                finally:
+                    # Zoom-19 retina PNG, not returned to the caller — free it once
+                    # the parcel map is rendered rather than holding it to function end.
+                    del parcel_basemap_bytes
 
     # Zone class definitions (deterministic lookup, no API call)
     from backend.retrieval.zoning_definitions import collect_report_zone_definitions
@@ -4332,8 +4336,8 @@ async def report(
 
     from backend.auth import _TIER_ORDER
     from jinja2 import Environment, FileSystemLoader
-    from weasyprint import HTML
 
+    settings = get_settings()
     rl = await _resolve_location(address, lat, lon, pin)
     resolved_lat, resolved_lon, resolved_address = rl.lat, rl.lon, rl.address
 
@@ -4397,6 +4401,12 @@ async def report(
                 for zd in mock_zdefs
             ]
 
+        # The basemap PNGs are only needed for the (optional) mock-mode map
+        # regeneration above; the report's maps are already embedded as base64 in
+        # report_data. Drop these buffers promptly so they aren't held resident
+        # across the render span.
+        del basemap_bytes, basemap_wide_bytes
+
         # Render HTML template
         template_dir = Path(__file__).parent / "templates"
         env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
@@ -4412,15 +4422,28 @@ async def report(
             report_date=date.today().strftime("%B %d, %Y"),
         )
 
-        # Generate PDF. write_pdf() is synchronous CPU/C work (cairo/pango) that
-        # rasterizes every embedded map PNG and lays out 16–19 pages — offload it to
-        # a thread so it doesn't block the event loop (health/chat/other reports) for
-        # its whole duration. Combined with _REPORT_SEM, at most report_concurrency
-        # PDF threads run at once.
-        loop = asyncio.get_running_loop()
-        pdf_bytes = await loop.run_in_executor(
-            None, lambda: HTML(string=html_content).write_pdf()
-        )
+        # Generate the PDF in an ISOLATED CHILD PROCESS. write_pdf() (cairo/pango
+        # laying out 16–19 image-embedded pages) spikes ~2.8 GB; in the long-lived
+        # worker that stacks on the ~5 GB resident baseline (citywide discovery
+        # index + ML models) and OOM-kills the single prod worker. Running it in a
+        # short-lived child gives a fresh address space that's fully reclaimed on
+        # exit — flattening both the render peak and cross-request glibc retention —
+        # and the child can be killed (timeout / oom_score_adj) without taking the
+        # worker down. See backend/report_render.py. Still inside _REPORT_SEM, so
+        # at most report_concurrency child renders run at once.
+        from backend.report_render import PdfRenderError, render_pdf
+        try:
+            pdf_bytes = await render_pdf(
+                html_content,
+                timeout_s=settings.report_render_timeout_s,
+                rlimit_as_bytes=settings.report_render_rlimit_as_bytes,
+            )
+        except PdfRenderError as exc:
+            log.warning("Isolated PDF render failed: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail={"error": "report_render_failed"},
+            ) from exc
 
     # Build filename
     slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")

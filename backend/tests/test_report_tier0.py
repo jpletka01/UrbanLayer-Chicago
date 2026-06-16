@@ -44,19 +44,13 @@ class _FakeEnv:
         return _FakeTemplate()
 
 
-class _FakeHTML:
-    """Stand-in for weasyprint.HTML — returns tiny PDF bytes instantly."""
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def write_pdf(self):
-        return b"%PDF-1.4 fake-tier0"
-
-
 def _install_common_patches(stack: ExitStack, fetch_impl) -> None:
     """Patch the heavy/IO internals of report() so only the concurrency/offload
-    wiring is exercised. `fetch_impl` is the async _fetch_report_data stand-in."""
+    wiring is exercised. `fetch_impl` is the async _fetch_report_data stand-in.
+
+    The PDF render now runs in an isolated child process (backend/report_render.py);
+    we patch the async `render_pdf` seam to return fake PDF bytes instantly rather
+    than spawn a real WeasyPrint subprocess (which isn't installed in this env)."""
     app.dependency_overrides[require_auth] = _premium_user
     stack.callback(app.dependency_overrides.pop, require_auth, None)
 
@@ -71,7 +65,10 @@ def _install_common_patches(stack: ExitStack, fetch_impl) -> None:
         patch.object(main_mod, "_fetch_report_data", new=fetch_impl)
     )
     stack.enter_context(patch("jinja2.Environment", new=_FakeEnv))
-    stack.enter_context(patch("weasyprint.HTML", new=_FakeHTML))
+    stack.enter_context(
+        patch("backend.report_render.render_pdf",
+              new=AsyncMock(return_value=b"%PDF-1.4 fake-tier0")),
+    )
 
 
 async def _fire(n: int) -> list[httpx.Response]:

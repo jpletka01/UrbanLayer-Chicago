@@ -13,6 +13,7 @@ import json
 import logging
 import math
 import sqlite3
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
@@ -263,6 +264,30 @@ def derive_sort_fields(attrs: dict[str, Any]) -> dict[str, Any]:
     return {**attrs, "total_assessed_value_sortkey": av}
 
 
+def _interned_attrs(attrs_json: str) -> dict[str, Any]:
+    """Parse an `attrs` cell, interning the field-name *keys*.
+
+    json.loads mints a fresh str for every key on every row, so across ~949k
+    parcels the same ~25 field names become tens of millions of duplicate string
+    objects (a large chunk of the resident index). Interning collapses them to one
+    shared object per name. The sort-only key derive_sort_fields adds is interned
+    here too. Values are deliberately left untouched — they include high-cardinality
+    strings (e.g. addresses) whose interning would only bloat the never-collected
+    intern table for zero dedup benefit.
+    """
+    derived = derive_sort_fields(json.loads(attrs_json))
+    return {sys.intern(k): v for k, v in derived.items()}
+
+
+def _interned_regions(regions_json: str) -> list[str]:
+    """Parse a `regions` cell, interning each ref.
+
+    Region refs (community-area / ward / flag labels) repeat across nearly every
+    parcel, so interning collapses ~949k×N duplicate strings to a handful.
+    """
+    return [sys.intern(r) for r in json.loads(regions_json)]
+
+
 def read_index(path: Path) -> tuple[str | None, list[IndexedParcel]]:
     """Load the index → (data_version, parcels). Returns (None, []) if absent/empty."""
     if not path.exists():
@@ -274,7 +299,7 @@ def read_index(path: Path) -> tuple[str | None, list[IndexedParcel]]:
             return None, []
         data_version = meta[0]
         parcels = [
-            IndexedParcel(pin, lat, lon, derive_sort_fields(json.loads(attrs)), json.loads(regions))
+            IndexedParcel(pin, lat, lon, _interned_attrs(attrs), _interned_regions(regions))
             for pin, lat, lon, attrs, regions in conn.execute(
                 "SELECT pin, lat, lon, attrs, regions FROM parcels"
             )
