@@ -7,6 +7,15 @@
   "searchingFor": "Searching municipal code for \"{{query}}\"",
   "propertyFor": "Looking up property records for {{address}}",
   "inArea": "{{label}} in {{area}}",
+  "emptyState": {
+    "heading": "Ask the analyst",
+    "subline": "It reads Chicago's municipal code and cites the sections. Ask about the code — or about any parcel you've opened.",
+    "examples": [
+      "What are the setback requirements for B3-2 zoning?",
+      "What uses are allowed in a C1-2 district?",
+      "When does a rear addition need a zoning variance?"
+    ]
+  },
   "sourceLabels": {
     "crime_api": "Searching crime records",
     "311_api": "Looking up 311 service requests",

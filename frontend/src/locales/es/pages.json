@@ -59,6 +59,14 @@
     "addressNotFound": "No se pudo encontrar esa dirección. Intente con un formato diferente (ej. \"2400 N Milwaukee Ave\").",
     "locationNotFound": "No se pudieron cargar los datos de la propiedad para esta ubicación.",
     "noResults": "No se encontraron resultados.",
+    "searchAnother": "Buscar otra dirección",
+    "codeRedirect": {
+      "title": "Eso parece una pregunta sobre el código, no una dirección.",
+      "body": "El analista puede responderla: lee el código municipal de Chicago y cita las secciones específicas.",
+      "askAnalyst": "Consultar al analista",
+      "searchInstead": "O busca una dirección de Chicago",
+      "orAskAnalyst": "¿No es una dirección? Consulta al analista →"
+    },
     "crime": "Delitos",
     "incidents90d": "{{count}} incidentes (90d)",
     "arrestRate": "Tasa de arrestos",

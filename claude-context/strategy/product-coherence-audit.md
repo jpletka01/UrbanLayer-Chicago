@@ -467,6 +467,21 @@ Session 1 produced a structured product definition that session 2 refined but di
 - **North-star §4 + CLAUDE.md reconciled** (same session): north-star §4 updated to shipped reality;
   the root CLAUDE.md killer query is now an address-assessment example.
 
+### Step 4 (2026-06-15) — IN WORKING TREE, NOT shipped — see `strategy/2026-06-15_homepage-coherence-pass.md`
+A homepage/entry/chat-access coherence pass, implemented but **uncommitted/unpushed** (needs Jack's
+deploy approval). Highlights: hero is now **address-only** (chat fully off the front door — the
+old librarian toggle is gone, not just demoted); ScorecardPage rebuilt on a **two-shell state model**
+that kills the duplicate-search-box moment + adds a **failure-recovery handoff** (a code question typed
+into the address box → neutral redirect → `/?q=` analyst); top nav trimmed to **Scorecard · Discovery ·
+Pricing** (Analyst removed as a weighting violation, About unlinked → architecture page kept at the
+`/about` URL only); vocabulary canonicalized (**Scorecard** free / **Report** paid / **analyst** chat;
+retired file/dossier/librarian); and the in-workspace **"New Chat" now resets in place** with a ready
+empty state. **Deferred on purpose:** cold-start direct-to-chat destination (pending Phase 2 validation),
+homepage↔inner-page visual/header unification (judged non-harming), and Pricing visibility on the
+homepage (the still-open first-critique finding #1). Full decisions + the reusable reasoning frameworks
+(focused-funnel-not-launcher; chat "distinct in kind, unequal in weight"; design vs. user-visible vs.
+user-harming inconsistency; distinct-modes over omnibox) live in the dated doc.
+
 ### Still open (each requires fresh approval before implementation)
 - **No decision on Explorer free-teaser depth** (how many results free? which filters free?).
   The last remaining funnel inversion: the funnel-top is still paywalled before it can demonstrate

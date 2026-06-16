@@ -105,8 +105,10 @@ export function App() {
   const [mapTabViewed, setMapTabViewed] = useState(true);
   const [exportReport, setExportReport] = useState<ReportData | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  // Set by persona cards: prefills the hero chat (librarian) entrance.
-  const [heroChatPrefill, setHeroChatPrefill] = useState<string | null>(null);
+  // True only in the empty "New Chat" state: keeps the workspace mounted (with an
+  // empty composer) when there are no messages yet. Set in handleNewChat; cleared
+  // on exit-to-home (reset) and on the first send.
+  const [composing, setComposing] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const { user, isAuthenticated, authRequired, loading: authLoading, signIn, signOut } = useAuthContext();
@@ -151,6 +153,7 @@ export function App() {
     } else if (!conversationIdFromUrl && conversationId) {
       // Browser navigated back to splash
       resetChat();
+      setComposing(false);
       setConversationId(null);
       conversationIdRef.current = null;
       setSidebarOpen(false);
@@ -320,7 +323,7 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const active = messages.length > 0 || streaming;
+  const active = messages.length > 0 || streaming || composing;
 
   // Anonymous visitors chat in-memory only: no server-side conversation,
   // no history, no uploads. Auth is asked for where identity is needed
@@ -329,6 +332,9 @@ export function App() {
 
   async function sendMessage(text: string, _attachments?: undefined, opts?: { parcelPin?: string | null }) {
     setHistoryOpen(false);
+    // The empty-state flag has done its job once a message exists; clearing it
+    // here keeps it from lingering true into later message-clearing paths.
+    setComposing(false);
     let cid = conversationId;
     if (!cid && canPersist) {
       cid = generateId();
@@ -403,7 +409,11 @@ export function App() {
     });
   }
 
-  function reset() {
+  // Shared teardown for both "exit to home" (reset) and "new chat in place"
+  // (handleNewChat): aborts any in-flight stream, clears the conversation,
+  // sidebar, and map state. Does NOT touch `composing` or the URL — the two
+  // callers differ only in those.
+  function clearWorkspace() {
     resetChat();
     setConversationId(null);
     conversationIdRef.current = null;
@@ -421,6 +431,22 @@ export function App() {
     setSourcesTabViewed(true);
     setMapTabViewed(true);
     setLoadError(null);
+  }
+
+  // Exit to home: clear everything and show the splash. `composing` must go
+  // false here, or active stays true and the splash never renders.
+  function reset() {
+    clearWorkspace();
+    setComposing(false);
+    navigateToSplash();
+  }
+
+  // New Chat (in place): same teardown, but stay in the workspace with an empty
+  // composer. Navigates to `/` so a refresh can't resurrect the old /c/:id;
+  // `composing` keeps `/` on the workspace instead of the splash.
+  function handleNewChat() {
+    clearWorkspace();
+    setComposing(true);
     navigateToSplash();
   }
 
@@ -722,11 +748,7 @@ export function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
-                      <HeroEntrance
-                        onChatSubmit={sendMessage}
-                        chatPrefill={heroChatPrefill}
-                        startInChat={searchParams.get("analyst") === "1"}
-                      />
+                      <HeroEntrance />
                     </motion.div>
                   </div>
                 </div>
@@ -776,12 +798,7 @@ export function App() {
             <DepthShowcase />
 
             {/* Persona Scenarios — professional personas */}
-            <PersonaScenarios
-              onChatQuestion={(q) => {
-                setHeroChatPrefill(q);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            />
+            <PersonaScenarios />
 
             {/* Story interstitial — report workflow */}
             <StorySection
@@ -888,7 +905,7 @@ export function App() {
                 ) : (
                   <>
                     <button
-                      onClick={reset}
+                      onClick={handleNewChat}
                       className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
                     >
                       <span className="hidden md:inline">{tc("newChat")}</span>
@@ -956,7 +973,7 @@ export function App() {
                 onMessageClick={handleMessageClick}
                 selectedMessageIndex={selectedMessageIndex}
                 atMessageLimit={atMessageLimit}
-                onNewChat={reset}
+                onNewChat={handleNewChat}
                 attachments={pendingAttachments}
                 onAttach={canPersist ? handleAttach : undefined}
                 onRemoveAttachment={handleRemoveAttachment}

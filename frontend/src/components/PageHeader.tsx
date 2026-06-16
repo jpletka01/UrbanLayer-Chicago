@@ -7,12 +7,13 @@ import LanguageSelector from "./LanguageSelector";
 import UserMenu from "./UserMenu";
 
 const NAV_ITEMS: { to: string; key: string }[] = [
-  // "Analyst" opens the homepage hero directly in chat mode — the cited
-  // code-research surface — not the address-first front door.
-  { to: "/?analyst=1", key: "nav.chat" },
+  // The nav carries only verbs on a parcel + its price. Chat ("Analyst") was
+  // removed — it's reached contextually (Investigate, persona cards, the address
+  // box's failure-recovery handoff), never as a co-equal top-level destination.
+  // About is unlinked from the customer UI (the /about route still resolves by
+  // direct URL); provenance lives in the homepage footer.
   { to: "/scorecard", key: "nav.scorecard" },
   { to: "/pricing", key: "nav.pricing" },
-  { to: "/about", key: "nav.about" },
 ];
 
 // Discovery is linked only once its index actually has data (coverage != "none"); while
@@ -23,7 +24,7 @@ const DISCOVERY_ITEM = { to: "/discovery", key: "nav.discovery" };
 
 export function navItemsFor(discoveryLive: boolean): { to: string; key: string }[] {
   if (!discoveryLive) return NAV_ITEMS;
-  return [...NAV_ITEMS.slice(0, 2), DISCOVERY_ITEM, ...NAV_ITEMS.slice(2)]; // after Scorecard
+  return [...NAV_ITEMS.slice(0, 1), DISCOVERY_ITEM, ...NAV_ITEMS.slice(1)]; // after Scorecard, before Pricing
 }
 
 /**

@@ -7,6 +7,15 @@
   "searchingFor": "Buscando en el código municipal \"{{query}}\"",
   "propertyFor": "Consultando registros de propiedad de {{address}}",
   "inArea": "{{label}} en {{area}}",
+  "emptyState": {
+    "heading": "Consulta al analista",
+    "subline": "Lee el código municipal de Chicago y cita las secciones. Pregunta sobre el código — o sobre cualquier parcela que hayas abierto.",
+    "examples": [
+      "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
+      "¿Qué usos están permitidos en un distrito C1-2?",
+      "¿Cuándo requiere una ampliación trasera una variación de zonificación?"
+    ]
+  },
   "sourceLabels": {
     "crime_api": "Consultando registros de delitos",
     "311_api": "Consultando solicitudes de servicio 311",

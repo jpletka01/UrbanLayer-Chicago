@@ -44,9 +44,18 @@ export function Footer() {
           <h4 className="text-text-primary font-semibold text-base">{t("footer.about")}</h4>
           <ul className="space-y-2 text-text-secondary">
             <li>
-              <Link to="/about" className="hover:text-accent transition-colors">
+              {/* Same-page scroll to the How-it-works section (the /about route
+                  is no longer a customer-facing destination). */}
+              <a
+                href="#how-it-works"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="hover:text-accent transition-colors"
+              >
                 {t("footer.howItWorks")}
-              </Link>
+              </a>
             </li>
             <li>
               <Link to="/pricing" className="hover:text-accent transition-colors">

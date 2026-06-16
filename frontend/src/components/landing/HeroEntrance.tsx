@@ -1,33 +1,19 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddressInput } from "../AddressInput";
-import { ChatInput } from "../ChatInput";
 import { PromptSuggestionChip } from "../PromptSuggestionChip";
 import { buildScorecardHref } from "../sidebar/ScorecardBridgeCard";
 import { track } from "../../lib/tracking";
 
-interface Props {
-  onChatSubmit: (text: string) => void;
-  chatPrefill?: string | null;
-  /** Open directly in chat mode (the "Analyst" nav entry). */
-  startInChat?: boolean;
-}
-
 /**
- * The homepage entry surface. Default mode asks one question — "Which
- * property?" — and opens the parcel's Scorecard. The code-research chat
- * (the librarian) is a clearly secondary entrance behind a quiet link.
+ * The homepage entry surface. It asks one question — "Which property?" — and
+ * opens the parcel's Scorecard. There is no chat box on the front door: code
+ * research reaches the analyst elsewhere (Investigate from inside a parcel, the
+ * persona cards, or the address box's failure-recovery handoff on a non-address).
  */
-export function HeroEntrance({ onChatSubmit, chatPrefill, startInChat = false }: Props) {
+export function HeroEntrance() {
   const { t } = useTranslation("landing");
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"address" | "chat">(startInChat ? "chat" : "address");
-
-  // Persona cards prefill a code-research question into the hero chat.
-  useEffect(() => {
-    if (chatPrefill) setMode("chat");
-  }, [chatPrefill]);
 
   function submitAddress(address: string, source: "hero" | "chip") {
     track("hero_address_submit", { source, address });
@@ -35,32 +21,6 @@ export function HeroEntrance({ onChatSubmit, chatPrefill, startInChat = false }:
   }
 
   const addressExamples = t("hero.addressExamples", { returnObjects: true }) as string[];
-  const librarianSuggestions = t("hero.librarianSuggestions", { returnObjects: true }) as string[];
-
-  if (mode === "chat") {
-    return (
-      <div className="space-y-4">
-        <ChatInput
-          onSubmit={onChatSubmit}
-          variant="hero"
-          placeholder={t("hero.chatPlaceholder")}
-          initialValue={chatPrefill ?? undefined}
-        />
-        <div className="flex flex-wrap gap-2 justify-center">
-          {librarianSuggestions.map((q) => (
-            <PromptSuggestionChip key={q} label={q} onClick={() => onChatSubmit(q)} />
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setMode("address")}
-          className="text-sm text-white/60 hover:text-white transition-colors"
-        >
-          {t("hero.backToAddress")}
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -74,16 +34,6 @@ export function HeroEntrance({ onChatSubmit, chatPrefill, startInChat = false }:
           <PromptSuggestionChip key={addr} label={addr} onClick={() => submitAddress(addr, "chip")} />
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          track("hero_librarian_click", { source: "hero" });
-          setMode("chat");
-        }}
-        className="text-sm text-white/60 hover:text-white transition-colors"
-      >
-        {t("hero.librarianLink")}
-      </button>
     </div>
   );
 }

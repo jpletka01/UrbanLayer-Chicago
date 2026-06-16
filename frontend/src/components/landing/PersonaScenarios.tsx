@@ -5,10 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { buildScorecardHref } from "../sidebar/ScorecardBridgeCard";
 import { track } from "../../lib/tracking";
 
-interface Props {
-  onChatQuestion: (question: string) => void;
-}
-
 const PERSONA_ICONS = [
   (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -27,7 +23,7 @@ const PERSONA_ICONS = [
   ),
 ];
 
-export function PersonaScenarios({ onChatQuestion }: Props) {
+export function PersonaScenarios() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const { t } = useTranslation("landing");
@@ -43,15 +39,15 @@ export function PersonaScenarios({ onChatQuestion }: Props) {
   }[];
 
   // Address-anchored personas open the parcel's Scorecard; code-research
-  // personas open the librarian chat with the question prefilled. Missing
-  // i18n fields fall back to chat (the i18n cast is unchecked at runtime).
+  // personas open the analyst directly via the ?q= auto-send (App.tsx consumes
+  // it). Missing i18n fields fall back to chat (the i18n cast is unchecked).
   function handleClick(p: (typeof personas)[number], index: number) {
     if (p.action === "scorecard" && p.address) {
       track("hero_address_submit", { source: "persona", persona: index, address: p.address });
       navigate(buildScorecardHref(null, p.address)!);
     } else {
       track("hero_librarian_click", { source: "persona", persona: index });
-      onChatQuestion(p.question);
+      navigate(`/?q=${encodeURIComponent(p.question)}`);
     }
   }
 
@@ -108,6 +104,11 @@ export function PersonaScenarios({ onChatQuestion }: Props) {
               </div>
 
               <p className="text-xs text-text-muted italic">{p.framing}</p>
+
+              {/* Explicit action cue — turns the card from example text into a door. */}
+              <div className="text-xs font-medium text-accent group-hover:text-accent-hover transition-colors">
+                {p.action === "scorecard" ? t("personas.actionScorecard") : t("personas.actionChat")}
+              </div>
             </motion.div>
           ))}
         </div>

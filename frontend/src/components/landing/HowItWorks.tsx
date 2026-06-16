@@ -69,7 +69,7 @@ export function HowItWorks() {
   }[];
 
   return (
-    <section ref={ref} className="py-24 px-6">
+    <section ref={ref} id="how-it-works" className="py-24 px-6">
       <div className="max-w-5xl mx-auto space-y-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

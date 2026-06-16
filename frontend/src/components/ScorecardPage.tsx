@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { fetchReport, checkReportAccess, type ScorecardResponse, type ZoneDefinition } from "../lib/api";
 import type { ParcelQuery } from "../lib/types";
@@ -20,6 +20,21 @@ import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
 import { humanizeShoutyCase } from "../lib/format";
 import { ReportTeaser } from "./sidebar/ReportTeaser";
 import PageHeader from "./PageHeader";
+
+// Classify a failed address-resolution input: did the user type an address
+// (a typo to fix here) or a code question (redirect to the analyst)? Computed
+// once when the error is set, never on every render.
+function classifyFailedInput(text: string): "address" | "question" {
+  const t = text.trim().toLowerCase();
+  if (!t) return "address";
+  if (t.endsWith("?")) return "question";
+  const QUESTION_WORDS = ["what", "how", "can", "when", "where", "why", "is", "are", "do", "does", "should", "which", "could", "may", "who"];
+  const words = t.split(/\s+/);
+  if (QUESTION_WORDS.includes(words[0])) return "question";
+  // Addresses carry a street number; a multi-word phrase with no digit reads as prose.
+  if (!/\d/.test(t) && words.length >= 4) return "question";
+  return "address";
+}
 
 // Dash-format a 14-digit PIN for display (assessor convention: 2-2-3-3-4).
 function formatPin(pin: string): string {
@@ -204,12 +219,17 @@ function ScorecardSkeleton() {
 export default function ScorecardPage() {
   const { t } = useTranslation("pages");
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuthContext();
   const { parcel, select } = useSelectedParcel();
   const [address, setAddress] = useState(searchParams.get("address") || "");
   const [data, setData] = useState<ScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Shape of the failed input, computed once when the error is set: "address"
+  // (typo — keep the search prominent) vs "question" (redirect to the analyst).
+  const [errorShape, setErrorShape] = useState<"address" | "question" | null>(null);
+  const [errorQuery, setErrorQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [showPurchasePrompt, setShowPurchasePrompt] = useState(false);
@@ -251,6 +271,7 @@ export default function ScorecardPage() {
   const runQuery = useCallback(async (query: ParcelQuery) => {
     setLoading(true);
     setError(null);
+    setErrorShape(null);
     setSearched(true);
     const result = await select(query);
     if (result) {
@@ -272,7 +293,12 @@ export default function ScorecardPage() {
         }, { replace: true });
       }
     } else {
-      setError(t("address" in query ? "scorecard.addressNotFound" : "scorecard.locationNotFound"));
+      const isAddress = "address" in query;
+      const failedText = isAddress ? query.address : "";
+      setError(t(isAddress ? "scorecard.addressNotFound" : "scorecard.locationNotFound"));
+      // pin/lat-lon failures have no typed text → treat as address (no question to redirect).
+      setErrorShape(isAddress ? classifyFailedInput(failedText) : "address");
+      setErrorQuery(failedText);
       setData(null);
     }
     setLoading(false);
@@ -341,6 +367,12 @@ export default function ScorecardPage() {
   const zoning = ctx?.parcel_zoning;
   const addr = data?.address || ctx?.property?.address || "";
 
+  // The single boolean that selects the layout shell: the search box is
+  // prominent exactly when re-entering an address is the user's next action
+  // (empty + address-typo). It demotes to a compact bar whenever something
+  // else owns the primary area — a load, a result, or a code-question redirect.
+  const searchProminent = !loading && !data && errorShape !== "question";
+
   // Facts-only verdict line: every clause restates a flag that is already
   // rendered in a card below — no scoring, no interpretation.
   const zdef = data?.zone_definition;
@@ -364,36 +396,95 @@ export default function ScorecardPage() {
 
       {/* pb-24 clears the sticky report bar so the last card is never hidden behind it */}
       <main className={`max-w-7xl mx-auto px-4 py-8 ${data && !loading ? "pb-24" : ""}`}>
-        {/* Search */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight mb-2">{t("scorecard.title")}</h1>
-          <p className="text-sm text-text-muted mb-4">
-            {t("scorecard.subtitle")}
-          </p>
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="2400 N Milwaukee Ave"
-              className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={loading || !address.trim()}
-              className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {loading ? t("scorecard.loading") : t("scorecard.search")}
-            </button>
-          </form>
-          {error && (
-            <div className="mt-3 text-sm text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-lg px-4 py-2.5">
-              {error}
-            </div>
-          )}
-        </div>
+        {/* Search shell — prominent (empty / address-typo) vs compact (loading /
+            success / code-question redirect). One boolean, two shells. */}
+        {searchProminent ? (
+          <div className="max-w-2xl mx-auto mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">{t("scorecard.title")}</h1>
+            <p className="text-sm text-text-muted mb-4">
+              {t("scorecard.subtitle")}
+            </p>
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="2400 N Milwaukee Ave"
+                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={loading || !address.trim()}
+                className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {loading ? t("scorecard.loading") : t("scorecard.search")}
+              </button>
+            </form>
+            {error && errorShape === "address" && (
+              <div className="mt-3 text-sm text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-lg px-4 py-2.5">
+                <div>{error}</div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/?q=${encodeURIComponent(errorQuery)}`)}
+                  className="mt-1.5 text-xs text-text-secondary hover:text-accent transition-colors"
+                >
+                  {t("scorecard.codeRedirect.orAskAnalyst")}
+                </button>
+              </div>
+            )}
+            {searched && !data && !error && (
+              <div className="mt-3 text-sm text-text-muted">{t("scorecard.noResults")}</div>
+            )}
+          </div>
+        ) : (
+          <div className="max-w-2xl mx-auto mb-6">
+            <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder={t("scorecard.searchAnother")}
+                aria-label={t("scorecard.searchAnother")}
+                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={loading || !address.trim()}
+                className="px-3 py-1.5 bg-dark-elevated hover:bg-dark-border disabled:opacity-50 text-text-secondary text-xs font-medium rounded-lg transition-colors shrink-0"
+              >
+                {loading ? t("scorecard.loading") : t("scorecard.search")}
+              </button>
+            </form>
+          </div>
+        )}
 
         {loading && <ScorecardSkeleton />}
+
+        {/* Code-question redirect (state 5): neutral surface, NOT an error color —
+            reframes "wrong box" as "right tool" and hands the exact text to the
+            analyst via the existing ?q= auto-send. */}
+        {errorShape === "question" && !loading && (
+          <div className="max-w-2xl mx-auto mb-8 bg-dark-surface border border-dark-border rounded-xl p-5">
+            <h2 className="text-base font-semibold text-text-primary mb-1.5">{t("scorecard.codeRedirect.title")}</h2>
+            <p className="text-sm text-text-secondary mb-4">{t("scorecard.codeRedirect.body")}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/?q=${encodeURIComponent(errorQuery)}`)}
+                className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {t("scorecard.codeRedirect.askAnalyst")} →
+              </button>
+              <button
+                type="button"
+                onClick={() => { setError(null); setErrorShape(null); setData(null); setSearched(false); setAddress(""); }}
+                className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {t("scorecard.codeRedirect.searchInstead")}
+              </button>
+            </div>
+          </div>
+        )}
 
         {data && ctx && !loading && (
           <div>
@@ -652,9 +743,6 @@ export default function ScorecardPage() {
           </div>
         )}
 
-        {!loading && !data && searched && !error && (
-          <div className="text-center text-text-muted py-12">{t("scorecard.noResults")}</div>
-        )}
       </main>
       {/* Sticky Report CTA — visible when main CTA scrolls out of view */}
       {!ctaVisible && data && !loading && (

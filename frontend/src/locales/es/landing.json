@@ -1,6 +1,6 @@
 {
   "heroSubtitle": "Estudio de viabilidad para cualquier dirección de Chicago. En segundos.",
-  "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo desde una sola búsqueda.",
+  "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo en una sola Ficha gratuita.",
   "stats": {
     "dataSources": "Fuentes de datos",
     "codeSections": "Secciones del código",
@@ -10,15 +10,7 @@
   "hero": {
     "addressPlaceholder": "Ingresa una dirección de Chicago…",
     "try": "Prueba:",
-    "addressExamples": ["4520 N Clark St", "2400 N Milwaukee Ave", "1425 N Wells St"],
-    "librarianLink": "¿Investigas el código, no una propiedad? Consulta al analista del código municipal →",
-    "backToAddress": "← ¿Buscas una propiedad? Ingresa una dirección",
-    "chatPlaceholder": "Pregunta sobre el código municipal…",
-    "librarianSuggestions": [
-      "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
-      "¿Qué usos están permitidos en un distrito C1-2?",
-      "¿Cuándo requiere una ampliación trasera una variación de zonificación?"
-    ]
+    "addressExamples": ["4520 N Clark St", "2400 N Milwaukee Ave", "1425 N Wells St"]
   },
   "intelligence": {
     "heading": "25 fuentes en una sola consulta.",
@@ -137,6 +129,8 @@
     "heading": "Diseñado para tomar decisiones reales",
     "subheading": "Ideal para evaluar sitios de desarrollo, verificar el cumplimiento de normativas o investigar la elegibilidad de incentivos.",
     "returns": "UrbanLayer proporciona:",
+    "actionChat": "Consultar al analista →",
+    "actionScorecard": "Ver la Ficha →",
     "items": [
       {
         "title": "El Desarrollador",
@@ -189,16 +183,16 @@
     "steps": [
       {
         "title": "Ingresa una dirección",
-        "description": "Empieza con la propiedad: escribe cualquier dirección de Chicago y el expediente de la parcela se abre al instante. Sin cuenta, sin formularios.",
+        "description": "Empieza con la propiedad: escribe cualquier dirección de Chicago y la Ficha de la parcela se abre al instante. Sin cuenta, sin formularios.",
         "query": "2100 N Damen Ave"
       },
       {
-        "title": "Armamos el expediente",
+        "title": "Armamos la Ficha",
         "description": "Las fuentes del municipio, condado, gobierno federal y legales se consultan en paralelo: zonificación, normativas, incentivos, impuestos y propiedades comparables."
       },
       {
-        "title": "Recibes el dossier",
-        "description": "Una evaluación Scorecard gratuita en segundos, un analista de IA para preguntas con citas del código — y el Informe de Viabilidad de Desarrollo completo ($25) cuando necesites el entregable."
+        "title": "Recibes la Ficha",
+        "description": "Una Ficha gratuita en segundos, un analista de IA para preguntas con citas del código — y el Informe de Viabilidad de Desarrollo completo ($25) cuando necesites el entregable."
       }
     ],
     "sourceTags": [
