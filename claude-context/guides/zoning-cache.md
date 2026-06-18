@@ -1,8 +1,10 @@
 # Zoning Precompute Cache — engineering reference
 
-**Status (2026-06-18): COMMITTED on `fix/report-oom` (`9840d37`), NOT deployed.** Carries on top of the reranker-fix commit `e59990b`. `RERANKER_ENABLED` stays `false` in prod. Nothing pushed — push to `main` = deploy and needs sign-off.
+**Status (2026-06-18): DEPLOYED & VERIFIED LIVE on prod (`main` @ `69d8481`).** Carries the reranker-fix commit `e59990b` (dormant), the cache `9840d37`, docs `d0c07ce`, and a deploy fix `69d8481`. `RERANKER_ENABLED` stays `false`. Verified: the running prod container returns C1-2 from the cache (FAR 2.2 + setbacks 0/0/30 + min-lot 1000, high confidence); a local `/api/report` render showed the setbacks in the PDF.
 
-This doc is the carry-across record for the report's zoning-extraction rework. It exists because the work is substantial, committed-but-unshipped, and has remaining steps; once it deploys + verifies, fold the highlights into the archive incident doc (`archive/2026-06-16_report-oom-reranker.md`) and trim this.
+**Deploy gotcha that bit us (fixed):** the first push reported CI-green but didn't ship — the Docker build failed at `COPY ingestion/data/zoning_cache.json` because `.dockerignore` excluded the artifact (allowlisted in `.gitignore` but not `.dockerignore`), and the CI deploy script let the build failure pass (old container answered the health curl). Fixed: `.dockerignore` allowlist + `set -e` in `ci.yml`'s deploy script. **Lesson: a committed data artifact needs BOTH `.gitignore` and `.dockerignore` allowlist entries.**
+
+This doc is the carry-across record for the report's zoning-extraction rework. Now that it's shipped + verified, the highlights can be folded into the archive incident doc (`archive/2026-06-16_report-oom-reranker.md`) when convenient.
 
 ## Why (the problem we actually found)
 
@@ -56,10 +58,11 @@ Then commit the JSON. **Rebuild whenever ingestion re-ingests Title 17** (the `i
 
 ## Remaining work / expected next steps
 
-1. **END-TO-END LIVE RENDER — not yet done.** The read path is unit-verified (`get_cached_zoning_standards` returns correct merged values) and `test_report_v2` passes, but **no real `/api/report` has been rendered against the cache.** Do this (local server + a parcel, or on prod after deploy) before trusting it end-to-end.
-2. **Deploy.** `fix/report-oom` → `main` (push = deploy; needs sign-off). The branch carries BOTH `e59990b` (reranker fix, dormant) and `9840d37` (zoning cache). After deploy, **verify a live report shows real zoning standards (FAR + setbacks), not just the table fallback** — and that the `zoning_cache.json` shipped in the image (the Dockerfile COPY).
-3. **Parking** via a separate extraction call (optional uplift).
-4. **Setback cross-validation** if/when a structured source is found.
+1. ~~End-to-end live render~~ ✅ DONE — local `/api/report` for C1-2 rendered the cached FAR + a real Setbacks section in the PDF.
+2. ~~Deploy~~ ✅ DONE 2026-06-18 (`main` @ `69d8481`), cache verified live in the prod container.
+3. **Parking** via a separate extraction call (optional uplift; feeding it inline regressed FAR).
+4. **Setback cross-validation** if/when a structured source is found (currently AI-only, uncross-validated).
+5. **Watch for any real report whose zone falls back to the table** (the 2 POS zones + PD/PMD always do, by design) — confirms the fallback path still works in the wild.
 
 ## Cost (measured)
 
