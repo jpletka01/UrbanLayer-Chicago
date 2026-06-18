@@ -35,9 +35,36 @@ Commits on `fix/report-oom` → `main`: `9f4bd4d` (isolation+interning+nginx+con
 
 ## What failed / open follow-ups
 
-- **Reranker re-enable (torch threads=1) — REVERTED.** "Thread oversubscription" hypothesis was wrong; capping threads made a single search *worse* (>60s). Reranker stays OFF until the rerank path is profiled (candidate-count, `run_in_executor` interaction, batching).
+- **Reranker re-enable (torch threads=1) — REVERTED.** "Thread oversubscription" hypothesis was wrong; capping threads made a single search *worse* (>60s). Reranker stays OFF until the rerank path is profiled (candidate-count, `run_in_executor` interaction, batching). → **RESOLVED 2026-06-18, see follow-up below.**
 - **Parent RSS creep ~20 MB/render — UNRESOLVED but benign.** Neither `MALLOC_ARENA_MAX=2` nor `malloc_trim` flattened it (likely live caches). Ample headroom + swap; watch for plateau.
 
 ## Files Changed
 
 `backend/report_render.py` (new), `backend/main.py`, `backend/config.py`, `backend/zoning_extract.py`, `backend/discovery/parcel_index.py`, `backend/retrieval/vector_search.py` (torch-cap added then reverted), `frontend/nginx.prod.conf`, `docker-compose.prod.yml`, `backend/tests/test_report_render.py` (new), `backend/tests/test_zoning_extract.py` (new), `backend/tests/test_report_tier0.py`. Host: `/swapfile`, `vm.swappiness`.
+
+---
+
+## 2026-06-18 follow-up — rerank path profiled and fixed (flag still OFF)
+
+The "needs profiling before re-enabling" follow-up above is now done. The rerank hang was **fixed in code on `fix/report-oom`**, but `RERANKER_ENABLED` stays `false` pending one prod-scale verification run (see "Remaining" below).
+
+**Root cause (confirmed, not inferred).** Two compounding bugs, both CPU/concurrency — *not* memory:
+1. **Unbounded rerank concurrency.** The report's `extract_zoning_standards` fires **5 `semantic_search` in parallel**; each dispatched its cross-encoder `predict()` to the shared default `ThreadPoolExecutor`. The 5 predicts (each spawning torch intra-op threads) thrash a 4-vCPU box and get **zero parallel speedup** — they serialize at best.
+2. **3× oversized batch.** `_rerank_payloads_sync` reranked *all* `scored_hits` (= `fetch_limit` ≈ **60** pairs) to return `top_k`=3, when only `reranker_candidate_count`=20 were ever needed. `predict(4 pairs)`=0.3s, so per-pair inference was never the problem — batch size × serialized concurrency was.
+
+Net effect: 5 × (60-pair predict), serialized → 40–60s on the 4-vCPU box → `/api/report` past the nginx ceiling → 504.
+
+**The diagnostic that settled thrash-vs-swap.** A **native run with swap physically impossible** (48 GB RAM, tiny index) still reproduced the stall: 5-way wall **35.7s = 0.99× the 5×serial floor**, each concurrent `predict` ballooning 6s→35.6s. Since the pathology reproduces where swap cannot occur, it is **CPU-serialization, not swap-bound**. (A constrained `--cpus=4 --memory=8g` Docker run could *not* settle it cleanly — Docker Desktop clamps the VM to ~3.8 GB, so it went swap-bound on an artifact, not prod's 8 GB. Lesson: this Mac cannot faithfully repro prod's 4-vCPU **+8 GB** profile.)
+
+**Why earlier hypotheses were wrong (do not retry):**
+- *OOM* — the render in isolation is ~118 MB and reports hung *before* `write_pdf`; the dmesg OOM was the worker's accumulated footprint under load, a separate (already-hardened) issue.
+- *torch threads=1* — made a single search **worse**: it stripped each predict's intra-op parallelism *without* removing the 5-way serialization. Thread count was never the lever in isolation; **bounding concurrency is**.
+
+**The fix (`vector_search.py` + `config.py`):**
+- Rerank only the **top `reranker_candidate_count` (20)** candidates (sorted by combined dense+keyword score) — the wider `fetch_limit` is still used for dense/keyword recall + dedup. **This 60→20 cut is the dominant, core-independent win.**
+- Route every `predict()` through a dedicated **single-worker** `ThreadPoolExecutor` (`_get_rerank_executor()`) so concurrent searches **queue instead of thrash**. (Profiling showed they serialize anyway, so bounding to 1 costs no throughput.)
+- New `reranker_torch_threads` setting (default **2**, configurable; applied via the executor's `initializer` so it lands on the thread that runs `predict`). Safe *only* because concurrency is now bounded — the exact thing that made threads=1 backfire before.
+
+**Verified (core-independent dims):** native 5-way **35.7s → 12.4s** (~2.9×), single-call 7.24s → 2.72s, pairs into predict 60 → 20, all reranks on one thread id; **240 tests green**, no regressions.
+
+**Remaining before prod re-enable (NOT closed):** one `/api/report` run on a **genuine 4-vCPU/8 GB Linux box** to (a) confirm wall-time lands well under the 180s nginx timeout and (b) pick `reranker_torch_threads` (2 vs 4) with real 4-core data. Only then flip `RERANKER_ENABLED=true`. Verification harness: `scripts/rerank_repro.py` (native) and `scripts/rerank_profile_run.py` (constrained, with /proc sampling).

@@ -107,7 +107,7 @@ query
   → Qdrant async dense search (limit = top_k × 5, overfetch for dedup)
   → filter legend-only table chunks
   → keyword boost: combined = 0.80 × dense + 0.20 × keyword_overlap
-  → cross-encoder rerank ALL candidates [thread pool]
+  → cross-encoder rerank the top reranker_candidate_count (20) candidates [single-worker pool]
   → blend: final = 0.80 × norm_dense + 0.20 × norm_reranker
   → sort by blended score
   → keyword-aware per-section dedup (when two chunks from same section are within
@@ -115,9 +115,9 @@ query
   → return top_k CodeChunks
 ```
 
-Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then reranked — the reranker was stuck with whatever chunk the dense embedding liked most. v4 reranks all ~60 candidates first, so dedup picks the best-scoring chunk per section after blending. v5 added synonym expansion, keyword-aware dedup, and bumped keyword weight from 0.15 to 0.20 — improved retrieval benchmark from 75% to 100% A/B (26A, 2B across 28 queries).
+Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then reranked — the reranker was stuck with whatever chunk the dense embedding liked most. v4 reranks first, so dedup picks the best-scoring chunk per section after blending. v5 added synonym expansion, keyword-aware dedup, and bumped keyword weight from 0.15 to 0.20 — improved retrieval benchmark from 75% to 100% A/B (26A, 2B across 28 queries). (2026-06-18: the rerank now scores only the top `reranker_candidate_count` (20) candidates by combined dense+keyword score, not all ~60 fetched — the wider fetch is still used for dense/keyword recall and dedup.)
 
-**Note**: Reranker is enabled in production (`RERANKER_ENABLED=true`) after server upgrade to 8GB RAM (2026-06-06). Full pipeline with cross-encoder reranking and blended scoring is active.
+**Note**: Reranker is currently **DISABLED in production** (`RERANKER_ENABLED=false`, since 2026-06-16) — it hung `/api/report` → 504. Root cause was unbounded rerank concurrency + a 3× oversized batch, not an OOM; fixed on `fix/report-oom` (top-20 batch, single-worker rerank executor, configurable torch threads) but the flag stays off pending a real 4-vCPU/8GB wall-time run. See `archive/2026-06-16_report-oom-reranker.md` and `core/known-issues.md`.
 
 ## Context Management
 

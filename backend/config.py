@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     reranker_enabled: bool = True
     reranker_candidate_count: int = 20
     reranker_weight: float = 0.2
+    # Intra-op torch threads for the cross-encoder rerank. Paired with the
+    # single-worker rerank executor (rerank concurrency bounded to 1 in
+    # vector_search.py), this restores per-call parallelism that setting
+    # threads=1 in isolation removed — the lever that made the hang WORSE on
+    # 2026-06-16 because it stripped intra-op parallelism without fixing the
+    # 5-way serialization. Safe now that concurrency is bounded. 0 = leave
+    # torch default. Tune on the 4-vCPU prod box (2-4).
+    reranker_torch_threads: int = 2
 
     keyword_boost_weight: float = 0.20
 

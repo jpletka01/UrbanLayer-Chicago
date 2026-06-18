@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Any
 
@@ -167,6 +168,45 @@ def _reranker():
     return CrossEncoder(settings.reranker_model)
 
 
+def _rerank_worker_init() -> None:
+    """Initializer for the single rerank worker thread.
+
+    Sets torch intra-op threads ON the thread that runs predict(), so it takes
+    effect deterministically (not subject to the ordering quirk of setting it
+    lazily elsewhere). Safe to give predict() 2-4 threads ONLY because this pool
+    is single-worker — reranks never run concurrently, so there is no 5-way
+    oversubscription. Setting threads without bounding concurrency is exactly
+    what made threads=1 worse in isolation (2026-06-16 profiling).
+    """
+    settings = get_settings()
+    if settings.reranker_torch_threads > 0:
+        import torch
+
+        torch.set_num_threads(settings.reranker_torch_threads)
+        log.info("Reranker worker torch threads set to %d", settings.reranker_torch_threads)
+
+
+_rerank_executor: ThreadPoolExecutor | None = None
+
+
+def _get_rerank_executor() -> ThreadPoolExecutor:
+    """Dedicated single-worker pool for cross-encoder reranks.
+
+    All reranks funnel through ONE thread so concurrent searches (e.g. the 5
+    parallel zoning_extract queries in a report) queue instead of thrashing the
+    CPU on the shared default executor. Profiling (2026-06-16) showed 5-way
+    concurrent reranks fully serialize anyway (0.99x the serial floor) — so
+    bounding to 1 worker costs nothing in throughput while letting each predict
+    use its torch threads cleanly. See archive/2026-06-16_report-oom-reranker.md.
+    """
+    global _rerank_executor
+    if _rerank_executor is None:
+        _rerank_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="rerank", initializer=_rerank_worker_init
+        )
+    return _rerank_executor
+
+
 def _keyword_score(query: str, text: str) -> float:
     """Fraction of unique non-stopword query terms found in the text."""
     query_terms = {w for w in _WORD_RE.findall(query.lower()) if w not in _STOPWORDS}
@@ -270,8 +310,15 @@ async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = Fal
         scored_hits.append((combined, payload))
 
     if rerank and len(scored_hits) > top_k:
+        # Rerank only the top candidate_count candidates (by combined
+        # dense+keyword score), not the full fetch_limit set. Reranking all ~60
+        # fetched pairs to return top_k was 3x the needed work; we still FETCH
+        # wide (fetch_limit) for dense/keyword recall, but the cross-encoder
+        # only scores the best candidate_count of them. (2026-06-16 profiling.)
+        scored_hits.sort(key=lambda x: x[0], reverse=True)
+        candidates = scored_hits[:candidate_count]
         scored_hits = await loop.run_in_executor(
-            None, lambda: _rerank_payloads_sync(query, scored_hits)
+            _get_rerank_executor(), lambda: _rerank_payloads_sync(query, candidates)
         )
 
     scored_hits.sort(key=lambda x: x[0], reverse=True)
