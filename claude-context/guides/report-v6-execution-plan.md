@@ -251,6 +251,8 @@ must be *labeled*, not hidden.
 
 ### R1 — Structured zoning extraction fails for RM-6 (CRITICAL)
 
+> **⚠️ SUPERSEDED 2026-06-18 — see `guides/zoning-cache.md`.** The deeper root cause was confirmed: the 5 semantic searches fetched a ~1,800-char slice of the ~30K-char Title-17 bulk tables, so extraction was `low`/null for ~48/61 zones (it always fell back to the table). The report path no longer runs live extraction at all — it reads a **precomputed cache** (`zoning_cache.py`) built off **deterministic full-section fetch + hybrid table merge** (table authoritative for FAR/height/coverage, AI adds setbacks/min-lot). 57/59 high-confidence, 0 FAR errors. Committed on `fix/report-oom` (`9840d37`), **NOT yet deployed** (live render + deploy remain). The original-path analysis below is retained for historical context.
+
 **Root cause (verified):**
 - `backend/zoning_extract.py::extract_zoning_standards()` runs 5 vector searches → Haiku JSON
   extraction. For RM-6 it returns `None` (vector search surfaces wrong-chapter chunks — Chapter 17-5
