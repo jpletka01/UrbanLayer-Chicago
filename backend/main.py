@@ -2167,7 +2167,8 @@ async def _fetch_report_data(
         nearby_new_construction, parse_chicago_address,
     )
     from backend.retrieval.property.sales import nearby_comparable_sales
-    from backend.zoning_extract import calculate_development_potential, extract_zoning_standards
+    from backend.zoning_extract import calculate_development_potential
+    from backend.zoning_cache import get_cached_zoning_standards
 
     settings = get_settings()
 
@@ -2179,11 +2180,6 @@ async def _fetch_report_data(
     # Step 2: v2 data retrievals in parallel
     zone_class = ctx.parcel_zoning.zone_class if ctx.parcel_zoning else None
     v2_tasks: dict[str, asyncio.Task] = {}
-
-    if zone_class:
-        v2_tasks["zoning_standards"] = asyncio.create_task(
-            _limited(extract_zoning_standards(zone_class, request_group="report"))
-        )
 
     v2_tasks["adjacent_zoning"] = asyncio.create_task(
         _limited(adjacent_parcel_zoning(resolved_lat, resolved_lon))
@@ -2222,7 +2218,6 @@ async def _fetch_report_data(
     v2_done = await asyncio.gather(*v2_tasks.values(), return_exceptions=True)
     v2_results: dict[str, Any] = {}
     _V2_FAILURE_MAP = {
-        "zoning_standards": "zoning code extraction",
         "adjacent_zoning": "adjacent zoning",
         "address_permits": "address-specific permits",
         "address_violations": "address-specific violations",
@@ -2238,9 +2233,12 @@ async def _fetch_report_data(
         else:
             v2_results[key] = value
 
-    # Step 3: Calculate development potential
-    standards = v2_results.get("zoning_standards")
-    # R1: when AI extraction is unavailable or low-confidence, fall back to the
+    # Step 3: Calculate development potential.
+    # Zoning standards come from the precomputed cache (built off-box with the
+    # reranker on) — the live reranker is never invoked on the report path. A cache
+    # miss/stale returns None and drops into the same R1 table fallback below.
+    standards = get_cached_zoning_standards(zone_class)
+    # R1: when extraction is unavailable or low-confidence, fall back to the
     # deterministic Title 17 zone-class table so we never dump wrong-chapter raw
     # code and development potential can still be computed for known zones.
     if zone_class and (standards is None or standards.extraction_confidence == "low"):

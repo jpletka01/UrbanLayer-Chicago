@@ -44,9 +44,10 @@ ENV TRANSFORMERS_CACHE=/home/app/.cache/huggingface
 
 COPY backend/ /app/backend/
 
-# Runtime data files needed by geo.py and transit.py
+# Runtime data files needed by geo.py, transit.py, and the zoning cache (zoning_cache.py).
 COPY ingestion/data/community_areas.geojson /app/ingestion/data/community_areas.geojson
 COPY ingestion/data/transit_stations.json /app/ingestion/data/transit_stations.json
+COPY ingestion/data/zoning_cache.json /app/ingestion/data/zoning_cache.json
 
 # Create data + uploads dirs for the SQLite volume mount
 RUN mkdir -p /app/backend/data/uploads && chown -R app:app /app/backend/data

@@ -26,6 +26,21 @@ if _THREADS > 0:
 from backend.config import get_settings
 from backend.retrieval.vector_search import semantic_search
 
+# Opt-in probe (PROBE=1): wrap the rerank fn to log pairs-into-predict + thread
+# id, so a run can CONFIRM the fix engages (batch == candidate_count, all reranks
+# on one executor thread) without touching the deployed service code.
+if os.getenv("PROBE"):
+    import threading
+    import backend.retrieval.vector_search as _vs
+
+    _orig_rerank = _vs._rerank_payloads_sync
+
+    def _probed_rerank(query, scored_hits):
+        print(f"PROBE rerank pairs={len(scored_hits)} tid={threading.get_ident()}", flush=True)
+        return _orig_rerank(query, scored_hits)
+
+    _vs._rerank_payloads_sync = _probed_rerank
+
 ZONE = "RM-5"
 QUERIES = [
     f"{ZONE} floor area ratio maximum building height lot coverage minimum lot area",

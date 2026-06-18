@@ -98,6 +98,17 @@ def main() -> None:
         if diff.deleted:
             log.info("  Deleted: %s", ", ".join(diff.deleted[:10]) + ("..." if len(diff.deleted) > 10 else ""))
 
+        # Flag the precomputed zoning cache if any Title-17 section changed (it's
+        # built off the zoning ordinance). Best-effort: never let it break ingestion.
+        try:
+            from backend.zoning_cache_build import staleness_flag
+
+            flag = staleness_flag(diff, new_manifest, old_manifest)
+            if flag:
+                log.warning(flag)
+        except Exception as exc:  # pragma: no cover - advisory only
+            log.debug("Zoning-cache staleness check skipped: %s", exc)
+
         if args.dry_run:
             log.info("Dry run -- no changes applied")
             return

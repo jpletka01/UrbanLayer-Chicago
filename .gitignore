@@ -6,10 +6,15 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 
-ingestion/data/
+# Ignore generated data, but allow specific committed artifacts. NOTE: must glob the
+# dir CONTENTS (ingestion/data/*), not the dir itself — git cannot re-include a file
+# whose parent directory is excluded, so `ingestion/data/` would make the `!` lines below
+# silently inert (they only "worked" before because those files were already tracked).
+ingestion/data/*
 !ingestion/data/.gitkeep
 !ingestion/data/transit_stations.json
 !ingestion/data/community_areas.geojson
+!ingestion/data/zoning_cache.json
 
 backend/data/
 
