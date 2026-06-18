@@ -50,9 +50,14 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd /opt/urbanlayer
             git fetch origin
             git merge origin/main
+            # set -e above makes a failed --build fail the deploy. Without it, a broken
+            # build left the OLD image running and the health curl still passed → a
+            # false-success deploy (hit 2026-06-18: a committed data artifact was missing
+            # from .dockerignore's allowlist, so its COPY failed but CI reported green).
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
             sleep 10
-            curl -sf https://urbanlayerchicago.com/health || exit 1
+            curl -sf https://urbanlayerchicago.com/health
