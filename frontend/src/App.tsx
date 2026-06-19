@@ -448,6 +448,7 @@ export function App() {
     clearWorkspace();
     setComposing(true);
     navigateToSplash();
+    setHistoryOpen(false); // no-op from the header (drawer already closed); closes it when invoked from the history drawer
   }
 
   async function loadConv(conv: Conversation) {
@@ -666,6 +667,7 @@ export function App() {
         onSelect={loadConv}
         onDelete={handleDeleteConversation}
         onClearAll={handleClearAll}
+        onNewChat={handleNewChat}
       />
 
       <AnimatePresence mode="wait">

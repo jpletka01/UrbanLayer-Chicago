@@ -9,6 +9,7 @@ interface Props {
   onSelect: (conversation: Conversation) => void;
   onDelete: (id: string) => void;
   onClearAll: () => void;
+  onNewChat: () => void;
 }
 
 function formatDate(timestamp: number, t: (key: string, opts?: Record<string, unknown>) => string, lng: string): string {
@@ -22,7 +23,7 @@ function formatDate(timestamp: number, t: (key: string, opts?: Record<string, un
   return date.toLocaleDateString(lng === "es" ? "es-US" : "en-US", { month: "short", day: "numeric" });
 }
 
-export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDelete, onClearAll }: Props) {
+export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDelete, onClearAll, onNewChat }: Props) {
   const { t, i18n } = useTranslation("common");
   return (
     <AnimatePresence>
@@ -56,6 +57,19 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
+              </button>
+            </div>
+
+            {/* New chat — pinned above the list so "start new / browse / delete" live together */}
+            <div className="p-2 border-b border-white/10">
+              <button
+                onClick={onNewChat}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                {t("newChat")}
               </button>
             </div>
 
