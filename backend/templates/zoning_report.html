@@ -797,11 +797,16 @@ a.glossary-link {
   <dl class="info-grid">
     <dt><a href="#glossary-pd" class="glossary-link">Planned Development</a></dt>
     <dd>{% if reg and reg.in_planned_development %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt>Landmark District</dt>
-    <dd>{% if reg and reg.in_landmark_district %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt>Historic District</dt>
-    <dd>{% if reg and reg.in_historic_district %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt>National Register</dt>
+    {# Chicago's local landmark designations span two GIS layers — "Landmark Boundaries"
+       (in_landmark_district) and the locally-designated "Historic Districts"
+       (in_historic_district). Both mean Commission on Chicago Landmarks jurisdiction, so
+       they roll up under one row. National Register (federal) is a distinct designation —
+       a parcel can be in an NR district without any local landmark status (and vice versa),
+       so it gets its own row. Keeping them separate avoids the old contradiction where the
+       overlay matrix listed an NR-only "...Historic District" while this grid said "No". #}
+    <dt>Chicago Landmark District</dt>
+    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dt>National Register District</dt>
     <dd>{% if reg and reg.on_national_register %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
     <dt><a href="#glossary-tod" class="glossary-link">TOD</a> Eligible</dt>
     <dd>{% if nbr and nbr.transit and nbr.transit.tod_eligible %}<span class="status-yes">Yes</span>{% if nbr.transit.tod_type %} — {{ nbr.transit.tod_type }}{% endif %}{% else %}<span class="status-no">No</span>{% endif %}</dd>
@@ -1361,8 +1366,7 @@ a.glossary-link {
     {% endif %}
     {% if reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register) %}
     <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a
-      {%- if reg.in_landmark_district %} landmark district{%- endif %}
-      {%- if reg.in_historic_district %}{%- if reg.in_landmark_district %} /{%- endif %} historic district{%- endif %}
+      {%- if reg.in_landmark_district or reg.in_historic_district %} Chicago Landmark District{%- endif %}
       {%- if reg.on_national_register %}{%- if reg.in_landmark_district or reg.in_historic_district %} /{%- endif %} National Register district{%- endif %}
       requiring permit review</li>
     {% endif %}
