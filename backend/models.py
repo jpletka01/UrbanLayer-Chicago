@@ -636,6 +636,9 @@ class ReportData(BaseModel):
     address: str | None = None
     lat: float = 0.0
     lon: float = 0.0
+    # Render language for the PDF report ("en"/"es"). Set by _fetch_report_data so
+    # the deterministic narrative builders localize their output (no LLM).
+    language: str = "en"
     community_area: int | None = None
     community_area_name: str | None = None
     context: ContextObject

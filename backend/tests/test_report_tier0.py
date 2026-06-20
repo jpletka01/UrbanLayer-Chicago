@@ -39,6 +39,7 @@ class _FakeEnv:
 
     def __init__(self, *args, **kwargs):
         self.filters = {}
+        self.globals = {}
 
     def get_template(self, name):
         return _FakeTemplate()
@@ -82,7 +83,7 @@ async def _fire(n: int) -> list[httpx.Response]:
 def _tracking_fetch(tracker: dict, delay: float = 0.05):
     """Build a _fetch_report_data stand-in that records peak concurrency."""
 
-    async def _fetch(lat, lon, addr, *, pin=None, confidence=None):
+    async def _fetch(lat, lon, addr, *, pin=None, confidence=None, language="en"):
         tracker["current"] += 1
         tracker["max"] = max(tracker["max"], tracker["current"])
         try:
@@ -142,7 +143,7 @@ async def test_report_completes_when_data_degraded():
     geometry, property=None), the report still renders end-to-end (200 + PDF)
     rather than crashing the worker."""
 
-    async def _degraded_fetch(lat, lon, addr, *, pin=None, confidence=None):
+    async def _degraded_fetch(lat, lon, addr, *, pin=None, confidence=None, language="en"):
         # Simulates the validated degraded path: no geometry, no basemaps.
         report_data = MagicMock()
         report_data.context.parcel_zoning = None

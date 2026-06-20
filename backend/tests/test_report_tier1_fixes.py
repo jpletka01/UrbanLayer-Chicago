@@ -38,6 +38,9 @@ def _render(report: ReportData) -> str:
     env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
     env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
     env.filters["zone_desc"] = get_zone_name
+    from backend import report_i18n
+    env.globals["t"] = report_i18n.make_translator(report.language)
+    env.globals["tn"] = report_i18n.make_plural(report.language)
     template = env.get_template("zoning_report.html")
     return template.render(report=report, report_date="June 11, 2026")
 

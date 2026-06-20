@@ -360,50 +360,47 @@ a.glossary-link {
 <!-- SECTION 1: Cover -->
 <div class="cover">
   <div class="brand">UrbanLayer Chicago</div>
-  <h1>Development Feasibility &amp;<br>Site Intelligence Report</h1>
-  <div class="subtitle">{{ report.address or "N/A" }}</div>
+  <h1>{{ t("cover.title_l1") }}<br>{{ t("cover.title_l2") }}</h1>
+  <div class="subtitle">{{ report.address or t("common.na") }}</div>
   {% if report.community_area_name %}
-  <div class="subtitle" style="font-size: 10pt;">{{ report.community_area_name }} Community Area</div>
+  <div class="subtitle" style="font-size: 10pt;">{{ report.community_area_name }} {{ t("cover.community_area_suffix") }}</div>
   {% endif %}
 
   {% if report.resolved_confidence == "approximate" %}
   <div style="margin-top: 12pt; padding: 6pt 10pt; background: #fef3c7; border: 1pt solid #f59e0b; border-radius: 4pt; font-size: 8pt; color: #92400e; max-width: 440pt; margin-left: auto; margin-right: auto;">
-    <strong>Approximate parcel match.</strong> This address could not be matched to an
-    authoritative parcel record, so the parcel was located by proximity. Verify the
-    PIN and address below before relying on this report.
+    <strong>{{ t("cover.approximate_title") }}</strong> {{ t("cover.approximate_body") }}
   </div>
   {% endif %}
 
   {% if dev and dev.max_buildable_sqft and prop and (prop.bldg_sqft or 0) == 0 %}
   <div class="headline">
-    This {{ prop.land_sqft|fnum }} sq ft lot in {{ zoning.zone_class }} allows up to {{ dev.max_buildable_sqft|fnum }} sq ft
-    {% if standards and standards.max_height_ft %} at {{ standards.max_height_ft }} ft{% endif %}.
+    {{ t("cover.headline_vacant", land=prop.land_sqft|fnum, zone=zoning.zone_class, buildable=dev.max_buildable_sqft|fnum, height=(t("cover.headline_vacant_height", height=standards.max_height_ft) if standards and standards.max_height_ft else "")) }}
   </div>
   {% elif dev and dev.development_surplus_sqft and dev.development_surplus_sqft > 0 %}
   <div class="headline">
-    Development surplus: {{ dev.development_surplus_sqft|fnum }} sq ft of additional buildable area beyond existing {{ (prop.bldg_sqft or 0)|fnum }} sq ft structure.
+    {{ t("cover.headline_surplus", surplus=dev.development_surplus_sqft|fnum, existing=(prop.bldg_sqft or 0)|fnum) }}
   </div>
   {% elif prop and prop.bldg_sqft %}
   <div class="headline">
-    Existing {{ prop.bldg_sqft|fnum }} sq ft structure on {{ (prop.land_sqft or 0)|fnum }} sq ft in {{ (zoning.zone_class or "N/A") }}.
+    {{ t("cover.headline_existing", bldg=prop.bldg_sqft|fnum, land=(prop.land_sqft or 0)|fnum, zone=(zoning.zone_class or t("common.na"))) }}
   </div>
   {% endif %}
 
   {% if report.decision_box %}
   {% set db = report.decision_box %}
   <div class="decision-box">
-    <div class="db-title">Development Snapshot</div>
+    <div class="db-title">{{ t("cover.snapshot_title") }}</div>
     <div class="decision-grid">
-      <div class="db-cell"><div class="db-label">Lot Size</div><div class="db-value">{{ db.lot }}</div></div>
-      <div class="db-cell"><div class="db-label">Zoning</div><div class="db-value">{{ db.zone }}</div></div>
-      <div class="db-cell"><div class="db-label">Max Buildable (FAR-based, gross)</div><div class="db-value">{{ db.buildable }}</div></div>
+      <div class="db-cell"><div class="db-label">{{ t("cover.snapshot_lot") }}</div><div class="db-value">{{ db.lot }}</div></div>
+      <div class="db-cell"><div class="db-label">{{ t("cover.snapshot_zoning") }}</div><div class="db-value">{{ db.zone }}</div></div>
+      <div class="db-cell"><div class="db-label">{{ t("cover.snapshot_buildable") }}</div><div class="db-value">{{ db.buildable }}</div></div>
       <div class="db-cell"><div class="db-label">{{ db.value_label }}</div><div class="db-value">{{ db.value }}</div></div>
-      <div class="db-cell"><div class="db-label">Key Constraint</div><div class="db-value db-sm">{{ db.key_constraint }}</div></div>
-      <div class="db-cell"><div class="db-label">Approval Path</div><div class="db-value db-sm">{{ db.timeline }}</div></div>
+      <div class="db-cell"><div class="db-label">{{ t("cover.snapshot_key_constraint") }}</div><div class="db-value db-sm">{{ db.key_constraint }}</div></div>
+      <div class="db-cell"><div class="db-label">{{ t("cover.snapshot_approval_path") }}</div><div class="db-value db-sm">{{ db.timeline }}</div></div>
     </div>
   </div>
   <div style="font-size: 6.5pt; color: #9ca3af; max-width: 440pt; margin: 0 auto; text-align: left;">
-    Snapshot of key feasibility metrics — see the report body for sources, assumptions, and limitations. Figures marked &ldquo;n/a&rdquo; are unavailable in public data for this parcel.
+    {{ t("cover.snapshot_footnote") }}
   </div>
   {% elif zoning and zoning.zone_class %}
   <div class="badge">{{ zoning.zone_class }}</div>
@@ -416,118 +413,118 @@ a.glossary-link {
   {% endif %}
 
   <div class="meta">
-    {% if prop and prop.pin14 %}<div><a href="#glossary-pin" class="glossary-link">PIN</a>: <a href="https://www.cookcountyassessor.com/pin/{{ prop.pin14 }}">{{ prop.pin14 }}</a></div>{% endif %}
-    <div>Coordinates: {{ "%.5f"|format(report.lat) }}, {{ "%.5f"|format(report.lon) }}</div>
-    <div>Report Date: {{ report_date }}</div>
-    <div style="margin-top: 8pt; font-size: 8pt;">Generated by UrbanLayer — urbanlayerchicago.com</div>
+    {% if prop and prop.pin14 %}<div><a href="#glossary-pin" class="glossary-link">{{ t("cover.pin") }}</a>: <a href="https://www.cookcountyassessor.com/pin/{{ prop.pin14 }}">{{ prop.pin14 }}</a></div>{% endif %}
+    <div>{{ t("cover.coordinates") }}: {{ "%.5f"|format(report.lat) }}, {{ "%.5f"|format(report.lon) }}</div>
+    <div>{{ t("cover.report_date") }}: {{ report_date }}</div>
+    <div style="margin-top: 8pt; font-size: 8pt;">{{ t("cover.generated_by") }}</div>
   </div>
 </div>
 
 <!-- TABLE OF CONTENTS -->
 <div class="page-break">
-  <h2>Contents</h2>
+  <h2>{{ t("toc.title") }}</h2>
   <div class="toc">
-    <div class="toc-entry"><span class="toc-title">Executive Summary</span><span class="toc-dots"></span><a class="toc-page" href="#section-exec-summary"></a></div>
-    <div class="toc-entry"><span class="toc-title">Zoning &amp; Development Standards</span><span class="toc-dots"></span><a class="toc-page" href="#section-zoning"></a></div>
-    <div class="toc-entry"><span class="toc-title">Regulatory &amp; Environmental</span><span class="toc-dots"></span><a class="toc-page" href="#section-regulatory"></a></div>
-    <div class="toc-entry"><span class="toc-title">Property &amp; Physical Characteristics</span><span class="toc-dots"></span><a class="toc-page" href="#section-property"></a></div>
-    <div class="toc-entry"><span class="toc-title">Market Context &amp; Comparables</span><span class="toc-dots"></span><a class="toc-page" href="#section-market"></a></div>
-    <div class="toc-entry"><span class="toc-title">Financial Feasibility &amp; Incentives</span><span class="toc-dots"></span><a class="toc-page" href="#section-financial"></a></div>
-    <div class="toc-entry"><span class="toc-title">Site Condition &amp; History</span><span class="toc-dots"></span><a class="toc-page" href="#section-site-condition"></a></div>
-    <div class="toc-entry"><span class="toc-title">Recommended Next Steps</span><span class="toc-dots"></span><a class="toc-page" href="#section-next-steps"></a></div>
-    <div class="toc-entry"><span class="toc-title">Glossary</span><span class="toc-dots"></span><a class="toc-page" href="#section-glossary"></a></div>
-    {% if report.zone_definitions %}<div class="toc-entry"><span class="toc-title">Zoning District Definitions</span><span class="toc-dots"></span><a class="toc-page" href="#section-zone-definitions"></a></div>{% endif %}
-    <div class="toc-entry"><span class="toc-title">Data Sources &amp; Disclaimers</span><span class="toc-dots"></span><a class="toc-page" href="#section-data-sources"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.exec_summary") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-exec-summary"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.zoning") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-zoning"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.regulatory") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-regulatory"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.property") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-property"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.market") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-market"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.financial") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-financial"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.site_condition") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-site-condition"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.next_steps") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-next-steps"></a></div>
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.glossary") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-glossary"></a></div>
+    {% if report.zone_definitions %}<div class="toc-entry"><span class="toc-title">{{ t("toc.zone_definitions") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-zone-definitions"></a></div>{% endif %}
+    <div class="toc-entry"><span class="toc-title">{{ t("toc.data_sources") }}</span><span class="toc-dots"></span><a class="toc-page" href="#section-data-sources"></a></div>
   </div>
 </div>
 
 <!-- SECTION 2: Executive Summary -->
 <div class="page-break">
-  <h2 id="section-exec-summary">Executive Summary</h2>
+  <h2 id="section-exec-summary">{{ t("exec.heading") }}</h2>
 
-  <h3>Site Assessment</h3>
+  <h3>{{ t("exec.site_assessment") }}</h3>
   <div class="traffic-lights">
     {# Zoning signal #}
     {% if reg and reg.in_planned_development %}
     <div class="tl-item tl-red">
-      <span class="tl-pill tl-pill-red">RISK</span>
-      <span class="tl-topic">Zoning</span>
-      <span class="tl-detail"><a href="#glossary-pd" class="glossary-link">Planned Development</a> (PD required)</span>
+      <span class="tl-pill tl-pill-red">{{ t("pill.risk") }}</span>
+      <span class="tl-topic">{{ t("topic.zoning") }}</span>
+      <span class="tl-detail"><a href="#glossary-pd" class="glossary-link">{{ t("reg.planned_development") }}</a> {{ t("tl.zoning_pd") }}</span>
     </div>
     {% elif standards and standards.special_uses and not standards.permitted_uses %}
     <div class="tl-item tl-yellow">
-      <span class="tl-pill tl-pill-yellow">CAUTION</span>
-      <span class="tl-topic">Zoning</span>
-      <span class="tl-detail">Special use permit may be required</span>
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.caution") }}</span>
+      <span class="tl-topic">{{ t("topic.zoning") }}</span>
+      <span class="tl-detail">{{ t("tl.zoning_special") }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
-      <span class="tl-pill tl-pill-green">CLEAR</span>
-      <span class="tl-topic">Zoning</span>
-      <span class="tl-detail">Base zoning permits development</span>
+      <span class="tl-pill tl-pill-green">{{ t("pill.clear") }}</span>
+      <span class="tl-topic">{{ t("topic.zoning") }}</span>
+      <span class="tl-detail">{{ t("tl.zoning_clear") }}</span>
     </div>
     {% endif %}
 
     {# Regulatory signal #}
     {% if reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register) %}
     <div class="tl-item tl-red">
-      <span class="tl-pill tl-pill-red">RISK</span>
-      <span class="tl-topic">Regulatory</span>
-      <span class="tl-detail">Historic/Landmark review required</span>
+      <span class="tl-pill tl-pill-red">{{ t("pill.risk") }}</span>
+      <span class="tl-topic">{{ t("topic.regulatory") }}</span>
+      <span class="tl-detail">{{ t("tl.reg_historic") }}</span>
     </div>
     {% elif reg and (reg.in_ssa or reg.in_tod_area) %}
     <div class="tl-item tl-yellow">
-      <span class="tl-pill tl-pill-yellow">NOTE</span>
-      <span class="tl-topic">Regulatory</span>
-      <span class="tl-detail"><a href="#glossary-ssa" class="glossary-link">SSA</a>/<a href="#glossary-tod" class="glossary-link">TOD</a> (bonus density potential)</span>
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.note") }}</span>
+      <span class="tl-topic">{{ t("topic.regulatory") }}</span>
+      <span class="tl-detail"><a href="#glossary-ssa" class="glossary-link">SSA</a>/<a href="#glossary-tod" class="glossary-link">TOD</a> {{ t("tl.reg_ssa_tod") }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
-      <span class="tl-pill tl-pill-green">CLEAR</span>
-      <span class="tl-topic">Regulatory</span>
-      <span class="tl-detail">No restrictive overlays</span>
+      <span class="tl-pill tl-pill-green">{{ t("pill.clear") }}</span>
+      <span class="tl-topic">{{ t("topic.regulatory") }}</span>
+      <span class="tl-detail">{{ t("tl.reg_clear") }}</span>
     </div>
     {% endif %}
 
     {# Environmental signal #}
     {% if reg and (reg.in_special_flood_hazard or reg.brownfield_sites) %}
     <div class="tl-item tl-red">
-      <span class="tl-pill tl-pill-red">RISK</span>
-      <span class="tl-topic">Environmental</span>
-      <span class="tl-detail">{% if reg.in_special_flood_hazard %}<a href="#glossary-sfha" class="glossary-link">SFHA</a> flood zone{% endif %}{% if reg.brownfield_sites %} Adjacent brownfield{% endif %}</span>
+      <span class="tl-pill tl-pill-red">{{ t("pill.risk") }}</span>
+      <span class="tl-topic">{{ t("topic.environmental") }}</span>
+      <span class="tl-detail">{% if reg.in_special_flood_hazard %}{{ t("tl.env_sfha") }}{% endif %}{% if reg.brownfield_sites %}{{ t("tl.env_brownfield") }}{% endif %}</span>
     </div>
     {% elif reg and reg.flood_zone and reg.flood_zone != "X" %}
     <div class="tl-item tl-yellow">
-      <span class="tl-pill tl-pill-yellow">CAUTION</span>
-      <span class="tl-topic">Environmental</span>
-      <span class="tl-detail">Flood Zone {{ reg.flood_zone }}</span>
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.caution") }}</span>
+      <span class="tl-topic">{{ t("topic.environmental") }}</span>
+      <span class="tl-detail">{{ t("tl.env_flood_zone", zone=reg.flood_zone) }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
-      <span class="tl-pill tl-pill-green">CLEAR</span>
-      <span class="tl-topic">Environmental</span>
-      <span class="tl-detail">No flood/brownfield risk</span>
+      <span class="tl-pill tl-pill-green">{{ t("pill.clear") }}</span>
+      <span class="tl-topic">{{ t("topic.environmental") }}</span>
+      <span class="tl-detail">{{ t("tl.env_clear") }}</span>
     </div>
     {% endif %}
 
     {# Financial signal #}
     {% if inc and (inc.in_tif_district or inc.in_opportunity_zone or inc.in_enterprise_zone or inc.in_qct or inc.in_nmtc) %}
     <div class="tl-item tl-green">
-      <span class="tl-pill tl-pill-green">FAVORABLE</span>
-      <span class="tl-topic">Financial</span>
-      <span class="tl-detail">Incentives available ({% if inc.in_tif_district %}<a href="#glossary-tif" class="glossary-link">TIF</a>{% endif %}{% if inc.in_opportunity_zone %} <a href="#glossary-oz" class="glossary-link">OZ</a>{% endif %}{% if inc.in_enterprise_zone %} <a href="#glossary-ez" class="glossary-link">EZ</a>{% endif %}{% if inc.in_qct %} <a href="#glossary-qct" class="glossary-link">QCT</a>{% endif %}{% if inc.in_nmtc %} <a href="#glossary-nmtc" class="glossary-link">NMTC</a>{% endif %})</span>
+      <span class="tl-pill tl-pill-green">{{ t("pill.favorable") }}</span>
+      <span class="tl-topic">{{ t("topic.financial") }}</span>
+      <span class="tl-detail">{{ t("tl.fin_incentives") }} ({% if inc.in_tif_district %}<a href="#glossary-tif" class="glossary-link">TIF</a>{% endif %}{% if inc.in_opportunity_zone %} <a href="#glossary-oz" class="glossary-link">OZ</a>{% endif %}{% if inc.in_enterprise_zone %} <a href="#glossary-ez" class="glossary-link">EZ</a>{% endif %}{% if inc.in_qct %} <a href="#glossary-qct" class="glossary-link">QCT</a>{% endif %}{% if inc.in_nmtc %} <a href="#glossary-nmtc" class="glossary-link">NMTC</a>{% endif %})</span>
     </div>
     {% elif report.effective_tax_rate and report.effective_tax_rate > 0.03 %}
     <div class="tl-item tl-red">
-      <span class="tl-pill tl-pill-red">RISK</span>
-      <span class="tl-topic">Financial</span>
-      <span class="tl-detail">High effective tax rate ({{ report.effective_tax_rate|fpct }})</span>
+      <span class="tl-pill tl-pill-red">{{ t("pill.risk") }}</span>
+      <span class="tl-topic">{{ t("topic.financial") }}</span>
+      <span class="tl-detail">{{ t("tl.fin_high_tax", rate=report.effective_tax_rate|fpct) }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-yellow">
-      <span class="tl-pill tl-pill-yellow">NEUTRAL</span>
-      <span class="tl-topic">Financial</span>
-      <span class="tl-detail">Standard tax class, no special incentives</span>
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.neutral") }}</span>
+      <span class="tl-topic">{{ t("topic.financial") }}</span>
+      <span class="tl-detail">{{ t("tl.fin_standard") }}</span>
     </div>
     {% endif %}
 
@@ -535,21 +532,21 @@ a.glossary-link {
     {% set open_violations = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list|length if report.address_violations else 0 %}
     {% if open_violations > 10 or (ctx.address_311 and ctx.address_311.high_risk_flags) %}
     <div class="tl-item tl-red">
-      <span class="tl-pill tl-pill-red">RISK</span>
-      <span class="tl-topic">Site Condition</span>
-      <span class="tl-detail">{% if open_violations > 10 %}{{ open_violations }} open violations{% endif %}{% if ctx.address_311 and ctx.address_311.high_risk_flags %} High-risk flags{% endif %}</span>
+      <span class="tl-pill tl-pill-red">{{ t("pill.risk") }}</span>
+      <span class="tl-topic">{{ t("topic.site_condition") }}</span>
+      <span class="tl-detail">{% if open_violations > 10 %}{{ tn("site.open_violations_count", open_violations, n=open_violations) }}{% endif %}{% if ctx.address_311 and ctx.address_311.high_risk_flags %}{{ t("tl.site_high_risk_flags") }}{% endif %}</span>
     </div>
     {% elif open_violations > 0 %}
     <div class="tl-item tl-yellow">
-      <span class="tl-pill tl-pill-yellow">CAUTION</span>
-      <span class="tl-topic">Site Condition</span>
-      <span class="tl-detail">{{ open_violations }} open violation{{ "s" if open_violations > 1 else "" }}</span>
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.caution") }}</span>
+      <span class="tl-topic">{{ t("topic.site_condition") }}</span>
+      <span class="tl-detail">{{ tn("site.open_violations_count", open_violations, n=open_violations) }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-green">
-      <span class="tl-pill tl-pill-green">CLEAR</span>
-      <span class="tl-topic">Site Condition</span>
-      <span class="tl-detail">No open violations</span>
+      <span class="tl-pill tl-pill-green">{{ t("pill.clear") }}</span>
+      <span class="tl-topic">{{ t("topic.site_condition") }}</span>
+      <span class="tl-detail">{{ t("tl.site_clear") }}</span>
     </div>
     {% endif %}
 
@@ -557,21 +554,21 @@ a.glossary-link {
     {% if report.approval_pathway %}
     {% if report.approval_pathway.complexity == "SIMPLE" %}
     <div class="tl-item tl-green">
-      <span class="tl-pill tl-pill-green">SIMPLE</span>
-      <span class="tl-topic">Approval</span>
-      <span class="tl-detail">Standard building permit ({{ report.approval_pathway.timeline }})</span>
+      <span class="tl-pill tl-pill-green">{{ t("pill.simple") }}</span>
+      <span class="tl-topic">{{ t("topic.approval") }}</span>
+      <span class="tl-detail">{{ t("tl.approval_simple", timeline=report.approval_pathway.timeline) }}</span>
     </div>
     {% elif report.approval_pathway.complexity == "MODERATE" %}
     <div class="tl-item tl-yellow">
-      <span class="tl-pill tl-pill-yellow">MODERATE</span>
-      <span class="tl-topic">Approval</span>
-      <span class="tl-detail">Special use or overlay review required</span>
+      <span class="tl-pill tl-pill-yellow">{{ t("pill.moderate") }}</span>
+      <span class="tl-topic">{{ t("topic.approval") }}</span>
+      <span class="tl-detail">{{ t("tl.approval_moderate") }}</span>
     </div>
     {% else %}
     <div class="tl-item tl-red">
-      <span class="tl-pill tl-pill-red">COMPLEX</span>
-      <span class="tl-topic">Approval</span>
-      <span class="tl-detail">Discretionary approval process ({{ report.approval_pathway.timeline }})</span>
+      <span class="tl-pill tl-pill-red">{{ t("pill.complex") }}</span>
+      <span class="tl-topic">{{ t("topic.approval") }}</span>
+      <span class="tl-detail">{{ t("tl.approval_complex", timeline=report.approval_pathway.timeline) }}</span>
     </div>
     {% endif %}
     {% endif %}
@@ -579,36 +576,34 @@ a.glossary-link {
 
   {% if dev %}
   <div class="dev-potential">
-    <div class="headline">Development Potential</div>
+    <div class="headline">{{ t("dev.heading") }}</div>
     <div class="detail">
-      {% if dev.max_buildable_sqft %}Maximum buildable: {{ dev.max_buildable_sqft|fnum }} sq ft{% endif %}
-      {% if dev.development_surplus_sqft %} | Surplus: {{ dev.development_surplus_sqft|fnum }} sq ft{% endif %}
-      {% if dev.max_lot_coverage_sqft %} | Max <a href="#glossary-lot-coverage" class="glossary-link">lot coverage</a>: {{ dev.max_lot_coverage_sqft|fnum }} sq ft{% endif %}
+      {% if dev.max_buildable_sqft %}{{ t("dev.max_buildable", v=dev.max_buildable_sqft|fnum) }}{% endif %}
+      {% if dev.development_surplus_sqft %}{{ t("dev.surplus", v=dev.development_surplus_sqft|fnum) }}{% endif %}
+      {% if dev.max_lot_coverage_sqft %}{{ t("dev.max_lot_coverage_pre") }}<a href="#glossary-lot-coverage" class="glossary-link">{{ t("dev.max_lot_coverage_link") }}</a>{{ t("dev.max_lot_coverage_post", v=dev.max_lot_coverage_sqft|fnum) }}{% endif %}
     </div>
     {% if report.far_utilization %}
     {% set fu = report.far_utilization %}
     <div class="detail" style="margin-top: 6pt;">
-      <strong>FAR utilization:</strong>
+      <strong>{{ t("dev.far_utilization_label") }}</strong>
       {% if fu.vacant %}
-      Vacant lot — 0% of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }} is built; full envelope available (before setbacks and lot-coverage limits).
+      {{ t("dev.far_vacant_pre", allowed=fu.allowed_sqft|fnum) }}<a href="#glossary-far" class="glossary-link">FAR</a>{{ t("dev.far_vacant_post", far=fu.far) }}
       {% else %}
-      Existing {{ fu.existing_sqft|fnum }} sq ft uses <strong>{{ fu.utilization_pct }}%</strong> of the {{ fu.allowed_sqft|fnum }} sq ft allowed by <a href="#glossary-far" class="glossary-link">FAR</a> {{ fu.far }}{% if fu.unused_sqft > 0 %} — {{ fu.unused_sqft|fnum }} sq ft below the FAR cap, typically realized through addition or redevelopment{% endif %}.
+      {{ t("dev.far_existing_pre", existing=fu.existing_sqft|fnum) }}<strong>{{ t("dev.far_existing_mid", pct=fu.utilization_pct) }}</strong>{{ t("dev.far_existing_post", allowed=fu.allowed_sqft|fnum) }}<a href="#glossary-far" class="glossary-link">FAR</a>{{ t("dev.far_existing_far", far=fu.far) }}{% if fu.unused_sqft > 0 %}{{ t("dev.far_existing_unused", unused=fu.unused_sqft|fnum) }}{% endif %}.
       {% endif %}
     </div>
     {% endif %}
     {% if report.unit_yield %}
     {% set uy = report.unit_yield %}
     <div class="detail" style="margin-top: 4pt;">
-      <strong>Indicative unit capacity (screening estimate):</strong> up to ~{{ uy.units }} dwelling unit{{ "s" if uy.units != 1 else "" }} total
-      ({{ uy.land_sqft|fnum }} sq ft ÷ {{ uy.mla_per_unit|fnum }} sq ft min. lot area per unit, {{ uy.zone_class }} per Title 17-2-0303), assuming redevelopment of any existing structure.
-      This is a density screen, <strong>not a zoning determination</strong> — permitted units are further limited by minimum lot area, rear-yard open space, FAR, height, parking, and unit mix.
+      <strong>{{ t("dev.unit_capacity_label") }}</strong>{{ tn("dev.unit_capacity_body", uy.units, units=uy.units, land=uy.land_sqft|fnum, mla=uy.mla_per_unit|fnum, zone=uy.zone_class) }}<strong>{{ t("dev.unit_capacity_emph") }}</strong>{{ t("dev.unit_capacity_tail") }}
     </div>
     {% endif %}
   </div>
   {% endif %}
 
   {% if report.opportunities or report.constraints %}
-  <h3>Opportunities &amp; Constraints</h3>
+  <h3>{{ t("dev.opps_constraints") }}</h3>
   {% if report.opportunities %}
   <div style="margin-bottom: 8pt;">
     {% for opp in report.opportunities %}
@@ -636,45 +631,45 @@ a.glossary-link {
 
 <!-- SECTION 3: Zoning & Development Standards -->
 <div class="section-flow">
-  <h2 id="section-zoning">Zoning &amp; Development Standards</h2>
+  <h2 id="section-zoning">{{ t("zoning.heading") }}</h2>
 
   {% if zoning %}
   <dl class="info-grid">
-    <dt>Zone Class</dt><dd><a href="https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&amp;config=zoning">{{ zoning.zone_class or "N/A" }}</a> — {{ zoning.zone_class|zone_desc }}</dd>
-    {% if zoning.ordinance_num %}<dt>Ordinance</dt><dd>{{ zoning.ordinance_num }}</dd>{% endif %}
+    <dt>{{ t("zoning.zone_class") }}</dt><dd><a href="https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&amp;config=zoning">{{ zoning.zone_class or t("common.na") }}</a> — {{ zoning.zone_class|zone_desc }}</dd>
+    {% if zoning.ordinance_num %}<dt>{{ t("zoning.ordinance") }}</dt><dd>{{ zoning.ordinance_num }}</dd>{% endif %}
   </dl>
   {% else %}
-  <p class="section-note">Zoning data unavailable — verify zone class with the Chicago Zoning Map at gisapps.chicago.gov.</p>
+  <p class="section-note">{{ t("zoning.unavailable") }}</p>
   {% endif %}
 
   {% if standards and standards.extraction_confidence != "low" %}
   {% if standards.extraction_confidence == "definitions" %}
-  <p class="section-note">Base-district standards from the Title 17 zone-class reference table. Setbacks, parking, and special-use details are not enumerated here — verify site-specific requirements with the City of Chicago Zoning Division.</p>
+  <p class="section-note">{{ t("zoning.definitions_note") }}</p>
   {% endif %}
-  <h3>Bulk &amp; Density Standards</h3>
+  <h3>{{ t("zoning.bulk_density") }}</h3>
   <table>
-    <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+    <thead><tr><th>{{ t("zoning.th_parameter") }}</th><th>{{ t("zoning.th_value") }}</th></tr></thead>
     <tbody>
-    {% if standards.far is not none %}<tr><td><a id="glossary-far">Floor Area Ratio (FAR)</a> <span style="font-size: 7.5pt; color: #6b7280;">— total floor area ÷ lot area</span></td><td>{{ standards.far }}</td></tr>{% endif %}
-    {% if standards.max_height_ft is not none %}<tr><td>Maximum Height</td><td>{{ standards.max_height_ft }} ft</td></tr>{% endif %}
-    {% if standards.max_stories is not none %}<tr><td>Maximum Stories</td><td>{{ standards.max_stories }}</td></tr>{% endif %}
-    {% if standards.lot_coverage_pct is not none %}<tr><td><a id="glossary-lot-coverage">Lot Coverage</a> <span style="font-size: 7.5pt; color: #6b7280;">— max % of lot covered by structures</span></td><td>{{ "%.0f"|format(standards.lot_coverage_pct * 100) }}%</td></tr>{% endif %}
-    {% if standards.min_lot_area_sqft is not none %}<tr><td>Minimum Lot Area</td><td>{{ standards.min_lot_area_sqft|fnum }} sq ft</td></tr>{% endif %}
+    {% if standards.far is not none %}<tr><td><a id="glossary-far">{{ t("zoning.far_label") }}</a> <span style="font-size: 7.5pt; color: #6b7280;">{{ t("zoning.far_hint") }}</span></td><td>{{ standards.far }}</td></tr>{% endif %}
+    {% if standards.max_height_ft is not none %}<tr><td>{{ t("zoning.max_height") }}</td><td>{{ standards.max_height_ft }} {{ t("common.ft") }}</td></tr>{% endif %}
+    {% if standards.max_stories is not none %}<tr><td>{{ t("zoning.max_stories") }}</td><td>{{ standards.max_stories }}</td></tr>{% endif %}
+    {% if standards.lot_coverage_pct is not none %}<tr><td><a id="glossary-lot-coverage">{{ t("zoning.lot_coverage") }}</a> <span style="font-size: 7.5pt; color: #6b7280;">{{ t("zoning.lot_coverage_hint") }}</span></td><td>{{ "%.0f"|format(standards.lot_coverage_pct * 100) }}%</td></tr>{% endif %}
+    {% if standards.min_lot_area_sqft is not none %}<tr><td>{{ t("zoning.min_lot_area") }}</td><td>{{ standards.min_lot_area_sqft|fnum }} {{ t("common.sqft") }}</td></tr>{% endif %}
     </tbody>
   </table>
 
-  <h3><a id="glossary-setback">Setbacks</a> <span style="font-size: 7.5pt; color: #6b7280; font-weight: normal;">— min. distance from property line to building</span></h3>
+  <h3><a id="glossary-setback">{{ t("zoning.setbacks") }}</a> <span style="font-size: 7.5pt; color: #6b7280; font-weight: normal;">{{ t("zoning.setbacks_hint") }}</span></h3>
   <table>
-    <thead><tr><th>Direction</th><th>Minimum (ft)</th></tr></thead>
+    <thead><tr><th>{{ t("zoning.th_direction") }}</th><th>{{ t("zoning.th_min_ft") }}</th></tr></thead>
     <tbody>
-    {% if standards.front_setback_ft is not none %}<tr><td>Front Yard</td><td>{{ standards.front_setback_ft }}</td></tr>{% endif %}
-    {% if standards.side_setback_ft is not none %}<tr><td>Side Yard</td><td>{{ standards.side_setback_ft }}</td></tr>{% endif %}
-    {% if standards.rear_setback_ft is not none %}<tr><td>Rear Yard</td><td>{{ standards.rear_setback_ft }}</td></tr>{% endif %}
+    {% if standards.front_setback_ft is not none %}<tr><td>{{ t("zoning.front_yard") }}</td><td>{{ standards.front_setback_ft }}</td></tr>{% endif %}
+    {% if standards.side_setback_ft is not none %}<tr><td>{{ t("zoning.side_yard") }}</td><td>{{ standards.side_setback_ft }}</td></tr>{% endif %}
+    {% if standards.rear_setback_ft is not none %}<tr><td>{{ t("zoning.rear_yard") }}</td><td>{{ standards.rear_setback_ft }}</td></tr>{% endif %}
     </tbody>
   </table>
 
   {% if report.envelope_summary %}
-  <h3>Development Envelope Summary</h3>
+  <h3>{{ t("zoning.envelope_summary") }}</h3>
   <div class="dev-potential" style="background: #f0f7ff;">
     <div class="detail" style="font-size: 9.5pt;">{{ report.envelope_summary }}</div>
   </div>
@@ -682,33 +677,33 @@ a.glossary-link {
   <div style="text-align: center; margin: 8pt 0;">
     <img src="data:image/png;base64,{{ report.envelope_map_b64 }}" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 6px;" alt="Development envelope diagram showing parcel outline, setback zones, and buildable footprint" />
     {% if report.buildable_footprint_sqft %}
-    <p style="font-size: 8pt; color: #1e40af; margin-top: 4pt; font-weight: 600;">Estimated buildable footprint: {{ "{:,.0f}".format(report.buildable_footprint_sqft) }} sq ft</p>
+    <p style="font-size: 8pt; color: #1e40af; margin-top: 4pt; font-weight: 600;">{{ t("zoning.envelope_footprint", v="{:,.0f}".format(report.buildable_footprint_sqft)) }}</p>
     {% endif %}
   </div>
   {% endif %}
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Reflects base district standards only. Overlays, planned developments, transition zones, and site-specific conditions may alter these parameters.</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("zoning.envelope_note") }}</p>
   {% endif %}
 
   {% if standards.permitted_uses %}
-  <h3>Permitted Uses</h3>
+  <h3>{{ t("zoning.permitted_uses") }}</h3>
   <p style="font-size: 9pt;">{{ standards.permitted_uses | join(", ") }}</p>
   {% endif %}
 
   {% if standards.special_uses %}
-  <h3>Special Uses (Require Approval)</h3>
+  <h3>{{ t("zoning.special_uses") }}</h3>
   <p style="font-size: 9pt;">{{ standards.special_uses | join(", ") }}</p>
   {% endif %}
 
   {% if standards.parking_residential or standards.parking_commercial %}
-  <h3>Parking Requirements</h3>
+  <h3>{{ t("zoning.parking") }}</h3>
   <dl class="info-grid">
-    {% if standards.parking_residential %}<dt>Residential</dt><dd>{{ standards.parking_residential }}</dd>{% endif %}
-    {% if standards.parking_commercial %}<dt>Commercial</dt><dd>{{ standards.parking_commercial }}</dd>{% endif %}
+    {% if standards.parking_residential %}<dt>{{ t("zoning.parking_residential") }}</dt><dd>{{ standards.parking_residential }}</dd>{% endif %}
+    {% if standards.parking_commercial %}<dt>{{ t("zoning.parking_commercial") }}</dt><dd>{{ standards.parking_commercial }}</dd>{% endif %}
   </dl>
   {% endif %}
 
   {% if standards.notes %}
-  <h3>Notes &amp; Conditions</h3>
+  <h3>{{ t("zoning.notes_conditions") }}</h3>
   <ul style="font-size: 9pt; padding-left: 16pt;">
     {% for note in standards.notes %}
     <li>{{ note }}</li>
@@ -718,31 +713,31 @@ a.glossary-link {
 
   {% elif standards and standards.extraction_confidence == "low" %}
   <div class="confidence-warning">
-    &#9888; Low confidence — the retrieved code sections may not directly reference <strong>{{ zoning.zone_class if zoning else "this zone class" }}</strong>. Verify all standards with the City of Chicago Zoning Division before relying on this data.
+    &#9888; {{ t("zoning.low_conf_pre") }}<strong>{{ zoning.zone_class if zoning else t("zoning.this_zone_class") }}</strong>{{ t("zoning.low_conf_post") }}
   </div>
   {% if report.bulk_standards_text %}
-  <h3>Relevant Municipal Code Sections</h3>
-  <p class="section-note">AI-retrieved reference material. May not precisely match your zone class.</p>
+  <h3>{{ t("zoning.relevant_code") }}</h3>
+  <p class="section-note">{{ t("zoning.ai_retrieved") }}</p>
   <div class="bulk-standards">{{ report.bulk_standards_text[:2000] }}{% if report.bulk_standards_text|length > 2000 %}
 
-[...truncated — see full ordinance at codelibrary.amlegal.com/codes/chicago/latest/chicago_il]{% endif %}</div>
+{{ t("zoning.truncated") }}{% endif %}</div>
   {% endif %}
 
   {% elif report.bulk_standards_text %}
   <div class="confidence-warning">
-    &#9888; Structured extraction unavailable for this zone class. Raw code sections shown below — verify with the City of Chicago Zoning Division.
+    &#9888; {{ t("zoning.extraction_unavailable") }}
   </div>
-  <h3>Relevant Municipal Code Sections</h3>
-  <p class="section-note">AI-retrieved reference material. May not precisely match your zone class.</p>
+  <h3>{{ t("zoning.relevant_code") }}</h3>
+  <p class="section-note">{{ t("zoning.ai_retrieved") }}</p>
   <div class="bulk-standards">{{ report.bulk_standards_text[:2000] }}{% if report.bulk_standards_text|length > 2000 %}
 
-[...truncated — see full ordinance at codelibrary.amlegal.com/codes/chicago/latest/chicago_il]{% endif %}</div>
+{{ t("zoning.truncated") }}{% endif %}</div>
   {% else %}
-  <p class="section-note">Consult Title 17, Chapter 17-2 of the Chicago Municipal Code for standards applicable to this district.</p>
+  <p class="section-note">{{ t("zoning.consult_title17") }}</p>
   {% endif %}
 
   {% if report.adjacent_zoning %}
-  <h3>Adjacent Zoning</h3>
+  <h3>{{ t("zoning.adjacent") }}</h3>
   <div class="adj-zoning">
     {% for dir, zone in report.adjacent_zoning.items() %}
     <div class="adj-item">
@@ -768,7 +763,7 @@ a.glossary-link {
   {% endfor %}
   {% if ns.transition_dirs %}
   <p style="font-size: 8pt; color: #92400e; background: #fffbeb; padding: 6pt 8pt; border-radius: 4pt; border-left: 3px solid #f59e0b; margin-top: -4pt;">
-    &#9888; Transition zone setback may apply (Title 17-2-0303) at {{ ns.transition_dirs|join(', ') }} boundary — residential/commercial interface requires additional setback verification.
+    &#9888; {{ t("zoning.transition_warning", dirs=ns.transition_dirs|join(', ')) }}
   </p>
   {% endif %}
   {% endif %}
@@ -777,9 +772,9 @@ a.glossary-link {
 
 <!-- SECTION 4: Regulatory & Environmental (flows, no page break) -->
 <div class="section-flow">
-  <h2 id="section-regulatory">Regulatory &amp; Environmental</h2>
+  <h2 id="section-regulatory">{{ t("reg.heading") }}</h2>
 
-  <h3>Overlay &amp; Special Districts</h3>
+  <h3>{{ t("reg.overlay_districts") }}</h3>
   {% if reg and reg.overlays %}
   <div class="overlay-matrix">
     {% for overlay in reg.overlays %}
@@ -791,12 +786,12 @@ a.glossary-link {
     {% endfor %}
   </div>
   {% else %}
-  <p class="section-note">No overlay or special districts detected at this location.</p>
+  <p class="section-note">{{ t("reg.no_overlays") }}</p>
   {% endif %}
 
   <dl class="info-grid">
-    <dt><a href="#glossary-pd" class="glossary-link">Planned Development</a></dt>
-    <dd>{% if reg and reg.in_planned_development %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dt><a href="#glossary-pd" class="glossary-link">{{ t("reg.planned_development") }}</a></dt>
+    <dd>{% if reg and reg.in_planned_development %}<span class="status-warn">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     {# Chicago's local landmark designations span two GIS layers — "Landmark Boundaries"
        (in_landmark_district) and the locally-designated "Historic Districts"
        (in_historic_district). Both mean Commission on Chicago Landmarks jurisdiction, so
@@ -804,41 +799,41 @@ a.glossary-link {
        a parcel can be in an NR district without any local landmark status (and vice versa),
        so it gets its own row. Keeping them separate avoids the old contradiction where the
        overlay matrix listed an NR-only "...Historic District" while this grid said "No". #}
-    <dt>Chicago Landmark District</dt>
-    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt>National Register District</dt>
-    <dd>{% if reg and reg.on_national_register %}<span class="status-warn">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt><a href="#glossary-tod" class="glossary-link">TOD</a> Eligible</dt>
-    <dd>{% if nbr and nbr.transit and nbr.transit.tod_eligible %}<span class="status-yes">Yes</span>{% if nbr.transit.tod_type %} — {{ nbr.transit.tod_type }}{% endif %}{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt><a href="#glossary-aro" class="glossary-link">ARO</a> Zone</dt>
-    <dd>{% if reg and reg.in_aro_zone %}<span class="status-yes">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dt>{{ t("reg.landmark_district") }}</dt>
+    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt>{{ t("reg.national_register") }}</dt>
+    <dd>{% if reg and reg.on_national_register %}<span class="status-warn">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt><a href="#glossary-tod" class="glossary-link">TOD</a> {{ t("reg.tod_eligible") }}</dt>
+    <dd>{% if nbr and nbr.transit and nbr.transit.tod_eligible %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if nbr.transit.tod_type %} — {{ nbr.transit.tod_type }}{% endif %}{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt><a href="#glossary-aro" class="glossary-link">ARO</a> {{ t("reg.aro_zone") }}</dt>
+    <dd>{% if reg and reg.in_aro_zone %}<span class="status-yes">{{ t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-ssa" class="glossary-link">SSA</a></dt>
-    <dd>{% if reg and reg.in_ssa %}<span class="status-yes">{{ reg.ssa_name or "Yes" }}</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
+    <dd>{% if reg and reg.in_ssa %}<span class="status-yes">{{ reg.ssa_name or t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
   </dl>
 
   {# Transit Access detail (CTA rail + Metra) lives in the Market Context section to
      avoid duplicating it here; the TOD-eligibility row above carries the regulatory
      signal. See D5. #}
 
-  <h3>Flood Zone (FEMA)</h3>
+  <h3>{{ t("reg.flood_zone_fema") }}</h3>
   {% if reg and reg.flood_zone %}
   <p style="font-size: 9.5pt;">
-    Zone: <strong>{{ reg.flood_zone }}</strong>
+    {{ t("reg.flood_zone_label") }}: <strong>{{ reg.flood_zone }}</strong>
     {% if reg.flood_zone_subtype %} ({{ reg.flood_zone_subtype }}){% endif %}
-    {% if reg.in_special_flood_hazard %}<br><span class="status-warn">In <a href="#glossary-sfha" class="glossary-link">Special Flood Hazard Area</a> — flood insurance required.</span>{% endif %}
+    {% if reg.in_special_flood_hazard %}<br><span class="status-warn"><a href="#glossary-sfha" class="glossary-link">{{ t("reg.flood_sfha") }}</a></span>{% endif %}
   </p>
   {% else %}
-  <p class="section-note">No flood zone data available (FEMA NFHL query returned no result).</p>
+  <p class="section-note">{{ t("reg.flood_unavailable") }}</p>
   {% endif %}
 
   {% if reg and reg.brownfield_sites %}
-  <h3>EPA Brownfield Sites Nearby</h3>
+  <h3>{{ t("reg.brownfield_heading") }}</h3>
   <table>
-    <thead><tr><th>Name</th><th>Status</th><th>Distance</th></tr></thead>
+    <thead><tr><th>{{ t("reg.th_name") }}</th><th>{{ t("reg.th_status") }}</th><th>{{ t("reg.th_distance") }}</th></tr></thead>
     <tbody>
     {% for site in reg.brownfield_sites[:5] %}
     <tr>
-      <td>{{ site.name or "Unknown" }}</td>
+      <td>{{ site.name or t("reg.unknown") }}</td>
       <td>{{ site.status or "—" }}</td>
       <td>{{ site.distance or "—" }}</td>
     </tr>
@@ -848,65 +843,65 @@ a.glossary-link {
   {% endif %}
 
   {% if reg and reg.aro_housing and reg.aro_housing.total_projects %}
-  <h3><a href="#glossary-aro" class="glossary-link">ARO</a> Affordable Housing</h3>
-  <p style="font-size: 9pt;">{{ reg.aro_housing.total_projects }} projects, {{ reg.aro_housing.total_units }} total units in this community area.</p>
+  <h3><a href="#glossary-aro" class="glossary-link">ARO</a> {{ t("reg.aro_housing") }}</h3>
+  <p style="font-size: 9pt;">{{ t("reg.aro_housing_body", projects=reg.aro_housing.total_projects, units=reg.aro_housing.total_units) }}</p>
   {% endif %}
 
   {% if report.approval_pathway %}
-  <h3>Approval Pathway</h3>
+  <h3>{{ t("reg.approval_pathway") }}</h3>
   <dl class="info-grid">
-    <dt>Complexity</dt>
+    <dt>{{ t("reg.complexity") }}</dt>
     <dd>
-      {% if report.approval_pathway.complexity == "SIMPLE" %}<span class="status-yes">{{ report.approval_pathway.complexity }}</span>
-      {% elif report.approval_pathway.complexity == "MODERATE" %}<span class="status-warn">{{ report.approval_pathway.complexity }}</span>
-      {% else %}<span style="color: #dc2626; font-weight: 600;">{{ report.approval_pathway.complexity }}</span>{% endif %}
+      {% if report.approval_pathway.complexity == "SIMPLE" %}<span class="status-yes">{{ t("pill.simple") }}</span>
+      {% elif report.approval_pathway.complexity == "MODERATE" %}<span class="status-warn">{{ t("pill.moderate") }}</span>
+      {% else %}<span style="color: #dc2626; font-weight: 600;">{{ t("pill.complex") }}</span>{% endif %}
     </dd>
-    <dt>Process</dt><dd>{{ report.approval_pathway.detail }}</dd>
-    <dt>Estimated Timeline</dt><dd>{{ report.approval_pathway.timeline }}</dd>
+    <dt>{{ t("reg.process") }}</dt><dd>{{ report.approval_pathway.detail }}</dd>
+    <dt>{{ t("reg.estimated_timeline") }}</dt><dd>{{ report.approval_pathway.timeline }}</dd>
   </dl>
   {% if report.approval_pathway.modifiers %}
-  <p style="font-size: 8.5pt; color: #4b5563;">Additional requirements:
+  <p style="font-size: 8.5pt; color: #4b5563;">{{ t("reg.additional_requirements") }}
     {% for mod in report.approval_pathway.modifiers %}<br>&#8226; {{ mod }}{% endfor %}
   </p>
   {% endif %}
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Timelines are estimates and vary by project specifics and political context.</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("reg.timeline_disclaimer") }}</p>
   {% endif %}
 </div>
 
 <!-- SECTION 5: Property & Physical Characteristics (flows) -->
 <div class="section-flow">
-  <h2 id="section-property">Property &amp; Physical Characteristics</h2>
+  <h2 id="section-property">{{ t("prop.heading") }}</h2>
 
   {% if prop %}
   <dl class="info-grid">
     {% if prop.pin14 %}<dt><a href="#glossary-pin" class="glossary-link">PIN</a></dt><dd><a href="https://www.cookcountyassessor.com/pin/{{ prop.pin14 }}">{{ prop.pin14 }}</a></dd>{% endif %}
-    {% if prop.bldg_class %}<dt>Building Class</dt><dd>{{ prop.bldg_class }}{% if prop.bldg_class_description %} — {{ prop.bldg_class_description }}{% endif %}</dd>{% endif %}
-    {% if prop.bldg_sqft %}<dt>Building Sq Ft</dt><dd>{{ prop.bldg_sqft|fnum }}</dd>{% endif %}
-    {% if prop.land_sqft %}<dt>Land Sq Ft</dt><dd>{{ prop.land_sqft|fnum }}</dd>{% endif %}
-    {% if prop.stories %}<dt>Stories</dt><dd>{{ prop.stories }}</dd>{% endif %}
-    {% if prop.units %}<dt>Units</dt><dd>{{ prop.units }}</dd>{% endif %}
-    {% if prop.bedrooms %}<dt>Bedrooms</dt><dd>{{ prop.bedrooms }}</dd>{% endif %}
-    {% if prop.full_baths %}<dt>Bathrooms</dt><dd>{{ prop.full_baths }}{% if prop.half_baths %} + {{ prop.half_baths }} half{% endif %}</dd>{% endif %}
-    {% if prop.year_built %}<dt>Year Built</dt><dd>{{ prop.year_built }}</dd>{% endif %}
-    {% if prop.bldg_age %}<dt>Building Age</dt><dd>{{ prop.bldg_age }} years{% if prop.year_built and prop.year_built < 1957 %} <span style="font-size: 7pt; color: #b45309;">(predates current zoning code)</span>{% endif %}</dd>{% endif %}
-    {% if prop.exterior_wall %}<dt>Exterior Wall</dt><dd>{{ prop.exterior_wall }}</dd>{% endif %}
-    {% if prop.roof_type %}<dt>Roof</dt><dd>{{ prop.roof_type }}</dd>{% endif %}
-    {% if prop.basement %}<dt>Basement</dt><dd>{{ prop.basement }}</dd>{% endif %}
-    {% if prop.garage_size %}<dt>Garage</dt><dd>{{ prop.garage_size }}</dd>{% endif %}
-    {% if prop.air_conditioning %}<dt>A/C</dt><dd>{{ prop.air_conditioning }}</dd>{% endif %}
-    {% if prop.tax_exempt %}<dt>Tax Status</dt><dd><strong>Tax-Exempt</strong> (Class EX){% if prop.bldg_class %} — {{ prop.bldg_class }}{% endif %}</dd>{% endif %}
+    {% if prop.bldg_class %}<dt>{{ t("prop.building_class") }}</dt><dd>{{ prop.bldg_class }}{% if prop.bldg_class_description %} — {{ prop.bldg_class_description }}{% endif %}</dd>{% endif %}
+    {% if prop.bldg_sqft %}<dt>{{ t("prop.building_sqft") }}</dt><dd>{{ prop.bldg_sqft|fnum }}</dd>{% endif %}
+    {% if prop.land_sqft %}<dt>{{ t("prop.land_sqft") }}</dt><dd>{{ prop.land_sqft|fnum }}</dd>{% endif %}
+    {% if prop.stories %}<dt>{{ t("prop.stories") }}</dt><dd>{{ prop.stories }}</dd>{% endif %}
+    {% if prop.units %}<dt>{{ t("prop.units") }}</dt><dd>{{ prop.units }}</dd>{% endif %}
+    {% if prop.bedrooms %}<dt>{{ t("prop.bedrooms") }}</dt><dd>{{ prop.bedrooms }}</dd>{% endif %}
+    {% if prop.full_baths %}<dt>{{ t("prop.bathrooms") }}</dt><dd>{{ prop.full_baths }}{% if prop.half_baths %}{{ t("prop.half_suffix", n=prop.half_baths) }}{% endif %}</dd>{% endif %}
+    {% if prop.year_built %}<dt>{{ t("prop.year_built") }}</dt><dd>{{ prop.year_built }}</dd>{% endif %}
+    {% if prop.bldg_age %}<dt>{{ t("prop.building_age") }}</dt><dd>{{ t("prop.age_years", n=prop.bldg_age) }}{% if prop.year_built and prop.year_built < 1957 %} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.predates_code") }}</span>{% endif %}</dd>{% endif %}
+    {% if prop.exterior_wall %}<dt>{{ t("prop.exterior_wall") }}</dt><dd>{{ prop.exterior_wall }}</dd>{% endif %}
+    {% if prop.roof_type %}<dt>{{ t("prop.roof") }}</dt><dd>{{ prop.roof_type }}</dd>{% endif %}
+    {% if prop.basement %}<dt>{{ t("prop.basement") }}</dt><dd>{{ prop.basement }}</dd>{% endif %}
+    {% if prop.garage_size %}<dt>{{ t("prop.garage") }}</dt><dd>{{ prop.garage_size }}</dd>{% endif %}
+    {% if prop.air_conditioning %}<dt>{{ t("prop.ac") }}</dt><dd>{{ prop.air_conditioning }}</dd>{% endif %}
+    {% if prop.tax_exempt %}<dt>{{ t("prop.tax_status") }}</dt><dd><strong>{{ t("prop.tax_exempt_value") }}</strong>{{ t("prop.tax_exempt_class") }}{% if prop.bldg_class %} — {{ prop.bldg_class }}{% endif %}</dd>{% endif %}
     {% if not prop.tax_exempt %}
-    {% if prop.total_assessed_value %}<dt>Assessed Value</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
-    {% if report.market_value %}<dt>Est. Market Value</dt><dd>{{ report.market_value|fcur }} <span style="font-size: 7pt; color: #888;">(assessed ÷ 10% residential level)</span></dd>{% endif %}
-    {% if prop.estimated_annual_tax %}<dt>Est. Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">(estimated from assessed value — no ptaxsim bill)</span>{% endif %}</dd>{% endif %}
-    {% if report.effective_tax_rate %}<dt>Effective Tax Rate</dt><dd>{{ report.effective_tax_rate|fpct }} <span style="font-size: 7pt; color: #888;">(of market value)</span></dd>{% endif %}
+    {% if prop.total_assessed_value %}<dt>{{ t("prop.assessed_value") }}</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
+    {% if report.market_value %}<dt>{{ t("prop.market_value") }}</dt><dd>{{ report.market_value|fcur }} <span style="font-size: 7pt; color: #888;">{{ t("prop.market_value_hint") }}</span></dd>{% endif %}
+    {% if prop.estimated_annual_tax %}<dt>{{ t("prop.annual_tax") }}</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.tax_fallback_hint") }}</span>{% endif %}</dd>{% endif %}
+    {% if report.effective_tax_rate %}<dt>{{ t("prop.effective_tax_rate") }}</dt><dd>{{ report.effective_tax_rate|fpct }} <span style="font-size: 7pt; color: #888;">{{ t("prop.effective_tax_hint") }}</span></dd>{% endif %}
     {% endif %}
   </dl>
   {% if prop.tax_exempt %}
-  <p class="section-note">This parcel is currently <strong>tax-exempt</strong> (assessor class EX) — typically institutional, government, religious, or non-profit ownership. No assessed value or property-tax estimate applies in its current use. A change of ownership or use would trigger reassessment at the applicable class. Verify exemption status and any pending change with the Cook County Assessor.</p>
+  <p class="section-note">{{ t("prop.tax_exempt_note") }}</p>
   {% endif %}
 
-  <h3>Parcel Geometry</h3>
+  <h3>{{ t("prop.parcel_geometry") }}</h3>
   {% if report.parcel_map_b64 or report.parcel_dimensions %}
   {% if report.parcel_map_b64 %}
   <div style="text-align: center; margin: 8pt 0 10pt 0;">
@@ -915,25 +910,25 @@ a.glossary-link {
   {% endif %}
   {% if report.parcel_dimensions %}
   <dl class="info-grid">
-    {% if report.parcel_dimensions.frontage_ft %}<dt>Frontage</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.frontage_ft) }} ft</dd>{% endif %}
-    {% if report.parcel_dimensions.depth_ft %}<dt>Depth</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.depth_ft) }} ft</dd>{% endif %}
-    {% if report.parcel_dimensions.area_sqft %}<dt>Computed Area</dt><dd>{{ report.parcel_dimensions.area_sqft|fnum }} sq ft</dd>{% endif %}
-    {% if report.parcel_dimensions.perimeter_ft %}<dt>Perimeter</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.perimeter_ft) }} ft</dd>{% endif %}
+    {% if report.parcel_dimensions.frontage_ft %}<dt>{{ t("prop.frontage") }}</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.frontage_ft) }} {{ t("common.ft") }}</dd>{% endif %}
+    {% if report.parcel_dimensions.depth_ft %}<dt>{{ t("prop.depth") }}</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.depth_ft) }} {{ t("common.ft") }}</dd>{% endif %}
+    {% if report.parcel_dimensions.area_sqft %}<dt>{{ t("prop.computed_area") }}</dt><dd>{{ report.parcel_dimensions.area_sqft|fnum }} {{ t("common.sqft") }}</dd>{% endif %}
+    {% if report.parcel_dimensions.perimeter_ft %}<dt>{{ t("prop.perimeter") }}</dt><dd>{{ "%.0f"|format(report.parcel_dimensions.perimeter_ft) }} {{ t("common.ft") }}</dd>{% endif %}
   </dl>
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Dimensions estimated from GIS data. Confirm with a licensed surveyor before acquisition.</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("prop.dimensions_note") }}</p>
   {% endif %}
   {% else %}
-  <p class="section-note">Parcel geometry unavailable — Cook County GIS did not return boundary data for this property. Land area shown above is from assessor records. For precise lot dimensions, obtain a boundary survey from a licensed surveyor.</p>
+  <p class="section-note">{{ t("prop.geometry_unavailable") }}</p>
   {% endif %}
 
   {% if inc and inc.property_tax_class %}
-  <p style="font-size: 9pt;"><strong>Tax Incentive Class:</strong> {{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</p>
+  <p style="font-size: 9pt;"><strong>{{ t("prop.tax_incentive_class") }}</strong> {{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</p>
   {% endif %}
 
   {% if prop.assessment_history and not prop.tax_exempt %}
-  <h3>Assessment History</h3>
+  <h3>{{ t("prop.assessment_history") }}</h3>
   <table>
-    <thead><tr><th>Year</th><th class="num">Land</th><th class="num">Building</th><th class="num">Total</th></tr></thead>
+    <thead><tr><th>{{ t("prop.th_year") }}</th><th class="num">{{ t("prop.th_land") }}</th><th class="num">{{ t("prop.th_building") }}</th><th class="num">{{ t("prop.th_total") }}</th></tr></thead>
     <tbody>
     {% for a in prop.assessment_history[:5] %}
     <tr>
@@ -947,24 +942,21 @@ a.glossary-link {
   </table>
   {% if report.assessment_trend %}
   <p style="font-size: 9pt; margin-top: 4pt;">
-    <strong>Trend:</strong> Assessed value {{ report.assessment_trend.direction }}
-    {{ "%.1f"|format(report.assessment_trend.total_change_pct) }}% over {{ report.assessment_trend.years }} years
-    ({{ report.assessment_trend.oldest_year }}–{{ report.assessment_trend.newest_year }}){% if report.assessment_trend.cagr_pct %},
-    {{ "%.1f"|format(report.assessment_trend.cagr_pct) }}% CAGR{% endif %}.
-    <span style="color: #888;">Assessment changes reflect Cook County reassessment cycles, not necessarily market value changes.</span>
+    <strong>{{ t("prop.trend_label") }}</strong> {{ t("prop.trend_body", direction=report.assessment_trend.direction, pct="%.1f"|format(report.assessment_trend.total_change_pct), years=report.assessment_trend.years, oldest=report.assessment_trend.oldest_year, newest=report.assessment_trend.newest_year) }}{% if report.assessment_trend.cagr_pct %}{{ t("prop.trend_cagr", cagr="%.1f"|format(report.assessment_trend.cagr_pct)) }}{% endif %}.
+    <span style="color: #888;">{{ t("prop.trend_note") }}</span>
   </p>
   {% endif %}
   {% endif %}
 
   {% if prop.sales_history %}
-  <h3>Sales History</h3>
+  <h3>{{ t("prop.sales_history") }}</h3>
   <table>
-    <thead><tr><th>Date</th><th class="num">Price</th><th>Deed Type</th></tr></thead>
+    <thead><tr><th>{{ t("prop.th_date") }}</th><th class="num">{{ t("prop.th_price") }}</th><th>{{ t("prop.th_deed_type") }}</th></tr></thead>
     <tbody>
     {% for s in prop.sales_history[:5] %}
     <tr>
-      <td>{{ s.date or "N/A" }}</td>
-      <td class="num">{{ s.price|fcur if s.price else "N/A" }}</td>
+      <td>{{ s.date or t("common.na") }}</td>
+      <td class="num">{{ s.price|fcur if s.price else t("common.na") }}</td>
       <td>{{ s.deed_type or "—" }}</td>
     </tr>
     {% endfor %}
@@ -973,9 +965,9 @@ a.glossary-link {
   {% endif %}
 
   {% if report.ownership_signals %}
-  <h3>Ownership Intelligence</h3>
+  <h3>{{ t("prop.ownership_intel") }}</h3>
   <table>
-    <thead><tr><th>Signal</th><th>Detail</th></tr></thead>
+    <thead><tr><th>{{ t("prop.th_signal") }}</th><th>{{ t("prop.th_detail") }}</th></tr></thead>
     <tbody>
     {% for sig in report.ownership_signals %}
     <tr>
@@ -987,13 +979,13 @@ a.glossary-link {
   </table>
   {% if report.ownership_interpretation %}
   <div style="font-size: 8.5pt; margin-top: 6pt; padding: 6pt 8pt; background: #eff6ff; border-left: 3pt solid #2563eb; border-radius: 2pt;">
-    <strong>What this means for a buyer:</strong> {{ report.ownership_interpretation }}
+    <strong>{{ t("prop.ownership_means_label") }}</strong> {{ report.ownership_interpretation }}
   </div>
   {% endif %}
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Derived from public sales history and tax records. Taxpayer names are not available via open data.</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("prop.ownership_note") }}</p>
   {% endif %}
   {% else %}
-  <p class="section-note">Property data unavailable for this location.</p>
+  <p class="section-note">{{ t("prop.unavailable") }}</p>
   {% endif %}
 </div>
 
@@ -1002,42 +994,42 @@ a.glossary-link {
   <h2 id="section-market">Market Context &amp; Comparables</h2>
 
   {% if comps and comps.sales_volume %}
-  <h3>Comparable Sales ({{ comps.sales_volume }} <a href="#glossary-arms-length" class="glossary-link">arm's-length</a> transaction{{ "s" if comps.sales_volume != 1 else "" }})</h3>
+  <h3>{{ t("market.comp_sales_heading_pre") }}<a href="#glossary-arms-length" class="glossary-link">{{ tn("market.comp_sales_link_full", comps.sales_volume, n=comps.sales_volume) }}</a>)</h3>
 
   {% if report.comp_valuation %}
   {% set cv = report.comp_valuation %}
   <div class="dev-potential" style="background: #fefce8; border-color: #fde68a;">
     {% if not cv.data_limited %}
-    <div class="headline" style="color: #92400e;">Valuation Indicators</div>
+    <div class="headline" style="color: #92400e;">{{ t("market.valuation_indicators") }}</div>
     {% else %}
-    <div class="headline" style="color: #92400e;">Comparable Market Activity</div>
+    <div class="headline" style="color: #92400e;">{{ t("market.comp_activity") }}</div>
     {% endif %}
     {% if cv.median_sale_price and cv.sample_size >= 3 %}
     <div class="detail">
-      <strong>Median nearby sale: {{ cv.median_sale_price|fcur }}</strong>
-      {% if cv.price_range_min and cv.price_range_max %} (range {{ cv.price_range_min|fcur }}–{{ cv.price_range_max|fcur }}){% endif %}
-      <span style="color: #92400e;">— {{ cv.comp_basis or "nearby arm's-length sales" }}</span>
+      <strong>{{ t("market.median_nearby_sale", v=cv.median_sale_price|fcur) }}</strong>
+      {% if cv.price_range_min and cv.price_range_max %}{{ t("market.range", lo=cv.price_range_min|fcur, hi=cv.price_range_max|fcur) }}{% endif %}
+      <span style="color: #92400e;">— {{ cv.comp_basis or t("market.comp_basis_default") }}</span>
     </div>
     {% elif cv.sample_size >= 1 and cv.price_range_min %}
     <div class="detail">
-      <strong>{{ cv.sample_size }} nearby arm's-length sale{{ "s" if cv.sample_size != 1 else "" }}:</strong>
+      <strong>{{ tn("market.nearby_sales_count", cv.sample_size, n=cv.sample_size) }}</strong>
       {{ cv.price_range_min|fcur }}{% if cv.price_range_max and cv.price_range_max != cv.price_range_min %} – {{ cv.price_range_max|fcur }}{% endif %}
-      <span style="color: #92400e;">— {{ cv.comp_basis or "nearby arm's-length sales" }}</span>
-      <br><span style="font-size: 8pt; color: #92400e;">Too few sales for a reliable central estimate — treat as directional only.</span>
+      <span style="color: #92400e;">— {{ cv.comp_basis or t("market.comp_basis_default") }}</span>
+      <br><span style="font-size: 8pt; color: #92400e;">{{ t("market.too_few_sales") }}</span>
     </div>
     {% endif %}
     {% if cv.median_price_per_bldg_sqft %}
-    <div class="detail" style="margin-top: 4pt;">Median price per building sq ft: <strong>${{ "%.0f"|format(cv.median_price_per_bldg_sqft) }}</strong> <span style="font-size: 7pt; color: #92400e;">(sold structures; a size-normalized cross-check on the sale prices above)</span></div>
+    <div class="detail" style="margin-top: 4pt;">{{ t("market.median_per_sqft") }}<strong>${{ "%.0f"|format(cv.median_price_per_bldg_sqft) }}</strong> <span style="font-size: 7pt; color: #92400e;">{{ t("market.median_per_sqft_hint") }}</span></div>
     {% endif %}
     {% if not cv.data_limited %}
     <div class="detail" style="margin-top: 4pt;">
-      <strong>Implied land value: {{ cv.land_value_low|fcur }} — {{ cv.land_value_high|fcur }}</strong>
-      (${{ "%.0f"|format(cv.land_per_sqft_low) }}–${{ "%.0f"|format(cv.land_per_sqft_high) }}/land sq ft × subject lot, n={{ cv.land_sample_size }})
-      {% if cv.per_buildable_low is not none %}<br>≈ ${{ "%.0f"|format(cv.per_buildable_low) }}–${{ "%.0f"|format(cv.per_buildable_high) }} of land cost per buildable sq ft.{% endif %}
+      <strong>{{ t("market.implied_land_value", lo=cv.land_value_low|fcur, hi=cv.land_value_high|fcur) }}</strong>
+      {{ t("market.land_value_calc", lo="%.0f"|format(cv.land_per_sqft_low), hi="%.0f"|format(cv.land_per_sqft_high), n=cv.land_sample_size) }}
+      {% if cv.per_buildable_low is not none %}<br>{{ t("market.per_buildable", lo="%.0f"|format(cv.per_buildable_low), hi="%.0f"|format(cv.per_buildable_high)) }}{% endif %}
     </div>
-    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">This is not an appraisal. The land-value range applies the interquartile (25th–75th percentile) of comparable $/land sq ft to the subject lot. An independent appraisal is recommended for transaction decisions.</div>
+    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">{{ t("market.not_appraisal") }}</div>
     {% else %}
-    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">These are <strong>nearby whole-property sales</strong>, not a valuation of the subject and not land-only value. The comparables' lot size, building size, and condition are not reported in public assessor data, so they are <strong>not size- or condition-matched</strong> to the subject — read them as a market-level price signal only. A lot-normalized land value (per land sq ft) cannot be computed for this market from public data. An independent appraisal is recommended for any transaction decision.</div>
+    <div style="font-size: 7pt; color: #92400e; margin-top: 4pt;">{{ t("market.data_limited_note") }}</div>
     {% endif %}
   </div>
   {% endif %}
@@ -1055,7 +1047,7 @@ a.glossary-link {
   {% endif %}
 
   <table>
-    <thead><tr><th>PIN</th><th>Date</th><th class="num">Price</th><th class="num">Land SF</th><th class="num">Bldg SF</th><th class="num">$/Bldg SF</th><th class="num">Dist</th></tr></thead>
+    <thead><tr><th>PIN</th><th>{{ t("prop.th_date") }}</th><th class="num">{{ t("prop.th_price") }}</th><th class="num">{{ t("market.th_land_sf") }}</th><th class="num">{{ t("market.th_bldg_sf") }}</th><th class="num">{{ t("market.th_price_per_bldg") }}</th><th class="num">{{ t("market.th_dist") }}</th></tr></thead>
     <tbody>
     {% for c in comps.sales[:10] %}
     <tr>
@@ -1065,54 +1057,54 @@ a.glossary-link {
       <td class="num">{{ c.land_sqft|fnum if c.land_sqft else "—" }}</td>
       <td class="num">{{ c.bldg_sqft|fnum if c.bldg_sqft else "—" }}</td>
       <td class="num">{{ ("$%.0f"|format(c.price_per_bldg_sqft)) if c.price_per_bldg_sqft else "—" }}</td>
-      <td class="num">{{ ("%.2f mi"|format(c.distance_mi)) if c.distance_mi else "—" }}</td>
+      <td class="num">{{ ("%.2f"|format(c.distance_mi) ~ " " ~ t("common.mi")) if c.distance_mi else "—" }}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
   {% else %}
-  <p class="section-note">No comparable sales found within 0.25 miles in the last 3 years.</p>
+  <p class="section-note">{{ t("market.no_comps") }}</p>
   {% endif %}
 
   {% if nbr and nbr.demographics %}
-  <h3>Demographics</h3>
+  <h3>{{ t("market.demographics") }}</h3>
   <dl class="info-grid">
-    {% if nbr.demographics.population %}<dt>Population</dt><dd>{{ nbr.demographics.population|fnum }}</dd>{% endif %}
-    {% if nbr.demographics.median_household_income %}<dt>Median Income</dt><dd>{{ nbr.demographics.median_household_income|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.median_gross_rent %}<dt>Median Rent</dt><dd>{{ nbr.demographics.median_gross_rent|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.median_home_value %}<dt>Median Home Value</dt><dd>{{ nbr.demographics.median_home_value|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.poverty_rate is not none %}<dt>Poverty Rate</dt><dd>{{ "%.1f"|format(nbr.demographics.poverty_rate * 100) }}%</dd>{% endif %}
-    {% if nbr.demographics.owner_occupied_pct is not none %}<dt>Owner-Occupied</dt><dd>{{ "%.1f"|format(nbr.demographics.owner_occupied_pct * 100) }}%</dd>{% endif %}
-    {% if nbr.demographics.bachelors_degree_pct is not none %}<dt>Bachelor's+</dt><dd>{{ "%.1f"|format(nbr.demographics.bachelors_degree_pct * 100) }}%</dd>{% endif %}
+    {% if nbr.demographics.population %}<dt>{{ t("market.population") }}</dt><dd>{{ nbr.demographics.population|fnum }}</dd>{% endif %}
+    {% if nbr.demographics.median_household_income %}<dt>{{ t("market.median_income") }}</dt><dd>{{ nbr.demographics.median_household_income|fcur }}</dd>{% endif %}
+    {% if nbr.demographics.median_gross_rent %}<dt>{{ t("market.median_rent") }}</dt><dd>{{ nbr.demographics.median_gross_rent|fcur }}</dd>{% endif %}
+    {% if nbr.demographics.median_home_value %}<dt>{{ t("market.median_home_value") }}</dt><dd>{{ nbr.demographics.median_home_value|fcur }}</dd>{% endif %}
+    {% if nbr.demographics.poverty_rate is not none %}<dt>{{ t("market.poverty_rate") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.poverty_rate * 100) }}%</dd>{% endif %}
+    {% if nbr.demographics.owner_occupied_pct is not none %}<dt>{{ t("market.owner_occupied") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.owner_occupied_pct * 100) }}%</dd>{% endif %}
+    {% if nbr.demographics.bachelors_degree_pct is not none %}<dt>{{ t("market.bachelors") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.bachelors_degree_pct * 100) }}%</dd>{% endif %}
   </dl>
   {% endif %}
 
   {% if nbr and nbr.walkscore %}
   <div class="scores">
     {% if nbr.walkscore.walk_score is not none %}
-    <div class="score-badge"><div class="value">{{ nbr.walkscore.walk_score }}</div><div class="label">Walk Score</div></div>
+    <div class="score-badge"><div class="value">{{ nbr.walkscore.walk_score }}</div><div class="label">{{ t("market.walk_score") }}</div></div>
     {% endif %}
     {% if nbr.walkscore.transit_score is not none %}
-    <div class="score-badge"><div class="value">{{ nbr.walkscore.transit_score }}</div><div class="label">Transit Score</div></div>
+    <div class="score-badge"><div class="value">{{ nbr.walkscore.transit_score }}</div><div class="label">{{ t("market.transit_score") }}</div></div>
     {% endif %}
     {% if nbr.walkscore.bike_score is not none %}
-    <div class="score-badge"><div class="value">{{ nbr.walkscore.bike_score }}</div><div class="label">Bike Score</div></div>
+    <div class="score-badge"><div class="value">{{ nbr.walkscore.bike_score }}</div><div class="label">{{ t("market.bike_score") }}</div></div>
     {% endif %}
   </div>
   {% endif %}
 
   {% if nbr and nbr.transit %}
-  <h3>Transit Access</h3>
+  <h3>{{ t("market.transit_access") }}</h3>
   {% if nbr.transit.nearest_cta_rail %}
-  <p style="font-size: 9pt;"><strong>CTA Rail:</strong> {{ nbr.transit.nearest_cta_rail }}{% if nbr.transit.cta_rail_distance_mi %} ({{ "%.1f"|format(nbr.transit.cta_rail_distance_mi) }} mi){% endif %}{% if nbr.transit.cta_lines %} — {{ nbr.transit.cta_lines | join(", ") }}{% endif %}</p>
+  <p style="font-size: 9pt;"><strong>{{ t("market.cta_rail") }}</strong> {{ nbr.transit.nearest_cta_rail }}{% if nbr.transit.cta_rail_distance_mi %} ({{ "%.1f"|format(nbr.transit.cta_rail_distance_mi) }} {{ t("common.mi") }}){% endif %}{% if nbr.transit.cta_lines %} — {{ nbr.transit.cta_lines | join(", ") }}{% endif %}</p>
   {% endif %}
   {% if nbr.transit.nearest_metra %}
-  <p style="font-size: 9pt;"><strong>Metra:</strong> {{ nbr.transit.nearest_metra }}{% if nbr.transit.metra_distance_mi %} ({{ "%.1f"|format(nbr.transit.metra_distance_mi) }} mi){% endif %}{% if nbr.transit.metra_line %} — {{ nbr.transit.metra_line }}{% endif %}</p>
+  <p style="font-size: 9pt;"><strong>{{ t("market.metra") }}</strong> {{ nbr.transit.nearest_metra }}{% if nbr.transit.metra_distance_mi %} ({{ "%.1f"|format(nbr.transit.metra_distance_mi) }} {{ t("common.mi") }}){% endif %}{% if nbr.transit.metra_line %} — {{ nbr.transit.metra_line }}{% endif %}</p>
   {% endif %}
   {% endif %}
 
   {% if report.nearby_development and (report.nearby_development.new_construction_count or report.nearby_development.demolition_count) %}
-  <h3>Nearby Development Activity (12 months, 0.5mi)</h3>
+  <h3>{{ t("market.nearby_dev") }}</h3>
   {% if report.development_trend %}
   <p style="font-size: 9.5pt; margin-bottom: 8pt; padding: 6pt 10pt; background: #f9fafb; border-left: 3pt solid #2563eb; border-radius: 2pt;">
     {{ report.development_trend.narrative }}
@@ -1120,17 +1112,17 @@ a.glossary-link {
   {% endif %}
   {% if report.nearby_development.recent_projects %}
   <table style="font-size: 7pt;">
-    <thead><tr><th>#</th><th>Type</th><th>Address</th><th>Description</th><th class="num">Cost</th><th>Date</th><th class="num">Dist</th></tr></thead>
+    <thead><tr><th>#</th><th>{{ t("market.th_type") }}</th><th>{{ t("market.th_address") }}</th><th>{{ t("market.th_description") }}</th><th class="num">{{ t("market.th_cost") }}</th><th>{{ t("prop.th_date") }}</th><th class="num">{{ t("market.th_dist") }}</th></tr></thead>
     <tbody>
     {% for p in report.nearby_development.recent_projects[:10] %}
     <tr>
       <td>{{ loop.index }}</td>
-      <td>{% if "WRECKING" in (p.permit_type or "") or "DEMOLITION" in (p.permit_type or "") %}<span style="color: #ef4444;">Demo</span>{% else %}<span style="color: #10b981;">New</span>{% endif %}</td>
+      <td>{% if "WRECKING" in (p.permit_type or "") or "DEMOLITION" in (p.permit_type or "") %}<span style="color: #ef4444;">{{ t("market.demo") }}</span>{% else %}<span style="color: #10b981;">{{ t("market.new") }}</span>{% endif %}</td>
       <td>{{ p.formatted_address or "—" }}</td>
       <td>{{ ((p.work_description or "—")[:50]) }}{% if (p.work_description or "")|length > 50 %}…{% endif %}</td>
       <td class="num">{{ ("$%s"|format(("{:,.0f}".format(p.reported_cost|float)))) if p.reported_cost else "—" }}</td>
       <td>{{ p.issue_date[:10] if p.issue_date else "—" }}</td>
-      <td class="num">{{ ("%.2f mi"|format(p.distance_mi)) if p.distance_mi else "—" }}</td>
+      <td class="num">{{ ("%.2f"|format(p.distance_mi) ~ " " ~ t("common.mi")) if p.distance_mi else "—" }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -1140,7 +1132,7 @@ a.glossary-link {
   {% if report.construction_map_b64 %}
   <figure style="text-align: center; margin: 4pt 0 6pt 0; page-break-inside: avoid;">
     <img src="data:image/png;base64,{{ report.construction_map_b64 }}" alt="Construction &amp; Demolition Activity Map" style="max-width: 65%; border-radius: 4pt;">
-    <figcaption style="font-size: 7.5pt; color: #6b7280; margin-top: 3pt;">New construction (green) and demolition (red) permits within 0.5&nbsp;mi over the past 12 months.</figcaption>
+    <figcaption style="font-size: 7.5pt; color: #6b7280; margin-top: 3pt;">{{ t("market.construction_caption") }}</figcaption>
   </figure>
   {% endif %}
   {% endif %}
@@ -1148,46 +1140,46 @@ a.glossary-link {
 
 <!-- SECTION 7: Financial Feasibility & Incentives (flows) -->
 <div class="section-flow">
-  <h2 id="section-financial">Financial Feasibility &amp; Incentives</h2>
+  <h2 id="section-financial">{{ t("fin.heading") }}</h2>
 
   {% if inc %}
   <dl class="info-grid">
-    <dt><a href="#glossary-tif" class="glossary-link">TIF</a> District</dt>
-    <dd>{% if inc.in_tif_district %}<span class="status-yes">{{ inc.tif_name or "Yes" }}</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt><a href="#glossary-oz" class="glossary-link">Opportunity Zone</a></dt>
-    <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">Yes</span> (Tract: {{ inc.oz_tract or "N/A" }}){% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt><a href="#glossary-ez" class="glossary-link">Enterprise Zone</a></dt>
-    <dd>{% if inc.in_enterprise_zone %}<span class="status-yes">{{ inc.enterprise_zone_name or "Yes" }}</span>{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt><a href="#glossary-qct" class="glossary-link">LIHTC Qualified Census Tract</a></dt>
-    <dd>{% if inc.in_qct %}<span class="status-yes">Yes</span> (Tract: {{ inc.qct_tract or "N/A" }}){% else %}<span class="status-no">No</span>{% endif %}</dd>
-    <dt><a href="#glossary-nmtc" class="glossary-link">NMTC Low-Income Community</a></dt>
-    <dd>{% if inc.in_nmtc %}<span class="status-yes">Yes</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">(Severely Distressed)</span>{% endif %}{% else %}<span class="status-no">No</span>{% endif %}</dd>
-    {% if inc.property_tax_class %}<dt>Tax Incentive Class</dt><dd>{{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</dd>{% endif %}
+    <dt><a href="#glossary-tif" class="glossary-link">TIF</a> {{ t("fin.tif_district") }}</dt>
+    <dd>{% if inc.in_tif_district %}<span class="status-yes">{{ inc.tif_name or t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt><a href="#glossary-oz" class="glossary-link">{{ t("fin.opportunity_zone") }}</a></dt>
+    <dd>{% if inc.in_opportunity_zone %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.oz_tract or t("common.na") }}){% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt><a href="#glossary-ez" class="glossary-link">{{ t("fin.enterprise_zone") }}</a></dt>
+    <dd>{% if inc.in_enterprise_zone %}<span class="status-yes">{{ inc.enterprise_zone_name or t("reg.yes") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt><a href="#glossary-qct" class="glossary-link">{{ t("fin.qct") }}</a></dt>
+    <dd>{% if inc.in_qct %}<span class="status-yes">{{ t("reg.yes") }}</span> ({{ t("fin.tract") }}: {{ inc.qct_tract or t("common.na") }}){% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dt><a href="#glossary-nmtc" class="glossary-link">{{ t("fin.nmtc") }}</a></dt>
+    <dd>{% if inc.in_nmtc %}<span class="status-yes">{{ t("reg.yes") }}</span>{% if inc.nmtc_severe_distress %} <span class="status-warn">{{ t("fin.severely_distressed") }}</span>{% endif %}{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    {% if inc.property_tax_class %}<dt>{{ t("fin.tax_incentive_class") }}</dt><dd>{{ inc.property_tax_class }}{% if inc.tax_incentive_description %} — {{ inc.tax_incentive_description }}{% endif %}</dd>{% endif %}
   </dl>
 
   {% if report.incentive_stacking_narrative %}
   <div style="font-size: 9pt; margin-bottom: 12pt; padding: 8pt 12pt; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4pt;">
-    <strong style="color: #1e40af;">Incentive Stacking:</strong> {{ report.incentive_stacking_narrative }}
+    <strong style="color: #1e40af;">{{ t("fin.incentive_stacking_label") }}</strong> {{ report.incentive_stacking_narrative }}
   </div>
   {% endif %}
 
   {% if inc.in_tif_district and (inc.tif_total_revenue or inc.tif_fund_balance) %}
-  <h3>TIF Financials</h3>
+  <h3>{{ t("fin.tif_financials") }}</h3>
   <dl class="info-grid">
-    {% if inc.tif_total_revenue %}<dt>Total Revenue</dt><dd>{{ inc.tif_total_revenue|fcur }}</dd>{% endif %}
-    {% if inc.tif_total_expenditure %}<dt>Total Expenditure</dt><dd>{{ inc.tif_total_expenditure|fcur }}</dd>{% endif %}
-    {% if inc.tif_fund_balance %}<dt>Fund Balance</dt><dd>{{ inc.tif_fund_balance|fcur }}</dd>{% endif %}
-    {% if inc.tif_year_start %}<dt>Established</dt><dd>{{ inc.tif_year_start }}</dd>{% endif %}
-    {% if inc.tif_end_year %}<dt>Expires</dt><dd>{{ inc.tif_end_year }}</dd>{% endif %}
+    {% if inc.tif_total_revenue %}<dt>{{ t("fin.total_revenue") }}</dt><dd>{{ inc.tif_total_revenue|fcur }}</dd>{% endif %}
+    {% if inc.tif_total_expenditure %}<dt>{{ t("fin.total_expenditure") }}</dt><dd>{{ inc.tif_total_expenditure|fcur }}</dd>{% endif %}
+    {% if inc.tif_fund_balance %}<dt>{{ t("fin.fund_balance") }}</dt><dd>{{ inc.tif_fund_balance|fcur }}</dd>{% endif %}
+    {% if inc.tif_year_start %}<dt>{{ t("fin.established") }}</dt><dd>{{ inc.tif_year_start }}</dd>{% endif %}
+    {% if inc.tif_end_year %}<dt>{{ t("fin.expires") }}</dt><dd>{{ inc.tif_end_year }}</dd>{% endif %}
   </dl>
   {% endif %}
 
   {% if inc.grant_programs and inc.grant_programs.total_projects %}
-  <h3>Grant Programs (SBIF / NOF)</h3>
-  <p style="font-size: 9pt;">{{ inc.grant_programs.total_projects }} projects, {{ inc.grant_programs.total_funding|fcur }} total funding in this area.</p>
+  <h3>{{ t("fin.grant_programs") }}</h3>
+  <p style="font-size: 9pt;">{{ t("fin.grant_body", projects=inc.grant_programs.total_projects, funding=inc.grant_programs.total_funding|fcur) }}</p>
   {% if inc.grant_programs.recent_projects %}
   <table>
-    <thead><tr><th>Project</th><th>Program</th><th class="num">Amount</th></tr></thead>
+    <thead><tr><th>{{ t("fin.th_project") }}</th><th>{{ t("fin.th_program") }}</th><th class="num">{{ t("fin.th_amount") }}</th></tr></thead>
     <tbody>
     {% for g in inc.grant_programs.recent_projects[:5] %}
     <tr>
@@ -1201,27 +1193,27 @@ a.glossary-link {
   {% endif %}
   {% endif %}
   {% else %}
-  <p class="section-note">Incentive data unavailable for this location.</p>
+  <p class="section-note">{{ t("fin.unavailable") }}</p>
   {% endif %}
 
   {% if prop and prop.estimated_annual_tax %}
-  <h3>Tax Estimate</h3>
+  <h3>{{ t("fin.tax_estimate") }}</h3>
   <dl class="info-grid">
-    <dt>Estimated Annual Tax</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">(estimated from assessed value)</span>{% endif %}</dd>
+    <dt>{{ t("fin.estimated_annual_tax") }}</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">{{ t("fin.tax_fallback_short") }}</span>{% endif %}</dd>
   </dl>
-  <p class="section-note">Market value, assessed value, and effective tax rate are detailed under Property &amp; Physical Characteristics.</p>
+  <p class="section-note">{{ t("fin.tax_detail_note") }}</p>
 
   {% if prop.tax_breakdown %}
-  <h3>Tax Breakdown by Agency</h3>
+  <h3>{{ t("fin.tax_breakdown") }}</h3>
   <table style="font-size: 8pt;">
-    <thead><tr><th>Agency</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+    <thead><tr><th>{{ t("fin.th_agency") }}</th><th class="num">{{ t("fin.th_rate") }}</th><th class="num">{{ t("fin.th_amount") }}</th></tr></thead>
     <tbody>
-    {% for t in prop.tax_breakdown|sort(attribute="amount", reverse=true) %}
+    {% for row in prop.tax_breakdown|sort(attribute="amount", reverse=true) %}
     {% if loop.index <= 5 %}
     <tr>
-      <td>{{ t.agency }}</td>
-      <td class="num">{{ "%.4f"|format(t.rate) if t.rate else "—" }}</td>
-      <td class="num">{{ t.amount|fcur if t.amount else "—" }}</td>
+      <td>{{ row.agency }}</td>
+      <td class="num">{{ "%.4f"|format(row.rate) if row.rate else "—" }}</td>
+      <td class="num">{{ row.amount|fcur if row.amount else "—" }}</td>
     </tr>
     {% endif %}
     {% endfor %}
@@ -1229,7 +1221,7 @@ a.glossary-link {
   </table>
   {% set other_amount = prop.tax_breakdown|sort(attribute="amount", reverse=true)|list %}
   {% if other_amount|length > 5 %}
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">Showing top 5 of {{ other_amount|length }} taxing agencies.</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("fin.top_agencies", n=other_amount|length) }}</p>
   {% endif %}
   {% endif %}
   {% endif %}
@@ -1240,15 +1232,15 @@ a.glossary-link {
   <h2 id="section-site-condition">Site Condition &amp; History</h2>
 
   {% if report.address_violations %}
-  <h3>Building Violations at Address ({{ report.address_violations|length }})</h3>
+  <h3>{{ t("site.violations_heading", n=report.address_violations|length) }}</h3>
   {% set open_v = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list %}
   {% set closed_v = report.address_violations|selectattr("violation_status", "equalto", "COMPLIED")|list %}
   <dl class="info-grid">
-    <dt>Open</dt><dd>{% if open_v %}<span class="status-warn">{{ open_v|length }}</span>{% else %}0{% endif %}</dd>
-    <dt>Closed/Complied</dt><dd>{{ closed_v|length }}</dd>
+    <dt>{{ t("site.open") }}</dt><dd>{% if open_v %}<span class="status-warn">{{ open_v|length }}</span>{% else %}0{% endif %}</dd>
+    <dt>{{ t("site.closed_complied") }}</dt><dd>{{ closed_v|length }}</dd>
   </dl>
   <table>
-    <thead><tr><th>Date</th><th>Status</th><th>Insp #</th><th>Description</th></tr></thead>
+    <thead><tr><th>{{ t("prop.th_date") }}</th><th>{{ t("reg.th_status") }}</th><th>{{ t("site.th_insp") }}</th><th>{{ t("market.th_description") }}</th></tr></thead>
     <tbody>
     {% for v in report.address_violations[:10] %}
     <tr>
@@ -1261,34 +1253,34 @@ a.glossary-link {
     </tbody>
   </table>
   {% else %}
-  <p class="section-note">No building violations found at this specific address.</p>
+  <p class="section-note">{{ t("site.no_violations") }}</p>
   {% endif %}
 
   {% if ctx.address_311 and ctx.address_311.total %}
-  <h3>311 Complaints at Address (12 months)</h3>
+  <h3>{{ t("site.complaints_311") }}</h3>
   {% if ctx.address_311.open_count %}
   <p style="font-size: 9.5pt; margin-bottom: 4pt;">
-    <span class="status-warn"><strong>{{ ctx.address_311.open_count }} open complaint{{ "s" if ctx.address_311.open_count != 1 else "" }}</strong></span>
+    <span class="status-warn"><strong>{{ tn("site.open_complaints", ctx.address_311.open_count, n=ctx.address_311.open_count) }}</strong></span>
     {% if ctx.address_311.by_type_open %}
     — {% for type, count in ctx.address_311.by_type_open.items() %}{{ type }}{% if count > 1 %} ({{ count }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
     {% endif %}
   </p>
   {% else %}
-  <p style="font-size: 9.5pt; margin-bottom: 4pt;"><span class="status-no">No open complaints</span></p>
+  <p style="font-size: 9.5pt; margin-bottom: 4pt;"><span class="status-no">{{ t("site.no_open_complaints") }}</span></p>
   {% endif %}
   {% if ctx.address_311.high_risk_flags %}
-  <p style="font-size: 9pt;"><span class="status-warn">High-Risk Flags:</span> {{ ctx.address_311.high_risk_flags | join(", ") }} <span style="color: #6b7280;">(structural / habitability / safety — warrant inspection)</span></p>
+  <p style="font-size: 9pt;"><span class="status-warn">{{ t("site.high_risk_flags") }}</span> {{ ctx.address_311.high_risk_flags | join(", ") }} <span style="color: #6b7280;">{{ t("site.high_risk_hint") }}</span></p>
   {% endif %}
   {% if ctx.address_311.routine_service_flags %}
-  <p style="font-size: 9pt; color: #6b7280;">Routine City service requests: {{ ctx.address_311.routine_service_flags | join(", ") }} — standard municipal abatement, not a structural or development-feasibility indicator.</p>
+  <p style="font-size: 9pt; color: #6b7280;">{{ t("site.routine_requests", flags=ctx.address_311.routine_service_flags | join(", ")) }}</p>
   {% endif %}
-  <p style="font-size: 8pt; color: #6b7280;">{{ ctx.address_311.total }} total complaints in past 12 months (open + closed).</p>
+  <p style="font-size: 8pt; color: #6b7280;">{{ t("site.total_complaints", n=ctx.address_311.total) }}</p>
   {% endif %}
 
   {% if report.address_permits %}
-  <h3>Permit History at Address ({{ report.address_permits|length }})</h3>
+  <h3>{{ t("site.permit_history", n=report.address_permits|length) }}</h3>
   <table style="font-size: 7pt;">
-    <thead><tr><th>Date</th><th>Permit #</th><th>Type</th><th>Work</th><th class="num">Cost</th><th>Contractor</th></tr></thead>
+    <thead><tr><th>{{ t("prop.th_date") }}</th><th>{{ t("site.th_permit") }}</th><th>{{ t("market.th_type") }}</th><th>{{ t("site.th_work") }}</th><th class="num">{{ t("market.th_cost") }}</th><th>{{ t("site.th_contractor") }}</th></tr></thead>
     <tbody>
     {% for p in report.address_permits[:10] %}
     <tr>
@@ -1305,48 +1297,48 @@ a.glossary-link {
   {% endif %}
 
   {% if crime %}
-  <h3>Crime Summary (Last 90 Days — Community Area)</h3>
+  <h3>{{ t("site.crime_heading") }}</h3>
   <p style="font-size: 9pt;">
-    {{ crime.total }} total incidents ({{ "%.0f"|format(crime.arrest_rate * 100) }}% arrest rate).
+    {{ t("site.crime_body", total=crime.total, rate="%.0f"|format(crime.arrest_rate * 100)) }}
     {% if crime.yoy %}
     {% set total_current = crime.yoy|sum(attribute='current_count') %}
     {% set total_prior = crime.yoy|sum(attribute='prior_year_count') %}
     {% set violent_cats = crime.yoy|selectattr("category", "in", ["HOMICIDE", "ASSAULT", "BATTERY", "ROBBERY", "CRIMINAL SEXUAL ASSAULT"])|list %}
     {% set violent_increase = violent_cats|selectattr("change_pct", "greaterthan", 50)|list %}
     {% if violent_increase %}
-    <span class="status-warn">Notable increase in {{ violent_increase|map(attribute='category')|map('lower')|join(', ') }}.</span>
+    <span class="status-warn">{{ t("site.crime_violent_increase", cats=violent_increase|map(attribute='category')|map('lower')|join(', ')) }}</span>
     {% else %}
     {% set overall_change = ((total_current - total_prior) / total_prior * 100) if total_prior > 0 else 0 %}
-    Overall trend: {% if overall_change > 10 %}<span class="status-warn">increasing</span>{% elif overall_change < -10 %}<span class="status-yes">decreasing</span>{% else %}stable{% endif %} vs. prior year.
+    {{ t("site.crime_trend_pre") }}{% if overall_change > 10 %}<span class="status-warn">{{ t("site.crime_increasing") }}</span>{% elif overall_change < -10 %}<span class="status-yes">{{ t("site.crime_decreasing") }}</span>{% else %}{{ t("site.crime_stable") }}{% endif %}{{ t("site.crime_trend_post") }}
     {% endif %}
     {% endif %}
   </p>
   {% endif %}
 
-  <h3>Due Diligence Checklist</h3>
+  <h3>{{ t("site.checklist") }}</h3>
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; font-size: 8.5pt;">
     <div>
-      <div style="font-weight: 600; color: #065f46; margin-bottom: 4pt;">&#10003; Completed in This Report</div>
+      <div style="font-weight: 600; color: #065f46; margin-bottom: 4pt;">&#10003; {{ t("site.completed_in_report") }}</div>
       <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
-        <li style="color: #047857;">&#10003; Zoning classification &amp; standards</li>
-        <li style="color: #047857;">&#10003; Overlay &amp; special district check</li>
-        <li style="color: #047857;">&#10003; FEMA flood zone determination</li>
-        <li style="color: #047857;">&#10003; EPA brownfield proximity search</li>
-        <li style="color: #047857;">&#10003; Property tax &amp; assessment analysis</li>
-        <li style="color: #047857;">&#10003; Comparable sales analysis</li>
-        <li style="color: #047857;">&#10003; Permit history review</li>
-        <li style="color: #047857;">&#10003; Building violation audit</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_zoning") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_overlay") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_flood") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_brownfield") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_tax") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_comps") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_permits") }}</li>
+        <li style="color: #047857;">&#10003; {{ t("site.check_violations") }}</li>
       </ul>
     </div>
     <div>
-      <div style="font-weight: 600; color: #92400e; margin-bottom: 4pt;">&#9744; Action Required</div>
+      <div style="font-weight: 600; color: #92400e; margin-bottom: 4pt;">&#9744; {{ t("site.action_required") }}</div>
       <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.6;">
-        <li>&#9744; Title search &amp; commitment</li>
-        <li>&#9744; ALTA/NSPS land survey</li>
-        {% if reg and reg.brownfield_sites %}<li style="color: #dc2626;">&#9744; Phase I ESA (brownfield nearby)</li>{% else %}<li>&#9744; Phase I ESA (if warranted)</li>{% endif %}
-        <li>&#9744; Utility verification (DWM/ComEd)</li>
-        <li>&#9744; Soil/geotechnical (if new construction)</li>
-        {% if reg and reg.in_special_flood_hazard %}<li style="color: #dc2626;">&#9744; Flood insurance quotes (SFHA)</li>{% else %}<li>&#9744; Flood insurance quotes (if applicable)</li>{% endif %}
+        <li>&#9744; {{ t("site.todo_title") }}</li>
+        <li>&#9744; {{ t("site.todo_survey") }}</li>
+        {% if reg and reg.brownfield_sites %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_esa_brownfield") }}</li>{% else %}<li>&#9744; {{ t("site.todo_esa") }}</li>{% endif %}
+        <li>&#9744; {{ t("site.todo_utility") }}</li>
+        <li>&#9744; {{ t("site.todo_soil") }}</li>
+        {% if reg and reg.in_special_flood_hazard %}<li style="color: #dc2626;">&#9744; {{ t("site.todo_flood_sfha") }}</li>{% else %}<li>&#9744; {{ t("site.todo_flood") }}</li>{% endif %}
       </ul>
     </div>
   </div>
@@ -1354,120 +1346,120 @@ a.glossary-link {
 
 <!-- SECTION 9: Recommended Next Steps -->
 <div class="section-flow">
-  <h2 id="section-next-steps">Recommended Next Steps</h2>
+  <h2 id="section-next-steps">{{ t("next.heading") }}</h2>
 
   {% set open_violations_count = report.address_violations|selectattr("violation_status", "equalto", "OPEN")|list|length if report.address_violations else 0 %}
 
   {% if open_violations_count > 0 or (reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register)) or (reg and reg.brownfield_sites) or (reg and reg.in_special_flood_hazard) %}
-  <h3>Immediate (Blocking Issues)</h3>
+  <h3>{{ t("next.immediate") }}</h3>
   <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
     {% if open_violations_count > 0 %}
-    <li>Resolve {{ open_violations_count }} open building code violation{{ "s" if open_violations_count > 1 else "" }} before applying for new permits — outstanding violations can delay or block permit issuance</li>
+    <li>{{ tn("next.resolve_violations", open_violations_count, n=open_violations_count) }}</li>
     {% endif %}
     {% if reg and (reg.in_landmark_district or reg.in_historic_district or reg.on_national_register) %}
-    <li>Contact the Commission on Chicago Landmarks before any exterior modifications — this property is in a
-      {%- if reg.in_landmark_district or reg.in_historic_district %} Chicago Landmark District{%- endif %}
-      {%- if reg.on_national_register %}{%- if reg.in_landmark_district or reg.in_historic_district %} /{%- endif %} National Register district{%- endif %}
-      requiring permit review</li>
+    <li>{{ t("next.contact_landmarks_pre") }}
+      {%- if reg.in_landmark_district or reg.in_historic_district %}{{ t("next.landmark_district_frag") }}{%- endif %}
+      {%- if reg.on_national_register %}{%- if reg.in_landmark_district or reg.in_historic_district %} /{%- endif %}{{ t("next.national_register_frag") }}{%- endif %}
+      {{ t("next.requiring_review") }}</li>
     {% endif %}
     {% if reg and reg.brownfield_sites %}
-    <li>Commission a Phase I Environmental Site Assessment (ESA) — {{ reg.brownfield_sites|length }} brownfield site{{ "s" if reg.brownfield_sites|length > 1 else "" }} identified nearby</li>
+    <li>{{ tn("next.commission_esa", reg.brownfield_sites|length, n=reg.brownfield_sites|length) }}</li>
     {% endif %}
     {% if reg and reg.in_special_flood_hazard %}
-    <li>Obtain a FEMA elevation certificate and flood insurance quotes — property is in a Special Flood Hazard Area</li>
+    <li>{{ t("next.elevation_cert") }}</li>
     {% endif %}
   </ul>
   {% endif %}
 
-  <h3>Due Diligence (Standard Process)</h3>
+  <h3>{{ t("next.due_diligence") }}</h3>
   <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
-    <li>Request title search from Cook County Recorder of Deeds for recorded easements and encumbrances</li>
-    <li>Engage a licensed surveyor for boundary survey and easement identification</li>
-    <li>Contact DWM and ComEd for utility location maps</li>
-    <li>Check Chicago Legistar for active zoning applications or planned developments affecting this property</li>
+    <li>{{ t("next.dd_title") }}</li>
+    <li>{{ t("next.dd_survey") }}</li>
+    <li>{{ t("next.dd_utility") }}</li>
+    <li>{{ t("next.dd_legistar") }}</li>
   </ul>
 
-  <h3>Advisory (Optimization)</h3>
+  <h3>{{ t("next.advisory") }}</h3>
   <ul style="font-size: 9pt; padding-left: 16pt; margin-bottom: 10pt;">
     {% if inc and inc.in_tif_district %}
-    <li>Contact the TIF administrator for <strong>{{ inc.tif_name }}</strong> to discuss available funding for site improvements, infrastructure, or environmental remediation</li>
+    <li>{{ t("next.adv_tif", tif=inc.tif_name) }}</li>
     {% endif %}
     {% if inc and inc.in_opportunity_zone %}
-    <li>Consult a tax advisor regarding Qualified Opportunity Fund (QOF) structuring — this property is in a designated Opportunity Zone (Tract {{ inc.oz_tract }})</li>
+    <li>{{ t("next.adv_oz", tract=inc.oz_tract) }}</li>
     {% endif %}
     {% if inc and inc.in_qct %}
-    <li>Explore LIHTC financing — QCT designation provides an enhanced 130% basis boost for affordable housing projects</li>
+    <li>{{ t("next.adv_qct") }}</li>
     {% endif %}
     {% if inc and inc.in_nmtc %}
-    <li>Contact a CDFI allocatee to explore NMTC financing for commercial, mixed-use, or community facility development</li>
+    <li>{{ t("next.adv_nmtc") }}</li>
     {% endif %}
-    <li>Commission an independent appraisal to confirm land value before structuring an offer — public-data comparables are a screening tool, not a valuation</li>
+    <li>{{ t("next.adv_appraisal") }}</li>
     {% if report.unit_yield %}
-    <li>Validate the as-of-right unit yield (~{{ report.unit_yield.units }} units) with a zoning attorney or expediter, accounting for parking, open-space, and unit-mix rules before underwriting</li>
+    <li>{{ t("next.adv_unit_yield", units=report.unit_yield.units) }}</li>
     {% else %}
-    <li>Confirm as-of-right density and bulk standards with a zoning attorney or expediter before underwriting</li>
+    <li>{{ t("next.adv_density") }}</li>
     {% endif %}
-    <li>Pull broker comparables and a local market study to pressure-test absorption, rents, and exit pricing for the intended product</li>
+    <li>{{ t("next.adv_broker") }}</li>
   </ul>
 </div>
 
 <!-- SECTION 10: Glossary -->
 <div class="section-flow">
-  <h2 id="section-glossary">Glossary</h2>
+  <h2 id="section-glossary">{{ t("glossary.heading") }}</h2>
 
   <div class="glossary-list">
     <dl>
       <div class="glossary-entry">
-        <dt><a id="glossary-adu">ADU (Accessory Dwelling Unit)</a></dt>
-        <dd>A secondary residential unit on a single-family lot, such as a coach house or basement apartment. Chicago's ADU ordinance allows these in certain zones to increase housing supply.</dd>
+        <dt><a id="glossary-adu">{{ t("glossary.adu.term") }}</a></dt>
+        <dd>{{ t("glossary.adu.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-arms-length">Arm's-Length Transaction</a></dt>
-        <dd>A sale between unrelated parties acting in their own self-interest, at fair market value. This report excludes non-arm's-length sales (family transfers, foreclosures, sub-$10K transactions) from comparable analysis.</dd>
+        <dt><a id="glossary-arms-length">{{ t("glossary.arms_length.term") }}</a></dt>
+        <dd>{{ t("glossary.arms_length.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-aro">ARO (Affordable Requirements Ordinance)</a></dt>
-        <dd>Chicago ordinance requiring residential developments of 10+ units receiving city financial assistance or zoning changes to set aside a percentage of units as affordable, or pay a fee into the Affordable Housing Fund.</dd>
+        <dt><a id="glossary-aro">{{ t("glossary.aro.term") }}</a></dt>
+        <dd>{{ t("glossary.aro.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-ez">EZ (Enterprise Zone)</a></dt>
-        <dd>State-designated areas offering tax incentives to encourage business investment and job creation, including sales tax exemptions on building materials, investment tax credits, and utility tax exemptions.</dd>
+        <dt><a id="glossary-ez">{{ t("glossary.ez.term") }}</a></dt>
+        <dd>{{ t("glossary.ez.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-nmtc">NMTC (New Markets Tax Credit)</a></dt>
-        <dd>Federal program providing 39% tax credit over 7 years for private investment in qualifying low-income communities through Community Development Financial Institutions (CDFIs). Severely distressed tracts receive allocation priority.</dd>
+        <dt><a id="glossary-nmtc">{{ t("glossary.nmtc.term") }}</a></dt>
+        <dd>{{ t("glossary.nmtc.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-oz">OZ (Opportunity Zone)</a></dt>
-        <dd>Federally designated census tracts where investors can receive capital gains tax benefits for long-term investments. Created by the 2017 Tax Cuts and Jobs Act to stimulate economic development in distressed communities.</dd>
+        <dt><a id="glossary-oz">{{ t("glossary.oz.term") }}</a></dt>
+        <dd>{{ t("glossary.oz.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-pd">PD (Planned Development)</a></dt>
-        <dd>A site-specific zoning designation requiring City Council approval. PDs allow flexibility in development standards but add a discretionary review process. Any change to an existing PD requires a new approval.</dd>
+        <dt><a id="glossary-pd">{{ t("glossary.pd.term") }}</a></dt>
+        <dd>{{ t("glossary.pd.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-pin">PIN (Property Index Number)</a></dt>
-        <dd>A 14-digit identifier assigned by the Cook County Assessor to every parcel of real property. Used for tax assessment, title records, and government data systems.</dd>
+        <dt><a id="glossary-pin">{{ t("glossary.pin.term") }}</a></dt>
+        <dd>{{ t("glossary.pin.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-qct">QCT (Qualified Census Tract)</a></dt>
-        <dd>HUD-designated census tract where 50%+ of households earn below 60% of Area Median Income. LIHTC (Low-Income Housing Tax Credit) projects in QCTs receive an enhanced basis boost of up to 130%, making affordable housing development more financially feasible.</dd>
+        <dt><a id="glossary-qct">{{ t("glossary.qct.term") }}</a></dt>
+        <dd>{{ t("glossary.qct.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-sfha">SFHA (Special Flood Hazard Area)</a></dt>
-        <dd>FEMA-designated zones with a 1% or greater annual chance of flooding (the "100-year floodplain"). Properties in SFHAs require flood insurance if federally financed and face additional construction requirements.</dd>
+        <dt><a id="glossary-sfha">{{ t("glossary.sfha.term") }}</a></dt>
+        <dd>{{ t("glossary.sfha.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-ssa">SSA (Special Service Area)</a></dt>
-        <dd>A defined geographic district where businesses pay an additional property tax to fund enhanced services such as streetscaping, marketing, snow removal, and security beyond standard city services.</dd>
+        <dt><a id="glossary-ssa">{{ t("glossary.ssa.term") }}</a></dt>
+        <dd>{{ t("glossary.ssa.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-tif">TIF (Tax Increment Financing)</a></dt>
-        <dd>A public financing tool that captures the increase in property tax revenue within a designated district over a base year to fund improvements within that district. Chicago TIF districts have a 23-year lifespan.</dd>
+        <dt><a id="glossary-tif">{{ t("glossary.tif.term") }}</a></dt>
+        <dd>{{ t("glossary.tif.def") }}</dd>
       </div>
       <div class="glossary-entry">
-        <dt><a id="glossary-tod">TOD (Transit-Oriented Development)</a></dt>
-        <dd>Development within a specified distance of a transit station (typically 1/4 mile for bus, 1/2 mile for rail). Chicago's TOD ordinance allows reduced parking requirements and density bonuses near transit.</dd>
+        <dt><a id="glossary-tod">{{ t("glossary.tod.term") }}</a></dt>
+        <dd>{{ t("glossary.tod.def") }}</dd>
       </div>
     </dl>
   </div>
@@ -1476,10 +1468,9 @@ a.glossary-link {
 <!-- SECTION 10: Zoning District Definitions -->
 {% if report.zone_definitions %}
 <div class="page-break">
-  <h2 id="section-zone-definitions">Zoning District Definitions</h2>
+  <h2 id="section-zone-definitions">{{ t("zonedef.heading") }}</h2>
   <p style="font-size: 9pt; color: #6b7280; margin-bottom: 10px;">
-    Reference standards for all zoning districts cited in this report, sourced from Chicago Municipal Code, Title 17.
-    Values shown are base district standards; overlays, planned developments, and bonuses may modify these limits.
+    {{ t("zonedef.intro") }}
   </p>
 
   {% for zd in report.zone_definitions %}
@@ -1488,23 +1479,23 @@ a.glossary-link {
       {{ zd.zone_class }} — {{ zd.name }}
       <span style="font-size: 8pt; font-weight: 400; color: #6b7280; margin-left: 8px;">{{ zd.code_section }}</span>
       {% if loop.first and report.context.parcel_zoning %}
-      <span style="font-size: 8pt; font-weight: 600; color: #2563eb; margin-left: 8px;">&#9679; Subject Property</span>
+      <span style="font-size: 8pt; font-weight: 600; color: #2563eb; margin-left: 8px;">&#9679; {{ t("zonedef.subject_property") }}</span>
       {% endif %}
     </div>
 
     {% if zd.far is not none or zd.max_height or zd.lot_coverage %}
     <table style="margin: 6px 0 6px 0; font-size: 9pt;">
-      <thead><tr><th style="width: 160px;">Standard</th><th>Value</th></tr></thead>
+      <thead><tr><th style="width: 160px;">{{ t("zonedef.th_standard") }}</th><th>{{ t("zoning.th_value") }}</th></tr></thead>
       <tbody>
-      {% if zd.far is not none %}<tr><td>Floor Area Ratio (FAR)</td><td>{{ zd.far }}</td></tr>{% endif %}
-      {% if zd.max_height %}<tr><td>Maximum Height</td><td>{{ zd.max_height }}</td></tr>{% endif %}
-      {% if zd.lot_coverage %}<tr><td>Lot Coverage</td><td>{{ zd.lot_coverage }}</td></tr>{% endif %}
+      {% if zd.far is not none %}<tr><td>{{ t("zoning.far_label") }}</td><td>{{ zd.far }}</td></tr>{% endif %}
+      {% if zd.max_height %}<tr><td>{{ t("zoning.max_height") }}</td><td>{{ zd.max_height }}</td></tr>{% endif %}
+      {% if zd.lot_coverage %}<tr><td>{{ t("zoning.lot_coverage") }}</td><td>{{ zd.lot_coverage }}</td></tr>{% endif %}
       </tbody>
     </table>
     {% endif %}
 
     {% if zd.uses %}
-    <div style="font-size: 8.5pt; color: #374151; margin-top: 4px;"><strong>Permitted Uses:</strong> {{ zd.uses }}</div>
+    <div style="font-size: 8.5pt; color: #374151; margin-top: 4px;"><strong>{{ t("zonedef.permitted_uses_label") }}</strong> {{ zd.uses }}</div>
     {% endif %}
 
     {% if zd.notes %}
@@ -1512,7 +1503,7 @@ a.glossary-link {
     {% endif %}
 
     {% if zd.is_fallback %}
-    <div style="font-size: 8pt; color: #d97706; margin-top: 3px;">&#9888; Non-standard or site-specific designation — verify with the City of Chicago Zoning Division.</div>
+    <div style="font-size: 8pt; color: #d97706; margin-top: 3px;">&#9888; {{ t("zonedef.fallback_note") }}</div>
     {% endif %}
   </div>
   {% endfor %}
@@ -1521,43 +1512,43 @@ a.glossary-link {
 
 <!-- SECTION 11: Data Sources & Disclaimers -->
 <div class="page-break">
-  <h2 id="section-data-sources">Data Sources &amp; Disclaimers</h2>
+  <h2 id="section-data-sources">{{ t("data.heading") }}</h2>
 
-  <h3>Data Sources</h3>
+  <h3>{{ t("data.sources") }}</h3>
   <table>
-    <thead><tr><th>Category</th><th>Source</th><th>Notes</th></tr></thead>
+    <thead><tr><th>{{ t("data.th_category") }}</th><th>{{ t("data.th_source") }}</th><th>{{ t("data.th_notes") }}</th></tr></thead>
     <tbody>
-    <tr><td>Property (parcel, characteristics, assessments, sales)</td><td>Cook County Assessor / GIS / Parcel Universe</td><td>Triennial assessments; arm's-length comps only</td></tr>
-    <tr><td>Zoning (classification, standards, overlays, adjacent)</td><td>Chicago Zoning MapServer + Municipal Code Title 17</td><td>Real-time spatial query; standards AI-extracted</td></tr>
-    <tr><td>Regulatory (flood, brownfields)</td><td>FEMA NFHL / EPA Cleanups in My Community</td><td>Real-time queries</td></tr>
-    <tr><td>Incentives (TIF, OZ, EZ, QCT, NMTC, grants)</td><td>City of Chicago / HUD / Census FIPS</td><td>Spatial + financial datasets</td></tr>
-    <tr><td>Demographics &amp; Transit</td><td>Census ACS 5-Year / CTA-Metra GTFS / Walk Score</td><td>ACS 2019–2023 (2-year lag)</td></tr>
-    <tr><td>Crime &amp; 311</td><td>Chicago Police Dept. / 311 via Data Portal</td><td>~7-day lag; 12-month address lookup</td></tr>
-    <tr><td>Permits &amp; Violations</td><td>City of Chicago Building Dept.</td><td>Address-specific + nearby activity</td></tr>
-    <tr><td>Affordable Housing (ARO)</td><td>City of Chicago Affordable Housing</td><td>Community area projects</td></tr>
+    <tr><td>{{ t("data.row_property_cat") }}</td><td>{{ t("data.row_property_src") }}</td><td>{{ t("data.row_property_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_zoning_cat") }}</td><td>{{ t("data.row_zoning_src") }}</td><td>{{ t("data.row_zoning_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_regulatory_cat") }}</td><td>{{ t("data.row_regulatory_src") }}</td><td>{{ t("data.row_regulatory_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_incentives_cat") }}</td><td>{{ t("data.row_incentives_src") }}</td><td>{{ t("data.row_incentives_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_demographics_cat") }}</td><td>{{ t("data.row_demographics_src") }}</td><td>{{ t("data.row_demographics_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_crime_cat") }}</td><td>{{ t("data.row_crime_src") }}</td><td>{{ t("data.row_crime_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_permits_cat") }}</td><td>{{ t("data.row_permits_src") }}</td><td>{{ t("data.row_permits_notes") }}</td></tr>
+    <tr><td>{{ t("data.row_aro_cat") }}</td><td>{{ t("data.row_aro_src") }}</td><td>{{ t("data.row_aro_notes") }}</td></tr>
     </tbody>
   </table>
 
   <hr style="border: none; border-top: 1px solid #374151; margin: 16pt 0;">
 
-  <h3>Methodology</h3>
+  <h3>{{ t("data.methodology") }}</h3>
   <p style="font-size: 8.5pt; margin-bottom: 8pt;">
-    This report aggregates publicly available government data from multiple sources. Zoning standards are extracted from the indexed Chicago Municipal Code via AI (Claude Haiku) and should be verified against the current ordinance. Property assessments are triennial and may not reflect current market values. Demographics are estimated from ACS 5-year survey data (2019–2023). Comparable sales are filtered for arm's-length transactions only (excluding multi-sales, sub-$10K, and non-standard deed types). Development potential is calculated as FAR × lot area and does not account for planned development restrictions, variance requirements, or site-specific conditions.
+    {{ t("data.methodology_body") }}
   </p>
 
   <div class="disclaimer">
-    <strong>IMPORTANT DISCLAIMER:</strong> This report is provided for informational purposes only and does not constitute legal, financial, or real estate advice. Zoning interpretations, regulatory determinations, and property valuations should be verified with the appropriate government agencies and qualified professionals before making investment, development, or compliance decisions. UrbanLayer makes no warranty as to the accuracy, completeness, or timeliness of the data presented. Data is sourced from public government APIs and may contain errors, omissions, or outdated information. Always consult with a licensed attorney for zoning and land use matters, a licensed appraiser for property valuations, and appropriate city departments for permit and regulatory compliance.
+    <strong>{{ t("data.disclaimer_label") }}</strong>{{ t("data.disclaimer_body") }}
   </div>
 
   {% if report.partial_failures %}
   <div style="margin-top: 12pt; font-size: 8pt; color: #9ca3af;">
-    <strong>Data gaps in this report:</strong> {{ report.partial_failures | join(", ") }}
+    <strong>{{ t("data.gaps_label") }}</strong> {{ report.partial_failures | join(", ") }}
   </div>
   {% endif %}
 
   <div style="margin-top: 24pt; text-align: center; font-size: 8pt; color: #9ca3af;">
-    Generated by UrbanLayer Chicago — urbanlayerchicago.com<br>
-    Report Date: {{ report_date }}
+    {{ t("data.footer_generated") }}<br>
+    {{ t("data.footer_date") }} {{ report_date }}
   </div>
 </div>
 

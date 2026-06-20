@@ -43,3 +43,31 @@ export function humanizeShoutyCase(value: string): string {
     })
     .join(" ");
 }
+
+/**
+ * Translate a FEMA flood-zone subtype (free-text `ZONE_SUBTY`, e.g.
+ * "AREA OF MINIMAL FLOOD HAZARD") into the active language. Falls back to a
+ * humanized version of the raw value when no translation exists.
+ */
+export function translateFloodSubtype(subtype: string | null | undefined): string {
+  if (!subtype) return "";
+  const norm = subtype.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+  const key = `data:terms.floodSubtypes.${norm}`;
+  const translated = i18n.t(key);
+  if (translated !== key) return translated;
+  return humanizeShoutyCase(subtype);
+}
+
+/**
+ * Localize the enumerable free-text qualifiers embedded in backend zone-definition
+ * values ("50 ft (varies by lot frontage)", "No max (bonuses available)") and the
+ * "ft" unit. English passes through byte-identical.
+ */
+export function localizeZoningValue(value: string | null | undefined): string {
+  if (!value) return value ?? "";
+  if (i18n.language.startsWith("en")) return value;
+  if (value === "No max (bonuses available)") return i18n.t("data:zoning.noMaxBonuses");
+  return value
+    .replace("(varies by lot frontage)", `(${i18n.t("data:zoning.variesByLotFrontage")})`)
+    .replace(/\bft\b/g, i18n.t("data:zoning.feetUnit"));
+}

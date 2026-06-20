@@ -1,3 +1,4 @@
+import i18n from "./i18n";
 import { parseSSE } from "./sse";
 import type {
   PinsResponse as DiscoveryPinsResponse,
@@ -160,6 +161,7 @@ export async function createReportCheckoutSession(
       lat: parcel.lat,
       lon: parcel.lon,
       pin: parcel.pin ?? undefined,
+      language: i18n.language && i18n.language !== "en" ? i18n.language : undefined,
     }),
   });
   if (!resp.ok) throw new Error("Failed to create report checkout session");
@@ -598,6 +600,7 @@ export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> 
     qs.set("lat", String(parcel.lat));
     qs.set("lon", String(parcel.lon));
   }
+  if (i18n.language && i18n.language !== "en") qs.set("language", i18n.language);
   try {
     const resp = await authFetch(`${API_BASE}/api/report?${qs}`);
     if (!resp.ok) return null;

@@ -318,7 +318,7 @@
     "medianCompSale": "Venta comp. mediana",
     "tifFundBalance": "Saldo del fondo TIF",
     "activeIncentives": "Incentivos activos",
-    "zonesCount": "{{count}} of 3 zones"
+    "zonesCount": "{{count}} de {{total}} zonas"
   },
   "terms": {
     "incentives": {
@@ -437,7 +437,20 @@
           "Estándares de diseño orientados al peatón"
         ]
       }
+    },
+    "floodSubtypes": {
+      "FLOODWAY": "Cauce de crecida",
+      "AREA_OF_MINIMAL_FLOOD_HAZARD": "Área de riesgo de inundación mínimo",
+      "0_2_PCT_ANNUAL_CHANCE_FLOOD_HAZARD": "Riesgo de inundación del 0.2% anual",
+      "1_PCT_ANNUAL_CHANCE_FLOOD_HAZARD_CONTAINED_IN_STRUCTURE": "Riesgo de inundación del 1% anual contenido en estructura",
+      "1_PCT_ANNUAL_CHANCE_FLOOD_HAZARD_CONTAINED_IN_CHANNEL": "Riesgo de inundación del 1% anual contenido en canal",
+      "AREA_WITH_REDUCED_FLOOD_RISK_DUE_TO_LEVEE": "Área con riesgo de inundación reducido por dique"
     }
+  },
+  "zoning": {
+    "variesByLotFrontage": "varía según el frente del lote",
+    "noMaxBonuses": "Sin máximo (bonificaciones disponibles)",
+    "feetUnit": "pies"
   },
   "report": {
     "siteReport": "Transcripción de conversación UrbanLayer",

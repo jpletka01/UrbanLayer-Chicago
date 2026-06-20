@@ -32,6 +32,7 @@ from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
 from backend.llm import tracked_create
 from backend import db
+from backend import report_i18n
 from backend.models import (
     ChatChunk,
     ChatRequest,
@@ -2152,6 +2153,7 @@ async def _fetch_report_data(
     *,
     pin: str | None = None,
     confidence: str | None = None,
+    language: str = "en",
 ) -> "ReportData":
     """Fetch all data for a v2 development feasibility report.
 
@@ -2502,6 +2504,10 @@ async def _fetch_report_data(
         resolved_pin=pin,
         resolved_confidence=confidence,
     )
+    # Set the render language before synthesis so the deterministic narrative
+    # builders below localize their output (they read report.language). No LLM.
+    from backend import report_i18n
+    report.language = report_i18n.normalize_lang(language)
 
     # V5 synthesis (all deterministic, no API calls)
     report.opportunities, report.constraints = _synthesize_opportunities_constraints(report)
@@ -3320,6 +3326,8 @@ def _synthesize_opportunities_constraints(
     comps = report.comparables
     standards = report.zoning_standards
     current_year = date.today().year
+    t = report_i18n.make_translator(report.language)
+    tn = report_i18n.make_plural(report.language)
 
     # --- Incentive stacking ---
     if inc:
@@ -3331,48 +3339,48 @@ def _synthesize_opportunities_constraints(
 
         if has_tif and has_oz and has_qct:
             opportunities.append({
-                "signal": "Triple incentive stack: TIF + OZ + QCT",
-                "detail": "TIF funds site improvements, OZ defers investor capital gains, QCT provides 130% LIHTC basis boost for affordable housing.",
+                "signal": t("oc.triple_stack.signal"),
+                "detail": t("oc.triple_stack.detail"),
                 "category": "incentive",
             })
         elif has_tif and has_oz:
             opportunities.append({
-                "signal": "TIF + Opportunity Zone",
-                "detail": "TIF can subsidize infrastructure and remediation; OZ structuring provides investors with tax-advantaged entry.",
+                "signal": t("oc.tif_oz.signal"),
+                "detail": t("oc.tif_oz.detail"),
                 "category": "incentive",
             })
         elif has_oz and has_qct:
             opportunities.append({
-                "signal": "OZ + Qualified Census Tract",
-                "detail": "OZ investors receive capital gains deferral; QCT provides 130% basis boost for LIHTC projects.",
+                "signal": t("oc.oz_qct.signal"),
+                "detail": t("oc.oz_qct.detail"),
                 "category": "incentive",
             })
 
         if has_tif and has_ez:
             opportunities.append({
-                "signal": "TIF + Enterprise Zone",
-                "detail": "TIF provides direct project funding; EZ provides sales tax exemption on building materials and investment tax credits.",
+                "signal": t("oc.tif_ez.signal"),
+                "detail": t("oc.tif_ez.detail"),
                 "category": "incentive",
             })
 
         if has_nmtc and inc.nmtc_severe_distress:
             opportunities.append({
-                "signal": "NMTC with Severe Distress designation",
-                "detail": "Severely Distressed tracts receive priority in CDFI allocation rounds for the 39% NMTC credit.",
+                "signal": t("oc.nmtc_distress.signal"),
+                "detail": t("oc.nmtc_distress.detail"),
                 "category": "incentive",
             })
 
         if has_oz and prop and (prop.bldg_sqft or 0) == 0:
             opportunities.append({
-                "signal": "Vacant lot in Opportunity Zone",
-                "detail": "Ground-up construction on vacant land is the cleanest Qualified Opportunity Fund investment — no substantial improvement test needed.",
+                "signal": t("oc.vacant_oz.signal"),
+                "detail": t("oc.vacant_oz.detail"),
                 "category": "incentive",
             })
 
         if inc.grant_programs and inc.grant_programs.total_funding and inc.grant_programs.total_funding > 500_000:
             opportunities.append({
-                "signal": "Active grant funding in area",
-                "detail": f"${inc.grant_programs.total_funding:,.0f} in SBIF/NOF grants awarded in this community area — established pipeline for applications.",
+                "signal": t("oc.grants.signal"),
+                "detail": t("oc.grants.detail", funding=f"${inc.grant_programs.total_funding:,.0f}"),
                 "category": "incentive",
             })
 
@@ -3380,38 +3388,38 @@ def _synthesize_opportunities_constraints(
             years_left = inc.tif_end_year - current_year
             if 0 < years_left <= 3:
                 constraints.append({
-                    "signal": f"TIF district expires in {years_left} year{'s' if years_left > 1 else ''}",
-                    "detail": f"{inc.tif_name} expires {inc.tif_end_year}. Apply for TIF funding before expiration.",
+                    "signal": tn("oc.tif_expiry.signal", years_left, years=years_left),
+                    "detail": t("oc.tif_expiry.detail", tif=inc.tif_name, year=inc.tif_end_year),
                     "category": "incentive",
                 })
 
     # --- TOD & Transit ---
     if nbr and nbr.transit and nbr.transit.tod_eligible and standards and standards.parking_residential:
         opportunities.append({
-            "signal": "TOD parking reduction eligible",
-            "detail": "Chicago TOD ordinance allows reduced parking near transit — could free buildable area otherwise consumed by parking.",
+            "signal": t("oc.tod_parking.signal"),
+            "detail": t("oc.tod_parking.detail"),
             "category": "zoning",
         })
 
     if nbr and nbr.walkscore and nbr.walkscore.walk_score and nbr.walkscore.walk_score >= 80 and nbr and nbr.transit and nbr.transit.tod_eligible:
         opportunities.append({
-            "signal": f"Walkable transit corridor (Walk Score {nbr.walkscore.walk_score})",
-            "detail": "High walkability + transit access supports reduced-parking or car-free residential development.",
+            "signal": t("oc.walkable.signal", walk=nbr.walkscore.walk_score),
+            "detail": t("oc.walkable.detail"),
             "category": "market",
         })
 
     if reg and any(o.layer_type == "adu" for o in (reg.overlays or [])):
         opportunities.append({
-            "signal": "ADU-eligible area",
-            "detail": "Accessory dwelling unit (coach house, basement apartment, rear cottage) is permitted — adds rental income potential without rezoning.",
+            "signal": t("oc.adu.signal"),
+            "detail": t("oc.adu.detail"),
             "category": "zoning",
         })
 
     # --- Development potential ---
     if prop and (prop.bldg_sqft or 0) == 0 and prop.land_sqft and dev and dev.max_buildable_sqft and dev.development_surplus_sqft and dev.development_surplus_sqft > 0:
         opportunities.append({
-            "signal": "Vacant lot with full development capacity",
-            "detail": f"{prop.land_sqft:,} sq ft lot allows up to {dev.max_buildable_sqft:,} sq ft with no existing structure.",
+            "signal": t("oc.vacant_full.signal"),
+            "detail": t("oc.vacant_full.detail", land=f"{prop.land_sqft:,}", buildable=f"{dev.max_buildable_sqft:,}"),
             "category": "zoning",
         })
 
@@ -3419,22 +3427,22 @@ def _synthesize_opportunities_constraints(
         utilization = prop.bldg_sqft / dev.max_buildable_sqft
         if utilization < 0.3:
             opportunities.append({
-                "signal": f"Under-improved property ({utilization:.0%} of allowed density)",
-                "detail": f"Existing {prop.bldg_sqft:,} sq ft uses {utilization:.0%} of the {dev.max_buildable_sqft:,} sq ft allowed. Significant expansion or teardown-rebuild potential.",
+                "signal": t("oc.under_improved.signal", pct=f"{utilization:.0%}".rstrip("%")),
+                "detail": t("oc.under_improved.detail", existing=f"{prop.bldg_sqft:,}", pct=f"{utilization:.0%}".rstrip("%"), buildable=f"{dev.max_buildable_sqft:,}"),
                 "category": "zoning",
             })
 
     if prop and prop.bldg_sqft and dev and dev.development_surplus_sqft is not None and dev.development_surplus_sqft <= 0:
         constraints.append({
-            "signal": "At FAR limit — no development surplus",
-            "detail": f"Existing {prop.bldg_sqft:,} sq ft structure is at or near the maximum allowed. Additional floor area requires a variance or rezoning.",
+            "signal": t("oc.at_far_limit.signal"),
+            "detail": t("oc.at_far_limit.detail", existing=f"{prop.bldg_sqft:,}"),
             "category": "zoning",
         })
 
     if prop and prop.bldg_age and prop.bldg_age >= 50 and prop.bldg_sqft and prop.bldg_sqft > 0:
         opportunities.append({
-            "signal": f"Building age ({prop.bldg_age} years) may qualify for historic tax credits",
-            "detail": "Federal 20% and Illinois 25% historic tax credits available for certified historic structures. Verify individual listing eligibility with Illinois SHPO.",
+            "signal": t("oc.historic_credits.signal", age=prop.bldg_age),
+            "detail": t("oc.historic_credits.detail"),
             "category": "financial",
         })
 
@@ -3444,43 +3452,43 @@ def _synthesize_opportunities_constraints(
         if standards and standards.far and prop.bldg_sqft and prop.land_sqft:
             allowed_sqft = standards.far * prop.land_sqft
             if prop.bldg_sqft > allowed_sqft * 1.05:
-                nonconformities.append(f"floor area ({prop.bldg_sqft:,} sq ft vs {allowed_sqft:,.0f} sq ft allowed by FAR {standards.far})")
+                nonconformities.append(t("oc.nonconf_floor_area", bldg=f"{prop.bldg_sqft:,}", allowed=f"{allowed_sqft:,.0f}", far=standards.far))
         if standards and standards.max_height_ft and prop.stories:
             est_height = prop.stories * 10
             if est_height > standards.max_height_ft:
-                nonconformities.append(f"height ({prop.stories} stories, est. {est_height}' vs {standards.max_height_ft:.0f}' limit)")
+                nonconformities.append(t("oc.nonconf_height", stories=prop.stories, est=est_height, limit=f"{standards.max_height_ft:.0f}"))
         if nonconformities:
             opportunities.append({
-                "signal": f"Likely legally nonconforming — predates {prop.year_built} zoning",
-                "detail": f"Built in {prop.year_built}, before current zoning code (1957/2004). Existing structure likely exceeds current standards for {' and '.join(nonconformities)}. Legally nonconforming buildings can continue current use but may face restrictions on expansion or reconstruction.",
+                "signal": t("oc.nonconforming.signal", year=prop.year_built),
+                "detail": t("oc.nonconforming.detail", year=prop.year_built, items=t("oc.nonconf_join").join(nonconformities)),
                 "category": "zoning",
             })
         elif prop.year_built < 1957:
             opportunities.append({
-                "signal": f"Pre-zoning building (built {prop.year_built})",
-                "detail": "Structure predates Chicago's 1957 comprehensive zoning code. Existing use and dimensions may be legally nonconforming ('grandfathered'). Verify conformity status before planning modifications.",
+                "signal": t("oc.pre_zoning.signal", year=prop.year_built),
+                "detail": t("oc.pre_zoning.detail"),
                 "category": "zoning",
             })
 
     # --- Regulatory ---
     if reg and reg.in_planned_development:
         constraints.append({
-            "signal": "Planned Development — discretionary approval required",
-            "detail": "Any modification to the approved PD plan requires City Council approval, public hearing, and aldermanic support (typically 6-18 months).",
+            "signal": t("oc.pd_discretionary.signal"),
+            "detail": t("oc.pd_discretionary.detail"),
             "category": "regulatory",
         })
 
     if reg and reg.in_landmark_district:
         constraints.append({
-            "signal": "Landmark district — design review required",
-            "detail": "Commission on Chicago Landmarks must review exterior modifications. Demolition is unlikely to be approved.",
+            "signal": t("oc.landmark_review.signal"),
+            "detail": t("oc.landmark_review.detail"),
             "category": "regulatory",
         })
 
     if reg and reg.on_national_register and not reg.in_landmark_district:
         constraints.append({
-            "signal": "National Register district — federal review for funded projects",
-            "detail": "Property is in a National Register historic district. Federal tax credit projects require Section 106 review. Local demolition or major alteration may trigger Landmarks Commission review.",
+            "signal": t("oc.nr_review.signal"),
+            "detail": t("oc.nr_review.detail"),
             "category": "regulatory",
         })
 
@@ -3498,30 +3506,30 @@ def _synthesize_opportunities_constraints(
             est_units = dev.max_buildable_sqft / 1000.0
         if est_units >= 9:  # within rounding of the 10-unit threshold
             constraints.append({
-                "signal": "ARO zone — affordable housing requirement at 10+ units",
-                "detail": "Projects of 10+ units must set aside units as affordable or pay in-lieu fee (~$175K/required unit). Factor into project economics.",
+                "signal": t("oc.aro_requirement.signal"),
+                "detail": t("oc.aro_requirement.detail"),
                 "category": "regulatory",
             })
 
     if reg and any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
         opportunities.append({
-            "signal": "Pedestrian street overlay",
-            "detail": "Requires 60% ground-floor transparency and active uses — constrains design but signals walkable commercial corridor with higher foot traffic.",
+            "signal": t("oc.pedestrian_overlay.signal"),
+            "detail": t("oc.pedestrian_overlay.detail"),
             "category": "regulatory",
         })
 
     if reg and reg.in_ssa:
         constraints.append({
-            "signal": "Special Service Area levy",
-            "detail": f"SSA {reg.ssa_name or ''} imposes additional property tax (typically 0.5-2.0% of EAV) beyond base property tax.",
+            "signal": t("oc.ssa_levy.signal"),
+            "detail": t("oc.ssa_levy.detail", ssa=reg.ssa_name or ""),
             "category": "financial",
         })
 
     # --- Financial ---
     if report.effective_tax_rate and report.effective_tax_rate > 0.035:
         constraints.append({
-            "signal": f"High effective tax rate ({report.effective_tax_rate:.1%})",
-            "detail": "Above Cook County median (~2.1%). Reduces NOI and may impair debt service coverage. Investigate Class 6b/7a/7b/8 incentive eligibility.",
+            "signal": t("oc.high_tax.signal", rate=f"{report.effective_tax_rate:.1%}"),
+            "detail": t("oc.high_tax.detail"),
             "category": "financial",
         })
 
@@ -3530,15 +3538,15 @@ def _synthesize_opportunities_constraints(
         # appreciation, and it raises the tax burden — frame it as a trend/cost to
         # verify, not an "appreciation opportunity" (see P7).
         opportunities.append({
-            "signal": f"Assessed value rising ({report.assessment_trend['cagr_pct']:.1f}% CAGR, reassessment trend)",
-            "detail": f"Assessed value rose {report.assessment_trend['total_change_pct']:.0f}% over {report.assessment_trend['years']} years ({report.assessment_trend.get('oldest_year')}–{report.assessment_trend.get('newest_year')}). This reflects Cook County reassessment cycles, not necessarily market appreciation, and increases the property-tax burden — model the higher assessment in underwriting.",
+            "signal": t("oc.assessed_rising.signal", cagr=f"{report.assessment_trend['cagr_pct']:.1f}"),
+            "detail": t("oc.assessed_rising.detail", pct=f"{report.assessment_trend['total_change_pct']:.0f}", years=report.assessment_trend['years'], oldest=report.assessment_trend.get('oldest_year'), newest=report.assessment_trend.get('newest_year')),
             "category": "market",
         })
 
     if comps and comps.sales_volume and comps.sales_volume < 3:
         constraints.append({
-            "signal": f"Thin comparable sales market ({comps.sales_volume} transactions)",
-            "detail": "Land valuation carries higher uncertainty with limited arm's-length sales nearby. Consider wider search radius or independent appraisal.",
+            "signal": t("oc.thin_comps.signal", n=comps.sales_volume),
+            "detail": t("oc.thin_comps.detail"),
             "category": "market",
         })
 
@@ -3547,21 +3555,21 @@ def _synthesize_opportunities_constraints(
         open_v = [v for v in report.address_violations if v.get("violation_status") == "OPEN"]
         if len(open_v) > 10:
             constraints.append({
-                "signal": f"{len(open_v)} open building code violations",
-                "detail": "Outstanding violations can block new permit issuance. Budget for remediation and factor violation clearance into closing timeline.",
+                "signal": t("oc.open_violations.signal", n=len(open_v)),
+                "detail": t("oc.open_violations.detail"),
                 "category": "site_condition",
             })
         elif len(open_v) > 0:
             opportunities.append({
-                "signal": f"Open violations ({len(open_v)}) as acquisition leverage",
-                "detail": "Owner faces compliance costs. Open violations may create negotiating leverage on purchase price.",
+                "signal": t("oc.violations_leverage.signal", n=len(open_v)),
+                "detail": t("oc.violations_leverage.detail"),
                 "category": "site_condition",
             })
 
     if ctx.address_311 and ctx.address_311.high_risk_flags:
         constraints.append({
-            "signal": "High-risk 311 complaints on file",
-            "detail": f"Flags: {', '.join(ctx.address_311.high_risk_flags)}. May indicate structural, mechanical, or habitability issues requiring immediate assessment.",
+            "signal": t("oc.high_risk_311.signal"),
+            "detail": t("oc.high_risk_311.detail", flags=", ".join(ctx.address_311.high_risk_flags)),
             "category": "site_condition",
         })
 
@@ -3569,14 +3577,14 @@ def _synthesize_opportunities_constraints(
         nc = report.nearby_development.new_construction_count or 0
         if nc >= 5:
             opportunities.append({
-                "signal": f"Active development corridor ({nc} new construction permits nearby)",
-                "detail": "High nearby construction activity indicates market confidence, established contractor availability, and favorable zoning precedent.",
+                "signal": t("oc.active_corridor.signal", n=nc),
+                "detail": t("oc.active_corridor.detail"),
                 "category": "market",
             })
         elif nc == 0 and (report.nearby_development.demolition_count or 0) == 0:
             constraints.append({
-                "signal": "No nearby development activity (12 months)",
-                "detail": "Limited nearby construction may indicate weak demand, regulatory barriers, or infrastructure constraints.",
+                "signal": t("oc.no_dev_activity.signal"),
+                "detail": t("oc.no_dev_activity.detail"),
                 "category": "market",
             })
 
@@ -3586,23 +3594,23 @@ def _synthesize_opportunities_constraints(
             open_count = len([v for v in report.address_violations if v.get("violation_status") == "OPEN"])
             if open_count > 5:
                 opportunities.append({
-                    "signal": "Long-held property with deferred maintenance",
-                    "detail": f"{open_count} open violations on a long-held property — owner faces mounting compliance costs and may be motivated to sell.",
+                    "signal": t("oc.long_held.signal"),
+                    "detail": t("oc.long_held.detail", n=open_count),
                     "category": "site_condition",
                 })
 
     # --- Environmental ---
     if reg and reg.in_special_flood_hazard:
         constraints.append({
-            "signal": f"FEMA Special Flood Hazard Area (Zone {reg.flood_zone})",
-            "detail": "Flood insurance mandatory for federally-backed mortgages. Construction costs typically increase 10-20% for SFHA compliance.",
+            "signal": t("oc.sfha.signal", zone=reg.flood_zone),
+            "detail": t("oc.sfha.detail"),
             "category": "environmental",
         })
 
     if reg and reg.brownfield_sites and inc and inc.in_tif_district:
         opportunities.append({
-            "signal": "TIF funding available for brownfield remediation",
-            "detail": f"{len(reg.brownfield_sites)} brownfield site(s) nearby. TIF districts routinely fund environmental remediation as an eligible expense.",
+            "signal": t("oc.tif_brownfield.signal"),
+            "detail": t("oc.tif_brownfield.detail", n=len(reg.brownfield_sites)),
             "category": "environmental",
         })
 
@@ -3822,13 +3830,17 @@ def _ownership_interpretation(report: "ReportData") -> str | None:
 
 def _build_decision_box(report: "ReportData") -> dict:
     """Page-1 go/no-go box: lot · zone · buildable · value · constraint · timeline (Miss#1)."""
+    t = report_i18n.make_translator(report.language)
+    tn = report_i18n.make_plural(report.language)
+    na = t("db.na")
+    sqft = t("common.sqft")
     prop = report.context.property
     zoning = report.context.parcel_zoning
     dev = report.development_potential
 
-    lot = f"{prop.land_sqft:,} sq ft" if prop and prop.land_sqft else "n/a"
-    zone = zoning.zone_class if zoning and zoning.zone_class else "n/a"
-    buildable = f"{dev.max_buildable_sqft:,} sq ft" if dev and dev.max_buildable_sqft else "n/a"
+    lot = f"{prop.land_sqft:,} {sqft}" if prop and prop.land_sqft else na
+    zone = zoning.zone_class if zoning and zoning.zone_class else na
+    buildable = f"{dev.max_buildable_sqft:,} {sqft}" if dev and dev.max_buildable_sqft else na
 
     # Value field. Credibility rule: never imply a subject valuation we can't
     # support. Tax-exempt/institutional parcels get a status read (more decision-
@@ -3837,30 +3849,30 @@ def _build_decision_box(report: "ReportData") -> dict:
     # context, not a valuation — and drop the word "median" below n=3 where it is
     # statistically meaningless.
     prop_exempt = bool(prop and (prop.tax_exempt or (prop.bldg_class or "").upper().startswith("EX")))
-    value = "n/a"
-    value_label = "Market Context"
+    value = na
+    value_label = t("db.value_label_market")
     elv = report.estimated_land_value
     cv = report.comp_valuation
     if prop_exempt:
-        value_label = "Tax Status"
-        value = "Exempt (institutional) — verify availability"
+        value_label = t("db.value_label_tax")
+        value = t("db.exempt_value")
     elif elv:
-        value_label = "Est. Land Value"
+        value_label = t("db.value_label_land")
         value = f"{_fmt_money(elv['low'])}–{_fmt_money(elv['high'])}"
     elif cv and cv.get("sample_size", 0) >= 3 and cv.get("median_sale_price"):
-        value_label = "Nearby Sales (median)"
+        value_label = t("db.value_label_nearby_median")
         value = f"{_fmt_money(cv['median_sale_price'])} · n={cv['sample_size']}"
     elif cv and cv.get("sample_size", 0) >= 1 and cv.get("price_range_min"):
         n = cv["sample_size"]
-        value_label = "Nearby Sales"
-        value = f"{_fmt_money(cv['price_range_min'])}–{_fmt_money(cv['price_range_max'])} · {n} sale{'s' if n != 1 else ''}"
+        value_label = t("db.value_label_nearby")
+        value = f"{_fmt_money(cv['price_range_min'])}–{_fmt_money(cv['price_range_max'])} · {tn('db.sale_count', n, n=n)}"
 
     # Surface the most *deal-shaping* constraint, not merely the first synthesized
     # one — regulatory / environmental / site issues bind a project harder than a
     # thin-comp-market caveat, so order by how much each gates a go/no-go decision.
     # "No major constraints flagged" (not "None identified") so the absence reads
     # as "our rule set found nothing," not a guarantee the site is unencumbered.
-    key_constraint = "No major constraints flagged"
+    key_constraint = t("db.key_constraint_none")
     if report.constraints:
         _binding_order = [
             "regulatory", "environmental", "site_condition",
@@ -3873,10 +3885,10 @@ def _build_decision_box(report: "ReportData") -> dict:
         )
         key_constraint = top["signal"]
 
-    timeline = "n/a"
+    timeline = na
     if report.approval_pathway:
         ap = report.approval_pathway
-        timeline = f"{ap['complexity'].title()} · {ap['timeline']}"
+        timeline = f"{t('pill.' + ap['complexity'].lower()).capitalize()} · {ap['timeline']}"
 
     return {
         "lot": lot,
@@ -3895,46 +3907,47 @@ def _compute_approval_pathway(report: "ReportData") -> dict | None:
     if not reg:
         return None
 
+    t = report_i18n.make_translator(report.language)
     standards = report.zoning_standards
     has_special = standards and standards.special_uses
     has_permitted = standards and standards.permitted_uses
 
     if reg.in_planned_development:
         complexity = "COMPLEX"
-        detail = "Planned Development amendment required: City Council approval, public hearing, aldermanic support"
-        timeline = "6-18 months"
+        detail = t("ap.pd_detail")
+        timeline = t("ap.pd_timeline")
     elif reg.in_landmark_district or reg.in_historic_district:
         complexity = "COMPLEX"
-        detail = "Commission on Chicago Landmarks review required for exterior modifications"
-        timeline = "3-6 months for permit review"
+        detail = t("ap.landmark_detail")
+        timeline = t("ap.landmark_timeline")
     elif reg.on_national_register:
         complexity = "MODERATE"
-        detail = "National Register district — Section 106 review for federal tax credit projects; local review may apply for demolition or major alteration"
-        timeline = "2-4 months for review"
+        detail = t("ap.nr_detail")
+        timeline = t("ap.nr_timeline")
     elif has_special and not has_permitted:
         complexity = "MODERATE"
-        detail = "Zoning Board of Appeals hearing required for special use approval"
-        timeline = "3-6 months"
+        detail = t("ap.special_zba_detail")
+        timeline = t("ap.special_zba_timeline")
     elif has_special and has_permitted:
         complexity = "MODERATE"
-        detail = "Permitted uses available; special use approval needed for some use types"
-        timeline = "4-8 weeks (permitted) / 3-6 months (special use)"
+        detail = t("ap.special_some_detail")
+        timeline = t("ap.special_some_timeline")
     else:
         complexity = "SIMPLE"
-        detail = "Standard building permit application under base zoning"
-        timeline = "4-8 weeks"
+        detail = t("ap.simple_detail")
+        timeline = t("ap.simple_timeline")
 
     modifiers: list[str] = []
     if report.address_violations:
         open_count = len([v for v in report.address_violations if v.get("violation_status") == "OPEN"])
         if open_count > 5:
-            modifiers.append("Violation clearance required before new permits")
+            modifiers.append(t("ap.mod_violation"))
     if reg.in_special_flood_hazard:
-        modifiers.append("FEMA floodplain compliance review")
+        modifiers.append(t("ap.mod_floodplain"))
     if reg.in_aro_zone:
-        modifiers.append("ARO affordable housing compliance (if 10+ units)")
+        modifiers.append(t("ap.mod_aro"))
     if any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
-        modifiers.append("Ground-floor design must meet pedestrian street standards")
+        modifiers.append(t("ap.mod_pedestrian"))
 
     return {
         "complexity": complexity,
@@ -3962,13 +3975,15 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
     radius_mi = round(get_settings().nearby_construction_radius_deg * 69.0, 2)
     radius_label = f"{radius_mi:g}mi"
 
+    t = report_i18n.make_translator(report.language)
+    tn = report_i18n.make_plural(report.language)
     nc = nd.new_construction_count or 0
     demo = nd.demolition_count or 0
     projects = nd.recent_projects or []
 
     if nc == 0 and demo == 0:
         return {
-            "narrative": f"Limited development activity within {radius_label} — {len(projects)} permit(s) in 12 months.",
+            "narrative": tn("dt.quiet", len(projects), n=len(projects), radius=radius_label),
             "intensity": "quiet",
         }
 
@@ -3982,22 +3997,18 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
 
     if nc > 0 and total_investment > 0:
         avg_cost = total_investment / max(nc, 1)
-        narrative = (
-            f"{nc} new construction permit{'s' if nc > 1 else ''} totaling "
-            f"{_fmt_money(total_investment)} within {radius_label} in the last 12 months. "
-            f"Average project investment: {_fmt_money(avg_cost)}."
+        narrative = tn(
+            "dt.active", nc, nc=nc, total=_fmt_money(total_investment),
+            radius=radius_label, avg=_fmt_money(avg_cost),
         )
         if demo > 0:
-            narrative += f" {demo} demolition permit{'s' if demo > 1 else ''} suggest{'s' if demo == 1 else ''} active site clearance."
+            narrative += tn("dt.active_demo", demo, demo=demo)
         intensity = "active" if nc >= 3 else "moderate"
     elif demo > nc:
-        narrative = (
-            f"{demo} demolition permit{'s' if demo > 1 else ''} vs {nc} new construction "
-            f"permit{'s' if nc != 1 else ''} suggest a teardown-rebuild cycle in early stages."
-        )
+        narrative = tn("dt.teardown", demo, demo=demo, nc=nc)
         intensity = "transitional"
     else:
-        narrative = f"{nc + demo} development permit{'s' if (nc + demo) > 1 else ''} within {radius_label} in 12 months."
+        narrative = tn("dt.moderate", nc + demo, n=nc + demo, radius=radius_label)
         intensity = "moderate"
 
     return {
@@ -4030,54 +4041,22 @@ def _build_incentive_stacking_narrative(report: "ReportData") -> str | None:
     if len(flags) < 2:
         return None
 
+    t = report_i18n.make_translator(report.language)
     key = "+".join(sorted(flags))
-    templates = {
-        "OZ+TIF": (
-            "This parcel sits in both a TIF district and an Opportunity Zone. "
-            "TIF funding can subsidize infrastructure, remediation, and public improvements, "
-            "while OZ structuring allows investors to defer and reduce capital gains taxes through a Qualified Opportunity Fund. "
-            "These programs operate independently and can be combined in the same project."
-        ),
-        "EZ+TIF": (
-            "This parcel benefits from both TIF and Enterprise Zone designations. "
-            "TIF provides direct project funding for eligible expenses, "
-            "while the Enterprise Zone offers sales tax exemptions on building materials and state investment tax credits. "
-            "Together, these can meaningfully reduce both hard and soft development costs."
-        ),
-        "OZ+QCT": (
-            "This parcel is in both an Opportunity Zone and a Qualified Census Tract. "
-            "OZ investors receive capital gains deferral and potential exclusion on appreciation. "
-            "The QCT designation provides LIHTC projects with a 130% basis boost, "
-            "making affordable housing development significantly more feasible."
-        ),
-        "OZ+QCT+TIF": (
-            "This parcel qualifies for a triple incentive stack: TIF + Opportunity Zone + Qualified Census Tract. "
-            "TIF can fund site improvements and infrastructure. OZ provides investor-level capital gains benefits. "
-            "QCT delivers a 130% LIHTC basis boost for affordable housing. "
-            "This combination represents one of the strongest incentive positions available in Chicago."
-        ),
-        "NMTC+TIF": (
-            "This parcel sits in both a TIF district and an NMTC-eligible census tract. "
-            "TIF provides direct project funding, while NMTC offers a 39% federal tax credit over 7 years for qualifying investments. "
-            "NMTC is typically applied to commercial, mixed-use, or community facility projects."
-        ),
-        "EZ+OZ": (
-            "This parcel benefits from both Enterprise Zone and Opportunity Zone designations. "
-            "EZ provides immediate benefits through sales tax exemptions on building materials, "
-            "while OZ offers long-term investor capital gains advantages through Qualified Opportunity Fund structuring."
-        ),
+    # Map the sorted-flag combo to its catalog key (deterministic, no LLM).
+    combo_keys = {
+        "OZ+TIF": "isn.oz_tif",
+        "EZ+TIF": "isn.ez_tif",
+        "OZ+QCT": "isn.oz_qct",
+        "OZ+QCT+TIF": "isn.oz_qct_tif",
+        "NMTC+TIF": "isn.nmtc_tif",
+        "EZ+OZ": "isn.ez_oz",
     }
+    catalog_key = combo_keys.get(key)
+    if catalog_key:
+        return t(catalog_key)
 
-    narrative = templates.get(key)
-    if narrative:
-        return narrative
-
-    return (
-        f"This parcel is eligible for {len(flags)} incentive programs: {', '.join(flags)}. "
-        "Multiple incentive programs can often be combined in the same project, though each has specific eligibility "
-        "requirements and application processes. Consult with a tax advisor or economic development specialist "
-        "to evaluate the optimal incentive strategy."
-    )
+    return t("isn.fallback", count=len(flags), flags=", ".join(flags))
 
 
 def _build_envelope_summary(report: "ReportData") -> str | None:
@@ -4090,33 +4069,34 @@ def _build_envelope_summary(report: "ReportData") -> str | None:
     if not standards or not prop or not prop.land_sqft:
         return None
 
-    zone = zoning.zone_class if zoning else "this district"
-    parts = [f"On this {prop.land_sqft:,} sq ft lot, {zone}"]
+    t = report_i18n.make_translator(report.language)
+    zone = zoning.zone_class if zoning else t("env.this_district")
+    parts = [t("env.lead", land=f"{prop.land_sqft:,}", zone=zone)]
 
     if dev and dev.max_buildable_sqft:
-        parts.append(f" allows up to {dev.max_buildable_sqft:,} sq ft of floor area")
+        parts.append(t("env.allows_buildable", v=f"{dev.max_buildable_sqft:,}"))
     elif standards.far is not None:
-        parts.append(f" permits a FAR of {standards.far}")
+        parts.append(t("env.permits_far", far=standards.far))
 
     if standards.max_stories and standards.max_height_ft:
-        parts.append(f" across {standards.max_stories} stories / {standards.max_height_ft} ft")
+        parts.append(t("env.across_stories_height", stories=standards.max_stories, height=standards.max_height_ft))
     elif standards.max_stories:
-        parts.append(f" across {standards.max_stories} stories")
+        parts.append(t("env.across_stories", stories=standards.max_stories))
     elif standards.max_height_ft:
-        parts.append(f" up to {standards.max_height_ft} ft")
+        parts.append(t("env.up_to_height", height=standards.max_height_ft))
 
     parts.append(".")
 
     if standards.lot_coverage_pct and prop.land_sqft:
         footprint = int(standards.lot_coverage_pct * prop.land_sqft)
-        parts.append(f" Maximum building footprint: approximately {footprint:,} sq ft ({int(standards.lot_coverage_pct * 100)}% lot coverage).")
+        parts.append(t("env.footprint", v=f"{footprint:,}", pct=int(standards.lot_coverage_pct * 100)))
 
     if standards.permitted_uses:
         top_uses = standards.permitted_uses[:3]
-        parts.append(f" Permitted uses include: {', '.join(top_uses)}.")
+        parts.append(t("env.permitted_uses", uses=", ".join(top_uses)))
 
     if standards.parking_residential:
-        parts.append(f" Parking: {standards.parking_residential} per residential unit.")
+        parts.append(t("env.parking", parking=standards.parking_residential))
 
     return "".join(parts)
 
@@ -4349,6 +4329,7 @@ async def report(
     lon: float | None = None,
     pin: str | None = None,
     mock: bool = False,
+    language: str = "en",
     user: dict = Depends(require_auth),
 ) -> Response:
     """Generate a PDF development feasibility & site intelligence report."""
@@ -4378,7 +4359,8 @@ async def report(
     # investigation in report-v6-execution-plan.md.
     async with _REPORT_SEM:
         report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(
-            resolved_lat, resolved_lon, resolved_address, pin=rl.pin, confidence=rl.confidence
+            resolved_lat, resolved_lon, resolved_address, pin=rl.pin, confidence=rl.confidence,
+            language=language,
         )
 
         if mock:
@@ -4429,18 +4411,25 @@ async def report(
         del basemap_bytes, basemap_wide_bytes
 
         # Render HTML template
+        from backend import report_i18n
+        _t = report_i18n.make_translator(language)
+        _tn = report_i18n.make_plural(language)
+        _na = _t("common.na")
         template_dir = Path(__file__).parent / "templates"
         env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
-        env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
-        env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
-        env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
+        env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else _na
+        env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else _na
+        env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else _na
         from backend.retrieval.zoning_definitions import get_zone_name
         env.filters["zone_desc"] = get_zone_name
+        # Translator globals for the template (deterministic catalog, no LLM).
+        env.globals["t"] = _t
+        env.globals["tn"] = _tn
         template = env.get_template("zoning_report.html")
 
         html_content = template.render(
             report=report_data,
-            report_date=date.today().strftime("%B %d, %Y"),
+            report_date=report_i18n.format_report_date(date.today(), language),
         )
 
         # Generate the PDF in an ISOLATED CHILD PROCESS. write_pdf() (cairo/pango

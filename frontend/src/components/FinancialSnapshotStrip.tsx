@@ -41,9 +41,10 @@ export function FinancialSnapshotStrip({ property, comparables, incentives }: Pr
     metrics.push({ label: t("financialSnapshot.tifFundBalance"), value: fmtDollar(incentives.tif_fund_balance) });
   }
 
-  const zoneCount = [incentives?.in_tif_district, incentives?.in_opportunity_zone, incentives?.in_enterprise_zone, incentives?.in_qct, incentives?.in_nmtc].filter(Boolean).length;
+  const zoneFlags = [incentives?.in_tif_district, incentives?.in_opportunity_zone, incentives?.in_enterprise_zone, incentives?.in_qct, incentives?.in_nmtc];
+  const zoneCount = zoneFlags.filter(Boolean).length;
   if (zoneCount > 0) {
-    metrics.push({ label: t("financialSnapshot.activeIncentives"), value: t("financialSnapshot.zonesCount", { count: zoneCount }) });
+    metrics.push({ label: t("financialSnapshot.activeIncentives"), value: t("financialSnapshot.zonesCount", { count: zoneCount, total: zoneFlags.length }) });
   }
 
   if (metrics.length < 2) return null;

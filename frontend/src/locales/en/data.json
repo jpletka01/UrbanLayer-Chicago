@@ -334,7 +334,7 @@
     "medianCompSale": "Median Comp Sale",
     "tifFundBalance": "TIF Fund Balance",
     "activeIncentives": "Active Incentives",
-    "zonesCount": "{{count}} of 5 zones"
+    "zonesCount": "{{count}} of {{total}} zones"
   },
   "terms": {
     "incentives": {
@@ -427,7 +427,20 @@
         "description": "Zone near CTA or Metra rail stations encouraging dense, mixed-use development with reduced parking.",
         "bullets": ["Reduced parking requirements", "Density bonuses available", "Pedestrian-oriented design standards"]
       }
+    },
+    "floodSubtypes": {
+      "FLOODWAY": "Floodway",
+      "AREA_OF_MINIMAL_FLOOD_HAZARD": "Area of minimal flood hazard",
+      "0_2_PCT_ANNUAL_CHANCE_FLOOD_HAZARD": "0.2% annual-chance flood hazard",
+      "1_PCT_ANNUAL_CHANCE_FLOOD_HAZARD_CONTAINED_IN_STRUCTURE": "1% annual-chance flood hazard contained in structure",
+      "1_PCT_ANNUAL_CHANCE_FLOOD_HAZARD_CONTAINED_IN_CHANNEL": "1% annual-chance flood hazard contained in channel",
+      "AREA_WITH_REDUCED_FLOOD_RISK_DUE_TO_LEVEE": "Area with reduced flood risk due to levee"
     }
+  },
+  "zoning": {
+    "variesByLotFrontage": "varies by lot frontage",
+    "noMaxBonuses": "No max (bonuses available)",
+    "feetUnit": "ft"
   },
   "report": {
     "siteReport": "UrbanLayer Conversation Transcript",

@@ -17,7 +17,7 @@ import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
 import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
-import { humanizeShoutyCase } from "../lib/format";
+import { humanizeShoutyCase, localizeZoningValue } from "../lib/format";
 import { ReportTeaser } from "./sidebar/ReportTeaser";
 import PageHeader from "./PageHeader";
 import { Card } from "./ui/Card";
@@ -91,13 +91,13 @@ function ZoningCard({ def, mapUrl }: { def: ZoneDefinition; mapUrl?: string | nu
           {def.max_height && (
             <div className="flex justify-between items-baseline gap-2 text-micro">
               <span className="text-text-muted">{t("scorecard.zoningCard.maxHeight")}</span>
-              <span className="text-text-primary font-mono text-right">{def.max_height}</span>
+              <span className="text-text-primary font-mono text-right">{localizeZoningValue(def.max_height)}</span>
             </div>
           )}
           {def.lot_coverage && (
             <div className="flex justify-between items-baseline gap-2 text-micro">
               <span className="text-text-muted">{t("scorecard.zoningCard.lotCoverage")}</span>
-              <span className="text-text-primary font-mono text-right">{def.lot_coverage}</span>
+              <span className="text-text-primary font-mono text-right">{localizeZoningValue(def.lot_coverage)}</span>
             </div>
           )}
         </div>

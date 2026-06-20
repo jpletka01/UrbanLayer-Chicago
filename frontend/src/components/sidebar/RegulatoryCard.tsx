@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { CollapsibleCard } from "./CollapsibleCard";
 import { InfoTooltip } from "../InfoTooltip";
-import { humanizeShoutyCase } from "../../lib/format";
+import { humanizeShoutyCase, translateFloodSubtype } from "../../lib/format";
+import { getTermInfo } from "../../lib/termDefinitions";
 
 const ShieldIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -55,10 +56,14 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
           <div className="space-y-1.5">
             <span className="text-micro text-text-muted uppercase tracking-wider">{t("regulatory.overlays")}</span>
             {data.overlays.map((ov, i) => {
-              const typeLabel = formatLayerType(ov.layer_type);
-              const name = ov.name && normLabel(ov.name) !== normLabel(typeLabel) ? humanizeShoutyCase(ov.name) : null;
+              // Dedup against the raw English label (API name/description are English
+              // too, so cross-language comparison would never match); display the
+              // translated label from the shared term catalog when available.
+              const rawTypeLabel = formatLayerType(ov.layer_type);
+              const typeLabel = getTermInfo(ov.layer_type)?.label || rawTypeLabel;
+              const name = ov.name && normLabel(ov.name) !== normLabel(rawTypeLabel) ? humanizeShoutyCase(ov.name) : null;
               const description = ov.description &&
-                normLabel(ov.description) !== normLabel(typeLabel) &&
+                normLabel(ov.description) !== normLabel(rawTypeLabel) &&
                 (!ov.name || normLabel(ov.description) !== normLabel(ov.name))
                 ? ov.description : null;
               return (
@@ -123,7 +128,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                 )}
               </div>
               {data.flood_zone_subtype && (
-                <p className="text-text-muted mt-0.5">{data.flood_zone_subtype}</p>
+                <p className="text-text-muted mt-0.5">{translateFloodSubtype(data.flood_zone_subtype)}</p>
               )}
             </div>
           </div>
