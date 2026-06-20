@@ -22,7 +22,7 @@ function fmtDollar(n: number | null | undefined): string {
 function Badge({ active, label, termKey }: { active: boolean; label: string; termKey?: string }) {
   const labelContent = termKey ? <InfoTooltip term={termKey}>{label}</InfoTooltip> : label;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] border ${
+    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-micro border ${
       active
         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
         : "bg-dark-elevated text-text-muted border-dark-border"
@@ -37,8 +37,8 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
   if (!value) return null;
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px]">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono text-right">{value}</span>
+      <span className="text-text-muted text-micro">{label}</span>
+      <span className="text-text-primary text-micro font-mono text-right">{value}</span>
     </div>
   );
 }
@@ -92,7 +92,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
           {data.tif_fund_history.length > 0 && (
             <button
               onClick={() => setShowFinancials(f => !f)}
-              className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+              className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors"
             >
               <svg
                 className={`w-2.5 h-2.5 transition-transform duration-150 ${showFinancials ? "" : "-rotate-90"}`}
@@ -105,7 +105,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
           )}
           {showFinancials && data.tif_fund_history.length > 0 && (
             <div className="mt-1">
-              <table className="w-full text-[11px]">
+              <table className="w-full text-micro">
                 <thead>
                   <tr className="text-text-muted border-b border-dark-border">
                     <th className="text-left pb-1.5 pr-2 font-medium">{t("analytics.year")}</th>
@@ -141,14 +141,14 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
             termKey="opportunity_zone"
           />
           {data.in_opportunity_zone && data.oz_tract && (
-            <p className="text-[10px] text-text-muted ml-5">
+            <p className="text-micro text-text-muted ml-5">
               {t("incentives.tract")}{" "}
               {data.oz_tract.length >= 11 ? (
                 <a
                   href={`https://censusreporter.org/profiles/14000US${data.oz_tract}/`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                  className="text-accent hover:text-accent-hover underline transition-colors"
                 >
                   {data.oz_tract}
                 </a>
@@ -164,7 +164,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
             termKey="enterprise_zone"
           />
           {data.in_enterprise_zone && data.enterprise_zone_name && (
-            <p className="text-[10px] text-text-muted ml-5">{data.enterprise_zone_name}</p>
+            <p className="text-micro text-text-muted ml-5">{data.enterprise_zone_name}</p>
           )}
         </div>
 
@@ -175,13 +175,13 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
             termKey="qct"
           />
           {data.in_qct && data.qct_tract && (
-            <p className="text-[10px] text-text-muted ml-5">
+            <p className="text-micro text-text-muted ml-5">
               {t("incentives.tract")}{" "}
               <a
                 href={`https://censusreporter.org/profiles/14000US${data.qct_tract}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                className="text-accent hover:text-accent-hover underline transition-colors"
               >
                 {data.qct_tract}
               </a>
@@ -198,20 +198,20 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
           {data.in_nmtc && (
             <div className="ml-5 space-y-0.5">
               {data.nmtc_tract && (
-                <p className="text-[10px] text-text-muted">
+                <p className="text-micro text-text-muted">
                   {t("incentives.tract")}{" "}
                   <a
                     href={`https://censusreporter.org/profiles/14000US${data.nmtc_tract}/`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                    className="text-accent hover:text-accent-hover underline transition-colors"
                   >
                     {data.nmtc_tract}
                   </a>
                 </p>
               )}
               {data.nmtc_severe_distress && (
-                <p className="text-[10px] text-amber-400">{t("incentives.severeDistress")}</p>
+                <p className="text-micro text-amber-400">{t("incentives.severeDistress")}</p>
               )}
             </div>
           )}
@@ -219,7 +219,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
 
         {data.grant_programs && data.grant_programs.total_projects > 0 && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+            <span className="text-micro text-text-muted uppercase tracking-wider">
               {t("incentives.cityGrantPrograms")}
             </span>
             <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
@@ -233,7 +233,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
               <div className="space-y-1.5">
                 <button
                   onClick={() => setShowProjects(p => !p)}
-                  className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+                  className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors"
                 >
                   <svg
                     className={`w-2.5 h-2.5 transition-transform duration-150 ${showProjects ? "" : "-rotate-90"}`}
@@ -244,7 +244,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
                   {t("incentives.recentProjects")} ({Math.min(data.grant_programs.recent_projects.length, 5)})
                 </button>
                 {showProjects && data.grant_programs.recent_projects.slice(0, 5).map((proj, i) => (
-                  <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border">
+                  <div key={i} className="text-micro leading-tight pl-1 border-l border-dark-border">
                     <p className="text-text-primary">{proj.name}</p>
                     <div className="flex gap-2 text-text-muted">
                       {proj.date && <span>{proj.date}</span>}
@@ -266,7 +266,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         {data.property_tax_class && (
           <div className="space-y-1">
             <Badge active label={t("incentives.taxClass", { code: data.property_tax_class })} />
-            <p className="text-[10px] text-text-muted ml-5">
+            <p className="text-micro text-text-muted ml-5">
               {data.property_tax_class === "standard"
                 ? t("incentives.standardClassDescription")
                 : data.property_tax_class === "unavailable"
@@ -277,14 +277,14 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         )}
 
         {data.census_tract && !hasAnyIncentive && (
-          <p className="text-[10px] text-text-muted">
+          <p className="text-micro text-text-muted">
             {t("incentives.censusTract")}{" "}
             {data.census_tract.length >= 11 ? (
               <a
                 href={`https://censusreporter.org/profiles/14000US${data.census_tract}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                className="text-accent hover:text-accent-hover underline transition-colors"
               >
                 {data.census_tract}
               </a>

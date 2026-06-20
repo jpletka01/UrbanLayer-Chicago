@@ -7,8 +7,11 @@
 // (presentational) — recipes never touch the CQS coverage path.
 
 import { useTranslation } from "react-i18next";
+import { Chip } from "../components/ui/Chip";
 import { coverageOf, liveAreaNames, missingFieldsFor } from "./coverage";
 import type { Registry, TopicDef } from "./types";
+
+type BadgeTone = "neutral" | "positive" | "warning";
 
 export function RecipeShelf({
   registry,
@@ -28,7 +31,7 @@ export function RecipeShelf({
 
   return (
     <div>
-      <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
+      <h3 className="mb-2 text-overline uppercase text-text-muted">
         {t("discovery.commonRecipes")}{coverageNote}
       </h3>
       <div
@@ -46,19 +49,19 @@ export function RecipeShelf({
           const missingLabels = labelsFor(missing);
 
           let badge: string;
-          let badgeClass: string;
+          let badgeTone: BadgeTone;
           let title: string | undefined;
           if (!fieldsReady) {
             badge = t("discovery.needsData");
-            badgeClass = "text-amber-400/80";
+            badgeTone = "warning";
             title = t("discovery.needsDataTitle", { labels: missingLabels.join(", ") });
           } else if (count === 0) {
             badge = t("discovery.noMatchesYet");
-            badgeClass = "text-text-muted";
+            badgeTone = "neutral";
             title = t("discovery.noMatchesTitle");
           } else {
             badge = t("discovery.liveBadge", { count: count.toLocaleString() });
-            badgeClass = "text-emerald-400/90";
+            badgeTone = "positive";
           }
           return (
             <button
@@ -66,18 +69,18 @@ export function RecipeShelf({
               type="button"
               onClick={() => onPick(topic)}
               title={title}
-              className={`rounded-lg border border-dark-border p-2.5 text-left transition-colors hover:border-text-muted ${
+              className={`rounded-lg border border-dark-border p-2.5 text-left transition-colors hover:border-dark-border-strong ${
                 live ? "" : "opacity-70"
               } ${horizontal ? "min-w-[200px] flex-shrink-0 snap-start" : ""}`}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="text-xs font-medium text-text-primary">
+                <span className="text-caption font-medium text-text-primary">
                   {t(`discovery.topic.${topic.id}.label`, { defaultValue: topic.label ?? "" })}
                 </span>
-                <span className={`flex-shrink-0 text-[10px] ${badgeClass}`}>{badge}</span>
+                <Chip size="sm" tone={badgeTone} className="flex-shrink-0">{badge}</Chip>
               </div>
               {topic.description && (
-                <p className="mt-0.5 text-[11px] text-text-muted">
+                <p className="mt-0.5 text-micro text-text-muted">
                   {t(`discovery.topic.${topic.id}.description`, topic.description)}
                 </p>
               )}

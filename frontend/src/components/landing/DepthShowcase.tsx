@@ -1,30 +1,32 @@
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Card } from "../ui/Card";
+import { Chip } from "../ui/Chip";
 
 function PropertyCard({ t }: { t: (key: string) => string }) {
   return (
-    <div className="space-y-3 text-xs">
+    <div className="space-y-3 text-caption">
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div>
-          <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.pin")}</div>
+          <div className="text-text-muted text-overline uppercase">{t("depth.pin")}</div>
           <div className="font-mono text-text-primary">14-33-423-048-0000</div>
         </div>
         <div>
-          <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.class")}</div>
+          <div className="text-text-muted text-overline uppercase">{t("depth.class")}</div>
           <div className="text-text-primary">{t("depth.sampleClass")}</div>
         </div>
         <div>
-          <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.building")}</div>
+          <div className="text-text-muted text-overline uppercase">{t("depth.building")}</div>
           <div className="text-text-primary">{t("depth.sampleBuilding")}</div>
         </div>
         <div>
-          <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.lot")}</div>
+          <div className="text-text-muted text-overline uppercase">{t("depth.lot")}</div>
           <div className="text-text-primary">{t("depth.sampleLot")}</div>
         </div>
       </div>
       <div className="border-t border-dark-border pt-2 space-y-1.5">
-        <div className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.assessmentHistory")}</div>
+        <div className="text-text-muted text-overline uppercase">{t("depth.assessmentHistory")}</div>
         <div className="space-y-1">
           {[
             { year: "2025", value: "$38,240" },
@@ -39,8 +41,8 @@ function PropertyCard({ t }: { t: (key: string) => string }) {
         </div>
       </div>
       <div className="border-t border-dark-border pt-2 flex justify-between items-center">
-        <span className="text-text-muted uppercase tracking-wider text-[10px]">{t("depth.estAnnualTax")}</span>
-        <span className="text-accent font-semibold text-sm">$8,420</span>
+        <span className="text-text-muted text-overline uppercase">{t("depth.estAnnualTax")}</span>
+        <span className="text-accent text-title">$8,420</span>
       </div>
     </div>
   );
@@ -48,38 +50,27 @@ function PropertyCard({ t }: { t: (key: string) => string }) {
 
 function RegulatoryCard({ t }: { t: (key: string) => string }) {
   return (
-    <div className="space-y-3 text-xs">
+    <div className="space-y-3 text-caption">
       <div>
-        <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.zoning")}</div>
-        <div className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-400 px-2.5 py-1 rounded-md font-mono text-sm font-medium">
-          B3-2
-        </div>
+        <div className="text-text-muted text-overline uppercase mb-2">{t("depth.zoning")}</div>
+        <Chip tone="accent" mono size="md">B3-2</Chip>
         <span className="text-text-secondary ml-2">{t("depth.sampleZoneDesc")}</span>
       </div>
       <div className="border-t border-dark-border pt-2">
-        <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.activeOverlays")}</div>
+        <div className="text-text-muted text-overline uppercase mb-2">{t("depth.activeOverlays")}</div>
         <div className="flex flex-wrap gap-1.5">
-          {[
-            { label: t("depth.plannedDevelopment"), color: "bg-blue-500/15 text-blue-400" },
-            { label: t("depth.pedestrianStreet"), color: "bg-purple-500/15 text-purple-400" },
-            { label: t("depth.todEligible"), color: "bg-emerald-500/15 text-emerald-400" },
-            { label: "SSA #26", color: "bg-cyan-500/15 text-cyan-400" },
-          ].map((o) => (
-            <span key={o.label} className={`${o.color} px-2 py-0.5 rounded text-[11px] font-medium`}>
-              {o.label}
-            </span>
+          {/* §6: overlay names are categorical facts, not state → neutral (Rule A). */}
+          {[t("depth.plannedDevelopment"), t("depth.pedestrianStreet"), t("depth.todEligible"), "SSA #26"].map((label) => (
+            <Chip key={label} tone="neutral" size="sm">{label}</Chip>
           ))}
         </div>
       </div>
       <div className="border-t border-dark-border pt-2">
-        <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.riskFactors")}</div>
+        <div className="text-text-muted text-overline uppercase mb-2">{t("depth.riskFactors")}</div>
         <div className="flex items-center gap-2">
-          <span className="bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-medium">
-            {t("depth.noFloodZone")}
-          </span>
-          <span className="bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-medium">
-            {t("depth.noBrownfield")}
-          </span>
+          {/* favorable risk = genuine positive state → emerald is allowed (§6). */}
+          <Chip tone="positive" size="sm">{t("depth.noFloodZone")}</Chip>
+          <Chip tone="positive" size="sm">{t("depth.noBrownfield")}</Chip>
         </div>
       </div>
     </div>
@@ -88,19 +79,20 @@ function RegulatoryCard({ t }: { t: (key: string) => string }) {
 
 function NeighborhoodCard({ t }: { t: (key: string) => string }) {
   return (
-    <div className="space-y-3 text-xs">
+    <div className="space-y-3 text-caption">
       <div>
-        <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.walkability")}</div>
+        <div className="text-text-muted text-overline uppercase mb-2">{t("depth.walkability")}</div>
         <div className="space-y-1.5">
+          {/* §6: a score isn't good/bad state → single accent fill, not a per-bar hue. */}
           {[
-            { label: t("depth.walkScore"), value: 92, color: "bg-emerald-500" },
-            { label: t("depth.transitScore"), value: 87, color: "bg-blue-500" },
-            { label: t("depth.bikeScore"), value: 82, color: "bg-cyan-500" },
+            { label: t("depth.walkScore"), value: 92 },
+            { label: t("depth.transitScore"), value: 87 },
+            { label: t("depth.bikeScore"), value: 82 },
           ].map((s) => (
             <div key={s.label} className="flex items-center gap-3">
               <span className="text-text-secondary w-20 shrink-0">{s.label}</span>
               <div className="flex-1 h-1.5 bg-dark-border rounded-full overflow-hidden">
-                <div className={`h-full ${s.color} rounded-full`} style={{ width: `${s.value}%` }} />
+                <div className="h-full bg-accent rounded-full" style={{ width: `${s.value}%` }} />
               </div>
               <span className="text-text-primary font-mono w-6 text-right">{s.value}</span>
             </div>
@@ -108,15 +100,15 @@ function NeighborhoodCard({ t }: { t: (key: string) => string }) {
         </div>
       </div>
       <div className="border-t border-dark-border pt-2">
-        <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.nearestTransit")}</div>
+        <div className="text-text-muted text-overline uppercase mb-2">{t("depth.nearestTransit")}</div>
         <div className="flex items-center gap-2 text-text-secondary">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+          <span className="w-2.5 h-2.5 rounded-full bg-accent shrink-0" />
           <span>Western</span>
           <span className="text-text-muted">&mdash; {t("depth.blueLine")}</span>
         </div>
       </div>
       <div className="border-t border-dark-border pt-2">
-        <div className="text-text-muted uppercase tracking-wider text-[10px] mb-2">{t("depth.demographics")}</div>
+        <div className="text-text-muted text-overline uppercase mb-2">{t("depth.demographics")}</div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
           <div className="flex justify-between">
             <span className="text-text-muted">{t("depth.population")}</span>
@@ -158,10 +150,10 @@ export function DepthShowcase() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-4"
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-text-primary tracking-tight">
+          <h2 className="text-section text-text-primary">
             {t("depth.heading")}
           </h2>
-          <p className="text-sm md:text-base text-text-secondary max-w-lg mx-auto leading-relaxed">
+          <p className="text-lead text-text-secondary max-w-lg mx-auto">
             {t("depth.subheading")}
           </p>
         </motion.div>
@@ -175,17 +167,11 @@ export function DepthShowcase() {
                 initial={{ opacity: 0, y: 30, scale: 0.97 }}
                 animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
                 transition={{ delay: 0.15 + i * 0.12, duration: 0.5, ease: "easeOut" }}
-                className="bg-dark-elevated border border-dark-border rounded-xl overflow-hidden"
+                className="h-full"
               >
-                <div className="px-5 pt-5 pb-3">
-                  <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider">{card.title}</h3>
-                </div>
-                <div className="px-5 pb-4">
+                <Card title={card.title} footer={card.caption} className="h-full">
                   <ContentComponent t={t} />
-                </div>
-                <div className="px-5 py-3 bg-dark-surface/50 border-t border-dark-border">
-                  <p className="text-xs text-text-muted leading-relaxed">{card.caption}</p>
-                </div>
+                </Card>
               </motion.div>
             );
           })}

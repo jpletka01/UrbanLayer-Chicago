@@ -8,6 +8,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Chip } from "../components/ui/Chip";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { coverageOf, isPopulated } from "./coverage";
 import { summarize } from "./summary";
@@ -68,10 +69,10 @@ export function DiscoveryResults({
 }: ResultsProps) {
   const { t } = useTranslation("pages");
   if (loading) {
-    return <p className="p-4 text-sm text-text-muted">{t("discovery.searching")}</p>;
+    return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
   }
   if (!response) {
-    return <p className="p-4 text-sm text-text-muted">{t("discovery.setFilters")}</p>;
+    return <p className="p-4 text-body text-text-muted">{t("discovery.setFilters")}</p>;
   }
 
   const { result, diagnostics } = response;
@@ -82,7 +83,7 @@ export function DiscoveryResults({
     <div className="flex h-full flex-col">
       <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm text-text-primary">
+          <p className="text-body text-text-primary">
             <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
             {t("discovery.parcelCount", { count: result.total })}
           </p>
@@ -90,7 +91,7 @@ export function DiscoveryResults({
             <button
               type="button"
               onClick={exportLocked ? onUpgrade : onExport}
-              className="inline-flex items-center gap-1 text-[11px] text-accent transition-colors hover:text-accent/80"
+              className="inline-flex items-center gap-1 text-micro text-accent transition-colors hover:text-accent-hover"
             >
               {exportLocked ? (
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -107,7 +108,7 @@ export function DiscoveryResults({
         </div>
 
         {diagnostics.droppedInvalid.length > 0 && (
-          <p className="text-[11px] text-amber-400/80">
+          <p className="text-micro text-amber-400">
             {t("discovery.ignored")}{" "}
             {diagnostics.droppedInvalid
               .map((d) => `${filterLabel(t, registry,d.filterId)} (${d.reason})`)
@@ -116,7 +117,7 @@ export function DiscoveryResults({
         )}
 
         {diagnostics.conflicts.map((c) => (
-          <div key={c.filters.join("|")} className="text-[11px] text-amber-400/80">
+          <div key={c.filters.join("|")} className="text-micro text-amber-400">
             {c.filters.map((f) => filterLabel(t, registry, f)).join(` ${t("discovery.conflictsConnector")} `)} —{" "}
             {c.filters.map((f) => (
               <button
@@ -134,10 +135,10 @@ export function DiscoveryResults({
         {result.total === 0 && <ZeroState response={response} registry={registry} onRelax={onRelax} />}
 
         {result.total > 0 && diagnostics.broad && (
-          <p className="text-[11px] text-text-muted">{t("discovery.broadSearch")}</p>
+          <p className="text-micro text-text-muted">{t("discovery.broadSearch")}</p>
         )}
         {excludedTotal > 0 && (
-          <p className="text-[11px] text-text-muted">
+          <p className="text-micro text-text-muted">
             {t("discovery.excludedMissing", { count: excludedTotal.toLocaleString() })}
           </p>
         )}
@@ -166,7 +167,7 @@ export function DiscoveryResults({
         ) : (
           !hasMore &&
           rows.length > 0 && (
-            <p className="px-4 py-3 text-[11px] text-text-muted">
+            <p className="px-4 py-3 text-micro text-text-muted">
               {t("discovery.showingAll", { count: rows.length.toLocaleString() })}
             </p>
           )
@@ -198,7 +199,7 @@ function ZeroState({
   const nullBacked = filterIds.filter((id) => !isPopulated(registry, id));
   if (nullBacked.length > 0) {
     return (
-      <div className="space-y-1 text-[11px] text-text-muted">
+      <div className="space-y-1 text-micro text-text-muted">
         <p>
           {t("discovery.zeroNullBacked", {
             count: nullBacked.length,
@@ -226,7 +227,7 @@ function ZeroState({
     if (selected.length > 0 && offCoverage.length === selected.length) {
       const names = offCoverage.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", ");
       return (
-        <p className="text-[11px] text-text-muted">
+        <p className="text-micro text-text-muted">
           {t("discovery.zeroNonLive", {
             count: offCoverage.length,
             names,
@@ -241,7 +242,7 @@ function ZeroState({
   const removable = response.diagnostics.mostRestrictive.filter((m) => m.countWithoutIt > 0);
   return (
     <div className="space-y-1">
-      <p className="text-[11px] text-text-muted">{t("discovery.zeroTooTight")}</p>
+      <p className="text-micro text-text-muted">{t("discovery.zeroTooTight")}</p>
       {removable.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {removable.map((m) => (
@@ -259,13 +260,9 @@ function ZeroState({
 
 function RelaxChip({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-md border border-dark-border px-2 py-0.5 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
-    >
+    <Chip as="button" size="sm" interactive onClick={onClick}>
       {label}
-    </button>
+    </Chip>
   );
 }
 
@@ -296,7 +293,7 @@ function InfiniteScrollSentinel({
 
   if (!hasMore) return null;
   return (
-    <div ref={ref} className="px-4 py-3 text-[11px] text-text-muted">
+    <div ref={ref} className="px-4 py-3 text-micro text-text-muted">
       {loadingMore ? t("discovery.loadingMore") : t("discovery.scrollMore")}
     </div>
   );
@@ -319,19 +316,19 @@ function TeaserWall({
   t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
   return (
-    <div className="border-t border-dark-border bg-dark-elevated/40 px-4 py-4 text-center backdrop-blur-[1px]">
-      <p className="text-sm font-medium text-text-primary">
+    <div className="border-t border-dark-border bg-dark-elevated/40 px-4 py-4 text-center">
+      <p className="text-title text-text-primary">
         {t("discovery.teaserCount", { total: total.toLocaleString(), shown })}
       </p>
-      <p className="mx-auto mt-1 max-w-xs text-[11px] text-text-muted">{summary}</p>
-      <p className="mx-auto mt-1 max-w-xs text-[11px] text-text-secondary">
+      <p className="mx-auto mt-1 max-w-xs text-micro text-text-muted">{summary}</p>
+      <p className="mx-auto mt-1 max-w-xs text-micro text-text-secondary">
         {t("discovery.teaserUnlock")}
       </p>
       {onUpgrade && (
         <button
           type="button"
           onClick={onUpgrade}
-          className="mt-3 rounded-lg bg-accent px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+          className="mt-3 rounded-lg bg-accent px-4 py-2 text-caption font-medium text-text-on-accent transition-colors hover:bg-accent-hover"
         >
           {t("discovery.unlockCta")}
         </button>
@@ -383,27 +380,27 @@ function ResultCard({
       onMouseEnter={() => onHoverPin?.(row.pin)}
       onMouseLeave={() => onHoverPin?.(null)}
       className={`block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors ${
-        hovered ? "bg-dark-elevated" : "hover:bg-dark-elevated"
+        hovered ? "bg-dark-hover" : "hover:bg-dark-hover"
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-sm text-text-primary">{title}</span>
+        <span className="truncate text-body text-text-primary">{title}</span>
         {row.upside_score != null && (
-          <span className="flex-shrink-0 text-[11px] text-accent">
+          <span className="flex-shrink-0 text-micro text-accent">
             ● {t("discovery.upsideShort", { n: Math.round(row.upside_score) })}
           </span>
         )}
       </div>
       {/* PIN demoted to a mono subtitle (shown when an address is the title). */}
-      {row.address && <div className="font-mono text-[10px] text-text-muted">{row.pin}</div>}
+      {row.address && <div className="font-mono text-micro text-text-muted">{row.pin}</div>}
       {useLine.length > 0 && (
-        <div className="mt-0.5 text-[11px] text-text-secondary">{useLine.join(" · ")}</div>
+        <div className="mt-0.5 text-micro text-text-secondary">{useLine.join(" · ")}</div>
       )}
       {sizeLine.length > 0 && (
-        <div className="text-[11px] text-text-muted">{sizeLine.join(" · ")}</div>
+        <div className="text-micro text-text-muted">{sizeLine.join(" · ")}</div>
       )}
       {(assessed || ppsf) && (
-        <div className="text-[11px] text-text-muted">
+        <div className="text-micro text-text-muted">
           {assessed && (
             <span className={sortIsAssessed ? "font-semibold text-text-secondary" : undefined}>
               {t("discovery.av", { money: assessed })}

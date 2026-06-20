@@ -158,7 +158,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
         onMouseLeave={() => setHovered(false)}
       >
         <div
-          className={`relative max-w-[85%] rounded-2xl px-4 py-3 bg-dark-bubble-user text-text-primary transition-all
+          className={`relative max-w-[85%] rounded-2xl px-4 py-3 bg-accent-muted text-text-primary transition-all
             ${onSelect ? "cursor-pointer hover:ring-1 hover:ring-white/20" : ""}
             ${isSelected ? "ring-1 ring-accent/40" : ""}`}
           onClick={onSelect}
@@ -223,7 +223,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
       onMouseLeave={() => setHovered(false)}
     >
       <div className="max-w-[85%]">
-        <div className="relative rounded-2xl px-4 py-3 bg-dark-bubble">
+        <div className="relative rounded-2xl px-4 py-3 bg-dark-elevated">
           {hovered && !streaming && displayedContent && (
             <button
               onClick={copy}

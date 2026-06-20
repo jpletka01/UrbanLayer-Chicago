@@ -100,7 +100,7 @@ export function TimeSeriesChart({
   if (allBuckets.length === 0) {
     return (
       <div
-        className="flex items-center justify-center text-text-muted text-sm"
+        className="flex items-center justify-center text-text-muted text-body"
         style={{ height }}
       >
         No data yet
@@ -245,7 +245,7 @@ export function TimeSeriesChart({
       {/* Tooltip */}
       {hoverIndex !== null && (
         <div
-          className="absolute bg-dark-tooltip border border-dark-border rounded-lg px-3 py-2 text-xs pointer-events-none shadow-lg"
+          className="absolute bg-dark-border-strong border border-dark-border rounded-lg px-3 py-2 text-caption pointer-events-none shadow-lg"
           style={{
             left: `${(xScale(hoverIndex) / chartWidth) * 100}%`,
             top: 0,

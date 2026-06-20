@@ -11,17 +11,17 @@ interface Props {
 export function StatCard({ label, value, format, subtitle, trend }: Props) {
   return (
     <div className="bg-dark-surface border border-dark-border rounded-xl p-6">
-      <div className="text-xs text-text-muted uppercase tracking-wider mb-2">
+      <div className="text-caption text-text-muted uppercase tracking-wider mb-2">
         {label}
       </div>
       <CountUp
         to={value}
         format={format}
-        className="text-3xl font-semibold text-text-primary"
+        className="text-stat font-semibold text-text-primary"
       />
       {trend != null && trend !== 0 && (
         <div
-          className={`text-xs mt-1 ${
+          className={`text-caption mt-1 ${
             trend > 0 ? "text-emerald-400" : "text-rose-400"
           }`}
         >
@@ -30,7 +30,7 @@ export function StatCard({ label, value, format, subtitle, trend }: Props) {
         </div>
       )}
       {subtitle && (
-        <div className="text-xs text-text-muted mt-1">{subtitle}</div>
+        <div className="text-caption text-text-muted mt-1">{subtitle}</div>
       )}
     </div>
   );

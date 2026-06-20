@@ -13,8 +13,8 @@ const AlertIcon = (
 function KV({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px] truncate">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono shrink-0">{value}</span>
+      <span className="text-text-muted text-micro truncate">{label}</span>
+      <span className="text-text-primary text-micro font-mono shrink-0">{value}</span>
     </div>
   );
 }
@@ -33,17 +33,17 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
         <div className="grid grid-cols-2 gap-2 py-1">
           <div className="text-center">
             <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted mt-0.5">{t("violations.total")}</div>
+            <div className="text-micro text-text-muted mt-0.5">{t("violations.total")}</div>
           </div>
           <div className="text-center">
             <div className="text-sm font-semibold text-amber-400">{data.open_count.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted mt-0.5">{t("violations.open")}</div>
+            <div className="text-micro text-text-muted mt-0.5">{t("violations.open")}</div>
           </div>
         </div>
 
         {categories.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("violations.byCategory")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("violations.byCategory")}</span>
             {categories.map(([cat, count]) => (
               <KV key={cat} label={t(`violations.categoryLabels.${cat}`, { defaultValue: cat })} value={String(count)} />
             ))}
@@ -54,7 +54,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
           <div>
             <button
               onClick={() => setShowDescriptions(s => !s)}
-              className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+              className="flex items-center gap-1 text-micro text-text-muted hover:text-text-secondary transition-colors"
             >
               <svg
                 className={`w-2.5 h-2.5 transition-transform duration-200 ${showDescriptions ? "" : "-rotate-90"}`}
@@ -67,7 +67,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
             {showDescriptions && (
               <ul className="mt-1 space-y-1">
                 {data.top_descriptions.map((desc, i) => (
-                  <li key={i} className="text-[10px] text-text-muted leading-tight pl-3">
+                  <li key={i} className="text-micro text-text-muted leading-tight pl-3">
                     {desc}
                   </li>
                 ))}
@@ -77,7 +77,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
         )}
 
         {data.capped && (
-          <p className="text-[10px] text-text-muted italic">
+          <p className="text-micro text-text-muted italic">
             {t("violations.showingFirst", { count: data.total.toLocaleString() })}
           </p>
         )}

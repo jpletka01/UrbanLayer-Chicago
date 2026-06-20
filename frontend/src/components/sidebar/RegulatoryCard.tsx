@@ -53,7 +53,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
       <div className="space-y-3">
         {data.overlays.length > 0 && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.overlays")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("regulatory.overlays")}</span>
             {data.overlays.map((ov, i) => {
               const typeLabel = formatLayerType(ov.layer_type);
               const name = ov.name && normLabel(ov.name) !== normLabel(typeLabel) ? humanizeShoutyCase(ov.name) : null;
@@ -63,17 +63,17 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                 ? ov.description : null;
               return (
                 <div key={i} className="rounded-lg bg-dark-elevated/60 border-l-2 border-accent/60 px-3 py-2">
-                  <span className="text-[10px] text-accent/80 uppercase tracking-wider">
+                  <span className="text-micro text-accent/80 uppercase tracking-wider">
                     <InfoTooltip term={ov.layer_type}>{typeLabel}</InfoTooltip>
                   </span>
                   {name && (
-                    <p className="text-[11px] text-text-primary mt-0.5">{name}</p>
+                    <p className="text-micro text-text-primary mt-0.5">{name}</p>
                   )}
                   {description && (
-                    <p className="text-[10px] text-text-muted mt-0.5">{description}</p>
+                    <p className="text-micro text-text-muted mt-0.5">{description}</p>
                   )}
                   {ov.ordinance && (
-                    <p className="text-[10px] text-text-muted mt-0.5">{t("regulatory.ord")} {ov.ordinance}</p>
+                    <p className="text-micro text-text-muted mt-0.5">{t("regulatory.ord")} {ov.ordinance}</p>
                   )}
                 </div>
               );
@@ -83,13 +83,13 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
 
         {activeFlags.length > 0 ? (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.status")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("regulatory.status")}</span>
             <div className="flex flex-wrap gap-1.5">
               {activeFlags.map(key => (
                 <span
                   key={key}
                   className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400
-                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-[10px]"
+                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-micro"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   <InfoTooltip term={key}>{t(`regulatory.flags.${key}`)}</InfoTooltip>
@@ -101,13 +101,13 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
             </div>
           </div>
         ) : data.overlays.length === 0 ? (
-          <p className="text-[11px] text-text-muted">{t("regulatory.noOverlays")}</p>
+          <p className="text-micro text-text-muted">{t("regulatory.noOverlays")}</p>
         ) : null}
 
         {data.flood_zone && (
           <div className="space-y-1">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("regulatory.floodZone")}</span>
-            <div className={`rounded-lg px-3 py-2 text-[11px] ${
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("regulatory.floodZone")}</span>
+            <div className={`rounded-lg px-3 py-2 text-micro ${
               data.in_special_flood_hazard
                 ? "bg-amber-500/10 border border-amber-500/20"
                 : "bg-dark-elevated/60 border border-dark-border"
@@ -117,7 +117,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                   <InfoTooltip term={`flood:${data.flood_zone}`}>{t("regulatory.zone", { code: data.flood_zone })}</InfoTooltip>
                 </span>
                 {data.in_special_flood_hazard && (
-                  <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 text-[9px] uppercase font-medium">
+                  <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 text-micro uppercase font-medium">
                     {t("regulatory.specialFloodHazard")}
                   </span>
                 )}
@@ -131,22 +131,22 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
 
         {data.aro_housing && data.aro_housing.total_projects > 0 && (
           <div className="space-y-1">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+            <span className="text-micro text-text-muted uppercase tracking-wider">
               {t("regulatory.affordableHousing")}
             </span>
             <div className="rounded-lg bg-dark-elevated/60 border border-dark-border px-3 py-2 space-y-1">
               <div className="flex justify-between items-baseline gap-2">
-                <span className="text-text-muted text-[11px]">{t("regulatory.projects")}</span>
-                <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_projects}</span>
+                <span className="text-text-muted text-micro">{t("regulatory.projects")}</span>
+                <span className="text-text-primary text-micro font-mono">{data.aro_housing.total_projects}</span>
               </div>
               <div className="flex justify-between items-baseline gap-2">
-                <span className="text-text-muted text-[11px]">{t("regulatory.totalUnits")}</span>
-                <span className="text-text-primary text-[11px] font-mono">{data.aro_housing.total_units.toLocaleString()}</span>
+                <span className="text-text-muted text-micro">{t("regulatory.totalUnits")}</span>
+                <span className="text-text-primary text-micro font-mono">{data.aro_housing.total_units.toLocaleString()}</span>
               </div>
               {data.aro_housing.projects.length > 0 && (
                 <button
                   onClick={() => setShowAroProjects(p => !p)}
-                  className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors pt-1"
+                  className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors pt-1"
                 >
                   <svg
                     className={`w-2.5 h-2.5 transition-transform duration-150 ${showAroProjects ? "" : "-rotate-90"}`}
@@ -158,7 +158,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                 </button>
               )}
               {showAroProjects && data.aro_housing.projects.slice(0, 5).map((proj, i) => (
-                <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border mt-1">
+                <div key={i} className="text-micro leading-tight pl-1 border-l border-dark-border mt-1">
                   <p className="text-text-primary">{proj.name}</p>
                   <div className="flex gap-2 text-text-muted">
                     {proj.units != null && <span>{proj.units} {t("regulatory.units")}</span>}
@@ -172,14 +172,14 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
 
         {data.brownfield_sites.length > 0 && (
           <div className="space-y-1">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+            <span className="text-micro text-text-muted uppercase tracking-wider">
               {t("regulatory.nearbyBrownfield", { count: data.brownfield_sites.length })}
             </span>
             {data.brownfield_sites.map((site, i) => (
-              <div key={i} className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-2 text-[11px]">
+              <div key={i} className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-2 text-micro">
                 <p className="text-text-primary">{(site as Record<string, string>).site_name ?? t("regulatory.unknownSite")}</p>
                 {(site as Record<string, string>).interest_type && (
-                  <p className="text-text-muted text-[10px] mt-0.5">{(site as Record<string, string>).interest_type}</p>
+                  <p className="text-text-muted text-micro mt-0.5">{(site as Record<string, string>).interest_type}</p>
                 )}
               </div>
             ))}

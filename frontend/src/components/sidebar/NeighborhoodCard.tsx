@@ -187,7 +187,7 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
           href={ct.census_reporter_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 underline transition-colors"
+          className="inline-flex items-center gap-1 text-micro text-accent hover:text-accent-hover underline transition-colors"
         >
           {t("neighborhood.viewCensusReporter")}
           <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

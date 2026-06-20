@@ -1,6 +1,8 @@
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Card } from "../ui/Card";
+import { Chip } from "../ui/Chip";
 
 const DOMAIN_ICONS = [
   (
@@ -58,10 +60,10 @@ export function IntelligenceStack() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-4"
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-text-primary tracking-tight">
+          <h2 className="text-section text-text-primary">
             {t("intelligence.heading")}
           </h2>
-          <p className="text-sm md:text-base text-text-secondary max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lead text-text-secondary max-w-2xl mx-auto">
             {t("intelligence.subheading")}
           </p>
         </motion.div>
@@ -73,25 +75,26 @@ export function IntelligenceStack() {
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.1 + i * 0.08, duration: 0.5, ease: "easeOut" }}
-              className="bg-dark-surface/80 backdrop-blur-md border border-white/10 rounded-xl p-6 space-y-4"
             >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
-                  {DOMAIN_ICONS[i]}
+              <Card surface="surface" padding="lg" className="h-full">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
+                      {DOMAIN_ICONS[i]}
+                    </div>
+                    <Chip tone="accent" mono size="md">{d.badge}</Chip>
+                  </div>
+                  <h3 className="text-subtitle text-text-primary">{d.title}</h3>
+                  <ul className="space-y-1.5">
+                    {d.points.map((p) => (
+                      <li key={p} className="text-body text-text-secondary flex items-start gap-2">
+                        <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <span className="text-xs font-mono text-accent/80 bg-accent/10 px-2 py-1 rounded-md">
-                  {d.badge}
-                </span>
-              </div>
-              <h3 className="text-base font-semibold text-text-primary">{d.title}</h3>
-              <ul className="space-y-1.5">
-                {d.points.map((p) => (
-                  <li key={p} className="text-sm text-text-secondary flex items-start gap-2">
-                    <span className="text-accent/60 mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
+              </Card>
             </motion.div>
           ))}
         </div>

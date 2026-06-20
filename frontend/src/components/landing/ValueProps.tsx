@@ -1,6 +1,7 @@
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Card } from "../ui/Card";
 
 const ICONS = [
   <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -31,13 +32,16 @@ export function ValueProps() {
             initial={{ opacity: 0, y: 30 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: i * 0.15, duration: 0.5, ease: "easeOut" }}
-            className="bg-dark-surface/80 backdrop-blur-md border border-white/10 rounded-xl p-8 space-y-4"
           >
-            <div className="w-12 h-12 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
-              {ICONS[i]}
-            </div>
-            <h3 className="text-lg font-semibold text-text-primary">{t(`valueProps.${key}Title`)}</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">{t(`valueProps.${key}Body`)}</p>
+            <Card surface="surface" padding="lg" className="h-full">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
+                  {ICONS[i]}
+                </div>
+                <h3 className="text-subtitle text-text-primary">{t(`valueProps.${key}Title`)}</h3>
+                <p className="text-body text-text-secondary leading-relaxed">{t(`valueProps.${key}Body`)}</p>
+              </div>
+            </Card>
           </motion.div>
         ))}
       </div>

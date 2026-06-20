@@ -29,7 +29,7 @@ export function HeroEntrance() {
         placeholder={t("hero.addressPlaceholder")}
       />
       <div className="flex flex-wrap gap-2 justify-center items-center">
-        <span className="text-sm text-white/50">{t("hero.try")}</span>
+        <span className="text-body text-white/50">{t("hero.try")}</span>
         {addressExamples.map((addr) => (
           <PromptSuggestionChip key={addr} label={addr} onClick={() => submitAddress(addr, "chip")} />
         ))}

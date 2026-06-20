@@ -20,6 +20,8 @@ import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
 import { humanizeShoutyCase } from "../lib/format";
 import { ReportTeaser } from "./sidebar/ReportTeaser";
 import PageHeader from "./PageHeader";
+import { Card } from "./ui/Card";
+import { Chip } from "./ui/Chip";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -62,42 +64,46 @@ function MapThumb({ lat, lon }: { lat: number; lon: number }) {
   );
 }
 
+const zoningIcon = (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+  </svg>
+);
+
 function ZoningCard({ def, mapUrl }: { def: ZoneDefinition; mapUrl?: string | null }) {
   const { t } = useTranslation("pages");
   return (
-    <div className="bg-dark-surface border border-dark-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-dark-border flex items-center gap-2">
-        <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-        </svg>
-        <span className="text-[11px] font-medium text-text-primary">{t("scorecard.zoningCard.title")}</span>
-        <span className="ml-auto text-[10px] font-mono text-accent">{def.zone_class}</span>
-      </div>
-      <div className="px-4 py-3 space-y-2">
-        <p className="text-[12px] font-medium text-text-primary">{def.name}</p>
+    <Card
+      padding="sm"
+      icon={zoningIcon}
+      title={t("scorecard.zoningCard.title")}
+      headerRight={<Chip tone="accent" mono size="sm">{def.zone_class}</Chip>}
+    >
+      <div className="space-y-2">
+        <p className="text-caption font-medium text-text-primary">{def.name}</p>
         <div className="space-y-1">
           {def.far != null && (
-            <div className="flex justify-between items-baseline gap-2 text-[11px]">
+            <div className="flex justify-between items-baseline gap-2 text-micro">
               <span className="text-text-muted">{t("scorecard.zoningCard.far")}</span>
               <span className="text-text-primary font-mono">{def.far}</span>
             </div>
           )}
           {def.max_height && (
-            <div className="flex justify-between items-baseline gap-2 text-[11px]">
+            <div className="flex justify-between items-baseline gap-2 text-micro">
               <span className="text-text-muted">{t("scorecard.zoningCard.maxHeight")}</span>
               <span className="text-text-primary font-mono text-right">{def.max_height}</span>
             </div>
           )}
           {def.lot_coverage && (
-            <div className="flex justify-between items-baseline gap-2 text-[11px]">
+            <div className="flex justify-between items-baseline gap-2 text-micro">
               <span className="text-text-muted">{t("scorecard.zoningCard.lotCoverage")}</span>
               <span className="text-text-primary font-mono text-right">{def.lot_coverage}</span>
             </div>
           )}
         </div>
-        {def.uses && <p className="text-[11px] text-text-secondary leading-snug">{def.uses}</p>}
-        {def.notes && <p className="text-[10px] text-text-muted leading-snug">{def.notes}</p>}
-        <div className="flex items-center justify-between gap-2 text-[10px] text-text-muted">
+        {def.uses && <p className="text-micro text-text-secondary leading-snug">{def.uses}</p>}
+        {def.notes && <p className="text-micro text-text-muted leading-snug">{def.notes}</p>}
+        <div className="flex items-center justify-between gap-2 text-micro text-text-muted">
           <span className="font-mono">{def.code_section}</span>
           {mapUrl && (
             <a
@@ -112,9 +118,15 @@ function ZoningCard({ def, mapUrl }: { def: ZoneDefinition; mapUrl?: string | nu
         </div>
         <ReportTeaser text={t("scorecard.zoningCard.reportTeaser")} />
       </div>
-    </div>
+    </Card>
   );
 }
+
+const crimeIcon = (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+  </svg>
+);
 
 function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
@@ -122,29 +134,27 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
   if (!crime) return null;
   const yoy = crime.yoy;
   return (
-    <div className="bg-dark-surface border border-dark-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-dark-border flex items-center gap-2">
-        <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-        </svg>
-        <span className="text-[11px] font-medium text-text-primary">{t("scorecard.crime")}</span>
-        <span className="ml-auto text-[10px] text-text-muted">{t("scorecard.incidents90d", { count: crime.total })}</span>
-      </div>
-      <div className="px-4 py-3 space-y-2">
-        <div className="flex gap-4 text-[11px]">
+    <Card
+      padding="sm"
+      icon={crimeIcon}
+      title={t("scorecard.crime")}
+      headerRight={<span className="text-micro text-text-muted">{t("scorecard.incidents90d", { count: crime.total })}</span>}
+    >
+      <div className="space-y-2">
+        <div className="flex gap-4 text-micro">
           <span className="text-text-muted">{t("scorecard.arrestRate")}</span>
           <span className="text-text-primary font-mono">{(crime.arrest_rate * 100).toFixed(1)}%</span>
         </div>
         {yoy && yoy.length > 0 && (
           <div>
-            <div className="text-[10px] text-text-muted mb-1.5">{crime.yoy_period || t("scorecard.yearOverYear")}</div>
+            <div className="text-micro text-text-muted mb-1.5">{crime.yoy_period || t("scorecard.yearOverYear")}</div>
             <div className="space-y-1">
               {yoy.slice(0, 6).map((item) => (
-                <div key={item.category} className="flex items-center justify-between text-[11px]">
+                <div key={item.category} className="flex items-center justify-between text-micro">
                   <span className="text-text-secondary truncate flex-1 mr-2">{humanizeShoutyCase(item.category)}</span>
                   <span className="font-mono text-text-primary w-8 text-right">{item.current_count}</span>
                   {/* prior-year base makes large percentage swings honest (54 → 209 reads differently than +287%) */}
-                  <span className="font-mono text-text-muted w-14 text-right text-[10px]">
+                  <span className="font-mono text-text-muted w-14 text-right">
                     {t("scorecard.vsPrior", { count: item.prior_year_count })}
                   </span>
                   <span className={`font-mono w-14 text-right ${
@@ -158,32 +168,36 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
+
+const address311Icon = (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+  </svg>
+);
 
 function Address311Card({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
   const addr311 = data.context.address_311;
   if (!addr311) return null;
   return (
-    <div className="bg-dark-surface border border-dark-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-dark-border flex items-center gap-2">
-        <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-        </svg>
-        <span className="text-[11px] font-medium text-text-primary">{t("scorecard.311atAddress")}</span>
-        <span className="ml-auto text-[10px] text-text-muted">{addr311.total} {t("scorecard.pastYear")}</span>
-      </div>
-      <div className="px-4 py-3 space-y-2">
+    <Card
+      padding="sm"
+      icon={address311Icon}
+      title={t("scorecard.311atAddress")}
+      headerRight={<span className="text-micro text-text-muted">{addr311.total} {t("scorecard.pastYear")}</span>}
+    >
+      <div className="space-y-2">
         {addr311.open_count > 0 && (
-          <div className="text-[11px] text-amber-400">{t("scorecard.openComplaints", { count: addr311.open_count })}</div>
+          <div className="text-micro text-amber-400">{t("scorecard.openComplaints", { count: addr311.open_count })}</div>
         )}
         {addr311.high_risk_flags.length > 0 && (
           <div className="space-y-1">
-            <div className="text-[10px] text-rose-400 font-medium">{t("scorecard.highRiskFlags")}</div>
+            <div className="text-micro text-rose-400 font-medium">{t("scorecard.highRiskFlags")}</div>
             {addr311.high_risk_flags.map((flag) => (
-              <div key={flag} className="text-[11px] text-rose-300 flex items-center gap-1.5">
+              <div key={flag} className="text-micro text-rose-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
                 {humanizeShoutyCase(flag)}
               </div>
@@ -193,7 +207,7 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
         {Object.entries(addr311.by_type).length > 0 && (
           <div className="space-y-1">
             {Object.entries(addr311.by_type).slice(0, 5).map(([type, count]) => (
-              <div key={type} className="flex items-center justify-between text-[11px]">
+              <div key={type} className="flex items-center justify-between text-micro">
                 <span className="text-text-secondary truncate flex-1 mr-2">{humanizeShoutyCase(type)}</span>
                 <span className="font-mono text-text-primary">{count}</span>
               </div>
@@ -201,7 +215,7 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -400,8 +414,8 @@ export default function ScorecardPage() {
             success / code-question redirect). One boolean, two shells. */}
         {searchProminent ? (
           <div className="max-w-2xl mx-auto mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight mb-2">{t("scorecard.title")}</h1>
-            <p className="text-sm text-text-muted mb-4">
+            <h1 className="text-section mb-2">{t("scorecard.title")}</h1>
+            <p className="text-body text-text-muted mb-4">
               {t("scorecard.subtitle")}
             </p>
             <form onSubmit={handleSubmit} className="flex gap-2">
@@ -410,30 +424,30 @@ export default function ScorecardPage() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="2400 N Milwaukee Ave"
-                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-4 py-2.5 text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
               />
               <button
                 type="submit"
                 disabled={loading || !address.trim()}
-                className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-text-on-accent text-title rounded-lg transition-colors"
               >
                 {loading ? t("scorecard.loading") : t("scorecard.search")}
               </button>
             </form>
             {error && errorShape === "address" && (
-              <div className="mt-3 text-sm text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-lg px-4 py-2.5">
+              <div className="mt-3 text-body text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-lg px-4 py-2.5">
                 <div>{error}</div>
                 <button
                   type="button"
                   onClick={() => navigate(`/?q=${encodeURIComponent(errorQuery)}`)}
-                  className="mt-1.5 text-xs text-text-secondary hover:text-accent transition-colors"
+                  className="mt-1.5 text-caption text-text-secondary hover:text-accent transition-colors"
                 >
                   {t("scorecard.codeRedirect.orAskAnalyst")}
                 </button>
               </div>
             )}
             {searched && !data && !error && (
-              <div className="mt-3 text-sm text-text-muted">{t("scorecard.noResults")}</div>
+              <div className="mt-3 text-body text-text-muted">{t("scorecard.noResults")}</div>
             )}
           </div>
         ) : (
@@ -445,12 +459,12 @@ export default function ScorecardPage() {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder={t("scorecard.searchAnother")}
                 aria-label={t("scorecard.searchAnother")}
-                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-3 py-1.5 text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
               />
               <button
                 type="submit"
                 disabled={loading || !address.trim()}
-                className="px-3 py-1.5 bg-dark-elevated hover:bg-dark-border disabled:opacity-50 text-text-secondary text-xs font-medium rounded-lg transition-colors shrink-0"
+                className="px-3 py-1.5 bg-dark-elevated hover:bg-dark-hover disabled:opacity-50 text-text-secondary text-caption font-medium rounded-lg transition-colors shrink-0"
               >
                 {loading ? t("scorecard.loading") : t("scorecard.search")}
               </button>
@@ -465,20 +479,20 @@ export default function ScorecardPage() {
             analyst via the existing ?q= auto-send. */}
         {errorShape === "question" && !loading && (
           <div className="max-w-2xl mx-auto mb-8 bg-dark-surface border border-dark-border rounded-xl p-5">
-            <h2 className="text-base font-semibold text-text-primary mb-1.5">{t("scorecard.codeRedirect.title")}</h2>
-            <p className="text-sm text-text-secondary mb-4">{t("scorecard.codeRedirect.body")}</p>
+            <h2 className="text-subtitle text-text-primary mb-1.5">{t("scorecard.codeRedirect.title")}</h2>
+            <p className="text-body text-text-secondary mb-4">{t("scorecard.codeRedirect.body")}</p>
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => navigate(`/?q=${encodeURIComponent(errorQuery)}`)}
-                className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors"
+                className="px-4 py-2 bg-accent hover:bg-accent-hover text-text-on-accent text-title rounded-lg transition-colors"
               >
                 {t("scorecard.codeRedirect.askAnalyst")} →
               </button>
               <button
                 type="button"
                 onClick={() => { setError(null); setErrorShape(null); setData(null); setSearched(false); setAddress(""); }}
-                className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                className="text-body text-text-secondary hover:text-text-primary transition-colors"
               >
                 {t("scorecard.codeRedirect.searchInstead")}
               </button>
@@ -493,17 +507,15 @@ export default function ScorecardPage() {
               <MapThumb lat={data.lat} lon={data.lon} />
               <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-subtitle">
                   {data.address || ctx.property?.address ||
                     (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
                 </h2>
                 {data.community_area_name && (
-                  <span className="text-sm text-text-muted">{data.community_area_name}</span>
+                  <span className="text-body text-text-muted">{data.community_area_name}</span>
                 )}
                 {zoning && (
-                  <span className="text-xs font-mono bg-dark-elevated px-2 py-0.5 rounded text-accent">
-                    {zoning.zone_class}
-                  </span>
+                  <Chip tone="accent" mono size="sm">{zoning.zone_class}</Chip>
                 )}
               </div>
               {/* Parcel identity strip */}
@@ -514,47 +526,38 @@ export default function ScorecardPage() {
                       href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-mono text-text-secondary hover:text-accent transition-colors"
+                      className="text-caption font-mono text-text-secondary hover:text-accent transition-colors"
                     >
                       PIN {formatPin(parcel.pin)}
                     </a>
                   )}
                   {parcel.pin === null ? (
-                    <span
-                      title={t("scorecard.badges.unconfirmedTitle")}
-                      className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400 cursor-help"
-                    >
+                    <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
                       {t("scorecard.badges.unconfirmed")}
-                    </span>
+                    </Chip>
                   ) : parcel.confidence === "authoritative" ? (
-                    <span
-                      title={t("scorecard.badges.exactTitle")}
-                      className="text-[10px] px-2 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 cursor-help"
-                    >
+                    <Chip tone="positive" size="sm" title={t("scorecard.badges.exactTitle")} className="cursor-help">
                       ✓ {t("scorecard.badges.exact")}
-                    </span>
+                    </Chip>
                   ) : (
-                    <span
-                      title={t("scorecard.badges.approximateTitle")}
-                      className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 text-amber-400 cursor-help"
-                    >
+                    <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
                       {t("scorecard.badges.approximate")}
-                    </span>
+                    </Chip>
                   )}
                 </div>
               )}
               {verdictClauses.length > 0 && (
-                <p className="mt-2 text-[12px] text-text-secondary leading-snug">
+                <p className="mt-2 text-caption text-text-secondary leading-snug">
                   {verdictClauses.join(" · ")}
                 </p>
               )}
               {data.context.data_as_of && (
-                <div className="mt-2 text-[10px] text-text-muted">
+                <div className="mt-2 text-micro text-text-muted">
                   {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
                 </div>
               )}
               {data.partial_failures.length > 0 && (
-                <div className="mt-2 text-[11px] text-amber-400">
+                <div className="mt-2 text-micro text-amber-400">
                   {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
                 </div>
               )}
@@ -572,7 +575,7 @@ export default function ScorecardPage() {
                     const date = new Date().toISOString().slice(0, 10);
                     downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
                   }}
-                  className="inline-flex items-center gap-1 text-[10px] text-text-secondary hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-1 text-micro text-text-secondary hover:text-accent transition-colors"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -752,12 +755,12 @@ export default function ScorecardPage() {
               <svg className="w-4 h-4 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
-              <span className="text-sm font-medium text-text-primary">{t("scorecard.reportCTA.stickyTitle")}</span>
+              <span className="text-title text-text-primary">{t("scorecard.reportCTA.stickyTitle")}</span>
             </div>
             <button
               onClick={() => { track("report_cta_click"); (hasReportAccess ? handleDownloadPdf : () => setShowPurchasePrompt(true))(); }}
               disabled={downloading}
-              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-text-on-accent text-title rounded-lg transition-colors shrink-0"
             >
               {downloading
                 ? t("scorecard.reportCTA.generating")

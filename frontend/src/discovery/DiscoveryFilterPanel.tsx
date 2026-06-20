@@ -5,6 +5,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Chip } from "../components/ui/Chip";
 import {
   COMMUNITY_AREAS,
   NEIGHBORHOOD_PREFIX,
@@ -70,7 +71,7 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
               type="button"
               onClick={() => toggle(cat)}
               aria-expanded={expanded}
-              className="flex w-full items-center justify-between text-[10px] uppercase tracking-wider text-text-muted transition-colors hover:text-text-secondary"
+              className="flex w-full items-center justify-between text-overline uppercase text-text-muted transition-colors hover:text-text-secondary"
             >
               <span>
                 {t(`discovery.category.${cat}`, CATEGORY_LABELS[cat])}
@@ -98,14 +99,6 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
   );
 }
 
-function chipCls(active: boolean): string {
-  return `rounded-md border px-2.5 py-1 text-[11px] transition-colors ${
-    active
-      ? "border-accent bg-accent/10 text-accent"
-      : "border-dark-border text-text-secondary hover:border-text-muted"
-  }`;
-}
-
 function Control({
   def,
   value,
@@ -123,7 +116,7 @@ function Control({
   // Visible group label (a <span>, not a <label> — pill/preset groups have no single
   // form control to associate; their accessible name comes from role+aria-label).
   const labelNode = (
-    <span className="mb-1 block text-xs text-text-secondary">
+    <span className="mb-1 block text-caption text-text-secondary">
       {name}
       {unit ? <span className="text-text-muted"> ({unit})</span> : null}
     </span>
@@ -136,7 +129,7 @@ function Control({
     return (
       <div className="opacity-50">
         {labelNode}
-        <p className="text-[11px] text-text-muted">{t("discovery.comingSoon")}</p>
+        <p className="text-micro text-text-muted">{t("discovery.comingSoon")}</p>
       </div>
     );
   }
@@ -153,15 +146,17 @@ function Control({
         {labelNode}
         <div role="group" aria-label={name} className="flex gap-1.5">
           {opts.map(([txt, val]) => (
-            <button
+            <Chip
               key={txt}
-              type="button"
+              as="button"
+              size="md"
+              selected={v === val}
+              interactive
               aria-pressed={v === val}
               onClick={() => onChange(def.id, val === null ? null : { kind: "flag", value: val })}
-              className={chipCls(v === val)}
             >
               {txt}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -180,15 +175,17 @@ function Control({
         {labelNode}
         <div role="group" aria-label={name} className="flex flex-wrap gap-1.5">
           {(def.enumValues ?? []).map((v) => (
-            <button
+            <Chip
               key={v}
-              type="button"
+              as="button"
+              size="md"
+              selected={selected.includes(v)}
+              interactive
               aria-pressed={selected.includes(v)}
               onClick={() => toggle(v)}
-              className={chipCls(selected.includes(v))}
             >
               {enumLabel(v)}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -209,28 +206,32 @@ function Control({
         <div>
           {labelNode}
           <div role="radiogroup" aria-label={name} className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
+            <Chip
+              as="button"
+              size="md"
               role="radio"
+              selected={anyChecked}
+              interactive
               aria-checked={anyChecked}
               onClick={() => onChange(def.id, null)}
-              className={chipCls(anyChecked)}
             >
               {t("discovery.flagAny")}
-            </button>
+            </Chip>
             {def.range.presets.map((p) => (
-              <button
+              <Chip
                 key={p.label}
-                type="button"
+                as="button"
+                size="md"
                 role="radio"
+                selected={isChecked(p)}
+                interactive
                 aria-checked={isChecked(p)}
                 onClick={() =>
                   onChange(def.id, { kind: "range", min: p.min ?? undefined, max: p.max ?? undefined })
                 }
-                className={chipCls(isChecked(p))}
               >
                 {t(`discovery.preset.${p.label}`, p.label)}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
@@ -242,7 +243,7 @@ function Control({
     const parse = (s: string) => (s === "" ? undefined : Number(s));
     const dom = def.range?.domain;
     const inputCls =
-      "w-full rounded-md border border-dark-border bg-dark-elevated px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none";
+      "w-full rounded-lg border border-dark-border bg-dark-elevated px-2 py-1 text-caption text-text-primary focus:border-accent focus:outline-none";
     return (
       <div>
         {labelNode}
@@ -280,7 +281,7 @@ function Control({
     return (
       <div className="opacity-50">
         {labelNode}
-        <p className="text-[11px] text-text-muted">{t("discovery.notAvailable")}</p>
+        <p className="text-micro text-text-muted">{t("discovery.notAvailable")}</p>
       </div>
     );
   }
@@ -292,7 +293,7 @@ function Control({
   const selectId = `disc-${def.id}`;
   return (
     <div>
-      <label htmlFor={selectId} className="mb-1 block text-xs text-text-secondary">
+      <label htmlFor={selectId} className="mb-1 block text-caption text-text-secondary">
         {name}
       </label>
       <select
@@ -300,7 +301,7 @@ function Control({
         multiple
         value={selected.map((r) => r.replace(NEIGHBORHOOD_PREFIX, ""))}
         onChange={onSelect}
-        className="h-28 w-full rounded-md border border-dark-border bg-dark-elevated px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
+        className="h-28 w-full rounded-lg border border-dark-border bg-dark-elevated px-2 py-1 text-caption text-text-primary focus:border-accent focus:outline-none"
       >
         {SORTED_CAS.map((ca) => (
           <option key={ca.id} value={ca.id}>

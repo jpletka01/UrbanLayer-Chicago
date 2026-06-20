@@ -36,7 +36,7 @@ function StatBox({ label, value, naLabel, naTitle }: {
       >
         {na ? (naLabel ?? "n/a") : value}
       </div>
-      <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
+      <div className="text-micro text-text-muted mt-0.5">{label}</div>
     </div>
   );
 }
@@ -45,8 +45,8 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
   if (!value || value === "—") return null;
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px] shrink-0">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono text-right">{value}</span>
+      <span className="text-text-muted text-micro shrink-0">{label}</span>
+      <span className="text-text-primary text-micro font-mono text-right">{value}</span>
     </div>
   );
 }
@@ -58,7 +58,7 @@ export function ComparablesCard({ data }: { data: ComparablesSummary }) {
   if (!data.sales || data.sales.length === 0) {
     return (
       <CollapsibleCard title={t("comparables.title")} icon={ChartIcon}>
-        <p className="text-[11px] text-text-muted">{t("comparables.noData")}</p>
+        <p className="text-micro text-text-muted">{t("comparables.noData")}</p>
       </CollapsibleCard>
     );
   }
@@ -83,12 +83,12 @@ export function ComparablesCard({ data }: { data: ComparablesSummary }) {
           <KV label={t("comparables.priceBldgSqft")} value={data.median_price_per_bldg_sqft != null ? `$${data.median_price_per_bldg_sqft.toFixed(0)}` : null} />
         </div>
 
-        <p className="text-[10px] text-text-muted">{t("comparables.radius")}</p>
+        <p className="text-micro text-text-muted">{t("comparables.radius")}</p>
 
         <div>
           <button
             onClick={() => setShowSales(s => !s)}
-            className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+            className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors"
           >
             <svg
               className={`w-2.5 h-2.5 transition-transform duration-150 ${showSales ? "" : "-rotate-90"}`}
@@ -100,7 +100,7 @@ export function ComparablesCard({ data }: { data: ComparablesSummary }) {
           </button>
           {showSales && (
             <div className="mt-1.5 overflow-x-auto">
-              <table className="w-full text-[11px]">
+              <table className="w-full text-micro">
                 <thead>
                   <tr className="text-text-muted border-b border-dark-border">
                     <th className="text-left pb-1.5 pr-2 font-medium">{t("comparables.date")}</th>

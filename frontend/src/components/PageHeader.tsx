@@ -65,22 +65,33 @@ export default function PageHeader({
     >
       {/* Three zones: brand | nav (centered) | utilities — navigation and
           account/language controls are distinct groups, not one corner pile */}
-      <div className={`${maxWidthClass} mx-auto px-4 py-3 flex items-center justify-between gap-4`}>
-        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
-          <img src="/logo.jpg" alt="UrbanLayer" className="w-6 h-6 rounded-full" />
-          <span className="text-sm font-semibold tracking-tight">UrbanLayer</span>
-        </Link>
-        <nav className="flex-1 flex items-center justify-center gap-5 text-xs text-text-muted overflow-x-auto min-w-0 px-2">
-          {navItems.map(({ to, key }) =>
-            pathname === to.split("?")[0] && !to.includes("?") ? (
-              <span key={to} className="text-accent shrink-0">{t(key)}</span>
-            ) : (
-              <Link key={to} to={to} className="hover:text-text-primary transition-colors shrink-0">
-                {t(key)}
-              </Link>
-            )
-          )}
-        </nav>
+      <div className={`${maxWidthClass} mx-auto px-4 h-14 flex items-center justify-between gap-4`}>
+        {/* Left group: brand + nav read as one anchored unit (not a centered float) */}
+        <div className="flex items-center gap-6 min-w-0">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
+            <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-full" />
+            <span className="font-display text-base font-semibold tracking-tight">UrbanLayer</span>
+          </Link>
+          <nav className="flex items-center gap-5 text-body overflow-x-auto min-w-0">
+            {navItems.map(({ to, key }) => {
+              const active = pathname === to.split("?")[0] && !to.includes("?");
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  aria-current={active ? "page" : undefined}
+                  className={`shrink-0 border-b-2 pb-0.5 transition-colors ${
+                    active
+                      ? "border-accent text-text-primary"
+                      : "border-transparent text-text-secondary hover:text-text-primary"
+                  }`}
+                >
+                  {t(key)}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           <LanguageSelector />
           {user ? (
@@ -88,7 +99,7 @@ export default function PageHeader({
           ) : authRequired ? (
             <button
               onClick={signIn}
-              className="text-[11px] text-text-secondary hover:text-text-primary border border-dark-border rounded-lg px-2.5 py-1 transition-colors"
+              className="text-caption text-text-secondary hover:text-text-primary border border-dark-border rounded-lg px-2.5 py-1 transition-colors"
             >
               {tc("signInShort")}
             </button>

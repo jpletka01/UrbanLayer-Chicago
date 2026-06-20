@@ -29,7 +29,7 @@ export function ReportCTACard({
             </div>
             <div>
               <h3 className="text-sm font-medium text-text-primary">{t("scorecard.reportCTA.title")}</h3>
-              <p className="text-[11px] text-text-muted">{t("scorecard.reportCTA.description")}</p>
+              <p className="text-micro text-text-muted">{t("scorecard.reportCTA.description")}</p>
             </div>
           </div>
           <button
@@ -60,7 +60,7 @@ export function ReportCTACard({
             alt={t("scorecard.reportCTA.viewSample")}
             className="w-28 rounded-md border border-dark-border group-hover:border-accent/60 transition-colors"
           />
-          <span className="block mt-1 text-center text-[10px] text-text-secondary group-hover:text-accent transition-colors">
+          <span className="block mt-1 text-center text-micro text-text-secondary group-hover:text-accent transition-colors">
             {t("scorecard.reportCTA.viewSample")} →
           </span>
         </a>
@@ -74,13 +74,13 @@ export function ReportCTACard({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-text-primary">{t("scorecard.reportCTA.title")}</h3>
-              <p className="text-[11px] text-text-secondary mt-0.5">{t("scorecard.reportCTA.description")}</p>
+              <p className="text-micro text-text-secondary mt-0.5">{t("scorecard.reportCTA.description")}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mb-3">
             {Array.isArray(features) && features.map((feature, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+              <div key={i} className="flex items-center gap-1.5 text-micro text-text-secondary">
                 <svg className="w-3 h-3 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
@@ -89,7 +89,7 @@ export function ReportCTACard({
             ))}
           </div>
 
-          <p className="text-[10px] text-text-muted mb-4">{t("scorecard.reportCTA.boundary")}</p>
+          <p className="text-micro text-text-muted mb-4">{t("scorecard.reportCTA.boundary")}</p>
 
           <div className="flex items-center gap-3 flex-wrap">
             <button
@@ -99,13 +99,13 @@ export function ReportCTACard({
             >
               {downloading ? t("scorecard.reportCTA.generating") : t("scorecard.reportCTA.buyReport")}
             </button>
-            <span className="text-[11px] text-text-muted">{t("scorecard.reportCTA.orUpgrade")}</span>
+            <span className="text-micro text-text-muted">{t("scorecard.reportCTA.orUpgrade")}</span>
             <a
               href="/sample-report.pdf"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track("sample_report_click", { source: "cta_link" })}
-              className="md:hidden text-[11px] text-text-secondary hover:text-accent transition-colors"
+              className="md:hidden text-micro text-text-secondary hover:text-accent transition-colors"
             >
               {t("scorecard.reportCTA.viewSample")} →
             </a>

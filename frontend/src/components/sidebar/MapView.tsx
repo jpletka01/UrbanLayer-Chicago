@@ -1053,7 +1053,7 @@ function DetailRow({ label, value, href }: { label: string; value: string; href?
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 text-right transition-colors"
+          className="text-accent hover:text-accent-hover text-right transition-colors"
         >
           {value} ↗
         </a>

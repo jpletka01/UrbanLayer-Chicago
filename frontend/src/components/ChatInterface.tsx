@@ -120,7 +120,7 @@ export function ChatInterface({
               {t("messageLimitReached")}{" "}
               <button
                 onClick={onNewChat}
-                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                className="text-accent hover:text-accent-hover hover:underline transition-colors"
               >
                 {t("startNewConversation")}
               </button>

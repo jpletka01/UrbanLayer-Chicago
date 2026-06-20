@@ -13,7 +13,7 @@ export function ReportTeaser({ text, href }: { text: string; href?: string | nul
       <Link
         to={href}
         onClick={() => track("scorecard_bridge_click", { source: "teaser" })}
-        className="mt-3 pt-2 border-t border-dashed border-dark-border/50 flex items-center gap-1.5 text-[11px] text-text-secondary hover:text-accent transition-colors"
+        className="mt-3 pt-2 border-t border-dashed border-dark-border/50 flex items-center gap-1.5 text-micro text-text-secondary hover:text-accent transition-colors"
       >
         {DocumentIcon}
         {text} →
@@ -21,7 +21,7 @@ export function ReportTeaser({ text, href }: { text: string; href?: string | nul
     );
   }
   return (
-    <div className="mt-3 pt-2 border-t border-dashed border-dark-border/50 flex items-center gap-1.5 text-[10px] text-text-muted">
+    <div className="mt-3 pt-2 border-t border-dashed border-dark-border/50 flex items-center gap-1.5 text-micro text-text-muted">
       {DocumentIcon}
       {text}
     </div>

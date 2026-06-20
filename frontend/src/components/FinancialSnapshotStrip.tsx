@@ -12,7 +12,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center min-w-[80px]">
       <div className="text-sm font-semibold text-text-primary font-mono">{value}</div>
-      <div className="text-[10px] text-text-muted uppercase tracking-wider mt-0.5">{label}</div>
+      <div className="text-micro text-text-muted uppercase tracking-wider mt-0.5">{label}</div>
     </div>
   );
 }

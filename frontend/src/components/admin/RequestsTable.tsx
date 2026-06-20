@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { RequestLogEntry } from "../../lib/types";
+import { Chip } from "../ui/Chip";
 
 interface Props {
   rows: RequestLogEntry[];
@@ -22,21 +23,12 @@ function formatDuration(ms: number): string {
   return `${ms}ms`;
 }
 
-const INTENT_COLORS: Record<string, string> = {
-  neighborhood_overview: "bg-blue-500/15 text-blue-400",
-  legal_question: "bg-purple-500/15 text-purple-400",
-  trend_analysis: "bg-teal-500/15 text-teal-400",
-  incident_lookup: "bg-amber-500/15 text-amber-400",
-  clarification_needed: "bg-gray-500/15 text-gray-400",
-  event_query: "bg-emerald-500/15 text-emerald-400",
-};
-
 export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (rows.length === 0) {
     return (
-      <div className="text-text-muted text-sm text-center py-8">
+      <div className="text-text-muted text-body text-center py-8">
         No requests yet. Make some chat queries and they'll appear here.
       </div>
     );
@@ -44,9 +36,9 @@ export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
 
   return (
     <div>
-      <table className="w-full text-[12px]">
+      <table className="w-full text-caption">
         <thead>
-          <tr className="text-text-muted uppercase tracking-wider text-[10px]">
+          <tr className="text-text-muted uppercase tracking-wider text-micro">
             <th className="text-left py-2 font-medium">Time</th>
             <th className="text-left py-2 font-medium">Message</th>
             <th className="text-left py-2 font-medium">Intent</th>
@@ -72,13 +64,7 @@ export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
               </td>
               <td className="py-2">
                 {row.intent && (
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] ${
-                      INTENT_COLORS[row.intent] ?? "bg-gray-500/15 text-gray-400"
-                    }`}
-                  >
-                    {row.intent.replace(/_/g, " ")}
-                  </span>
+                  <Chip tone="neutral" size="sm">{row.intent.replace(/_/g, " ")}</Chip>
                 )}
               </td>
               <td className="py-2 text-text-muted truncate max-w-[100px]">
@@ -104,7 +90,7 @@ export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
         const row = rows.find((r) => r.id === expandedId);
         if (!row) return null;
         return (
-          <div className="bg-dark-elevated border border-dark-border rounded-lg p-4 mt-2 mb-2 text-xs">
+          <div className="bg-dark-elevated border border-dark-border rounded-lg p-4 mt-2 mb-2 text-caption">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-text-muted">Full message: </span>
@@ -137,7 +123,7 @@ export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
         <div className="text-center py-3">
           <button
             onClick={onLoadMore}
-            className="text-xs text-accent hover:text-accent-hover transition-colors"
+            className="text-caption text-accent hover:text-accent-hover transition-colors"
           >
             Load more
           </button>

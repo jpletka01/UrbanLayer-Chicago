@@ -28,14 +28,14 @@ const SECTIONS = [
 
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <h2 id={id} className="text-2xl font-semibold text-text-primary tracking-tight scroll-mt-20 pt-12 pb-4">
+    <h2 id={id} className="text-section font-semibold text-text-primary tracking-tight scroll-mt-20 pt-12 pb-4">
       {children}
     </h2>
   );
 }
 
 function Sub({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-lg font-semibold text-text-primary mt-8 mb-3">{children}</h3>;
+  return <h3 className="text-subtitle font-semibold text-text-primary mt-8 mb-3">{children}</h3>;
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -44,7 +44,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <pre className="rounded-lg bg-dark-elevated border border-dark-border p-4 overflow-x-auto text-sm font-mono text-text-secondary mb-4">
+    <pre className="rounded-lg bg-dark-elevated border border-dark-border p-4 overflow-x-auto text-body font-mono text-text-secondary mb-4">
       {children}
     </pre>
   );
@@ -55,13 +55,13 @@ function Accent({ children }: { children: React.ReactNode }) {
 }
 
 function Mono({ children }: { children: React.ReactNode }) {
-  return <code className="text-sm bg-dark-elevated px-1.5 py-0.5 rounded font-mono text-text-primary">{children}</code>;
+  return <code className="text-body bg-dark-elevated px-1.5 py-0.5 rounded font-mono text-text-primary">{children}</code>;
 }
 
 function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-dark-border mb-4">
-      <table className="w-full text-sm">
+      <table className="w-full text-body">
         <thead className="bg-dark-elevated">
           <tr>
             {headers.map((h) => (
@@ -90,7 +90,7 @@ function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
 function WideTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-dark-border mb-4">
-      <table className="w-full text-sm">
+      <table className="w-full text-body">
         <thead className="bg-dark-elevated">
           <tr>
             {headers.map((h) => (
@@ -153,7 +153,7 @@ export function AboutPage() {
       <div className="lg:hidden sticky top-12 z-20 bg-dark-bg border-b border-dark-border">
         <button
           onClick={() => setTocOpen(!tocOpen)}
-          className="w-full flex items-center justify-between px-6 py-3 text-sm text-text-secondary"
+          className="w-full flex items-center justify-between px-6 py-3 text-body text-text-secondary"
         >
           <span>{SECTIONS.find((s) => s.id === activeSection)?.title ?? "Overview"}</span>
           <svg
@@ -172,7 +172,7 @@ export function AboutPage() {
               <button
                 key={s.id}
                 onClick={() => scrollTo(s.id)}
-                className={`block w-full text-left py-1.5 text-sm transition-colors ${
+                className={`block w-full text-left py-1.5 text-body transition-colors ${
                   activeSection === s.id ? "text-accent" : "text-text-muted hover:text-text-secondary"
                 }`}
               >
@@ -186,12 +186,12 @@ export function AboutPage() {
       <div className="max-w-6xl mx-auto flex">
         {/* Desktop sidebar TOC */}
         <nav className="hidden lg:block w-56 shrink-0 sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto py-8 pr-6 pl-6">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Contents</p>
+          <p className="text-caption font-semibold text-text-muted uppercase tracking-wider mb-4">Contents</p>
           {SECTIONS.map((s) => (
             <button
               key={s.id}
               onClick={() => scrollTo(s.id)}
-              className={`block w-full text-left py-1.5 text-sm transition-colors ${
+              className={`block w-full text-left py-1.5 text-body transition-colors ${
                 activeSection === s.id
                   ? "text-accent font-medium"
                   : "text-text-muted hover:text-text-secondary"
@@ -1366,7 +1366,7 @@ NEIGHBORHOOD-WIDE (community area name):
           />
 
           <div className="mt-16 pt-8 border-t border-dark-border/50">
-            <p className="text-text-muted text-sm">
+            <p className="text-text-muted text-body">
               480 tests passing. 14,535 chunks indexed. 18+ live datasets. 4 domain orchestrators.
               Built with FastAPI, Claude, Qdrant, React, Mapbox, and deck.gl.
               Live at urbanlayerchicago.com.

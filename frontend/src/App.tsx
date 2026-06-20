@@ -710,10 +710,9 @@ export function App() {
                       onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       className="flex items-center gap-2.5 group"
                     >
-                      <img src="/logo.jpg" alt="UrbanLayer" className="w-8 h-8 rounded-full group-hover:scale-105 transition-transform" />
-                      <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-                        <span className="hidden md:inline">UrbanLayer — Chicago</span>
-                        <span className="md:hidden">UrbanLayer</span>
+                      <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-full group-hover:scale-105 transition-transform" />
+                      <span className="font-display text-base font-semibold tracking-tight text-white/90 group-hover:text-white transition-colors">
+                        UrbanLayer
                       </span>
                     </a>
                   </div>
@@ -734,7 +733,7 @@ export function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1, duration: 0.5 }}
                     >
-                      <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4">
+                      <h1 className="text-display text-white mb-4">
                         UrbanLayer
                       </h1>
                       <p className="text-lg text-white/80 leading-relaxed">

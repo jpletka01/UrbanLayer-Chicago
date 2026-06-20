@@ -109,11 +109,11 @@ export function DiscoveryMap({
       {/* Legend — upside (Pro) or land use (free), each named */}
       {mappable.length > 0 && (
         <div className="absolute bottom-6 left-3 z-10 space-y-1 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2">
-          <div className="mb-1 text-[9px] uppercase tracking-wider text-text-muted">
+          <div className="mb-1 text-overline uppercase text-text-muted">
             {legendTitle}
           </div>
           {legend.map((item) => (
-            <div key={item.i18nKey} className="flex items-center gap-2 text-[10px] text-text-secondary">
+            <div key={item.i18nKey} className="flex items-center gap-2 text-micro text-text-secondary">
               <span
                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: item.color }}
@@ -126,7 +126,7 @@ export function DiscoveryMap({
 
       {/* Honest cap note: the map shows the first MAX_MAP_POINTS of a larger set. */}
       {truncated && (
-        <div className="absolute left-3 top-3 z-10 rounded-lg border border-dark-border bg-dark-surface/90 px-3 py-1.5 text-[11px] text-text-secondary">
+        <div className="absolute left-3 top-3 z-10 rounded-lg border border-dark-border bg-dark-surface/90 px-3 py-1.5 text-micro text-text-secondary">
           {t("discovery.mapTruncated", { shown: mappable.length.toLocaleString(), total: total.toLocaleString() })}
         </div>
       )}

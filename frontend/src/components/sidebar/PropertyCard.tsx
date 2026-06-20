@@ -26,15 +26,15 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
   if (!value || value === "—") return null;
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px] shrink-0">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono text-right">{value}</span>
+      <span className="text-text-muted text-micro shrink-0">{label}</span>
+      <span className="text-text-primary text-micro font-mono text-right">{value}</span>
     </div>
   );
 }
 
 function MiniTable({ headers, rows }: { headers: string[]; rows: (string | null)[][] }) {
   return (
-    <table className="w-full text-[11px]">
+    <table className="w-full text-micro">
       <thead>
         <tr className="text-text-muted border-b border-dark-border">
           {headers.map(h => (
@@ -69,7 +69,7 @@ function StatBox({ label, value, naLabel, naTitle }: {
       >
         {na ? (naLabel ?? "n/a") : value}
       </div>
-      <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
+      <div className="text-micro text-text-muted mt-0.5">{label}</div>
     </div>
   );
 }
@@ -128,7 +128,7 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
           <div>
             <button
               onClick={() => setShowAssessments(a => !a)}
-              className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+              className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors"
             >
               <svg
                 className={`w-2.5 h-2.5 transition-transform duration-150 ${showAssessments ? "" : "-rotate-90"}`}
@@ -158,7 +158,7 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
           <div>
             <button
               onClick={() => setShowSales(s => !s)}
-              className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+              className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors"
             >
               <svg
                 className={`w-2.5 h-2.5 transition-transform duration-150 ${showSales ? "" : "-rotate-90"}`}
@@ -185,7 +185,7 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
 
         {data.estimated_annual_tax != null && (
           <div>
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-micro">
               <span className="text-text-muted">{t("property.estAnnualTax")}</span>
               <span className="font-medium text-text-primary">{fmtDollar(data.estimated_annual_tax)}</span>
             </div>
@@ -193,7 +193,7 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
               <>
                 <button
                   onClick={() => setShowTax(tx => !tx)}
-                  className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-text-secondary transition-colors mt-1"
+                  className="flex items-center gap-1.5 text-micro text-text-muted hover:text-text-secondary transition-colors mt-1"
                 >
                   <svg
                     className={`w-2.5 h-2.5 transition-transform duration-150 ${showTax ? "" : "-rotate-90"}`}

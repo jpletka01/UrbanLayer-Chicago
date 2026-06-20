@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { buildScorecardHref } from "../sidebar/ScorecardBridgeCard";
 import { track } from "../../lib/tracking";
+import { Card } from "../ui/Card";
+import { Chip } from "../ui/Chip";
 
 const PERSONA_ICONS = [
   (
@@ -60,10 +62,10 @@ export function PersonaScenarios() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-4"
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-text-primary tracking-tight">
+          <h2 className="text-section text-text-primary">
             {t("personas.heading")}
           </h2>
-          <p className="text-sm md:text-base text-text-secondary max-w-lg mx-auto leading-relaxed">
+          <p className="text-lead text-text-secondary max-w-lg mx-auto">
             {t("personas.subheading")}
           </p>
         </motion.div>
@@ -75,40 +77,44 @@ export function PersonaScenarios() {
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.1 + i * 0.1, duration: 0.5, ease: "easeOut" }}
-              className="bg-dark-surface/80 backdrop-blur-md border border-white/10 border-l-2 border-l-accent rounded-xl p-6 space-y-5 cursor-pointer hover:border-l-accent-hover hover:bg-dark-surface transition-all group"
-              onClick={() => handleClick(p, i)}
+              className="h-full"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
-                  {PERSONA_ICONS[i]}
+              <Card
+                padding="lg"
+                interactive
+                accentEdge
+                onClick={() => handleClick(p, i)}
+                className="group h-full"
+              >
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
+                      {PERSONA_ICONS[i]}
+                    </div>
+                    <h3 className="text-subtitle text-text-primary">{p.title}</h3>
+                  </div>
+
+                  <div className="bg-dark-bg rounded-lg px-3 py-2.5 text-body text-text-primary border border-dark-border-subtle group-hover:border-accent/20 transition-colors">
+                    &ldquo;{p.question}&rdquo;
+                  </div>
+
+                  <div>
+                    <div className="text-overline uppercase text-text-muted mb-2">{t("personas.returns")}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {p.domains.map((d) => (
+                        <Chip key={d} tone="neutral" size="sm">{d}</Chip>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-caption text-text-muted italic">{p.framing}</p>
+
+                  {/* Explicit action cue — turns the card from example text into a door. */}
+                  <div className="text-caption font-medium text-accent group-hover:text-accent-hover transition-colors">
+                    {p.action === "scorecard" ? t("personas.actionScorecard") : t("personas.actionChat")}
+                  </div>
                 </div>
-                <h3 className="text-base font-semibold text-text-primary">{p.title}</h3>
-              </div>
-
-              <div className="bg-dark-bg/60 rounded-lg px-3 py-2.5 text-sm text-white/90 border border-white/5 group-hover:border-accent/20 transition-colors">
-                &ldquo;{p.question}&rdquo;
-              </div>
-
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">{t("personas.returns")}</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {p.domains.map((d) => (
-                    <span
-                      key={d}
-                      className="text-[11px] text-text-secondary bg-dark-elevated px-2 py-0.5 rounded-md border border-dark-border"
-                    >
-                      {d}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-xs text-text-muted italic">{p.framing}</p>
-
-              {/* Explicit action cue — turns the card from example text into a door. */}
-              <div className="text-xs font-medium text-accent group-hover:text-accent-hover transition-colors">
-                {p.action === "scorecard" ? t("personas.actionScorecard") : t("personas.actionChat")}
-              </div>
+              </Card>
             </motion.div>
           ))}
         </div>

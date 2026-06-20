@@ -24,14 +24,14 @@ function msColor(ms: number): string {
 export function LatencyTable({ rows }: Props) {
   if (rows.length === 0) {
     return (
-      <div className="text-text-muted text-sm text-center py-4">
+      <div className="text-text-muted text-body text-center py-4">
         No latency data yet
       </div>
     );
   }
 
   return (
-    <table className="w-full text-[11px]">
+    <table className="w-full text-micro">
       <thead>
         <tr className="text-text-muted uppercase tracking-wider">
           <th className="text-left py-2 font-medium">Phase</th>

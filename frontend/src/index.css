@@ -1,8 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* §7: the display face (Space Grotesk) applies to the two largest type steps —
+   hero (text-display) and section/page headings (text-section). Unlayered so it
+   wins the cascade over Tailwind's layered utilities (which only set size/weight). */
+.text-display,
+.text-section {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
 
 html {
   scroll-behavior: smooth;

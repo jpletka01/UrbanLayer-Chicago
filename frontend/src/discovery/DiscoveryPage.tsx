@@ -182,8 +182,8 @@ export default function DiscoveryPage() {
         <div className="flex w-full flex-shrink-0 flex-col overflow-hidden border-r border-dark-border md:w-[420px] lg:w-[460px]">
           <div className="flex-shrink-0 space-y-3 border-b border-dark-border p-4">
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">{t("discovery.title")}</h1>
-              <p className="text-[11px] text-text-muted">
+              <h1 className="text-section">{t("discovery.title")}</h1>
+              <p className="text-micro text-text-muted">
                 {t("discovery.subtitle")}
               </p>
             </div>
@@ -196,14 +196,14 @@ export default function DiscoveryPage() {
               }}
               placeholder={t("discovery.searchPlaceholder")}
               aria-label={t("discovery.searchAria")}
-              className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+              className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => runWith(panelState, text, sort, topicId)}
                 disabled={!registry || loading}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2 text-title text-text-on-accent transition-colors hover:bg-accent-hover disabled:opacity-50"
               >
                 {loading ? t("discovery.searching") : t("discovery.search")}
               </button>
@@ -217,7 +217,7 @@ export default function DiscoveryPage() {
               <button
                 type="button"
                 onClick={() => setFiltersOpen(true)}
-                className="ml-auto rounded-md border border-dark-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-text-muted"
+                className="ml-auto rounded-lg border border-dark-border px-3 py-1.5 text-caption text-text-secondary transition-colors hover:border-dark-border-strong"
               >
                 {t("discovery.editFilters")}
                 {Object.keys(panelState).length > 0 && (
@@ -240,14 +240,14 @@ export default function DiscoveryPage() {
               <>
                 <RecipeShelf registry={registry} onPick={onPickRecipe} />
                 <div>
-                  <h3 className="mb-2 text-[10px] uppercase tracking-wider text-text-muted">
+                  <h3 className="mb-2 text-overline uppercase text-text-muted">
                     {t("discovery.refine")}
                   </h3>
                   <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
                 </div>
               </>
             ) : (
-              <p className="text-sm text-text-muted">{t("discovery.loadingFilters")}</p>
+              <p className="text-body text-text-muted">{t("discovery.loadingFilters")}</p>
             )}
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function DiscoveryPage() {
         >
           {response && registry && (
             <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
-              <p className="text-sm text-text-secondary">{summarize(response.cqs, registry)}</p>
+              <p className="text-body text-text-secondary">{summarize(response.cqs, registry)}</p>
               <Chips cqs={response.cqs} registry={registry} onRemove={onRelax} />
             </div>
           )}
@@ -307,13 +307,13 @@ export default function DiscoveryPage() {
       {filtersOpen && registry && (
         <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label={t("discovery.filtersAria")}>
           <div className="absolute inset-0 bg-black/50" onClick={() => setFiltersOpen(false)} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-dark-border bg-dark-surface p-4">
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-xl border-t border-dark-border bg-dark-surface p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{t("discovery.filtersHeading")}</h3>
+              <h3 className="text-title">{t("discovery.filtersHeading")}</h3>
               <button
                 type="button"
                 onClick={() => setFiltersOpen(false)}
-                className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white"
+                className="rounded-lg bg-accent px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-accent-hover"
               >
                 {t("common:done")}
               </button>
@@ -347,7 +347,7 @@ function MobileTabToggle({
           type="button"
           aria-pressed={value === opt}
           onClick={() => onChange(opt)}
-          className={`px-3 py-1.5 text-xs transition-colors ${
+          className={`px-3 py-1.5 text-caption transition-colors ${
             value === opt ? "bg-accent/15 text-accent" : "text-text-secondary hover:text-text-primary"
           } ${opt === "list" ? "rounded-l-md" : "rounded-r-md"}`}
         >
@@ -369,11 +369,11 @@ function SortControl({
 }) {
   const { t } = useTranslation("pages");
   return (
-    <div className="flex items-center gap-1.5 text-xs">
+    <div className="flex items-center gap-1.5 text-caption">
       <select
         value={sort.key}
         onChange={(e) => onChange({ ...sort, key: e.target.value })}
-        className="rounded-md border border-dark-border bg-dark-elevated px-2 py-1.5 text-text-primary focus:border-accent focus:outline-none"
+        className="rounded-lg border border-dark-border bg-dark-elevated px-2 py-1.5 text-text-primary focus:border-accent focus:outline-none"
       >
         {registry.sortKeys.map((sk) => (
           <option key={sk.key} value={sk.key}>
@@ -384,7 +384,7 @@ function SortControl({
       <button
         type="button"
         onClick={() => onChange({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })}
-        className="rounded-md border border-dark-border px-2 py-1.5 text-text-secondary transition-colors hover:border-text-muted"
+        className="rounded-lg border border-dark-border px-2 py-1.5 text-text-secondary transition-colors hover:border-dark-border-strong"
         aria-label={t("discovery.toggleSortAria")}
       >
         {sort.dir === "asc" ? "↑" : "↓"}

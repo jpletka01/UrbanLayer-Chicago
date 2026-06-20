@@ -39,7 +39,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-dark-drawer border-l border-dark-border shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-dark-surface border-l border-dark-border shadow-2xl z-50 flex flex-col"
           >
             <div className="flex items-start justify-between p-4 border-b border-dark-border gap-4">
               <div className="min-w-0 flex-1">

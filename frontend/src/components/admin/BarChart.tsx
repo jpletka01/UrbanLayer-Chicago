@@ -21,7 +21,7 @@ export function BarChart({ bars, height }: Props) {
 
   if (bars.length === 0) {
     return (
-      <div className="flex items-center justify-center text-text-muted text-sm h-32">
+      <div className="flex items-center justify-center text-text-muted text-body h-32">
         No data
       </div>
     );

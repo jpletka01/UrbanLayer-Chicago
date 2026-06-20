@@ -39,11 +39,12 @@ export function StorySection({ image, title, subtitle, align = "left" }: Props) 
           transition={{ duration: 0.5, ease: "easeOut" }}
           className={`max-w-5xl mx-auto w-full px-4 md:px-8 ${align === "right" ? "text-right" : "text-left"}`}
         >
-          <h2 className="text-2xl md:text-4xl font-semibold text-white mb-3 tracking-tight">
+          {/* over-image text: white stays (exempt from the dark-chrome neutral ramp) */}
+          <h2 className="text-section text-white mb-3">
             {title}
           </h2>
           <p
-            className="text-base md:text-lg text-white/70 max-w-md leading-relaxed"
+            className="text-lead text-white/70 max-w-md"
             style={align === "right" ? { marginLeft: "auto" } : {}}
           >
             {subtitle}

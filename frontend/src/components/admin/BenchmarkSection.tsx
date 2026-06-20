@@ -50,22 +50,22 @@ export function BenchmarkSection({ benchmark }: Props) {
                   className="w-8 h-16 rounded-md opacity-20"
                   style={{ backgroundColor: GRADE_COLORS[g] }}
                 />
-                <div className="text-[10px] text-text-muted mt-1">{g}</div>
+                <div className="text-micro text-text-muted mt-1">{g}</div>
               </div>
             ))}
           </div>
           <div className="text-right">
-            <div className="text-2xl font-semibold text-text-muted">--</div>
-            <div className="text-[10px] text-text-muted">Avg Score</div>
+            <div className="text-section font-semibold text-text-muted">--</div>
+            <div className="text-micro text-text-muted">Avg Score</div>
           </div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <p className="text-sm text-text-muted mb-1">
+          <p className="text-body text-text-muted mb-1">
             No benchmark results found
           </p>
-          <p className="text-xs text-text-muted">
+          <p className="text-caption text-text-muted">
             Run to generate:{" "}
-            <code className="text-text-secondary bg-dark-bg px-1.5 py-0.5 rounded text-[10px]">
+            <code className="text-text-secondary bg-dark-bg px-1.5 py-0.5 rounded text-micro">
               python -m eval.retrieval_benchmark --json-out eval/benchmark_results.json
             </code>
           </p>
@@ -98,41 +98,41 @@ export function BenchmarkSection({ benchmark }: Props) {
       {/* Top row: score + pass rate + last run */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className={`text-2xl font-semibold ${scoreColor(benchmark.avg_score)}`}>
+          <div className={`text-section font-semibold ${scoreColor(benchmark.avg_score)}`}>
             <CountUp
               to={benchmark.avg_score * 100}
               format={(n) => `${n.toFixed(0)}%`}
             />
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">Avg Score</div>
+          <div className="text-micro text-text-muted mt-0.5">Avg Score</div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className="text-2xl font-semibold text-emerald-400">
+          <div className="text-section font-semibold text-emerald-400">
             <CountUp
               to={passRate}
               format={(n) => `${n.toFixed(0)}%`}
             />
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">A+B Rate</div>
+          <div className="text-micro text-text-muted mt-0.5">A+B Rate</div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className="text-2xl font-semibold text-text-primary">
+          <div className="text-section font-semibold text-text-primary">
             {benchmark.total_queries}
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">Queries</div>
+          <div className="text-micro text-text-muted mt-0.5">Queries</div>
         </div>
       </div>
 
       {/* Charts row: bar + pie side by side */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <div className="text-micro text-text-muted uppercase tracking-wider mb-2">
             Grade Distribution
           </div>
           <BarChart bars={gradesBars} />
         </div>
         <div className="flex flex-col items-center">
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <div className="text-micro text-text-muted uppercase tracking-wider mb-2">
             Grade Breakdown
           </div>
           <PieChart slices={gradeSlices} size={140} />
@@ -144,7 +144,7 @@ export function BenchmarkSection({ benchmark }: Props) {
         <div>
           <button
             onClick={() => setShowQueries(!showQueries)}
-            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors"
           >
             <svg
               className={`w-3 h-3 transition-transform ${showQueries ? "rotate-90" : ""}`}
@@ -159,9 +159,9 @@ export function BenchmarkSection({ benchmark }: Props) {
           </button>
 
           {showQueries && (
-            <table className="w-full text-[11px] mt-2">
+            <table className="w-full text-micro mt-2">
               <thead>
-                <tr className="text-text-muted uppercase tracking-wider text-[9px]">
+                <tr className="text-text-muted uppercase tracking-wider text-micro">
                   <th className="text-left py-1.5 font-medium">Query</th>
                   <th className="text-center py-1.5 font-medium w-12">Grade</th>
                   <th className="text-right py-1.5 font-medium w-14">Score</th>
@@ -176,7 +176,7 @@ export function BenchmarkSection({ benchmark }: Props) {
                     </td>
                     <td className="py-1.5 text-center">
                       <span
-                        className="inline-block w-5 h-5 rounded text-[10px] font-bold leading-5 text-center"
+                        className="inline-block w-5 h-5 rounded text-micro font-bold leading-5 text-center"
                         style={{
                           backgroundColor: gradeColor(q.grade) + "22",
                           color: gradeColor(q.grade),
@@ -200,7 +200,7 @@ export function BenchmarkSection({ benchmark }: Props) {
       )}
 
       {/* Footer */}
-      <div className="text-[10px] text-text-muted">
+      <div className="text-micro text-text-muted">
         {benchmark.last_run && (
           <>Last run: {new Date(benchmark.last_run).toLocaleDateString()} &middot; </>
         )}

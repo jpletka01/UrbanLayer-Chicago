@@ -3,6 +3,7 @@
 // connective grammar are i18n'd (templates per predicate shape) so Spanish word order works.
 
 import i18n from "../lib/i18n";
+import { Chip } from "../components/ui/Chip";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import type { CQS, FilterDef, Predicate, Registry } from "./types";
 
@@ -73,20 +74,15 @@ export function Chips({ cqs, registry, onRemove }: ChipsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {ids.map((id) => (
-        <span
+        <Chip
           key={id}
-          className="inline-flex items-center gap-1.5 rounded-full border border-dark-border bg-dark-elevated px-3 py-1 text-xs text-text-primary"
+          size="md"
+          removable
+          onRemove={() => onRemove(id)}
+          removeLabel={td("removeFilterAria", `Remove ${humanize(id)} filter`, { name: filterLabel(id, defs.get(id)) })}
         >
           {chipLabel(id, cqs.filters[id].predicate, defs.get(id))}
-          <button
-            type="button"
-            onClick={() => onRemove(id)}
-            aria-label={td("removeFilterAria", `Remove ${humanize(id)} filter`, { name: filterLabel(id, defs.get(id)) })}
-            className="text-text-muted transition-colors hover:text-accent"
-          >
-            ×
-          </button>
-        </span>
+        </Chip>
       ))}
     </div>
   );

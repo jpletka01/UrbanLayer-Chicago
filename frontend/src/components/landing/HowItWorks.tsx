@@ -5,13 +5,13 @@ import { useTranslation } from "react-i18next";
 function StepVisual({ index, query, t }: { index: number; query?: string; t: (key: string, opts?: Record<string, unknown>) => string }) {
   if (index === 0) {
     return (
-      <div className="bg-dark-bg rounded-lg px-4 py-3 border border-white/10">
+      <div className="bg-dark-bg rounded-lg px-4 py-3 border border-dark-border">
         <div className="flex items-center gap-2">
-          <div className="flex-1 text-sm text-white/60 truncate">
+          <div className="flex-1 text-body text-text-secondary truncate">
             {query}
           </div>
           <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
-            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="w-3.5 h-3.5 text-text-on-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
             </svg>
           </div>
@@ -31,7 +31,7 @@ function StepVisual({ index, query, t }: { index: number; query?: string; t: (ke
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 + i * 0.06, duration: 0.3 }}
-            className="text-[11px] font-mono text-accent/80 bg-accent/10 px-2 py-0.5 rounded"
+            className="text-micro font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-md"
           >
             {s}
           </motion.span>
@@ -41,17 +41,18 @@ function StepVisual({ index, query, t }: { index: number; query?: string; t: (ke
   }
 
   return (
-    <div className="bg-dark-bg rounded-lg px-4 py-3 border border-white/10 space-y-2">
-      <div className="text-xs text-text-secondary leading-relaxed">
+    <div className="bg-dark-bg rounded-lg px-4 py-3 border border-dark-border space-y-2">
+      <div className="text-caption text-text-secondary leading-relaxed">
         {t("howItWorks.sampleResponse")}{" "}
         <span className="font-mono text-accent bg-accent/10 px-1 rounded">RM-5</span>
         {t("howItWorks.sampleResponseTail")}
       </div>
       <div className="flex gap-1.5">
-        <span className="text-[10px] font-mono bg-dark-elevated text-text-muted px-1.5 py-0.5 rounded">
+        <span className="text-micro font-mono bg-dark-elevated text-text-muted px-1.5 py-0.5 rounded">
           § 17-2-0300
         </span>
-        <span className="text-[10px] bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded">
+        {/* decorative mock of a data citation (not the functional DataPill) → on-palette accent, not default blue */}
+        <span className="text-micro font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
           data:zoning
         </span>
       </div>
@@ -77,7 +78,7 @@ export function HowItWorks() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-4"
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-text-primary tracking-tight">
+          <h2 className="text-section text-text-primary">
             {t("howItWorks.heading")}
           </h2>
         </motion.div>
@@ -94,18 +95,18 @@ export function HowItWorks() {
               className="text-center space-y-5"
             >
               <div className="flex justify-center">
-                <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-semibold text-sm relative z-10">
+                <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent text-title relative z-10">
                   {i + 1}
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-text-primary">{step.title}</h3>
+              <h3 className="text-subtitle text-text-primary">{step.title}</h3>
 
               <div className="max-w-[280px] mx-auto">
                 <StepVisual index={i} query={step.query} t={t} />
               </div>
 
-              <p className="text-sm text-text-secondary leading-relaxed max-w-[280px] mx-auto">
+              <p className="text-body text-text-secondary leading-relaxed max-w-[280px] mx-auto">
                 {step.description}
               </p>
             </motion.div>

@@ -51,22 +51,22 @@ export function JudgeSection({ results }: Props) {
                   className="w-8 h-16 rounded-md opacity-20"
                   style={{ backgroundColor: GRADE_COLORS[g] }}
                 />
-                <div className="text-[10px] text-text-muted mt-1">{g}</div>
+                <div className="text-micro text-text-muted mt-1">{g}</div>
               </div>
             ))}
           </div>
           <div className="text-right">
-            <div className="text-2xl font-semibold text-text-muted">--</div>
-            <div className="text-[10px] text-text-muted">Avg Score</div>
+            <div className="text-section font-semibold text-text-muted">--</div>
+            <div className="text-micro text-text-muted">Avg Score</div>
           </div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <p className="text-sm text-text-muted mb-1">
+          <p className="text-body text-text-muted mb-1">
             No judge results found
           </p>
-          <p className="text-xs text-text-muted">
+          <p className="text-caption text-text-muted">
             Run to generate:{" "}
-            <code className="text-text-secondary bg-dark-bg px-1.5 py-0.5 rounded text-[10px]">
+            <code className="text-text-secondary bg-dark-bg px-1.5 py-0.5 rounded text-micro">
               python -m eval.run_eval --full http://localhost:8001 --judge
             </code>
           </p>
@@ -99,28 +99,28 @@ export function JudgeSection({ results }: Props) {
       {/* Top row: score + pass rate + queries */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className={`text-2xl font-semibold ${scoreColor(results.avg_score)}`}>
+          <div className={`text-section font-semibold ${scoreColor(results.avg_score)}`}>
             <CountUp
               to={results.avg_score * 100}
               format={(n) => `${n.toFixed(0)}%`}
             />
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">Avg Score</div>
+          <div className="text-micro text-text-muted mt-0.5">Avg Score</div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className="text-2xl font-semibold text-emerald-400">
+          <div className="text-section font-semibold text-emerald-400">
             <CountUp
               to={passRate}
               format={(n) => `${n.toFixed(0)}%`}
             />
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">A+B Rate</div>
+          <div className="text-micro text-text-muted mt-0.5">A+B Rate</div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className="text-2xl font-semibold text-text-primary">
+          <div className="text-section font-semibold text-text-primary">
             {results.total_queries}
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">
+          <div className="text-micro text-text-muted mt-0.5">
             Judged{results.skipped_queries > 0 && ` (${results.skipped_queries} skipped)`}
           </div>
         </div>
@@ -129,13 +129,13 @@ export function JudgeSection({ results }: Props) {
       {/* Charts row: bar + pie */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <div className="text-micro text-text-muted uppercase tracking-wider mb-2">
             Grade Distribution
           </div>
           <BarChart bars={gradesBars} />
         </div>
         <div className="flex flex-col items-center">
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <div className="text-micro text-text-muted uppercase tracking-wider mb-2">
             Grade Breakdown
           </div>
           <PieChart slices={gradeSlices} size={140} />
@@ -144,7 +144,7 @@ export function JudgeSection({ results }: Props) {
 
       {/* Dimension breakdown: 4 mini bar sections */}
       <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+        <div className="text-micro text-text-muted uppercase tracking-wider mb-2">
           By Dimension
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -158,10 +158,10 @@ export function JudgeSection({ results }: Props) {
             return (
               <div key={dim} className="bg-dark-elevated rounded-lg p-2.5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] text-text-secondary font-medium">
+                  <span className="text-micro text-text-secondary font-medium">
                     {DIMENSION_LABELS[dim] ?? dim}
                   </span>
-                  <span className={`text-[10px] font-mono ${
+                  <span className={`text-micro font-mono ${
                     summary.avg_numeric >= 3 ? "text-emerald-400" :
                     summary.avg_numeric >= 2 ? "text-amber-400" : "text-rose-400"
                   }`}>
@@ -192,7 +192,7 @@ export function JudgeSection({ results }: Props) {
                     const count = dist[g] ?? 0;
                     if (count === 0) return null;
                     return (
-                      <span key={g} className="text-[9px] text-text-muted">
+                      <span key={g} className="text-micro text-text-muted">
                         <span style={{ color: GRADE_COLORS[g] }}>{g}</span>={count}
                       </span>
                     );
@@ -209,7 +209,7 @@ export function JudgeSection({ results }: Props) {
         <div>
           <button
             onClick={() => setShowQueries(!showQueries)}
-            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors"
           >
             <svg
               className={`w-3 h-3 transition-transform ${showQueries ? "rotate-90" : ""}`}
@@ -224,9 +224,9 @@ export function JudgeSection({ results }: Props) {
           </button>
 
           {showQueries && (
-            <table className="w-full text-[11px] mt-2">
+            <table className="w-full text-micro mt-2">
               <thead>
-                <tr className="text-text-muted uppercase tracking-wider text-[9px]">
+                <tr className="text-text-muted uppercase tracking-wider text-micro">
                   <th className="text-left py-1.5 font-medium">Query</th>
                   <th className="text-center py-1.5 font-medium w-10">All</th>
                   <th className="text-center py-1.5 font-medium w-10">Cite</th>
@@ -255,18 +255,18 @@ export function JudgeSection({ results }: Props) {
                             <div className="text-text-secondary font-medium">
                               {q.id.replace(/_/g, " ")}
                             </div>
-                            <div className="text-text-muted italic text-[10px]">
+                            <div className="text-text-muted italic text-micro">
                               {q.question}
                             </div>
                             {q.overall_reasoning && (
-                              <div className="text-text-muted text-[10px]">
+                              <div className="text-text-muted text-micro">
                                 <span className="text-text-secondary">Overall:</span> {q.overall_reasoning}
                               </div>
                             )}
                             {q.dimensions.map((d) => (
-                              <div key={d.dimension} className="text-[10px] text-text-muted flex gap-2">
+                              <div key={d.dimension} className="text-micro text-text-muted flex gap-2">
                                 <span
-                                  className="inline-block w-4 h-4 rounded text-[9px] font-bold leading-4 text-center shrink-0"
+                                  className="inline-block w-4 h-4 rounded text-micro font-bold leading-4 text-center shrink-0"
                                   style={{
                                     backgroundColor: gradeColor(d.grade) + "22",
                                     color: gradeColor(d.grade),
@@ -318,7 +318,7 @@ export function JudgeSection({ results }: Props) {
       )}
 
       {/* Footer */}
-      <div className="text-[10px] text-text-muted">
+      <div className="text-micro text-text-muted">
         {results.last_run && (
           <>Last run: {new Date(results.last_run).toLocaleDateString()} &middot; </>
         )}
@@ -334,7 +334,7 @@ function GradeBadge({ grade }: { grade: string | undefined }) {
   if (!grade) return <span className="text-text-muted">-</span>;
   return (
     <span
-      className="inline-block w-5 h-5 rounded text-[10px] font-bold leading-5 text-center"
+      className="inline-block w-5 h-5 rounded text-micro font-bold leading-5 text-center"
       style={{
         backgroundColor: gradeColor(grade) + "22",
         color: gradeColor(grade),
