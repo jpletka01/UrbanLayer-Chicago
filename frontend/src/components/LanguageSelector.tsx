@@ -37,10 +37,10 @@ export default function LanguageSelector({ variant = "workspace" }: LanguageSele
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium transition-colors ${
           isSplash
             ? "text-text-secondary hover:text-text-primary hover:bg-white/5"
-            : "text-text-muted hover:text-text-secondary hover:bg-dark-surface"
+            : "text-text-muted hover:text-text-secondary hover:bg-dark-hover"
         }`}
         title="Language"
       >
@@ -58,10 +58,10 @@ export default function LanguageSelector({ variant = "workspace" }: LanguageSele
             <button
               key={lang.code}
               onClick={() => select(lang.code)}
-              className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+              className={`w-full text-left px-3 py-1.5 text-body transition-colors ${
                 lang.code === i18n.language
                   ? "text-accent bg-accent/5"
-                  : "text-text-secondary hover:bg-dark-surface hover:text-text-primary"
+                  : "text-text-secondary hover:bg-dark-hover hover:text-text-primary"
               }`}
             >
               {lang.label}

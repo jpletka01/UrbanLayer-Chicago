@@ -45,14 +45,14 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -320, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-80 bg-dark-surface/80 backdrop-blur-xl border-r border-white/10 flex flex-col"
+            className="fixed left-0 top-0 bottom-0 z-50 w-80 bg-dark-surface/80 backdrop-blur-xl border-r border-dark-border flex flex-col"
           >
             {/* Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="p-4 border-b border-dark-border flex items-center justify-between">
               <h2 className="text-lg font-medium text-white">{t("history")}</h2>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-dark-hover transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -61,10 +61,10 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
             </div>
 
             {/* New chat — pinned above the list so "start new / browse / delete" live together */}
-            <div className="p-2 border-b border-white/10">
+            <div className="p-2 border-b border-dark-border">
               <button
                 onClick={onNewChat}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-body font-medium text-text-primary hover:text-text-primary hover:bg-dark-hover rounded-lg transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -76,7 +76,7 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
             {/* Conversations list */}
             <div className="flex-1 overflow-y-auto p-2">
               {conversations.length === 0 ? (
-                <div className="text-center text-white/40 text-sm py-8">
+                <div className="text-center text-text-muted text-body py-8">
                   {t("noConversations")}
                 </div>
               ) : (
@@ -84,21 +84,21 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
                   {conversations.map((conv) => (
                     <div
                       key={conv.id}
-                      className="group relative rounded-lg hover:bg-white/5 transition-colors"
+                      className="group relative rounded-lg hover:bg-dark-hover transition-colors"
                     >
                       <button
                         onClick={() => onSelect(conv)}
                         className="w-full text-left p-3 pr-10"
                       >
-                        <div className="text-sm text-white/90 truncate">{conv.title}</div>
-                        <div className="text-xs text-white/40 mt-1">{formatDate(conv.updatedAt, t, i18n.language)}</div>
+                        <div className="text-body text-text-primary truncate">{conv.title}</div>
+                        <div className="text-caption text-text-muted mt-1">{formatDate(conv.updatedAt, t, i18n.language)}</div>
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(conv.id);
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md flex items-center justify-center text-white/30 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
                         title={t("deleteConversation")}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -113,10 +113,10 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
 
             {/* Footer */}
             {conversations.length > 0 && (
-              <div className="p-3 border-t border-white/10">
+              <div className="p-3 border-t border-dark-border">
                 <button
                   onClick={onClearAll}
-                  className="w-full px-3 py-2 text-sm text-white/60 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  className="w-full px-3 py-2 text-body text-text-secondary hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                 >
                   {t("deleteAll")}
                 </button>

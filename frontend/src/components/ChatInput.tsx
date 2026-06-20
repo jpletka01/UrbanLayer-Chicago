@@ -195,10 +195,10 @@ export function ChatInput({
                 key={suggestion.address}
                 type="button"
                 onClick={() => selectSuggestion(suggestion)}
-                className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                className={`w-full px-4 py-3 text-left text-body transition-colors ${
                   index === selectedIndex
-                    ? "bg-accent/20 text-white"
-                    : "text-text-secondary hover:bg-dark-elevated hover:text-white"
+                    ? "bg-accent/20 text-text-primary"
+                    : "text-text-secondary hover:bg-dark-elevated hover:text-text-primary"
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -242,7 +242,7 @@ export function ChatInput({
                     <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
-                    <span className="text-[8px] text-text-muted truncate max-w-[3rem] px-0.5">
+                    <span className="text-micro text-text-muted truncate max-w-[3rem] px-0.5">
                       {att.file.name.split(".").pop()?.toUpperCase()}
                     </span>
                   </div>
@@ -287,13 +287,13 @@ export function ChatInput({
             disabled={disabled}
             placeholder={placeholder ?? t("placeholder")}
             rows={1}
-            className="flex-1 bg-transparent py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none min-w-0 resize-none max-h-40 overflow-y-auto"
+            className="flex-1 bg-transparent py-2 text-body text-text-primary placeholder-text-muted focus:outline-none min-w-0 resize-none max-h-40 overflow-y-auto"
           />
 
           <button
             type="submit"
             disabled={disabled || !value.trim()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-accent hover:bg-accent-hover disabled:bg-dark-elevated disabled:text-text-muted text-white shrink-0"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-accent hover:bg-accent-hover disabled:bg-dark-elevated disabled:text-text-muted text-text-on-accent shrink-0"
             aria-label={t("common:submit")}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -310,7 +310,7 @@ export function ChatInput({
               key={suggestion.address}
               type="button"
               onClick={() => selectSuggestion(suggestion)}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+              className={`w-full px-4 py-2.5 text-left text-body transition-colors ${
                 index === selectedIndex
                   ? "bg-accent/20 text-white"
                   : "text-text-secondary hover:bg-dark-elevated hover:text-white"
