@@ -10,17 +10,25 @@ const SECTIONS = [
   { id: "router", title: "LLM Router" },
   { id: "domain-orchestrators", title: "Domain Orchestrators" },
   { id: "synthesis", title: "Streaming Synthesis" },
+  { id: "scorecard", title: "The Scorecard" },
+  { id: "parcel-identity", title: "Parcel Identity" },
+  { id: "report", title: "Feasibility Report (PDF)" },
+  { id: "zoning-cache", title: "Zoning Cache" },
+  { id: "payments", title: "Payments & Monetization" },
+  { id: "discovery", title: "Property Discovery" },
   { id: "conversation", title: "Conversation Management" },
   { id: "auth", title: "Authentication & Security" },
   { id: "rate-limiting", title: "Rate Limiting" },
   { id: "map", title: "Map & Geo Visualization" },
   { id: "sidebar-cards", title: "Sidebar & Data Cards" },
   { id: "analytics", title: "Analytics" },
+  { id: "usage-analytics", title: "Usage Analytics" },
   { id: "file-upload", title: "File Upload & Vision" },
   { id: "admin", title: "Admin & Observability" },
   { id: "eval", title: "Eval & Benchmarks" },
   { id: "infrastructure", title: "Infrastructure & Deployment" },
   { id: "frontend", title: "Frontend Architecture" },
+  { id: "design-system", title: "Design System" },
   { id: "testing", title: "Testing" },
   { id: "decisions", title: "Design Decisions" },
   { id: "scale", title: "At Scale" },
@@ -208,21 +216,40 @@ export function AboutPage() {
           {/* ── 1. Project Overview ── */}
           <SectionHeading id="overview">Project Overview</SectionHeading>
           <P>
-            UrbanLayer is a retrieval-augmented generation (RAG) system for natural-language questions about Chicago.
-            It combines <Accent>18+ live datasets</Accent> across 5 APIs (Chicago Socrata, Cook County Socrata,
-            ArcGIS, Census, and external services), <Accent>semantic search</Accent> over the entire Chicago
-            Municipal Code (14,535 vector-indexed chunks), and <Accent>LLM synthesis</Accent> via Claude
-            to produce sourced, cited answers with interactive map visualizations. Live
-            at <Mono>urbanlayerchicago.com</Mono>.
+            UrbanLayer is a <Accent>parcel feasibility engine</Accent> for Chicago real-estate professionals — it
+            answers the question every developer, architect, and attorney asks before committing capital:{" "}
+            <em>"What can I build here, and should I?"</em> Type an address and in ~2 seconds you get the parcel's
+            full <Accent>Scorecard</Accent> (zoning, overlays, incentives, tax projection, comparable sales);
+            interrogate it via chat with cited municipal code; and buy a $25
+            PDF <Accent>Development Feasibility Report</Accent>. Live at <Mono>urbanlayerchicago.com</Mono>.
           </P>
           <P>
-            The killer query: <em>"What's going on near 2400 N Milwaukee Ave?"</em> A single prompt triggers the
-            LLM router, which geocodes the address, identifies the community area, and dispatches parallel retrieval
-            across crime statistics, open 311 service requests, building permits, code violations, business licenses,
-            vacant buildings, food inspections, applicable zoning, regulatory overlays, nearby incentive programs,
-            property records, demographics, and transit access. The response includes inline citations,
-            month-over-month trend analysis, and a map with filterable data layers — synthesized via streaming SSE
-            in 3-8 seconds.
+            Under the hood it is a retrieval-augmented generation (RAG) system combining <Accent>25+ live
+            datasets</Accent> across 5 APIs (Chicago Socrata, Cook County Socrata, ArcGIS, Census, and external
+            services), <Accent>semantic search</Accent> over the entire Chicago Municipal Code (14,535
+            vector-indexed chunks), and <Accent>LLM synthesis</Accent> via Claude to produce sourced, cited answers
+            with interactive map visualizations. The product began as a neighborhood Q&amp;A tool and was
+            deliberately refocused onto site feasibility — the engine is the same, but every surface now points at
+            one workflow: <em>evaluate a parcel, then act.</em>
+          </P>
+          <P>
+            Two complementary workflows sit on top of the engine:
+          </P>
+          <Table
+            headers={["Workflow", "Question", "Surfaces"]}
+            rows={[
+              ["Evaluate (today's wedge)", "\"I found a parcel. Should I develop it?\"", "Scorecard (free hook) → Chat (cited analysis) → $25 Report (the deliverable)"],
+              ["Discover (second wedge)", "\"Find me parcels worth evaluating.\"", "Property Discovery workbench (filters over ~949k parcels) → each result flows into Evaluate"],
+            ]}
+          />
+          <P>
+            The <Accent>Scorecard</Accent> is the hook: instant, free, anonymous, and <em>zero LLM cost</em> — it
+            renders structured facts straight from the data layer. The <Accent>chat copilot</Accent> is the engine
+            and the differentiator: an LLM router geocodes the address, resolves the parcel, and dispatches parallel
+            retrieval across crime, 311, permits, violations, business licenses, zoning, regulatory overlays,
+            incentive programs, property records, demographics, and transit — synthesizing a cited answer via
+            streaming SSE in 3-8 seconds. The <Accent>$25 PDF report</Accent> is the wedge: a tangible deliverable
+            that proves the value of every underlying system in one artifact.
           </P>
           <P>
             Four <Accent>domain orchestrators</Accent> extend beyond basic API queries: Property (parcel → assessment → sales → tax
@@ -232,8 +259,8 @@ export function AboutPage() {
             services are unavailable.
           </P>
           <P>
-            What makes this different from querying APIs directly: the system resolves addresses to community areas via
-            Census geocoding, fetches from multiple datasets concurrently behind a concurrency semaphore, applies
+            What makes this different from querying APIs directly: the system resolves an address to an authoritative
+            14-digit parcel PIN, fetches from multiple datasets concurrently behind a concurrency semaphore, applies
             domain-specific aggregation and capping, computes analytics, routes through workflow-aware orchestrators,
             and uses an LLM to synthesize a human-readable answer that cites its sources. A user would need to
             make 15+ API calls across 5 services, understand SoQL and ArcGIS query syntax, cross-reference zoning
@@ -294,14 +321,16 @@ export function AboutPage() {
               ["Conversation", "Claude Haiku 4.5", "Cheap multi-turn expansion (300 tok)"],
               ["Vector DB", "Qdrant v1.9.0 (Docker)", "Free, fast, metadata filtering, payload search"],
               ["Embeddings", "BAAI/bge-base-en-v1.5 (768-dim)", "Better legal text discrimination than bge-small"],
-              ["Reranker", "BAAI/bge-reranker-v2-m3", "Same family as embeddings, avoids MS MARCO domain mismatch"],
+              ["Reranker", "BAAI/bge-reranker-v2-m3 (disabled in prod)", "Same family as embeddings; too slow on prod vCPUs — report now uses a precomputed zoning cache instead"],
+              ["Payments", "Stripe (Checkout + webhooks)", "One-time $25 report + $99/mo Pro subscription; no PCI surface"],
               ["Streaming", "SSE (text/event-stream)", "Synthesis is 3-8s; streaming TTFT is better UX"],
-              ["Persistence", "SQLite via aiosqlite (WAL)", "Single user, single writer — simplest correct solution"],
+              ["Persistence", "SQLite via aiosqlite (WAL), schema v11", "Single user, single writer — simplest correct solution"],
               ["Auth", "Google OAuth2 + self-rolled JWT", "One-click sign-in; httpOnly cookies + CSRF double-submit"],
-              ["Frontend", "React + TypeScript + Vite + Tailwind v3", "Type-safe, dark theme, fast builds (~322KB JS)"],
+              ["Frontend", "React + TypeScript + Vite + Tailwind v3", "Type-safe, dark theme; Inter / Space Grotesk / IBM Plex Mono"],
+              ["PDF Reports", "WeasyPrint + Jinja + matplotlib", "HTML/CSS → PDF; rendered in an isolated child process"],
               ["Map", "Mapbox GL JS + deck.gl", "WebGL handles 1000s of points, declarative layers"],
-              ["Geocoding", "Census Geocoder + Shapely", "Free, no API key, deterministic"],
-              ["Hosting", "Hetzner CX22 (Nuremberg)", "Cheapest x86 VPS: 2 vCPU, 4GB RAM, €4.50/mo"],
+              ["Geocoding", "Census Geocoder + Shapely + Cook County Address Points", "Free, deterministic; authoritative address→PIN resolution"],
+              ["Hosting", "Hetzner CX32 (Nuremberg)", "4 vCPU, 8GB RAM + 8GB swap (upgraded from CX22/4GB)"],
               ["DNS/TLS", "Cloudflare Full (Strict)", "Zero-maintenance Origin Certificate (expires 2041)"],
             ]}
           />
@@ -352,6 +381,27 @@ export function AboutPage() {
               ["Sales History", "CCAO API", "10 most recent sales with dates, prices, deed types"],
             ]}
           />
+
+          <Sub>The Assessment That Was Always Zero — A Data Story</Sub>
+          <P>
+            Building the discovery index, a key field came back <Accent>0% populated</Accent>: total assessed value was
+            null for every one of ~949k parcels, which silently disabled the entire "undervalued" recipe. The data
+            existed and the join wasn't wrong in any obvious way — yet every parcel resolved to a valueless row.
+          </P>
+          <P>
+            The cause is a Socrata semantics trap. The CCAO assessment dataset carries an in-progress current year
+            whose value columns stay NULL until the assessment is mailed — and <em>Socrata omits NULL fields from its
+            JSON entirely</em>. So a query ordering <Mono>year DESC</Mono> and taking the first row got the in-progress
+            year, which arrived with no value columns at all. The fix requires a non-null total in the predicate
+            ("the latest year that actually carries values"), taking population from 0% to 99%. The same audit confirmed
+            the scorecard/report path was already safe — it iterates to the first row with a real total rather than
+            grabbing the raw latest.
+          </P>
+          <P>
+            A methodology footnote from the same effort: a 300-row <em>sample</em> reported 74% coverage of a field
+            whose true coverage across the full set was 28% — sampling a skewed dataset lied by 46 points.{" "}
+            <em>Measure the whole set when the cost is a one-time batch job.</em>
+          </P>
 
           <Sub>Incentive Zone Data</Sub>
           <Table
@@ -426,11 +476,19 @@ export function AboutPage() {
             BeautifulSoup state machine tracking Title → Chapter → Article → Subarticle → Part → Section hierarchy.
             Table extraction handles colspan/rowspan and composite multi-row headers. Cross-references extracted via regex.
           </P>
+          <Sub>The 8 MB That Vanished — A Parsing Story</Sub>
           <P>
-            The HTML has a malformed <Mono>&lt;div&gt;</Mono> in Title 18 that causes lxml to silently nest the
-            trailing ~8MB (the republished Titles 16/17 "Zoning & Land Use Ordinance") inside an earlier element.
-            Without the fix, 250 republished sections and 1 net-new section were missing. Workaround: split the
-            file at the republication banner string and parse each half separately.
+            Early on, the index was quietly missing 251 sections — with no error, just absent content. The cause was a
+            single malformed <Mono>&lt;div&gt;</Mono> in Title 18 of the source HTML that made lxml <em>silently</em>{" "}
+            nest the trailing ~8 MB of the document — the republished Titles 16/17 "Zoning &amp; Land Use Ordinance,"
+            the single most important content for a feasibility tool — inside an earlier element, where the section
+            walker never reached it. The data didn't throw; it lied about its own shape.
+          </P>
+          <P>
+            The fix sidesteps the broken markup entirely: split the file at the republication banner string and parse
+            each half as its own document. The lesson — when a parser's output is suspiciously short, suspect the{" "}
+            <em>input's</em> structure before your traversal logic — is the same instinct that later caught the
+            null-field assessment bug.
           </P>
 
           <Sub>Chunking</Sub>
@@ -465,29 +523,72 @@ export function AboutPage() {
             query latency unchanged.
           </P>
 
-          <Sub>Full Pipeline (v4)</Sub>
+          <Sub>Full Pipeline (v5)</Sub>
           <Code>{`query
+  → synonym expansion (_expand_query: 11 trigger terms — ADU, loading, demolition…)
+  → district code normalization (e.g. "RM5" → "RM-5")
   → prepend BGE query prefix
   → encode with bge-base (768-dim)                        [thread pool]
-  → Qdrant async dense search (limit = top_k × 5)
+  → Qdrant async dense search (limit = top_k × 5, overfetch for dedup)
   → filter legend-only table chunks
-  → keyword boost: combined = 0.85 × dense + 0.15 × keyword_overlap
-  → cross-encoder rerank ALL candidates                   [thread pool]
+  → keyword boost: combined = 0.80 × dense + 0.20 × keyword_overlap
+  → cross-encoder rerank the top 20 candidates            [single-worker pool]
   → blend: final = 0.80 × norm_dense + 0.20 × norm_reranker
   → sort by blended score
-  → per-section dedup (keep best chunk per section)
+  → keyword-aware per-section dedup (best chunk per section)
   → cross-reference expansion (1-hop, batched Qdrant call)
   → return top_k CodeChunks`}</Code>
           <P>
-            <Accent>Production note:</Accent> The cross-encoder reranker (<Mono>bge-reranker-v2-m3</Mono>, ~1.3GB)
-            is disabled in production via <Mono>RERANKER_ENABLED=false</Mono> to fit within 4GB server RAM.
-            The pipeline falls back to the proven 0.85 dense + 0.15 keyword scoring. Re-enable at 8GB+ RAM.
+            v5 added synonym expansion, district-code normalization, keyword-aware dedup, and bumped the keyword
+            weight from 0.15 to 0.20 — lifting the retrieval benchmark from 75% to{" "}
+            <Accent>100% A/B (26 A, 2 B across 28 queries)</Accent>.
+          </P>
+          <Sub>The Reranker Incident — A Debugging Story</Sub>
+          <P>
+            The cross-encoder reranker is the one piece of this pipeline that is <Mono>RERANKER_ENABLED=false</Mono> in
+            production — and getting there was the single hardest debugging episode in the project. It's worth telling
+            in full, because the path to the fix was a chain of wrong turns.
+          </P>
+          <P>
+            <Accent>The symptom.</Accent> One day <Mono>/api/report</Mono> started returning 504s — every report timed
+            out. Scorecard and chat stayed up, so the outage was report-only. <Accent>The first wrong guess:</Accent>{" "}
+            an out-of-memory kill. The box runs ML models in 8GB, the timing felt like memory pressure, so the first
+            response hardened against OOM — swap was grown 2GB → 8GB and the PDF render was moved into an isolated
+            child process. Sensible defense-in-depth, but it didn't fix the 504s, because memory was never the cause.
+          </P>
+          <P>
+            <Accent>The real culprit.</Accent> The report's zoning extraction fired <em>five</em> reranked semantic
+            searches in parallel, and on the production vCPUs a single reranked search took 40-60s — so the five-way
+            fan-out blew straight past the nginx timeout. The obvious quick fix —
+            pin <Mono>torch.set_num_threads(1)</Mono> — actually made it <em>worse</em>: it stripped intra-op
+            parallelism without removing the real problem. Profiling found two compounding issues: unbounded rerank
+            concurrency (the five searches each dispatched a Torch <Mono>predict()</Mono> to a shared executor and
+            thrashed) and a 3× oversized batch (60 pairs reranked just to return 3). The clincher was a native run
+            where swap was physically impossible and the stall <em>still</em> reproduced at 0.99× the serial floor —
+            proof it was CPU serialization, not memory, all along.
+          </P>
+          <P>
+            <Accent>The fix that wasn't enough.</Accent> A proper fix followed: rerank only the top 20 candidates,
+            route every <Mono>predict()</Mono> through a single-worker executor, make the thread count configurable.
+            On a dev machine the five-way path dropped from 35.7s to 12.4s. But verified <em>on the real production
+            box</em>, a single 20-pair <Mono>predict()</Mono> was still ~40s and the report path ~280s ≫ the 180s
+            ceiling — the bge cross-encoder is simply ~15× slower per core on these shared vCPUs than on the M4 Pro it
+            was tuned on. So the fix was rolled back and the flag stayed off.
+          </P>
+          <P>
+            <Accent>How we overcame it.</Accent> The breakthrough was reframing the problem: the report didn't need a
+            faster reranker, it needed to <em>not call one</em>. The zoning extraction was moved offline into a{" "}
+            <Accent>precomputed cache</Accent> (see the Zoning Cache section) — which, as a bonus, fixed a separate
+            silent accuracy bug. The reranker is now out of the report path entirely; the chat pipeline falls back to
+            the proven 0.80 dense + 0.20 keyword scoring. The lessons that stuck: <em>profile on the hardware you
+            actually ship to</em> (the prod box behaves nothing like a laptop), and the best fix for a slow dependency
+            on a hot path is sometimes to remove it from the path, not to speed it up.
           </P>
 
           <Sub>Score Blending Rationale</Sub>
           <P>
-            <Accent>Keyword boost (0.15)</Accent>: catches exact-term relevance that embeddings miss. "Lot coverage" matching
-            a chunk about lot coverage percentages instead of lot area standards.
+            <Accent>Keyword boost (0.20)</Accent>: catches exact-term relevance that embeddings miss. "Lot coverage" matching
+            a chunk about lot coverage percentages instead of lot area standards. (Raised from 0.15 in v5.)
           </P>
           <P>
             <Accent>Reranker weight (0.20)</Accent>: preserves the proven dense+keyword signal while using the cross-encoder
@@ -507,10 +608,12 @@ export function AboutPage() {
           <Sub>Why Rerank Before Dedup</Sub>
           <P>
             The v3 pipeline deduped to 20 unique sections first, then reranked those 20. This meant the reranker was
-            stuck with whatever chunk the dense embedding liked most per section. The v4 pipeline reranks ALL ~60
-            candidate chunks first, then dedup picks the best-scoring chunk per section after blending. This lets
-            the reranker choose a better chunk from multi-part sections (e.g., selecting the chunk
-            with "square feet" from the lot area table instead of the table legend).
+            stuck with whatever chunk the dense embedding liked most per section. The v4/v5 pipeline reranks the top
+            candidates (the top 20 by combined dense+keyword score) <em>before</em> dedup, so dedup picks the
+            best-scoring chunk per section after blending. This lets the reranker choose a better chunk from
+            multi-part sections (e.g., selecting the chunk with "square feet" from the lot area table instead of the
+            table legend). When the reranker is disabled in production, the same ordering applies to the blended
+            dense+keyword score.
           </P>
 
           <Sub>Per-Section Deduplication</Sub>
@@ -744,6 +847,242 @@ NEIGHBORHOOD-WIDE (community area name):
             enough information to weave trends into the narrative.
           </P>
 
+          {/* ── The Scorecard ── */}
+          <SectionHeading id="scorecard">The Scorecard</SectionHeading>
+          <P>
+            The Scorecard is the product's hook: type an address, get the parcel's complete structured assessment in
+            ~2 seconds. It is <Accent>free, anonymous, and zero LLM cost</Accent> — <Mono>GET /api/scorecard</Mono> reads
+            straight from the data layer and domain orchestrators, no synthesis pass. It earns the user's trust ("this
+            is right") before asking for anything, then bridges into the chat (Investigate buttons) and the paid report
+            (Download CTA).
+          </P>
+          <P>
+            The page (<Mono>ScorecardPage.tsx</Mono>) accepts a parcel three ways, in precedence
+            order: <Mono>?pin=</Mono> → <Mono>?address=</Mono> → <Mono>?lat=&amp;lon=</Mono>. A pin-confirmed result
+            canonicalizes the URL to <Mono>?pin=&amp;address=</Mono> (the address is display-only); legacy URLs keep
+            working. Above the card grid sits the <Accent>identity band</Accent>: a Mapbox static thumbnail (shown only
+            when a real pin resolved), an i18n'd parcel-confidence badge with a tooltip that explains a degraded state
+            ("Area data — exact parcel not confirmed"), the dash-formatted PIN linking to the Cook County Assessor, and
+            a facts-only verdict line composed from context flags (zone name · TIF · OZ · TOD · ADU · ARO · flood).
+          </P>
+          <P>
+            Three page-local cards render the highest-signal facts without a model in the loop:{" "}
+            <Mono>ZoningCard</Mono> (renders the Title-17 bulk standards from the scorecard API's <Mono>zone_definition</Mono>),{" "}
+            <Mono>CrimeYoYCard</Mono> (year-over-year with prior-year base counts), and <Mono>Address311Card</Mono>.
+            Each card carries exactly one muted "Investigate" link into the chat (solid accent is reserved for the
+            purchase CTA), and the financial snapshot strip surfaces assessed value, annual tax, median comp sale, and
+            active incentive zones. The whole surface is the free preview of what the $25 report contains.
+          </P>
+
+          {/* ── Parcel Identity ── */}
+          <SectionHeading id="parcel-identity">Parcel Identity</SectionHeading>
+          <P>
+            A feasibility tool lives or dies on resolving the <em>right</em> parcel. A wrong zoning class or a
+            neighbor's tax bill destroys trust permanently — and money changes hands per parcel — so parcel identity is
+            modeled explicitly with one producer, one holder, and four consumers.
+          </P>
+          <Code>{`Producer  → _resolve_location (backend/main.py)
+              returns ResolvedLocation(lat, lon, address, pin, confidence)
+              strict precedence: explicit lat/lon → supplied PIN
+                → address→PIN (Cook County Address Points 78yw-iddh)
+                → degraded geocode + nearest-centroid → 422
+Holder    → SelectedParcel, held in SelectedParcelContext (frontend)
+              select(ParcelQuery) is the ONLY write site — it calls
+              /api/scorecard and commits the backend's resolved pin /
+              confidence / lat / lon / address atomically
+Consumers → Scorecard (renders pin + confidence badge)
+              Report   (request / entitlement / purchase keyed on pin)
+              Chat     (reads per-message pins as history — read-only)
+              Discovery(emits ?pin= navigation intent only)`}</Code>
+          <P>
+            Confidence is deliberately <Accent>two-valued</Accent> — <Mono>"authoritative"</Mono> or{" "}
+            <Mono>"approximate"</Mono>, no other tier. Identity is never constructed client-side from raw input, URL
+            params, or a Discovery row. The invariants: no silent re-resolution when a pin is known; no fidelity
+            downgrade at a handoff (never coordinates when a pin exists, never an address when either exists);
+            money/entitlement keys on the pin when one exists (legacy pin-less purchases stay entitled via a 4-decimal
+            coordinate match); and a pin is never shown detached from its confidence tier.
+          </P>
+          <Sub>The Parcel That Resolved to the Neighbor — A Correctness Story</Sub>
+          <P>
+            For a tool that sells a per-parcel report, resolving the <em>wrong</em> parcel isn't cosmetic — it bills
+            someone for their neighbor's analysis. While the Cook County GIS spatial index is down (its broken index
+            times out 60s+), a typed address resolved through a coordinate pipeline: Census geocode → nearest parcel
+            centroid. A read-only audit of 111 real addresses measured how often that hit the right parcel:{" "}
+            <Accent>23%</Accent>. The other ~77% weren't condo-unit ambiguity — 100% of the misses were a{" "}
+            <em>different building</em> on the block.
+          </P>
+          <P>
+            The root cause was geometric. The Census geocoder returns a <em>street-interpolated</em> point — median
+            31m, p90 66m from the true parcel, offset toward the street. Chicago lots are ~7.6m wide, so 31m is about
+            four lots over, and "nearest centroid" almost always snapped to a neighbor. A second bug compounded it: the
+            Socrata fallback fetched only the first 20 of the 500-600 parcels in the bounding box <em>with no
+            ordering</em>, so the true parcel often wasn't even a candidate.
+          </P>
+          <P>
+            The fix abandoned coordinates for identity entirely. An address is now resolved against the authoritative
+            Cook County <Accent>Address Points</Accent> dataset (<Mono>78yw-iddh</Mono>) directly to a PIN, and the
+            parcel is fetched by PIN — coordinates became display-only. Exact-PIN accuracy jumped
+            to <Accent>98-100%</Accent>. The sharpest lesson came from a near-miss: the dataset stores the directional
+            as <Mono>"WEST"</Mono>, not <Mono>"W"</Mono>, so the natural <Mono>st_predir = 'W'</Mono> query
+            matched <em>nothing</em> and would have silently shipped a no-op feature to production. It was caught only
+            by probing the live dataset, not by unit tests against mocked data — <em>verify the real artifact, not your
+            assumption of it.</em>
+          </P>
+
+          {/* ── Feasibility Report (PDF) ── */}
+          <SectionHeading id="report">Development Feasibility Report (PDF)</SectionHeading>
+          <P>
+            The $25 PDF report is the revenue wedge — the moment a professional needs a deliverable for a client,
+            lender, or partner. It's priced per-unit (no subscription threshold), it demonstrates every underlying
+            system in one artifact, and it markets itself ("Generated by UrbanLayer" travels to whoever receives it).
+            <Mono>GET /api/report</Mono> assembles the same retrieval the Scorecard uses, then renders HTML/CSS to PDF
+            via <Accent>WeasyPrint</Accent> over a Jinja template (<Mono>zoning_report.html</Mono>) with matplotlib map
+            overlays.
+          </P>
+          <Sub>What the report contains</Sub>
+          <P>
+            A page-1 <Accent>Development Snapshot</Accent> decision box (lot · zone · max buildable · value · key
+            constraint · approval path), a comp-implied valuation with honest data-limit handling, FAR-utilization
+            framing ("existing X sf uses Y% of the FAR-allowed Z sf"), indicative unit yield from authoritative
+            minimum-lot-area tables, a SIMPLE/MODERATE/COMPLEX regulatory <Accent>approval pathway</Accent>, an
+            "Ownership Intelligence" read derived from sales/tax signals (Cook County doesn't expose owner names), and
+            zoning/construction/comps maps with auto-scaled distance bars and reference rings. The synthesis is
+            deterministic where it must be — ~29 opportunity/constraint rules, not a free-form LLM essay — so the
+            numbers never contradict the tables.
+          </P>
+          <Sub>Render isolation</Sub>
+          <P>
+            WeasyPrint's <Mono>write_pdf()</Mono> runs in an <Accent>isolated child process</Accent>{" "}
+            (<Mono>backend/report_render.py</Mono>): the parent spawns <Mono>python -m backend.report_render</Mono> with
+            the HTML in a temp file and the PDF out. The child imports <em>only</em> WeasyPrint (~118 MB peak), not the
+            FastAPI app or the ~3 GB discovery index, sets <Mono>oom_score_adj=1000</Mono>, carries a generous{" "}
+            <Mono>RLIMIT_AS</Mono> backstop, and is killed by a parent wall-clock timeout → a clean 503 instead of an
+            OOM-killed worker.
+          </P>
+          <Sub>The Crash That Only Happened in Production — A Reproducibility Story</Sub>
+          <P>
+            An earlier report-reliability incident was a textbook "works on my machine": reports generated fine
+            locally, but the production worker kept dying under load. The first theory blamed the flaky Cook County
+            GIS — but blackholing GIS locally didn't reproduce it (the Socrata fallback absorbed the failure with no
+            exception; GIS only added latency), so that theory was <em>disproven</em> rather than assumed.
+          </P>
+          <P>
+            The real causes were memory and the event loop. Each report held ~375 MB of render data (map rasters +
+            WeasyPrint), and <Mono>write_pdf()</Mono> ran <em>synchronously</em> on the event loop — at completion it
+            blocked <Mono>/health</Mono> for 6.4s, and three concurrent reports saturated the single worker and all
+            timed out. Why it never showed locally: a 48 GB dev Mac <em>compresses</em> memory under pressure (a slow
+            timeout cascade), while the 8 GB production box just <Accent>OOM-kills</Accent> the worker outright — the
+            same bug with a completely different failure mode by environment.
+          </P>
+          <P>
+            The fix bounded report generation with a <Mono>Semaphore(2)</Mono> and offloaded <Mono>write_pdf()</Mono>{" "}
+            to a thread so it can't block the loop (the subprocess isolation above came later, in the reranker-era
+            hardening). The lesson: a generous dev machine can <em>hide</em> a resource bug that a constrained
+            production box surfaces as a hard kill — reproduce on production-like limits.
+          </P>
+          <Sub>Honesty over completeness</Sub>
+          <P>
+            Where the data is thin, the report says so rather than fabricating. Land-value ranges render only with ≥3
+            land-bearing comps (condo-dense blocks rarely have them) — otherwise a labeled "Valuation Indicators"
+            fallback anchors on median comp <em>sale price</em>. Tax-exempt parcels get a "Tax-Exempt (Class EX)"
+            callout, not a residential comp number. The deliberate refusals (no automated pro-forma/IRR, no "PERMITTED"
+            entitlement verdicts, no fabricated parcel geometry) are as much a part of the design as the features.
+          </P>
+
+          {/* ── Zoning Cache ── */}
+          <SectionHeading id="zoning-cache">Zoning Cache</SectionHeading>
+          <P>
+            The report's AI zoning extraction was silently failing for months. Two compounding bugs: (1) semantic
+            search fetched only a ~1,800-char <em>slice</em> of the ~30,000-char Title-17 bulk-standards table, so
+            ~48/61 zones came back <Mono>low</Mono>/null and the report silently fell back to the deterministic table;
+            and (2) Haiku wrapped its JSON in markdown fences, so a bare <Mono>json.loads()</Mono> threw at char 0 and
+            was swallowed → fallback again. The reader saw correct bulk numbers (from the table) but zero AI value-add,
+            with no error.
+          </P>
+          <P>
+            The fix removes the reranker from the report path entirely. An offline build
+            (<Mono>backend/zoning_cache_build.py</Mono>) does a <Accent>deterministic full-section fetch</Accent> of
+            the complete bulk-standards table per district chapter (no semantic search, no reranker), runs it through
+            Haiku, then does a <Accent>hybrid merge</Accent>: the table is authoritative for FAR / height / coverage,
+            and the AI adds the setbacks and minimum-lot values the table lacks. The result —{" "}
+            <Accent>57/59 zones high-confidence, 0 FAR errors</Accent> — is committed
+            to <Mono>ingestion/data/zoning_cache.json</Mono> and read at request time
+            by <Mono>zoning_cache.py</Mono>, falling back to the table on a miss.
+          </P>
+          <P>
+            Known limits: AI-supplied setbacks/min-lot are not cross-validated against an authoritative source the way
+            the FAR/height/coverage table is, so they carry lower trust; parking ratios were deferred (feeding the
+            parking section alongside the bulk table regressed FAR extraction). A deploy gotcha worth recording: a
+            committed data artifact needs a <Mono>.dockerignore</Mono> allowlist entry too, not just a{" "}
+            <Mono>.gitignore</Mono> exclusion — the first push built without the cache and CI false-reported green.
+          </P>
+
+          {/* ── Payments & Monetization ── */}
+          <SectionHeading id="payments">Payments &amp; Monetization</SectionHeading>
+          <P>
+            Two price points, both through <Accent>Stripe</Accent> (<Mono>backend/payments.py</Mono>): a one-time{" "}
+            <Accent>$25 Development Feasibility Report</Accent> and a <Accent>$99/mo Pro</Accent> subscription
+            (unlimited reports). The a-la-carte report is the wedge — the decision is "is this worth $25 for this
+            parcel right now?", a far lower bar than "$99/mo forever" — and after a few reports the Pro math makes
+            itself obvious ("4 reports ≈ a month of Pro").
+          </P>
+          <Table
+            headers={["Endpoint", "Purpose"]}
+            rows={[
+              ["POST /api/checkout/report", "Stripe Checkout session for a single $25 report"],
+              ["POST /api/checkout", "Stripe Checkout session for the $99/mo Pro subscription"],
+              ["POST /api/webhook/stripe", "Webhook → records the purchase / activates the subscription"],
+              ["GET /api/report/access", "Entitlement check before generating or re-downloading a report"],
+            ]}
+          />
+          <P>
+            Purchases are <Accent>PIN-keyed</Accent>: the <Mono>report_purchases</Mono> table (schema v9) records the
+            14-digit pin, so entitlement is checked against the exact parcel. The frontend's report functions
+            (<Mono>fetchReport</Mono>, <Mono>createReportCheckoutSession</Mono>, <Mono>checkReportAccess</Mono>) all
+            take a whole <Mono>SelectedParcel</Mono> and derive the wire params internally — hand-constructing report
+            identity is a compile error. Legacy pin-less purchase rows stay entitled permanently via a 4-decimal
+            coordinate match. Stripe's success URL is <Mono>?pin=…&amp;report_purchased=1</Mono>, which the Scorecard
+            reads to auto-download the report right after payment.
+          </P>
+
+          {/* ── Property Discovery ── */}
+          <SectionHeading id="discovery">Property Discovery</SectionHeading>
+          <P>
+            Discovery is the second workflow: "find me parcels worth evaluating." It's a filter/search workbench
+            covering the <Accent>full city — all 77 community areas / ~949k parcels</Accent> — where each result flows
+            straight into the Evaluate pipeline (click a row → Scorecard → Report). Free users see a top-10 teaser;
+            premium users get the full list, an interactive map, and CSV export.
+          </P>
+          <Sub>Compile, don't evaluate</Sub>
+          <P>
+            The frontend (<Mono>frontend/src/discovery/</Mono>) never filters data itself — it compiles panel/topic/text
+            inputs into a <Mono>SearchRequest</Mono> and renders chips and summaries from the server's canonical query
+            state (<Mono>response.cqs</Mono>), so the UI can never disagree with what the server actually ran. The
+            backend (<Mono>backend/discovery/</Mono>) holds the predicates, evaluator, and registry, and serves three
+            routes: <Mono>/search</Mono> (rows), <Mono>/search/pins</Mono> (the full coordinate set for the map), and{" "}
+            <Mono>/search/export</Mono> (premium CSV).
+          </P>
+          <Sub>The prospecting index</Sub>
+          <P>
+            Filtering ~949k parcels interactively requires a precomputed index with derived fields:{" "}
+            <Mono>value_percentile</Mono>, an <Mono>upside_score</Mono> heuristic (documented v1, not oversold),{" "}
+            <Mono>is_teardown_candidate</Mono>, and transit proximity, plus a <Mono>populated_fields</Mono> manifest
+            that drives honest cold-start behavior. Recipe shortcuts ("undervalued multifamily") show 3-state counts —
+            "Live · N" / "No matches yet" / "Needs data" — instead of advertising filters that can't run. Building the
+            index surfaced the <Accent>CCAO valueless-latest-year bug</Accent>: the assessor's in-progress year has
+            null value columns that Socrata omits from JSON, so a naive "latest year" join resolved every parcel to a
+            valueless row — fixed by requiring a non-null total (and verified safe in the scorecard/report path too).
+          </P>
+          <Sub>Memory-bounded, off-box build</Sub>
+          <P>
+            The full-city index is built off the live backend (<Mono>docker compose run --rm</Mono>, its own cgroup,
+            shared data volume) and is memory-bounded by construction: per-community-area ingest plus a streaming
+            finalize that recomputes percentiles/manifests over the SQLite index in chunks. Full 77-CA runtime is
+            ~2.98 GB RSS — 39% of the 8 GB box, ~2.37 KB/parcel. (The earlier "1.8M parcels won't fit" worry was a unit
+            error: that figure is Cook County <em>with</em> suburbs; Chicago's 77 CAs are ~949k.) A monthly refresh
+            timer keeps it current.
+          </P>
+
           {/* ── 9. Conversation Management ── */}
           <SectionHeading id="conversation">Conversation Management</SectionHeading>
 
@@ -792,10 +1131,11 @@ NEIGHBORHOOD-WIDE (community area name):
 
           <Sub>SQLite Persistence</Sub>
           <P>
-            WAL mode via <Mono>aiosqlite</Mono>, singleton connection, schema v6. Tables: <Mono>conversations</Mono>,
+            WAL mode via <Mono>aiosqlite</Mono>, singleton connection, schema v11. Tables: <Mono>conversations</Mono>,
             <Mono>messages</Mono> (with JSON blob columns for context/plan/mapData), <Mono>uploads</Mono>,
             <Mono>llm_calls</Mono>, <Mono>request_logs</Mono>, <Mono>schema_version</Mono>,
-            <Mono>users</Mono>, <Mono>refresh_tokens</Mono>, <Mono>share_tokens</Mono>. JSON blob columns
+            <Mono>users</Mono>, <Mono>refresh_tokens</Mono>, <Mono>share_tokens</Mono>, <Mono>report_purchases</Mono> (v9),
+            and <Mono>events</Mono> (v10, usage analytics); v11 made purchases PIN-bound. JSON blob columns
             because context/plan/mapData are written once and read whole — no query benefit from normalization
             for a single-user app.
           </P>
@@ -840,9 +1180,11 @@ NEIGHBORHOOD-WIDE (community area name):
 
           <Sub>Frontend Auth Integration</Sub>
           <P>
-            <Mono>AuthProvider</Mono> wraps the app, exposing <Mono>useAuth()</Mono> throughout. The auth gate
-            fires on <Mono>sendMessage</Mono> — unauthenticated users see a modal with a "Sign in with Google"
-            button. The <Mono>401-interceptor</Mono> in <Mono>authFetch()</Mono> intercepts expired tokens:
+            <Mono>AuthProvider</Mono> wraps the app, exposing <Mono>useAuth()</Mono> throughout. There is{" "}
+            <em>no</em> gate on <Mono>sendMessage</Mono> — anonymous chat works at the server-enforced 3/day IP limit
+            (in-memory only, never persisted), so the front door doesn't ask for an account. The sign-in modal appears
+            only at identity moments (save/share, purchase, or a 429 rate-limit). The <Mono>401-interceptor</Mono>{" "}
+            in <Mono>authFetch()</Mono> intercepts expired tokens:
             attempts <Mono>POST /api/auth/refresh</Mono> (coalescing concurrent refreshes via a module-level
             promise), re-reads the CSRF cookie, and retries the original request once. Dev mode
             (<Mono>GOOGLE_CLIENT_ID</Mono> unset) bypasses auth entirely — no sign-in UI shown.
@@ -1000,6 +1342,27 @@ NEIGHBORHOOD-WIDE (community area name):
             green ↓ for decreases. Sortable by type, current count, prior count, or trend percentage.
           </P>
 
+          {/* ── Usage Analytics ── */}
+          <SectionHeading id="usage-analytics">Usage Analytics</SectionHeading>
+          <P>
+            Distinct from the LLM-cost observability above, a lightweight first-party tracker
+            (<Mono>frontend/src/lib/tracking.ts</Mono>) instruments the funnel so customer validation is backed by
+            behavior, not just opinion. No third-party analytics SDK — events are written to the
+            app's own <Mono>events</Mono> table (schema v10) and surfaced in the admin engagement dashboard.
+          </P>
+          <P>
+            Eight events trace the path from landing to purchase: <Mono>page_view</Mono>, <Mono>hero_address_submit</Mono>,{" "}
+            <Mono>hero_librarian_click</Mono>, <Mono>investigate_click</Mono>, <Mono>chat_message_sent</Mono>,{" "}
+            <Mono>scorecard_bridge_click</Mono>, <Mono>report_cta_click</Mono>, and <Mono>sample_report_click</Mono>.
+            Each carries a per-tab <Accent>session ID</Accent> and a cross-session <Accent>visitor ID</Accent>, so the
+            same person can be followed across visits without accounts.
+          </P>
+          <P>
+            Delivery is cheap and loss-resistant: events batch in memory and flush every 30s, with
+            a <Mono>navigator.sendBeacon</Mono> on page hide so the last events survive a tab close. Ingestion is
+            fire-and-forget on the backend — a failed analytics write never degrades the user-facing request.
+          </P>
+
           {/* ── 15. File Upload & Vision ── */}
           <SectionHeading id="file-upload">File Upload & Vision</SectionHeading>
           <P>
@@ -1083,7 +1446,7 @@ NEIGHBORHOOD-WIDE (community area name):
             ]}
           />
 
-          <Sub>Retrieval Quality Benchmark (18 queries)</Sub>
+          <Sub>Retrieval Quality Benchmark (28 queries)</Sub>
           <P>
             <Mono>eval/retrieval_benchmark.py</Mono> with gold section IDs and expected answer terms per query.
             Grades: A (gold hit + terms), B (gold hit, some terms missing), C (partial), D/F (miss).
@@ -1093,13 +1456,16 @@ NEIGHBORHOOD-WIDE (community area name):
             rows={[
               ["v1 (baseline)", "11", "1", "4", "1", "1", "No dedup, no keyword boost"],
               ["v3", "13", "1", "4", "0", "0", "Per-section dedup + keyword boost"],
-              ["v4 (current)", "15", "1", "2", "0", "0", "bge-reranker-v2-m3, rerank-before-dedup"],
+              ["v4", "15", "1", "2", "0", "0", "bge-reranker-v2-m3, rerank-before-dedup"],
+              ["v5 (current)", "26", "2", "0", "0", "0", "Synonym expansion, keyword-aware dedup, 0.20 keyword weight"],
             ]}
           />
           <P>
-            Remaining 2 C-grades (<Mono>adu_allowed</Mono>, <Mono>lot_coverage_rm5</Mono>) are term-mismatch
-            issues — the answer terms don't appear in any chunk of the retrieved sections. Not a retrieval problem
-            but a terminology gap.
+            v5 reaches <Accent>100% A/B</Accent> across the (expanded) 28-query set. The two C-grades that survived v4
+            (<Mono>adu_allowed</Mono>, <Mono>lot_coverage_rm5</Mono>) were terminology gaps; synonym expansion at query
+            time closed them. Note the benchmark numbers are from the <em>full</em> pipeline including the reranker —
+            in production (reranker off) the dense+keyword fallback carries the chat path, and the report path uses the
+            precomputed zoning cache rather than retrieval at all.
           </P>
 
           <Sub>Data Source Coverage Benchmark</Sub>
@@ -1112,9 +1478,9 @@ NEIGHBORHOOD-WIDE (community area name):
             headers={["Metric", "Value"]}
             rows={[
               ["Total queries", "29"],
-              ["Sub-source checks", "40"],
-              ["Covered", "34/40 (85%)"],
-              ["Known gaps", "Property characteristics (GIS intermittent), Tax (PTaxSim optional), ARO routing"],
+              ["Sub-source checks", "41"],
+              ["Covered", "38/41 (93%)"],
+              ["Known gaps", "Property characteristics (GIS intermittent), Assessments (CCAO 400s), Tax (PTaxSim optional)"],
             ]}
           />
 
@@ -1155,16 +1521,16 @@ NEIGHBORHOOD-WIDE (community area name):
             headers={["Spec", "Value"]}
             rows={[
               ["Provider", "Hetzner Cloud (Nuremberg, Germany)"],
-              ["Instance", "CX22 — 2 vCPU (shared), 4GB RAM, 40GB SSD"],
-              ["Swap", "2GB (prevents OOM kills during ML inference spikes)"],
-              ["Cost", "~€4.50/month"],
+              ["Instance", "CX32 — 4 vCPU, 8GB RAM, 80GB SSD (upgraded from CX22/4GB, 2026-06-06)"],
+              ["Swap", "8GB (swappiness=10) — cushions transient render/index spikes (grown from 2GB)"],
               ["OS", "Ubuntu 22.04"],
             ]}
           />
           <P>
-            Chosen over AWS/DigitalOcean/Railway for cost — 4GB RAM at Hetzner costs less than 1GB on most
-            US cloud providers. The trade-off is higher latency for US users (Nuremberg → US adds ~100ms)
-            and no managed scaling, but acceptable for a portfolio project.
+            Chosen over AWS/DigitalOcean/Railway for cost — the same RAM at Hetzner costs a fraction of US cloud
+            providers. The CX22 (4GB) was outgrown once the discovery index (~3GB resident) and PDF rendering landed,
+            so the box was bumped to 8GB plus 8GB swap. The trade-off is higher latency for US users (Nuremberg → US
+            adds ~100ms) and no managed scaling, but acceptable for a portfolio project.
           </P>
 
           <Sub>DNS & TLS</Sub>
@@ -1178,10 +1544,11 @@ NEIGHBORHOOD-WIDE (community area name):
 
           <Sub>CI/CD Pipeline</Sub>
           <P>
-            GitHub Actions workflow on push to <Mono>main</Mono>: runs all 480 backend tests, TypeScript type
-            check, and frontend build. On success, SSHs into the production server, pulls the latest code,
-            and rebuilds Docker containers. Claude Code GitHub App provides AI code review on PR
-            open/synchronize events.
+            GitHub Actions workflow on push to <Mono>main</Mono>: runs the backend test suite (~599 unit tests;
+            56 real-API integration tests are excluded), the frontend vitest suite, the TypeScript type check, and
+            the frontend build. On success, SSHs into the production server, pulls the latest code, and rebuilds
+            Docker containers — so a push to <Mono>main</Mono> is a deploy. Claude Code GitHub App provides AI code
+            review on PR open/synchronize events.
           </P>
 
           <Sub>Monitoring & Reliability</Sub>
@@ -1203,7 +1570,9 @@ NEIGHBORHOOD-WIDE (community area name):
             headers={["Issue", "Root Cause", "Fix"]}
             rows={[
               ["OOM kills", "10+ concurrent retrieval tasks + ML model loading", "Semaphore(4) concurrency limit + blocking ML preload at startup"],
-              ["Reranker crashes", "bge-reranker-v2-m3 (~1.3GB) exceeds 4GB RAM", "Disabled via RERANKER_ENABLED=false; falls back to dense+keyword"],
+              ["/api/report 504s", "Reranker hung extract_zoning_standards (~40s/search × 5 parallel) past the nginx ceiling — diagnosed past a false OOM lead", "RERANKER_ENABLED=false + report decoupled via a precomputed zoning cache; dedicated nginx 180s timeout on /api/report"],
+              ["Report worker OOM risk", "WeasyPrint render + 3GB index in one process", "write_pdf() isolated in a ~118MB child process (oom_score_adj, RLIMIT_AS, wall-clock timeout → clean 503)"],
+              ["Silent zoning extraction failure", "Partial-slice retrieval of 30K-char tables + markdown-fenced LLM JSON, both swallowed → silent table fallback", "Precomputed zoning cache (full-section fetch + hybrid merge); strip code fences before json.loads"],
               ["HTTP 413 on saves", "Message blobs with context/plan/mapData exceeded nginx limit", "client_max_body_size 16m + client strips blobs from chat history"],
               ["CSP blocking", "Google avatars, Sentry, Cloudflare scripts blocked", "Expanded CSP connect-src/img-src/script-src directives"],
               ["Auth race condition", "Conversation load fired before auth resolved", "Gated init on !authLoading flag"],
@@ -1217,20 +1586,24 @@ NEIGHBORHOOD-WIDE (community area name):
 
           <Sub>State Machine</Sub>
           <P>
-            <Mono>App.tsx</Mono> implements a dual-mode UI: splash (landing page) and workspace (chat + sidebar).
-            Activation: <Mono>{"active = messages.length > 0 || streaming"}</Mono>. Hard cut between modes
-            with opacity transition. First user message auto-creates a conversation and routes to <Mono>/c/:id</Mono>.
+            <Mono>App.tsx</Mono> implements a dual-mode UI: splash (the address-first homepage) and workspace (chat +
+            sidebar). The homepage hero (<Mono>HeroEntrance</Mono>) leads with a single address input that opens{" "}
+            <Mono>/scorecard?address=</Mono> — the code-research chat (the "librarian") is a quiet secondary entrance,
+            keeping the front door pointed at the feasibility product. Workspace
+            activation: <Mono>{"active = messages.length > 0 || streaming"}</Mono>, a hard cut with an opacity
+            transition. The first user message auto-creates a conversation and routes to <Mono>/c/:id</Mono>.
           </P>
 
           <Sub>URL Routing</Sub>
           <P>
-            <Mono>react-router-dom</Mono> with five routes: <Mono>/</Mono> (splash),{" "}
-            <Mono>/c/:id</Mono> (conversation), <Mono>/s/:shareToken</Mono> (shared read-only
-            view), <Mono>/admin</Mono> (dashboard, admin-only via <Mono>ProtectedRoute</Mono>),
-            and <Mono>/about</Mono> (this page).
-            Conversations are bookmarkable and work with browser back/forward.
-            A <Mono>useConversationRouter</Mono> hook syncs <Mono>conversationId</Mono> state with the URL
-            bidirectionally. Direct URL access loads the conversation from the API; invalid URLs redirect to <Mono>/</Mono>.
+            <Mono>react-router-dom</Mono> routes: <Mono>/</Mono> (address-first splash),{" "}
+            <Mono>/c/:id</Mono> (conversation), <Mono>/s/:shareToken</Mono> (shared read-only view),{" "}
+            <Mono>/scorecard</Mono> (parcel Scorecard, non-AI), <Mono>/discovery</Mono> (Property Discovery
+            workbench), <Mono>/pricing</Mono> (Free vs Pro), <Mono>/admin</Mono> (dashboard, admin-only
+            via <Mono>ProtectedRoute</Mono>), and <Mono>/about</Mono> (this page). <Mono>/explore</Mono> was retired —
+            it now redirects to <Mono>/discovery</Mono>. Conversations and parcels are bookmarkable and work with
+            browser back/forward. A <Mono>useConversationRouter</Mono> hook syncs <Mono>conversationId</Mono> with the
+            URL bidirectionally; invalid conversation URLs redirect to <Mono>/</Mono>.
           </P>
 
           <Sub>Per-Message State Switching</Sub>
@@ -1279,10 +1652,57 @@ NEIGHBORHOOD-WIDE (community area name):
             padding adjusts from <Mono>px-6</Mono> to <Mono>px-3</Mono>.
           </P>
 
+          {/* ── Design System ── */}
+          <SectionHeading id="design-system">Design System</SectionHeading>
+          <P>
+            As the surface area grew (Scorecard, Report, Discovery, chat, landing), arbitrary <Mono>text-[Npx]</Mono>{" "}
+            sizes, ad-hoc <Mono>white/opacity</Mono> chrome, and off-palette hues had crept in. A unification pass
+            replaced them with a small, role-based token system — the same tokens this page is built on. The goal:
+            decisions are made by <em>picking a token</em>, not inventing a value.
+          </P>
+          <Sub>Type scale</Sub>
+          <P>
+            Ten named steps replace every arbitrary pixel size — <Mono>text-display / stat / section / subtitle /
+            lead / title / body / caption / micro / overline</Mono>. Each bakes in size, line-height, and weight, so
+            you pick the step rather than overriding weight per use.
+          </P>
+          <Sub>One neutral ramp</Sub>
+          <P>
+            A single neutral system (bg <Mono>#0d0d0d</Mono> → surface → elevated → hover, with subtle/regular/strong
+            borders, and primary/secondary/muted text) retired the parallel <Mono>white/opacity</Mono> chrome fork and
+            the one-off <Mono>bubble/drawer/tooltip</Mono> tokens. The accent is a single warm
+            terracotta (<Mono>#c96442</Mono>) with hover and muted variants.
+          </P>
+          <Sub>Radius by role</Sub>
+          <P>
+            Radius encodes role rather than taste: card/panel/modal <Mono>rounded-xl</Mono>, control/input/button{" "}
+            <Mono>rounded-lg</Mono>, chip/badge <Mono>rounded-md</Mono>, inline code <Mono>rounded</Mono>, and
+            avatar/dot/pill <Mono>rounded-full</Mono> (<Mono>2xl</Mono> reserved, by intent, for chat bubbles, the
+            composer, and Pricing cards).
+          </P>
+          <Sub>Fonts</Sub>
+          <P>
+            Three families, each scoped: <Accent>Inter</Accent> for body/UI, <Accent>Space Grotesk</Accent> for display
+            (scoped to <Mono>.text-display</Mono> / <Mono>.text-section</Mono> headings only), and{" "}
+            <Accent>IBM Plex Mono</Accent> for PINs, code, and data.
+          </P>
+          <Sub>Primitives &amp; color discipline</Sub>
+          <P>
+            Three shared primitives in <Mono>src/components/ui/</Mono> — <Mono>Card</Mono>, <Mono>Chip</Mono>,{" "}
+            <Mono>Modal</Mono> — replace hand-rolled card/chip/dialog chrome. The §6 color rule keeps chrome to{" "}
+            <Accent>accent + neutral only</Accent>; hue is reserved for genuine state
+            (<Mono>positive</Mono>=emerald, <Mono>negative</Mono>=rose, <Mono>warning</Mono>=amber). The deliberate
+            exemptions — text over photos, and functional data encoding (map colors, the Discovery upside ramp, data
+            pills, CTA/score colors) — are where color carries real meaning rather than decoration.
+          </P>
+
           {/* ── 20. Testing ── */}
           <SectionHeading id="testing">Testing</SectionHeading>
           <P>
-            480 tests across 40 test files. All passing. Frontend: <Mono>tsc</Mono> build clean, <Mono>npm run build</Mono> produces
+            ~655 backend tests (599 unit + 56 real-API integration). The everyday baseline is{" "}
+            <Mono>pytest -m "not integration"</Mono> — the integration tests hit live external APIs and fail on
+            network/GIS flakiness, not code. The frontend adds a <Mono>vitest</Mono> suite (~51, covering the Property
+            Discovery compiler/selectors), a clean <Mono>tsc</Mono> build, and a <Mono>npm run build</Mono> producing
             ~322KB JS + 16KB CSS.
           </P>
           <Table
@@ -1298,6 +1718,8 @@ NEIGHBORHOOD-WIDE (community area name):
               ["Auth & Sharing", "auth, share", "OAuth flow, JWT token rotation, CSRF validation, share token CRUD"],
               ["Persistence", "db, conversation, models", "Schema migration, conversation CRUD, message saving, JSON blobs"],
               ["API & Integration", "api, integration, map_data, analytics", "SSE endpoint, end-to-end flow, row fetching, MoM trends"],
+              ["Report & Payments", "report_tier0/1, report_render, zoning_extract, resolve_location", "Render isolation, zoning extraction, address→PIN precedence, Stripe entitlement"],
+              ["Discovery", "discovery (compile/evaluate/registry) + vitest", "CQS compile, predicate evaluation, index build, FE compiler/selectors"],
             ]}
           />
           <P>
@@ -1337,6 +1759,15 @@ NEIGHBORHOOD-WIDE (community area name):
               ["ML preload at startup", "Lazy-load on first request", "First user doesn't wait 8s for model download; OOM caught at deploy time, not at runtime", "Slower container startup (~30s); startup fails if model missing"],
               ["CPU-only PyTorch", "Full PyTorch with CUDA", "Production server is x86 CPU; avoids shipping ~2GB of unused CUDA libraries", "No GPU acceleration; inference is slower (acceptable for query volume)"],
               ["Conversation sharing via token", "Snapshot duplication, public URLs", "No data duplication; CASCADE delete auto-revokes; owner retains control", "Share breaks if conversation is deleted; no offline/archived shares"],
+              ["Scorecard as free zero-LLM hook", "Gate everything behind chat/auth", "Instant zero-cost facts earn trust before asking for an account or payment; pushes users to Scorecard first, chat second", "Some users never reach the paid report"],
+              ["$25 per-unit report wedge", "Subscription-only", "A $25 per-parcel decision is a far lower bar than $99/mo; a tangible PDF that markets itself", "Lower ARPU than pure subscription; per-report compute cost"],
+              ["Precomputed zoning cache", "On-demand reranked AI extraction", "Reranker too slow on prod vCPUs; deterministic full-section fetch + hybrid merge is faster AND more accurate (57/59 high-confidence)", "Cache must be rebuilt when Title 17 changes; setbacks uncross-validated"],
+              ["SelectedParcel single write site", "Resolve the parcel ad hoc per surface", "Guarantees the pin shown is the pin queried, purchased, and reported on", "More plumbing; every handoff must thread identity"],
+              ["Address→PIN via Address Points", "Census geocode + nearest centroid", "Authoritative resolution to the exact parcel — typed addresses were ~77% wrong while GIS is down", "One more Socrata dataset; coverage gaps degrade to 'approximate'"],
+              ["Stripe hosted Checkout", "Self-hosted card form", "No PCI surface; one integration covers both one-time and subscription", "Redirect flow; Stripe lock-in"],
+              ["Off-box, memory-bounded index build", "Build on the live serving process", "Full-city index build (~3GB) doesn't compete with the server for RAM; bounded by per-CA ingest + streaming finalize", "Extra deploy step; index is stale between monthly rebuilds"],
+              ["Subprocess PDF render", "Render in the request process", "Isolates WeasyPrint memory — an OOM kills the child, not the worker", "IPC + temp-file handoff overhead"],
+              ["Role-based design tokens", "Ad-hoc Tailwind classes", "Picking a type/neutral/radius token prevents drift across a growing surface area", "One-time migration cost"],
             ]}
           />
 
@@ -1367,8 +1798,9 @@ NEIGHBORHOOD-WIDE (community area name):
 
           <div className="mt-16 pt-8 border-t border-dark-border/50">
             <p className="text-text-muted text-body">
-              480 tests passing. 14,535 chunks indexed. 18+ live datasets. 4 domain orchestrators.
-              Built with FastAPI, Claude, Qdrant, React, Mapbox, and deck.gl.
+              ~655 backend tests. 14,535 code chunks indexed. ~949k parcels in the discovery index.
+              25+ live datasets. 4 domain orchestrators. Scorecard + cited chat + $25 PDF report + discovery.
+              Built with FastAPI, Claude, Qdrant, React, Mapbox, deck.gl, WeasyPrint, and Stripe.
               Live at urbanlayerchicago.com.
             </p>
           </div>
