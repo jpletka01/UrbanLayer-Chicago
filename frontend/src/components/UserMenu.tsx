@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { AuthUser } from "../lib/api";
 import { createBillingPortal } from "../lib/api";
+import { Chip } from "./ui/Chip";
 
 interface UserMenuProps {
   user: AuthUser;
@@ -52,7 +53,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="w-7 h-7 rounded-full bg-accent/80 flex items-center justify-center text-xs font-medium text-white">
+          <div className="w-7 h-7 rounded-full bg-accent/80 flex items-center justify-center text-caption font-medium text-text-on-accent">
             {initial}
           </div>
         )}
@@ -62,19 +63,15 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
         <div className="absolute right-0 top-full mt-2 w-56 bg-dark-elevated border border-dark-border rounded-xl shadow-lg py-2 z-50">
           <div className="px-4 py-2 border-b border-dark-border">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-text-primary truncate">{user.name}</p>
-              {isPro && (
-                <span className="text-[10px] font-medium bg-accent/20 text-accent px-1.5 py-0.5 rounded">
-                  Pro
-                </span>
-              )}
+              <p className="text-body font-medium text-text-primary truncate">{user.name}</p>
+              {isPro && <Chip tone="accent" size="sm">Pro</Chip>}
             </div>
-            <p className="text-xs text-text-muted truncate">{user.email}</p>
+            <p className="text-caption text-text-muted truncate">{user.email}</p>
           </div>
           {isPro ? (
             <button
               onClick={handleManageSubscription}
-              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-dark-surface hover:text-text-primary transition-colors"
+              className="w-full text-left px-4 py-2 text-body text-text-secondary hover:bg-dark-hover hover:text-text-primary transition-colors"
             >
               {t("manageSubscription")}
             </button>
@@ -82,7 +79,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             <Link
               to="/pricing"
               onClick={() => setOpen(false)}
-              className="block w-full text-left px-4 py-2 text-sm text-accent hover:bg-dark-surface transition-colors"
+              className="block w-full text-left px-4 py-2 text-body text-accent hover:bg-dark-hover transition-colors"
             >
               {t("upgradeToPro")}
             </Link>
@@ -92,7 +89,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
               setOpen(false);
               await onSignOut();
             }}
-            className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-dark-surface hover:text-text-primary transition-colors"
+            className="w-full text-left px-4 py-2 text-body text-text-secondary hover:bg-dark-hover hover:text-text-primary transition-colors"
           >
             {t("signOut")}
           </button>
