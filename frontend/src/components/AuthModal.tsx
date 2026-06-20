@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Modal } from "./ui/Modal";
 
 interface AuthModalProps {
   onSignIn: () => void;
@@ -8,23 +9,18 @@ interface AuthModalProps {
 export default function AuthModal({ onSignIn, onClose }: AuthModalProps) {
   const { t } = useTranslation("common");
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-sm mx-4 bg-dark-surface border border-dark-border rounded-2xl p-8 shadow-2xl">
-        <h2 className="text-lg font-semibold text-text-primary text-center mb-2">
+    <Modal onClose={onClose} size="sm">
+      <div>
+        <h2 className="text-subtitle text-text-primary text-center mb-2">
           {t("signInTitle")}
         </h2>
-        <p className="text-sm text-text-secondary text-center mb-6">
+        <p className="text-body text-text-secondary text-center mb-6">
           {t("signInDescription")} {t("signInFreeNote")}.
         </p>
 
         <button
           onClick={onSignIn}
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 rounded-lg py-2.5 px-4 font-medium text-sm hover:bg-gray-100 transition-colors"
+          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 rounded-lg py-2.5 px-4 text-title hover:bg-gray-100 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -49,11 +45,11 @@ export default function AuthModal({ onSignIn, onClose }: AuthModalProps) {
 
         <button
           onClick={onClose}
-          className="w-full mt-3 text-xs text-text-muted hover:text-text-secondary transition-colors text-center py-2"
+          className="w-full mt-3 text-caption text-text-muted hover:text-text-secondary transition-colors text-center py-2"
         >
           {t("continueBrowsing")}
         </button>
       </div>
-    </div>
+    </Modal>
   );
 }

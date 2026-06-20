@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createShareLink, getShareStatus, revokeShareLink } from "../lib/api";
+import { Modal } from "./ui/Modal";
 
 interface ShareModalProps {
   conversationId: string;
@@ -56,83 +57,69 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
   }, [conversationId]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-md mx-4 bg-dark-surface border border-dark-border rounded-2xl p-6 shadow-2xl">
-        <h2 className="text-lg font-semibold text-text-primary mb-1">
-          {t("shareTitle")}
-        </h2>
-        <p className="text-sm text-text-secondary mb-5">
-          {t("shareDescription")}
-        </p>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-6">
-            <div className="w-5 h-5 border-2 border-text-muted border-t-accent rounded-full animate-spin" />
-            <span className="ml-3 text-sm text-text-muted">{t("creatingLink")}</span>
+    <Modal onClose={onClose} size="md" showClose={false} title={t("shareTitle")} description={t("shareDescription")}>
+      {loading ? (
+        <div className="flex items-center justify-center py-6">
+          <div className="w-5 h-5 border-2 border-text-muted border-t-accent rounded-full animate-spin" />
+          <span className="ml-3 text-body text-text-muted">{t("creatingLink")}</span>
+        </div>
+      ) : url ? (
+        <>
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="text"
+              readOnly
+              value={url}
+              className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-body text-text-primary font-mono truncate"
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+            <button
+              onClick={handleCopy}
+              className="shrink-0 px-4 py-2 text-title rounded-lg transition-colors bg-accent text-text-on-accent hover:bg-accent-hover"
+            >
+              {copied ? t("copied") : t("copy")}
+            </button>
           </div>
-        ) : url ? (
-          <>
-            <div className="flex items-center gap-2 mb-4">
-              <input
-                type="text"
-                readOnly
-                value={url}
-                className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-text-primary font-mono truncate"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
-              <button
-                onClick={handleCopy}
-                className="shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-accent text-white hover:bg-accent/90"
-              >
-                {copied ? t("copied") : t("copy")}
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleRevoke}
-                disabled={revoking}
-                className="text-xs text-text-muted hover:text-rose-400 transition-colors disabled:opacity-50"
-              >
-                {revoking ? t("revoking") : t("revokeLink")}
-              </button>
-              <button
-                onClick={onClose}
-                className="px-4 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
-              >
-                {t("done")}
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-sm text-text-muted mb-4">{t("linkRevoked")}</p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={async () => {
-                  setLoading(true);
-                  const result = await createShareLink(conversationId);
-                  if (result) setUrl(result.url);
-                  setLoading(false);
-                }}
-                className="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/90 transition-colors"
-              >
-                {t("createNewLink")}
-              </button>
-              <button
-                onClick={onClose}
-                className="px-4 py-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
-              >
-                {t("close")}
-              </button>
-            </div>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleRevoke}
+              disabled={revoking}
+              className="text-caption text-text-muted hover:text-rose-400 transition-colors disabled:opacity-50"
+            >
+              {revoking ? t("revoking") : t("revokeLink")}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 text-body text-text-secondary hover:text-text-primary transition-colors"
+            >
+              {t("done")}
+            </button>
           </div>
-        )}
-      </div>
-    </div>
+        </>
+      ) : (
+        <div className="text-center py-4">
+          <p className="text-body text-text-muted mb-4">{t("linkRevoked")}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                setLoading(true);
+                const result = await createShareLink(conversationId);
+                if (result) setUrl(result.url);
+                setLoading(false);
+              }}
+              className="px-4 py-1.5 text-title rounded-lg bg-accent text-text-on-accent hover:bg-accent-hover transition-colors"
+            >
+              {t("createNewLink")}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 text-body text-text-secondary hover:text-text-primary transition-colors"
+            >
+              {t("close")}
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
