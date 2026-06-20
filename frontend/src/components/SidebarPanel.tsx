@@ -159,12 +159,12 @@ export function SidebarPanel({
           </svg>
 
           {showDataBadge && dataCount > 0 && (
-            <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent">
+            <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-micro font-semibold flex items-center justify-center bg-accent/20 text-accent">
               {dataCount > 9 ? "9+" : dataCount}
             </span>
           )}
           {showSourcesBadge && srcCount > 0 && (
-            <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent">
+            <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-micro font-semibold flex items-center justify-center bg-accent/20 text-accent">
               {srcCount > 9 ? "9+" : srcCount}
             </span>
           )}
@@ -172,7 +172,7 @@ export function SidebarPanel({
 
         {/* vertical label */}
         <span
-          className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted mt-6"
+          className="text-micro font-semibold uppercase tracking-[0.2em] text-text-muted mt-6"
           style={{ writingMode: "vertical-lr" }}
         >
           {t("sources")}

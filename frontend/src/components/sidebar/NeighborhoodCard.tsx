@@ -42,7 +42,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center">
       <div className="text-sm font-semibold text-text-primary">{value}</div>
-      <div className="text-[10px] text-text-muted mt-0.5">{label}</div>
+      <div className="text-micro text-text-muted mt-0.5">{label}</div>
     </div>
   );
 }
@@ -51,8 +51,8 @@ function KV({ label, value }: { label: string; value: string | null | undefined 
   if (!value || value === "—") return null;
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px]">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono text-right">{value}</span>
+      <span className="text-text-muted text-micro">{label}</span>
+      <span className="text-text-primary text-micro font-mono text-right">{value}</span>
     </div>
   );
 }
@@ -69,8 +69,8 @@ function ScoreBar({ score, description, label }: { score: number; description: s
   return (
     <div className="space-y-0.5">
       <div className="flex justify-between items-baseline">
-        <span className="text-[10px] text-text-muted">{label}</span>
-        <span className="text-[11px] text-text-primary font-mono">{score}</span>
+        <span className="text-micro text-text-muted">{label}</span>
+        <span className="text-micro text-text-primary font-mono">{score}</span>
       </div>
       <div className="h-1.5 bg-dark-elevated rounded-full overflow-hidden">
         <div
@@ -79,7 +79,7 @@ function ScoreBar({ score, description, label }: { score: number; description: s
         />
       </div>
       {description && (
-        <p className="text-[10px] text-text-muted">{description}</p>
+        <p className="text-micro text-text-muted">{description}</p>
       )}
     </div>
   );
@@ -107,7 +107,7 @@ function DistSection({ title, bars, defaultOpen = false }: { title: string; bars
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <span className="text-[10px] text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
+        <span className="text-micro text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
           {title}
         </span>
       </button>
@@ -146,7 +146,7 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <span className="text-[10px] text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
+        <span className="text-micro text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
           {t("neighborhood.tractDetail", { tract: tractNum })}
         </span>
       </button>
@@ -156,9 +156,9 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
         <StatBox label={t("neighborhood.population")} value={fmtNum(ct.population)} />
         <div className="text-center">
           <div className="text-sm font-semibold text-text-primary">{fmtDollar(ct.median_household_income)}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">{t("neighborhood.medIncome")}</div>
+          <div className="text-micro text-text-muted mt-0.5">{t("neighborhood.medIncome")}</div>
           {incomeContext && (
-            <div className="text-[9px] text-text-muted">{incomeContext}</div>
+            <div className="text-micro text-text-muted">{incomeContext}</div>
           )}
         </div>
         <StatBox label={t("neighborhood.poverty")} value={fmtPct(ct.poverty_rate)} />
@@ -240,14 +240,14 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
 
         {transit && (transit.nearest_cta_rail || transit.nearest_metra) && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("neighborhood.transit")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("neighborhood.transit")}</span>
 
             {transit.nearest_cta_rail && (
               <div className="rounded-lg bg-dark-elevated/60 px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[11px] text-text-primary">{transit.nearest_cta_rail}</span>
+                  <span className="text-micro text-text-primary">{transit.nearest_cta_rail}</span>
                   {transit.cta_rail_distance_mi != null && (
-                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                    <span className="text-micro text-text-muted font-mono shrink-0">
                       {transit.cta_rail_distance_mi.toFixed(2)} mi
                     </span>
                   )}
@@ -257,7 +257,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
                     {transit.cta_lines.map(line => (
                       <span
                         key={line}
-                        className="rounded px-1.5 py-0.5 text-[9px] font-medium"
+                        className="rounded px-1.5 py-0.5 text-micro font-medium"
                         style={{
                           backgroundColor: (CTA_LINE_COLORS[line] ?? "#666") + "25",
                           color: CTA_LINE_COLORS[line] ?? "#999",
@@ -275,22 +275,22 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
             {transit.nearest_metra && (
               <div className="rounded-lg bg-dark-elevated/60 px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[11px] text-text-primary">{transit.nearest_metra}</span>
+                  <span className="text-micro text-text-primary">{transit.nearest_metra}</span>
                   {transit.metra_distance_mi != null && (
-                    <span className="text-[10px] text-text-muted font-mono shrink-0">
+                    <span className="text-micro text-text-muted font-mono shrink-0">
                       {transit.metra_distance_mi.toFixed(2)} mi
                     </span>
                   )}
                 </div>
                 {transit.metra_line && (
-                  <p className="text-[10px] text-text-muted mt-0.5">{transit.metra_line}</p>
+                  <p className="text-micro text-text-muted mt-0.5">{transit.metra_line}</p>
                 )}
               </div>
             )}
 
             {transit.tod_eligible && (
               <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400
-                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-[10px]">
+                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-micro">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 {t("neighborhood.todEligible")}
                 {transit.tod_type && <span className="text-emerald-400/70">({transit.tod_type})</span>}
@@ -301,7 +301,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
 
         {data.walkscore && (data.walkscore.walk_score != null || data.walkscore.transit_score != null || data.walkscore.bike_score != null) && (
           <div className="space-y-2">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("neighborhood.walkScore")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("neighborhood.walkScore")}</span>
             {data.walkscore.walk_score != null && (
               <ScoreBar score={data.walkscore.walk_score} description={translateWsDesc(t, "walkDescriptions", data.walkscore.walk_description)} label={t("neighborhood.walk")} />
             )}
@@ -315,7 +315,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
               href={data.walkscore.ws_link || "https://www.walkscore.com"}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[9px] text-text-muted hover:text-text-secondary transition-colors underline"
+              className="text-micro text-text-muted hover:text-text-secondary transition-colors underline"
             >
               {t("neighborhood.walkScoreTM")}
             </a>
@@ -323,7 +323,7 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
         )}
 
         {!demo && !transit && !data.walkscore && (
-          <p className="text-[11px] text-text-muted">{t("neighborhood.noData")}</p>
+          <p className="text-micro text-text-muted">{t("neighborhood.noData")}</p>
         )}
       </div>
     </CollapsibleCard>

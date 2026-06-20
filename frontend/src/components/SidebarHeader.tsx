@@ -47,7 +47,7 @@ export function SidebarHeader({
           >
             {t("data")}
             {showDataBadge && dataCount > 0 && (
-              <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent transition-all duration-200">
+              <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-micro font-semibold flex items-center justify-center bg-accent/20 text-accent transition-all duration-200">
                 {dataCount > 9 ? "9+" : dataCount}
               </span>
             )}
@@ -63,7 +63,7 @@ export function SidebarHeader({
           >
             {t("sources")}
             {showSourcesBadge && sourceCount > 0 && (
-              <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center bg-accent/20 text-accent transition-all duration-200">
+              <span className="min-w-[1.25rem] h-5 px-1 rounded-full text-micro font-semibold flex items-center justify-center bg-accent/20 text-accent transition-all duration-200">
                 {sourceCount > 9 ? "9+" : sourceCount}
               </span>
             )}

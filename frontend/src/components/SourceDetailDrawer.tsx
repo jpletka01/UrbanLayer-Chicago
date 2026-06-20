@@ -125,7 +125,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
 
                   {chunk.cross_references.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-[11px] uppercase tracking-wider text-text-muted mb-1.5">
+                      <p className="text-micro uppercase tracking-wider text-text-muted mb-1.5">
                         {t("relatedSections")}
                       </p>
                       <div className="flex flex-wrap gap-1.5">
