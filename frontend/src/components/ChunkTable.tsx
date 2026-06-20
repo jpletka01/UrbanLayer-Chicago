@@ -12,7 +12,7 @@ function EntryRow({ entry, colCount }: { entry: ParsedTableEntry; colCount: numb
         <tr>
           <td
             colSpan={colCount}
-            className="px-3 py-2 text-xs font-semibold text-accent bg-accent/8 border-t border-dark-border"
+            className="px-3 py-2 text-caption font-semibold text-accent bg-accent/8 border-t border-dark-border"
           >
             {entry.label}
           </td>
@@ -23,7 +23,7 @@ function EntryRow({ entry, colCount }: { entry: ParsedTableEntry; colCount: numb
         <tr>
           <td
             colSpan={colCount}
-            className="px-3 py-1.5 text-xs text-text-secondary bg-dark-elevated/40 border-t border-dark-border/50 italic"
+            className="px-3 py-1.5 text-caption text-text-secondary bg-dark-elevated/40 border-t border-dark-border/50 italic"
           >
             {entry.value}
           </td>
@@ -35,7 +35,7 @@ function EntryRow({ entry, colCount }: { entry: ParsedTableEntry; colCount: numb
           {entry.cells.map((cell, i) => (
             <td
               key={i}
-              className="px-3 py-1.5 text-xs text-text-secondary border-t border-dark-border/50 align-top"
+              className="px-3 py-1.5 text-caption text-text-secondary border-t border-dark-border/50 align-top"
             >
               {cell || <span className="text-text-muted">—</span>}
             </td>
@@ -44,7 +44,7 @@ function EntryRow({ entry, colCount }: { entry: ParsedTableEntry; colCount: numb
             Array.from({ length: colCount - entry.cells.length }).map((_, i) => (
               <td
                 key={`pad-${i}`}
-                className="px-3 py-1.5 text-xs border-t border-dark-border/50"
+                className="px-3 py-1.5 text-caption border-t border-dark-border/50"
               />
             ))}
         </tr>
@@ -64,7 +64,7 @@ export function ChunkTable({ table }: Props) {
               {table.headers.map((h, i) => (
                 <th
                   key={i}
-                  className="px-3 py-2 text-[11px] font-semibold text-text-primary uppercase tracking-wider whitespace-nowrap"
+                  className="px-3 py-2 text-micro font-semibold text-text-primary uppercase tracking-wider whitespace-nowrap"
                   title={h}
                 >
                   {shortenHeader(h)}

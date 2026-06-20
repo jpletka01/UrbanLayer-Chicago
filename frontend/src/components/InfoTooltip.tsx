@@ -108,20 +108,19 @@ const Popover = forwardRef<HTMLDivElement, PopoverProps>(
         ref={combinedRef}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        className="fixed z-[60] rounded-lg border border-[#444] shadow-[0_4px_24px_rgba(0,0,0,0.7)]"
+        className="fixed z-[60] rounded-lg border border-dark-border-strong bg-dark-elevated shadow-[0_4px_24px_rgba(0,0,0,0.7)]"
         style={{
-          backgroundColor: "#333",
           maxWidth: 260,
           ...(pos ? { left: pos.left, top: pos.top } : { opacity: 0, pointerEvents: "none" as const }),
         }}
       >
         <div className="px-3 py-2.5 space-y-1.5">
-          <div className="text-[11px] font-medium text-text-secondary">{info.label}</div>
-          <div className="text-[10px] text-text-muted leading-relaxed">{info.description}</div>
+          <div className="text-micro font-medium text-text-secondary">{info.label}</div>
+          <div className="text-micro text-text-muted leading-relaxed">{info.description}</div>
           {info.bullets.length > 0 && (
             <ul className="space-y-0.5 pt-0.5">
               {info.bullets.map((b) => (
-                <li key={b} className="flex items-start gap-1.5 text-[10px] text-text-muted leading-relaxed">
+                <li key={b} className="flex items-start gap-1.5 text-micro text-text-muted leading-relaxed">
                   <span className="w-1 h-1 rounded-full bg-text-muted/60 shrink-0 mt-[5px]" />
                   {b}
                 </li>

@@ -6,6 +6,7 @@ import type { CodeChunk } from "../lib/types";
 import { useCopyButton } from "../lib/useCopyButton";
 import { ChunkText } from "./ChunkText";
 import { CrossRefPill } from "./CrossRefPill";
+import { Chip } from "./ui/Chip";
 
 interface Props {
   chunk: CodeChunk;
@@ -20,19 +21,12 @@ interface Props {
 function ScorePill({ score }: { score: number }) {
   const { t } = useTranslation("sidebar");
   const pct = Math.round(score * 100);
-  const tone =
-    pct >= 85
-      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-      : pct >= 70
-      ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
-      : "bg-dark-elevated text-text-muted border-dark-border";
+  // Match-quality is genuine state → positive / warning / neutral (Rule A).
+  const tone = pct >= 85 ? "positive" : pct >= 70 ? "warning" : "neutral";
   return (
-    <span
-      className={`px-1.5 py-0.5 rounded text-[10px] font-medium border tabular-nums ${tone}`}
-      title={t("semanticMatchScore")}
-    >
+    <Chip tone={tone} size="sm" title={t("semanticMatchScore")} className="tabular-nums">
       {pct}%
-    </span>
+    </Chip>
   );
 }
 
@@ -54,20 +48,20 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
       <div
         ref={ref}
         onClick={onToggleExpand}
-        className={`rounded-xl bg-dark-surface/80 border p-3.5 cursor-pointer
-                    hover:bg-dark-surface transition-all group
+        className={`rounded-xl bg-dark-surface border p-3.5 cursor-pointer
+                    hover:bg-dark-hover transition-all group
                     ${flashing ? "animate-flash" : ""}
                     ${highlighted
                       ? "border-accent/50 ring-1 ring-accent/30"
-                      : "border-dark-border hover:border-dark-border/80"
+                      : "border-dark-border hover:border-dark-border-strong"
                     }`}
       >
         {/* Header row: rank · section pill · score · copy */}
         <div className="flex items-center gap-2.5">
-          <span className="w-6 h-6 rounded-full bg-accent text-dark-bg text-xs font-bold flex items-center justify-center shrink-0 tabular-nums">
+          <span className="w-6 h-6 rounded-full bg-accent text-dark-bg text-caption font-bold flex items-center justify-center shrink-0 tabular-nums">
             {index + 1}
           </span>
-          <span className="px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-xs font-mono font-medium border border-accent/20 shrink-0">
+          <span className="px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-caption font-mono font-medium border border-accent/20 shrink-0">
             § {chunk.section}
           </span>
           <div className="ml-auto flex items-center gap-2 shrink-0">
@@ -93,14 +87,14 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
 
         {/* Title */}
         {chunk.section_title && (
-          <h4 className="mt-2 text-sm font-medium text-text-primary leading-snug">
+          <h4 className="mt-2 text-body font-medium text-text-primary leading-snug">
             {chunk.section_title}
           </h4>
         )}
 
         {/* Preview (collapsed) — plain prose, not a dense mono block */}
         {!expanded && (
-          <p className="mt-1.5 text-xs text-text-muted leading-relaxed line-clamp-2">
+          <p className="mt-1.5 text-caption text-text-muted leading-relaxed line-clamp-2">
             {preview}
           </p>
         )}
@@ -117,12 +111,12 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
               <div className="space-y-3 pt-3">
                 <ChunkText
                   text={chunk.text}
-                  className="text-[13px] text-text-secondary font-mono bg-dark-bg p-3 rounded-lg border border-dark-border leading-relaxed"
+                  className="text-caption text-text-secondary font-mono bg-dark-bg p-3 rounded-lg border border-dark-border leading-relaxed"
                 />
 
                 {chunk.cross_references.length > 0 && (
                   <div>
-                    <p className="text-[11px] uppercase tracking-wider text-text-muted mb-1.5">
+                    <p className="text-overline uppercase text-text-muted mb-1.5">
                       {t("relatedSections")}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -130,19 +124,14 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
                         isResolvableSection(xref) ? (
                           <CrossRefPill key={i} sectionId={xref.trim()} onClick={onCrossRefClick} />
                         ) : (
-                          <span
-                            key={i}
-                            className="text-xs font-mono text-text-muted bg-dark-elevated px-2 py-0.5 rounded border border-dark-border"
-                          >
-                            {xref}
-                          </span>
+                          <Chip key={i} tone="neutral" mono size="sm">{xref}</Chip>
                         )
                       )}
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 text-[11px] text-text-muted">
+                <div className="flex items-center gap-2 text-micro text-text-muted">
                   <span>{t("sourceLabel")}</span>
                   <span className="font-mono">{chunk.source_document}</span>
                 </div>
@@ -152,7 +141,7 @@ export const SourceCitation = forwardRef<HTMLDivElement, Props>(
         </AnimatePresence>
 
         {/* Expand / collapse affordance */}
-        <div className="flex items-center gap-1 pt-2 text-[11px] text-accent/70">
+        <div className="flex items-center gap-1 pt-2 text-micro text-accent/70">
           <svg
             className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`}
             fill="none"

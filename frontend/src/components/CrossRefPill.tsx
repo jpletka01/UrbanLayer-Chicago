@@ -44,7 +44,7 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
         }}
         onMouseEnter={handleEnter}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center gap-1 text-xs font-mono text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20 hover:bg-accent/20 hover:border-accent/40 transition-colors"
+        className="inline-flex items-center gap-1 text-caption font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20 hover:bg-accent/20 hover:border-accent/40 transition-colors"
         title={t("crossref.view", { id: sectionId })}
       >
         § {sectionId}
@@ -54,27 +54,27 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
       </button>
       {showTooltip && (
         <Tooltip className="w-64 p-3 rounded-lg shadow-2xl text-left">
-          <div className="text-xs font-mono font-medium text-accent mb-1">§&nbsp;{sectionId}</div>
+          <div className="text-caption font-mono font-medium text-accent mb-1">§&nbsp;{sectionId}</div>
           {preview.status === "loading" && (
-            <div className="text-xs text-text-muted">{t("crossref.loading")}</div>
+            <div className="text-caption text-text-muted">{t("crossref.loading")}</div>
           )}
           {preview.status === "missing" && (
-            <div className="text-xs text-text-muted">{t("crossref.unavailable")}</div>
+            <div className="text-caption text-text-muted">{t("crossref.unavailable")}</div>
           )}
           {preview.status === "ok" && (
             <>
               {preview.chunk.section_title && (
-                <div className="text-xs text-text-secondary mb-1.5 truncate">
+                <div className="text-caption text-text-secondary mb-1.5 truncate">
                   {preview.chunk.section_title}
                 </div>
               )}
               <div
-                className="text-xs text-text-muted leading-relaxed overflow-hidden"
+                className="text-caption text-text-muted leading-relaxed overflow-hidden"
                 style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
               >
                 {previewText}…
               </div>
-              <div className="text-xs text-accent/70 mt-2 flex items-center gap-1">
+              <div className="text-caption text-accent/70 mt-2 flex items-center gap-1">
                 <span>{t("crossref.openSection")}</span>
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />

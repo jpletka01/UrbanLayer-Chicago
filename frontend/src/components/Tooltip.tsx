@@ -39,13 +39,9 @@ export function Tooltip({ className = "", children }: Props) {
       {createPortal(
         <div
           ref={tooltipRef}
-          className={`fixed z-50 rounded-lg border border-[#444]
+          className={`fixed z-50 rounded-lg border border-dark-border-strong bg-dark-elevated
                       shadow-[0_4px_24px_rgba(0,0,0,0.7)] pointer-events-none ${className}`}
-          style={
-            pos
-              ? { left: pos.left, top: pos.top, backgroundColor: "#333" }
-              : { opacity: 0, backgroundColor: "#333" }
-          }
+          style={pos ? { left: pos.left, top: pos.top } : { opacity: 0 }}
         >
           {children}
         </div>,
