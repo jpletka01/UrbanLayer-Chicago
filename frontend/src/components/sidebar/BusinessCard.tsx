@@ -12,8 +12,8 @@ const BriefcaseIcon = (
 function KV({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px] truncate">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono shrink-0">{value}</span>
+      <span className="text-text-muted text-micro truncate">{label}</span>
+      <span className="text-text-primary text-micro font-mono shrink-0">{value}</span>
     </div>
   );
 }
@@ -29,12 +29,12 @@ export function BusinessCard({ data }: { data: BusinessSummary }) {
       <div className="space-y-2.5">
         <div className="text-center py-1">
           <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">{t("business.activeLicenses")}</div>
+          <div className="text-micro text-text-muted mt-0.5">{t("business.activeLicenses")}</div>
         </div>
 
         {licenseTypes.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("business.byLicenseType")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("business.byLicenseType")}</span>
             {licenseTypes.map(([type, count]) => (
               <KV key={type} label={t(`business.licenseTypeLabels.${type}`, { defaultValue: type })} value={String(count)} />
             ))}
@@ -43,9 +43,9 @@ export function BusinessCard({ data }: { data: BusinessSummary }) {
 
         {data.top_activities?.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("business.topActivities")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("business.topActivities")}</span>
             {data.top_activities.map((activity, i) => (
-              <p key={i} className="text-[10px] text-text-muted leading-tight pl-1">
+              <p key={i} className="text-micro text-text-muted leading-tight pl-1">
                 {activity}
               </p>
             ))}
@@ -53,7 +53,7 @@ export function BusinessCard({ data }: { data: BusinessSummary }) {
         )}
 
         {data.capped && (
-          <p className="text-[10px] text-text-muted italic">
+          <p className="text-micro text-text-muted italic">
             {t("business.showingFirst", { count: data.total.toLocaleString() })}
           </p>
         )}

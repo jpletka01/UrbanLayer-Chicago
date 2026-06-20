@@ -12,8 +12,8 @@ const ForkKnifeIcon = (
 function KV({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px] truncate">{label}</span>
-      <span className={`text-[11px] font-mono shrink-0 ${color ?? "text-text-primary"}`}>{value}</span>
+      <span className="text-text-muted text-micro truncate">{label}</span>
+      <span className={`text-micro font-mono shrink-0 ${color ?? "text-text-primary"}`}>{value}</span>
     </div>
   );
 }
@@ -21,9 +21,9 @@ function KV({ label, value, color }: { label: string; value: string; color?: str
 function resultColor(result: string | null): string {
   if (!result) return "text-text-muted";
   const r = result.toLowerCase();
-  if (r === "pass") return "text-green-400";
-  if (r === "fail") return "text-red-400";
-  if (r.includes("conditional") || r.includes("conditions")) return "text-yellow-400";
+  if (r === "pass") return "text-emerald-400";
+  if (r === "fail") return "text-rose-400";
+  if (r.includes("conditional") || r.includes("conditions")) return "text-amber-400";
   return "text-text-secondary";
 }
 
@@ -41,21 +41,21 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
         <div className="flex justify-center gap-4 py-1">
           <div className="text-center">
             <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted mt-0.5">{t("foodInspections.inspections1yr")}</div>
+            <div className="text-micro text-text-muted mt-0.5">{t("foodInspections.inspections1yr")}</div>
           </div>
           {data.fail_rate != null && (
             <div className="text-center">
-              <div className={`text-sm font-semibold ${data.fail_rate > 15 ? "text-red-400" : "text-text-primary"}`}>
+              <div className={`text-sm font-semibold ${data.fail_rate > 15 ? "text-rose-400" : "text-text-primary"}`}>
                 {data.fail_rate}%
               </div>
-              <div className="text-[10px] text-text-muted mt-0.5">{t("foodInspections.failRate")}</div>
+              <div className="text-micro text-text-muted mt-0.5">{t("foodInspections.failRate")}</div>
             </div>
           )}
         </div>
 
         {results.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("foodInspections.byResult")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("foodInspections.byResult")}</span>
             {results.map(([result, count]) => (
               <KV key={result} label={result} value={String(count)} color={resultColor(result)} />
             ))}
@@ -64,7 +64,7 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
 
         {risks.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("foodInspections.byRiskLevel")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("foodInspections.byRiskLevel")}</span>
             {risks.map(([risk, count]) => (
               <KV key={risk} label={risk} value={String(count)} />
             ))}
@@ -73,9 +73,9 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
 
         {data.recent_inspections?.length > 0 && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("foodInspections.recentInspections")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("foodInspections.recentInspections")}</span>
             {data.recent_inspections.slice(0, 5).map((insp, i) => (
-              <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border">
+              <div key={i} className="text-micro leading-tight pl-1 border-l border-dark-border">
                 <p className="text-text-primary">{insp.name}</p>
                 <div className="flex gap-2 text-text-muted">
                   {insp.date && <span>{insp.date}</span>}

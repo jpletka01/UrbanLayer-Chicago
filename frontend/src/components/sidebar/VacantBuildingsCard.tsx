@@ -12,8 +12,8 @@ const BuildingIcon = (
 function KV({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-baseline gap-2">
-      <span className="text-text-muted text-[11px] truncate">{label}</span>
-      <span className="text-text-primary text-[11px] font-mono shrink-0">{value}</span>
+      <span className="text-text-muted text-micro truncate">{label}</span>
+      <span className="text-text-primary text-micro font-mono shrink-0">{value}</span>
     </div>
   );
 }
@@ -29,12 +29,12 @@ export function VacantBuildingsCard({ data }: { data: VacantBuildingSummary }) {
       <div className="space-y-2.5">
         <div className="text-center py-1">
           <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">{t("vacantBuildings.reportedCases")}</div>
+          <div className="text-micro text-text-muted mt-0.5">{t("vacantBuildings.reportedCases")}</div>
         </div>
 
         {depts.length > 0 && (
           <div className="space-y-0.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("vacantBuildings.byDepartment")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("vacantBuildings.byDepartment")}</span>
             {depts.map(([dept, count]) => (
               <KV key={dept} label={dept} value={String(count)} />
             ))}
@@ -43,9 +43,9 @@ export function VacantBuildingsCard({ data }: { data: VacantBuildingSummary }) {
 
         {data.recent_reports?.length > 0 && (
           <div className="space-y-1.5">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("vacantBuildings.recentReports")}</span>
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("vacantBuildings.recentReports")}</span>
             {data.recent_reports.slice(0, 5).map((r, i) => (
-              <div key={i} className="text-[10px] leading-tight pl-1 border-l border-dark-border">
+              <div key={i} className="text-micro leading-tight pl-1 border-l border-dark-border">
                 <p className="text-text-primary">{r.address}</p>
                 {r.date && <p className="text-text-muted">{r.date}</p>}
                 {r.amount_due != null && r.amount_due > 0 && (

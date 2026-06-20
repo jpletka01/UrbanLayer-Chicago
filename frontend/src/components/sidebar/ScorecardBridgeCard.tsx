@@ -24,13 +24,13 @@ export function ScorecardBridgeCard({ pin, address }: { pin: string | null; addr
           <span className="truncate">{address ?? t("bridge.pin", { pin })}</span>
         </div>
         {address && pin && (
-          <div className="text-[10px] text-text-muted font-mono mt-0.5 pl-5">{t("bridge.pin", { pin })}</div>
+          <div className="text-micro text-text-muted font-mono mt-0.5 pl-5">{t("bridge.pin", { pin })}</div>
         )}
       </div>
       <Link
         to={href}
         onClick={() => track("scorecard_bridge_click", { source: "bridge_card", pin, address })}
-        className="shrink-0 text-[11px] font-medium text-accent hover:text-accent-hover transition-colors whitespace-nowrap"
+        className="shrink-0 text-micro font-medium text-accent hover:text-accent-hover transition-colors whitespace-nowrap"
       >
         {t("bridge.viewScorecard")} →
       </Link>
