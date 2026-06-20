@@ -66,7 +66,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
   if (zoneCodes.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-dark-surface/80 backdrop-blur-sm border border-dark-border overflow-hidden">
+    <div className="rounded-xl bg-dark-surface border border-dark-border overflow-hidden">
       <button
         onClick={() => setCollapsed(c => !c)}
         className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-text-muted
@@ -83,7 +83,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
 
       {!collapsed && (
         <div className="px-4 pb-3">
-          <table className="w-full text-[11px]">
+          <table className="w-full text-micro">
             <thead>
               <tr className="text-text-muted border-b border-dark-border">
                 <th className="text-left pr-2 pb-1.5 font-medium w-8"></th>
@@ -99,7 +99,7 @@ function ZoningCodesTable({ mapData }: { mapData: MapData }) {
                   <tr key={code} className="border-t border-dark-border/50">
                     <td className="pr-2 py-1">
                       <span
-                        className="w-3 h-3 rounded-sm inline-block border border-white/20"
+                        className="w-3 h-3 rounded-sm inline-block border border-dark-border-strong"
                         style={{ backgroundColor: zoneColorCSS(code) }}
                       />
                     </td>

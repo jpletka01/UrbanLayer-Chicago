@@ -27,13 +27,13 @@ export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, ha
   if (!showPoints && showZoning && hasZoning) {
     return (
       <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
-        border border-dark-border rounded-lg p-2 text-[10px] max-w-[200px]">
+        border border-dark-border rounded-lg p-2 text-micro max-w-[200px]">
         <div className="text-text-secondary font-semibold mb-1">{t("legend.zoningDistricts")}</div>
         <div className="space-y-0.5">
           {ZONING_LEGEND_KEYS.map(item => (
             <div key={item.key} className="flex items-center gap-1.5">
               <span
-                className="w-2.5 h-2.5 rounded-sm shrink-0 border border-white/20"
+                className="w-2.5 h-2.5 rounded-sm shrink-0 border border-dark-border-strong"
                 style={{ backgroundColor: item.color }}
               />
               <span className="text-text-muted">{t(`legend.${item.key}`)}</span>
@@ -52,7 +52,7 @@ export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, ha
   if (filterMode === "crime") {
     return (
       <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
-        border border-dark-border rounded-lg p-2 text-[10px] max-w-[180px]">
+        border border-dark-border rounded-lg p-2 text-micro max-w-[180px]">
         <div className="text-text-secondary font-semibold mb-0.5">{t("legend.crimeTypes")}</div>
         <div className="text-text-muted">{t("legend.filtersActive", { count: activeKeys.length })}</div>
       </div>
@@ -62,7 +62,7 @@ export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, ha
   if (filterMode === "311") {
     return (
       <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
-        border border-dark-border rounded-lg p-2 text-[10px] max-w-[180px]">
+        border border-dark-border rounded-lg p-2 text-micro max-w-[180px]">
         <div className="text-text-secondary font-semibold mb-0.5">{t("legend.311RequestTypes")}</div>
         <div className="text-text-muted">{t("legend.filtersActive", { count: activeKeys.length })}</div>
       </div>
@@ -72,7 +72,7 @@ export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, ha
   if (filterMode === "permits") {
     return (
       <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
-        border border-dark-border rounded-lg p-2 text-[10px] max-w-[180px]">
+        border border-dark-border rounded-lg p-2 text-micro max-w-[180px]">
         <div className="text-text-secondary font-semibold mb-0.5">{t("legend.permitTypes")}</div>
         <div className="text-text-muted">{t("legend.filtersActive", { count: activeKeys.length })}</div>
       </div>
@@ -88,7 +88,7 @@ export function MapLegend({ activeLayers, filterMode, showPoints, showZoning, ha
 
   return (
     <div className="absolute bottom-2 left-2 z-10 bg-dark-surface/90 backdrop-blur-sm
-      border border-dark-border rounded-lg p-2 text-[10px] max-w-[180px]">
+      border border-dark-border rounded-lg p-2 text-micro max-w-[180px]">
       {showCrime && (
         <div className="mb-1">
           <span className="flex items-center gap-1 text-text-muted">

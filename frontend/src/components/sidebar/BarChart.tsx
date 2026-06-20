@@ -21,7 +21,7 @@ export function BarChart({ bars, accentColor = DEFAULT_COLOR }: Props) {
           onMouseEnter={() => setHovered(i)}
           onMouseLeave={() => setHovered(null)}
         >
-          <span className="text-[10px] text-text-muted w-[72px] shrink-0 text-right truncate">
+          <span className="text-micro text-text-muted w-[72px] shrink-0 text-right truncate">
             {bar.label}
           </span>
           <div className="flex-1 h-3.5 bg-dark-elevated rounded-sm overflow-hidden relative">
@@ -35,7 +35,7 @@ export function BarChart({ bars, accentColor = DEFAULT_COLOR }: Props) {
             />
           </div>
           <span
-            className="text-[10px] font-mono w-[36px] shrink-0 text-right transition-colors"
+            className="text-micro font-mono w-[36px] shrink-0 text-right transition-colors"
             style={{ color: hovered === i ? "#eeeeee" : "#6b6962" }}
           >
             {bar.value.toFixed(0)}%

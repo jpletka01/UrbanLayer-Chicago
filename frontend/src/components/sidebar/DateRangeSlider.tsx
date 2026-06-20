@@ -86,8 +86,8 @@ export function DateRangeSlider({ minDate, maxDate, startDate, endDate, onChange
 
       {/* Date labels */}
       <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-text-muted">{formatShort(startDate)}</span>
-        <span className="text-[10px] text-text-muted">{formatShort(endDate)}</span>
+        <span className="text-micro text-text-muted">{formatShort(startDate)}</span>
+        <span className="text-micro text-text-muted">{formatShort(endDate)}</span>
       </div>
 
       <style>{`

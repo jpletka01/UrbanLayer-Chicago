@@ -47,7 +47,7 @@ export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
 
   return (
     <div className="w-full">
-      <table className="w-full text-[11px]">
+      <table className="w-full text-micro">
         <thead>
           <tr className="text-text-muted border-b border-dark-border">
             <th

@@ -17,7 +17,7 @@ export function MapLayerToggles({ layers, onToggle }: Props) {
         <button
           key={layer.id}
           onClick={() => onToggle(layer.id)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-micro font-medium
             transition-all duration-150 backdrop-blur-sm border
             ${
               layer.active

@@ -686,7 +686,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
       {isMobile && mapReady && showPoints && hasData && (
         <button
           onClick={() => setFilterPopoverOpen(o => !o)}
-          className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium
+          className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-1 text-micro font-medium
                      rounded-md backdrop-blur-sm bg-dark-surface/90 border border-dark-border shadow-sm
                      text-text-primary transition-colors duration-150"
         >
@@ -725,7 +725,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`flex-1 px-2 py-1 text-[11px] font-medium transition-colors duration-150
+                        className={`flex-1 px-2 py-1 text-micro font-medium transition-colors duration-150
                           ${filterMode === tab
                             ? "bg-dark-elevated text-text-primary"
                             : "text-text-muted hover:text-text-secondary"
@@ -741,14 +741,14 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
 
               {toggleConfigs.length > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.typeFilters")}</div>
+                  <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.typeFilters")}</div>
                   <MapLayerToggles layers={toggleConfigs} onToggle={onToggle} />
                 </div>
               )}
 
               {filterMode === "crime" && crimeTotal > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.arrestStatus")}</div>
+                  <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.arrestStatus")}</div>
                   <ToggleGroup<ArrestFilterValue>
                     value={arrestFilter}
                     onChange={setArrestFilter}
@@ -763,7 +763,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
 
               {filterMode === "311" && requests311Total > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.status")}</div>
+                  <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.status")}</div>
                   <ToggleGroup<StatusFilterValue>
                     value={statusFilter}
                     onChange={setStatusFilter}
@@ -778,7 +778,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
 
               {filterMode === "permits" && permitsTotal > 0 && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.costRange")}</div>
+                  <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.costRange")}</div>
                   <ToggleGroup<CostFilterValue>
                     value={costFilter}
                     onChange={setCostFilter}
@@ -794,7 +794,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
 
               {dateBounds && dateRange && hasData && (
                 <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("filters.dateRange")}</div>
+                  <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.dateRange")}</div>
                   <DateRangeSlider
                     minDate={dateBounds.min}
                     maxDate={dateBounds.max}
@@ -825,7 +825,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
             {hasZoning && (
               <button
                 onClick={() => setShowZoning(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showZoning
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
@@ -844,7 +844,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
             {hasData && (
               <button
                 onClick={() => setShowPoints(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showPoints
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
@@ -859,7 +859,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
             )}
             <button
               onClick={() => setShowTransit(s => !s)}
-              className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+              className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                 ${showTransit
                   ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                   : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
@@ -877,7 +877,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
             {mapData?.incentive_zones && (
               <button
                 onClick={() => setShowIncentives(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showIncentives
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
@@ -896,7 +896,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
             {mapData?.overlay_districts && (
               <button
                 onClick={() => setShowOverlays(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
                   ${showOverlays
                     ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
                     : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
@@ -925,7 +925,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`flex-1 px-2.5 py-1 text-[11px] font-medium transition-colors duration-150
+                        className={`flex-1 px-2.5 py-1 text-micro font-medium transition-colors duration-150
                           ${filterMode === tab
                             ? "bg-dark-elevated text-text-primary"
                             : "text-text-muted hover:text-text-secondary hover:bg-dark-surface/60"
@@ -996,7 +996,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
 
       {!loading && mapReady && isCapped && showPoints && (
         <div className="absolute bottom-2 right-2 z-10">
-          <span className="text-[10px] text-amber-400/80 bg-dark-surface/90 backdrop-blur-sm
+          <span className="text-micro text-amber-400/80 bg-dark-surface/90 backdrop-blur-sm
                            border border-amber-500/20 rounded-md px-2 py-1">
             {t("states.showingResults", { count: cappedCount.toLocaleString() })}
           </span>
@@ -1089,7 +1089,7 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
         )}
         {examples.length > 0 && (
           <div>
-            <span className="text-text-muted text-[10px] uppercase tracking-wide">{t("detail.allowedUses")}</span>
+            <span className="text-text-muted text-micro uppercase tracking-wide">{t("detail.allowedUses")}</span>
             <ul className="mt-0.5 space-y-0.5">
               {examples.map(ex => (
                 <li key={ex} className="flex items-center gap-1.5 text-text-primary">
@@ -1111,7 +1111,7 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
       <>
         {zoning && (
           <div className={overlays.length > 0 || incentives.length > 0 ? "pb-2 border-b border-dark-border mb-2" : ""}>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{t("detail.baseZoning")}</div>
+            <div className="text-micro text-text-muted uppercase tracking-wider mb-1">{t("detail.baseZoning")}</div>
             <DetailRow label={t("detail.zoneClass")} value={zoning.zone_class} />
             {(() => {
               const prefix = zonePrefix(zoning.zone_class);
@@ -1129,7 +1129,7 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
 
         {overlays.length > 0 && (
           <div className={incentives.length > 0 ? "pb-2 border-b border-dark-border mb-2" : ""}>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{t("detail.regulatoryOverlays")}</div>
+            <div className="text-micro text-text-muted uppercase tracking-wider mb-1">{t("detail.regulatoryOverlays")}</div>
             {overlays.map((ov, i) => {
               const ovDesc = t(`overlays.${ov.overlay_type}.description`, { defaultValue: "" });
               const ovImplications = t(`overlays.${ov.overlay_type}.implications`, { returnObjects: true }) as string[] | string;
@@ -1146,15 +1146,15 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
                     </span>
                   </div>
                   {ov.feature_name && (
-                    <p className="text-text-secondary text-[11px] ml-3.5">{ov.feature_name}</p>
+                    <p className="text-text-secondary text-micro ml-3.5">{ov.feature_name}</p>
                   )}
                   {ovDesc && (
-                    <p className="text-text-muted text-[10px] ml-3.5 mt-0.5">{ovDesc}</p>
+                    <p className="text-text-muted text-micro ml-3.5 mt-0.5">{ovDesc}</p>
                   )}
                   {implications.length > 0 && (
                     <ul className="ml-3.5 mt-0.5 space-y-0.5">
                       {implications.map(imp => (
-                        <li key={imp} className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                        <li key={imp} className="flex items-center gap-1.5 text-micro text-text-muted">
                           <span className="w-1 h-1 rounded-full bg-text-muted shrink-0" />
                           {imp}
                         </li>
@@ -1162,7 +1162,7 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
                     </ul>
                   )}
                   {ov.ordinance && (
-                    <p className="text-[10px] text-text-muted ml-3.5 mt-0.5">{t("detail.ord")} {ov.ordinance}</p>
+                    <p className="text-micro text-text-muted ml-3.5 mt-0.5">{t("detail.ord")} {ov.ordinance}</p>
                   )}
                 </div>
               );
@@ -1172,7 +1172,7 @@ function renderDetailFields(item: SelectedItem, t: (key: string, opts?: Record<s
 
         {incentives.length > 0 && (
           <div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{t("detail.incentiveZones")}</div>
+            <div className="text-micro text-text-muted uppercase tracking-wider mb-1">{t("detail.incentiveZones")}</div>
             {incentives.map((inc, i) => (
               <div key={i} className="flex items-center gap-1.5 mb-1 last:mb-0">
                 <span

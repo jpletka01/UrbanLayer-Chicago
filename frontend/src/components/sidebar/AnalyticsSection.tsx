@@ -29,8 +29,8 @@ function fmtDollar(n: number): string {
 function StatPill({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <span className="inline-flex items-center gap-1 bg-dark-elevated/60 rounded-md px-2 py-0.5">
-      <span className="text-[10px] text-text-muted">{label}</span>
-      <span className={`text-[11px] font-mono font-medium ${color ?? "text-text-primary"}`}>{value}</span>
+      <span className="text-micro text-text-muted">{label}</span>
+      <span className={`text-micro font-mono font-medium ${color ?? "text-text-primary"}`}>{value}</span>
     </span>
   );
 }
@@ -85,7 +85,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
   const showPermits = (filterMode === "permits" || filterMode === "overview") && (permitAnalytics || permitSummary);
 
   return (
-    <div className="rounded-xl bg-dark-surface/80 backdrop-blur-sm border border-dark-border overflow-hidden">
+    <div className="rounded-xl bg-dark-surface border border-dark-border overflow-hidden">
       <button
         onClick={() => setCollapsed(c => !c)}
         className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-text-muted
@@ -105,7 +105,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
           {showCrime && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.crime")}</h4>
+                <h4 className="text-micro font-medium text-text-muted uppercase tracking-wider">{t("analytics.crime")}</h4>
                 {mapData?.crimes && mapData.crimes.length > 0 && (
                   <button
                     onClick={() => {
@@ -120,7 +120,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                         { key: "arrest", header: "Arrest" },
                       ]);
                     }}
-                    className="text-[10px] text-accent hover:text-accent-hover transition-colors"
+                    className="text-micro text-accent hover:text-accent-hover transition-colors"
                   >
                     {t("analytics.exportCsv")}
                   </button>
@@ -139,12 +139,12 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                   )}
                   {crimeAnalytics.pie.length > 0 && <PieChart slices={crimeAnalytics.pie} />}
                   {!crimeAnalytics.monthLabels && crimeAnalytics.pie.length > 0 && (
-                    <p className="text-[10px] text-text-muted">{t("analytics.notEnoughData")}</p>
+                    <p className="text-micro text-text-muted">{t("analytics.notEnoughData")}</p>
                   )}
                 </div>
               )}
               {crimeSummary?.capped && (
-                <p className="text-[10px] text-text-muted italic mt-1">{t("analytics.cappedCrime")}</p>
+                <p className="text-micro text-text-muted italic mt-1">{t("analytics.cappedCrime")}</p>
               )}
             </div>
           )}
@@ -152,7 +152,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
           {show311 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.311Requests")}</span>
+                <span className="text-micro font-medium text-text-muted uppercase tracking-wider">{t("analytics.311Requests")}</span>
                 <span className="flex items-center gap-2">
                   {mapData?.requests_311 && mapData.requests_311.length > 0 && (
                     <button
@@ -168,7 +168,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                           { key: "owner_department", header: "Department" },
                         ]);
                       }}
-                      className="text-[10px] text-accent hover:text-accent-hover transition-colors"
+                      className="text-micro text-accent hover:text-accent-hover transition-colors"
                     >
                       {t("analytics.exportCsv")}
                     </button>
@@ -177,7 +177,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                   <div className="flex bg-dark-bg/60 rounded-md overflow-hidden border border-dark-border">
                     <button
                       onClick={() => setThreeOneOneGrouping("sr_type")}
-                      className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      className={`px-2 py-0.5 text-micro font-medium transition-colors ${
                         threeOneOneGrouping === "sr_type"
                           ? "bg-dark-elevated text-text-primary"
                           : "text-text-muted hover:text-text-secondary"
@@ -187,7 +187,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                     </button>
                     <button
                       onClick={() => setThreeOneOneGrouping("department")}
-                      className={`px-2 py-0.5 text-[10px] font-medium border-l border-dark-border transition-colors ${
+                      className={`px-2 py-0.5 text-micro font-medium border-l border-dark-border transition-colors ${
                         threeOneOneGrouping === "department"
                           ? "bg-dark-elevated text-text-primary"
                           : "text-text-muted hover:text-text-secondary"
@@ -225,12 +225,12 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                     <PieChart slices={threeOneOneAnalytics.pie} />
                   )}
                   {!threeOneOneAnalytics.monthLabels && threeOneOneAnalytics.pie.length > 0 && (
-                    <p className="text-[10px] text-text-muted">{t("analytics.notEnoughData")}</p>
+                    <p className="text-micro text-text-muted">{t("analytics.notEnoughData")}</p>
                   )}
                 </div>
               )}
               {threeOneOneSummary?.capped && (
-                <p className="text-[10px] text-text-muted italic mt-1">{t("analytics.capped311")}</p>
+                <p className="text-micro text-text-muted italic mt-1">{t("analytics.capped311")}</p>
               )}
             </div>
           )}
@@ -238,7 +238,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
           {showPermits && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{t("analytics.buildingPermits")}</h4>
+                <h4 className="text-micro font-medium text-text-muted uppercase tracking-wider">{t("analytics.buildingPermits")}</h4>
                 {mapData?.building_permits && mapData.building_permits.length > 0 && (
                   <button
                     onClick={() => {
@@ -253,7 +253,7 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                         { key: "issue_date", header: "Date" },
                       ]);
                     }}
-                    className="text-[10px] text-accent hover:text-accent-hover transition-colors"
+                    className="text-micro text-accent hover:text-accent-hover transition-colors"
                   >
                     {t("analytics.exportCsv")}
                   </button>
@@ -274,12 +274,12 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
                   )}
                   {permitAnalytics.pie.length > 0 && <PieChart slices={permitAnalytics.pie} />}
                   {!permitAnalytics.monthLabels && permitAnalytics.pie.length > 0 && (
-                    <p className="text-[10px] text-text-muted">{t("analytics.notEnoughData")}</p>
+                    <p className="text-micro text-text-muted">{t("analytics.notEnoughData")}</p>
                   )}
                 </div>
               )}
               {permitSummary?.capped && (
-                <p className="text-[10px] text-text-muted italic mt-1">{t("analytics.cappedPermits")}</p>
+                <p className="text-micro text-text-muted italic mt-1">{t("analytics.cappedPermits")}</p>
               )}
             </div>
           )}

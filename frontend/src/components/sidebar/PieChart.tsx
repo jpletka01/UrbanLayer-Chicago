@@ -296,7 +296,7 @@ export function PieChart({
                   {activePct}%
                 </div>
                 <div
-                  className="text-[9px] text-text-secondary leading-tight mx-auto"
+                  className="text-micro text-text-secondary leading-tight mx-auto"
                   style={{
                     maxWidth: innerR * 1.5,
                     overflow: "hidden",
@@ -307,7 +307,7 @@ export function PieChart({
                 >
                   {capLabel(activeSlice.label)}
                 </div>
-                <div className="text-[9px] text-text-muted">
+                <div className="text-micro text-text-muted">
                   {activeSlice.value.toLocaleString()}
                 </div>
               </>
@@ -316,7 +316,7 @@ export function PieChart({
                 <div className="text-lg font-semibold text-text-primary">
                   {sliceTotal.toLocaleString()}
                 </div>
-                <div className="text-[9px] text-text-muted uppercase tracking-wide">
+                <div className="text-micro text-text-muted uppercase tracking-wide">
                   {t("analytics.total")}
                 </div>
               </>
@@ -334,10 +334,10 @@ export function PieChart({
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: slice.color }}
               />
-              <span className="text-[10px] text-text-secondary truncate">
+              <span className="text-micro text-text-secondary truncate">
                 {capLabel(slice.label)}
               </span>
-              <span className="text-[10px] text-text-muted ml-auto shrink-0">
+              <span className="text-micro text-text-muted ml-auto shrink-0">
                 {pct}%
               </span>
             </div>
@@ -346,7 +346,7 @@ export function PieChart({
         {slices.length > 8 && (
           <button
             onClick={() => setLegendExpanded(e => !e)}
-            className="text-[10px] text-text-muted hover:text-text-secondary
+            className="text-micro text-text-muted hover:text-text-secondary
                        transition-colors col-span-2 text-left"
           >
             {legendExpanded
