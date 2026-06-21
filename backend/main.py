@@ -43,6 +43,7 @@ from backend.models import (
     MapDataResponse,
     RetrievalPlan,
     SaveMessagesRequest,
+    ScorecardContext,
     TurnSummary,
 )
 from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
@@ -633,9 +634,39 @@ def _sse(chunk: ChatChunk) -> str:
     return f"data: {chunk.model_dump_json(exclude_none=True)}\n\n"
 
 
-async def _retrieve(plan: RetrievalPlan) -> ContextObject:
+_PROPERTY_DOMAINS = {"property_domain", "regulatory_domain", "incentives_domain"}
+
+
+def _scorecard_grounding_applies(
+    plan: RetrievalPlan, sc: ScorecardContext | None,
+) -> bool:
+    """True when pre-resolved Scorecard grounding should replace live retrieval.
+
+    Three conditions (all required): grounding is present, its pin matches the
+    parcel the plan resolved to (so we never graft one parcel's facts onto a
+    question the router read as being about another), and the plan is
+    property-scoped — it asked for at least one property/regulatory/incentives
+    domain or ran the site-due-diligence workflow. A pure neighborhood or
+    code-research turn fails the last check and retrieves normally (augment).
+    """
+    if sc is None or not sc.pin:
+        return False
+    if plan.location.pin != sc.pin:
+        return False
+    return bool(_PROPERTY_DOMAINS & set(plan.sources)) or plan.workflow_hint == "site_due_diligence"
+
+
+async def _retrieve(
+    plan: RetrievalPlan, scorecard_context: ScorecardContext | None = None,
+) -> ContextObject:
     ca = plan.location.resolved_community_area
     tasks: dict[str, asyncio.Task] = {}
+
+    # When the Scorecard handed us pre-resolved grounding for this exact parcel,
+    # skip the property/regulatory/incentives/zoning fetches it already covers
+    # (bypass) and merge those sub-objects into the assembled context below.
+    # vector_search + neighborhood + the activity feeds still run (augment).
+    use_sc = _scorecard_grounding_applies(plan, scorecard_context)
 
     if ca is not None:
         if "crime_api" in plan.sources:
@@ -674,32 +705,34 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
             ))
 
     loc = plan.location
-    if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon:
+    if plan.requires_disclaimer and loc.resolved_lat and loc.resolved_lon and not use_sc:
         tasks["zoning_lookup"] = asyncio.create_task(_limited(
             lookup_zoning(loc.resolved_lat, loc.resolved_lon)
         ))
 
     wf = plan.workflow_hint or "general"
 
-    if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+    if "regulatory_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon and not use_sc:
         tasks["regulatory"] = asyncio.create_task(_limited(
             regulatory_domain(loc.resolved_lat, loc.resolved_lon, workflow=wf)
         ))
 
+    # ARO is folded into the regulatory summary; the Scorecard grounding already
+    # carries it, so skip the fetch when we're substituting that summary.
     _aro_triggers = {"regulatory_domain", "property_domain", "neighborhood_domain", "incentives_domain"}
-    if _aro_triggers & set(plan.sources) and ca is not None:
+    if _aro_triggers & set(plan.sources) and ca is not None and not use_sc:
         tasks["aro_housing"] = asyncio.create_task(_limited(
             aro_housing_by_community_area(ca)
         ))
 
-    if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon:
+    if "property_domain" in plan.sources and loc.resolved_lat and loc.resolved_lon and not use_sc:
         tasks["property"] = asyncio.create_task(_limited(
             # pin keys the property domain authoritatively when the turn came
             # from a Scorecard handoff (INV-2 parity with /api/scorecard)
             property_domain(loc.resolved_lat, loc.resolved_lon, pin=loc.pin, workflow=wf)
         ))
 
-    if "incentives_domain" in plan.sources:
+    if "incentives_domain" in plan.sources and not use_sc:
         ca_name = loc.resolved_community_area_name
         if loc.resolved_lat and loc.resolved_lon:
             tasks["incentives"] = asyncio.create_task(_limited(
@@ -768,7 +801,7 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         chunks = await semantic_search(plan.search_query, top_k=5)
         code_chunks = await expand_cross_references(chunks)
 
-    return assemble_context(
+    ctx = assemble_context(
         plan=plan,
         crime_rows=results.get("crime") if "crime" in results else None,
         crime_yoy_data=results.get("crime_yoy"),
@@ -788,6 +821,26 @@ async def _retrieve(plan: RetrievalPlan) -> ContextObject:
         aro_housing_rows=results.get("aro_housing") if "aro_housing" in results else None,
         partial_failures=partial_failures,
     )
+
+    if use_sc:
+        # Graft the Scorecard's already-assembled sub-objects in place of the
+        # fetches we skipped. They're post-assembly (same shapes ctx uses) and
+        # already carry the assembler's tax-class enrichment. comparables and
+        # zone_definition have no assembler input — set them straight on ctx
+        # (new optional fields; the synthesizer serializes them automatically).
+        sc = scorecard_context
+        if sc.parcel_zoning is not None:
+            ctx.parcel_zoning = sc.parcel_zoning
+        if sc.regulatory is not None:
+            ctx.regulatory = sc.regulatory
+        if sc.property is not None:
+            ctx.property = sc.property
+        if sc.incentives is not None:
+            ctx.incentives = sc.incentives
+        ctx.comparables = sc.comparables
+        ctx.zone_definition = sc.zone_definition
+
+    return ctx
 
 
 async def _fetch_overlay_geojson(
@@ -1098,7 +1151,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     try:
         t0 = time.monotonic()
         context, map_rows = await asyncio.gather(
-            _retrieve(plan),
+            _retrieve(plan, scorecard_context=req.scorecard_context),
             _fetch_map_rows(plan, cached_community_area=req.cached_community_area),
         )
         timings["retrieval"] = int((time.monotonic() - t0) * 1000)

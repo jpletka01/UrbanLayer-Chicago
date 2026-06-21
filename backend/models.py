@@ -421,6 +421,36 @@ class AnalyticsSummary(BaseModel):
     trend_period: str | None = None
 
 
+class ComparableSale(BaseModel):
+    pin: str
+    sale_date: str | None = None
+    sale_price: float | None = None
+    class_code: str | None = None
+    class_description: str | None = None
+    land_sqft: int | None = None
+    bldg_sqft: int | None = None
+    price_per_land_sqft: float | None = None
+    price_per_bldg_sqft: float | None = None
+    deed_type: str | None = None
+    sale_type: str | None = None
+    distance_mi: float | None = None
+    lat: float | None = None
+    lon: float | None = None
+
+
+class ComparablesSummary(BaseModel):
+    median_sale_price: float | None = None
+    median_price_per_land_sqft: float | None = None
+    median_price_per_bldg_sqft: float | None = None
+    price_range_min: float | None = None
+    price_range_max: float | None = None
+    sales_volume: int = 0
+    # Human-readable basis describing the comp set used (class + radius + window),
+    # set by the progressive-widening search so the reader can judge comparability.
+    comp_basis: str | None = None
+    sales: list[ComparableSale] = Field(default_factory=list)
+
+
 class ContextObject(BaseModel):
     community_area: int | None = None
     community_area_name: str | None = None
@@ -443,6 +473,12 @@ class ContextObject(BaseModel):
     property: PropertySummary | None = None
     incentives: IncentivesSummary | None = None
     neighborhood: NeighborhoodSummary | None = None
+    # Set only on the chat path when a Scorecard handoff supplies pre-resolved
+    # grounding (the synthesizer serializes ContextObject, so these reach the LLM
+    # with no synthesizer change). The /api/scorecard ContextObject leaves them
+    # None — comparables / zone_definition live as siblings on ScorecardResponse.
+    comparables: ComparablesSummary | None = None
+    zone_definition: dict | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
@@ -473,6 +509,32 @@ class Message(BaseModel):
     content: str
 
 
+class ScorecardContext(BaseModel):
+    """Pre-resolved parcel grounding shipped from the Scorecard on a chat handoff.
+
+    The Scorecard already assembled a full ContextObject for this parcel; rather
+    than re-running the property/regulatory/incentives retrieval, the chat path
+    reads these (post-assembly) sub-objects directly and skips those fetches.
+    Selective by design: the neighborhood-activity feeds (crime/311/permits/
+    violations/businesses/etc.) and code_chunks are deliberately omitted — those
+    are stale-prone or cheaply re-fetched when a question actually needs them.
+    The frontend lifts these straight off the held ScorecardResponse:
+    `context.{property,regulatory,incentives,parcel_zoning}` + sibling
+    `comparables` (sales trimmed) + `zone_definition`.
+    """
+    pin: str | None = Field(default=None, max_length=20)
+    address: str | None = None
+    community_area_name: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    parcel_zoning: ZoningSummary | None = None
+    zone_definition: dict | None = None
+    property: PropertySummary | None = None
+    regulatory: RegulatorySummary | None = None
+    incentives: IncentivesSummary | None = None
+    comparables: ComparablesSummary | None = None
+
+
 class ChatRequest(BaseModel):
     message: str = Field(max_length=2000)
     history: list[Message] = Field(default_factory=list, max_length=20)
@@ -483,6 +545,10 @@ class ChatRequest(BaseModel):
     # 14-digit parcel hint from a Scorecard handoff — resolves the turn's
     # location authoritatively instead of re-geocoding the question text.
     parcel_pin: str | None = Field(default=None, max_length=20)
+    # Pre-resolved parcel grounding from the Scorecard (bypass: skips the
+    # property/regulatory/incentives re-fetch, see _retrieve). Never persisted
+    # into stored history — same stripping rule as the context/plan/map blobs.
+    scorecard_context: ScorecardContext | None = None
 
 
 class ChatChunk(BaseModel):
@@ -594,36 +660,6 @@ class DevelopmentPotential(BaseModel):
     max_lot_coverage_sqft: int | None = None
     development_surplus_sqft: int | None = None
     parking_spaces_estimated: int | None = None
-
-
-class ComparableSale(BaseModel):
-    pin: str
-    sale_date: str | None = None
-    sale_price: float | None = None
-    class_code: str | None = None
-    class_description: str | None = None
-    land_sqft: int | None = None
-    bldg_sqft: int | None = None
-    price_per_land_sqft: float | None = None
-    price_per_bldg_sqft: float | None = None
-    deed_type: str | None = None
-    sale_type: str | None = None
-    distance_mi: float | None = None
-    lat: float | None = None
-    lon: float | None = None
-
-
-class ComparablesSummary(BaseModel):
-    median_sale_price: float | None = None
-    median_price_per_land_sqft: float | None = None
-    median_price_per_bldg_sqft: float | None = None
-    price_range_min: float | None = None
-    price_range_max: float | None = None
-    sales_volume: int = 0
-    # Human-readable basis describing the comp set used (class + radius + window),
-    # set by the progressive-widening search so the reader can judge comparability.
-    comp_basis: str | None = None
-    sales: list[ComparableSale] = Field(default_factory=list)
 
 
 class NearbyDevelopment(BaseModel):
