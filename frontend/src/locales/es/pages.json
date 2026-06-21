@@ -97,6 +97,7 @@
     "generating": "Generando...",
     "dataAsOf": "Datos al {{date}}",
     "someDataUnavailable": "Algunos datos no están disponibles: {{sources}}",
+    "nearestParcelCaveat": "No pudimos confirmar la parcela fiscal exacta para esta dirección, por lo que las cifras de propiedad, impuestos y ventas comparables a continuación describen la parcela más cercana, que podría ser una vecina. Verifique el PIN antes de usar números específicos de la parcela.",
     "reportCTA": {
       "title": "Informe de Viabilidad de Desarrollo",
       "description": "PDF profesional con análisis impulsado por IA para esta propiedad.",

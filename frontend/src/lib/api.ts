@@ -567,6 +567,9 @@ export interface ScorecardResponse {
   partial_failures: string[];
   resolved_pin: string | null;
   resolved_confidence: "authoritative" | "approximate";
+  // True when identity is unconfirmed but the property/comps cards were filled
+  // from a nearest (possibly-neighbor) parcel — the UI caveats those cards.
+  nearest_parcel_unverified?: boolean;
   resolved_lat: number;
   resolved_lon: number;
   zone_definition?: ZoneDefinition | null;

@@ -615,6 +615,15 @@ export default function ScorecardPage() {
               />
             </div>
 
+            {/* Nearest-parcel caveat: identity is unconfirmed and the property/
+                tax/comps cards were filled from the nearest (possibly-neighbor)
+                parcel — say so before the reader trusts parcel-specific numbers. */}
+            {data.nearest_parcel_unverified && (
+              <div className="mb-4 text-caption text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-4 py-2.5">
+                {t("scorecard.nearestParcelCaveat")}
+              </div>
+            )}
+
             {/* Financial Snapshot */}
             <FinancialSnapshotStrip
               property={ctx.property}
