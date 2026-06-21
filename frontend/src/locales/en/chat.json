@@ -16,6 +16,16 @@
       "When does a rear addition need a zoning variance?"
     ]
   },
+  "propertyStarters": {
+    "heading": "Ask about this property",
+    "sublineWithAddress": "Grounded in the Scorecard for {{address}} — zoning, incentives, comps, and the code behind them.",
+    "subline": "Grounded in this parcel's Scorecard — zoning, incentives, comps, and the code behind them.",
+    "build": "What can I build on this lot?",
+    "zoning": "Explain the zoning and overlays here",
+    "comparables": "How do the recent comparable sales look?",
+    "incentives": "What incentives and tax programs apply here?",
+    "neighborhood": "What's going on in this neighborhood?"
+  },
   "sourceLabels": {
     "crime_api": "Searching crime records",
     "311_api": "Looking up 311 service requests",

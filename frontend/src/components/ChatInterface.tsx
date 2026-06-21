@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ActivityItem, ContextObject, DataSource, Message } from "../lib/types";
+import type { ActivityItem, ContextObject, DataSource, Message, ScorecardContext } from "../lib/types";
 import { ChatInput, type PendingAttachment } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
 
@@ -21,6 +21,12 @@ interface Props {
   onRemoveAttachment?: (index: number) => void;
   activities?: ActivityItem[];
   readOnly?: boolean;
+  // When the workspace was entered for a held parcel, the empty state becomes a
+  // grounded "Ask about this property" surface: flag-aware starters that send
+  // WITH the pin + grounding (the obvious path is the grounded one). Raw typing
+  // stays available but is the secondary, ungrounded fallback.
+  propertyContext?: ScorecardContext | null;
+  onPropertyStarterClick?: (question: string) => void;
 }
 
 export function ChatInterface({
@@ -40,6 +46,8 @@ export function ChatInterface({
   onRemoveAttachment,
   activities,
   readOnly,
+  propertyContext,
+  onPropertyStarterClick,
 }: Props) {
   const { t } = useTranslation(["common", "chat"]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -53,7 +61,39 @@ export function ChatInterface({
   // The fresh "New Chat" surface: no messages, not streaming, not a shared/read-only
   // view, and not blocked at the message limit. Reads as ready, not broken.
   const showEmptyState = messages.length === 0 && !streaming && !readOnly && !atMessageLimit;
-  const examples = t("chat:emptyState.examples", { returnObjects: true }) as string[];
+
+  // Grounded variant: entered for a parcel → property-specific, flag-aware
+  // starters. Comparables/incentives questions only appear when the data backs
+  // them, so we never offer a dead-end prompt.
+  const grounded = showEmptyState && !!propertyContext;
+  const cmp = propertyContext?.comparables;
+  const hasComps = !!cmp && ((cmp.sales_volume ?? 0) > 0 || (cmp.sales?.length ?? 0) > 0);
+  const inc = propertyContext?.incentives;
+  // Only the parcel-specific incentive designations (TIF district / Opportunity
+  // Zone / Enterprise Zone) discriminate — grants, TOD, ADU and ARO are area-wide
+  // and near-universal in real data, so including them would fire the incentives
+  // starter on nearly every parcel and make the neighborhood fallback dead code.
+  const hasProgram = !!(
+    inc?.in_tif_district || inc?.in_opportunity_zone || inc?.in_enterprise_zone
+  );
+  const propertyStarters: string[] = grounded
+    ? [
+        t("chat:propertyStarters.build"),
+        t("chat:propertyStarters.zoning"),
+        ...(hasComps ? [t("chat:propertyStarters.comparables")] : []),
+        hasProgram ? t("chat:propertyStarters.incentives") : t("chat:propertyStarters.neighborhood"),
+      ]
+    : [];
+
+  const examples = grounded
+    ? propertyStarters
+    : (t("chat:emptyState.examples", { returnObjects: true }) as string[]);
+  const emptyHeading = grounded ? t("chat:propertyStarters.heading") : t("chat:emptyState.heading");
+  const emptySubline = grounded
+    ? propertyContext?.address
+      ? t("chat:propertyStarters.sublineWithAddress", { address: propertyContext.address })
+      : t("chat:propertyStarters.subline")
+    : t("chat:emptyState.subline");
 
   return (
     <section className="flex-1 min-w-0 h-full flex flex-col bg-dark-bg">
@@ -65,14 +105,14 @@ export function ChatInterface({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-text-primary mb-1.5">{t("chat:emptyState.heading")}</h2>
-            <p className="text-sm text-text-secondary max-w-md mb-5 leading-relaxed">{t("chat:emptyState.subline")}</p>
+            <h2 className="text-lg font-semibold text-text-primary mb-1.5">{emptyHeading}</h2>
+            <p className="text-sm text-text-secondary max-w-md mb-5 leading-relaxed">{emptySubline}</p>
             <div className="flex flex-wrap gap-2 justify-center max-w-lg">
               {examples.map((q) => (
                 <button
                   key={q}
                   type="button"
-                  onClick={() => setComposerSeed(q)}
+                  onClick={() => (grounded ? onPropertyStarterClick?.(q) : setComposerSeed(q))}
                   className="text-xs text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-3 py-1.5 hover:border-accent/40 hover:text-text-primary transition-colors"
                 >
                   {q}

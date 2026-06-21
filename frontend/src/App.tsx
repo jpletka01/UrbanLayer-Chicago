@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
@@ -408,6 +408,40 @@ export function App() {
       sendMessage(q, undefined, { parcelPin: pin, scorecardContext });
     })();
   }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
+
+  // Bare ?pin= (the "Ask about this property" entry — no ?q=, so no auto-send):
+  // ensure the parcel is held so the grounded empty-state starters can render.
+  // On in-SPA navigation it's already held; on a cold deep-link, hydrate once.
+  useEffect(() => {
+    const pin = searchParams.get("pin");
+    if (!pin || searchParams.get("q")) return;
+    if (conversationIdFromUrl || shareTokenFromUrl) return;
+    if (heldScorecard?.resolved_pin === pin) return;
+    selectParcel({ pin });
+  }, [searchParams, conversationIdFromUrl, shareTokenFromUrl, heldScorecard]);
+
+  // Grounding for the empty-state starters: shown only when the workspace was
+  // entered for a parcel (?pin= present and the held Scorecard matches it), so
+  // the generic librarian entry never surfaces property starters by accident.
+  const entryPin = searchParams.get("pin");
+  const groundedContext = useMemo(
+    () => (entryPin && heldScorecard?.resolved_pin === entryPin ? buildScorecardContext(heldScorecard) : null),
+    [entryPin, heldScorecard],
+  );
+
+  function sendPropertyStarter(question: string) {
+    if (!groundedContext) return;
+    // Embed the address so the router types the turn as an address query — that
+    // is what lets _apply_parcel_hint anchor it to the pin (a deictic "this lot"
+    // routes to clarification before grounding is ever read). Mirrors the
+    // address-bearing InvestigateButton questions.
+    const addr = groundedContext.address;
+    const text = addr ? `${question} — ${addr}` : question;
+    sendMessage(text, undefined, {
+      parcelPin: groundedContext.pin,
+      scorecardContext: groundedContext,
+    });
+  }
 
   function handleAttach(files: File[]) {
     const remaining = 3 - pendingAttachments.length;
@@ -999,6 +1033,8 @@ export function App() {
                 onRemoveAttachment={handleRemoveAttachment}
                 activities={activities}
                 readOnly={isSharedView}
+                propertyContext={groundedContext}
+                onPropertyStarterClick={sendPropertyStarter}
               />
               <SidebarPanel
                 context={activeSidebarContext}

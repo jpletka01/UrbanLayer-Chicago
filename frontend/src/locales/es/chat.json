@@ -16,6 +16,16 @@
       "¿Cuándo requiere una ampliación trasera una variación de zonificación?"
     ]
   },
+  "propertyStarters": {
+    "heading": "Pregunta sobre esta propiedad",
+    "sublineWithAddress": "Basado en el Scorecard de {{address}} — zonificación, incentivos, comparables y el código que los respalda.",
+    "subline": "Basado en el Scorecard de esta parcela — zonificación, incentivos, comparables y el código que los respalda.",
+    "build": "¿Qué puedo construir en este lote?",
+    "zoning": "Explica la zonificación y los distritos superpuestos aquí",
+    "comparables": "¿Cómo se ven las ventas comparables recientes?",
+    "incentives": "¿Qué incentivos y programas fiscales aplican aquí?",
+    "neighborhood": "¿Qué está pasando en este vecindario?"
+  },
   "sourceLabels": {
     "crime_api": "Consultando registros de delitos",
     "311_api": "Consultando solicitudes de servicio 311",
