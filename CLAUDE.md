@@ -59,7 +59,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ## Known Issues
 
-- **Cook County GIS parcel lookup intermittent** — ArcGIS spatial index broken, queries can timeout 60s+. Socrata Parcel Universe (`pabr-t5kh`) auto-fallback implemented in `parcels.py` — resolves PIN via bounding-box query, no polygon geometry. Diagnostic test `test_parcel_gis_diagnostic` fails loudly when GIS is down.
+- **Cook County GIS parcel lookup intermittent** — ArcGIS spatial index broken, queries can timeout 60s+. Socrata Parcel Universe (`pabr-t5kh`) auto-fallback in `parcels.py` resolves PIN via a **server-side distance-ordered** bbox query (no polygon geometry). The fallback is nearest-by-distance, so it can land on a *neighbor* — `/api/scorecard` treats it as identity only when it passes a reverse Address Points round-trip (`parcel_address_matches`), else withholds the PIN (`approximate`) and flags `nearest_parcel_unverified` so the UI caveats the parcel data (2026-06-21, see `archive/2026-06-21_pin-resolution-seam.md`). Diagnostic test `test_parcel_gis_diagnostic` fails loudly when GIS is down.
 - Demographics median values are estimated from bracket distributions, not pre-computed.
 - Violation categories are homegrown keyword-based bucketing (16 custom categories from free-text descriptions).
 
