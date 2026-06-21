@@ -24,7 +24,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/components/ReportPurchasePrompt.tsx` | Modal for a la carte report purchase ($25 one-time) with dual CTA: buy single report or upgrade to Pro. Takes the `SelectedParcel`; checkout is PIN-keyed when pin exists (address/lat/lon still sent for display + legacy entitlement) |
 | `src/components/PageHeader.tsx` | Shared header for non-chat pages (Scorecard/Discovery/Pricing/About): 3-zone layout — logo left, nav centered (Analyst/Scorecard/Discovery/Pricing/About with active highlight; "Analyst" → `/?analyst=1` opens the hero in chat mode), LanguageSelector + UserMenu/sign-in right. `sticky`/`maxWidthClass` props. **Discovery is inserted into nav (after Scorecard — Explore's old slot) only when its index has data (`coverage.mode != "none"`, fetched via cached `registryClient`) — `navItemsFor()`; self-activated on prod 2026-06-14.** Splash & workspace keep their own headers |
 | `src/components/ScorecardPage.tsx` | Property Scorecard page. Param precedence `?pin=` → `?address=` → `?lat=&lon=`; pin-confirmed results canonicalize the URL to `?pin=&address=` (legacy URLs still work). Identity band: Mapbox Static thumbnail (pin-only, hidden on failure), i18n'd confidence badges with tooltip explanations, dash-formatted PIN → assessor link, facts-only verdict line composed from context flags (zone name · TIF · OZ · TOD · ADU · ARO · flood). Page-local cards: ZoningCard (renders `zone_definition` Title-17 standards from the scorecard API), CrimeYoYCard (shows prior-year base counts), Address311Card. One investigate link per card, muted style (solid accent reserved for purchase). `?report_purchased=1` post-purchase auto-download (Stripe success URL is `?pin=...&report_purchased=1` for pin-keyed purchases). Report download/access/purchase keyed on `parcel.pin` when present |
-| `src/discovery/` | **Property Discovery** workbench (`/discovery`, **LIVE on prod 2026-06-14, 25 CAs / ~482k parcels, nav-linked** — premium full experience, free top-10 teaser). The FE never evaluates — it compiles panel/topic/text inputs into a `SearchRequest` and renders chips + summary **from `response.cqs`** (INV-4). Modules: `types.ts` (wire mirrors), `registryClient`, pure `uiCompiler`/`topicCompiler` (incl. `panelFromCqs`)/`summary`, `searchClient` (`runSearch`/`runPins`/`exportCsv`), `chips.tsx`, `DiscoveryFilterPanel`/`DiscoveryResults`/`DiscoveryPage`. **Wave 2 (PR1–PR10):** `coverage.ts` (coverage/populatedFields selectors, safe-dormant defaults), `CoverageBanner` (standalone, NEVER in the CQS/chips), `DiscoveryMap` (deck.gl, `colorBy` upside/land_use + `interactive` per tier — `useMapboxOverlay`/`ScatterplotLayer`), `upsideColor.ts` (upside ramp + DISTINCT no-data swatch + land-use ramp/legends), `RecipeShelf` (recipe click = `expandTopic`→panel as user filters, `topicId` telemetry-only; honest **3-state badges** "Live · N" / "No matches yet" / "Needs data" via `missingFieldsFor` + `registry.recipeCounts`). **Results:** address-first row-cards (PIN demoted, active sort bolded; address via `humanizeShoutyCase`, `~` prefix → "near …" for approximate/nearest), infinite scroll over `nextOffset` (append+dedupe; list never the map's source), 3-way zero state (NULL-backed/non-live-area/too-tight) from PR4 selectors, region via `caName()`. **Map split** fed by `/search/pins` (full coord set). **CSV export** via `/search/export` (premium; locked button → upgrade for free). **Free teaser:** server returns `gated` + true total + top-10; FE renders the query-aware `TeaserWall`. **Mobile:** `[List|Map]` toggle (map stays mounted), bottom-sheet filters, scroll-snap recipes. a11y: aria-pressed pills, radiogroup preset chips, labeled range inputs. i18n: PR9 strings keyed (`discovery.*`); rest still hardcoded (gap). Spec/decisions: `claude-context/property-discovery/10-implementation-status.md` (Wave 3). Tests via **vitest** (`npm test`, 51; `src/test-setup.ts` inits i18n) |
+| `src/discovery/` | **Property Discovery** workbench (`/discovery`, **LIVE on prod — full citywide, all 77 CAs / ~949k parcels, nav-linked** — premium full experience, free top-10 teaser). The FE never evaluates — it compiles panel/topic/text inputs into a `SearchRequest` and renders chips + summary **from `response.cqs`** (INV-4). Modules: `types.ts` (wire mirrors), `registryClient`, pure `uiCompiler`/`topicCompiler` (incl. `panelFromCqs`)/`summary`, `searchClient` (`runSearch`/`runPins`/`exportCsv`), `chips.tsx`, `DiscoveryFilterPanel`/`DiscoveryResults`/`DiscoveryPage`. **Wave 2 (PR1–PR10):** `coverage.ts` (coverage/populatedFields selectors, safe-dormant defaults), `CoverageBanner` (standalone, NEVER in the CQS/chips), `DiscoveryMap` (deck.gl, `colorBy` upside/land_use + `interactive` per tier — `useMapboxOverlay`/`ScatterplotLayer`), `upsideColor.ts` (upside ramp + DISTINCT no-data swatch + land-use ramp/legends), `RecipeShelf` (recipe click = `expandTopic`→panel as user filters, `topicId` telemetry-only; honest **3-state badges** "Live · N" / "No matches yet" / "Needs data" via `missingFieldsFor` + `registry.recipeCounts`). **Results:** address-first row-cards (PIN demoted, active sort bolded; address via `humanizeShoutyCase`, `~` prefix → "near …" for approximate/nearest), infinite scroll over `nextOffset` (append+dedupe; list never the map's source), 3-way zero state (NULL-backed/non-live-area/too-tight) from PR4 selectors, region via `caName()`. **Map split** fed by `/search/pins` (full coord set). **CSV export** via `/search/export` (premium; locked button → upgrade for free). **Free teaser:** server returns `gated` + true total + top-10; FE renders the query-aware `TeaserWall`. **Mobile:** `[List|Map]` toggle (map stays mounted), bottom-sheet filters, scroll-snap recipes. a11y: aria-pressed pills, radiogroup preset chips, labeled range inputs. i18n: fully keyed under `discovery.*` (UI strings + all 32 filter labels/enum/topic/preset) in en+es; registry labels translated by id with the backend English as `defaultValue` fallback (single English source, no drift). Spec/decisions: `claude-context/property-discovery/10-implementation-status.md` (Wave 3). Tests via **vitest** (`npm test`, 51; `src/test-setup.ts` inits i18n) |
 | `src/components/ProtectedRoute.tsx` | Route guard for auth + tier checks (used for `/admin`) |
 | `src/lib/mapColors.ts` | Shared colors for map + charts + zone categories + OVERLAY_INFO/ZONE_INFO definitions + hash-based incentive zone colors |
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
@@ -40,17 +40,35 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 
 ## Design Tokens
 
-| Token | Value | Tailwind |
-|-------|-------|----------|
-| Background | `#0d0d0d` | `bg-dark-bg` |
-| Surface | `#171717` | `bg-dark-surface` |
-| Elevated | `#1f1f1f` | `bg-dark-elevated` |
-| Border | `#2a2a2a` | `border-dark-border` |
-| Accent | `#c96442` | `bg-accent` / `text-accent` |
-| Text Primary | `#eeeeee` | `text-text-primary` |
-| Text Secondary | `#a3a098` | `text-text-secondary` |
-| Text Muted | `#6b6962` | `text-text-muted` |
-| Font | Inter, system-ui, sans-serif | — |
+**Full design system: `claude-context/guides/design-system.md`** (branch `design-system-refactor`,
+not yet merged 2026-06-20). The rules below are the canonical token set — don't reintroduce arbitrary
+`text-[Npx]`, raw `white/<opacity>` chrome, or off-palette hue.
+
+**Neutral ramp** (one system — `white/opacity` for chrome is retired): bg `#0d0d0d bg-dark-bg` ·
+surface `#171717 bg-dark-surface` · elevated `#1f1f1f bg-dark-elevated` · hover `#242424 bg-dark-hover`
+(interactive fill) · border-subtle `#1f1f1f` · border `#2a2a2a border-dark-border` · border-strong
+`#383838 border-dark-border-strong`. Text: primary `#eeeeee` · secondary `#a3a098` · muted `#6b6962`
+· on-accent `#ffffff text-text-on-accent`. Accent `#c96442 bg-accent/text-accent` + `accent-hover`
+`#d97a5a` + `accent-muted`. (Retired: `dark.bubble/bubble-user/drawer/tooltip`.)
+
+**Type scale** (10 named `fontSize` steps — replaces all arbitrary px): `text-display / stat /
+section / subtitle / lead / title / body / caption / micro / overline`. Size+line-height+weight baked
+in; pick the step, don't override weight. `overline` = pair with `uppercase`.
+
+**Radius by role**: card/panel/modal `rounded-xl` · control/input/button `rounded-lg` · chip/badge
+`rounded-md` · inline code `rounded` · avatar/dot/pill `rounded-full`. (`2xl` only on chat bubbles +
+composer + Pricing cards, by intent.)
+
+**Fonts**: `font-sans` Inter (body/UI) · `font-display` **Space Grotesk** (headings — scoped to
+`.text-display`/`.text-section` only via `index.css`) · `font-mono` IBM Plex Mono (PINs/code/data).
+
+**Primitives** (`src/components/ui/`): `Card`, `Chip`, `Modal` — use these, don't hand-roll card/chip/
+dialog chrome. `CollapsibleCard` wraps `Card`.
+
+**Color discipline (§6)**: chrome = accent + neutral only. Hue ONLY for genuine state —
+`positive`=emerald-400, `negative`=rose-400, `warning`=amber-400. Links = `text-accent`. Exempt:
+over-image text (white over photos), and functional data encoding (`mapColors.ts`, `DataPill`,
+`upsideColor.ts`, CTA-line/score colors).
 
 ## Patterns
 
@@ -70,7 +88,7 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 - **401-interceptor**: `authFetch()` in `api.ts` intercepts 401 responses, attempts `POST /api/auth/refresh` via raw `fetch` (not `authFetch` to avoid recursion), coalesces concurrent refreshes with a module-level `_refreshPromise`, re-reads CSRF cookie after refresh, retries original request once.
 - **History stripping**: `useChat.ts` sends only `{role, content}` in chat POST history (strips `context`/`plan`/`mapData` blobs) to avoid HTTP 413 from nginx's `client_max_body_size`.
 - **Stream close detection**: `useChat.ts` tracks `receivedDone` flag — if the SSE stream ends without a `done` event and wasn't user-aborted, shows "Connection lost — please try again."
-- **i18n**: `react-i18next` with 7 namespaces (`common`, `chat`, `sidebar`, `landing`, `map`, `data`, `pages`). Languages: English (default) + Spanish. Bundled JSON resources in `src/locales/{en,es}/`. Language persisted in localStorage as `urbanlayer-language`. `LanguageSelector` component in splash and workspace headers. Backend synthesizer responds in target language via `LANGUAGE_INSTRUCTION` prompt append — English path is +0ms latency. Adding a new language: create `src/locales/{code}/` with 7 JSON files + add option to `LanguageSelector.tsx` + add entry to `LANGUAGE_NAMES` dict in `backend/synthesizer.py`. Non-React code (mapColors.ts, mapTooltip.ts, termDefinitions.ts) uses `i18n.t()` directly. **Not yet localized**: Admin dashboard, About page (excluded by design).
+- **i18n**: `react-i18next` with 7 namespaces (`common`, `chat`, `sidebar`, `landing`, `map`, `data`, `pages`). Languages: English (default) + Spanish. Bundled JSON resources in `src/locales/{en,es}/`. Language persisted in localStorage as `urbanlayer-language`. `LanguageSelector` component in splash and workspace headers. Backend synthesizer responds in target language via `LANGUAGE_INSTRUCTION` prompt append — English path is +0ms latency. The **$25 Feasibility Report** is also localized (deterministic, no LLM): `fetchReport`/`createReportCheckoutSession` pass `language`; the backend renders via `backend/report_i18n.py` (see backend CLAUDE.md). Adding a new language: create `src/locales/{code}/` with 7 JSON files + add option to `LanguageSelector.tsx` + add entry to `LANGUAGE_NAMES` (`backend/synthesizer.py`) **and `MESSAGES` (`backend/report_i18n.py`)**. Non-React code (mapColors.ts, mapTooltip.ts, termDefinitions.ts) uses `i18n.t()` directly; scorecard/regulatory enum + zoning-qualifier strings go through `format.ts` helpers (`translateFloodSubtype`, `localizeZoningValue`). **Guard:** `src/i18n.parity.test.ts` asserts en/es key-set + interpolation-placeholder parity across all 7 namespaces (catches the drift class that caused the "3 of 5"/"3 of 3 zones" bug); backend `test_report_i18n.py` does the same for the report catalog. **Not yet localized**: Admin dashboard, About page (excluded by design).
 - **Pipeline timing**: The `done` SSE event includes a `timings` dict (`PhaseTimings` in `types.ts`) with `conv_synth`, `router`, `retrieval`, `first_token`, `total` (all in ms). Logged to console via `[perf] pipeline timings (ms):` in `useChat.ts`.
 
 ## Docker / Nginx
