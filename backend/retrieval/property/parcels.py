@@ -36,10 +36,25 @@ PARCEL_QUERY_URL = (
 
 _BBOX_DELTA = 0.002  # ~220m at Chicago's latitude
 
+# With server-side distance ordering the bbox fallback only needs the nearest few
+# rows — a small window the dense-area row cap can never truncate past. (Without
+# ordering, a 2000-row cap still evicted the true nearest in Lincoln Park and
+# returned a neighbor parcel — see 2026-06-21_resolver-investigation.md.)
+_SOCRATA_NEAREST_LIMIT = 64
+
 # Hard cap on the GIS point query. Cook County GIS is intermittently down; a bounded
 # timeout keeps a hanging GIS call from stretching the report request (and its
 # memory-pressure window) before the Socrata fallback fires.
 _GIS_TIMEOUT_S = 8.0
+
+
+def _distance_order_expr(lat: float, lon: float) -> str:
+    """SoQL ``$order`` expression: squared planar distance from each parcel's
+    (lat, lon) to the query point. Pushes nearest-first to the server so the
+    row cap returns the *closest* parcels, not an arbitrary truncated slice —
+    the bug that returned a wrong neighbor in dense blocks. (lon is negative in
+    Chicago, hence the parenthesised subtraction.)"""
+    return f"(lat-{lat})*(lat-{lat})+(lon-({lon}))*(lon-({lon}))"
 
 
 async def lookup_parcel(
@@ -196,35 +211,61 @@ async def _lookup_parcel_socrata(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> dict | None:
-    """Fallback: bounding-box query on Socrata Parcel Universe, pick closest."""
+    """Fallback: nearest parcel from Socrata Parcel Universe within a small bbox.
+
+    The bbox bounds the scan; **server-side distance ordering** makes the row cap
+    truncation-proof — the nearest parcels are returned first, so the true nearest
+    is always in the window regardless of how dense the block is. If the ordered
+    query is rejected (older SoQL), we fall back to an unordered bbox and **refuse
+    on a full cap** rather than return a guess that may not be the real nearest.
+    """
     settings = get_settings()
-    params = {
-        "$where": (
-            f"lat between '{lat - _BBOX_DELTA}' and '{lat + _BBOX_DELTA}' "
-            f"and lon between '{lon - _BBOX_DELTA}' and '{lon + _BBOX_DELTA}'"
-        ),
-        "$select": "pin,pin10,class,lat,lon,zip_code,township_name,nbhd_code,tax_code",
-        "$limit": settings.limit_ccao_parcels,
-    }
-    try:
-        rows = await socrata_get(
+    where = (
+        f"lat between '{lat - _BBOX_DELTA}' and '{lat + _BBOX_DELTA}' "
+        f"and lon between '{lon - _BBOX_DELTA}' and '{lon + _BBOX_DELTA}'"
+    )
+    select = "pin,pin10,class,lat,lon,zip_code,township_name,nbhd_code,tax_code"
+
+    async def _query(params: dict) -> list[dict] | None:
+        return await socrata_get(
             settings.dataset_ccao_parcels,
             params,
             client=client,
             base_url=settings.cook_county_socrata_base,
             app_token=settings.cook_county_socrata_token or None,
         )
+
+    try:
+        rows: list[dict] | None
+        try:
+            # Primary: nearest-first, small window — truncation can't drop the true nearest.
+            rows = await _query({
+                "$where": where,
+                "$select": select,
+                "$order": _distance_order_expr(lat, lon),
+                "$limit": _SOCRATA_NEAREST_LIMIT,
+            })
+        except Exception as exc:
+            # Ordering unsupported/rejected → unordered bbox, but now truncation IS a
+            # hazard, so refuse to guess when the result set hit the cap.
+            log.warning(
+                "Ordered parcel bbox query failed at (%s, %s): %s — retrying unordered",
+                lat, lon, exc,
+            )
+            rows = await _query({
+                "$where": where, "$select": select, "$limit": settings.limit_ccao_parcels,
+            })
+            if rows and len(rows) >= settings.limit_ccao_parcels:
+                log.warning(
+                    "Parcel bbox fallback hit the %d-row cap at (%s, %s) without distance "
+                    "ordering; refusing to guess a nearest parcel (dense/condo area).",
+                    settings.limit_ccao_parcels, lat, lon,
+                )
+                return None
+
         if not rows:
             return None
-        # "closest" is only correct if the candidate set actually contains the true
-        # parcel. If we hit the limit, the box was truncated (e.g. a condo-dense
-        # block) and the nearest returned parcel may not be the real one — surface it.
-        if len(rows) >= settings.limit_ccao_parcels:
-            log.warning(
-                "Parcel bbox fallback hit the %d-row cap at (%s, %s); nearest parcel "
-                "may be approximate (dense/condo area).",
-                settings.limit_ccao_parcels, lat, lon,
-            )
+        # Defensive: with server ordering rows[0] is already nearest; recompute anyway.
         closest = min(rows, key=lambda r: _distance_sq(lat, lon, r))
         pin_raw = closest.get("pin", "")
         if not pin_raw:

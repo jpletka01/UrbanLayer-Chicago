@@ -170,12 +170,13 @@ async def test_socrata_fallback_picks_closest_pin():
 
 
 @pytest.mark.asyncio
-async def test_socrata_fallback_requests_full_bbox_not_truncated():
-    """Regression: the fallback must fetch enough candidates that 'pick closest' is
-    computed over the whole bounding box. A small cap (the old bug: 20) silently
-    truncated dense urban boxes (~500+ parcels), so the true parcel was often not in
-    the candidate set and the report resolved to a wrong neighbor. Lock the cap high."""
-    from backend.config import get_settings
+async def test_socrata_fallback_orders_by_distance_server_side():
+    """Regression (resolver-investigation): the fallback must push distance ordering
+    to the server so the row cap returns the *nearest* parcels, not an arbitrary
+    truncated slice. The old fix (raise the cap to 2000) was insufficient — a dense
+    Lincoln Park bbox still hit 2000 and evicted the true nearest, returning a
+    neighbor. Lock in the server-side ``$order`` distance expression."""
+    from backend.retrieval.property.parcels import _SOCRATA_NEAREST_LIMIT
 
     captured = {}
 
@@ -188,10 +189,62 @@ async def test_socrata_fallback_requests_full_bbox_not_truncated():
         result = await _lookup_parcel_socrata(41.9307, -87.6411)
 
     assert result is not None
-    cap = captured["params"]["$limit"]
-    assert cap == get_settings().limit_ccao_parcels
-    # Must comfortably exceed a dense-residential bbox population (~500-600).
-    assert cap >= 1000, f"parcel bbox cap {cap} is too small — truncation bug risk"
+    order = captured["params"].get("$order")
+    assert order is not None and "lat" in order and "lon" in order, (
+        f"primary bbox query must order by distance server-side, got $order={order!r}"
+    )
+    # Ordering makes the cap truncation-proof, so it only needs the nearest few.
+    assert captured["params"]["$limit"] == _SOCRATA_NEAREST_LIMIT
+
+
+@pytest.mark.asyncio
+async def test_socrata_fallback_refuses_guess_when_unordered_query_hits_cap():
+    """If server-side ordering is rejected (older SoQL) the fallback runs an
+    unordered bbox — where truncation IS a hazard. When that result hits the row
+    cap, the true nearest may have been evicted, so the fallback must refuse to
+    guess (return None) rather than surface a possibly-wrong neighbor."""
+    from backend.config import get_settings
+
+    cap = get_settings().limit_ccao_parcels
+    full_box = [
+        {"pin": str(14241020170000 + i), "class": "2-05",
+         "lat": "41.9307", "lon": "-87.6411"}
+        for i in range(cap)
+    ]
+    calls = {"n": 0}
+
+    async def _spy(dataset, params, **kwargs):
+        calls["n"] += 1
+        if "$order" in params:            # first (ordered) attempt → simulate rejection
+            raise Exception("query.soql.no-such-function: $order expression unsupported")
+        return full_box                   # unordered retry → full cap, truncated
+
+    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=_spy):
+        result = await _lookup_parcel_socrata(41.9307, -87.6411)
+
+    assert calls["n"] == 2, "should retry unordered after the ordered query is rejected"
+    assert result is None, "a capped unordered result must not be trusted as the nearest"
+
+
+@pytest.mark.asyncio
+async def test_socrata_fallback_unordered_under_cap_still_resolves():
+    """Ordering rejected but the unordered bbox came back under the cap → the box was
+    NOT truncated, so picking the closest is safe and we still resolve a parcel."""
+    rows = [
+        {"pin": "14283180220000", "class": "2-11", "lat": "41.9300", "lon": "-87.6415"},
+        {"pin": "14241020170000", "class": "2-05", "lat": "41.9307", "lon": "-87.6411"},
+    ]
+
+    async def _spy(dataset, params, **kwargs):
+        if "$order" in params:
+            raise Exception("query.soql.no-such-function")
+        return rows
+
+    with patch("backend.retrieval.property.parcels.socrata_get", side_effect=_spy):
+        result = await _lookup_parcel_socrata(41.9307, -87.6411)
+
+    assert result is not None
+    assert result["pin14"] == "14241020170000"  # the closest of the two
 
 
 @pytest.mark.asyncio
