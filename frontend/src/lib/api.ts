@@ -270,6 +270,7 @@ export async function* chatStream(
   cachedCommunityArea?: number | null,
   language?: string,
   parcelPin?: string | null,
+  scorecardContext?: import("./types").ScorecardContext | null,
 ): AsyncGenerator<ChatChunk, void, unknown> {
   const body: Record<string, unknown> = { message, history };
   if (conversationId) body.conversation_id = conversationId;
@@ -277,6 +278,9 @@ export async function* chatStream(
   if (cachedCommunityArea != null) body.cached_community_area = cachedCommunityArea;
   if (language && language !== "en") body.language = language;
   if (parcelPin) body.parcel_pin = parcelPin;
+  // Pre-resolved parcel grounding (Scorecard handoff). Paired with parcel_pin so
+  // the backend gate (plan.location.pin == sc.pin) can match this turn.
+  if (scorecardContext) body.scorecard_context = scorecardContext;
 
   const resp = await authFetch(`${API_BASE}/chat`, {
     method: "POST",

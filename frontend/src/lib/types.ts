@@ -414,6 +414,24 @@ export interface ComparablesSummary {
   sales: ComparableSale[];
 }
 
+// Pre-resolved parcel grounding shipped to /chat on a Scorecard handoff. Mirrors
+// backend ScorecardContext. Built from the held ScorecardResponse (see
+// lib/scorecardContext.ts); the backend reads it directly and skips the
+// property/regulatory/incentives re-fetch when its pin matches the turn.
+export interface ScorecardContext {
+  pin: string | null;
+  address: string | null;
+  community_area_name: string | null;
+  lat: number | null;
+  lon: number | null;
+  parcel_zoning?: ZoningSummary | null;
+  zone_definition?: Record<string, unknown> | null;
+  property?: PropertySummary | null;
+  regulatory?: RegulatorySummary | null;
+  incentives?: IncentivesSummary | null;
+  comparables?: ComparablesSummary | null;
+}
+
 export interface ContextObject {
   community_area: number | null;
   community_area_name: string | null;

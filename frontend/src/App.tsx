@@ -47,6 +47,8 @@ import type {
 } from "./lib/types";
 import { useChat } from "./lib/useChat";
 import { useConversationRouter } from "./lib/useConversationRouter";
+import { useSelectedParcel } from "./contexts/SelectedParcelContext";
+import { buildScorecardContext } from "./lib/scorecardContext";
 import { buildReportData, type ReportData } from "./lib/reportBuilder";
 import { ExportReport } from "./components/ExportReport";
 import { ShareModal } from "./components/ShareModal";
@@ -80,6 +82,7 @@ export function App() {
   const { t: tc } = useTranslation("common");
   const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace, navigateBack } =
     useConversationRouter();
+  const { scorecard: heldScorecard, select: selectParcel } = useSelectedParcel();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -330,7 +333,11 @@ export function App() {
   // (save/share/purchase) — never as a precondition for the first answer.
   const canPersist = !authRequired || isAuthenticated;
 
-  async function sendMessage(text: string, _attachments?: undefined, opts?: { parcelPin?: string | null }) {
+  async function sendMessage(
+    text: string,
+    _attachments?: undefined,
+    opts?: { parcelPin?: string | null; scorecardContext?: import("./lib/types").ScorecardContext | null },
+  ) {
     setHistoryOpen(false);
     // The empty-state flag has done its job once a message exists; clearing it
     // here keeps it from lingering true into later message-clearing paths.
@@ -371,7 +378,9 @@ export function App() {
 
   // Auto-send ?q= query parameter (from Investigate buttons on Scorecard).
   // ?pin= rides along so the turn resolves the exact parcel instead of
-  // re-geocoding the address text (read-only handoff — truth-model §3).
+  // re-geocoding the address text (read-only handoff — truth-model §3), and
+  // carries pre-resolved grounding (scorecard_context) so the answer reads the
+  // facts the Scorecard already resolved instead of re-fetching them.
   const qConsumedRef = useRef(false);
   // True when this chat visit is a handoff from another page (?q= deep link).
   // If the user then declines the sign-in modal without ever getting an
@@ -387,7 +396,17 @@ export function App() {
     handoffOriginRef.current = true;
     const pin = searchParams.get("pin");
     setSearchParams({}, { replace: true });
-    sendMessage(q, undefined, pin ? { parcelPin: pin } : undefined);
+    if (!pin) {
+      sendMessage(q);
+      return;
+    }
+    // Reuse the held ScorecardResponse from the in-SPA navigation; on a cold
+    // deep-link it isn't there, so hydrate once via the scorecard endpoint.
+    (async () => {
+      const resp = heldScorecard?.resolved_pin === pin ? heldScorecard : await selectParcel({ pin });
+      const scorecardContext = resp?.resolved_pin === pin ? buildScorecardContext(resp) : null;
+      sendMessage(q, undefined, { parcelPin: pin, scorecardContext });
+    })();
   }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
 
   function handleAttach(files: File[]) {

@@ -7,6 +7,7 @@ import type {
   MapData,
   Message,
   RetrievalPlan,
+  ScorecardContext,
   SourceTag,
   TurnSummary,
   UploadMeta,
@@ -67,7 +68,11 @@ interface UseChat {
   rateLimited: boolean;
   atMessageLimit: boolean;
   activities: ActivityItem[];
-  sendMessage: (text: string, attachments?: UploadMeta[], opts?: { parcelPin?: string | null }) => Promise<void>;
+  sendMessage: (
+    text: string,
+    attachments?: UploadMeta[],
+    opts?: { parcelPin?: string | null; scorecardContext?: ScorecardContext | null },
+  ) => Promise<void>;
   clearTurnState: () => void;
   reset: () => void;
 }
@@ -114,7 +119,11 @@ export function useChat({
     clearTurnState();
   }
 
-  async function sendMessage(text: string, attachments?: UploadMeta[], opts?: { parcelPin?: string | null }) {
+  async function sendMessage(
+    text: string,
+    attachments?: UploadMeta[],
+    opts?: { parcelPin?: string | null; scorecardContext?: ScorecardContext | null },
+  ) {
     if (streaming) return;
 
     if (atMessageLimit) {
@@ -160,6 +169,7 @@ export function useChat({
         cachedMapRef.current?.communityArea ?? null,
         language,
         opts?.parcelPin ?? null,
+        opts?.scorecardContext ?? null,
       )) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);
