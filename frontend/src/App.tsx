@@ -410,14 +410,17 @@ export function App() {
   }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
 
   // Bare ?pin= (the "Ask about this property" entry — no ?q=, so no auto-send):
-  // ensure the parcel is held so the grounded empty-state starters can render.
-  // On in-SPA navigation it's already held; on a cold deep-link, hydrate once.
+  // activate the workspace (composing) so the grounded empty-state renders
+  // instead of the splash, and ensure the parcel is held so the starters can
+  // build. On in-SPA navigation it's already held; on a cold deep-link, hydrate
+  // once. composing must be set even when already held, so it can't sit behind
+  // the hydration short-circuit.
   useEffect(() => {
     const pin = searchParams.get("pin");
     if (!pin || searchParams.get("q")) return;
     if (conversationIdFromUrl || shareTokenFromUrl) return;
-    if (heldScorecard?.resolved_pin === pin) return;
-    selectParcel({ pin });
+    setComposing(true);
+    if (heldScorecard?.resolved_pin !== pin) selectParcel({ pin });
   }, [searchParams, conversationIdFromUrl, shareTokenFromUrl, heldScorecard]);
 
   // Grounding for the empty-state starters: shown only when the workspace was
