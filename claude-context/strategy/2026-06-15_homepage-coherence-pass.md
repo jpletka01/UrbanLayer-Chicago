@@ -1,10 +1,8 @@
 # Homepage Coherence Pass + In-Session New Chat (2026-06-15)
 
-**Status: IMPLEMENTED IN WORKING TREE — NOT committed, NOT pushed, NOT shipped.**
-On branch `main`, 14 files modified (unstaged). `tsc --noEmit` clean, 51/51 vitest pass,
-en/es locale parity verified, production build succeeds. **Push to `main` = deploy**, so this
-needs Jack's explicit approval before it goes live (per CLAUDE.md workflow rules). Until then,
-treat every "fixed/resolved" claim below as *in the working tree*, not live on prod.
+**Status: SHIPPED & LIVE on prod** (commit `334dcb7` on `main`, in the live image). 14 frontend
+files; `tsc --noEmit` clean, 51/51 vitest pass, en/es locale parity verified, production build
+succeeds. The "fixed/resolved" claims below are now live.
 
 This is **Step 4** of the product coherence audit (`product-coherence-audit.md`), continuing the
 homepage/entry/funnel work after Steps 1–3 (shipped 2026-06-11/12). It was produced through a long
@@ -171,5 +169,5 @@ These shaped every decision above and should govern future homepage/funnel/chat 
 `components/landing/Footer.tsx`, `components/landing/HowItWorks.tsx`,
 `locales/{en,es}/landing.json`, `locales/{en,es}/pages.json`, `locales/{en,es}/chat.json`.
 
-When this ships, archive per `claude-context/README.md` rules and move the relevant status lines into
-an `archive/` entry; until then it stays here as active, un-shipped work.
+Shipped 2026-06-15 (`334dcb7`). Per `claude-context/README.md` rules this could now be moved into an
+`archive/` entry; left here for now as the full record of the coherence pass.

@@ -3,11 +3,11 @@
 This folder is the **engineering handoff spec** for the Property Discovery (filter/search) system.
 Design is locked. Docs 00–09 are normative; code from them directly.
 
-> **Status (2026-06-13): SHIPPED TO PRODUCTION** (main `f192d57`, deploy-verified) — backend
-> (steps 1–10) + offline prospecting index + premium-gated frontend. LIVE but **dormant**:
-> unlinked from nav + empty-index fallback until an index is built on the prod server (blocked by
-> a Socrata outage). See **`10-implementation-status.md`** for what was built, the in-build
-> decisions/reasoning, and what remains. Read that doc first when resuming this work.
+> **Status (2026-06-15): LIVE ON PRODUCTION — FULL CITYWIDE** (all 77 CAs / ~949k parcels, coverage
+> `all`, nav-linked). Three waves shipped (`f192d57` → `8c279c6` → `78294d8`+`8d3ae07`+`731aca6`),
+> then expanded to full city in off-box batches (25→37→57→77). No longer dormant; the prod index is
+> built and persistent. See **`10-implementation-status.md`** for what was built, the in-build
+> decisions/reasoning, and what remains (deferred index fields). Read that doc first when resuming this work.
 
 **Reading order:**
 

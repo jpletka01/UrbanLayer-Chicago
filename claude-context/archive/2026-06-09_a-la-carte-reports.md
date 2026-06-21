@@ -1,7 +1,7 @@
 # A La Carte Report Purchases ($25 One-Time)
 
 **Completed**: 2026-06-09
-**Status**: Code complete, not yet deployed
+**Status**: Shipped & live in production (the $25 report wedge is the core monetization; schema v9 is part of the current prod v11 DB).
 
 ## What Was Built
 Added Stripe one-time payment flow so free users can buy individual PDF feasibility reports for $25 without subscribing to Pro ($99/mo). The purchase grants permanent re-download access for that specific address. This is the "wedge" from the North Star strategy — the first thing someone pays for.

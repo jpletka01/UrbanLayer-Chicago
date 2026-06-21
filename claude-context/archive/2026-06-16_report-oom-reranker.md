@@ -1,7 +1,7 @@
 # Report 504 incident — reranker hang + OOM hardening
 
-**Completed**: 2026-06-16
-**Status**: Shipped to production (with one reverted attempt; two open follow-ups)
+**Completed**: 2026-06-16 (reranker resolution finalized 2026-06-18)
+**Status**: Shipped to production — RESOLVED. Reranker stays OFF; the report was decoupled from it via the precomputed zoning cache (deployed & verified live 2026-06-18, `main` @ `69d8481`). Branch `fix/report-oom` since merged & deleted.
 
 ## What Was Built
 
@@ -46,7 +46,7 @@ Commits on `fix/report-oom` → `main`: `9f4bd4d` (isolation+interning+nginx+con
 
 ## 2026-06-18 follow-up — rerank path profiled and fixed (flag still OFF)
 
-The "needs profiling before re-enabling" follow-up above is now done. The rerank hang was **fixed in code on `fix/report-oom`**, but `RERANKER_ENABLED` stays `false` pending one prod-scale verification run (see "Remaining" below).
+The "needs profiling before re-enabling" follow-up above is now done. The rerank hang was **fixed in code** (commit `e59990b`, detailed below), the fix was **verified on the real prod box (2026-06-18) and found insufficient**, and `RERANKER_ENABLED` stays `false` permanently. The report no longer depends on the reranker at all (decoupled via the zoning cache — see "Real resolution" below).
 
 **Root cause (confirmed, not inferred).** Two compounding bugs, both CPU/concurrency — *not* memory:
 1. **Unbounded rerank concurrency.** The report's `extract_zoning_standards` fires **5 `semantic_search` in parallel**; each dispatched its cross-encoder `predict()` to the shared default `ThreadPoolExecutor`. The 5 predicts (each spawning torch intra-op threads) thrash a 4-vCPU box and get **zero parallel speedup** — they serialize at best.
@@ -69,4 +69,4 @@ Net effect: 5 × (60-pair predict), serialized → 40–60s on the 4-vCPU box �
 
 **Verified on prod 2026-06-18 (empty site = the real 4-vCPU/8 GB box) — fix is insufficient, reranker stays OFF.** Deployed `e59990b` to prod with the flag still false, flipped `RERANKER_ENABLED=true`, measured, rolled back. The fix engages perfectly (pairs=20 confirmed via probe, all reranks on one executor thread, **swap negligible — 124 pages, NOT swap-bound at real 8 GB**) but a single 20-pair `predict()` is still **~40s** and the 5-way report path **~280s ≫ 180s** — *worse* than the original hang. The bge-reranker cross-encoder is simply too slow on these vCPUs (~15× the M4 Pro per-core); the 60→20 cut can't close a 15× hardware gap. **More RAM would do nothing — the wall is CPU, and faster cores are the expensive CPX42 jump we're avoiding.** Verification harness: `scripts/rerank_repro.py` (native) + `scripts/rerank_profile_run.py` (constrained, /proc sampling).
 
-**Real resolution (2026-06-18): decouple the report from the reranker entirely via a precomputed zoning cache.** Rather than make the reranker fast enough, we removed it from the report path: `extract_zoning_standards` is now precomputed offline (deterministic full-section fetch + hybrid table merge) into a committed JSON the report reads. This *also* fixed a latent quality bug — the AI extraction was never delivering bulk numbers even reranked (partial-chunk retrieval). Committed on `fix/report-oom` (`9840d37`), **not yet deployed**. Full record + remaining work: **`guides/zoning-cache.md`**. The branch fix `e59990b` stays as the foundation for any future chat-rerank attempt (ONNX/smaller model).
+**Real resolution (2026-06-18): decouple the report from the reranker entirely via a precomputed zoning cache.** Rather than make the reranker fast enough, we removed it from the report path: `extract_zoning_standards` is now precomputed offline (deterministic full-section fetch + hybrid table merge) into a committed JSON the report reads. This *also* fixed a latent quality bug — the AI extraction was never delivering bulk numbers even reranked (partial-chunk retrieval). Committed `9840d37`, **deployed & verified live 2026-06-18 (`main` @ `69d8481`)** — prod returns C1-2 from the cache (FAR 2.2 + setbacks). Full record + remaining work: **`guides/zoning-cache.md`**. The branch fix `e59990b` stays as the foundation for any future chat-rerank attempt (ONNX/smaller model).

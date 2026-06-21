@@ -30,3 +30,6 @@ chicago-il-codes.html
 
 # JetBrains IDE
 .idea/
+
+# stray local artifact
+vibecoded-design-tells-main.zip

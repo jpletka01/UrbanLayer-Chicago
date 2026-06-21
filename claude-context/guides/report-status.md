@@ -2,9 +2,9 @@
 
 Single source of truth for all planned, shipped, and blocked report features across V4–V6+.
 
-Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **R6 (`_resolve_location` address-over-PIN override) FIXED 2026-06-11 — deploy pending.** **NEW — R7 (CRITICAL, OPEN): an empirical audit (n=111) shows address-only resolution selects the WRONG parcel ~77% of the time while GIS is down — now the #1 report-correctness issue, above all Phase 4 work; investigation only, not yet implemented.** See "R5"/"R6"/"R7" + Revalidation note below.)
+Last updated: 2026-06-11 (Report V6 Phase 3 + credibility pass + **Tier-0/Tier-1 + Tier-2 D3 + R5 ALL SHIPPED & DEPLOYED** (git `2fdf465`, live image 19:05 UTC). **R5 — critical correctness bug found & FIXED while validating P5 (commit 2c12286): the Socrata parcel bbox fallback resolved the subject to a WRONG NEIGHBOR whenever GIS is down (currently always).** Both QA parcels **revalidated post-fix (pin-only)** — control = $114,600/$23,024/class 205/1888, EX = exempt; the old Tier-1 figures were a neighbor (corrected). **R6 (`_resolve_location` address-over-PIN override) FIXED & DEPLOYED 2026-06-11.** **R7 (address→PIN via Cook County Address Points) — was the #1 report-correctness issue; now DEPLOYED & VERIFIED LIVE 2026-06-11 (`a9b7e6b`, live `060c281`), audit PASSED 98–100% exact-PIN.** See "R5"/"R6"/"R7" + Revalidation note below.)
 
-**2026-06-18 — Zoning extraction reworked (committed `fix/report-oom` `9840d37`, NOT deployed).** The report's AI zoning extraction (`extract_zoning_standards`) was silently failing — semantic search fetched a ~1,800-char slice of the ~30K-char Title-17 bulk tables, so ~48/61 zones came back `low`/null and the report fell back to the deterministic table (correct bulk numbers, no AI value-add). The report path now reads a **precomputed cache** built off **deterministic full-section fetch + hybrid merge** (table authoritative for FAR/height/coverage; AI adds setbacks/min-lot): 57/59 high-confidence, 0 FAR errors, reranker fully out of the report path. **DEPLOYED & VERIFIED LIVE 2026-06-18 (`main` @ `69d8481`).** Full record: `guides/zoning-cache.md`. (This also resolves the open **R1** item below.)
+**2026-06-18 — Zoning extraction reworked — DEPLOYED & VERIFIED LIVE (`main` @ `69d8481`; branch `fix/report-oom` since merged & deleted).** The report's AI zoning extraction (`extract_zoning_standards`) was silently failing — semantic search fetched a ~1,800-char slice of the ~30K-char Title-17 bulk tables, so ~48/61 zones came back `low`/null and the report fell back to the deterministic table (correct bulk numbers, no AI value-add). The report path now reads a **precomputed cache** built off **deterministic full-section fetch + hybrid merge** (table authoritative for FAR/height/coverage; AI adds setbacks/min-lot): 57/59 high-confidence, 0 FAR errors, reranker fully out of the report path. **DEPLOYED & VERIFIED LIVE 2026-06-18 (`main` @ `69d8481`).** Full record: `guides/zoning-cache.md`. (This also resolves the open **R1** item below.)
 
 ### R5 — Parcel bbox fallback resolved the WRONG parcel (CRITICAL, FIXED 2026-06-11, commit 2c12286)
 
@@ -41,7 +41,7 @@ Regenerated both real (non-mock) reports against the corrected resolver:
 - **EX `14283190070000` (pin-only): CORRECT** — "Tax-Exempt (Class EX)" callout, n/a assessed, exempt
   incentive class.
 
-### R6 — address param overrode a supplied PIN (FIXED 2026-06-11, not yet deployed)
+### R6 — address param overrode a supplied PIN (FIXED & DEPLOYED 2026-06-11)
 
 **Found during R5 revalidation.** Running the EX report with `&address=443+W+Wrightwood+Ave` (both pin +
 address) resolved a **taxable class-391 neighbor** instead of the EX subject, because `_resolve_location`
@@ -61,7 +61,7 @@ resolves **class EX (exempt), 41.92874,-87.64145**; address-only still geocodes 
 at 41.93072,-87.6411 (a separate coord-driven-pipeline / geocoder-accuracy limitation, see note). 7 new
 regression tests in `test_resolve_location.py` (pin-wins, address-fallback on empty/null PIN, pin-only,
 address-only, explicit-latlon-wins, 422). **Files:** `backend/main.py` (`_resolve_location`),
-`backend/tests/test_resolve_location.py`. **Deploy pending** (per workflow rules).
+`backend/tests/test_resolve_location.py`. **Deployed 2026-06-11** (R7 built on top of this resolver and is live).
 
 **Residual (NOT fixed by R6) → escalated to R7 below.** R6 fixed only the case where a PIN is *also*
 supplied. The dominant production path — a user **typing an address** — resolves the parcel from
@@ -324,7 +324,7 @@ data-*correctness* bug (every report could describe the wrong parcel while GIS i
 now fixed. With R5 + P5 closed, the remaining actionable backlog is genuinely low-leverage cosmetics
 (D8/Q14, P6) or data/GIS-blocked work (Miss#6, V5-2a, V6-2, D7-dropped, P3-deferred). The report has reached
 "good draft"; D3 + R5 are now **DEPLOYED (2026-06-11)**. R6 (`_resolve_location` address-over-PIN override)
-is **fixed (deploy pending)**. **SUPERSEDED 2026-06-11:** the R6 "residual" is now **R7** — an empirical
+is **fixed & deployed**. **SUPERSEDED 2026-06-11:** the R6 "residual" is now **R7** — an empirical
 audit shows address-only resolution picks the wrong parcel **~77% of the time while GIS is down**, making it
 the **new #1 report-correctness priority above everything in Phase 4**, and the recommended fix is **not**
 plain PIN-threading but **address→PIN resolution via the Cook County Address Points dataset** (threading is
@@ -408,7 +408,7 @@ pick, no-raise on degenerate lat, and an end-to-end smoke render of each of the 
 
 **Files (Tier-2 D3):** `backend/main.py` (`_rendered_m_per_px`, `_draw_scale_and_ring`, `_SCALE_BAR_MILES`,
 +3 call sites), `backend/tests/test_report_d3_maps.py` (+10). No model/template/config changes.
-**Not yet deployed** (per workflow rules). **Next: Tier-2 — P5 ownership-coverage validation + D8/Q14 batch.**
+**DEPLOYED 2026-06-11** (live image build 19:05 UTC, git `2fdf465`). **Next: Tier-2 — P5 ownership-coverage validation + D8/Q14 batch.**
 
 ### Phase 3 credibility pass — 2026-06-11
 

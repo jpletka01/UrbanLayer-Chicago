@@ -1,6 +1,6 @@
 # 10 — Implementation Status & Decisions Record
 
-**Status: LIVE ON PRODUCTION (2026-06-14) — three waves; no longer dormant.**
+**Status: LIVE ON PRODUCTION — FULL CITYWIDE (2026-06-15, all 77 CAs / ~949k parcels); no longer dormant.**
 - **Wave 1 (2026-06-13, `f192d57`)** — the invariant core, compilers, evaluator, diagnostics,
   offline index builder, list-first frontend.
 - **Wave 2 (2026-06-14, merge `8c279c6`)** — the **result.rows workbench (PR1–PR10)**: the
@@ -8,14 +8,18 @@
 - **Wave 3 (2026-06-14, merges `78294d8` + `8d3ae07` + `731aca6`)** — **PR-INDEX → live launch.**
   Built the prod index for real, caught + fixed a launch-blocking assessment bug, added
   recipe-count honesty + 3-tier addresses + index persistence + a self-activating nav link +
-  follow-ups (perf, PR-VAL, periodic rebuild), then expanded coverage to **25 community areas
-  (~482k parcels)**. Full record in the **"Wave 3"** section below.
+  follow-ups (perf, PR-VAL, periodic rebuild), launching at **25 community areas (~482k parcels)**.
+- **Part C (2026-06-15) — FULL CITYWIDE.** Expanded 25→37→57→77 CAs in measured off-box batches
+  (`docker compose run --rm`); the builder is now memory-bounded by construction (per-CA ingest +
+  streaming finalize). The old "~1.8M won't fit" worry was a **unit error** (Cook County + suburbs;
+  Chicago = ~949k). Full 77-CA runtime **2.98 GB RSS (39% of the 8 GB box)** at ~2.37 KB/parcel.
+  Full record in the **"Wave 3"** section below.
 
-**LIVE on prod as of 2026-06-14:** `/api/discovery/registry` → coverage `partial`, **25
-liveAreas**, 19 `populatedFields`, `recipeCounts` serving; Discovery is **nav-linked** (the PR-LIVE
-conditional link self-activated when coverage flipped off "none"). Backend runtime ~1.86 GB with
-the 482k-parcel index loaded; box has ~4.4 GB free. Monthly rebuild timer installed (next
-2026-07-01). The index persists on the `backend/data` volume across deploys.
+**LIVE on prod as of 2026-06-15:** `/api/discovery/registry` → coverage **`all`**, **all 77
+liveAreas**, `populatedFields` + `recipeCounts` serving; Discovery is **nav-linked**. Backend runtime
+**2.98 GB** with the full-city index loaded. Monthly `--refresh` rebuild timer installed (off-box,
+`run --rm`, auto-follows all 77). The index persists on the `backend/data` volume across deploys.
+**Remaining:** deferred index fields only (OZ/ward/overlay/adu/aro/flood/units — each a `data_version` bump).
 
 This doc records **what was actually built, the decisions made during implementation that were not
 fully pinned by the spec (00–09), and what remains.** The spec docs 00–09 stay the normative design.

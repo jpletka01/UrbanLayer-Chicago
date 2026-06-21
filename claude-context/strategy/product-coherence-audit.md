@@ -467,9 +467,8 @@ Session 1 produced a structured product definition that session 2 refined but di
 - **North-star §4 + CLAUDE.md reconciled** (same session): north-star §4 updated to shipped reality;
   the root CLAUDE.md killer query is now an address-assessment example.
 
-### Step 4 (2026-06-15) — IN WORKING TREE, NOT shipped — see `strategy/2026-06-15_homepage-coherence-pass.md`
-A homepage/entry/chat-access coherence pass, implemented but **uncommitted/unpushed** (needs Jack's
-deploy approval). Highlights: hero is now **address-only** (chat fully off the front door — the
+### Step 4 (2026-06-15) — SHIPPED & LIVE (`334dcb7` on `main`) — see `strategy/2026-06-15_homepage-coherence-pass.md`
+A homepage/entry/chat-access coherence pass, **shipped and live in prod**. Highlights: hero is now **address-only** (chat fully off the front door — the
 old librarian toggle is gone, not just demoted); ScorecardPage rebuilt on a **two-shell state model**
 that kills the duplicate-search-box moment + adds a **failure-recovery handoff** (a code question typed
 into the address box → neutral redirect → `/?q=` analyst); top nav trimmed to **Scorecard · Discovery ·

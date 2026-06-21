@@ -38,7 +38,7 @@ User Message
 | Map | Mapbox GL JS + deck.gl | WebGL handles thousands of points; deck.gl declarative layers |
 | Geocoding | Census Geocoder + shapely | Free, no API key, deterministic. 77 community areas + 30+ aliases |
 | Containers | Docker Compose (Qdrant + backend + nginx/frontend) | Multi-stage build, CPU-only PyTorch, baked HF models, non-root user |
-| Hosting | Hetzner CX32 (Nuremberg) — 2 vCPU, 8GB RAM. Live at `https://urbanlayerchicago.com` | Upgraded from CX22 (4GB) on 2026-06-06; reranker re-enabled |
+| Hosting | Hetzner CX32 (Nuremberg) — 2 vCPU, 8GB RAM. Live at `https://urbanlayerchicago.com` | Upgraded from CX22 (4GB) on 2026-06-06 (reranker has since been disabled — too slow on these vCPUs; report uses the precomputed zoning cache instead) |
 | DNS/CDN | Cloudflare Free | Origin IP hiding, DDoS protection, static asset caching |
 | TLS | Cloudflare Full (Strict) + Origin Certificate (expires 2041) | Zero-maintenance vs Let's Encrypt — no certbot/renewal cron |
 | Auth | Google OAuth2 + self-rolled JWT (PyJWT) | One-click sign-in, no password storage, httpOnly cookies + CSRF double-submit |
@@ -117,7 +117,7 @@ query
 
 Key design: rerank BEFORE per-section dedup. The v3 pipeline deduped first, then reranked — the reranker was stuck with whatever chunk the dense embedding liked most. v4 reranks first, so dedup picks the best-scoring chunk per section after blending. v5 added synonym expansion, keyword-aware dedup, and bumped keyword weight from 0.15 to 0.20 — improved retrieval benchmark from 75% to 100% A/B (26A, 2B across 28 queries). (2026-06-18: the rerank now scores only the top `reranker_candidate_count` (20) candidates by combined dense+keyword score, not all ~60 fetched — the wider fetch is still used for dense/keyword recall and dedup.)
 
-**Note**: Reranker is currently **DISABLED in production** (`RERANKER_ENABLED=false`, since 2026-06-16) — it hung `/api/report` → 504. Root cause was unbounded rerank concurrency + a 3× oversized batch, not an OOM; fixed on `fix/report-oom` (top-20 batch, single-worker rerank executor, configurable torch threads) but the flag stays off pending a real 4-vCPU/8GB wall-time run. See `archive/2026-06-16_report-oom-reranker.md` and `core/known-issues.md`.
+**Note**: Reranker is **DISABLED in production** (`RERANKER_ENABLED=false`, since 2026-06-16) — it hung `/api/report` → 504. Root cause was unbounded rerank concurrency + a 3× oversized batch, not an OOM. The concurrency/batch fix (top-20 batch, single-worker rerank executor, configurable torch threads; commit `e59990b`) was verified too slow on the real 4-vCPU box (a 20-pair `predict()` is still ~40s), so the flag stays off. **Resolved instead by decoupling the report from the reranker via a precomputed zoning cache** (`zoning_cache.py`, deployed & verified live 2026-06-18) — the reranker is out of the report path entirely. See `archive/2026-06-16_report-oom-reranker.md` and `core/known-issues.md`.
 
 ## Context Management
 
