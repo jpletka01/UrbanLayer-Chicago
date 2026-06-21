@@ -156,3 +156,79 @@ async def test_format_display_address_cases():
     assert f("2400 N MILWAUKEE AVE") == "2400 N Milwaukee Ave"
     assert f("123 E 63RD ST") == "123 E 63rd St"
     assert f("1 S STATE ST") == "1 S State St"
+
+
+# --- Reverse round-trip gate (parcel_address_matches) -----------------------
+#
+# Guards promotion of a fallback/nearest-centroid PIN to confirmed identity:
+# accept only when the candidate parcel's own address points round-trip to the
+# input on number + direction + street + side-of-street parity.
+
+
+async def test_round_trip_accepts_exact_match():
+    """642 W Belden's parcel carries a 642 W Belden address point → accept."""
+    rows = [{"add_number": "642", "st_predir": "WEST", "st_name": "BELDEN"}]
+    with _patch_socrata(rows):
+        ok = await address_points.parcel_address_matches("14331030110000", "642 W Belden Ave")
+    assert ok is True
+
+
+async def test_round_trip_rejects_wrong_side_neighbor_deming():
+    """Orchestrator grabbed 470 W Deming for input 481 (even vs odd) → reject."""
+    rows = [{"add_number": "470", "st_predir": "WEST", "st_name": "DEMING"}]
+    with _patch_socrata(rows):
+        ok = await address_points.parcel_address_matches("14283180160000", "481 W Deming Pl")
+    assert ok is False
+
+
+async def test_round_trip_rejects_across_street_neighbor_milwaukee():
+    """Orchestrator grabbed 2401/2403 N Milwaukee for input 2400 → reject."""
+    rows = [
+        {"add_number": "2401", "st_predir": "NORTH", "st_name": "MILWAUKEE"},
+        {"add_number": "2403", "st_predir": "NORTH", "st_name": "MILWAUKEE"},
+    ]
+    with _patch_socrata(rows):
+        ok = await address_points.parcel_address_matches("13253220380000", "2400 N Milwaukee Ave")
+    assert ok is False
+
+
+async def test_round_trip_accepts_one_of_multi_address_parcel():
+    """A multi-address parcel (2401-2403) matches when the input is one of them."""
+    rows = [
+        {"add_number": "2401", "st_predir": "NORTH", "st_name": "MILWAUKEE"},
+        {"add_number": "2403", "st_predir": "NORTH", "st_name": "MILWAUKEE"},
+    ]
+    with _patch_socrata(rows):
+        ok = await address_points.parcel_address_matches("13253220380000", "2403 N Milwaukee Ave")
+    assert ok is True
+
+
+async def test_round_trip_rejects_direction_mismatch():
+    """Same number + street but wrong directional → reject."""
+    rows = [{"add_number": "642", "st_predir": "EAST", "st_name": "BELDEN"}]
+    with _patch_socrata(rows):
+        ok = await address_points.parcel_address_matches("14331030110000", "642 W Belden Ave")
+    assert ok is False
+
+
+async def test_round_trip_handles_letter_direction_encoding():
+    """78yw-iddh sometimes stores the directional as a single letter, not the word."""
+    rows = [{"add_number": "642", "st_predir": "W", "st_name": "BELDEN"}]
+    with _patch_socrata(rows):
+        ok = await address_points.parcel_address_matches("14331030110000", "642 W Belden Ave")
+    assert ok is True
+
+
+async def test_round_trip_unparseable_input_returns_false_without_query():
+    sg = AsyncMock(return_value=[])
+    with patch.object(address_points, "socrata_get", new=sg):
+        ok = await address_points.parcel_address_matches("14331030110000", "???")
+    assert ok is False
+    sg.assert_not_called()
+
+
+async def test_round_trip_query_error_returns_false():
+    """Any lookup error withholds (False) — never a default-accept."""
+    with _patch_socrata(raises=Exception("timeout")):
+        ok = await address_points.parcel_address_matches("14331030110000", "642 W Belden Ave")
+    assert ok is False

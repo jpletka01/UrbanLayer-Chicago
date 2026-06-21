@@ -182,3 +182,71 @@ async def pin_to_address(
     result = _format_display_address(raw)
     _cache.set(key, result)
     return result
+
+
+# A parcel can carry several address points (corner lots, multi-address buildings);
+# fetch enough to check them all without scanning the whole dataset.
+_REVERSE_MATCH_LIMIT = 50
+
+
+async def parcel_address_matches(
+    pin14: str,
+    address: str,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> bool:
+    """True iff ``pin14``'s own Address Points address round-trips to ``address``.
+
+    The gate that keeps a *fallback/nearest-centroid* PIN from being surfaced as
+    confirmed identity. A parcel is accepted as the subject only when one of its
+    address points matches the input on **house number, directional, street name,
+    and side-of-street parity**. The neighbour parcels the nearest-centroid grabs
+    (470 vs 481 W Deming; 2401/2403 vs 2400 N Milwaukee) all fail and stay
+    withheld; an exact round-trip (642 W Belden) passes. Any error → False
+    (withhold), never a default-accept. See 2026-06-21_resolver-investigation.md.
+    """
+    parsed = parse_chicago_address(address)
+    if not parsed:
+        return False
+    try:
+        in_number = int(parsed["number"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    in_direction = parsed["direction"]
+    in_name = parsed["name"].upper()
+    dir_word = _DIRECTION_WORD.get(in_direction, in_direction)
+
+    settings = get_settings()
+    params = {
+        "$where": f"pin='{pin14}'",
+        "$select": "add_number,st_predir,st_name",
+        "$limit": _REVERSE_MATCH_LIMIT,
+    }
+    try:
+        rows = await socrata_get(
+            settings.dataset_address_points,
+            params,
+            client=client,
+            base_url=settings.cook_county_socrata_base,
+            app_token=settings.cook_county_socrata_token or None,
+        )
+    except Exception as exc:
+        log.warning("Parcel address round-trip lookup failed for pin %s: %s", pin14, exc)
+        return False
+
+    for r in rows or []:
+        try:
+            r_number = int(str(r.get("add_number", "")).strip())
+        except (TypeError, ValueError):
+            continue
+        r_dir = str(r.get("st_predir", "")).strip().upper()
+        r_name = str(r.get("st_name", "")).strip().upper()
+        if r_name != in_name:
+            continue
+        if r_dir not in (in_direction, dir_word):
+            continue
+        if r_number % 2 != in_number % 2:  # opposite side of the street
+            continue
+        if r_number == in_number:          # exact house-number round-trip
+            return True
+    return False
