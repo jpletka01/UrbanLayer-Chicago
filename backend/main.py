@@ -1537,8 +1537,32 @@ async def scorecard(
     """Non-AI instant-load property dashboard. Zero LLM cost."""
     rl = await _resolve_location(address, lat, lon, pin)
     data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
-    data["resolved_pin"] = rl.pin
-    data["resolved_confidence"] = rl.confidence
+
+    # Reconcile identity. When the authoritative address→PIN path degraded
+    # ("approximate"), the property orchestrator still resolved a parcel from the
+    # point via the nearest-centroid fallback — which is frequently a *neighbour*
+    # (470 vs 481 W Deming; 2401/2403 vs 2400 N Milwaukee). Trust that PIN as the
+    # parcel's identity only if its own address round-trips to the input; else
+    # withhold it (never surface a neighbour as "exact") and flag the property/
+    # comps data as based on a nearest, unverified parcel so the UI can caveat it.
+    # See claude-context/audits/2026-06-21_resolver-investigation.md.
+    resolved_pin = rl.pin
+    resolved_confidence = rl.confidence
+    nearest_parcel_unverified = False
+    if address and resolved_confidence == "approximate":
+        prop = data["context"].property
+        candidate_pin = prop.pin14 if prop else None
+        if candidate_pin:
+            from backend.retrieval.property.address_points import parcel_address_matches
+            if await parcel_address_matches(candidate_pin, address):
+                resolved_pin = candidate_pin
+                resolved_confidence = "authoritative"
+            else:
+                nearest_parcel_unverified = True
+
+    data["resolved_pin"] = resolved_pin
+    data["resolved_confidence"] = resolved_confidence
+    data["nearest_parcel_unverified"] = nearest_parcel_unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon
     # Deterministic Title-17 bulk standards for the parcel's zone (same table
