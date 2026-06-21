@@ -10,7 +10,7 @@
   "hero": {
     "addressPlaceholder": "Enter a Chicago address…",
     "try": "Try:",
-    "addressExamples": ["4520 N Clark St", "2400 N Milwaukee Ave", "1425 N Wells St"]
+    "addressExamples": ["4520 N Clark St", "1601 N Milwaukee Ave", "1425 N Wells St"]
   },
   "intelligence": {
     "heading": "One question. Twenty-five sources.",
@@ -125,11 +125,11 @@
       },
       {
         "title": "The Attorney",
-        "question": "Is the property at 2400 N Milwaukee Ave eligible for a Class 6b tax incentive?",
+        "question": "Is the property at 1601 N Milwaukee Ave eligible for a Class 6b tax incentive?",
         "domains": ["Property Classification", "Incentive Eligibility", "TIF District Status", "Applicable Programs", "Assessment History", "Municipal Code"],
         "framing": "Due diligence research in one query, not ten FOIA requests.",
         "action": "scorecard",
-        "address": "2400 N Milwaukee Ave"
+        "address": "1601 N Milwaukee Ave"
       }
     ]
   },

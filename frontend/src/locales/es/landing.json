@@ -10,7 +10,7 @@
   "hero": {
     "addressPlaceholder": "Ingresa una dirección de Chicago…",
     "try": "Prueba:",
-    "addressExamples": ["4520 N Clark St", "2400 N Milwaukee Ave", "1425 N Wells St"]
+    "addressExamples": ["4520 N Clark St", "1601 N Milwaukee Ave", "1425 N Wells St"]
   },
   "intelligence": {
     "heading": "25 fuentes en una sola consulta.",
@@ -163,7 +163,7 @@
       },
       {
         "title": "El Abogado",
-        "question": "¿Es la propiedad en 2400 N Milwaukee Ave elegible para un incentivo fiscal Clase 6b?",
+        "question": "¿Es la propiedad en 1601 N Milwaukee Ave elegible para un incentivo fiscal Clase 6b?",
         "domains": [
           "Clasificación de la propiedad",
           "Elegibilidad de incentivos",
@@ -174,7 +174,7 @@
         ],
         "framing": "Auditoría de compra en una sola consulta, en lugar de múltiples solicitudes de acceso a información pública (FOIA).",
         "action": "scorecard",
-        "address": "2400 N Milwaukee Ave"
+        "address": "1601 N Milwaukee Ave"
       }
     ]
   },

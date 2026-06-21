@@ -647,12 +647,12 @@ export function AboutPage() {
           <Code>{`{
   "sources": ["crime_api", "311_api", "vector_search", "property", "regulatory", ...],
   "location": {
-    "raw": "2400 N Milwaukee Ave",
+    "raw": "1601 N Milwaukee Ave",
     "type": "address",
-    "resolved_community_area": 22,
-    "resolved_address": "2400 N Milwaukee Ave, Chicago, IL",
-    "resolved_lat": 41.9267,
-    "resolved_lon": -87.6973
+    "resolved_community_area": 24,
+    "resolved_address": "1601 N Milwaukee Ave, Chicago, IL",
+    "resolved_lat": 41.9109,
+    "resolved_lon": -87.6778
   },
   "intent": "neighborhood_overview",
   "time_range_days": 90,

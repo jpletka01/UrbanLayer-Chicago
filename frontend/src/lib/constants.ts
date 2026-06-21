@@ -2,7 +2,7 @@
 // through components.
 
 export const SUGGESTIONS = [
-  "What's going on near 2400 N Milwaukee Ave?",
+  "What's going on near 1601 N Milwaukee Ave?",
   "Tell me about the property at 1425 N Wells St",
   "Can I open a bar at 2200 W Chicago Ave?",
   "Is Logan Square in a TIF district?",

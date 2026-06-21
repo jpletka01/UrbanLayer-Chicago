@@ -56,7 +56,7 @@
     "subtitle": "Free instant snapshot of any Chicago parcel — zoning, taxes, incentives, comps. Enter an address.",
     "search": "Search",
     "loading": "Loading...",
-    "addressNotFound": "Could not find that address. Try a different format (e.g., \"2400 N Milwaukee Ave\").",
+    "addressNotFound": "Could not find that address. Try a different format (e.g., \"1601 N Milwaukee Ave\").",
     "locationNotFound": "Could not load property data for this location.",
     "noResults": "No results found.",
     "searchAnother": "Search another address",

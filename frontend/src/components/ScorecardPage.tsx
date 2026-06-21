@@ -423,7 +423,7 @@ export default function ScorecardPage() {
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="2400 N Milwaukee Ave"
+                placeholder="1601 N Milwaukee Ave"
                 className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-4 py-2.5 text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
               />
               <button

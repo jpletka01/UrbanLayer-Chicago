@@ -155,5 +155,5 @@ python -m pytest backend/tests/test_assembler.py -v          # specific module
 python -m pytest backend/tests/ -k "property" -v             # keyword filter
 
 # PDF Report v2 visual QA (mock=true forces all sections populated)
-curl -o /tmp/report_mock.pdf "http://localhost:8001/api/report?address=2400+N+Milwaukee+Ave&mock=true" -H "Cookie: session=dev"
+curl -o /tmp/report_mock.pdf "http://localhost:8001/api/report?address=1601+N+Milwaukee+Ave&mock=true" -H "Cookie: session=dev"
 ```
