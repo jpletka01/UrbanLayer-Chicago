@@ -31,7 +31,7 @@ Base: `https://datacatalog.cookcountyil.gov/resource/{id}.json`. Same SODA 2.1 A
 
 | Dataset | ID | Key Fields | Join Key |
 |---------|-----|-----------|----------|
-| Parcel Universe (Current) | `pabr-t5kh` | pin, class, township, lat, lon | PIN — also used as **fallback for lat/lon → PIN** when GIS is down (bounding-box query on lat/lon). PIN-direct lookup via `lookup_parcel_by_pin()` |
+| Parcel Universe (Current) | `pabr-t5kh` | pin, class, township, lat, lon | PIN — also used as **fallback for lat/lon → PIN** when GIS is down (**distance-ordered** bbox query on lat/lon; `$order` server-side so a dense-block cap can't truncate out the true nearest — 2026-06-21). This is a *nearest* PIN, not authoritative identity: `/api/scorecard` only promotes it to `resolved_pin` on a reverse address round-trip, else flags `nearest_parcel_unverified`. PIN-direct lookup via `lookup_parcel_by_pin()` |
 | **Address Points** | `78yw-iddh` | add_number, **st_predir** (spelled-out word, e.g. `WEST`), st_name (no suffix), lst_type (suffix abbr), pin, lat, **long** | **Authoritative address→PIN map** (GIS-index-independent). Powers R7 `address_to_pin()` (`retrieval/property/address_points.py`). `inc_muni='Chicago'` filter (title-case). **Gotchas:** `st_predir` is the word not the letter (match `in ('W','WEST')`); coord column is `long` not `lon`; query by number+direction+name only (no suffix-type filter → numbered streets like `87TH ST`/`87TH PL` can multi-match → conservative fall-through). Some exempt/institutional parcels have **no** address point (e.g. EX subject `14283190070000`) |
 | Assessed Values | `uzyt-m557` | pin, tax_year, mailed_tot, certified_tot, board_tot | PIN + year |
 | Parcel Sales | `wvhk-k5uv` | pin, sale_date, sale_price, deed_type | PIN |

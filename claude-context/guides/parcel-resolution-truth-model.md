@@ -74,8 +74,12 @@ Two compounding defects:
 - **D-locator:** with GIS down, lat/lon→PIN degrades from *containment* (PIP) to
   *proximity* (nearest-centroid), which is wrong by construction for an offset point.
 
-R5 fixed only the cap on the nearest-centroid search (so it now correctly finds the
-nearest centroid); R6 fixed only the PIN-vs-address precedence *when a PIN is also passed*.
+R5 raised the cap on the nearest-centroid search, but that was insufficient — a dense-block
+bbox still hit the (raised) cap unordered and truncated out the true nearest, returning a
+neighbor; **2026-06-21** fixed this properly with server-side distance ordering + a reverse
+round-trip gate that keeps a nearest-centroid PIN from becoming identity unless it matches
+the input address (see step 4 and `archive/2026-06-21_pin-resolution-seam.md`).
+R6 fixed only the PIN-vs-address precedence *when a PIN is also passed*.
 Neither touches the dominant path — a user typing an address — because the frontend sends
 no PIN and the address still becomes coordinates.
 
@@ -180,9 +184,20 @@ a **confidence tier**:
 3. **`address` supplied** → **Address Points `78yw-iddh`** lookup (parse via
    `parse_chicago_address`) → unique PIN → resolve by PIN. → **confidence = authoritative**.
 4. **Degraded fallback** (only when 1–3 yield no confident PIN): `geocode_address` → point
-   → GIS PIP if it returns, else **nearest Parcel-Universe centroid** (the current path).
-   → **confidence = approximate**. The resolved PIN/address **must be surfaced for user
-   verification** on the artifact, and this path must be logged/counted.
+   → GIS PIP if it returns, else **nearest Parcel-Universe centroid**.
+   → **confidence = approximate**, `resolved_pin = null`. The geocoded location/address
+   **must be surfaced for user verification**, and this path is logged/counted.
+   **The nearest-centroid PIN is NOT promoted to identity by default (2026-06-21).** The
+   property orchestrator still resolves it (to fill property/tax/comps), but `/api/scorecard`
+   promotes it to `resolved_pin`/`authoritative` **only when it passes a reverse round-trip**
+   (`parcel_address_matches`: the candidate PIN's own Address Points must match the input on
+   number + direction + parity). Otherwise the PIN stays withheld and the response carries
+   `nearest_parcel_unverified=true` so the UI caveats the parcel-specific cards (they describe
+   the nearest parcel, possibly a neighbor). The nearest-centroid search itself now orders by
+   distance **server-side** (`pabr-t5kh` `$order`) so a dense-block row cap can't truncate out
+   the true nearest (the old unordered cap returned a *neighbor* — e.g. 470 vs 481 W Deming);
+   it refuses on a full cap if ordering is unavailable. See
+   `archive/2026-06-21_pin-resolution-seam.md`.
 5. **No resolution** → `422`, ask for a different format or a map pin.
 
 ### Fallback rules
