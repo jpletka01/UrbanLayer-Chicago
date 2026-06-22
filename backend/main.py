@@ -1348,6 +1348,28 @@ async def _resolve_location(
                 hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative",
             )
 
+    # 3.5 Address → authoritative PIN via the Assessor's Parcel Addresses
+    #     (3723-97qp) — a SECOND authoritative source consulted only after an
+    #     Address Points miss. Covers parcels absent from 78yw-iddh (e.g. 481 W
+    #     Deming Pl). It has no coordinates, so backfill the parcel centroid from
+    #     Parcel Universe (same query as step 2). A PIN whose centroid doesn't
+    #     resolve falls through to the degraded path rather than guessing a point.
+    if address and settings.assessor_address_resolution_enabled:
+        from backend.retrieval.property.parcel_addresses import assessor_address_to_pin
+        from backend.retrieval.socrata import socrata_get
+        assessor_pin = await assessor_address_to_pin(address)
+        if assessor_pin:
+            rows = await socrata_get(
+                settings.dataset_ccao_parcels,
+                {"$where": f"pin='{assessor_pin}'", "$select": "lat,lon", "$limit": 1},
+                base_url=settings.cook_county_socrata_base,
+            )
+            if rows and rows[0].get("lat") and rows[0].get("lon"):
+                return ResolvedLocation(
+                    float(rows[0]["lat"]), float(rows[0]["lon"]),
+                    resolved_address, assessor_pin, "authoritative",
+                )
+
     # 4. Degraded fallback: geocode → street-interpolated point → downstream
     #    nearest-centroid. No confident PIN, so flag approximate (INV-5) and log.
     if address:

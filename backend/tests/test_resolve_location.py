@@ -162,6 +162,79 @@ async def test_kill_switch_skips_address_point_step():
 
 
 # --------------------------------------------------------------------------- #
+# Step 3.5 — assessor address → PIN fallback (covers Address Points gaps)
+# --------------------------------------------------------------------------- #
+#
+# Fires only when Address Points (step 3) misses AND the flag is on. The assessor
+# source returns a bare PIN; the centroid is backfilled from Parcel Universe
+# (same socrata_get the step-2 PIN branch uses). Default-OFF until spot-checked.
+
+ASSESSOR_PIN = "14283190070000"  # 481 W Deming Pl — absent from Address Points
+
+
+def _patch_assessor_to_pin(pin):
+    return patch(
+        "backend.retrieval.property.parcel_addresses.assessor_address_to_pin",
+        new=AsyncMock(return_value=pin),
+    )
+
+
+def _enable_assessor():
+    return patch.object(
+        main_mod.get_settings(), "assessor_address_resolution_enabled", True
+    )
+
+
+async def test_assessor_fallback_resolves_when_address_point_misses():
+    """AP miss + flag on + assessor PIN + centroid → authoritative, geocode skipped."""
+    geo = AsyncMock(return_value=GEOCODE_COORDS)
+    with _enable_assessor(), _patch_address_to_pin(None), \
+            _patch_assessor_to_pin(ASSESSOR_PIN), _patch_pin_lookup(PIN_COORDS), \
+            patch.object(main_mod, "geocode_address", new=geo):
+        rl = await main_mod._resolve_location(address="481 W Deming Pl")
+    assert (rl.lat, rl.lon) == PIN_COORDS
+    assert rl.pin == ASSESSOR_PIN
+    assert rl.confidence == "authoritative"
+    assert rl.address == "481 W Deming Pl"
+    geo.assert_not_called()
+
+
+async def test_assessor_fallback_skipped_when_flag_off():
+    """Flag off (default) → assessor resolver never called → geocode approximate."""
+    assessor = AsyncMock(return_value=ASSESSOR_PIN)
+    with patch.object(main_mod.get_settings(), "assessor_address_resolution_enabled", False), \
+            _patch_address_to_pin(None), \
+            patch("backend.retrieval.property.parcel_addresses.assessor_address_to_pin", new=assessor), \
+            _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(address="481 W Deming Pl")
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.pin is None
+    assert rl.confidence == "approximate"
+    assessor.assert_not_called()
+
+
+async def test_assessor_miss_falls_to_geocode_approximate():
+    """AP miss + flag on + assessor no-confident-match → geocode, approximate."""
+    with _enable_assessor(), _patch_address_to_pin(None), \
+            _patch_assessor_to_pin(None), _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(address="2400 N Milwaukee Ave")
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.pin is None
+    assert rl.confidence == "approximate"
+
+
+async def test_assessor_hit_without_centroid_falls_to_geocode():
+    """Assessor PIN but Parcel Universe has no usable centroid → degrade, never guess."""
+    with _enable_assessor(), _patch_address_to_pin(None), \
+            _patch_assessor_to_pin(ASSESSOR_PIN), _patch_pin_lookup(None), \
+            _patch_geocode(GEOCODE_COORDS):
+        rl = await main_mod._resolve_location(address="481 W Deming Pl")
+    assert (rl.lat, rl.lon) == GEOCODE_COORDS
+    assert rl.pin is None
+    assert rl.confidence == "approximate"
+
+
+# --------------------------------------------------------------------------- #
 # Fallback chains when a supplied PIN does not resolve
 # --------------------------------------------------------------------------- #
 
