@@ -17,6 +17,13 @@ services:
       # is benign (ample headroom + 8 GB swap, decelerates, worker restarts each
       # deploy). Revisit only if RSS fails to plateau over days.
       - MALLOC_ARENA_MAX=2
+      # Enabled 2026-06-22: second authoritative address→PIN source (Assessor Parcel
+      # Addresses 3723-97qp) for parcels absent from Address Points (78yw-iddh) —
+      # closes ~half of the ~25% of Chicago addresses that degraded to "approximate".
+      # Code default is OFF; prod opts in here (revert by removing this line). Gated
+      # pre-enable on: 55/55 agreement w/ Address Points, 20/20 independent geocode
+      # spot-check, 5 live integration tests. See audits/2026-06-22_gis-parcel-resolution-fix.md.
+      - ASSESSOR_ADDRESS_RESOLUTION_ENABLED=true
 
   frontend:
     build:
