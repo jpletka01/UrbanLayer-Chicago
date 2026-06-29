@@ -54,6 +54,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.
 - Frontend state: `useChat` hook owns SSE consumption. `App.tsx` is the state machine. Per-message context architecture (each assistant message stores its own context/plan/mapData).
+- Theming: light/dark themeable (CSS-var-backed Tailwind tokens; `system` default; `ThemeProvider`/`ThemeToggle`). Palette = "Cyanotype on Vellum" (azure accent on warm vellum neutrals; terracotta = premium `highlight` only). On branch `feat/light-dark-theming` (not yet merged). See `claude-context/guides/light-dark-theming.md` + `frontend/CLAUDE.md` before any color/token work.
 - Tests: mock external APIs, mark real-API tests with `@pytest.mark.integration`.
 - Env vars: `.env` (ANTHROPIC_API_KEY, SOCRATA_APP_TOKEN, WALKSCORE_API_KEY), `frontend/.env` (VITE_MAPBOX_TOKEN).
 

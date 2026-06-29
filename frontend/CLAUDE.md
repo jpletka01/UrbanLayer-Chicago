@@ -40,16 +40,38 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 
 ## Design Tokens
 
-**Full design system: `claude-context/guides/design-system.md`** (branch `design-system-refactor`,
-not yet merged 2026-06-20). The rules below are the canonical token set — don't reintroduce arbitrary
-`text-[Npx]`, raw `white/<opacity>` chrome, or off-palette hue.
+**Full design system: `claude-context/guides/design-system.md`** (shipped 2026-06-20). **Light/dark
+theming + palette revision: `claude-context/guides/light-dark-theming.md`** (branch
+`feat/light-dark-theming`, Phases 1–3 done 2026-06-29 — read it before any color/token work). The rules
+below are the canonical token set — don't reintroduce arbitrary `text-[Npx]`, raw `white/<opacity>`
+chrome, or off-palette hue.
 
-**Neutral ramp** (one system — `white/opacity` for chrome is retired): bg `#0d0d0d bg-dark-bg` ·
-surface `#171717 bg-dark-surface` · elevated `#1f1f1f bg-dark-elevated` · hover `#242424 bg-dark-hover`
-(interactive fill) · border-subtle `#1f1f1f` · border `#2a2a2a border-dark-border` · border-strong
-`#383838 border-dark-border-strong`. Text: primary `#eeeeee` · secondary `#a3a098` · muted `#6b6962`
-· on-accent `#ffffff text-text-on-accent`. Accent `#c96442 bg-accent/text-accent` + `accent-hover`
-`#d97a5a` + `accent-muted`. (Retired: `dark.bubble/bubble-user/drawer/tooltip`.)
+**Theming.** All color tokens are CSS-var-backed (`rgb(var(--x) / <alpha-value>)`); class names are
+**unchanged** (`bg-dark-surface`, `text-text-primary`, …) — only the backing flips. `:root` /
+`[data-theme="dark"]` hold the dark palette, `[data-theme="light"]` the light one (channel triplets in
+`src/index.css`). `ThemeProvider`/`useTheme` (`src/contexts/ThemeContext.tsx` + `src/lib/useTheme.ts`)
+own the preference (light/dark/**system** default, persisted as `urbanlayer-theme`); a pre-paint script
+in `index.html` sets `data-theme` before first paint (no FOUC); `ThemeToggle` (3-state) sits in the
+page/workspace/splash headers. **Mode-lock an over-image / always-dark island** by putting
+`data-theme="dark"` on its wrapper (re-applies the dark vars) — used by the hero, StorySection, the
+Footer. NOT for content sections (they must flip).
+
+**Palette = "Cyanotype on Vellum"** (replaces terracotta-on-flat-gray). Blueprint-**azure** accent on
+**warm vellum** neutrals; exact per-theme hexes live in `index.css`. Neutral ramp (warm, flips): bg
+`bg-dark-bg` · surface `bg-dark-surface` · elevated `bg-dark-elevated` · hover `bg-dark-hover` ·
+`border-dark-border{,-subtle,-strong}`. Text: `text-text-primary / -secondary / -muted / -on-accent`.
+**Accent = bright azure**: `bg-accent`/`text-accent` (brand/outline/selected/focus) + `accent-hover` +
+`accent-text` (= `text-link`, the AA-safe link tone, lighter on dark) + `accent-muted` (selected fill).
+
+**Action hierarchy** (reads by FORM, not by shade of blue): **Primary** = filled `bg-action` +
+`text-action-fg` + `hover:bg-action-hover` (a deeper azure, **decoupled** from `accent` so white labels
+keep AA). **Secondary** = `border-accent` + `text-link`. **Tertiary/link** = `text-link` only. **Inert**
+= neutral ramp. **Premium** (money / paid-report CTAs ONLY) = terracotta `bg-highlight-fill` +
+`text-highlight-fg` (icon/text: `text-highlight`). Dual-accent meaning: azure = do work, terracotta = costs money.
+
+**State tones** = themed `state-{positive,negative,warning}` tokens (`bg-/text-/border-state-*`, with
+`/opacity`) — bright -400 in dark, -700 in light (AA). Use these, NOT raw `emerald/rose/amber-400`.
+Exempt (keep raw hue): `DataPill` (data-encoding category colors) + `MapView` overlays (always-dark map canvas).
 
 **Type scale** (10 named `fontSize` steps — replaces all arbitrary px): `text-display / stat /
 section / subtitle / lead / title / body / caption / micro / overline`. Size+line-height+weight baked
@@ -63,12 +85,14 @@ composer + Pricing cards, by intent.)
 `.text-display`/`.text-section` only via `index.css`) · `font-mono` IBM Plex Mono (PINs/code/data).
 
 **Primitives** (`src/components/ui/`): `Card`, `Chip`, `Modal` — use these, don't hand-roll card/chip/
-dialog chrome. `CollapsibleCard` wraps `Card`.
+dialog chrome. `CollapsibleCard` wraps `Card`. `Card` is `flex flex-col` (footer pins to the bottom in
+equal-height grids) and carries `shadow-card`; `Modal` uses `shadow-modal` — both are theme-aware
+elevation tokens (none in dark, soft shadow in light).
 
-**Color discipline (§6)**: chrome = accent + neutral only. Hue ONLY for genuine state —
-`positive`=emerald-400, `negative`=rose-400, `warning`=amber-400. Links = `text-accent`. Exempt:
-over-image text (white over photos), and functional data encoding (`mapColors.ts`, `DataPill`,
-`upsideColor.ts`, CTA-line/score colors).
+**Color discipline (§6)**: chrome = accent + neutral only. Hue ONLY for genuine state (use the themed
+`state-*` tokens). Links = `text-link` (azure — on-brand; the old "links never blue" rule is **overridden**
+by the azure palette). Exempt: over-image text (white over photos), and functional data encoding
+(`mapColors.ts`, `DataPill`, `upsideColor.ts`, CTA-line/score colors).
 
 ## Patterns
 

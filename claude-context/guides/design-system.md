@@ -2,8 +2,17 @@
 
 **Status: COMPLETE on branch `design-system-refactor` (8 commits, HEAD `bf33d70`) — NOT yet
 merged/pushed to `main`/prod (2026-06-20).** `tsc` + production build + 51 vitest tests green.
-This is the source of truth for type, color, radius, and shared UI primitives. Read before any
+This is the source of truth for type, radius, and shared UI primitives. Read before any
 visual/CSS/component-chrome work.
+
+> **⚠️ COLOR is partly SUPERSEDED (2026-06-29) — see `light-dark-theming.md`.** The app is now
+> light/dark themeable and the palette was revised to **"Cyanotype on Vellum"** (bright **azure**
+> accent on **warm vellum** neutrals; terracotta demoted to a premium-only `highlight`). Tokens are
+> CSS-var-backed (class names unchanged). Specifically superseded here: §2's fixed dark neutral hexes
+> (now per-theme vars), §6's terracotta accent + "links never blue" rule (links are now azure
+> `text-link`), and the static `emerald/rose/amber-400` state colors (now themed `state-*` tokens).
+> New: an **action hierarchy** (`action`/`link`/`highlight`) and theme-aware `shadow-card`/`shadow-modal`.
+> Type scale, radius, fonts, and the Card/Chip/Modal primitives below are unchanged.
 
 ## Why this exists
 A UI audit (against the "vibecoded-design-tells" study: the top AI tells are untouched
