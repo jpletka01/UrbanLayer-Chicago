@@ -12,7 +12,11 @@
    data-theme before first paint (no FOUC). Neutrals carry a warm amber undertone (~40°);
    accent/link/focus/selected are blueprint blue; terracotta is the warm premium HIGHLIGHT
    only. Action hierarchy reads by FORM (fill/outline/text), never by shade of blue.       */
-:root {
+/* `:root` is the dark default; `[data-theme="dark"]` repeats the dark values so any element
+   can opt back into dark as a self-contained island — used to mode-lock over-image sections
+   (hero, IntelligenceStack) so their token text stays light over a dark photo even in light mode. */
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
   /* warm graphite neutrals (amber undertone) */
   --bg: 20 17 14;                /* #14110e */

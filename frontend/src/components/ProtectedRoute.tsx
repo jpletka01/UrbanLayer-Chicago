@@ -11,7 +11,7 @@ export default function ProtectedRoute({ tier, children }: ProtectedRouteProps) 
   const { isAuthenticated, authRequired, user, loading } = useAuthContext();
 
   if (loading) {
-    return <div className="w-full min-h-screen bg-[#0d0d0d]" />;
+    return <div className="w-full min-h-screen bg-dark-bg" />;
   }
 
   if (authRequired && !isAuthenticated) {
@@ -20,7 +20,7 @@ export default function ProtectedRoute({ tier, children }: ProtectedRouteProps) 
 
   if (tier === "admin" && user?.tier !== "admin") {
     return (
-      <div className="w-full min-h-screen bg-[#0d0d0d] flex items-center justify-center">
+      <div className="w-full min-h-screen bg-dark-bg flex items-center justify-center">
         <p className="text-text-secondary text-sm">Admin access required</p>
       </div>
     );

@@ -76,7 +76,7 @@ export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
               <td className="py-2 text-center">
                 <span
                   className={`inline-block w-2 h-2 rounded-full ${
-                    row.status === "ok" ? "bg-emerald-400" : "bg-rose-400"
+                    row.status === "ok" ? "bg-state-positive" : "bg-state-negative"
                   }`}
                 />
               </td>
@@ -105,7 +105,7 @@ export function RequestsTable({ rows, onLoadMore, hasMore }: Props) {
               {row.error_message && (
                 <div className="col-span-2">
                   <span className="text-text-muted">Error: </span>
-                  <span className="text-rose-400">{row.error_message}</span>
+                  <span className="text-state-negative">{row.error_message}</span>
                 </div>
               )}
               <div>

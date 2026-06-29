@@ -21,9 +21,9 @@ function KV({ label, value, color }: { label: string; value: string; color?: str
 function resultColor(result: string | null): string {
   if (!result) return "text-text-muted";
   const r = result.toLowerCase();
-  if (r === "pass") return "text-emerald-400";
-  if (r === "fail") return "text-rose-400";
-  if (r.includes("conditional") || r.includes("conditions")) return "text-amber-400";
+  if (r === "pass") return "text-state-positive";
+  if (r === "fail") return "text-state-negative";
+  if (r.includes("conditional") || r.includes("conditions")) return "text-state-warning";
   return "text-text-secondary";
 }
 
@@ -45,7 +45,7 @@ export function FoodInspectionCard({ data }: { data: FoodInspectionSummary }) {
           </div>
           {data.fail_rate != null && (
             <div className="text-center">
-              <div className={`text-sm font-semibold ${data.fail_rate > 15 ? "text-rose-400" : "text-text-primary"}`}>
+              <div className={`text-sm font-semibold ${data.fail_rate > 15 ? "text-state-negative" : "text-text-primary"}`}>
                 {data.fail_rate}%
               </div>
               <div className="text-micro text-text-muted mt-0.5">{t("foodInspections.failRate")}</div>

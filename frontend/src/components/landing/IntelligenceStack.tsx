@@ -45,7 +45,7 @@ export function IntelligenceStack() {
   const domains = t("intelligence.domains", { returnObjects: true }) as { title: string; badge: string; points: string[] }[];
 
   return (
-    <section ref={ref} className="relative py-24 px-6 overflow-hidden">
+    <section ref={ref} data-theme="dark" className="relative py-24 px-6 overflow-hidden">
       <img
         src="https://images.unsplash.com/photo-1597411216858-8e8bfcbb37e3?w=1920&q=80"
         alt=""

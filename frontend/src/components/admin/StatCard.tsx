@@ -22,7 +22,7 @@ export function StatCard({ label, value, format, subtitle, trend }: Props) {
       {trend != null && trend !== 0 && (
         <div
           className={`text-caption mt-1 ${
-            trend > 0 ? "text-emerald-400" : "text-rose-400"
+            trend > 0 ? "text-state-positive" : "text-state-negative"
           }`}
         >
           {trend > 0 ? "+" : ""}

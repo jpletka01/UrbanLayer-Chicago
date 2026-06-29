@@ -94,8 +94,8 @@ export function ActivityStatus({ activities, visible }: Props) {
               {activities.map((a) => (
                 <div key={a.id} className="flex items-center gap-2 text-xs">
                   {a.status === "done" ? (
-                    <span className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                      <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <span className="w-4 h-4 rounded-full bg-state-positive/20 flex items-center justify-center shrink-0">
+                      <svg className="w-2.5 h-2.5 text-state-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </span>

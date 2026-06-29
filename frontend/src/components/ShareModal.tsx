@@ -84,7 +84,7 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
             <button
               onClick={handleRevoke}
               disabled={revoking}
-              className="text-caption text-text-muted hover:text-rose-400 transition-colors disabled:opacity-50"
+              className="text-caption text-text-muted hover:text-state-negative transition-colors disabled:opacity-50"
             >
               {revoking ? t("revoking") : t("revokeLink")}
             </button>

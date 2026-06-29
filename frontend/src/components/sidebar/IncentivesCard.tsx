@@ -24,10 +24,10 @@ function Badge({ active, label, termKey }: { active: boolean; label: string; ter
   return (
     <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-micro border ${
       active
-        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+        ? "bg-state-positive/15 text-state-positive border-state-positive/30"
         : "bg-dark-elevated text-text-muted border-dark-border"
     }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-emerald-400" : "bg-text-muted/40"}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-state-positive" : "bg-text-muted/40"}`} />
       {labelContent}
     </span>
   );
@@ -56,7 +56,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
         <div className="space-y-1.5">
           <Badge active={data.in_tif_district} label={data.in_tif_district ? t("incentives.inTif") : t("incentives.notInTif")} termKey="tif_district" />
           {data.in_tif_district && data.tif_name && (
-            <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
+            <div className="rounded-lg bg-state-positive/5 border border-state-positive/15 px-3 py-2 space-y-0.5">
               <KV label={t("incentives.tifName")} value={data.tif_name} />
               {(data.tif_year_start != null || data.tif_end_year != null) && (
                 <KV
@@ -76,7 +76,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
               {data.tif_districts_in_area.map((d, i) => {
                 const dr = d as Record<string, unknown>;
                 return (
-                  <div key={i} className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
+                  <div key={i} className="rounded-lg bg-state-positive/5 border border-state-positive/15 px-3 py-2 space-y-0.5">
                     <KV label={t("incentives.district")} value={String(dr.tif_name ?? "—")} />
                     {(dr.start_year != null || dr.end_year != null) && (
                       <KV label={t("incentives.period")} value={[dr.start_year, dr.end_year].filter(Boolean).join(" — ")} />
@@ -211,7 +211,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
                 </p>
               )}
               {data.nmtc_severe_distress && (
-                <p className="text-micro text-amber-400">{t("incentives.severeDistress")}</p>
+                <p className="text-micro text-state-warning">{t("incentives.severeDistress")}</p>
               )}
             </div>
           )}
@@ -222,7 +222,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
             <span className="text-micro text-text-muted uppercase tracking-wider">
               {t("incentives.cityGrantPrograms")}
             </span>
-            <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 space-y-0.5">
+            <div className="rounded-lg bg-state-positive/5 border border-state-positive/15 px-3 py-2 space-y-0.5">
               <KV label={t("incentives.totalProjects")} value={String(data.grant_programs.total_projects)} />
               <KV label={t("incentives.totalFunding")} value={fmtDollar(data.grant_programs.total_funding)} />
               {Object.entries(data.grant_programs.by_program).map(([prog, count]) => (
@@ -248,7 +248,7 @@ export function IncentivesCard({ data, scorecardHref }: { data: IncentivesSummar
                     <p className="text-text-primary">{proj.name}</p>
                     <div className="flex gap-2 text-text-muted">
                       {proj.date && <span>{proj.date}</span>}
-                      <span className="text-emerald-400">{proj.program}</span>
+                      <span className="text-state-positive">{proj.program}</span>
                       {proj.incentive_amount != null && (
                         <span>{fmtDollar(proj.incentive_amount)}</span>
                       )}

@@ -289,11 +289,11 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
             )}
 
             {transit.tod_eligible && (
-              <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400
-                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-micro">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="inline-flex items-center gap-1 bg-state-positive/15 text-state-positive
+                             border border-state-positive/30 rounded-md px-2 py-0.5 text-micro">
+                <span className="w-1.5 h-1.5 rounded-full bg-state-positive" />
                 {t("neighborhood.todEligible")}
-                {transit.tod_type && <span className="text-emerald-400/70">({transit.tod_type})</span>}
+                {transit.tod_type && <span className="text-state-positive/70">({transit.tod_type})</span>}
               </span>
             )}
           </div>

@@ -77,7 +77,7 @@ export function SourceDetailDrawer({ view, onClose, onCrossRefClick }: Props) {
                     title={t("copyFullText")}
                   >
                     {copied ? (
-                      <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-5 h-5 text-state-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (

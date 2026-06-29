@@ -27,9 +27,9 @@ const DIMENSION_LABELS: Record<string, string> = {
 const DIMENSIONS = ["citation_accuracy", "factuality", "completeness", "rule_compliance"];
 
 function scoreColor(score: number): string {
-  if (score >= 0.8) return "text-emerald-400";
-  if (score >= 0.6) return "text-amber-400";
-  return "text-rose-400";
+  if (score >= 0.8) return "text-state-positive";
+  if (score >= 0.6) return "text-state-warning";
+  return "text-state-negative";
 }
 
 function gradeColor(grade: string): string {
@@ -108,7 +108,7 @@ export function JudgeSection({ results }: Props) {
           <div className="text-micro text-text-muted mt-0.5">Avg Score</div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className="text-section font-semibold text-emerald-400">
+          <div className="text-section font-semibold text-state-positive">
             <CountUp
               to={passRate}
               format={(n) => `${n.toFixed(0)}%`}
@@ -162,8 +162,8 @@ export function JudgeSection({ results }: Props) {
                     {DIMENSION_LABELS[dim] ?? dim}
                   </span>
                   <span className={`text-micro font-mono ${
-                    summary.avg_numeric >= 3 ? "text-emerald-400" :
-                    summary.avg_numeric >= 2 ? "text-amber-400" : "text-rose-400"
+                    summary.avg_numeric >= 3 ? "text-state-positive" :
+                    summary.avg_numeric >= 2 ? "text-state-warning" : "text-state-negative"
                   }`}>
                     {summary.avg_numeric.toFixed(1)}/4
                   </span>

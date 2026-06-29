@@ -16,6 +16,7 @@ export function StorySection({ image, title, subtitle, align = "left" }: Props) 
   return (
     <section
       ref={ref}
+      data-theme="dark"
       className="relative h-[50vh] min-h-[360px] overflow-hidden cursor-default"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

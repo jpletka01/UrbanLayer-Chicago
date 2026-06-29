@@ -108,7 +108,7 @@ export function DiscoveryResults({
         </div>
 
         {diagnostics.droppedInvalid.length > 0 && (
-          <p className="text-micro text-amber-400">
+          <p className="text-micro text-state-warning">
             {t("discovery.ignored")}{" "}
             {diagnostics.droppedInvalid
               .map((d) => `${filterLabel(t, registry,d.filterId)} (${d.reason})`)
@@ -117,7 +117,7 @@ export function DiscoveryResults({
         )}
 
         {diagnostics.conflicts.map((c) => (
-          <div key={c.filters.join("|")} className="text-micro text-amber-400">
+          <div key={c.filters.join("|")} className="text-micro text-state-warning">
             {c.filters.map((f) => filterLabel(t, registry, f)).join(` ${t("discovery.conflictsConnector")} `)} —{" "}
             {c.filters.map((f) => (
               <button

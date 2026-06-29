@@ -712,7 +712,7 @@ export function App() {
   }
 
   if (loadingConversation) {
-    return <div className="w-full min-h-screen bg-[#0d0d0d]" />;
+    return <div className="w-full min-h-screen bg-dark-bg" />;
   }
 
   return (
@@ -1000,7 +1000,7 @@ export function App() {
             </header>
 
             {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
-              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm flex items-center justify-between gap-4">
+              <div className="px-6 py-3 bg-state-negative/10 border-b border-state-negative/20 text-state-negative text-sm flex items-center justify-between gap-4">
                 <span>{errorMsg}</span>
                 {rateLimited && !canPersist && (
                   <button
@@ -1013,9 +1013,9 @@ export function App() {
               </div>
             )}
             {loadError && (
-              <div className="px-6 py-3 bg-rose-500/10 border-b border-rose-500/20 text-rose-400 text-sm flex items-center justify-between">
+              <div className="px-6 py-3 bg-state-negative/10 border-b border-state-negative/20 text-state-negative text-sm flex items-center justify-between">
                 <span>{loadError}</span>
-                <button onClick={() => setLoadError(null)} className="ml-4 text-rose-400/60 hover:text-rose-400">
+                <button onClick={() => setLoadError(null)} className="ml-4 text-state-negative/60 hover:text-state-negative">
                   &times;
                 </button>
               </div>

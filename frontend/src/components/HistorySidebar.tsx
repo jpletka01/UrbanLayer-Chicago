@@ -98,7 +98,7 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
                           e.stopPropagation();
                           onDelete(conv.id);
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-state-negative hover:bg-state-negative/10 opacity-0 group-hover:opacity-100 transition-all"
                         title={t("deleteConversation")}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -116,7 +116,7 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
               <div className="p-3 border-t border-dark-border">
                 <button
                   onClick={onClearAll}
-                  className="w-full px-3 py-2 text-body text-text-secondary hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  className="w-full px-3 py-2 text-body text-text-secondary hover:text-state-negative hover:bg-state-negative/10 rounded-lg transition-colors"
                 >
                   {t("deleteAll")}
                 </button>

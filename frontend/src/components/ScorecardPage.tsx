@@ -158,7 +158,7 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
                     {t("scorecard.vsPrior", { count: item.prior_year_count })}
                   </span>
                   <span className={`font-mono w-14 text-right ${
-                    item.change_pct > 0 ? "text-rose-400" : item.change_pct < 0 ? "text-emerald-400" : "text-text-muted"
+                    item.change_pct > 0 ? "text-state-negative" : item.change_pct < 0 ? "text-state-positive" : "text-text-muted"
                   }`}>
                     {item.change_pct > 0 ? "+" : ""}{item.change_pct}%
                   </span>
@@ -191,14 +191,14 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
     >
       <div className="space-y-2">
         {addr311.open_count > 0 && (
-          <div className="text-micro text-amber-400">{t("scorecard.openComplaints", { count: addr311.open_count })}</div>
+          <div className="text-micro text-state-warning">{t("scorecard.openComplaints", { count: addr311.open_count })}</div>
         )}
         {addr311.high_risk_flags.length > 0 && (
           <div className="space-y-1">
-            <div className="text-micro text-rose-400 font-medium">{t("scorecard.highRiskFlags")}</div>
+            <div className="text-micro text-state-negative font-medium">{t("scorecard.highRiskFlags")}</div>
             {addr311.high_risk_flags.map((flag) => (
-              <div key={flag} className="text-micro text-rose-400 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
+              <div key={flag} className="text-micro text-state-negative flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-state-negative flex-shrink-0" />
                 {humanizeShoutyCase(flag)}
               </div>
             ))}
@@ -435,7 +435,7 @@ export default function ScorecardPage() {
               </button>
             </form>
             {error && errorShape === "address" && (
-              <div className="mt-3 text-body text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-lg px-4 py-2.5">
+              <div className="mt-3 text-body text-state-negative bg-state-negative/10 border border-state-negative/20 rounded-lg px-4 py-2.5">
                 <div>{error}</div>
                 <button
                   type="button"
@@ -557,7 +557,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {data.partial_failures.length > 0 && (
-                <div className="mt-2 text-micro text-amber-400">
+                <div className="mt-2 text-micro text-state-warning">
                   {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
                 </div>
               )}
@@ -619,7 +619,7 @@ export default function ScorecardPage() {
                 tax/comps cards were filled from the nearest (possibly-neighbor)
                 parcel — say so before the reader trusts parcel-specific numbers. */}
             {data.nearest_parcel_unverified && (
-              <div className="mb-4 text-caption text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-4 py-2.5">
+              <div className="mb-4 text-caption text-state-warning bg-state-warning/10 border border-state-warning/20 rounded-lg px-4 py-2.5">
                 {t("scorecard.nearestParcelCaveat")}
               </div>
             )}

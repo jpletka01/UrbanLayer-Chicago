@@ -93,13 +93,13 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
               {activeFlags.map(key => (
                 <span
                   key={key}
-                  className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400
-                             border border-emerald-500/30 rounded-md px-2 py-0.5 text-micro"
+                  className="inline-flex items-center gap-1 bg-state-positive/15 text-state-positive
+                             border border-state-positive/30 rounded-md px-2 py-0.5 text-micro"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-state-positive" />
                   <InfoTooltip term={key}>{t(`regulatory.flags.${key}`)}</InfoTooltip>
                   {key === "in_ssa" && data.ssa_name && (
-                    <span className="text-emerald-400/70 ml-0.5">({data.ssa_name})</span>
+                    <span className="text-state-positive/70 ml-0.5">({data.ssa_name})</span>
                   )}
                 </span>
               ))}
@@ -114,15 +114,15 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
             <span className="text-micro text-text-muted uppercase tracking-wider">{t("regulatory.floodZone")}</span>
             <div className={`rounded-lg px-3 py-2 text-micro ${
               data.in_special_flood_hazard
-                ? "bg-amber-500/10 border border-amber-500/20"
+                ? "bg-state-warning/10 border border-state-warning/20"
                 : "bg-dark-elevated/60 border border-dark-border"
             }`}>
               <div className="flex items-center gap-2">
-                <span className={`font-mono font-medium ${data.in_special_flood_hazard ? "text-amber-400" : "text-text-primary"}`}>
+                <span className={`font-mono font-medium ${data.in_special_flood_hazard ? "text-state-warning" : "text-text-primary"}`}>
                   <InfoTooltip term={`flood:${data.flood_zone}`}>{t("regulatory.zone", { code: data.flood_zone })}</InfoTooltip>
                 </span>
                 {data.in_special_flood_hazard && (
-                  <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 text-micro uppercase font-medium">
+                  <span className="bg-state-warning/20 text-state-warning border border-state-warning/30 rounded px-1.5 py-0.5 text-micro uppercase font-medium">
                     {t("regulatory.specialFloodHazard")}
                   </span>
                 )}
@@ -181,7 +181,7 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
               {t("regulatory.nearbyBrownfield", { count: data.brownfield_sites.length })}
             </span>
             {data.brownfield_sites.map((site, i) => (
-              <div key={i} className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-2 text-micro">
+              <div key={i} className="rounded-lg bg-state-warning/5 border border-state-warning/15 px-3 py-2 text-micro">
                 <p className="text-text-primary">{(site as Record<string, string>).site_name ?? t("regulatory.unknownSite")}</p>
                 {(site as Record<string, string>).interest_type && (
                   <p className="text-text-muted text-micro mt-0.5">{(site as Record<string, string>).interest_type}</p>

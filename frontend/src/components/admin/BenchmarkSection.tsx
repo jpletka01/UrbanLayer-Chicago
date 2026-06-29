@@ -26,9 +26,9 @@ const GRADE_LABELS: Record<string, string> = {
 };
 
 function scoreColor(score: number): string {
-  if (score >= 0.8) return "text-emerald-400";
-  if (score >= 0.6) return "text-amber-400";
-  return "text-rose-400";
+  if (score >= 0.8) return "text-state-positive";
+  if (score >= 0.6) return "text-state-warning";
+  return "text-state-negative";
 }
 
 function gradeColor(grade: string): string {
@@ -107,7 +107,7 @@ export function BenchmarkSection({ benchmark }: Props) {
           <div className="text-micro text-text-muted mt-0.5">Avg Score</div>
         </div>
         <div className="bg-dark-elevated rounded-lg p-3 text-center">
-          <div className="text-section font-semibold text-emerald-400">
+          <div className="text-section font-semibold text-state-positive">
             <CountUp
               to={passRate}
               format={(n) => `${n.toFixed(0)}%`}

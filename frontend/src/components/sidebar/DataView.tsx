@@ -136,7 +136,7 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
       )}
 
       {context?.data_lag_note && (
-        <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400/90 text-xs">
+        <div className="px-3 py-2 rounded-lg bg-state-warning/10 border border-state-warning/20 text-state-warning/90 text-xs">
           {context.data_lag_days && context.data_lag_cutoff
             ? td("crimeDataLag", { days: context.data_lag_days, cutoff: context.data_lag_cutoff })
             : context.data_lag_note}
@@ -144,14 +144,14 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
       )}
 
       {hasZoning ? (
-        <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400/90 text-xs leading-relaxed">
-          <strong className="text-amber-400">{t("states.zoningNotice")}</strong>{" "}
+        <div className="px-3 py-2 rounded-lg bg-state-warning/10 border border-state-warning/20 text-state-warning/90 text-xs leading-relaxed">
+          <strong className="text-state-warning">{t("states.zoningNotice")}</strong>{" "}
           {t("states.zoningNoticeText")}{" "}
           <a
             href="https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-amber-300 transition-colors"
+            className="underline hover:text-state-warning transition-colors"
           >
             {t("states.zoningNoticeLink")}
           </a>{" "}

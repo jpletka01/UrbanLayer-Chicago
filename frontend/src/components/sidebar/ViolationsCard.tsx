@@ -36,7 +36,7 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
             <div className="text-micro text-text-muted mt-0.5">{t("violations.total")}</div>
           </div>
           <div className="text-center">
-            <div className="text-sm font-semibold text-amber-400">{data.open_count.toLocaleString()}</div>
+            <div className="text-sm font-semibold text-state-warning">{data.open_count.toLocaleString()}</div>
             <div className="text-micro text-text-muted mt-0.5">{t("violations.open")}</div>
           </div>
         </div>

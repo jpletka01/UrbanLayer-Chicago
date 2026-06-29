@@ -16,8 +16,8 @@ function formatMs(ms: number): string {
 }
 
 function msColor(ms: number): string {
-  if (ms >= 5000) return "text-rose-400";
-  if (ms >= 2000) return "text-amber-400";
+  if (ms >= 5000) return "text-state-negative";
+  if (ms >= 2000) return "text-state-warning";
   return "text-text-primary";
 }
 

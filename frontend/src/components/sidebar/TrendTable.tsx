@@ -114,7 +114,7 @@ function TrendBadge({ percent }: { percent: number }) {
 
   const isUp = percent > 0;
   const arrow = isUp ? "↑" : "↓";
-  const color = isUp ? "text-rose-400" : "text-emerald-400";
+  const color = isUp ? "text-state-negative" : "text-state-positive";
 
   return (
     <span className={`font-mono font-medium ${color}`}>
