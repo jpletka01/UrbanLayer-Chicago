@@ -40,8 +40,10 @@ export default {
         // Tertiary = `text-link` only; Inert = neutral ramp. Aliases of the accent var so the
         // class name documents intent at the call site.
         action: {
-          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',               // bg-action — primary fill
-          hover: 'rgb(var(--accent-hover) / <alpha-value>)',           // hover:bg-action-hover
+          // DECOUPLED from --accent: a slightly deeper azure so white labels keep AA on the
+          // filled button, while accent/links/outlines stay bright azure.
+          DEFAULT: 'rgb(var(--action-primary) / <alpha-value>)',       // bg-action — primary fill
+          hover: 'rgb(var(--action-primary-hover) / <alpha-value>)',   // hover:bg-action-hover
           fg: 'rgb(var(--text-on-accent) / <alpha-value>)',            // text-action-fg (white)
         },
         link: 'rgb(var(--accent-text) / <alpha-value>)',               // text-link (= accent-text)

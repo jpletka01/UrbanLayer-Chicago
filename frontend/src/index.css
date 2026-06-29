@@ -26,11 +26,15 @@
   --text-secondary: 170 163 148; /* #aaa394 */
   --text-muted: 116 109 95;      /* #746d5f — AA-large/UI only */
   --text-on-accent: 255 255 255; /* #ffffff (= action-primary-fg) */
-  /* blueprint-blue accent (brand / action-primary fill / outline / focus / selected) */
-  --accent: 47 111 237;          /* #2f6fed — white-on-fill 4.55, fill-vs-bg 4.14 */
-  --accent-text: 110 168 254;    /* #6ea8fe — link/tertiary, on surface 7.3 (lighter on dark) */
-  --accent-hover: 68 128 245;    /* #4480f5 — action-primary hover */
-  --accent-muted-a: 0.15;        /* selected-fill alpha (blue tint) */
+  /* bright azure accent (brand / outline / focus / selected / link). DECOUPLED from the
+     button fill below: azure is too bright for white-on-fill AA, so the filled button uses a
+     slightly deeper azure (`--action-primary`) while everything else stays bright. */
+  --accent: 43 155 244;          /* #2b9bf4 — bright azure; as text/outline on surface 5.97 */
+  --accent-text: 92 196 251;     /* #5cc4fb — link/tertiary on dark, on surface 9.03 */
+  --accent-hover: 79 176 247;    /* #4fb0f7 — hover on accent surfaces */
+  --accent-muted-a: 0.15;        /* selected-fill alpha (azure tint) */
+  --action-primary: 23 114 201;  /* #1772c9 — button FILL (deeper azure), white-on-fill 4.90 */
+  --action-primary-hover: 28 126 214; /* #1c7ed6 — fill hover */
   /* terracotta highlight — warm premium accent ONLY (paid report badge/CTA) */
   --highlight: 224 160 106;      /* #e0a06a — text/icon on dark */
   --highlight-fill: 168 77 46;   /* #a84d2e — badge fill, white-on 5.58 */
@@ -57,10 +61,12 @@
   --text-secondary: 92 83 70;    /* #5c5346 */
   --text-muted: 131 122 107;     /* #837a6b — AA-large/UI only */
   --text-on-accent: 255 255 255; /* #ffffff */
-  --accent: 29 78 216;           /* #1d4ed8 — white-on-fill 6.70, on surface 6.6 (text-safe) */
-  --accent-text: 29 78 216;      /* #1d4ed8 — link */
-  --accent-hover: 26 69 192;     /* #1a45c0 */
+  --accent: 23 130 214;          /* #1782d6 — bright azure; as outline vs surface 3.97 */
+  --accent-text: 21 101 192;     /* #1565c0 — link (deeper, clears elevated rows ≥4.5) */
+  --accent-hover: 14 111 196;    /* #0e6fc4 */
   --accent-muted-a: 0.12;
+  --action-primary: 14 111 196;  /* #0e6fc4 — button FILL, white-on-fill 5.14 */
+  --action-primary-hover: 11 94 168;  /* #0b5ea8 — fill hover */
   --highlight: 168 77 46;        /* #a84d2e — text on warm paper 5.5 */
   --highlight-fill: 168 77 46;   /* #a84d2e */
   --highlight-fg: 255 255 255;   /* #ffffff */
