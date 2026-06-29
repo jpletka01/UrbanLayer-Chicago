@@ -6,9 +6,14 @@ a deeper `--action-primary` button fill so white labels keep AA). **Phase 2 wire
 action hierarchy:** Card→`shadow-card`, Modal→`shadow-modal`, Chip tones→themed `state-*`; app-action
 filled buttons→`bg-action` (azure); money/premium CTAs→`bg-highlight-fill` (terracotta) — the
 intentional dual-accent (azure = do work, terracotta = costs money). Reads by FORM (fill/outline/text).
-tsc/build/65 tests green. **Next: Phase 3** — state-tone refs across the remaining ~25 files, hardcoded
-hex surfaces, the `bg-[#0d0d0d]` placeholders, splash over-image toggle, and swap residual `text-accent`
-links → `text-link`. Builds on the shipped design system (`guides/design-system.md`).
+tsc/build/65 tests green. **Phase 3 DONE:** state-tone literals across 22 files → themed `state-*`
+(excluding DataPill data-encoding + MapView dark map canvas); `[data-theme="dark"]` re-applies dark
+vars so over-image sections (IntelligenceStack, StorySection) mode-lock as dark islands (fixed the
+unreadable "One question. Twenty-five sources." section in light mode); `bg-[#0d0d0d]` placeholders →
+`bg-dark-bg`. **Deferred:** readable `text-accent` links → `text-link` (targeted follow-up; bright
+azure is AA-large as text); charts keep dark-tuned hex (Polish-path); `TimeSeriesChart` stroke +
+Mapbox thumbnail `dark-v11`/`c96442` pin (mode-locked map). Builds on the shipped design system
+(`guides/design-system.md`).
 
 **Phase 1 shipped (token foundation, zero dark-change):** `tailwind.config.js` color tokens →
 `rgb(var(--x) / <alpha-value>)` (class names unchanged) + new `accent-text` / `state-*` / `shadow-card`
