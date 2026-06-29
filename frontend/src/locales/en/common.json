@@ -69,5 +69,11 @@
   },
   "loadConversationError": "Couldn't load conversation. It may have been deleted or you may not have access.",
   "transcriptTitle": "Chicago Transcript",
-  "viewQuestionData": "Click to view this question's data"
+  "viewQuestionData": "Click to view this question's data",
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
 }

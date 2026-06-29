@@ -12,27 +12,46 @@ export default {
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
-        // §2 — single neutral ramp. white/<opacity> neutrals are retired (migrated in Phase 2).
+        // §2 — single neutral ramp, now CSS-var-backed for light/dark theming (2026-06-29,
+        // see guides/light-dark-theming.md). Class names are UNCHANGED (`bg-dark-surface`,
+        // `text-text-primary`, …) — only the backing flips. Each var holds an RGB channel
+        // triplet so Tailwind's `<alpha-value>` opacity utilities (`bg-dark-surface/80`) keep
+        // working. Values live in src/index.css (:root = dark default, [data-theme=light]).
+        // The `dark-*` key names are now a slight misnomer in light mode (internal only).
         dark: {
-          bg: '#0d0d0d',               // app/page background
-          surface: '#171717',          // default card/panel surface (opaque — no /80 fork)
-          elevated: '#1f1f1f',         // raised within a surface: inputs, nested rows, badges
-          hover: '#242424',            // NEW — interactive hover fill (replaces bg-white/5–10)
-          'border-subtle': '#1f1f1f',  // low-contrast internal dividers
-          border: '#2a2a2a',           // default hairline / card border
-          'border-strong': '#383838',  // emphasis/hover/selected (replaces border-white/20–30)
+          bg: 'rgb(var(--bg) / <alpha-value>)',                          // app/page background
+          surface: 'rgb(var(--surface) / <alpha-value>)',               // default card/panel surface
+          elevated: 'rgb(var(--elevated) / <alpha-value>)',             // raised: inputs, nested rows
+          hover: 'rgb(var(--hover) / <alpha-value>)',                   // interactive hover fill
+          'border-subtle': 'rgb(var(--border-subtle) / <alpha-value>)', // internal dividers
+          border: 'rgb(var(--border) / <alpha-value>)',                 // default hairline / border
+          'border-strong': 'rgb(var(--border-strong) / <alpha-value>)', // emphasis/hover/selected
         },
         accent: {
-          DEFAULT: '#c96442',
-          hover: '#d97a5a',
-          muted: 'rgba(201, 100, 66, 0.15)',
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          hover: 'rgb(var(--accent-hover) / <alpha-value>)',
+          // text/link variant — darkens on light so accent text clears AA (accent fill stays).
+          text: 'rgb(var(--accent-text) / <alpha-value>)',
+          muted: 'rgb(var(--accent) / var(--accent-muted-a))',          // selected-fill, alpha flips
         },
         text: {
-          primary: '#eeeeee',
-          secondary: '#a3a098',
-          muted: '#6b6962',
-          'on-accent': '#ffffff',      // NEW — text/icon on accent fills
+          primary: 'rgb(var(--text-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--text-muted) / <alpha-value>)',
+          'on-accent': 'rgb(var(--text-on-accent) / <alpha-value>)',    // text/icon on accent fills
         },
+        // Themed semantic state tones (§6) — replace the static Tailwind emerald/rose/amber-400
+        // refs in Phase 3. -400 in dark, -700 in light (the only AA failures light introduces).
+        state: {
+          positive: 'rgb(var(--state-positive) / <alpha-value>)',
+          negative: 'rgb(var(--state-negative) / <alpha-value>)',
+          warning: 'rgb(var(--state-warning) / <alpha-value>)',
+        },
+      },
+      boxShadow: {
+        // Elevation inverts between modes (§4): near-none in dark, real soft shadow in light.
+        card: 'var(--shadow-card)',
+        modal: 'var(--shadow-modal)',
       },
       // §1 — named type scale (size · line-height · weight · tracking). Additive: the stock
       // Tailwind sizes remain until pages are migrated (Phase 2). Responsive steps use
@@ -60,17 +79,17 @@ export default {
           '50%': { opacity: '0' },
         },
         'flash': {
-          '0%': { boxShadow: '0 0 0 0 rgba(201, 100, 66, 0.7)' },
-          '70%': { boxShadow: '0 0 0 8px rgba(201, 100, 66, 0)' },
-          '100%': { boxShadow: '0 0 0 0 rgba(201, 100, 66, 0)' },
+          '0%': { boxShadow: '0 0 0 0 rgb(var(--accent) / 0.7)' },
+          '70%': { boxShadow: '0 0 0 8px rgb(var(--accent) / 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgb(var(--accent) / 0)' },
         },
         'dot-bounce': {
           '0%, 80%, 100%': { transform: 'translateY(0)' },
           '40%': { transform: 'translateY(-5px)' },
         },
         'text-glow': {
-          '0%, 100%': { color: '#eeeeee' },
-          '50%': { color: '#6b6962' },
+          '0%, 100%': { color: 'rgb(var(--text-primary))' },
+          '50%': { color: 'rgb(var(--text-muted))' },
         },
         'trace-in': {
           '0%': { opacity: '0', transform: 'translateY(-3px)' },

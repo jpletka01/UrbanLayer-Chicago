@@ -24,6 +24,7 @@ import PricingPage from './components/PricingPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
 import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
+import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
 
@@ -36,8 +37,9 @@ function TrackPageView() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <SelectedParcelProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SelectedParcelProvider>
           <TrackPageView />
           <Routes>
             <Route path="/" element={<App />} />
@@ -55,8 +57,9 @@ createRoot(document.getElementById('root')!).render(
               </ProtectedRoute>
             } />
           </Routes>
-        </SelectedParcelProvider>
-      </AuthProvider>
+          </SelectedParcelProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

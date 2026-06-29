@@ -4,6 +4,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens (light/dark) — guides/light-dark-theming.md ───────────────────
+   Channel triplets (space-separated RGB) so Tailwind `<alpha-value>` opacity
+   utilities keep working. :root = DARK default (values identical to the pre-theming
+   palette — zero visual change in dark). [data-theme="light"] flips them. The
+   pre-paint script in index.html sets data-theme before first paint (no FOUC).      */
+:root {
+  color-scheme: dark;
+  --bg: 13 13 13;                /* #0d0d0d */
+  --surface: 23 23 23;           /* #171717 */
+  --elevated: 31 31 31;          /* #1f1f1f */
+  --hover: 36 36 36;             /* #242424 */
+  --border-subtle: 31 31 31;     /* #1f1f1f */
+  --border: 42 42 42;            /* #2a2a2a */
+  --border-strong: 56 56 56;     /* #383838 */
+  --text-primary: 238 238 238;   /* #eeeeee */
+  --text-secondary: 163 160 152; /* #a3a098 */
+  --text-muted: 107 105 98;      /* #6b6962 */
+  --text-on-accent: 255 255 255; /* #ffffff */
+  --accent: 201 100 66;          /* #c96442 — fills (both modes) */
+  --accent-text: 201 100 66;     /* #c96442 — links/accent text (darkens on light) */
+  --accent-hover: 217 122 90;    /* #d97a5a */
+  --accent-muted-a: 0.15;        /* selected-fill alpha */
+  --state-positive: 52 211 153;  /* emerald-400 */
+  --state-negative: 251 113 133; /* rose-400 */
+  --state-warning: 251 191 36;   /* amber-400 */
+  --shadow-card: 0 0 #0000;      /* none in dark (elevation = lighter surface) */
+  --shadow-modal: 0 25px 50px -12px rgb(0 0 0 / 0.6);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: 250 250 249;             /* #fafaf9 warm off-white */
+  --surface: 255 255 255;        /* #ffffff */
+  --elevated: 244 243 240;       /* #f4f3f0 */
+  --hover: 236 235 231;          /* #ecebe7 */
+  --border-subtle: 236 234 230;  /* #eceae6 */
+  --border: 224 221 215;         /* #e0ddd7 */
+  --border-strong: 201 196 187;  /* #c9c4bb */
+  --text-primary: 27 26 24;      /* #1b1a18 */
+  --text-secondary: 87 84 77;    /* #57544d */
+  --text-muted: 132 129 122;     /* #84817a */
+  --text-on-accent: 255 255 255; /* #ffffff (white on terracotta fill — AA-large) */
+  --accent: 201 100 66;          /* #c96442 fill unchanged */
+  --accent-text: 168 77 46;      /* #a84d2e — AA on white (4.5:1+) */
+  --accent-hover: 177 82 47;     /* #b1522f */
+  --accent-muted-a: 0.12;
+  --state-positive: 4 120 87;    /* emerald-700 #047857 */
+  --state-negative: 190 18 60;   /* rose-700 #be123c */
+  --state-warning: 180 83 9;     /* amber-700 #b45309 */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
 /* §7: the display face (Space Grotesk) applies to the two largest type steps —
    hero (text-display) and section/page headings (text-section). Unlayered so it
    wins the cascade over Tailwind's layered utilities (which only set size/weight). */
@@ -21,8 +74,8 @@ html, body, #root {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #0d0d0d;
-  color: #eeeeee;
+  background: rgb(var(--bg));
+  color: rgb(var(--text-primary));
 }
 
 @media print {

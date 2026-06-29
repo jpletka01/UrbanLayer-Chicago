@@ -56,6 +56,7 @@ import { useAuthContext } from "./contexts/AuthContext";
 import AuthModal from "./components/AuthModal";
 import UserMenu from "./components/UserMenu";
 import LanguageSelector from "./components/LanguageSelector";
+import ThemeToggle from "./components/ThemeToggle";
 import { useTranslation } from "react-i18next";
 import { track } from "./lib/tracking";
 
@@ -981,6 +982,7 @@ export function App() {
                         </svg>
                       </Link>
                     )}
+                    <ThemeToggle />
                     <LanguageSelector variant="workspace" />
                     {!canPersist && (
                       <button

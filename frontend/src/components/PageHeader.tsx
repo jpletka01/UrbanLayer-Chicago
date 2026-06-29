@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
 import { loadRegistry } from "../discovery/registryClient";
 import LanguageSelector from "./LanguageSelector";
+import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 
 const NAV_ITEMS: { to: string; key: string }[] = [
@@ -93,6 +94,7 @@ export default function PageHeader({
           </nav>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <ThemeToggle />
           <LanguageSelector />
           {user ? (
             <UserMenu user={user} onSignOut={signOut} />

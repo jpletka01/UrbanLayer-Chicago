@@ -69,5 +69,11 @@
   },
   "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tengas acceso.",
   "transcriptTitle": "Transcripción de Chicago",
-  "viewQuestionData": "Haz clic para ver los datos de esta pregunta"
+  "viewQuestionData": "Haz clic para ver los datos de esta pregunta",
+  "theme": {
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  }
 }
