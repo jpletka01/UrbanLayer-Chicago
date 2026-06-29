@@ -49,7 +49,7 @@ export function HistorySidebar({ isOpen, onClose, conversations, onSelect, onDel
           >
             {/* Header */}
             <div className="p-4 border-b border-dark-border flex items-center justify-between">
-              <h2 className="text-lg font-medium text-white">{t("history")}</h2>
+              <h2 className="text-lg font-medium text-text-primary">{t("history")}</h2>
               <button
                 onClick={onClose}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-dark-hover transition-colors"

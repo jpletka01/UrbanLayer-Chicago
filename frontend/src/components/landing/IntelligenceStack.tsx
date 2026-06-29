@@ -45,12 +45,14 @@ export function IntelligenceStack() {
   const domains = t("intelligence.domains", { returnObjects: true }) as { title: string; badge: string; points: string[] }[];
 
   return (
-    <section ref={ref} data-theme="dark" className="relative py-24 px-6 overflow-hidden">
+    <section ref={ref} className="relative py-24 px-6 overflow-hidden bg-dark-bg">
+      {/* Faint architectural texture — a subtle wash over the themed bg so the section flips
+          with the theme (dark text was unreadable over the old full-bleed dark photo in light
+          mode). Robust to the remote image failing to load (bg token stands alone). */}
       <img
         src="https://images.unsplash.com/photo-1597411216858-8e8bfcbb37e3?w=1920&q=80"
         alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: "brightness(0.15)" }}
+        className="absolute inset-0 w-full h-full object-cover opacity-[0.06] pointer-events-none"
         loading="lazy"
       />
       <div className="relative z-10 max-w-6xl mx-auto space-y-12">
