@@ -80,7 +80,9 @@ export function Card({
   const root = [
     // shadow-card is none in dark (elevation = lighter surface) and a soft shadow in light
     // (where you can't go lighter than the page) — theme-aware elevation, §4.
-    "rounded-xl overflow-hidden border shadow-card",
+    // flex-col so that in an equal-height grid (h-full) the footer pins to the bottom
+    // instead of leaving a gap below short content.
+    "rounded-xl overflow-hidden border shadow-card flex flex-col",
     accentEdge ? "border-dark-border border-l-2 border-l-accent" : "border-dark-border",
     SURFACE[surface],
     interactive ? "transition-colors hover:border-dark-border-strong" : "",
@@ -115,7 +117,7 @@ export function Card({
             {headerInner}
           </div>
         ))}
-      {bodyOpen && <div className={PADDING[padding]}>{children}</div>}
+      {bodyOpen && <div className={`${PADDING[padding]} ${footer ? "flex-1" : ""}`}>{children}</div>}
       {footer && bodyOpen && (
         <div className="px-4 py-3 bg-dark-elevated border-t border-dark-border text-caption text-text-muted">
           {footer}

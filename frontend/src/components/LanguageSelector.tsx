@@ -40,7 +40,7 @@ export default function LanguageSelector({ variant = "workspace" }: LanguageSele
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-caption font-medium transition-colors ${
           isSplash
             ? "text-text-secondary hover:text-text-primary hover:bg-white/5"
-            : "text-text-muted hover:text-text-secondary hover:bg-dark-hover"
+            : "border border-dark-border bg-dark-elevated text-text-secondary hover:text-text-primary hover:bg-dark-hover"
         }`}
         title="Language"
       >

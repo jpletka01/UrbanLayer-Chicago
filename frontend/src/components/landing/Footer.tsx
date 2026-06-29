@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   const { t } = useTranslation("landing");
+  // Deep blueprint-navy footer band. data-theme="dark" keeps the text tokens light so they
+  // stay readable on the blue in BOTH app themes (a deliberate fixed-blue footer).
   return (
-    <footer className="bg-dark-surface border-t border-dark-border">
+    <footer data-theme="dark" className="bg-[#16284a] border-t border-white/10">
       <div className="max-w-5xl mx-auto py-12 px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-sm">
         <div className="space-y-3">
           <h4 className="text-text-primary font-semibold text-base">UrbanLayer</h4>
