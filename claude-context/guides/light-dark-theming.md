@@ -1,12 +1,14 @@
 # Light/Dark Theming — Plan
 
-**Status: Phase 1 COMPLETE + palette revision token-layer DONE on branch `feat/light-dark-theming`
-(2026-06-29) — not merged/pushed.** The **"Cyanotype on Vellum" hybrid palette is CONFIRMED and
-the token layer is implemented** (index.css vars + tailwind.config `action`/`link`/`highlight`
-tokens; tsc/build/65 tests green). Existing `bg-accent`/`text-accent`/`bg-dark-*` chrome already
-renders the new palette. **Next: Phase 2** — rewire buttons/primitives onto the action-hierarchy
-tokens (and Phase 3 swap `text-accent` links → `text-link` for dark-mode AA). Builds directly on the
-shipped design system (`guides/design-system.md`).
+**Status: Phases 1–2 COMPLETE on branch `feat/light-dark-theming` (2026-06-29) — not merged/pushed.**
+The **"Cyanotype on Vellum" palette is implemented** (azure accent now **bright azure, decoupled** from
+a deeper `--action-primary` button fill so white labels keep AA). **Phase 2 wired components onto the
+action hierarchy:** Card→`shadow-card`, Modal→`shadow-modal`, Chip tones→themed `state-*`; app-action
+filled buttons→`bg-action` (azure); money/premium CTAs→`bg-highlight-fill` (terracotta) — the
+intentional dual-accent (azure = do work, terracotta = costs money). Reads by FORM (fill/outline/text).
+tsc/build/65 tests green. **Next: Phase 3** — state-tone refs across the remaining ~25 files, hardcoded
+hex surfaces, the `bg-[#0d0d0d]` placeholders, splash over-image toggle, and swap residual `text-accent`
+links → `text-link`. Builds on the shipped design system (`guides/design-system.md`).
 
 **Phase 1 shipped (token foundation, zero dark-change):** `tailwind.config.js` color tokens →
 `rgb(var(--x) / <alpha-value>)` (class names unchanged) + new `accent-text` / `state-*` / `shadow-card`
