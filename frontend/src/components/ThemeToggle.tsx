@@ -21,19 +21,40 @@ const ICONS: Record<ThemePref, string> = {
 
 const ORDER: ThemePref[] = ["light", "dark", "system"];
 
-export default function ThemeToggle({ className = "" }: { className?: string }) {
+/**
+ * @param overImage  Splash/hero variant — white-on-opacity styling that reads on the
+ *   mode-locked dark photography (the §over-image exemption), instead of neutral tokens.
+ */
+export default function ThemeToggle({
+  className = "",
+  overImage = false,
+}: {
+  className?: string;
+  overImage?: boolean;
+}) {
   const { t } = useTranslation("common");
   const { theme, setTheme } = useThemeContext();
+
+  const shell = overImage
+    ? "border-white/20 bg-white/10"
+    : "border-dark-border bg-dark-elevated";
 
   return (
     <div
       role="radiogroup"
       aria-label={t("theme.label")}
-      className={`inline-flex items-center gap-0.5 rounded-full border border-dark-border bg-dark-elevated p-0.5 ${className}`}
+      className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell} ${className}`}
     >
       {ORDER.map((opt) => {
         const active = theme === opt;
         const label = t(`theme.${opt}`);
+        const state = overImage
+          ? active
+            ? "bg-white/20 text-white"
+            : "text-white/60 hover:text-white/90"
+          : active
+            ? "bg-dark-hover text-text-primary"
+            : "text-text-muted hover:text-text-secondary";
         return (
           <button
             key={opt}
@@ -43,11 +64,7 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
             aria-label={label}
             title={label}
             onClick={() => setTheme(opt)}
-            className={`flex items-center justify-center w-6 h-6 rounded-full transition-colors ${
-              active
-                ? "bg-dark-hover text-text-primary"
-                : "text-text-muted hover:text-text-secondary"
-            }`}
+            className={`flex items-center justify-center w-6 h-6 rounded-full transition-colors ${state}`}
           >
             <Icon d={ICONS[opt]} />
           </button>

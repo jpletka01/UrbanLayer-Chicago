@@ -4,28 +4,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Theme tokens (light/dark) — guides/light-dark-theming.md ───────────────────
-   Channel triplets (space-separated RGB) so Tailwind `<alpha-value>` opacity
-   utilities keep working. :root = DARK default (values identical to the pre-theming
-   palette — zero visual change in dark). [data-theme="light"] flips them. The
-   pre-paint script in index.html sets data-theme before first paint (no FOUC).      */
+/* ── Theme tokens — "Cyanotype on Vellum" (light/dark) — guides/light-dark-theming.md ─
+   Blueprint-blue ink on a WARM vellum neutral ramp (hybrid: Direction-A accent on
+   Direction-B neutrals — "blue ink on warm paper", true to real blueprints). Channel
+   triplets (space-separated RGB) so Tailwind `<alpha-value>` opacity utilities work.
+   :root = DARK default, [data-theme="light"] flips. Pre-paint script in index.html sets
+   data-theme before first paint (no FOUC). Neutrals carry a warm amber undertone (~40°);
+   accent/link/focus/selected are blueprint blue; terracotta is the warm premium HIGHLIGHT
+   only. Action hierarchy reads by FORM (fill/outline/text), never by shade of blue.       */
 :root {
   color-scheme: dark;
-  --bg: 13 13 13;                /* #0d0d0d */
-  --surface: 23 23 23;           /* #171717 */
-  --elevated: 31 31 31;          /* #1f1f1f */
-  --hover: 36 36 36;             /* #242424 */
-  --border-subtle: 31 31 31;     /* #1f1f1f */
-  --border: 42 42 42;            /* #2a2a2a */
-  --border-strong: 56 56 56;     /* #383838 */
-  --text-primary: 238 238 238;   /* #eeeeee */
-  --text-secondary: 163 160 152; /* #a3a098 */
-  --text-muted: 107 105 98;      /* #6b6962 */
-  --text-on-accent: 255 255 255; /* #ffffff */
-  --accent: 201 100 66;          /* #c96442 — fills (both modes) */
-  --accent-text: 201 100 66;     /* #c96442 — links/accent text (darkens on light) */
-  --accent-hover: 217 122 90;    /* #d97a5a */
-  --accent-muted-a: 0.15;        /* selected-fill alpha */
+  /* warm graphite neutrals (amber undertone) */
+  --bg: 20 17 14;                /* #14110e */
+  --surface: 28 24 19;           /* #1c1813 */
+  --elevated: 36 31 24;          /* #241f18 */
+  --hover: 45 39 30;             /* #2d271e */
+  --border-subtle: 34 28 21;     /* #221c15 */
+  --border: 51 44 34;            /* #332c22 */
+  --border-strong: 68 58 44;     /* #443a2c */
+  --text-primary: 239 235 227;   /* #efebe3 warm white */
+  --text-secondary: 170 163 148; /* #aaa394 */
+  --text-muted: 116 109 95;      /* #746d5f — AA-large/UI only */
+  --text-on-accent: 255 255 255; /* #ffffff (= action-primary-fg) */
+  /* blueprint-blue accent (brand / action-primary fill / outline / focus / selected) */
+  --accent: 47 111 237;          /* #2f6fed — white-on-fill 4.55, fill-vs-bg 4.14 */
+  --accent-text: 110 168 254;    /* #6ea8fe — link/tertiary, on surface 7.3 (lighter on dark) */
+  --accent-hover: 68 128 245;    /* #4480f5 — action-primary hover */
+  --accent-muted-a: 0.15;        /* selected-fill alpha (blue tint) */
+  /* terracotta highlight — warm premium accent ONLY (paid report badge/CTA) */
+  --highlight: 224 160 106;      /* #e0a06a — text/icon on dark */
+  --highlight-fill: 168 77 46;   /* #a84d2e — badge fill, white-on 5.58 */
+  --highlight-fg: 255 255 255;   /* #ffffff */
+  /* zoning-map state convention (unchanged) */
   --state-positive: 52 211 153;  /* emerald-400 */
   --state-negative: 251 113 133; /* rose-400 */
   --state-warning: 251 191 36;   /* amber-400 */
@@ -35,21 +45,25 @@
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg: 250 250 249;             /* #fafaf9 warm off-white */
-  --surface: 255 255 255;        /* #ffffff */
-  --elevated: 244 243 240;       /* #f4f3f0 */
-  --hover: 236 235 231;          /* #ecebe7 */
-  --border-subtle: 236 234 230;  /* #eceae6 */
-  --border: 224 221 215;         /* #e0ddd7 */
-  --border-strong: 201 196 187;  /* #c9c4bb */
-  --text-primary: 27 26 24;      /* #1b1a18 */
-  --text-secondary: 87 84 77;    /* #57544d */
-  --text-muted: 132 129 122;     /* #84817a */
-  --text-on-accent: 255 255 255; /* #ffffff (white on terracotta fill — AA-large) */
-  --accent: 201 100 66;          /* #c96442 fill unchanged */
-  --accent-text: 168 77 46;      /* #a84d2e — AA on white (4.5:1+) */
-  --accent-hover: 177 82 47;     /* #b1522f */
+  /* warm vellum / manila neutrals */
+  --bg: 247 243 236;             /* #f7f3ec vellum */
+  --surface: 255 253 249;        /* #fffdf9 */
+  --elevated: 240 233 221;       /* #f0e9dd manila */
+  --hover: 232 223 208;          /* #e8dfd0 */
+  --border-subtle: 239 231 217;  /* #efe7d9 */
+  --border: 221 210 192;         /* #ddd2c0 */
+  --border-strong: 196 184 162;  /* #c4b8a2 */
+  --text-primary: 33 28 21;      /* #211c15 sepia-ink */
+  --text-secondary: 92 83 70;    /* #5c5346 */
+  --text-muted: 131 122 107;     /* #837a6b — AA-large/UI only */
+  --text-on-accent: 255 255 255; /* #ffffff */
+  --accent: 29 78 216;           /* #1d4ed8 — white-on-fill 6.70, on surface 6.6 (text-safe) */
+  --accent-text: 29 78 216;      /* #1d4ed8 — link */
+  --accent-hover: 26 69 192;     /* #1a45c0 */
   --accent-muted-a: 0.12;
+  --highlight: 168 77 46;        /* #a84d2e — text on warm paper 5.5 */
+  --highlight-fill: 168 77 46;   /* #a84d2e */
+  --highlight-fg: 255 255 255;   /* #ffffff */
   --state-positive: 4 120 87;    /* emerald-700 #047857 */
   --state-negative: 190 18 60;   /* rose-700 #be123c */
   --state-warning: 180 83 9;     /* amber-700 #b45309 */

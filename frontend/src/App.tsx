@@ -774,6 +774,7 @@ export function App() {
                     </a>
                   </div>
                   <div className="flex items-center gap-2">
+                    <ThemeToggle overImage />
                     <LanguageSelector variant="splash" />
                     {user && (
                       <div className="relative z-50">

@@ -28,11 +28,28 @@ export default {
           'border-strong': 'rgb(var(--border-strong) / <alpha-value>)', // emphasis/hover/selected
         },
         accent: {
-          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',               // brand / selected / focus / outline
           hover: 'rgb(var(--accent-hover) / <alpha-value>)',
-          // text/link variant — darkens on light so accent text clears AA (accent fill stays).
+          // text/link variant — lighter on dark / darker on light so accent text clears AA on
+          // both (the accent FILL stays vivid). Use this for links, never `text-accent` on dark.
           text: 'rgb(var(--accent-text) / <alpha-value>)',
           muted: 'rgb(var(--accent) / var(--accent-muted-a))',          // selected-fill, alpha flips
+        },
+        // Action hierarchy (problem 3) — reads by FORM first (fill > outline > text > neutral),
+        // hue second. Primary = filled `action`; Secondary = `border-accent` + `text-accent-text`;
+        // Tertiary = `text-link` only; Inert = neutral ramp. Aliases of the accent var so the
+        // class name documents intent at the call site.
+        action: {
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',               // bg-action — primary fill
+          hover: 'rgb(var(--accent-hover) / <alpha-value>)',           // hover:bg-action-hover
+          fg: 'rgb(var(--text-on-accent) / <alpha-value>)',            // text-action-fg (white)
+        },
+        link: 'rgb(var(--accent-text) / <alpha-value>)',               // text-link (= accent-text)
+        // Terracotta premium highlight — the only warm in the chrome; reserved for the paid report.
+        highlight: {
+          DEFAULT: 'rgb(var(--highlight) / <alpha-value>)',            // text/icon
+          fill: 'rgb(var(--highlight-fill) / <alpha-value>)',          // badge fill
+          fg: 'rgb(var(--highlight-fg) / <alpha-value>)',              // white on fill
         },
         text: {
           primary: 'rgb(var(--text-primary) / <alpha-value>)',

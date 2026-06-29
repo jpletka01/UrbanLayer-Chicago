@@ -1,7 +1,11 @@
 # Light/Dark Theming — Plan
 
-**Status: Phase 1 COMPLETE on branch `feat/light-dark-theming` (2026-06-29) — not merged/pushed.**
-Phases 2–4 pending. Design decisions locked (see "Decisions" below). Builds directly on the
+**Status: Phase 1 COMPLETE + palette revision token-layer DONE on branch `feat/light-dark-theming`
+(2026-06-29) — not merged/pushed.** The **"Cyanotype on Vellum" hybrid palette is CONFIRMED and
+the token layer is implemented** (index.css vars + tailwind.config `action`/`link`/`highlight`
+tokens; tsc/build/65 tests green). Existing `bg-accent`/`text-accent`/`bg-dark-*` chrome already
+renders the new palette. **Next: Phase 2** — rewire buttons/primitives onto the action-hierarchy
+tokens (and Phase 3 swap `text-accent` links → `text-link` for dark-mode AA). Builds directly on the
 shipped design system (`guides/design-system.md`).
 
 **Phase 1 shipped (token foundation, zero dark-change):** `tailwind.config.js` color tokens →
@@ -32,8 +36,103 @@ default and persistence — without changing the dark appearance and without a c
    rename to role names is a separate later PR.
 3. **Default = `system`** (follow OS `prefers-color-scheme`, resolve to dark when unknown —
    preserves today's look for dark-OS users). Live-updates on OS change.
-4. **Light palette = warm off-white** (harmonizes with the terracotta accent).
+4. ~~Light palette = warm off-white~~ **SUPERSEDED by decision 6.**
 5. **Toggle = 3-state** (light / dark / system).
+6. **Palette = "Cyanotype on Vellum" (HYBRID — CONFIRMED 2026-06-29).** Blueprint-blue accent
+   (Direction A) on **warm vellum neutrals** (Direction B) — "blue ink on warm paper", true to
+   real blueprints, keeps the approachable warmth. Terracotta demoted to a warm premium highlight.
+   §6 override approved: blue is the action/link hue. **Condition: action tiers read by FORM
+   (fill / outline / text), not by users distinguishing shades of blue** — a blue button never
+   looks like a stray link.
+
+---
+
+## Revised color system — "Cyanotype on Vellum" (2026-06-29, CONFIRMED · token layer implemented)
+
+Supersedes the Phase-1 §2 neutral/accent values. The Phase-1 *mechanism* (CSS-var-backed tokens,
+`<alpha-value>` triplets, pre-paint script, ThemeProvider) is unchanged — this is a values + new-roles
+revision, not a re-architecture. Reframe: color is **information, not decoration** — a field-native
+palette, warm-tinted neutrals with depth, and blue accent reserved for a legible **action hierarchy**.
+
+**Hybrid = Direction-A accent (blueprint blue) on Direction-B neutrals (warm vellum).** AA verified on
+every load-bearing pairing in both themes (table below). The cool-on-warm question was checked
+explicitly: it is **not a clash** — blue ink on warm paper is what blueprints are. Two minor,
+non-blocking consequences: (1) the `accent-muted` **selected-chip fill skews cool** against warm
+chrome (`#1f2534` dark / `#e4e8f5` light) — reads as intentional "selected", not muddy; retintable to
+terracotta later if desired. (2) the terracotta **highlight pops by fill+form, not hue** on warm
+neutrals (the premium CTA is a filled badge) — fine, just weaker as pure-text highlight.
+
+**Action hierarchy reads by FORM first** (the confirmed condition): Primary = filled block · Secondary
+= outline · Tertiary = bare text · Inert = neutral. Same blue hue across tiers, but never the same
+shape, so a button can't be mistaken for a link. Primary also carries heavier weight + the light-mode
+shadow as redundant (non-color) emphasis.
+
+### Industry rationale
+For zoning attorneys + developers, the native visual language is **cyanotype blueprint blue** (the
+clearest signal of architecture/drafting/planning), **surveyor/construction-safety warm** (terracotta/
+amber — Chicago brick, flagging, signage), and **drafting neutrals** (graphite-on-table, vellum). The
+zoning-map state convention (emerald/amber/rose = go/caution/stop) already matches our state tones.
+Key insight resolving the broken accent: **oranges hit AA only when pushed dark and muddy; blue clears
+AA at vivid values.** So blue leads (action/brand), and terracotta moves to the role it's good at — a
+warm *highlight* (premium/$25 report, brand mark). This **overrides design-system §6's "links never
+blue"** rule: blue is now the brand accent, so blue links are on-brand, not generic.
+
+### Token table (warm vellum neutrals · blueprint-blue accent · contrast vs the paired surface)
+Neutral ramp carries a **warm amber undertone (~40°)** — vellum/manila, not flat gray. Hue enters at
+every neutral: bg/surface/elevated/hover/borders all warm-shifted. (Values implemented in `index.css`.)
+
+| Token (CSS var) | Class | Dark | Light | Contrast (dark / light) |
+|---|---|---|---|---|
+| `--bg` | `dark-bg` | `#14110e` | `#f7f3ec` | page (warm near-black / vellum) |
+| `--surface` | `dark-surface` | `#1c1813` | `#fffdf9` | card |
+| `--elevated` | `dark-elevated` | `#241f18` | `#f0e9dd` | nested/input (manila) |
+| `--hover` | `dark-hover` | `#2d271e` | `#e8dfd0` | interactive fill |
+| `--border-subtle` | `dark-border-subtle` | `#221c15` | `#efe7d9` | divider (decorative hairline) |
+| `--border` | `dark-border` | `#332c22` | `#ddd2c0` | card edge (~1.4:1, decorative) |
+| `--border-strong` | `dark-border-strong` | `#443a2c` | `#c4b8a2` | inert emphasis edge |
+| `--text-primary` | `text-text-primary` | `#efebe3` | `#211c15` | **14.9 / 16.7** ✓ |
+| `--text-secondary` | `text-text-secondary` | `#aaa394` | `#5c5346` | **7.0 / 7.4** ✓ |
+| `--text-muted` | `text-text-muted` | `#746d5f` | `#837a6b` | 3.4 / 4.2 — AA-large/UI only (as today) |
+| `--accent` (brand/active/selected/focus/secondary-outline/primary-fill) | `accent` | `#2f6fed` | `#1d4ed8` | white-on-fill 4.55 / 6.70; outline vs surface 3.9 / 6.6 ✓ |
+| `--accent-text` / `--link` | `accent-text`, `link` | `#6ea8fe` | `#1d4ed8` | **on surface 7.3 / 6.6** ✓ |
+| `--accent-muted` (selected fill) | `accent-muted` | blue @ .15 | blue @ .12 | cool-tinted (intentional selected) |
+| `--highlight` (premium text/icon) | new `highlight` | `#e0a06a` | `#a84d2e` | as text on surface 7.7 / 5.6 ✓ |
+| `--highlight-fill` (premium badge) | new `highlight-fill` | `#a84d2e` | `#a84d2e` | white-on-fill **5.58 / 5.58** ✓ |
+| `--state-positive` | `state-positive` | emerald-400 `#34d399` | emerald-700 `#047857` | 9.3 / 5.5 ✓ |
+| `--state-negative` | `state-negative` | rose-400 `#fb7185` | rose-700 `#be123c` | 6.7 / 4.7 ✓ |
+| `--state-warning` | `state-warning` | amber-400 `#fbbf24` | amber-700 `#b45309` | 10.7 / 5.0 ✓ |
+| `--text-on-accent` (= `action-primary-fg`) | `text-on-accent` | `#ffffff` | `#ffffff` | white-on-primary **4.55 / 6.70** ✓ |
+
+### Action hierarchy (new semantic tokens)
+A legible fill → outline → text → neutral emphasis ramp. New tokens (all theme-flipping):
+
+| Tier | Visual (both themes) | Tokens (dark / light) | Use |
+|---|---|---|---|
+| **Primary** | Solid **blue fill**, white text, soft shadow in light. ~One per view. | `--action-primary` `#2f6fed`/`#1d4ed8`, `--action-primary-hover` `#4480f5`/`#1a45c0`, `--action-primary-fg` `#fff` | Buy Report, Submit |
+| **Secondary** | Transparent, **blue (accent) 1px outline + blue text**. (Neutral border-strong is too faint at ~1.8:1 to read as a control edge — the outline is the accent.) | `--action-secondary-border` = `--accent`, `--action-secondary-fg` = `--link` | Investigate, Cancel |
+| **Tertiary / ghost** | **Blue text only**, hover paints a faint `--hover` fill. | `--link` + `--hover` | inline links, "Maybe later" |
+| **Inert / interactive** | **Neutral** chrome — `elevated` bg, `text-secondary`, hover `hover`; *no accent*. Selected → `accent`. | existing neutrals + `--accent` on select | filter chips, toggles, tabs |
+| **Premium** (special) | Terracotta **highlight** — text/icon `--highlight`, or `--highlight-fill` badge w/ white text. The only warm in the system; reserved for the paid report. | `--highlight`, `--highlight-fill`, `--highlight-fg` `#fff` | $25 report CTA/badge |
+
+`--focus` = `--accent`, rendered as a ring at partial alpha (UI-contrast 4.1 / 6.2 vs bg ✓).
+
+### What changes vs. the current (Phase-1) tokens
+- **Neutrals retinted warm** — all `bg/surface/elevated/hover/border*` gain a ~40° amber/vellum
+  undertone (replaces flat dark / the cool Direction-A option). ~14 var values; **class names unchanged.**
+- **Accent redefined** — `--accent` + `--accent-text` move from terracotta `#c96442`/`#a84d2e` to
+  **blueprint blue**. Flat terracotta retired as the lead.
+- **New tokens** — `action-primary{,-hover,-fg}`, `action-secondary-{border,fg}` (alias accent/link),
+  `link`, `focus`, `highlight`, `highlight-fill`, `highlight-fg`.
+- **§6 rule override** — links are now blue (on-brand), not `text-accent` terracotta.
+- **State tones unchanged** (the §1-corrected emerald/rose/amber -400 dark / -700 light).
+- **Mechanism unchanged** — still var-backed triplets; Phase-1 plumbing untouched.
+
+### Open follow-ups (decide at implementation)
+- Whether to slightly **cool-tint the modal/card shadows** in light (currently neutral black) to
+  match the cool neutrals — minor.
+- `accent-muted` selected-chip blue tint intensity (.12–.15) — confirm against real chips in Phase 3.
+- Mapbox basemap stays `dark-v11` (Polish path) — a cool-neutral light app over a dark map is an
+  intentional "data canvas" seam; revisit only if the full-feature map path is taken.
 
 ---
 
