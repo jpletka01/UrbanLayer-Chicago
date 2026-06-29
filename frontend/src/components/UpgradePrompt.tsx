@@ -43,7 +43,7 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
         <button
           onClick={handleUpgrade}
           disabled={loading}
-          className="w-full py-2.5 bg-accent hover:bg-accent-hover text-text-on-accent rounded-lg text-title transition-colors disabled:opacity-50"
+          className="w-full py-2.5 bg-highlight-fill hover:opacity-90 text-highlight-fg rounded-lg text-title transition-colors disabled:opacity-50"
         >
           {loading ? t("upgradePrompt.redirecting") : t("upgradePrompt.cta")}
         </button>

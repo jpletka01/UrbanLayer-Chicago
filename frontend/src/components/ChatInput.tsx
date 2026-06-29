@@ -177,7 +177,7 @@ export function ChatInput({
             disabled={disabled || !value.trim()}
             className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
               isActive
-                ? "bg-accent hover:bg-accent-hover text-white"
+                ? "bg-action hover:bg-action-hover text-white"
                 : "bg-white/10 hover:bg-white/20 text-white/70"
             } disabled:opacity-30`}
             aria-label={t("common:submit")}
@@ -293,7 +293,7 @@ export function ChatInput({
           <button
             type="submit"
             disabled={disabled || !value.trim()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-accent hover:bg-accent-hover disabled:bg-dark-elevated disabled:text-text-muted text-text-on-accent shrink-0"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-action hover:bg-action-hover disabled:bg-dark-elevated disabled:text-text-muted text-text-on-accent shrink-0"
             aria-label={t("common:submit")}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

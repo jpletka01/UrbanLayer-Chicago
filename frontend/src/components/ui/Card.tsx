@@ -78,7 +78,9 @@ export function Card({
   const hasHeader = Boolean(title || icon || headerRight || collapsible);
 
   const root = [
-    "rounded-xl overflow-hidden border",
+    // shadow-card is none in dark (elevation = lighter surface) and a soft shadow in light
+    // (where you can't go lighter than the page) — theme-aware elevation, §4.
+    "rounded-xl overflow-hidden border shadow-card",
     accentEdge ? "border-dark-border border-l-2 border-l-accent" : "border-dark-border",
     SURFACE[surface],
     interactive ? "transition-colors hover:border-dark-border-strong" : "",

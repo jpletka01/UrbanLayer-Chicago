@@ -46,7 +46,7 @@ export function Modal({ onClose, title, description, showClose, size = "sm", chi
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`relative w-full ${SIZE[size]} mx-4 bg-dark-surface border border-dark-border rounded-xl p-6 shadow-2xl`}>
+      <div className={`relative w-full ${SIZE[size]} mx-4 bg-dark-surface border border-dark-border rounded-xl p-6 shadow-modal`}>
         {close && (
           <button
             type="button"

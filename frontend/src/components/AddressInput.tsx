@@ -125,7 +125,7 @@ export function AddressInput({ onSubmit, placeholder }: Props) {
           disabled={!value.trim()}
           className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
             isActive
-              ? "bg-accent hover:bg-accent-hover text-white"
+              ? "bg-action hover:bg-action-hover text-white"
               : "bg-white/10 hover:bg-white/20 text-white/70"
           } disabled:opacity-30`}
           aria-label={t("submit")}

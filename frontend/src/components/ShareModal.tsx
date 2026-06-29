@@ -75,7 +75,7 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
             />
             <button
               onClick={handleCopy}
-              className="shrink-0 px-4 py-2 text-title rounded-lg transition-colors bg-accent text-text-on-accent hover:bg-accent-hover"
+              className="shrink-0 px-4 py-2 text-title rounded-lg transition-colors bg-action text-text-on-accent hover:bg-action-hover"
             >
               {copied ? t("copied") : t("copy")}
             </button>
@@ -107,7 +107,7 @@ export function ShareModal({ conversationId, onClose }: ShareModalProps) {
                 if (result) setUrl(result.url);
                 setLoading(false);
               }}
-              className="px-4 py-1.5 text-title rounded-lg bg-accent text-text-on-accent hover:bg-accent-hover transition-colors"
+              className="px-4 py-1.5 text-title rounded-lg bg-action text-text-on-accent hover:bg-action-hover transition-colors"
             >
               {t("createNewLink")}
             </button>

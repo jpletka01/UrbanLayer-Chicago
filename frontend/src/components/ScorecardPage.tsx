@@ -429,7 +429,7 @@ export default function ScorecardPage() {
               <button
                 type="submit"
                 disabled={loading || !address.trim()}
-                className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-text-on-accent text-title rounded-lg transition-colors"
+                className="px-5 py-2.5 bg-action hover:bg-action-hover disabled:opacity-50 text-text-on-accent text-title rounded-lg transition-colors"
               >
                 {loading ? t("scorecard.loading") : t("scorecard.search")}
               </button>
@@ -485,7 +485,7 @@ export default function ScorecardPage() {
               <button
                 type="button"
                 onClick={() => navigate(`/?q=${encodeURIComponent(errorQuery)}`)}
-                className="px-4 py-2 bg-accent hover:bg-accent-hover text-text-on-accent text-title rounded-lg transition-colors"
+                className="px-4 py-2 bg-action hover:bg-action-hover text-text-on-accent text-title rounded-lg transition-colors"
               >
                 {t("scorecard.codeRedirect.askAnalyst")} →
               </button>
@@ -788,7 +788,7 @@ export default function ScorecardPage() {
             <button
               onClick={() => { track("report_cta_click"); (hasReportAccess ? handleDownloadPdf : () => setShowPurchasePrompt(true))(); }}
               disabled={downloading}
-              className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-text-on-accent text-title rounded-lg transition-colors shrink-0"
+              className="px-4 py-2 bg-highlight-fill hover:opacity-90 disabled:opacity-50 text-highlight-fg text-title rounded-lg transition-colors shrink-0"
             >
               {downloading
                 ? t("scorecard.reportCTA.generating")

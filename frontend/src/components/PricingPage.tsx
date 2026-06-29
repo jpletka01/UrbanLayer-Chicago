@@ -66,9 +66,9 @@ export default function PricingPage() {
             )}
           </div>
 
-          {/* Development Feasibility Report — the per-parcel wedge */}
-          <div className="bg-dark-surface border-2 border-accent rounded-2xl p-8 relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-text-on-accent text-caption font-medium px-3 py-1 rounded-full">
+          {/* Development Feasibility Report — the per-parcel wedge. Premium = terracotta highlight. */}
+          <div className="bg-dark-surface border-2 border-highlight rounded-2xl p-8 relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-highlight-fill text-highlight-fg text-caption font-medium px-3 py-1 rounded-full">
               {t("pricing.startHere")}
             </div>
             <h2 className="text-subtitle font-semibold mb-1">{t("pricing.reportTier")}</h2>
@@ -89,7 +89,7 @@ export default function PricingPage() {
             </ul>
             <Link
               to="/scorecard"
-              className="block w-full py-2.5 bg-accent hover:bg-accent-hover text-text-on-accent rounded-lg text-title transition-colors text-center"
+              className="block w-full py-2.5 bg-highlight-fill hover:opacity-90 text-highlight-fg rounded-lg text-title transition-colors text-center"
             >
               {t("pricing.getReport")}
             </Link>

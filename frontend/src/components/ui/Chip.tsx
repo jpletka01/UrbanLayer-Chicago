@@ -43,9 +43,11 @@ const SIZE: Record<Size, string> = {
 const TONE: Record<Tone, string> = {
   neutral: "bg-dark-elevated text-text-secondary border border-dark-border",
   accent: "bg-accent-muted text-accent border border-accent/30",
-  positive: "bg-emerald-500/15 text-emerald-400",
-  negative: "bg-rose-500/15 text-rose-400",
-  warning: "bg-amber-500/15 text-amber-400",
+  // Themed state tones (§6): -400 in dark / -700 in light, so the translucent fill + text
+  // both flip and clear AA on the light surface. Replaces the static emerald/rose/amber-400.
+  positive: "bg-state-positive/15 text-state-positive",
+  negative: "bg-state-negative/15 text-state-negative",
+  warning: "bg-state-warning/15 text-state-warning",
 };
 
 const SELECTED = "border border-accent bg-accent/10 text-accent";

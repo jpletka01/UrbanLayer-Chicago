@@ -198,7 +198,7 @@ export function AdminDashboard() {
               onClick={() => setPeriod(p.key)}
               className={`px-3 py-1.5 rounded-lg text-body transition-colors ${
                 period === p.key
-                  ? "bg-accent text-white"
+                  ? "bg-action text-white"
                   : "bg-dark-surface text-text-secondary hover:text-text-primary border border-dark-border"
               }`}
             >

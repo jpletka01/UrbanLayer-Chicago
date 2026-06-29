@@ -35,7 +35,7 @@ export function ReportCTACard({
           <button
             onClick={() => { track("report_cta_click"); onDownload(); }}
             disabled={downloading}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+            className="px-4 py-2 bg-highlight-fill hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
           >
             {downloading ? t("scorecard.reportCTA.generating") : t("scorecard.reportCTA.download")}
           </button>
@@ -95,7 +95,7 @@ export function ReportCTACard({
             <button
               onClick={() => { track("report_cta_click"); onShowPurchase(); }}
               disabled={downloading}
-              className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-5 py-2.5 bg-highlight-fill hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
             >
               {downloading ? t("scorecard.reportCTA.generating") : t("scorecard.reportCTA.buyReport")}
             </button>

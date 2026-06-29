@@ -203,7 +203,7 @@ export default function DiscoveryPage() {
                 type="button"
                 onClick={() => runWith(panelState, text, sort, topicId)}
                 disabled={!registry || loading}
-                className="rounded-lg bg-accent px-4 py-2 text-title text-text-on-accent transition-colors hover:bg-accent-hover disabled:opacity-50"
+                className="rounded-lg bg-action px-4 py-2 text-title text-text-on-accent transition-colors hover:bg-action-hover disabled:opacity-50"
               >
                 {loading ? t("discovery.searching") : t("discovery.search")}
               </button>
@@ -313,7 +313,7 @@ export default function DiscoveryPage() {
               <button
                 type="button"
                 onClick={() => setFiltersOpen(false)}
-                className="rounded-lg bg-accent px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-accent-hover"
+                className="rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover"
               >
                 {t("common:done")}
               </button>

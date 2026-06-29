@@ -328,7 +328,7 @@ function TeaserWall({
         <button
           type="button"
           onClick={onUpgrade}
-          className="mt-3 rounded-lg bg-accent px-4 py-2 text-caption font-medium text-text-on-accent transition-colors hover:bg-accent-hover"
+          className="mt-3 rounded-lg bg-highlight-fill px-4 py-2 text-caption font-medium text-highlight-fg transition-colors hover:opacity-90"
         >
           {t("discovery.unlockCta")}
         </button>

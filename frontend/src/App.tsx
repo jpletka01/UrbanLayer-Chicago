@@ -1005,7 +1005,7 @@ export function App() {
                 {rateLimited && !canPersist && (
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className="shrink-0 px-3 py-1 text-xs font-medium text-white bg-accent hover:bg-accent/80 rounded-lg transition-colors"
+                    className="shrink-0 px-3 py-1 text-xs font-medium text-white bg-action hover:bg-action-hover rounded-lg transition-colors"
                   >
                     {tc("signInShort")}
                   </button>
