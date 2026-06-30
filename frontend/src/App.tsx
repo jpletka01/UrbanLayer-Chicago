@@ -399,6 +399,11 @@ export function App() {
     const pin = searchParams.get("pin");
     setSearchParams({}, { replace: true });
     if (!pin) {
+      // Ungrounded ?q= handoff (Discovery area seam, persona cards, Scorecard
+      // failure-recovery): no parcel named, so clear any sticky grounding left
+      // from a prior in-session conversation before sending. Same defensive
+      // clean-open as the ?ask=1 doors — closes stale grounding on all three.
+      setGrounding(null);
       sendMessage(q);
       return;
     }

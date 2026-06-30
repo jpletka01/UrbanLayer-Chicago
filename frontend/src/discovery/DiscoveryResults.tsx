@@ -49,6 +49,7 @@ interface ResultsProps {
   onExport?: () => void; // full-match-set CSV (server-side, premium)
   exportLocked?: boolean; // free tier — show the Export button as a Pro conversion lever
   onUpgrade?: () => void; // teaser CTA + locked-export click
+  onAskArea?: () => void; // #6 seam: free "Ask the analyst about this area" (teaser fork)
 }
 
 export function DiscoveryResults({
@@ -66,6 +67,7 @@ export function DiscoveryResults({
   onExport,
   exportLocked = false,
   onUpgrade,
+  onAskArea,
 }: ResultsProps) {
   const { t } = useTranslation("pages");
   if (loading) {
@@ -162,6 +164,7 @@ export function DiscoveryResults({
             shown={rows.length}
             summary={summarize(response.cqs, registry)}
             onUpgrade={onUpgrade}
+            onAskArea={onAskArea}
             t={t}
           />
         ) : (
@@ -307,12 +310,14 @@ function TeaserWall({
   shown,
   summary,
   onUpgrade,
+  onAskArea,
   t,
 }: {
   total: number;
   shown: number;
   summary: string;
   onUpgrade?: () => void;
+  onAskArea?: () => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
   return (
@@ -324,6 +329,9 @@ function TeaserWall({
       <p className="mx-auto mt-1 max-w-xs text-micro text-text-secondary">
         {t("discovery.teaserUnlock")}
       </p>
+      {/* A fork, not a wall: the paid unlock (deliverables) OR a free analyst door
+          (qualitative area intelligence) — so the free user has a useful next
+          action instead of pay-or-abandon, and it cross-sells the chat product. */}
       {onUpgrade && (
         <button
           type="button"
@@ -332,6 +340,17 @@ function TeaserWall({
         >
           {t("discovery.unlockCta")}
         </button>
+      )}
+      {onAskArea && (
+        <p className="mt-2">
+          <button
+            type="button"
+            onClick={onAskArea}
+            className="inline-flex items-center gap-1 text-caption text-link transition-colors hover:text-accent-hover"
+          >
+            {t("discovery.orAskAnalystArea")} <span aria-hidden>→</span>
+          </button>
+        </p>
       )}
     </div>
   );

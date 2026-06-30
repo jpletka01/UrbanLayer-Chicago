@@ -56,6 +56,39 @@ function phrase(id: string, p: Predicate, def?: FilterDef): string {
   }
 }
 
+/**
+ * A chat-handoff question for the current result set (#6 Discovery→chat seam).
+ * Names the area (so the chat router scopes the community area from the text) and
+ * the filter criteria (so the answer is specific to what the user searched),
+ * anchored to "these properties". UNGROUNDED — answered by the chat's native area
+ * retrieval, never a structured payload. Citywide (no region filter) is an
+ * accepted generic floor; the area-filtered case is where the seam earns its keep.
+ */
+export function seamPrompt(cqs: CQS, registry: Registry): string {
+  const defs = new Map(registry.filters.map((f) => [f.id, f]));
+  const ids = Object.keys(cqs.filters).sort();
+  const regions: string[] = [];
+  const criteria: string[] = [];
+  for (const id of ids) {
+    const pred = cqs.filters[id].predicate;
+    if (pred.kind === "region") regions.push(...pred.regions.map(regionName));
+    else criteria.push(phrase(id, pred, defs.get(id)));
+  }
+  const crit = criteria.length ? criteria.join(", ") : td("seamCrit", "properties");
+  const area = regions.length ? regions.join(td("valueJoinOr", " or ")) : null;
+  return area
+    ? td(
+        "seamPromptArea",
+        `I'm researching ${crit} in ${area}. What's driving development there, and what should I know before pursuing these properties?`,
+        { crit, area },
+      )
+    : td(
+        "seamPromptCity",
+        `I'm researching ${crit} across Chicago. What should I know before pursuing these properties?`,
+        { crit },
+      );
+}
+
 /** Deterministic plain-language description of an evaluated CQS (in the active language). */
 export function summarize(cqs: CQS, registry: Registry): string {
   const defs = new Map(registry.filters.map((f) => [f.id, f]));

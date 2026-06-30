@@ -16,7 +16,7 @@ import { DiscoveryResults } from "./DiscoveryResults";
 import { RecipeShelf } from "./RecipeShelf";
 import { loadRegistry } from "./registryClient";
 import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
-import { summarize } from "./summary";
+import { summarize, seamPrompt } from "./summary";
 import { expandTopic, panelFromCqs } from "./topicCompiler";
 import type {
   PanelState,
@@ -171,6 +171,14 @@ export default function DiscoveryPage() {
 
   const onUpgrade = useCallback(() => setShowUpgrade(true), []);
 
+  // Discovery→chat seam (#6): hand the result set to the analyst as an UNGROUNDED
+  // pre-filled question (area + filter intent as prose). No pin, no payload — the
+  // chat's native area retrieval answers it; App.tsx clears grounding on open.
+  const onAskArea = useCallback(() => {
+    if (!response || !registry) return;
+    navigate(`/?q=${encodeURIComponent(seamPrompt(response.cqs, registry))}`);
+  }, [navigate, response, registry]);
+
   return (
     <div className="flex h-screen flex-col bg-dark-bg text-text-primary">
       <PageHeader sticky={false} maxWidthClass="max-w-[1920px]" />
@@ -262,6 +270,18 @@ export default function DiscoveryPage() {
             <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
               <p className="text-body text-text-secondary">{summarize(response.cqs, registry)}</p>
               <Chips cqs={response.cqs} registry={registry} onRemove={onRelax} />
+              {/* Quiet seam — subordinate to the ranked list (the page's primary
+                  job); the chat door is secondary to it. Always available (incl.
+                  premium / pre-wall), not gated behind the teaser. */}
+              {response.result.total > 0 && (
+                <button
+                  type="button"
+                  onClick={onAskArea}
+                  className="inline-flex items-center gap-1 text-caption text-link transition-colors hover:text-accent-hover"
+                >
+                  {t("discovery.askAnalystArea")} <span aria-hidden>→</span>
+                </button>
+              )}
             </div>
           )}
           <div className="min-h-0 flex-1">
@@ -281,6 +301,7 @@ export default function DiscoveryPage() {
                 onExport={onExport}
                 exportLocked={!isPro}
                 onUpgrade={onUpgrade}
+                onAskArea={onAskArea}
               />
             )}
           </div>
