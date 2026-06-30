@@ -573,6 +573,10 @@ export interface ScorecardResponse {
   resolved_lat: number;
   resolved_lon: number;
   zone_definition?: ZoneDefinition | null;
+  // True when the address-scoped violation lookup actually ran (parsed + queried).
+  // Lets the UI show "no violations on record" for a confirmed-zero vs. omitting
+  // for an unconfirmed lookup — silence must not mean two different things.
+  violations_checked?: boolean;
 }
 
 export async function fetchScorecard(params: {

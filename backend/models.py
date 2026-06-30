@@ -479,6 +479,11 @@ class ContextObject(BaseModel):
     # None — comparables / zone_definition live as siblings on ScorecardResponse.
     comparables: ComparablesSummary | None = None
     zone_definition: dict | None = None
+    # The Scorecard's computed verdict (category + binding constraint + caveats),
+    # grafted on a parcel handoff so the chat can speak to "what's the constraint
+    # here" and carry the verdict's caveats. PARCEL-scoped. Serialized to the LLM
+    # with ContextObject (no synthesizer change).
+    verdict: dict | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
@@ -533,6 +538,10 @@ class ScorecardContext(BaseModel):
     regulatory: RegulatorySummary | None = None
     incentives: IncentivesSummary | None = None
     comparables: ComparablesSummary | None = None
+    # Distilled ScorecardVerdict {category, headline, binding_constraint, reasons,
+    # confidence, caveats, signals} — lifted from the held response so the chat
+    # can speak to the verdict + carry its caveats. PARCEL-scoped.
+    verdict: dict | None = None
 
 
 class ChatRequest(BaseModel):

@@ -19,7 +19,7 @@ function KV({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ViolationsCard({ data }: { data: ViolationSummary }) {
+export function ViolationsCard({ data, scopeLabel }: { data: ViolationSummary; scopeLabel?: string }) {
   const { t } = useTranslation("data");
   const [showDescriptions, setShowDescriptions] = useState(false);
 
@@ -30,6 +30,10 @@ export function ViolationsCard({ data }: { data: ViolationSummary }) {
   return (
     <CollapsibleCard title={t("violations.title")} icon={AlertIcon}>
       <div className="space-y-2.5">
+        {/* Scope disclosure — on the Scorecard these are address-exact; in chat
+            they're area-level. The label says which, so a number is never
+            mistaken for the wrong scope. */}
+        {scopeLabel && <p className="text-micro text-text-muted -mt-0.5">{scopeLabel}</p>}
         <div className="grid grid-cols-2 gap-2 py-1">
           <div className="text-center">
             <div className="text-sm font-semibold text-text-primary">{data.total.toLocaleString()}</div>

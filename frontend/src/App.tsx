@@ -271,6 +271,7 @@ export function App() {
     sendMessage: sendChat,
     clearTurnState,
     reset: resetChat,
+    setGrounding,
   } = useChat({
     onContext: handleContext,
     onPlan: handlePlan,
@@ -406,6 +407,8 @@ export function App() {
     (async () => {
       const resp = heldScorecard?.resolved_pin === pin ? heldScorecard : await selectParcel({ pin });
       const scorecardContext = resp?.resolved_pin === pin ? buildScorecardContext(resp) : null;
+      // Persist as the conversation's grounding so typed follow-ups stay grounded.
+      setGrounding(scorecardContext);
       sendMessage(q, undefined, { parcelPin: pin, scorecardContext });
     })();
   }, [authLoading, searchParams, conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
@@ -432,6 +435,13 @@ export function App() {
     () => (entryPin && heldScorecard?.resolved_pin === entryPin ? buildScorecardContext(heldScorecard) : null),
     [entryPin, heldScorecard],
   );
+
+  // Persist the parcel grounding for the whole conversation. Only ever sets (never
+  // clears) here, so it survives the autosend's searchParams reset — follow-up
+  // turns stay grounded. Cleared only by reset() (New Chat).
+  useEffect(() => {
+    if (groundedContext) setGrounding(groundedContext);
+  }, [groundedContext]);
 
   function sendPropertyStarter(question: string) {
     if (!groundedContext) return;

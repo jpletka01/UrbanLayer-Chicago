@@ -426,10 +426,31 @@ export interface ScorecardContext {
   lon: number | null;
   parcel_zoning?: ZoningSummary | null;
   zone_definition?: Record<string, unknown> | null;
+  // property + comparables are PIN/identity-dependent — omitted on a pin-null
+  // (unverified) parcel so the chat never grounds on a possible neighbor's data.
   property?: PropertySummary | null;
   regulatory?: RegulatorySummary | null;
   incentives?: IncentivesSummary | null;
   comparables?: ComparablesSummary | null;
+  // Distilled ScorecardVerdict so the chat can speak to the verdict + carry caveats.
+  verdict?: VerdictGrounding | null;
+}
+
+// Distilled verdict shipped in the grounding payload (UI-only nextStep/cardAnchor dropped).
+export interface VerdictGrounding {
+  category: string;
+  headline: string;
+  binding_constraint: string | null;
+  reasons: { text: string; polarity: string }[];
+  confidence: "high" | "caveated";
+  caveats: string[];
+  signals: {
+    allowedFar: number | null;
+    existingFar: number | null;
+    capacityBand: string;
+    incentiveStrength: string;
+    frictionFlags: string[];
+  };
 }
 
 export interface ContextObject {

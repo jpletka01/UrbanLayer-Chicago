@@ -75,6 +75,8 @@ interface UseChat {
   ) => Promise<void>;
   clearTurnState: () => void;
   reset: () => void;
+  // Set the conversation's active parcel grounding (attached to every turn).
+  setGrounding: (ctx: ScorecardContext | null) => void;
 }
 
 export function useChat({
@@ -100,6 +102,13 @@ export function useChat({
   const pendingTurnSummaryRef = useRef<TurnSummary | null>(null);
   const hasTokenRef = useRef(false);
   const cachedMapRef = useRef<{ communityArea: number; mapData: MapData } | null>(null);
+  // Active parcel grounding for the conversation: set once on a Scorecard
+  // handoff, then attached to EVERY turn (typed follow-ups included) so grounding
+  // survives past the first message. The backend decides per-turn whether it
+  // applies (pin/point match + property-scoped) and steps aside on a pivot, so
+  // attaching it on an off-parcel turn is harmless. Cleared on reset (New Chat).
+  const activeGroundingRef = useRef<ScorecardContext | null>(null);
+  const setGrounding = (ctx: ScorecardContext | null) => { activeGroundingRef.current = ctx; };
 
   const userMessageCount = messages.filter((m) => m.role === "user").length;
   const atMessageLimit = userMessageCount >= MESSAGE_LIMIT;
@@ -117,6 +126,7 @@ export function useChat({
     abortRef.current?.abort();
     setMessages([]);
     clearTurnState();
+    activeGroundingRef.current = null; // New Chat drops the parcel grounding
   }
 
   async function sendMessage(
@@ -168,8 +178,8 @@ export function useChat({
         uploadIds,
         cachedMapRef.current?.communityArea ?? null,
         language,
-        opts?.parcelPin ?? null,
-        opts?.scorecardContext ?? null,
+        opts?.parcelPin ?? activeGroundingRef.current?.pin ?? null,
+        opts?.scorecardContext ?? activeGroundingRef.current ?? null,
       )) {
         if (chunk.type === "plan") {
           setPlan(chunk.plan);
@@ -296,5 +306,6 @@ export function useChat({
     sendMessage,
     clearTurnState,
     reset,
+    setGrounding,
   };
 }

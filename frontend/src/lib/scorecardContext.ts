@@ -1,32 +1,60 @@
+import i18n from "./i18n";
 import type { ScorecardResponse } from "./api";
-import type { ScorecardContext } from "./types";
+import type { ScorecardContext, VerdictGrounding } from "./types";
+import { computeVerdict, type TFunc } from "./scorecardVerdict";
 
 // Sales beyond the nearest few add tokens without changing the comp picture;
 // the summary stats (median, range, volume) already span the full set.
 const MAX_COMP_SALES = 8;
 
+// Verdict strings resolve through the pages namespace (same keys the band uses).
+const groundingT: TFunc = (key, opts) => i18n.t(key, { ns: "pages", ...opts }) as string;
+
+// Distill the computed ScorecardVerdict to the grounding shape: drop the UI-only
+// nextStep/cardAnchor, surface the dominant negative reason as the binding constraint.
+function distillVerdict(resp: ScorecardResponse): VerdictGrounding {
+  const v = computeVerdict(resp, groundingT);
+  const binding = v.reasons.find((r) => r.polarity === "negative")?.text ?? null;
+  return {
+    category: v.category,
+    headline: v.headline,
+    binding_constraint: binding,
+    reasons: v.reasons.map((r) => ({ text: r.text, polarity: r.polarity })),
+    confidence: v.confidence,
+    caveats: v.caveats,
+    signals: {
+      allowedFar: v.signals.allowedFar,
+      existingFar: v.signals.existingFar,
+      capacityBand: v.signals.capacityBand,
+      incentiveStrength: v.signals.incentiveStrength,
+      frictionFlags: v.signals.frictionFlags,
+    },
+  };
+}
+
 /**
  * Build the chat-grounding payload from a held ScorecardResponse.
  *
- * Selective by design (see backend ScorecardContext): only the property /
- * regulatory / incentives / zoning facts + comparables — never the
- * neighborhood-activity feeds (crime/311/permits/...) or code_chunks, which are
- * stale-prone or cheaply re-fetched when a question actually needs them. The
- * sub-objects are lifted verbatim from the already-assembled response; only the
- * comparables sales list is trimmed.
+ * Parcel-only by design (see backend ScorecardContext): property / regulatory /
+ * incentives / zoning facts + comparables + the computed verdict — never the
+ * neighborhood-activity feeds (crime/311/permits/...), which are area-level and
+ * re-fetch via normal retrieval when a question needs them.
  *
- * Returns null when the response has no authoritative pin — without one the
- * backend gate can't match it to the turn, so there's nothing to ship.
+ * Two tiers, by identity confidence:
+ *  - **pin present** (authoritative parcel): full grounding incl. property/comps.
+ *  - **pin null** (unverified/nearest): zoning-only — ship the point-resolved,
+ *    identity-independent facts (zoning/regulatory/incentives) + the (already
+ *    caveated) verdict, and OMIT property/comparables, which are PIN-keyed and
+ *    could belong to a neighbor. Returns null only when there's no zoning at all.
  */
 export function buildScorecardContext(resp: ScorecardResponse | null): ScorecardContext | null {
-  if (!resp || !resp.resolved_pin) return null;
+  if (!resp) return null;
+  const hasPin = !!resp.resolved_pin;
 
-  const comps = resp.comparables;
-  const trimmedComparables = comps
-    ? { ...comps, sales: comps.sales.slice(0, MAX_COMP_SALES) }
-    : null;
+  // Point-resolved, identity-independent facts ship in both tiers.
+  if (!hasPin && !resp.zone_definition && !resp.context.parcel_zoning) return null;
 
-  return {
+  const base: ScorecardContext = {
     pin: resp.resolved_pin,
     address: resp.address,
     community_area_name: resp.community_area_name,
@@ -34,9 +62,17 @@ export function buildScorecardContext(resp: ScorecardResponse | null): Scorecard
     lon: resp.resolved_lon,
     parcel_zoning: resp.context.parcel_zoning ?? null,
     zone_definition: (resp.zone_definition as Record<string, unknown> | null) ?? null,
-    property: resp.context.property ?? null,
     regulatory: resp.context.regulatory ?? null,
     incentives: resp.context.incentives ?? null,
-    comparables: trimmedComparables,
+    verdict: distillVerdict(resp),
+  };
+
+  if (!hasPin) return base; // zoning-only tier — property/comps omitted
+
+  const comps = resp.comparables;
+  return {
+    ...base,
+    property: resp.context.property ?? null,
+    comparables: comps ? { ...comps, sales: comps.sales.slice(0, MAX_COMP_SALES) } : null,
   };
 }

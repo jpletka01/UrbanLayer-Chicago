@@ -134,7 +134,103 @@
       "aduEligible": "elegible para ADU",
       "aroApplies": "aplica ARO",
       "minimalFlood": "riesgo de inundación mínimo",
-      "floodZone": "zona de inundación FEMA {{zone}}"
+      "floodZone": "zona de inundación FEMA {{zone}}",
+      "headline": {
+        "strong": "Candidato sólido para desarrollo",
+        "incentive_driven": "Oportunidad por incentivos",
+        "constrained": "Potencial con restricciones",
+        "limited": "Potencial limitado por zonificación",
+        "entitlement_defined": "Parcela de desarrollo planificado",
+        "insufficient_data": "No se pudo confirmar esta parcela"
+      },
+      "reason": {
+        "capacity": "FAR {{allowed}} permitido vs ≈{{existing}} construido — espacio para ~{{ratio}}× más superficie edificable",
+        "vacant": "Prácticamente vacante en un sitio edificable (FAR {{allowed}} permitido)",
+        "oz": "En una Zona de Oportunidad federal — diferimiento de ganancias de capital reinvertidas",
+        "tifFunded": "En el TIF {{name}} — saldo del fondo {{balance}}",
+        "tif": "En el distrito TIF {{name}}",
+        "ez": "En una Zona Empresarial de Illinois — alivio de impuestos sobre ventas y tarifas",
+        "distressIncentive": "En un tracto QCT/NMTC — elegible para créditos fiscales de áreas en dificultad",
+        "tod": "Elegible para TOD — menos estacionamiento obligatorio y bono de densidad",
+        "adu": "Elegible para ADU — se permiten unidades de vivienda adicionales",
+        "landmark": "Designación de hito — prevé revisión de diseño (más tiempo y costo)",
+        "historic": "Distrito histórico — los cambios exteriores se revisan",
+        "flood": "Zona de inundación FEMA {{zone}} — construcción resistente y seguro",
+        "lakefront": "Distrito de Protección del Lago — aplica revisión adicional",
+        "pdOverlay": "Desarrollo Planificado — los derechos se rigen por la ordenanza del PD",
+        "aro": "La Ordenanza de Requisitos de Vivienda Asequible aplica a proyectos de 10+ unidades",
+        "asOfRight": "Zonificación {{zone}} — FAR {{allowed}} por derecho",
+        "zoned": "Zonificación {{zone}}",
+        "nearCapacity": "Construido en o cerca del límite por derecho — poca capacidad adicional",
+        "compsPointer": "Vea ventas comparables recientes para el rango de valor",
+        "entitlement": "{{name}} — los derechos los define la ordenanza de Desarrollo Planificado, no las reglas por derecho",
+        "insufficient": "No se pudo confirmar la identidad de la parcela desde la dirección"
+      },
+      "caveat": {
+        "unverified": "Identidad de parcela sin confirmar — las cifras de propiedad y comparables podrían ser de una parcela vecina. Verifique el PIN antes de confiar en ellas.",
+        "noBldgArea": "Superficie del edificio no disponible — no se calculó la capacidad de desarrollo para esta parcela.",
+        "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
+        "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}."
+      },
+      "next": {
+        "strong": {
+          "label": "Pregunte al analista: ¿cuál es la restricción límite?",
+          "question": "¿Cuál es la restricción límite en {{addr}} — FAR, altura o cobertura del lote?",
+          "secondary": "Modele la envolvente completa en el informe de $25"
+        },
+        "incentive": {
+          "label": "Investigue el financiamiento por incentivos",
+          "tifQuestion": "¿Cuánto financiamiento TIF hay disponible en {{name}} y qué proyectos califican?",
+          "question": "¿Qué incentivos fiscales y programas de subvención hay disponibles en {{addr}}?"
+        },
+        "constrained": {
+          "label": "Pregunte al analista sobre la restricción",
+          "landmarkQuestion": "¿Qué exige la revisión de hito / histórica para un proyecto en {{addr}}?",
+          "floodQuestion": "¿Qué implican los requisitos de zona de inundación para el desarrollo en {{addr}}?",
+          "pdQuestion": "¿Qué permite el Desarrollo Planificado en {{addr}}?",
+          "overlayQuestion": "¿Qué restricciones de desarrollo aplican por las superposiciones en {{addr}}?"
+        },
+        "limited": {
+          "label": "Vea ventas comparables",
+          "secondary": "Valore la envolvente por derecho (informe de $25)"
+        },
+        "entitlement": {
+          "label": "Pregunte qué permite este PD",
+          "question": "¿Qué permite el Desarrollo Planificado {{name}} en {{addr}}?"
+        },
+        "insufficient": {
+          "label": "Revise los detalles de la propiedad"
+        }
+      },
+      "ariaLabel": "Veredicto de la parcela",
+      "caveatedBadge": "Sin verificar",
+      "jumpToEvidence": "Ir a los datos de respaldo",
+      "howScored": "Cómo lo evaluamos",
+      "howScoredNote": "Determinístico a partir de datos publicados de zonificación, incentivos y superposiciones — sin estimación ni modelo. Verifique con las tarjetas de arriba.",
+      "signal": {
+        "zone": "Zona",
+        "allowedFar": "FAR permitido",
+        "entitlementDefined": "Definido por PD",
+        "existingFar": "FAR existente",
+        "unavailable": "no disponible",
+        "capacity": "Capacidad",
+        "incentives": "Incentivos",
+        "friction": "Restricciones",
+        "none": "ninguna"
+      },
+      "band": {
+        "vacant_or_teardown": "vacante / demolición",
+        "high": "amplio margen",
+        "modest": "margen moderado",
+        "at_cap": "cerca del límite",
+        "unknown": "sin confirmar",
+        "n/a": "n/d"
+      },
+      "strength": {
+        "strong": "fuerte ({{count}})",
+        "some": "presente ({{count}})",
+        "none": "ninguno"
+      }
     },
     "badges": {
       "exact": "Parcela exacta confirmada",
@@ -143,6 +239,18 @@
       "unconfirmedTitle": "No pudimos confirmar la parcela fiscal exacta para esta dirección en este momento (servicio de parcelas del condado). Las cifras siguientes describen esta ubicación y sus alrededores.",
       "approximate": "Ubicación aproximada",
       "approximateTitle": "Esta dirección se ubicó por geocodificación de calles, por lo que la parcela mostrada podría ser una vecina cercana. Verifique las cifras específicas de la parcela antes de usarlas."
+    },
+    "crimeArea": "Criminalidad del vecindario",
+    "violationsScope": "En esta dirección",
+    "neighborhoodContext": {
+      "title": "Contexto del vecindario",
+      "scope": "— describe {{area}}, no esta parcela"
+    },
+    "thisArea": "esta zona",
+    "crimeAreaScope": "En {{area}} · últimos 90 días — no esta parcela",
+    "violations": {
+      "title": "Infracciones de construcción",
+      "noneOnRecord": "Sin infracciones registradas en esta dirección"
     }
   },
   "discovery": {

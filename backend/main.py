@@ -839,6 +839,7 @@ async def _retrieve(
             ctx.incentives = sc.incentives
         ctx.comparables = sc.comparables
         ctx.zone_definition = sc.zone_definition
+        ctx.verdict = sc.verdict
 
     return ctx
 
@@ -1015,6 +1016,11 @@ def _build_map_response(
     )
 
 
+# Distance beyond which a turn's own geocode is treated as a pivot away from the
+# sticky parcel (vs. geocoder jitter on the same parcel). ~0.1 mi ≈ 160 m.
+_PARCEL_HINT_PIVOT_MI = 0.1
+
+
 async def _apply_parcel_hint(plan, pin: str):
     """Replace the router's text-geocoded location with the authoritative parcel.
 
@@ -1035,6 +1041,17 @@ async def _apply_parcel_hint(plan, pin: str):
     if rl.pin != pin:
         return plan
     loc = plan.location
+    # Pivot guard (conversation-sticky grounding): the sticky parcel pin now rides
+    # on EVERY turn, so a turn that pivoted to a different explicit address ("what
+    # about 500 N State?") must NOT be dragged back to the held parcel. If the
+    # router already geocoded this turn to a point far from the sticky parcel, the
+    # user moved on — keep the router's location and let the grounding gate drop
+    # the stale context via its pin mismatch. Follow-ups about the same parcel
+    # (synthesize_query re-embeds its address) resolve near it and still anchor.
+    if loc.resolved_lat is not None and loc.resolved_lon is not None:
+        from backend.retrieval.property.sales import _haversine_mi
+        if _haversine_mi(loc.resolved_lat, loc.resolved_lon, rl.lat, rl.lon) > _PARCEL_HINT_PIVOT_MI:
+            return plan
     ca = community_area_by_point(rl.lat, rl.lon)
     loc.resolved_lat = rl.lat
     loc.resolved_lon = rl.lon
@@ -1389,6 +1406,40 @@ async def _resolve_location(
     )
 
 
+async def _address_violations_data(resolved_address: str | None) -> dict | None:
+    """Parcel-scoped building violations for the Scorecard, shaped for
+    ``assembler._violation_summary`` ({status_counts, detail}).
+
+    Switched off the community-area count (which rendered a whole neighborhood's
+    violations as if they were this parcel's — a trust bug) to the address-exact
+    dataset query. Returns None when the address can't be parsed to street fields
+    (lat/lon- or PIN-only entry) so the card is omitted rather than falling back
+    to area-as-parcel data. An empty {} (parsed, but no violations on record) is
+    an honest "clean parcel" — _violation_summary maps it to None (no card).
+    """
+    if not resolved_address:
+        return None
+    parsed = buildings.parse_chicago_address(resolved_address)
+    if not parsed:
+        return None
+    rows = await buildings.address_specific_violations(
+        parsed["number"], parsed["direction"], parsed["name"]
+    )
+    status_counts: dict[str, int] = {}
+    for r in rows:
+        st = (r.get("violation_status") or "UNKNOWN").upper()
+        status_counts[st] = status_counts.get(st, 0) + 1
+    # "checked" distinguishes a confirmed-zero lookup (parsed + queried, no rows)
+    # from a parse failure — so the UI can show "no violations on record" instead
+    # of silently omitting, which would otherwise read identically to "couldn't
+    # check." Silence must not mean two different things.
+    return {
+        "checked": True,
+        "status_counts": [{"violation_status": s, "count": n} for s, n in status_counts.items()],
+        "detail": rows,
+    }
+
+
 async def _fetch_scorecard_data(
     resolved_lat: float,
     resolved_lon: float,
@@ -1443,10 +1494,12 @@ async def _fetch_scorecard_data(
         tasks["crime_yoy"] = asyncio.create_task(_limited(
             crime.crime_yoy_by_community_area(ca)
         ))
-        tasks["violations"] = asyncio.create_task(_limited(
-            buildings.violations_by_community_area(ca)
-        ))
 
+    # Violations + 311 are PARCEL-scoped (address-exact), not area-level — they
+    # live outside the community-area block and key off the resolved address.
+    tasks["violations"] = asyncio.create_task(_limited(
+        _address_violations_data(resolved_address)
+    ))
     tasks["address_311"] = asyncio.create_task(_limited(
         three11.address_311_complaints(resolved_lat, resolved_lon)
     ))
@@ -1537,6 +1590,14 @@ async def _fetch_scorecard_data(
             log.warning("Scorecard comparable sales failed: %s", exc)
             partial_failures.append("comparable sales")
 
+    # Tri-state for the violations card: a present summary (ctx.violations), a
+    # confirmed-zero ("no violations on record"), or an unconfirmed lookup
+    # (address didn't parse / fetch failed → card omitted). Without this the
+    # confirmed-zero and the parse-failure both render as "no card" and the
+    # reader can't tell a clean building from an unchecked one.
+    _viol_raw = results.get("violations")
+    violations_checked = bool(_viol_raw) and bool(_viol_raw.get("checked"))
+
     return {
         "address": resolved_address,
         "lat": resolved_lat,
@@ -1546,6 +1607,7 @@ async def _fetch_scorecard_data(
         "context": ctx,
         "comparables": comparables_summary,
         "partial_failures": partial_failures,
+        "violations_checked": violations_checked,
     }
 
 

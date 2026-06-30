@@ -134,7 +134,103 @@
       "aduEligible": "ADU-eligible",
       "aroApplies": "ARO applies",
       "minimalFlood": "minimal flood risk",
-      "floodZone": "FEMA flood zone {{zone}}"
+      "floodZone": "FEMA flood zone {{zone}}",
+      "headline": {
+        "strong": "Strong development candidate",
+        "incentive_driven": "Incentive-driven opportunity",
+        "constrained": "Constrained upside",
+        "limited": "Limited as-of-right upside",
+        "entitlement_defined": "Entitlement-defined parcel",
+        "insufficient_data": "Couldn't confirm this parcel"
+      },
+      "reason": {
+        "capacity": "FAR {{allowed}} allowed vs ≈{{existing}} built — room for ~{{ratio}}× more buildable area",
+        "vacant": "Effectively vacant on a buildable site (FAR {{allowed}} allowed)",
+        "oz": "In a federal Opportunity Zone — capital-gains deferral on reinvested gains",
+        "tifFunded": "In the {{name}} TIF — {{balance}} fund balance",
+        "tif": "In the {{name}} TIF district",
+        "ez": "In an Illinois Enterprise Zone — sales-tax and fee relief",
+        "distressIncentive": "In a QCT/NMTC tract — eligible for distressed-area tax credits",
+        "tod": "TOD-eligible — reduced parking minimums and a density bonus",
+        "adu": "ADU-eligible — additional dwelling units permitted",
+        "landmark": "Landmark designation — expect design review (adds time and cost)",
+        "historic": "Historic district — exterior changes are reviewed",
+        "flood": "FEMA flood zone {{zone}} — flood-resistant construction and insurance",
+        "lakefront": "Lakefront Protection district — additional review applies",
+        "pdOverlay": "Planned Development — entitlements governed by the PD ordinance",
+        "aro": "Affordable Requirements Ordinance applies to projects of 10+ units",
+        "asOfRight": "Zoned {{zone}} — FAR {{allowed}} as-of-right",
+        "zoned": "Zoned {{zone}}",
+        "nearCapacity": "Built at or near the as-of-right limit — little added capacity",
+        "compsPointer": "See recent comparable sales for the value range",
+        "entitlement": "{{name}} — entitlements set by the Planned Development ordinance, not as-of-right rules",
+        "insufficient": "Parcel identity couldn't be confirmed from the address"
+      },
+      "caveat": {
+        "unverified": "Parcel identity unconfirmed — property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
+        "noBldgArea": "Building area unavailable — development capacity wasn't computed for this parcel.",
+        "fallbackZone": "Zoning shown is a category default, not a parcel-specific lookup.",
+        "partial": "Some data sources were unavailable: {{sources}}."
+      },
+      "next": {
+        "strong": {
+          "label": "Ask the analyst: what's the binding constraint?",
+          "question": "What's the binding constraint on {{addr}} — FAR, height, or lot coverage?",
+          "secondary": "Model the full envelope in the $25 report"
+        },
+        "incentive": {
+          "label": "Look into the incentive funding",
+          "tifQuestion": "How much TIF funding is available in {{name}} and what projects qualify?",
+          "question": "What tax incentives and grant programs are available at {{addr}}?"
+        },
+        "constrained": {
+          "label": "Ask the analyst about the constraint",
+          "landmarkQuestion": "What does landmark / historic review require for a project at {{addr}}?",
+          "floodQuestion": "What do the flood-zone requirements mean for development at {{addr}}?",
+          "pdQuestion": "What does the Planned Development at {{addr}} permit?",
+          "overlayQuestion": "What development restrictions apply from the overlays at {{addr}}?"
+        },
+        "limited": {
+          "label": "Check comparable sales",
+          "secondary": "Value the as-of-right envelope ($25 report)"
+        },
+        "entitlement": {
+          "label": "Ask what this PD permits",
+          "question": "What does the {{name}} Planned Development permit at {{addr}}?"
+        },
+        "insufficient": {
+          "label": "Review the property details"
+        }
+      },
+      "ariaLabel": "Parcel verdict",
+      "caveatedBadge": "Unverified",
+      "jumpToEvidence": "Jump to the supporting data",
+      "howScored": "How we scored this",
+      "howScoredNote": "Deterministic from published zoning, incentive, and overlay data — no estimate or model. Verify against the cards above.",
+      "signal": {
+        "zone": "Zone",
+        "allowedFar": "Allowed FAR",
+        "entitlementDefined": "PD-defined",
+        "existingFar": "Existing FAR",
+        "unavailable": "unavailable",
+        "capacity": "Capacity",
+        "incentives": "Incentives",
+        "friction": "Constraints",
+        "none": "none"
+      },
+      "band": {
+        "vacant_or_teardown": "vacant / teardown",
+        "high": "high headroom",
+        "modest": "modest headroom",
+        "at_cap": "near capacity",
+        "unknown": "unconfirmed",
+        "n/a": "n/a"
+      },
+      "strength": {
+        "strong": "strong ({{count}})",
+        "some": "present ({{count}})",
+        "none": "none"
+      }
     },
     "badges": {
       "exact": "Exact parcel match",
@@ -143,6 +239,18 @@
       "unconfirmedTitle": "We couldn't confirm the exact tax parcel for this address right now (county parcel service). Figures below describe this location and the surrounding area.",
       "approximate": "Approximate location",
       "approximateTitle": "This address was placed by street geocoding, so the parcel shown may be a close neighbor. Verify parcel-specific figures before relying on them."
+    },
+    "crimeArea": "Neighborhood crime",
+    "violationsScope": "At this address",
+    "neighborhoodContext": {
+      "title": "Neighborhood context",
+      "scope": "— describes {{area}}, not this parcel"
+    },
+    "thisArea": "this area",
+    "crimeAreaScope": "Across {{area}} · last 90 days — not this parcel",
+    "violations": {
+      "title": "Building violations",
+      "noneOnRecord": "No violations on record at this address"
     }
   },
   "discovery": {

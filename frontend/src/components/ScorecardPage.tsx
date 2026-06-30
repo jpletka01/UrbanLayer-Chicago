@@ -17,6 +17,8 @@ import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
 import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
+import { VerdictBand } from "./VerdictBand";
+import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase, localizeZoningValue } from "../lib/format";
 import { ReportTeaser } from "./sidebar/ReportTeaser";
 import PageHeader from "./PageHeader";
@@ -128,6 +130,12 @@ const crimeIcon = (
   </svg>
 );
 
+const cleanIcon = (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
   const crime = data.context.crime_last_90d;
@@ -137,10 +145,16 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
     <Card
       padding="sm"
       icon={crimeIcon}
-      title={t("scorecard.crime")}
+      title={t("scorecard.crimeArea")}
       headerRight={<span className="text-micro text-text-muted">{t("scorecard.incidents90d", { count: crime.total })}</span>}
     >
       <div className="space-y-2">
+        {/* Self-disclose the area scope on the card itself — so even read in
+            isolation (collapsed section, screenshot) the count can't be mistaken
+            for parcel-level. */}
+        <p className="text-micro text-text-muted">
+          {t("scorecard.crimeAreaScope", { area: data.community_area_name || t("scorecard.thisArea") })}
+        </p>
         <div className="flex gap-4 text-micro">
           <span className="text-text-muted">{t("scorecard.arrestRate")}</span>
           <span className="text-text-primary font-mono">{(crime.arrest_rate * 100).toFixed(1)}%</span>
@@ -387,22 +401,21 @@ export default function ScorecardPage() {
   // else owns the primary area — a load, a result, or a code-question redirect.
   const searchProminent = !loading && !data && errorShape !== "question";
 
-  // Facts-only verdict line: every clause restates a flag that is already
-  // rendered in a card below — no scoring, no interpretation.
   const zdef = data?.zone_definition;
-  const verdictClauses: string[] = [];
-  if (ctx) {
-    if (zdef) verdictClauses.push(`${zdef.zone_class} ${zdef.name}`);
-    const inc = ctx.incentives;
-    const reg = ctx.regulatory;
-    if (inc?.in_tif_district && inc.tif_name) verdictClauses.push(t("scorecard.verdict.inTif", { name: inc.tif_name }));
-    if (inc?.in_opportunity_zone) verdictClauses.push(t("scorecard.verdict.opportunityZone"));
-    if (reg?.in_tod_area || ctx.neighborhood?.transit?.tod_eligible) verdictClauses.push(t("scorecard.verdict.todEligible"));
-    if (reg?.in_adu_area) verdictClauses.push(t("scorecard.verdict.aduEligible"));
-    if (reg?.in_aro_zone) verdictClauses.push(t("scorecard.verdict.aroApplies"));
-    if (reg?.flood_zone === "X") verdictClauses.push(t("scorecard.verdict.minimalFlood"));
-    else if (reg?.flood_zone) verdictClauses.push(t("scorecard.verdict.floodZone", { zone: reg.flood_zone }));
-  }
+
+  // Verdict Band: leads the Scorecard with a deterministic scored conclusion +
+  // card-linked evidence + ONE next step (replaces the old facts-only flag line,
+  // which restated cards without concluding). Thresholds calibrated & signed off
+  // 2026-06-29 — see lib/scorecardVerdict.ts.
+  const verdict = data && ctx ? computeVerdict(data, t) : null;
+
+  const scrollToCard = (anchor: CardId) => {
+    document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const verdictChat = (question: string) => {
+    track("investigate_click", { card_name: "verdict" });
+    navigate(`/?q=${encodeURIComponent(question)}${parcel?.pin ? `&pin=${parcel.pin}` : ""}`);
+  };
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
@@ -546,11 +559,6 @@ export default function ScorecardPage() {
                   )}
                 </div>
               )}
-              {verdictClauses.length > 0 && (
-                <p className="mt-2 text-caption text-text-secondary leading-snug">
-                  {verdictClauses.join(" · ")}
-                </p>
-              )}
               {data.context.data_as_of && (
                 <div className="mt-2 text-micro text-text-muted">
                   {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
@@ -605,6 +613,18 @@ export default function ScorecardPage() {
               </div>
             </div>
 
+            {/* Verdict Band — leads with the conclusion; reasons deep-link to the
+                evidence cards below; one next step. The nearest-parcel /
+                unconfirmed-identity caveat is folded into the band's caveats. */}
+            {verdict && (
+              <VerdictBand
+                verdict={verdict}
+                onChat={verdictChat}
+                onScrollTo={scrollToCard}
+                onReport={handleDownloadPdf}
+              />
+            )}
+
             {/* Report CTA */}
             <div className="mb-6" ref={ctaRef}>
               <ReportCTACard
@@ -614,15 +634,6 @@ export default function ScorecardPage() {
                 onShowPurchase={() => setShowPurchasePrompt(true)}
               />
             </div>
-
-            {/* Nearest-parcel caveat: identity is unconfirmed and the property/
-                tax/comps cards were filled from the nearest (possibly-neighbor)
-                parcel — say so before the reader trusts parcel-specific numbers. */}
-            {data.nearest_parcel_unverified && (
-              <div className="mb-4 text-caption text-state-warning bg-state-warning/10 border border-state-warning/20 rounded-lg px-4 py-2.5">
-                {t("scorecard.nearestParcelCaveat")}
-              </div>
-            )}
 
             {/* Financial Snapshot */}
             <FinancialSnapshotStrip
@@ -637,7 +648,7 @@ export default function ScorecardPage() {
                 keeps a card and its ask-link together. */}
             <div className="columns-1 md:columns-2 gap-4">
               {ctx.property && (
-                <div className="break-inside-avoid mb-4">
+                <div id="scorecard-card-property" className="break-inside-avoid mb-4 scroll-mt-4">
                   <PropertyCard data={ctx.property} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
@@ -650,7 +661,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {data.comparables && data.comparables.sales.length > 0 && (
-                <div className="break-inside-avoid mb-4">
+                <div id="scorecard-card-comparables" className="break-inside-avoid mb-4 scroll-mt-4">
                   <ComparablesCard data={data.comparables} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
@@ -663,7 +674,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {zdef && (
-                <div className="break-inside-avoid mb-4">
+                <div id="scorecard-card-zoning" className="break-inside-avoid mb-4 scroll-mt-4">
                   <ZoningCard def={zdef} mapUrl={zoning?.zoning_map_url} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
@@ -676,7 +687,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {ctx.incentives && (
-                <div className="break-inside-avoid mb-4">
+                <div id="scorecard-card-incentives" className="break-inside-avoid mb-4 scroll-mt-4">
                   <IncentivesCard data={ctx.incentives} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
@@ -694,7 +705,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {ctx.regulatory && (
-                <div className="break-inside-avoid mb-4">
+                <div id="scorecard-card-regulatory" className="break-inside-avoid mb-4 scroll-mt-4">
                   <RegulatoryCard data={ctx.regulatory} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" ? (
@@ -715,34 +726,34 @@ export default function ScorecardPage() {
                   </div>
                 </div>
               )}
-              {ctx.violations && (
-                <div className="break-inside-avoid mb-4">
-                  <ViolationsCard data={ctx.violations} />
+              {/* Violations tri-state: a record at this address, a confirmed
+                  "none on record" (clean — lookup ran, zero rows), or nothing
+                  (lookup couldn't run → omitted). The middle state is shown, not
+                  silent, so "no card" can't be read as "clean." */}
+              {ctx.violations ? (
+                <div id="scorecard-card-violations" className="break-inside-avoid mb-4 scroll-mt-4">
+                  <ViolationsCard data={ctx.violations} scopeLabel={t("scorecard.violationsScope")} />
                   {ctx.violations.total > 0 && (
                     <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                       <InvestigateButton
                         question={`Explain the building violations at ${addr} and typical remediation steps`}
                         label={t("scorecard.investigate.violationDetails")}
                         cardName="violations"
-                      pin={parcel?.pin}
+                        pin={parcel?.pin}
                       />
                     </div>
                   )}
                 </div>
-              )}
-              {data.context.crime_last_90d && (
-                <div className="break-inside-avoid mb-4">
-                  <CrimeYoYCard data={data} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`What are the crime trends and safety concerns near ${addr}?`}
-                      label={t("scorecard.investigate.crimeAnalysis")}
-                      cardName="crime"
-                      pin={parcel?.pin}
-                    />
-                  </div>
+              ) : data.violations_checked ? (
+                <div id="scorecard-card-violations" className="break-inside-avoid mb-4 scroll-mt-4">
+                  <Card padding="sm" icon={cleanIcon} title={t("scorecard.violations.title")}>
+                    <p className="text-caption text-state-positive">{t("scorecard.violations.noneOnRecord")}</p>
+                    <p className="text-micro text-text-muted mt-0.5">{t("scorecard.violationsScope")}</p>
+                  </Card>
                 </div>
-              )}
+              ) : null}
+              {/* 311 stays in the parcel grid — it's address-point scoped, like
+                  the now-address-scoped violations. */}
               {data.context.address_311 && (
                 <div className="break-inside-avoid mb-4">
                   <Address311Card data={data} />
@@ -756,21 +767,55 @@ export default function ScorecardPage() {
                   </div>
                 </div>
               )}
-              {/* Neighborhood last: deepest card flows at the trailing edge */}
-              {ctx.neighborhood && (
-                <div className="break-inside-avoid mb-4">
-                  <NeighborhoodCard data={ctx.neighborhood} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`What's the neighborhood like around ${addr}?`}
-                      label={t("scorecard.investigate.neighborhoodOverview")}
-                      cardName="neighborhood"
-                      pin={parcel?.pin}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/* Neighborhood context — AREA-level (the whole community area), NOT
+                this parcel. Pulled out of the parcel grid and collapsed by
+                default: it's background, not parcel-decision data, and keeping
+                area counts (crime, demographics) out of the parcel cards stops
+                them reading as parcel facts. This is the #2 scope fix + the #3
+                density fix in one move — a thin parcel's page is now short. */}
+            {(data.context.crime_last_90d || ctx.neighborhood) && (
+              <details className="mt-6 group">
+                <summary className="flex cursor-pointer list-none items-center gap-2 text-caption text-text-secondary transition-colors hover:text-text-primary">
+                  <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
+                  {t("scorecard.neighborhoodContext.title")}
+                  {data.community_area_name && (
+                    <span className="text-micro text-text-muted">
+                      {t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })}
+                    </span>
+                  )}
+                </summary>
+                <div className="columns-1 gap-4 md:columns-2 mt-4">
+                  {data.context.crime_last_90d && (
+                    <div className="break-inside-avoid mb-4">
+                      <CrimeYoYCard data={data} />
+                      <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                        <InvestigateButton
+                          question={`What are the crime trends and safety concerns near ${addr}?`}
+                          label={t("scorecard.investigate.crimeAnalysis")}
+                          cardName="crime"
+                          pin={parcel?.pin}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {ctx.neighborhood && (
+                    <div className="break-inside-avoid mb-4">
+                      <NeighborhoodCard data={ctx.neighborhood} />
+                      <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                        <InvestigateButton
+                          question={`What's the neighborhood like around ${addr}?`}
+                          label={t("scorecard.investigate.neighborhoodOverview")}
+                          cardName="neighborhood"
+                          pin={parcel?.pin}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
+            )}
           </div>
         )}
 
