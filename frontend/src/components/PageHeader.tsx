@@ -8,12 +8,15 @@ import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 
 const NAV_ITEMS: { to: string; key: string }[] = [
-  // The nav carries only verbs on a parcel + its price. Chat ("Analyst") was
-  // removed — it's reached contextually (Investigate, persona cards, the address
-  // box's failure-recovery handoff), never as a co-equal top-level destination.
+  // The returning-user nav: the parcel Scorecard, the labeled analyst chat door,
+  // and price. "Ask the analyst" (→ ?ask=1) opens an empty, UNGROUNDED chat — the
+  // general navigation door, distinct from the Scorecard's grounded handoff. It
+  // was previously reachable only via unlabeled side doors (Investigate, persona
+  // cards, failure-recovery); restored here so chat has a discoverable label.
   // About is unlinked from the customer UI (the /about route still resolves by
   // direct URL); provenance lives in the homepage footer.
   { to: "/scorecard", key: "nav.scorecard" },
+  { to: "/?ask=1", key: "nav.askAnalyst" },
   { to: "/pricing", key: "nav.pricing" },
 ];
 

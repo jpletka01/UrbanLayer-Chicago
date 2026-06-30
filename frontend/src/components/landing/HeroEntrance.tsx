@@ -6,10 +6,10 @@ import { buildScorecardHref } from "../sidebar/ScorecardBridgeCard";
 import { track } from "../../lib/tracking";
 
 /**
- * The homepage entry surface. It asks one question — "Which property?" — and
- * opens the parcel's Scorecard. There is no chat box on the front door: code
- * research reaches the analyst elsewhere (Investigate from inside a parcel, the
- * persona cards, or the address box's failure-recovery handoff on a non-address).
+ * The homepage entry surface. The primary action asks one question — "Which
+ * property?" — and opens the parcel's Scorecard. Below it, a quiet, LABELED
+ * secondary door routes the other intent (code/neighborhood research, no parcel
+ * yet) to the analyst — so the fork is discoverable, not a hidden side door.
  */
 export function HeroEntrance() {
   const { t } = useTranslation("landing");
@@ -18,6 +18,13 @@ export function HeroEntrance() {
   function submitAddress(address: string, source: "hero" | "chip") {
     track("hero_address_submit", { source, address });
     navigate(buildScorecardHref(null, address)!);
+  }
+
+  // The labeled chat door: opens an empty, ungrounded analyst chat (?ask=1) — no
+  // parcel named here, so it carries no grounding (App.tsx clears it on open).
+  function openAnalyst() {
+    track("hero_librarian_click");
+    navigate("/?ask=1");
   }
 
   const addressExamples = t("hero.addressExamples", { returnObjects: true }) as string[];
@@ -34,6 +41,18 @@ export function HeroEntrance() {
           <PromptSuggestionChip key={addr} label={addr} onClick={() => submitAddress(addr, "chip")} />
         ))}
       </div>
+      {/* Secondary, labeled door — subordinate to the address input, names the
+          fork (code/neighborhood research) so a returning user knows what it does. */}
+      <p className="text-body text-white/50">
+        {t("hero.askAnalystLead")}{" "}
+        <button
+          type="button"
+          onClick={openAnalyst}
+          className="text-white/80 hover:text-white underline underline-offset-2 transition-colors"
+        >
+          {t("hero.askAnalystCta")} →
+        </button>
+      </p>
     </div>
   );
 }

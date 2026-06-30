@@ -427,6 +427,20 @@ export function App() {
     if (heldScorecard?.resolved_pin !== pin) selectParcel({ pin });
   }, [searchParams, conversationIdFromUrl, shareTokenFromUrl, heldScorecard]);
 
+  // Bare ?ask=1 — the labeled "Ask the analyst" door (Home hero + page nav).
+  // Opens an EMPTY, UNGROUNDED chat: the user hasn't named a parcel here, so
+  // clear any sticky grounding left from a prior in-session conversation and just
+  // activate the composer. This is the general navigation door — deliberately
+  // distinct from the Scorecard's grounded handoff (?pin=/?q=), which carries
+  // parcel context. Here the chat knows nothing about a parcel, by design.
+  useEffect(() => {
+    if (!searchParams.get("ask")) return;
+    if (conversationIdFromUrl || shareTokenFromUrl) return;
+    setGrounding(null);
+    setComposing(true);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, conversationIdFromUrl, shareTokenFromUrl]);
+
   // Grounding for the empty-state starters: shown only when the workspace was
   // entered for a parcel (?pin= present and the held Scorecard matches it), so
   // the generic librarian entry never surfaces property starters by accident.
