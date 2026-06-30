@@ -14,6 +14,10 @@
     "askAnalystLead": "¿Investigando el código o un vecindario?",
     "askAnalystCta": "Pregunte al analista"
   },
+  "payoff": {
+    "label": "Lo que obtendrá",
+    "cta": "Vea la Ficha completa"
+  },
   "intelligence": {
     "heading": "25 fuentes en una sola consulta.",
     "subheading": "Zonificación, código municipal, registros de la propiedad, incentivos, permisos y más, consultados simultáneamente.",
