@@ -134,7 +134,10 @@ by the azure palette). Exempt: over-image text (white over photos), and function
 
 ```bash
 npm run dev          # dev server on :5173
-npx tsc --noEmit     # type check
+npx tsc --noEmit     # quick type check — weaker than the build; NOT what CI gates on
 npm test             # vitest unit/component tests (Property Discovery)
-npm run build        # production build (~322KB JS)
+npm run build        # ⚠️ CI-PARITY GATE — run before pushing to main. = tsc -b (noUnusedLocals etc.) + vite build.
+                     # CI's test job runs this and deploy has `needs: test`, so a build failure SILENTLY SKIPS the
+                     # deploy (prod keeps serving the old image). `tsc --noEmit` misses errors `tsc -b` catches —
+                     # e.g. an unused import passed --noEmit but failed the build, skipping a deploy (2026-06-30).
 ```

@@ -29,7 +29,12 @@ kill $(lsof -ti:8001) 2>/dev/null; uvicorn backend.main:app --reload --port 8001
 kill $(lsof -ti:5173) 2>/dev/null; cd frontend && npm run dev
 
 python -m pytest backend/tests/ -q                # ~655 tests (599 unit + 56 integration)
-cd frontend && npx tsc --noEmit                   # type check
+cd frontend && npx tsc --noEmit                   # quick type check — NOT the CI gate
+cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run before pushing to main): tsc -b + vite build.
+                                                  # CI's `test` job runs this; deploy has `needs: test`, so a build
+                                                  # failure here SILENTLY SKIPS the deploy (prod stays on the old image).
+                                                  # `tsc -b` enforces noUnusedLocals etc. that `tsc --noEmit` MISSES —
+                                                  # an unused import passes --noEmit but fails the build/deploy (hit 2026-06-30).
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark
 
