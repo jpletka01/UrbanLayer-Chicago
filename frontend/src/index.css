@@ -38,7 +38,7 @@
   --accent-hover: 79 176 247;    /* #4fb0f7 — hover on accent surfaces */
   --accent-muted-a: 0.15;        /* selected-fill alpha (azure tint) */
   --action-primary: 23 114 201;  /* #1772c9 — button FILL (deeper azure), white-on-fill 4.90 */
-  --action-primary-hover: 28 126 214; /* #1c7ed6 — fill hover */
+  --action-primary-hover: 21 104 181; /* #1568b5 — fill hover: DEEPER than resting so hover darkens (correct feedback) AND white-on-fill clears AA with margin (~5.7). The old #1c7ed6 was LIGHTER → 4.20, sub-AA on hover. */
   /* terracotta highlight — warm premium accent ONLY (paid report badge/CTA) */
   --highlight: 224 160 106;      /* #e0a06a — text/icon on dark */
   --highlight-fill: 168 77 46;   /* #a84d2e — badge fill, white-on 5.58 */
