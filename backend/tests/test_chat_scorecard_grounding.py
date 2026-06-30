@@ -48,7 +48,7 @@ def _plan(sources, *, pin=PIN, workflow="general", ca=7) -> RetrievalPlan:
     )
 
 
-def _sc(pin=PIN) -> ScorecardContext:
+def _sc(pin=PIN, *, verdict=None) -> ScorecardContext:
     return ScorecardContext(
         pin=pin,
         address="642 W Belden Ave",
@@ -61,7 +61,24 @@ def _sc(pin=PIN) -> ScorecardContext:
         regulatory=RegulatorySummary(in_planned_development=True),
         incentives=IncentivesSummary(property_tax_class="standard"),
         comparables=ComparablesSummary(median_sale_price=950000, sales_volume=6),
+        verdict=verdict,
     )
+
+
+# A distilled verdict as lib/scorecardContext.ts ships it — flagged caveated so
+# the test proves the hedge survives all the way into chat context.
+CAVEATED_VERDICT = {
+    "category": "constrained",
+    "headline": "Constrained upside",
+    "binding_constraint": "In a planned development — uses are entitlement-defined",
+    "reasons": [{"text": "In a planned development", "polarity": "negative"}],
+    "confidence": "caveated",
+    "caveats": [
+        "Parcel identity unconfirmed — verify the PIN before relying on parcel facts.",
+        "Development capacity not computed (building area unavailable).",
+    ],
+    "signals": {"capacityBand": "unknown"},
+}
 
 
 # --------------------------------------------------------------------------- #
@@ -128,6 +145,41 @@ async def test_retrieve_skips_property_domains_and_merges_grounding():
     assert ctx.parcel_zoning is sc.parcel_zoning
     assert ctx.comparables is sc.comparables
     assert ctx.zone_definition == {"zone_class": "RM-5", "far": 2.0}
+
+
+@pytest.mark.asyncio
+async def test_retrieve_grafts_verdict_with_caveats_intact():
+    """The Scorecard's computed verdict (incl. its caveats) must ride into chat
+    context so the synthesizer can speak to the verdict and stay hedged. This is
+    the seam where a caveated verdict could silently lose its hedge."""
+    sc = _sc(verdict=CAVEATED_VERDICT)
+    plan = _plan(["property_domain", "regulatory_domain", "incentives_domain"])
+
+    with patch.object(main_mod, "property_domain", new=AsyncMock()), \
+            patch.object(main_mod, "regulatory_domain", new=AsyncMock()), \
+            patch.object(main_mod, "incentives_domain", new=AsyncMock()), \
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock()), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()):
+        ctx = await _retrieve(plan, scorecard_context=sc)
+
+    assert ctx.verdict is sc.verdict
+    assert ctx.verdict["confidence"] == "caveated"
+    # The hedge must survive the handoff — both caveats present, untruncated.
+    assert ctx.verdict["caveats"] == CAVEATED_VERDICT["caveats"]
+    assert ctx.verdict["binding_constraint"]
+
+
+@pytest.mark.asyncio
+async def test_retrieve_no_verdict_grafted_on_pin_mismatch():
+    """A verdict belongs to its parcel — a mismatched grounding must not leak it."""
+    sc = _sc(pin="99999999999999", verdict=CAVEATED_VERDICT)
+    plan = _plan(["property_domain"])
+
+    with patch.object(main_mod, "property_domain", new=AsyncMock(return_value=None)), \
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)):
+        ctx = await _retrieve(plan, scorecard_context=sc)
+
+    assert ctx.verdict is None
 
 
 @pytest.mark.asyncio

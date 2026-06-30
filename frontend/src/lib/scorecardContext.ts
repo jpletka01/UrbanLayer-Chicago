@@ -67,7 +67,12 @@ export function buildScorecardContext(resp: ScorecardResponse | null): Scorecard
     verdict: distillVerdict(resp),
   };
 
-  if (!hasPin) return base; // zoning-only tier — property/comps omitted
+  // Zoning-only tier. DO NOT add property/comparables here: with no verified PIN
+  // the parcel resolved nearest-by-distance, so those PIN-keyed fields may belong
+  // to a NEIGHBOR. Shipping them as grounding (even caveated) re-introduces the
+  // exact parcel/area conflation this payload exists to prevent — omit, don't
+  // ship-and-caveat. Signed off 2026-06-29. (Covered by scorecardContext.test.ts.)
+  if (!hasPin) return base;
 
   const comps = resp.comparables;
   return {

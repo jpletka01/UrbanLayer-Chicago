@@ -18,7 +18,8 @@ pytestmark = pytest.mark.asyncio
 
 PIN = "14331030110000"
 PARCEL_COORDS = (41.92395, -87.64558)
-GEOCODED_COORDS = (41.92390, -87.64550)
+GEOCODED_COORDS = (41.92390, -87.64550)  # ~jitter on the same parcel (< 0.1 mi)
+PIVOTED_COORDS = (41.95000, -87.64558)   # ~1.8 mi away — a real pivot (> 0.1 mi)
 
 
 def _plan(loc_type: str = "address") -> RetrievalPlan:
@@ -79,6 +80,32 @@ async def test_pin_mismatch_keeps_router_location():
         plan = await _apply_parcel_hint(_plan("address"), PIN)
     assert plan.location.pin is None
     assert (plan.location.resolved_lat, plan.location.resolved_lon) == GEOCODED_COORDS
+
+
+async def test_pivot_guard_keeps_router_location_when_turn_geocodes_far_away():
+    """Conversation-sticky grounding rides the held PIN on EVERY turn. When this
+    turn's own geocode lands far from the held parcel (the user pivoted to a
+    different address), the hint must NOT drag it back — keep the router's
+    location so the grounding gate can drop the now-stale parcel context."""
+    plan = _plan("address")
+    plan.location.resolved_lat, plan.location.resolved_lon = PIVOTED_COORDS
+    rl = ResolvedLocation(*PARCEL_COORDS, "642 W Belden Ave", PIN, "authoritative")
+    with _patch_resolve(rl), \
+            patch.object(main_mod, "community_area_by_point", return_value=7), \
+            patch.object(main_mod, "community_area_name", return_value="Lincoln Park"):
+        plan = await _apply_parcel_hint(plan, PIN)
+
+    # Router location preserved; the held PIN was NOT stamped onto the pivot turn.
+    assert plan.location.pin is None
+    assert (plan.location.resolved_lat, plan.location.resolved_lon) == PIVOTED_COORDS
+
+    # And the grounding gate consequently drops the stale parcel context: the
+    # plan resolved to no PIN, so it can't match the held grounding's PIN.
+    from backend.main import _scorecard_grounding_applies
+    from backend.models import ScorecardContext
+
+    held = ScorecardContext(pin=PIN, address="642 W Belden Ave")
+    assert _scorecard_grounding_applies(plan, held) is False
 
 
 # --------------------------------------------------------------------------- #
