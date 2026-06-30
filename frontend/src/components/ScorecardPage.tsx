@@ -16,7 +16,6 @@ import { IncentivesCard } from "./sidebar/IncentivesCard";
 import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
-import { FinancialSnapshotStrip } from "./FinancialSnapshotStrip";
 import { VerdictBand } from "./VerdictBand";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase, localizeZoningValue } from "../lib/format";
@@ -618,13 +617,6 @@ export default function ScorecardPage() {
                 onShowPurchase={() => setShowPurchasePrompt(true)}
               />
             </div>
-
-            {/* Financial Snapshot */}
-            <FinancialSnapshotStrip
-              property={ctx.property}
-              comparables={data.comparables}
-              incentives={ctx.incentives}
-            />
 
             {/* Card columns — ordered for developer evaluation flow. CSS multicol
                 instead of grid: each column flows independently, so a short card

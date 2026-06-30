@@ -312,14 +312,6 @@
     "moreCount": "+{{count}} más",
     "exportCsv": "CSV"
   },
-  "financialSnapshot": {
-    "assessedValue": "Valor de avalúo",
-    "annualTax": "Impuesto anual",
-    "medianCompSale": "Venta comp. mediana",
-    "tifFundBalance": "Saldo del fondo TIF",
-    "activeIncentives": "Incentivos activos",
-    "zonesCount": "{{count}} de {{total}} zonas"
-  },
   "terms": {
     "incentives": {
       "tif_district": {
