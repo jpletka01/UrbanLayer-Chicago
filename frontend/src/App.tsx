@@ -4,7 +4,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
 import { HeroEntrance } from "./components/landing/HeroEntrance";
-import { PayoffPreview } from "./components/landing/PayoffPreview";
 import { HeroSlideshow } from "./components/HeroSlideshow";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
@@ -838,17 +837,6 @@ export function App() {
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
                       <HeroEntrance />
-                    </motion.div>
-
-                    {/* Payoff preview (#7): subordinate to the address box — shows
-                        the conclusion a real address returns, with a labeled
-                        click-through to that actual Scorecard. */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.5 }}
-                    >
-                      <PayoffPreview />
                     </motion.div>
                   </div>
                 </div>
