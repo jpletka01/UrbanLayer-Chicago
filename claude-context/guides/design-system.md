@@ -102,6 +102,19 @@ amber/80→amber, green/red/yellow-400→emerald/rose/amber).
   `CrossRefPill` (`§` ref + hover-fetch tooltip) are accent-compliant, NOT migrated to `Chip`, NOT
   the DataPill exemption. The inline-citation family is exactly 3: CitationPill, CrossRefPill,
   DataPill(exempt) — no fourth.
+- **Conclusion-first (the Verdict Band pattern, 2026-06-30).** Lead with the conclusion, support it
+  with card-linked evidence, commit to ONE next step — never make the user synthesize raw data; say
+  what you know, flag what you don't. The Scorecard `VerdictBand` is the canonical bespoke hero element
+  of this kind (one tone bar per favorability = genuine state, not rainbow; caveats folded *into* the
+  verdict, not a separate banner; methodology disclosed for the attorney persona). A money CTA never
+  lives inside the verdict — azure = do work (the verdict's next step), terracotta = costs money (the
+  separate `ReportCTACard`). Don't preview the old wall-of-cards; preview the conclusion.
+- **Subordinate the secondary door.** A second entry point (a chat door, a "see a real example" link)
+  stays **labeled** but visually subordinate to the page's one primary action — smaller, muted, no
+  competing CTA (the #5 Home/nav "Ask the analyst" door sits *under* the address box; the #6 Discovery
+  seam is quiet, below the ranked list). And **judge a hero element on the live page, not in spec**:
+  the #7 "payoff preview" card read fine in spec but was heavier than its value live (parcel jargon to
+  a context-less newcomer, crowded the hero) → **reverted.** Green tests confirm shape, not weight.
 
 ## What shipped (8 commits on `design-system-refactor`)
 1. `f4ee78a` foundation: tokens, type scale, fonts, Card + Chip.

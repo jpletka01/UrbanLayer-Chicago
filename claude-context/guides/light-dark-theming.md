@@ -1,6 +1,12 @@
 # Light/Dark Theming — Plan
 
-**Status: Phases 1–2 COMPLETE on branch `feat/light-dark-theming` (2026-06-29) — not merged/pushed.**
+**Status: SHIPPED — merged to `main` & deployed live 2026-06-30 (`main` @ `679e236`), image-verified on prod.**
+Post-merge fix: the dark `--action-primary-hover` was *lighter* than resting, so white-on-fill dropped to
+**4.20 (sub-AA) on hover** while resting passed at 4.90 — caught by a measured surface×mode contrast matrix,
+not the eye. Darkened to `#1568b5` (21 104 181) so hover *deepens* and clears AA at ~**5.71** (light hover
+6.60 + terracotta 5.58 unaffected). Lesson: **verify AA by measuring the actual rendered fill, in both
+modes and both resting/hover states — eyeballing catches gross failures, not the 4.2-vs-4.5 misses an
+attorney feels over a workday.** (Original plan status below, retained for the palette/token reasoning.)
 The **"Cyanotype on Vellum" palette is implemented** (azure accent now **bright azure, decoupled** from
 a deeper `--action-primary` button fill so white labels keep AA). **Phase 2 wired components onto the
 action hierarchy:** Card→`shadow-card`, Modal→`shadow-modal`, Chip tones→themed `state-*`; app-action
