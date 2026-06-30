@@ -840,6 +840,11 @@ async def _retrieve(
         ctx.comparables = sc.comparables
         ctx.zone_definition = sc.zone_definition
         ctx.verdict = sc.verdict
+        # Address-scoped violation tri-state rides in its own field — it never
+        # touches ctx.violations (the area feed, which still augments if the
+        # router asked for it). The prompt rule prioritizes this for parcel-level
+        # questions; the two scopes stay separate.
+        ctx.address_violations = sc.address_violations
 
     return ctx
 

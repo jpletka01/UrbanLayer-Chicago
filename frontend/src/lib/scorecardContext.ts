@@ -1,6 +1,6 @@
 import i18n from "./i18n";
 import type { ScorecardResponse } from "./api";
-import type { ScorecardContext, VerdictGrounding } from "./types";
+import type { ScorecardContext, VerdictGrounding, AddressViolationsGrounding } from "./types";
 import { computeVerdict, type TFunc } from "./scorecardVerdict";
 
 // Sales beyond the nearest few add tokens without changing the comp picture;
@@ -30,6 +30,18 @@ function distillVerdict(resp: ScorecardResponse): VerdictGrounding {
       frictionFlags: v.signals.frictionFlags,
     },
   };
+}
+
+// Derive the address-scoped violation tri-state from the held response — the SAME
+// three states ScorecardPage renders. context.violations is address-exact here (the
+// /api/scorecard path fills it from _address_violations_data, not the area feed), so
+// a non-null summary is a real at-address record. violations_checked distinguishes a
+// confirmed zero (lookup ran, none) from an unconfirmed lookup (address didn't parse).
+function deriveAddressViolations(resp: ScorecardResponse): AddressViolationsGrounding {
+  const summary = resp.context.violations ?? null;
+  if (summary) return { status: "present", summary };
+  if (resp.violations_checked) return { status: "confirmed_zero", summary: null };
+  return { status: "unconfirmed", summary: null };
 }
 
 /**
@@ -65,6 +77,10 @@ export function buildScorecardContext(resp: ScorecardResponse | null): Scorecard
     regulatory: resp.context.regulatory ?? null,
     incentives: resp.context.incentives ?? null,
     verdict: distillVerdict(resp),
+    // Address-keyed (not PIN-keyed) → identity-independent, so it ships in BOTH
+    // tiers: the page shows the at-address violation state regardless of pin, so
+    // the chat must be able to affirm it on the nearest-parcel case too.
+    address_violations: deriveAddressViolations(resp),
   };
 
   // Zoning-only tier. DO NOT add property/comparables here: with no verified PIN

@@ -92,6 +92,52 @@ describe("scope discipline — area-level facts never enter the grounding payloa
       expect("open_311_requests" in ctx).toBe(false);
       expect("neighborhood" in ctx).toBe(false);
       expect("permits" in ctx).toBe(false);
+      // Parcel violations ride ONLY under the address-scoped `address_violations`
+      // field — a raw area-style `violations` key must never appear (#4b).
+      expect("violations" in ctx).toBe(false);
+      expect(ctx.address_violations).toBeTruthy();
     });
   }
+});
+
+describe("address violations tri-state (#4b) — chat agrees with the page", () => {
+  function withViolations(over: Partial<ScorecardResponse["context"]> & { violations_checked?: boolean }) {
+    const { violations_checked, ...ctxOver } = over;
+    return makeResp({
+      violations_checked,
+      context: { ...makeResp().context, ...ctxOver } as ScorecardResponse["context"],
+    });
+  }
+
+  it("present → status 'present' carrying the address summary", () => {
+    const ctx = buildScorecardContext(
+      withViolations({
+        violations: { total: 2, open_count: 1, by_category: {}, top_descriptions: [] },
+      }),
+    )!;
+    expect(ctx.address_violations!.status).toBe("present");
+    expect(ctx.address_violations!.summary!.total).toBe(2);
+  });
+
+  it("confirmed_zero → lookup ran with no rows (NOT unconfirmed)", () => {
+    const ctx = buildScorecardContext(
+      withViolations({ violations: null as never, violations_checked: true }),
+    )!;
+    expect(ctx.address_violations!.status).toBe("confirmed_zero");
+    expect(ctx.address_violations!.summary).toBeNull();
+  });
+
+  it("unconfirmed → lookup never ran; must NOT read as zero", () => {
+    const ctx = buildScorecardContext(
+      withViolations({ violations: null as never, violations_checked: false }),
+    )!;
+    expect(ctx.address_violations!.status).toBe("unconfirmed");
+    expect(ctx.address_violations!.summary).toBeNull();
+  });
+
+  it("ships in BOTH tiers (address-keyed, identity-independent)", () => {
+    const present = buildScorecardContext(makeResp({ resolved_pin: null, violations_checked: true }))!;
+    expect(present.address_violations).toBeTruthy();
+    expect(present.property).toBeUndefined(); // still the zoning-only tier
+  });
 });

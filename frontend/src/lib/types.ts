@@ -434,6 +434,17 @@ export interface ScorecardContext {
   comparables?: ComparablesSummary | null;
   // Distilled ScorecardVerdict so the chat can speak to the verdict + carry caveats.
   verdict?: VerdictGrounding | null;
+  // Address-scoped building-violation tri-state, so chat affirms the same
+  // at-address fact the Scorecard shows. ADDRESS-scoped — never the area feed.
+  address_violations?: AddressViolationsGrounding | null;
+}
+
+// Parcel-scoped (address-keyed) building-violation tri-state shipped in grounding.
+// status: present (records on file) / confirmed_zero (lookup ran, none on record) /
+// unconfirmed (address didn't parse — NOT zero). Mirrors backend AddressViolations.
+export interface AddressViolationsGrounding {
+  status: "present" | "confirmed_zero" | "unconfirmed";
+  summary: ViolationSummary | null; // set only when status === "present"
 }
 
 // Distilled verdict shipped in the grounding payload (UI-only nextStep/cardAnchor dropped).

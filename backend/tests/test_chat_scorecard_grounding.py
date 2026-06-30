@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, patch
 from backend import main as main_mod
 from backend.main import _retrieve, _scorecard_grounding_applies
 from backend.models import (
+    AddressViolations,
     ComparablesSummary,
     IncentivesSummary,
     Location,
@@ -22,6 +23,7 @@ from backend.models import (
     RegulatorySummary,
     RetrievalPlan,
     ScorecardContext,
+    ViolationSummary,
     ZoningSummary,
 )
 
@@ -48,7 +50,7 @@ def _plan(sources, *, pin=PIN, workflow="general", ca=7) -> RetrievalPlan:
     )
 
 
-def _sc(pin=PIN, *, verdict=None) -> ScorecardContext:
+def _sc(pin=PIN, *, verdict=None, address_violations=None) -> ScorecardContext:
     return ScorecardContext(
         pin=pin,
         address="642 W Belden Ave",
@@ -62,6 +64,7 @@ def _sc(pin=PIN, *, verdict=None) -> ScorecardContext:
         incentives=IncentivesSummary(property_tax_class="standard"),
         comparables=ComparablesSummary(median_sale_price=950000, sales_volume=6),
         verdict=verdict,
+        address_violations=address_violations,
     )
 
 
@@ -180,6 +183,43 @@ async def test_retrieve_no_verdict_grafted_on_pin_mismatch():
         ctx = await _retrieve(plan, scorecard_context=sc)
 
     assert ctx.verdict is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["present", "confirmed_zero", "unconfirmed"])
+async def test_retrieve_grafts_address_violations_tristate(status):
+    """The parcel's address-scoped violation tri-state must reach chat context in
+    its OWN field (distinct from the area-level ctx.violations) so the chat can
+    agree with the page — present / confirmed_zero / unconfirmed all ride through,
+    and confirmed_zero must never collapse into unconfirmed (or vice versa)."""
+    summary = ViolationSummary(total=3, open_count=1, top_descriptions=[]) if status == "present" else None
+    av = AddressViolations(status=status, summary=summary)
+    sc = _sc(address_violations=av)
+    plan = _plan(["property_domain"])
+
+    with patch.object(main_mod, "property_domain", new=AsyncMock()), \
+            patch.object(main_mod, "regulatory_domain", new=AsyncMock()), \
+            patch.object(main_mod, "incentives_domain", new=AsyncMock()), \
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock()), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()):
+        ctx = await _retrieve(plan, scorecard_context=sc)
+
+    assert ctx.address_violations is av
+    assert ctx.address_violations.status == status
+    # Distinct field — never grafted onto the area-level ctx.violations.
+    assert ctx.violations is None
+
+
+@pytest.mark.asyncio
+async def test_retrieve_no_address_violations_on_pin_mismatch():
+    """A parcel's at-address record belongs to that parcel — a mismatched grounding
+    must not leak its confirmed_zero (which would read as 'this parcel is clean')."""
+    sc = _sc(pin="99999999999999", address_violations=AddressViolations(status="confirmed_zero"))
+    plan = _plan(["property_domain"])
+    with patch.object(main_mod, "property_domain", new=AsyncMock(return_value=None)), \
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)):
+        ctx = await _retrieve(plan, scorecard_context=sc)
+    assert ctx.address_violations is None
 
 
 @pytest.mark.asyncio

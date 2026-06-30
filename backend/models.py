@@ -120,6 +120,22 @@ class ViolationSummary(BaseModel):
     capped: bool = False
 
 
+class AddressViolations(BaseModel):
+    """Parcel-scoped (address-keyed) building-violation tri-state, lifted from the
+    Scorecard so the chat agrees with the page.
+
+    ADDRESS-scoped — deliberately DISTINCT from the area-level
+    ``ContextObject.violations`` the chat fetches via community-area retrieval.
+    Never merge the two. ``status``:
+      - ``present``       — records on file at this address (``summary`` set).
+      - ``confirmed_zero``— the address-exact lookup ran and found none on record.
+      - ``unconfirmed``   — the address didn't parse; the lookup never ran. This is
+                            NOT zero — must never be reported as "no violations."
+    """
+    status: Literal["present", "confirmed_zero", "unconfirmed"]
+    summary: ViolationSummary | None = None
+
+
 class BusinessSummary(BaseModel):
     total: int
     by_license_type: dict[str, int] = Field(default_factory=dict)
@@ -484,6 +500,10 @@ class ContextObject(BaseModel):
     # here" and carry the verdict's caveats. PARCEL-scoped. Serialized to the LLM
     # with ContextObject (no synthesizer change).
     verdict: dict | None = None
+    # Address-scoped building-violation tri-state, grafted from a Scorecard handoff
+    # so the chat affirms the SAME at-address fact the page shows. PARCEL-scoped —
+    # distinct from the area-level `violations` above (never merge the two).
+    address_violations: AddressViolations | None = None
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
@@ -542,6 +562,10 @@ class ScorecardContext(BaseModel):
     # confidence, caveats, signals} — lifted from the held response so the chat
     # can speak to the verdict + carry its caveats. PARCEL-scoped.
     verdict: dict | None = None
+    # Address-scoped building-violation tri-state (present/confirmed_zero/
+    # unconfirmed), lifted from the held response's address-exact violation lookup
+    # so the chat agrees with the page. ADDRESS-scoped — never the area feed.
+    address_violations: AddressViolations | None = None
 
 
 class ChatRequest(BaseModel):
