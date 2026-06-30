@@ -58,11 +58,13 @@ export interface VerdictReason {
 }
 
 export interface VerdictNextStep {
-  kind: "report" | "chat" | "scroll";
+  // The band commits to ONE azure next-step (work, not money). The paid report is
+  // a separate terracotta money action — the dedicated ReportCTACard below the
+  // band — so the verdict earns trust before the page asks for the sale (#4).
+  kind: "chat" | "scroll";
   label: string;
   question?: string; // kind==="chat" — carries the address (grounding requires it)
   cardAnchor?: CardId; // kind==="scroll"
-  secondary?: VerdictNextStep; // e.g. strong → primary=chat, secondary=report
 }
 
 export interface VerdictSignals {
@@ -363,7 +365,6 @@ function buildNextStep(category: VerdictCategory, s: VerdictSignals, data: Score
         kind: "chat",
         label: t("scorecard.verdict.next.strong.label"),
         question: t("scorecard.verdict.next.strong.question", { addr }),
-        secondary: { kind: "report", label: t("scorecard.verdict.next.strong.secondary") },
       };
     case "incentive_driven":
       return {
@@ -395,7 +396,6 @@ function buildNextStep(category: VerdictCategory, s: VerdictSignals, data: Score
         kind: "scroll",
         label: t("scorecard.verdict.next.limited.label"),
         cardAnchor: "comparables",
-        secondary: { kind: "report", label: t("scorecard.verdict.next.limited.secondary") },
       };
     case "entitlement_defined":
       return {

@@ -114,8 +114,7 @@
       "download": "Descargar informe",
       "generating": "Generando...",
       "orUpgrade": "o actualice a Pro — $99/mes",
-      "ready": "Su informe está listo",
-      "stickyTitle": "Informe de Viabilidad de Desarrollo"
+      "ready": "Su informe está listo"
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
@@ -124,8 +123,7 @@
       "far": "FAR máx.",
       "maxHeight": "Altura máx.",
       "lotCoverage": "Cobertura máx. del lote",
-      "viewMap": "Ver mapa de zonificación",
-      "reportTeaser": "Envolvente edificable, retiros y estacionamiento en el informe"
+      "viewMap": "Ver mapa de zonificación"
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -175,8 +173,7 @@
       "next": {
         "strong": {
           "label": "Pregunte al analista: ¿cuál es la restricción límite?",
-          "question": "¿Cuál es la restricción límite en {{addr}} — FAR, altura o cobertura del lote?",
-          "secondary": "Modele la envolvente completa en el informe de $25"
+          "question": "¿Cuál es la restricción límite en {{addr}} — FAR, altura o cobertura del lote?"
         },
         "incentive": {
           "label": "Investigue el financiamiento por incentivos",
@@ -191,8 +188,7 @@
           "overlayQuestion": "¿Qué restricciones de desarrollo aplican por las superposiciones en {{addr}}?"
         },
         "limited": {
-          "label": "Vea ventas comparables",
-          "secondary": "Valore la envolvente por derecho (informe de $25)"
+          "label": "Vea ventas comparables"
         },
         "entitlement": {
           "label": "Pregunte qué permite este PD",

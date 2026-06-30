@@ -108,8 +108,7 @@
       "download": "Download Report",
       "generating": "Generating...",
       "orUpgrade": "or upgrade to Pro — $99/mo",
-      "ready": "Your report is ready",
-      "stickyTitle": "Development Feasibility Report"
+      "ready": "Your report is ready"
     },
     "downloadPdf": "Download PDF Report",
     "downloadCsv": "Download CSV",
@@ -124,8 +123,7 @@
       "far": "Max FAR",
       "maxHeight": "Max height",
       "lotCoverage": "Max lot coverage",
-      "viewMap": "View zoning map",
-      "reportTeaser": "Buildable envelope, setbacks & parking in report"
+      "viewMap": "View zoning map"
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
@@ -175,8 +173,7 @@
       "next": {
         "strong": {
           "label": "Ask the analyst: what's the binding constraint?",
-          "question": "What's the binding constraint on {{addr}} — FAR, height, or lot coverage?",
-          "secondary": "Model the full envelope in the $25 report"
+          "question": "What's the binding constraint on {{addr}} — FAR, height, or lot coverage?"
         },
         "incentive": {
           "label": "Look into the incentive funding",
@@ -191,8 +188,7 @@
           "overlayQuestion": "What development restrictions apply from the overlays at {{addr}}?"
         },
         "limited": {
-          "label": "Check comparable sales",
-          "secondary": "Value the as-of-right envelope ($25 report)"
+          "label": "Check comparable sales"
         },
         "entitlement": {
           "label": "Ask what this PD permits",

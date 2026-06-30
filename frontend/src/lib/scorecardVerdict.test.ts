@@ -144,10 +144,12 @@ describe("scorecardVerdict — calibration decisions (signed off 2026-06-29)", (
 });
 
 describe("scorecardVerdict — output contract", () => {
-  it("strong leads with a non-commercial chat step, report as secondary (#4)", () => {
+  it("strong leads with a non-commercial chat step and no money action in the band (#4)", () => {
     const v = computeVerdict(mk({ zone: "DS-5", far: 5.0, bldg: 1000, land: 970 }), t);
     expect(v.nextStep.kind).toBe("chat");
-    expect(v.nextStep.secondary?.kind).toBe("report");
+    // The band carries one azure next-step only; the paid report is the separate
+    // ReportCTACard, never a verdict secondary.
+    expect("secondary" in v.nextStep).toBe(false);
   });
 
   it("every verdict has 1–4 reasons and a headline", () => {

@@ -38,23 +38,20 @@ export interface VerdictBandProps {
   verdict: ScorecardVerdict;
   onChat: (question: string) => void;
   onScrollTo: (anchor: CardId) => void;
-  onReport: () => void;
 }
 
-export function VerdictBand({ verdict, onChat, onScrollTo, onReport }: VerdictBandProps) {
+export function VerdictBand({ verdict, onChat, onScrollTo }: VerdictBandProps) {
   const { t } = useTranslation("pages");
   const tone = TONE[verdict.category];
 
+  // Single azure next-step only — the paid report lives in its own terracotta
+  // ReportCTACard below the band (no money action inside the verdict). See #4.
   function runStep(step: ScorecardVerdict["nextStep"]) {
     if (step.kind === "chat" && step.question) onChat(step.question);
     else if (step.kind === "scroll" && step.cardAnchor) onScrollTo(step.cardAnchor);
-    else if (step.kind === "report") onReport();
   }
 
-  const primaryClasses =
-    verdict.nextStep.kind === "report"
-      ? "bg-highlight-fill hover:opacity-90 text-highlight-fg"
-      : "bg-action hover:bg-action-hover text-action-fg";
+  const primaryClasses = "bg-action hover:bg-action-hover text-action-fg";
 
   return (
     <section
@@ -91,7 +88,7 @@ export function VerdictBand({ verdict, onChat, onScrollTo, onReport }: VerdictBa
         ))}
       </ul>
 
-      {/* The single next step (+ optional secondary) */}
+      {/* The single next step — one azure action, no money CTA in the band */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -100,16 +97,6 @@ export function VerdictBand({ verdict, onChat, onScrollTo, onReport }: VerdictBa
         >
           {verdict.nextStep.label}
         </button>
-        {verdict.nextStep.secondary && (
-          <button
-            type="button"
-            onClick={() => runStep(verdict.nextStep.secondary!)}
-            className="text-caption text-highlight hover:opacity-80 transition-opacity inline-flex items-center gap-1"
-          >
-            {verdict.nextStep.secondary.label}
-            <span aria-hidden>→</span>
-          </button>
-        )}
       </div>
 
       {/* Caveats — honesty folded INTO the verdict, not a separate banner */}
