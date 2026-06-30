@@ -177,6 +177,7 @@ the data to do it right is already loaded on the page.
 | **2** | **Disambiguate every number's scope.** Relabel Violations/Crime as "in {community area}" (or move them into a clearly-separated "Neighborhood context" group below the parcel cards); keep parcel cards visually distinct from area cards. | Scorecard | Actively misleads attorneys on risk — a trust bug, not polish. | #2 |
 | **3** | **Scale page depth to verdict confidence.** When the verdict is thin/caveated (capacity not computed, few signals), render a short page — collapse area/context cards by default; expand only on a rich verdict. | Scorecard | A wall that implies depth we don't have erodes trust at the decision moment. | #3 |
 | **4** | **Collapse the duplicate report CTAs + reconcile FinancialSnapshotStrip** with the property/incentives cards (one CTA, no redundant strip). | Scorecard | Hierarchy: one primary money action; cut the overlap. | #3 |
+| **4b** | **Ship the address-specific violations result into the grounding payload** (present / confirmed-zero / unconfirmed) so chat can say "zero violations on record at this address" and *agree with the Scorecard*. Today the page says "No violations on record at this address" but chat can't affirm it and falls back to area data with a scope caveat — honest, but reads as the page and chat contradicting each other at the trust-building moment. The natural finish of the #2 violations work. | Scorecard↔Chat | Page↔chat must agree where grounding is supposed to build trust. | #1/#2 |
 | **5** | **Give chat a labeled door from Home** (and the returning-user nav), keeping the address-first funnel intact. | Home | The second product is invisible. | IA |
 | **6** | **Soften the Discovery free→paid wall into a value ladder**, and add a Discovery→chat seam for the result set. | Discovery | Conversion moment + cross-page intelligence. | — |
 | **7** | **Add a "what you get" payoff preview** to the Home hero. | Home | De-risks the first action. | — |
@@ -184,6 +185,29 @@ the data to do it right is already loaded on the page.
 **Recommended sequencing for discussion:** #1 and #2 are the two that decide whether a fence-sitter trusts us
 enough to pay, and both are isolated seams with the data already in hand. #3 compounds #2 (the padding blocks
 *are* the misleading ones), so #2+#3 are natural to do together. #5–#7 are real but second-order.
+
+## Status update — 2026-06-30 (post live-review)
+
+**Shipped & live-reviewed:** P0 (Verdict Band), #2 (parcel/area scope fix), #3 (density tracks
+confidence), and #1 (grounding seam — sticky grounding + verdict-into-context + pin-null tier + pivot
+guard) are committed on branch `feat/scorecard-verdict-grounding` (`07ea9fc` + tests `358029b`), green
+across tsc/vitest(84)/backend(891), and **verified live via Playwright** against a local backend (2
+parcels, 5 turns): verdict-grounded answers with caveats intact, area facts never misattributed to the
+parcel (the violations-trap turn explained the scope to the user), sticky grounding held across a deictic
+typed follow-up, and stale grounding dropped on a parcel pivot. **Branch pushed to origin; main merge
+(the live deploy) deliberately held.**
+
+**Next:** #4 (collapse the three report CTAs → one), then **#4b** (address-specific violations into the
+grounding payload — the real coherence finish of #2).
+
+**Minor findings logged (not prioritized):**
+- Chat occasionally emits a mislabeled `[data:crime]` pill on a *comparable-sale* sentence — cosmetic
+  citation-tag bug, unrelated to grounding.
+- The "Ask about this property" (`/?pin=`) entry can bounce back to `/scorecard` in dev (StrictMode +
+  async `setSearchParams` race in ScorecardPage canonicalization). The autosend handoff (verdict CTA /
+  Investigate buttons) is unaffected. Needs a separate look; confirm whether it reproduces in a prod build.
+- Cold pin-only scorecard hydrate can return without building area (→ "capacity unavailable" caveat) even
+  for a parcel that has bldg_sqft when resolved by address. Property-fetch variance, not a seam bug.
 
 ## Appendix — primary evidence
 `HeroEntrance.tsx:10`; `InvestigateButton.tsx:9`; `App.tsx:337-448` (sendMessage/autosend/starters);
