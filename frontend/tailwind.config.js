@@ -4,12 +4,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // §7 — Inter body/UI, Space Grotesk display (h1/section), IBM Plex Mono for data.
-        // Spec named only Fraunces's fallback; the Space Grotesk + mono fallbacks below
-        // are derived (grotesque → sans fallback; mono → system mono). [judgment call]
+        // Bento Pro type — Inter body/UI, Inter Tight display (hero/section headings),
+        // JetBrains Mono for data/PINs/code (IBM Plex Mono kept as fallback).
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"Space Grotesk"', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        display: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
         // §2 — single neutral ramp, now CSS-var-backed for light/dark theming (2026-06-29,
@@ -68,9 +67,22 @@ export default {
         },
       },
       boxShadow: {
-        // Elevation inverts between modes (§4): near-none in dark, real soft shadow in light.
+        // Elevation inverts between modes: subtle in dark, real soft shadow in light.
         card: 'var(--shadow-card)',
         modal: 'var(--shadow-modal)',
+        // Bento accent glow — hover lift on interactive tiles / brand CTA halo.
+        glow: 'var(--glow-accent)',
+      },
+      borderRadius: {
+        // Bento tile radius (spec radius.md: card 32px desktop / 20px mobile). Applied by the
+        // Card/Modal primitives; stock Tailwind radii stay intact for everything else.
+        bento: '1.75rem',       // 28px — big bento tiles
+        'bento-sm': '1.25rem',  // 20px — compact/mobile tiles
+      },
+      backgroundImage: {
+        // Brand CTA gradient (buttons.md) — warm orange blend, dark label on top.
+        'brand-gradient': 'linear-gradient(135deg, #f9a474 0%, #f7b38e 55%, #fcd2b7 100%)',
+        'brand-gradient-hover': 'linear-gradient(135deg, #f39a67 0%, #f9a474 55%, #f7b38e 100%)',
       },
       // §1 — named type scale (size · line-height · weight · tracking). Additive: the stock
       // Tailwind sizes remain until pages are migrated (Phase 2). Responsive steps use

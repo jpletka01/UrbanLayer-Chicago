@@ -82,10 +82,11 @@ export function Card({
     // (where you can't go lighter than the page) — theme-aware elevation, §4.
     // flex-col so that in an equal-height grid (h-full) the footer pins to the bottom
     // instead of leaving a gap below short content.
-    "rounded-xl overflow-hidden border shadow-card flex flex-col",
+    "rounded-bento overflow-hidden border shadow-card flex flex-col",
     accentEdge ? "border-dark-border border-l-2 border-l-accent" : "border-dark-border",
     SURFACE[surface],
-    interactive ? "transition-colors hover:border-dark-border-strong" : "",
+    // Bento hover: border strengthens, subtle accent glow, slight lift.
+    interactive ? "transition-all duration-200 hover:border-dark-border-strong hover:shadow-glow hover:-translate-y-0.5" : "",
     onClick ? "cursor-pointer text-left w-full" : "",
     className,
   ].filter(Boolean).join(" ");

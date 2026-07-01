@@ -71,7 +71,7 @@ export function Chip({
   "aria-checked": ariaChecked,
 }: ChipProps) {
   const cls = [
-    "inline-flex items-center gap-1 rounded-md text-micro transition-colors",
+    "inline-flex items-center gap-1 rounded-full text-micro transition-colors",
     SIZE[size],
     selected ? SELECTED : TONE[tone],
     interactive && !selected ? "hover:border-dark-border-strong hover:text-text-primary" : "",

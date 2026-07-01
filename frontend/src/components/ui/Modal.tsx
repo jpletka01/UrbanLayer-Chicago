@@ -41,12 +41,12 @@ export function Modal({ onClose, title, description, showClose, size = "sm", chi
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`relative w-full ${SIZE[size]} mx-4 bg-dark-surface border border-dark-border rounded-xl p-6 shadow-modal`}>
+      <div className={`relative w-full ${SIZE[size]} mx-4 bg-dark-surface border border-dark-border rounded-bento p-6 shadow-modal`}>
         {close && (
           <button
             type="button"
