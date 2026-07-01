@@ -24,7 +24,7 @@ import { Footer } from "./components/landing/Footer";
 import { ValueProps } from "./components/landing/ValueProps";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
 import { StorySection } from "./components/landing/StorySection";
-import { ProblemPivot } from "./components/landing/ProblemPivot";
+import { ChaosToVerdict } from "./components/landing/ChaosToVerdict";
 import { PersonaScenarios } from "./components/landing/PersonaScenarios";
 import { HowItWorks } from "./components/landing/HowItWorks";
 import {
@@ -868,9 +868,9 @@ export function App() {
 
             </div>
 
-            {/* Problem Pivot — VISUALIZE the problem we solve (a mind clogged with fragmented
-                sources → one simple source) + the time/money/stress saved. Not a product demo. */}
-            <ProblemPivot />
+            {/* Chaos → Verdict — the dense, coded municipal source material collapsing into one
+                cited verdict. Visualizes the problem (fragmentation) and the value (clarity). */}
+            <ChaosToVerdict />
 
             {/* Value Props — professional positioning */}
             <ValueProps />
