@@ -1,5 +1,9 @@
 {
   "heroBadge": "Más de 25 fuentes de datos en vivo · Chicago",
+  "heroPreview": {
+    "verdict": "Edificable",
+    "cta": "Ver la Ficha completa"
+  },
   "heroSubtitle": "Estudio de viabilidad para cualquier dirección de Chicago. En segundos.",
   "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo en una sola Ficha gratuita.",
   "stats": {
