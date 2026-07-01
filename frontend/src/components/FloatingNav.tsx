@@ -104,7 +104,7 @@ export default function FloatingNav({
       ? "sticky top-0 z-40 shrink-0"
       : position === "hero"
         ? "relative z-40 px-3 pt-3"
-        : "sticky top-3 z-40 px-3"; // floating
+        : "sticky top-3 z-40 px-3 shrink-0"; // floating
   const bar =
     position === "docked"
       ? `w-full h-14 px-3 md:px-6 flex items-center justify-between gap-3 border-b backdrop-blur-md ${

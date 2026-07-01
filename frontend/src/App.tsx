@@ -904,7 +904,8 @@ export function App() {
           >
             {isSharedView ? (
               <FloatingNav
-                position="docked"
+                position="floating"
+                maxWidthClass="max-w-7xl"
                 showNav={false}
                 hideUtilities
                 brandTo="/"
@@ -920,7 +921,8 @@ export function App() {
               />
             ) : (
               <FloatingNav
-                position="docked"
+                position="floating"
+                maxWidthClass="max-w-7xl"
                 languageVariant="workspace"
                 onBrandClick={reset}
                 brandSuffix={
