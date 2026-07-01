@@ -36,14 +36,14 @@ export function HeroEntrance() {
         placeholder={t("hero.addressPlaceholder")}
       />
       <div className="flex flex-wrap gap-2 justify-center items-center">
-        <span className="text-body text-white/50">{t("hero.try")}</span>
+        <span className="text-body text-white/70">{t("hero.try")}</span>
         {addressExamples.map((addr) => (
           <PromptSuggestionChip key={addr} label={addr} onClick={() => submitAddress(addr, "chip")} />
         ))}
       </div>
       {/* Secondary, labeled door — subordinate to the address input, names the
           fork (code/neighborhood research) so a returning user knows what it does. */}
-      <p className="text-body text-white/50">
+      <p className="text-body text-white/70">
         {t("hero.askAnalystLead")}{" "}
         <button
           type="button"

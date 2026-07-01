@@ -120,7 +120,7 @@ export function Card({
         ))}
       {bodyOpen && <div className={`${PADDING[padding]} ${footer ? "flex-1" : ""}`}>{children}</div>}
       {footer && bodyOpen && (
-        <div className="px-4 py-3 bg-dark-elevated border-t border-dark-border text-caption text-text-muted">
+        <div className="px-4 py-3 bg-dark-elevated border-t border-dark-border text-caption text-text-secondary">
           {footer}
         </div>
       )}

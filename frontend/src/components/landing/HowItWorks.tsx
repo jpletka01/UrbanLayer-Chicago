@@ -48,7 +48,7 @@ function StepVisual({ index, query, t }: { index: number; query?: string; t: (ke
         {t("howItWorks.sampleResponseTail")}
       </div>
       <div className="flex gap-1.5">
-        <span className="text-micro font-mono bg-dark-elevated text-text-muted px-1.5 py-0.5 rounded">
+        <span className="text-micro font-mono bg-dark-elevated text-text-secondary px-1.5 py-0.5 rounded">
           § 17-2-0300
         </span>
         {/* decorative mock of a data citation (not the functional DataPill) → on-palette accent, not default blue */}
@@ -95,7 +95,7 @@ export function HowItWorks() {
               className="text-center space-y-5"
             >
               <div className="flex justify-center">
-                <div className="w-10 h-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent text-title relative z-10">
+                <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-text-on-accent text-subtitle font-semibold relative z-10 shadow-glow">
                   {i + 1}
                 </div>
               </div>

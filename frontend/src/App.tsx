@@ -822,7 +822,7 @@ export function App() {
                         >
                           {t("heroSubtitle")}
                         </h1>
-                        <p className="text-lead text-white/60 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                        <p className="text-lead text-white/75 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                           {t("heroSubline")}
                         </p>
                       </motion.div>

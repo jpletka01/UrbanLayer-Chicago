@@ -84,7 +84,7 @@ export function IntelligenceStack() {
                     <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
                       {DOMAIN_ICONS[i]}
                     </div>
-                    <Chip tone="accent" mono size="md">{d.badge}</Chip>
+                    <Chip tone="accent" mono size="md" className="font-semibold">{d.badge}</Chip>
                   </div>
                   <h3 className="text-subtitle text-text-primary">{d.title}</h3>
                   <ul className="space-y-1.5">

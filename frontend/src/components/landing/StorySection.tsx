@@ -29,6 +29,16 @@ export function StorySection({ image, title, subtitle, align = "left" }: Props) 
         transition={{ duration: 0.5, ease: "easeOut" }}
         loading="lazy"
       />
+      {/* Directional scrim so the copy keeps contrast over bright building lights. */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            align === "right"
+              ? "linear-gradient(to left, rgba(0,0,0,0.78), rgba(0,0,0,0.2) 55%, transparent 80%)"
+              : "linear-gradient(to right, rgba(0,0,0,0.78), rgba(0,0,0,0.2) 55%, transparent 80%)",
+        }}
+      />
       <div className="relative z-10 h-full flex items-center">
         <motion.div
           initial={{ opacity: 0, x: align === "left" ? -30 : 30 }}
@@ -44,7 +54,7 @@ export function StorySection({ image, title, subtitle, align = "left" }: Props) 
             {title}
           </h2>
           <p
-            className="text-lead text-white/70 max-w-md"
+            className="text-lead text-white/85 max-w-md"
             style={align === "right" ? { marginLeft: "auto" } : {}}
           >
             {subtitle}

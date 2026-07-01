@@ -118,7 +118,7 @@ export default function FloatingNav({
   const linkBase = "shrink-0 text-body transition-colors pb-0.5 border-b-2";
   const linkActive = over ? "border-white/70 text-white" : "border-accent text-text-primary";
   const linkIdle = over
-    ? "border-transparent text-white/70 hover:text-white"
+    ? "border-transparent text-white/80 hover:text-white"
     : "border-transparent text-text-secondary hover:text-text-primary";
 
   const brandInner = (
