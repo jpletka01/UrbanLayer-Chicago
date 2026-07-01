@@ -5,6 +5,7 @@ import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
 import { HeroEntrance } from "./components/landing/HeroEntrance";
 import { HeroBackdrop } from "./components/landing/HeroBackdrop";
+import { AccentRails } from "./components/landing/AccentRails";
 import { HeroScorecardPreview } from "./components/landing/HeroScorecardPreview";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
@@ -868,6 +869,11 @@ export function App() {
 
             </div>
 
+            {/* Below-hero sections share faint accent plat-rails along the page margins,
+                continuing the hero backdrop's survey-map language. */}
+            <div className="relative">
+              <AccentRails />
+
             {/* Chaos → Verdict — the dense, coded municipal source material collapsing into one
                 cited verdict. Visualizes the problem (fragmentation) and the value (clarity). */}
             <ChaosToVerdict />
@@ -896,6 +902,7 @@ export function App() {
 
             {/* How It Works — trust / architecture */}
             <HowItWorks />
+            </div>
 
             <Footer />
           </motion.div>
