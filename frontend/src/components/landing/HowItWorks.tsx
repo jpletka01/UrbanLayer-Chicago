@@ -40,21 +40,32 @@ function StepVisual({ index, query, t }: { index: number; query?: string; t: (ke
     );
   }
 
+  // Step 3 = the "reward". A polished deliverable card (header bar + status + cited result),
+  // not a raw code block — matches the clean UI mocks in steps 1 & 2.
   return (
-    <div className="bg-dark-bg rounded-lg px-4 py-3 border border-dark-border space-y-2">
-      <div className="text-caption text-text-secondary leading-relaxed">
-        {t("howItWorks.sampleResponse")}{" "}
-        <span className="font-mono text-accent bg-accent/10 px-1 rounded">RM-5</span>
-        {t("howItWorks.sampleResponseTail")}
+    <div className="bg-dark-bg rounded-xl border border-dark-border overflow-hidden text-left shadow-card">
+      <div className="flex items-center gap-2 px-3.5 py-2 border-b border-dark-border bg-dark-elevated">
+        <svg className="w-3.5 h-3.5 text-state-positive shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+        <span className="text-overline uppercase text-text-secondary">Scorecard ready</span>
+        <span className="ml-auto text-micro font-mono font-semibold text-accent bg-accent-muted px-1.5 py-0.5 rounded">RM-5</span>
       </div>
-      <div className="flex gap-1.5">
-        <span className="text-micro font-mono bg-dark-elevated text-text-secondary px-1.5 py-0.5 rounded">
-          § 17-2-0300
-        </span>
-        {/* decorative mock of a data citation (not the functional DataPill) → on-palette accent, not default blue */}
-        <span className="text-micro font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
-          data:zoning
-        </span>
+      <div className="px-3.5 py-3 space-y-2.5">
+        <div className="text-caption text-text-secondary leading-relaxed">
+          {t("howItWorks.sampleResponse")}{" "}
+          <span className="font-mono text-accent">RM-5</span>
+          {t("howItWorks.sampleResponseTail")}
+        </div>
+        <div className="flex gap-1.5">
+          <span className="text-micro font-mono bg-dark-elevated text-text-secondary px-1.5 py-0.5 rounded border border-dark-border">
+            § 17-2-0300
+          </span>
+          {/* decorative mock of a data citation (not the functional DataPill) → on-palette accent */}
+          <span className="text-micro font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
+            data:zoning
+          </span>
+        </div>
       </div>
     </div>
   );

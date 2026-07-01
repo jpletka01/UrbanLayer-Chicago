@@ -37,6 +37,33 @@ const DOMAIN_ICONS = [
   ),
 ];
 
+// Fills the wide feature tile's right column with an on-theme visual accent (a mini zoning
+// legend) instead of dead space. Orange tints, not a rainbow — stays on-palette.
+const ZONE_SAMPLE = [
+  { z: "B3-2", a: "0.9" },
+  { z: "RS-3", a: "0.68" },
+  { z: "C1-2", a: "0.52" },
+  { z: "RT-4", a: "0.4" },
+  { z: "DX-7", a: "0.3" },
+  { z: "PD 1211", a: "0.22" },
+];
+
+function ZoningLegend() {
+  return (
+    <div className="hidden sm:block rounded-xl border border-dark-border bg-dark-bg/40 p-4">
+      <div className="text-overline uppercase text-text-muted mb-3">Sample zoning classes</div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+        {ZONE_SAMPLE.map(({ z, a }) => (
+          <div key={z} className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: `rgb(var(--accent) / ${a})` }} />
+            <span className="font-mono text-caption text-text-secondary">{z}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function IntelligenceStack() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -88,7 +115,7 @@ export function IntelligenceStack() {
                   padding="lg"
                   className={`h-full ${feature ? "ring-1 ring-accent/25 shadow-glow" : ""}`}
                 >
-                  <div className={`space-y-4 ${feature ? "md:space-y-6" : ""}`}>
+                  <div className={feature ? "space-y-6" : "space-y-4"}>
                     <div className="flex items-center justify-between">
                       <div
                         className={`rounded-xl bg-accent/15 flex items-center justify-center text-accent ${
@@ -99,17 +126,35 @@ export function IntelligenceStack() {
                       </div>
                       <Chip tone="accent" mono size="md" className="font-semibold">{d.badge}</Chip>
                     </div>
-                    <h3 className={feature ? "text-section text-text-primary" : "text-subtitle text-text-primary"}>
-                      {d.title}
-                    </h3>
-                    <ul className={feature ? "grid sm:grid-cols-2 gap-x-6 gap-y-1.5" : "space-y-1.5"}>
-                      {d.points.map((p) => (
-                        <li key={p} className="text-body text-text-secondary flex items-start gap-2">
-                          <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
+                    {feature ? (
+                      // Two-column body so the wide tile fills: bullets left, zoning legend right.
+                      <div className="grid sm:grid-cols-2 gap-6 items-center">
+                        <div className="space-y-4">
+                          <h3 className="text-section text-text-primary">{d.title}</h3>
+                          <ul className="space-y-2">
+                            {d.points.map((p) => (
+                              <li key={p} className="text-body text-text-secondary flex items-start gap-2">
+                                <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
+                                {p}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <ZoningLegend />
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-subtitle text-text-primary">{d.title}</h3>
+                        <ul className="space-y-1.5">
+                          {d.points.map((p) => (
+                            <li key={p} className="text-body text-text-secondary flex items-start gap-2">
+                              <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
+                              {p}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
                   </div>
                 </Card>
               </motion.div>

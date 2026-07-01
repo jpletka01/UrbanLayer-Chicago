@@ -111,15 +111,15 @@ export default function FloatingNav({
           over ? "border-white/10 bg-black/30" : "border-dark-border bg-dark-surface/80"
         }`
       : `${maxWidthClass} mx-auto h-14 px-3 md:px-5 flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto_1fr] rounded-full border backdrop-blur-md shadow-glow ${
-          over ? "border-white/15 bg-black/25" : "border-dark-border bg-dark-surface/70"
+          over ? "border-white/15 bg-black/40" : "border-dark-border bg-dark-surface/90"
         }`;
 
   const brandText = over ? "text-white/90 group-hover:text-white" : "text-text-primary";
   const linkBase = "shrink-0 text-body transition-colors pb-0.5 border-b-2";
   const linkActive = over ? "border-white/70 text-white" : "border-accent text-text-primary";
   const linkIdle = over
-    ? "border-transparent text-white/80 hover:text-white"
-    : "border-transparent text-text-secondary hover:text-text-primary";
+    ? "border-transparent text-white/90 hover:text-white"
+    : "border-transparent text-text-primary/80 hover:text-text-primary";
 
   const brandInner = (
     <>

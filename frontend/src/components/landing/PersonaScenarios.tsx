@@ -94,7 +94,7 @@ export function PersonaScenarios() {
                     <h3 className="text-subtitle text-text-primary">{p.title}</h3>
                   </div>
 
-                  <div className="bg-dark-bg rounded-lg px-4 py-3.5 text-body text-text-primary border border-dark-border-subtle group-hover:border-accent/20 transition-colors">
+                  <div className="bg-dark-bg rounded-xl px-5 py-4 text-body text-text-primary leading-relaxed border border-dark-border-subtle group-hover:border-accent/20 transition-colors">
                     &ldquo;{p.question}&rdquo;
                   </div>
 
