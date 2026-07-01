@@ -54,9 +54,7 @@ import { ExportReport } from "./components/ExportReport";
 import { ShareModal } from "./components/ShareModal";
 import { useAuthContext } from "./contexts/AuthContext";
 import AuthModal from "./components/AuthModal";
-import UserMenu from "./components/UserMenu";
-import LanguageSelector from "./components/LanguageSelector";
-import ThemeToggle from "./components/ThemeToggle";
+import FloatingNav from "./components/FloatingNav";
 import { useTranslation } from "react-i18next";
 import { track } from "./lib/tracking";
 
@@ -115,7 +113,7 @@ export function App() {
   const [composing, setComposing] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const { user, isAuthenticated, authRequired, loading: authLoading, signIn, signOut } = useAuthContext();
+  const { user, isAuthenticated, authRequired, loading: authLoading, signIn } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -772,45 +770,31 @@ export function App() {
 
               {/* Hero section — full viewport */}
               <div className="relative z-10 min-h-screen flex flex-col">
-                {/* Top header bar */}
+                {/* Top header bar — the unified floating nav, over-image variant */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="flex items-center justify-between px-4 pt-4"
                 >
-                  <div className="flex items-center gap-2.5">
-                    {conversations.length > 0 && (
-                      <button
-                        onClick={() => setHistoryOpen(true)}
-                        className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
-                        title={tc("viewHistory")}
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                      </button>
-                    )}
-                    <a
-                      href="/"
-                      onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                      className="flex items-center gap-2.5 group"
-                    >
-                      <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-full group-hover:scale-105 transition-transform" />
-                      <span className="font-display text-base font-semibold tracking-tight text-white/90 group-hover:text-white transition-colors">
-                        UrbanLayer
-                      </span>
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ThemeToggle overImage />
-                    <LanguageSelector variant="splash" />
-                    {user && (
-                      <div className="relative z-50">
-                        <UserMenu user={user} onSignOut={signOut} />
-                      </div>
-                    )}
-                  </div>
+                  <FloatingNav
+                    position="hero"
+                    tone="overImage"
+                    languageVariant="splash"
+                    onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    contextLeft={
+                      conversations.length > 0 ? (
+                        <button
+                          onClick={() => setHistoryOpen(true)}
+                          className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all shrink-0"
+                          title={tc("viewHistory")}
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                          </svg>
+                        </button>
+                      ) : null
+                    }
+                  />
                 </motion.div>
 
                 <div className="flex-1 flex flex-col justify-center items-center px-4 py-20">
@@ -909,89 +893,102 @@ export function App() {
             transition={{ duration: 0.3 }}
             className="w-full h-screen flex flex-col bg-dark-bg"
           >
-            <header className="h-14 px-3 md:px-6 flex items-center justify-between bg-dark-bg shrink-0">
-              <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                {!isSharedView && conversations.length > 0 && (
-                  <button
-                    onClick={() => setHistoryOpen(true)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors shrink-0"
-                    title={tc("chatHistory")}
-                  >
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
-                )}
-                {isSharedView ? (
-                  <span className="flex items-center gap-2 text-sm font-medium text-text-secondary shrink-0">
-                    <img src="/logo.jpg" alt="" className="w-6 h-6 rounded-full" />
-                    <span className="hidden md:inline">UrbanLayer — {tc("shared")}</span>
-                    <span className="md:hidden">{tc("shared")}</span>
-                  </span>
-                ) : (
-                  <button
-                    onClick={reset}
-                    className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors shrink-0"
-                  >
-                    <img src="/logo.jpg" alt="" className="w-6 h-6 rounded-full" />
-                    <span className="hidden md:inline">UrbanLayer — Chicago</span>
-                    <span className="md:hidden">UrbanLayer</span>
-                  </button>
-                )}
-                {context?.community_area_name && (
-                  <div className="flex items-center gap-2 text-sm min-w-0">
-                    <span className="text-text-muted">/</span>
-                    <span className="text-text-primary truncate max-w-[120px] md:max-w-none">{context.community_area_name}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Mobile sidebar toggle */}
-                <button
-                  onClick={() => setMobileSidebarOpen(true)}
-                  className="md:hidden relative w-9 h-9 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
-                  aria-label={tc("openDataPanel")}
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                  </svg>
-                  {((!dataTabViewed && countDataCategories(activeSidebarContext) > 0) || (!sourcesTabViewed && (activeSidebarContext?.code_chunks?.length ?? 0) > 0) || (!mapTabViewed && mapData)) && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent" />
-                  )}
-                </button>
-                {!streaming && messages.some((m) => m.role === "assistant" && m.context) && (
-                  <button
-                    onClick={handleExport}
-                    className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                    title={tc("export")}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                    </svg>
-                    <span className="hidden md:inline">{tc("export")}</span>
-                  </button>
-                )}
-                {!isSharedView && !streaming && isAuthenticated && conversationId && messages.some((m) => m.role === "assistant" && m.context) && (
-                  <button
-                    onClick={() => setShareModalOpen(true)}
-                    className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                    title={tc("shareConversation")}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    <span className="hidden md:inline">{tc("share")}</span>
-                  </button>
-                )}
-                {isSharedView ? (
+            {isSharedView ? (
+              <FloatingNav
+                position="docked"
+                showNav={false}
+                hideUtilities
+                brandTo="/"
+                brandSuffix={<span className="hidden md:inline text-sm text-text-secondary">— {tc("shared")}</span>}
+                contextRight={
                   <Link
                     to="/"
                     className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
                   >
                     {tc("tryUrbanLayer")}
                   </Link>
-                ) : (
+                }
+              />
+            ) : (
+              <FloatingNav
+                position="docked"
+                languageVariant="workspace"
+                onBrandClick={reset}
+                brandSuffix={
                   <>
+                    <span className="hidden md:inline text-sm text-text-secondary">— Chicago</span>
+                    {context?.community_area_name && (
+                      <span className="flex items-center gap-2 text-sm min-w-0">
+                        <span className="text-text-muted">/</span>
+                        <span className="text-text-primary truncate max-w-[120px] md:max-w-none">
+                          {context.community_area_name}
+                        </span>
+                      </span>
+                    )}
+                  </>
+                }
+                contextLeft={
+                  conversations.length > 0 ? (
+                    <button
+                      onClick={() => setHistoryOpen(true)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors shrink-0"
+                      title={tc("chatHistory")}
+                    >
+                      <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                  ) : null
+                }
+                signInSlot={
+                  !canPersist ? (
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
+                    >
+                      {tc("signInToSave")}
+                    </button>
+                  ) : undefined
+                }
+                contextRight={
+                  <>
+                    {/* Mobile sidebar toggle */}
+                    <button
+                      onClick={() => setMobileSidebarOpen(true)}
+                      className="md:hidden relative w-9 h-9 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
+                      aria-label={tc("openDataPanel")}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                      </svg>
+                      {((!dataTabViewed && countDataCategories(activeSidebarContext) > 0) || (!sourcesTabViewed && (activeSidebarContext?.code_chunks?.length ?? 0) > 0) || (!mapTabViewed && mapData)) && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent" />
+                      )}
+                    </button>
+                    {!streaming && messages.some((m) => m.role === "assistant" && m.context) && (
+                      <button
+                        onClick={handleExport}
+                        className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
+                        title={tc("export")}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <span className="hidden md:inline">{tc("export")}</span>
+                      </button>
+                    )}
+                    {!streaming && isAuthenticated && conversationId && messages.some((m) => m.role === "assistant" && m.context) && (
+                      <button
+                        onClick={() => setShareModalOpen(true)}
+                        className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
+                        title={tc("shareConversation")}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        <span className="hidden md:inline">{tc("share")}</span>
+                      </button>
+                    )}
                     <button
                       onClick={handleNewChat}
                       className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
@@ -1012,21 +1009,10 @@ export function App() {
                         </svg>
                       </Link>
                     )}
-                    <ThemeToggle />
-                    <LanguageSelector variant="workspace" />
-                    {!canPersist && (
-                      <button
-                        onClick={() => setShowAuthModal(true)}
-                        className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
-                      >
-                        {tc("signInToSave")}
-                      </button>
-                    )}
-                    {user && <UserMenu user={user} onSignOut={signOut} />}
                   </>
-                )}
-              </div>
-            </header>
+                }
+              />
+            )}
 
             {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
               <div className="px-6 py-3 bg-state-negative/10 border-b border-state-negative/20 text-state-negative text-sm flex items-center justify-between gap-4">
