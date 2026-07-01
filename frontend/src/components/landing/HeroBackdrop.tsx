@@ -17,9 +17,12 @@ function activeVariant(): Variant {
   return v === "bloom" || v === "contour" || v === "geo" ? v : "plat";
 }
 
+// Inverted mask: the hero's content (headline, input, preview card) lives in the middle of the
+// viewport, and its surfaces are translucent — line-work showing through them reads as noise.
+// So the backdrop is voided over the content zone and only draws in the periphery.
 const MASK = {
-  maskImage: "radial-gradient(ellipse 85% 75% at 50% 45%, black 25%, transparent 80%)",
-  WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 50% 45%, black 25%, transparent 80%)",
+  maskImage: "radial-gradient(ellipse 75% 70% at 46% 44%, transparent 42%, black 72%)",
+  WebkitMaskImage: "radial-gradient(ellipse 75% 70% at 46% 44%, transparent 42%, black 72%)",
 } as const;
 
 /** Soft achromatic depth bloom — white haze in dark mode, faint gray in light. */
@@ -112,18 +115,18 @@ function PlatVariant() {
       >
         {/* street grid */}
         {STREET_XS.map((x) => (
-          <line key={`v${x}`} x1={x} y1={0} x2={x} y2={900} strokeOpacity={0.16} />
+          <line key={`v${x}`} x1={x} y1={0} x2={x} y2={900} strokeOpacity={0.13} />
         ))}
         {STREET_YS.map((y) => (
-          <line key={`h${y}`} x1={0} y1={y} x2={1440} y2={y} strokeOpacity={0.16} />
+          <line key={`h${y}`} x1={0} y1={y} x2={1440} y2={y} strokeOpacity={0.13} />
         ))}
         {/* subdivided blocks */}
         {LOTTED_BLOCKS.map(([c, r]) => (
           <PlatBlock key={`${c}-${r}`} col={c} row={r} />
         ))}
         {/* diagonal avenue (double line, Milwaukee-style) */}
-        <line x1={150} y1={980} x2={1300} y2={-80} strokeOpacity={0.22} />
-        <line x1={168} y1={990} x2={1318} y2={-70} strokeOpacity={0.22} />
+        <line x1={150} y1={980} x2={1300} y2={-80} strokeOpacity={0.18} />
+        <line x1={168} y1={990} x2={1318} y2={-70} strokeOpacity={0.18} />
         {/* survey crosses at a few intersections */}
         {[[420, 340], [930, 200], [760, 620], [1270, 480]].map(([x, y]) => (
           <g key={`${x}${y}`} strokeOpacity={0.25}>
@@ -131,10 +134,10 @@ function PlatVariant() {
             <line x1={x} y1={y - 5} x2={x} y2={y + 5} />
           </g>
         ))}
-        {/* the found parcel — one lot inside block [4,3], in the visible gap between hero columns */}
+        {/* the found parcel — one lot inside block [2,4], in the periphery below the input column */}
         <g>
-          <rect x={793} y={493} width={21} height={57} stroke="rgb(249 164 116 / 0.85)" strokeWidth="1.5" fill="rgb(249 164 116 / 0.10)" />
-          <circle cx={803.5} cy={521} r={2.5} fill="rgb(249 164 116 / 0.9)" stroke="none" />
+          <rect x={452} y={632} width={21} height={57} stroke="rgb(249 164 116 / 0.85)" strokeWidth="1.5" fill="rgb(249 164 116 / 0.10)" />
+          <circle cx={462.5} cy={660} r={2.5} fill="rgb(249 164 116 / 0.9)" stroke="none" />
         </g>
       </svg>
     </>
