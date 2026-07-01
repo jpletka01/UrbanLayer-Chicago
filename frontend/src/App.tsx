@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ChatInterface } from "./components/ChatInterface";
 import { CountUp } from "./components/CountUp";
 import { HeroEntrance } from "./components/landing/HeroEntrance";
-import { HeroSlideshow } from "./components/HeroSlideshow";
+import { HeroBackdrop } from "./components/landing/HeroBackdrop";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { MobileSidebarSheet } from "./components/MobileSidebarSheet";
 import { SidebarPanel } from "./components/SidebarPanel";
@@ -765,8 +765,9 @@ export function App() {
             className="w-full"
           >
             {/* Hero + value props — slideshow covers both */}
-            <div className="relative">
-              <HeroSlideshow />
+            {/* Hero is a mode-locked dark island (Bento geometric canvas) regardless of theme. */}
+            <div className="relative bg-dark-bg" data-theme="dark">
+              <HeroBackdrop />
 
               {/* Hero section — full viewport */}
               <div className="relative z-10 min-h-screen flex flex-col">
@@ -798,19 +799,27 @@ export function App() {
                 </motion.div>
 
                 <div className="flex-1 flex flex-col justify-center items-center px-4 py-20">
-                  <div className="text-center max-w-2xl space-y-8">
+                  <div className="text-center max-w-3xl space-y-8">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1, duration: 0.5 }}
                     >
-                      <h1 className="text-display text-white mb-4">
-                        UrbanLayer
-                      </h1>
-                      <p className="text-lg text-white/80 leading-relaxed">
+                      {/* Badge pill — live-status dot + provenance */}
+                      <div
+                        className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-4 py-1.5 backdrop-blur-sm mb-7"
+                        style={{ boxShadow: "0 0 20px rgba(249,164,116,0.10)" }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                        <span className="text-caption tracking-wide text-white/70">{t("heroBadge")}</span>
+                      </div>
+                      <h1
+                        className="text-display mb-5 bg-gradient-to-b from-white via-white to-white/55 bg-clip-text text-transparent [text-wrap:balance]"
+                        style={{ filter: "drop-shadow(0 2px 24px rgba(0,0,0,0.45))" }}
+                      >
                         {t("heroSubtitle")}
-                      </p>
-                      <p className="text-sm text-white/60 leading-relaxed mt-2">
+                      </h1>
+                      <p className="text-lead text-white/60 max-w-2xl mx-auto leading-relaxed">
                         {t("heroSubline")}
                       </p>
                     </motion.div>
