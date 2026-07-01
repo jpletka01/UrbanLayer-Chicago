@@ -74,6 +74,7 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
       icon={DollarIcon}
       headerRight={<span className="text-caption text-text-muted">{t("incentives.activeCount", { count: activeCount })}</span>}
       divider
+      className="flex-1"
     >
       <div className="space-y-3">
         {data.in_tif_district && (

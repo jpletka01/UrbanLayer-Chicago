@@ -65,7 +65,7 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
 
   if (!data.sales || data.sales.length === 0) {
     return (
-      <Card title={t("comparables.title")} icon={ChartIcon} divider>
+      <Card title={t("comparables.title")} icon={ChartIcon} divider className="flex-1">
         <p className="text-body text-text-muted">{t("comparables.noData")}</p>
       </Card>
     );
@@ -77,6 +77,7 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
       icon={ChartIcon}
       headerRight={<span className="text-caption text-text-muted">{t("comparables.radius")}</span>}
       divider
+      className="flex-1"
     >
       <div className="space-y-4">
         {data.median_sale_price != null && (

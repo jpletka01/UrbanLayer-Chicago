@@ -173,6 +173,7 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
     <Card
       padding="sm"
       icon={address311Icon}
+      className="flex-1"
       title={t("scorecard.311atAddress")}
       headerRight={<span className="text-micro text-text-muted">{addr311.total} {t("scorecard.pastYear")}</span>}
     >
@@ -692,9 +693,9 @@ export default function ScorecardPage() {
 
             {/* §1 — What you can build */}
             <SectionHeader title={t("scorecard.sections.capacityTitle")} subtitle={t("scorecard.sections.capacitySub")} />
-            <div className="grid md:grid-cols-2 gap-4 items-start">
+            <div className="grid md:grid-cols-2 gap-4">
               {zdef && (
-                <div id="scorecard-card-zoning" className="scroll-mt-24">
+                <div id="scorecard-card-zoning" className="scroll-mt-24 flex flex-col">
                   <ScorecardZoningCard
                     def={zdef}
                     mapUrl={zoning?.zoning_map_url}
@@ -713,7 +714,7 @@ export default function ScorecardPage() {
                 </div>
               )}
               {ctx.regulatory && (
-                <div id="scorecard-card-regulatory" className="scroll-mt-24">
+                <div id="scorecard-card-regulatory" className="scroll-mt-24 flex flex-col">
                   <ScorecardRegulatoryCard data={ctx.regulatory} />
                   <div className="flex flex-wrap gap-2 mt-2">
                     <InvestigateButton
@@ -730,9 +731,9 @@ export default function ScorecardPage() {
 
             {/* §2 — What it costs */}
             <SectionHeader title={t("scorecard.sections.economicsTitle")} subtitle={t("scorecard.sections.economicsSub")} />
-            <div className="grid md:grid-cols-2 gap-4 items-start">
+            <div className="grid md:grid-cols-2 gap-4">
               {ctx.property && (
-                <div id="scorecard-card-property" className="scroll-mt-24">
+                <div id="scorecard-card-property" className="scroll-mt-24 flex flex-col">
                   <ScorecardPropertyCard data={ctx.property} />
                   <div className="flex flex-wrap gap-2 mt-2">
                     <InvestigateButton
@@ -745,9 +746,9 @@ export default function ScorecardPage() {
                   </div>
                 </div>
               )}
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 {data.comparables && data.comparables.sales.length > 0 && (
-                  <div id="scorecard-card-comparables" className="scroll-mt-24">
+                  <div id="scorecard-card-comparables" className="scroll-mt-24 flex flex-col flex-1">
                     <ScorecardComparablesCard data={data.comparables} />
                     <div className="flex flex-wrap gap-2 mt-2">
                       <InvestigateButton
@@ -761,7 +762,7 @@ export default function ScorecardPage() {
                   </div>
                 )}
                 {ctx.incentives && (
-                  <div id="scorecard-card-incentives" className="scroll-mt-24">
+                  <div id="scorecard-card-incentives" className="scroll-mt-24 flex flex-col flex-1">
                     <ScorecardIncentivesCard data={ctx.incentives} />
                     <div className="flex flex-wrap gap-2 mt-2">
                       {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
@@ -784,14 +785,14 @@ export default function ScorecardPage() {
 
             {/* §3 — What to watch for */}
             <SectionHeader title={t("scorecard.sections.riskTitle")} subtitle={t("scorecard.sections.riskSub")} />
-            <div className="grid md:grid-cols-2 gap-4 items-start">
-              <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-4">
                 {/* Violations tri-state: a record at this address, a confirmed
                     "none on record" (clean — lookup ran, zero rows), or nothing
                     (lookup couldn't run → omitted). The middle state is shown, not
                     silent, so "no card" can't be read as "clean." */}
                 {ctx.violations ? (
-                  <div id="scorecard-card-violations" className="scroll-mt-24">
+                  <div id="scorecard-card-violations" className="scroll-mt-24 flex flex-col flex-1">
                     <ScorecardViolationsCard data={ctx.violations} scopeLabel={t("scorecard.violationsScope")} />
                     {ctx.violations.total > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -806,43 +807,43 @@ export default function ScorecardPage() {
                     )}
                   </div>
                 ) : data.violations_checked ? (
-                  <div id="scorecard-card-violations" className="scroll-mt-24">
-                    <Card padding="sm" icon={cleanIcon} title={t("scorecard.violations.title")}>
+                  <div id="scorecard-card-violations" className="scroll-mt-24 flex flex-col flex-1">
+                    <Card padding="sm" icon={cleanIcon} title={t("scorecard.violations.title")} className="flex-1">
                       <p className="text-body text-state-positive">{t("scorecard.violations.noneOnRecord")}</p>
                       <p className="text-caption text-text-muted mt-0.5">{t("scorecard.violationsScope")}</p>
                     </Card>
                   </div>
                 ) : null}
-                {/* 311 is address-point scoped, like the address-scoped violations. */}
-                {data.context.address_311 && (
-                  <div>
-                    <Address311Card data={data} />
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <InvestigateButton
-                        variant="chip"
-                        question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
-                        label={t("scorecard.investigate.complaints311")}
-                        cardName="311"
-                        pin={parcel?.pin}
-                      />
-                    </div>
+                {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.brownfield_sites.length > 0) && (
+                  <div className="flex flex-col flex-1">
+                    <ScorecardEnvironmentCard data={ctx.regulatory} />
+                    {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <InvestigateButton
+                          variant="chip"
+                          question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
+                          label={t("scorecard.investigate.overlaysAndFlood")}
+                          cardName="environment"
+                          pin={parcel?.pin}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-              {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.brownfield_sites.length > 0) && (
-                <div>
-                  <ScorecardEnvironmentCard data={ctx.regulatory} />
-                  {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <InvestigateButton
-                        variant="chip"
-                        question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
-                        label={t("scorecard.investigate.overlaysAndFlood")}
-                        cardName="environment"
-                        pin={parcel?.pin}
-                      />
-                    </div>
-                  )}
+              {/* 311 is address-point scoped, like the address-scoped violations. */}
+              {data.context.address_311 && (
+                <div className="flex flex-col">
+                  <Address311Card data={data} />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <InvestigateButton
+                      variant="chip"
+                      question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
+                      label={t("scorecard.investigate.complaints311")}
+                      cardName="311"
+                      pin={parcel?.pin}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -864,7 +865,7 @@ export default function ScorecardPage() {
                     </span>
                   )}
                 </summary>
-                <div className="grid md:grid-cols-2 gap-4 items-start mt-4">
+                <div className="grid md:grid-cols-2 gap-4 mt-4">
                   {data.context.crime_last_90d && (
                     <div>
                       <CrimeYoYCard data={data} />

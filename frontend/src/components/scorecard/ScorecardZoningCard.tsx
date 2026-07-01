@@ -57,6 +57,7 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar }: {
       title={t("scorecard.zoningCard.title")}
       headerRight={<Chip tone="accent" mono size="sm">{def.zone_class}</Chip>}
       divider
+      className="flex-1"
     >
       <div className="space-y-4">
         <p className="text-body font-medium text-text-primary">{def.name}</p>

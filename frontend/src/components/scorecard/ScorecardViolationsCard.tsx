@@ -34,6 +34,7 @@ export function ScorecardViolationsCard({ data, scopeLabel }: { data: ViolationS
         </span>
       }
       divider
+      className="flex-1"
     >
       <div className="space-y-3">
         {scopeLabel && <p className="text-caption text-text-muted">{scopeLabel}</p>}

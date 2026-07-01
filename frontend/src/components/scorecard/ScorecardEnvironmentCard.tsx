@@ -18,7 +18,7 @@ export function ScorecardEnvironmentCard({ data }: { data: RegulatorySummary }) 
   if (!data.flood_zone && data.brownfield_sites.length === 0) return null;
 
   return (
-    <Card title={t("regulatory.environment")} icon={WaterIcon} divider>
+    <Card title={t("regulatory.environment")} icon={WaterIcon} divider className="flex-1">
       <div className="space-y-4">
         {data.flood_zone && (
           <div>

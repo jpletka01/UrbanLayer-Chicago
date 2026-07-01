@@ -132,7 +132,7 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
     : null;
 
   return (
-    <Card title={t("property.title")} icon={BuildingIcon} divider>
+    <Card title={t("property.title")} icon={BuildingIcon} divider className="flex-1">
       <div className="space-y-5">
         {/* Headline numbers live at full weight in the verdict band's tiles; here
             they appear once, at detail weight, with full precision. */}

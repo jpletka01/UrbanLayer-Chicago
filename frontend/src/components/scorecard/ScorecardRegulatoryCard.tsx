@@ -144,6 +144,7 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
           {t("regulatory.constraintCount", { count: constraints.length })}
         </span>
       ) : undefined}
+      className="flex-1"
     >
       <div className="space-y-5">
         {rows.length === 0 && <p className="text-body text-text-muted">{t("regulatory.noOverlays")}</p>}
@@ -164,8 +165,18 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
             <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
               {t("regulatory.opportunities")}
             </div>
-            <div className="space-y-2">
-              {others.map((r) => <OverlayRowView key={r.key} row={r} />)}
+            {/* Pills, not rows: opportunities are context, and full rows made this
+                card the page's height driver. Definitions stay on the tooltip. */}
+            <div className="flex flex-wrap gap-1.5">
+              {others.map((r) => (
+                <span key={r.key}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-state-positive/25 bg-state-positive/5 px-2.5 py-1 text-caption text-text-primary">
+                  <svg className="w-3.5 h-3.5 text-state-positive shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <InfoTooltip term={r.term}>{r.title}</InfoTooltip>
+                </span>
+              ))}
             </div>
           </div>
         )}
