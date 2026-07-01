@@ -4,14 +4,10 @@
     "verdict": "Edificable",
     "cta": "Ver la Ficha completa"
   },
-  "showcase": {
-    "heading": "Toda la parcela, en una sola vista.",
-    "caption": "Cada respuesta se arma con más de 25 fuentes municipales, del condado y federales — en segundos.",
-    "zoning": "Zonificación",
-    "incentives": "Incentivos",
-    "tax": "Impuesto anual est.",
-    "comps": "Ventas comparables",
-    "overlays": "Superposiciones"
+  "chaos": {
+    "heading": "Cada regla de Chicago, resuelta en un solo veredicto.",
+    "subheading": "Código de zonificación, normativas, incentivos y avalúos — leídos, contrastados y respondidos en segundos.",
+    "verified": "Cada regla verificada. 0 normativas activas."
   },
   "heroSubtitle": "Estudio de viabilidad para cualquier dirección de Chicago. En segundos.",
   "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo en una sola Ficha gratuita.",
@@ -28,66 +24,6 @@
     "askAnalystLead": "¿Investigando el código o un vecindario?",
     "askAnalystCta": "Pregunte al analista"
   },
-  "intelligence": {
-    "heading": "25 fuentes en una sola consulta.",
-    "subheading": "Zonificación, código municipal, registros de la propiedad, incentivos, permisos y más, consultados simultáneamente.",
-    "domains": [
-      {
-        "title": "Zonificación y Normativas",
-        "badge": "12 capas",
-        "points": [
-          "Zonificación base y 12 normativas superpuestas",
-          "Zonas de inundación FEMA",
-          "Terrenos industriales abandonados (EPA)"
-        ]
-      },
-      {
-        "title": "Código Municipal",
-        "badge": "Texto completo",
-        "points": [
-          "14,535 secciones con opción de búsqueda",
-          "Expansión de referencias cruzadas",
-          "Respuestas citadas"
-        ]
-      },
-      {
-        "title": "Inteligencia de la Propiedad",
-        "badge": "4 fuentes",
-        "points": [
-          "Datos de propiedad y valores de avalúo",
-          "Historial de ventas",
-          "Proyección de impuestos"
-        ]
-      },
-      {
-        "title": "Incentivos e Inversión",
-        "badge": "3 conjuntos",
-        "points": [
-          "Distritos TIF y finanzas",
-          "Zonas de oportunidad",
-          "Zonas empresariales"
-        ]
-      },
-      {
-        "title": "Contexto del Sitio",
-        "badge": "4 fuentes",
-        "points": [
-          "Demografía y transporte público",
-          "Walk Score, Transit Score y Bike Score",
-          "Elegibilidad para TOD"
-        ]
-      },
-      {
-        "title": "Auditoría de compra",
-        "badge": "5 conjuntos",
-        "points": [
-          "Permisos e infracciones",
-          "Licencias comerciales",
-          "Delitos y quejas 311"
-        ]
-      }
-    ]
-  },
   "story": {
     "feasibilityTitle": "Evalúa cualquier sitio en segundos",
     "feasibilitySubtitle": "Clasificación de zonificación, normativas superpuestas, elegibilidad de incentivos, proyecciones de impuestos y propiedades comparables consolidadas desde más de 25 fuentes. Auditoría de compra en segundos, no en semanas de trabajo.",
@@ -95,50 +31,9 @@
     "reportSubtitle": "Haz tu consulta en español y obtén un análisis detallado con fuentes citadas del código municipal, mapas interactivos y tendencias de datos — y luego obtén el Informe de Viabilidad de Desarrollo completo, un PDF profesional para entregar a clientes, inversores o prestamistas. $25 por parcela."
   },
   "depth": {
-    "heading": "Haz tu consulta y obtén el panorama completo.",
-    "subheading": "Esto es lo que UrbanLayer proporciona al consultar una dirección en Chicago.",
-    "cards": [
-      {
-        "title": "Ficha de la propiedad",
-        "caption": "Datos de la propiedad, historial de avalúo de 5 años, registros de ventas y estimaciones de impuestos del Condado de Cook."
-      },
-      {
-        "title": "Perfil normativo",
-        "caption": "12 capas de normativas superpuestas verificadas por dirección: desde monumentos históricos hasta zonas de inundación y elegibilidad para viviendas accesorias (ADU)."
-      },
-      {
-        "title": "Contexto del sitio",
-        "caption": "Demografía, acceso a transporte público e índices de transitabilidad peatonal recopilados para cada consulta."
-      }
-    ],
-    "pin": "PIN",
-    "class": "Clase",
-    "building": "Edificio",
-    "lot": "Lote",
-    "assessmentHistory": "Historial de avalúo",
     "estAnnualTax": "Impuesto anual estimado",
-    "zoning": "Zonificación",
-    "activeOverlays": "Normativas superpuestas",
-    "riskFactors": "Factores de riesgo",
-    "plannedDevelopment": "Desarrollo planificado",
-    "pedestrianStreet": "Calle peatonal",
-    "todEligible": "Elegibilidad para TOD",
-    "noFloodZone": "Sin riesgo de inundación",
-    "noBrownfield": "Libre de terrenos contaminados",
-    "walkability": "Walk Score",
     "walkScore": "Walk Score",
     "transitScore": "Transit Score",
-    "bikeScore": "Bike Score",
-    "nearestTransit": "Transporte más cercano",
-    "blueLine": "Línea Azul, 0.3 mi",
-    "demographics": "Demografía",
-    "population": "Población",
-    "medIncome": "Ingreso medio",
-    "ownerOcc": "Propietario-ocupada",
-    "medAge": "Edad media",
-    "sampleClass": "Residencia de dos pisos (Clase 2-11)",
-    "sampleBuilding": "2,450 pies² · 2 pisos",
-    "sampleLot": "3,125 pies²",
     "sampleZoneDesc": "Distrito comercial comunitario"
   },
   "personas": {

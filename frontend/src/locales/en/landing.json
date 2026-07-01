@@ -4,14 +4,10 @@
     "verdict": "Buildable",
     "cta": "View the full Scorecard"
   },
-  "showcase": {
-    "heading": "The whole parcel, in one view.",
-    "caption": "Every answer assembled from 25+ city, county, and federal sources — in seconds.",
-    "zoning": "Zoning",
-    "incentives": "Incentives",
-    "tax": "Est. annual tax",
-    "comps": "Comparable sales",
-    "overlays": "Overlays"
+  "chaos": {
+    "heading": "Every rule in Chicago, resolved to one verdict.",
+    "subheading": "Zoning code, overlays, incentives, and assessments — read, cross-checked, and answered in seconds.",
+    "verified": "Every rule verified. 0 active overlays."
   },
   "heroSubtitle": "Site feasibility for any Chicago address. In seconds.",
   "heroSubline": "Zoning, incentives, tax projections, comparable sales, and municipal code analysis — all in one free Scorecard.",
@@ -28,42 +24,6 @@
     "askAnalystLead": "Researching the code or a neighborhood?",
     "askAnalystCta": "Ask the analyst"
   },
-  "intelligence": {
-    "heading": "One question. Twenty-five sources.",
-    "subheading": "Zoning, municipal code, property records, incentives, permits, and more — queried simultaneously.",
-    "domains": [
-      {
-        "title": "Regulatory & Zoning",
-        "badge": "12 layers",
-        "points": ["Base zoning + 12 overlays", "FEMA flood zones", "EPA brownfields"]
-      },
-      {
-        "title": "Municipal Code",
-        "badge": "Full text",
-        "points": ["14,535 searchable sections", "Cross-reference expansion", "Cited answers"]
-      },
-      {
-        "title": "Property Intelligence",
-        "badge": "4 sources",
-        "points": ["Parcel data + assessed values", "Sales history", "Tax estimation"]
-      },
-      {
-        "title": "Incentives & Investment",
-        "badge": "3 datasets",
-        "points": ["TIF districts + financials", "Opportunity Zones", "Enterprise Zones"]
-      },
-      {
-        "title": "Neighborhood Context",
-        "badge": "4 sources",
-        "points": ["Demographics + transit", "Walk / Transit / Bike Score", "TOD eligibility"]
-      },
-      {
-        "title": "Due Diligence Signals",
-        "badge": "5 datasets",
-        "points": ["Permits & violations", "Business licenses", "Crime + 311 summary"]
-      }
-    ]
-  },
   "story": {
     "feasibilityTitle": "Evaluate any site in seconds",
     "feasibilitySubtitle": "Zoning classification, regulatory overlays, incentive eligibility, tax projections, and comparable sales — assembled from 25+ sources for any Chicago address. The due diligence that used to take a week.",
@@ -71,50 +31,9 @@
     "reportSubtitle": "Ask a question in plain English. Get a sourced analysis with cited municipal code, interactive maps, and trend data — then get the full Development Feasibility Report, a professional PDF you can hand to a client, investor, or lender. $25 per parcel."
   },
   "depth": {
-    "heading": "Ask one question. Get the full picture.",
-    "subheading": "Here's what UrbanLayer returns when you ask about a single Chicago address.",
-    "cards": [
-      {
-        "title": "Property Scorecard",
-        "caption": "Parcel data, 5-year assessment history, sales records, and tax estimates from Cook County."
-      },
-      {
-        "title": "Regulatory profile",
-        "caption": "12 overlay layers checked per address — landmarks to flood zones to ADU eligibility."
-      },
-      {
-        "title": "Site context",
-        "caption": "Demographics, transit access, and walkability scores assembled for every query."
-      }
-    ],
-    "pin": "PIN",
-    "class": "Class",
-    "building": "Building",
-    "lot": "Lot",
-    "assessmentHistory": "Assessment History",
-    "estAnnualTax": "Est. Annual Tax",
-    "zoning": "Zoning",
-    "activeOverlays": "Active Overlays",
-    "riskFactors": "Risk Factors",
-    "plannedDevelopment": "Planned Development",
-    "pedestrianStreet": "Pedestrian Street",
-    "todEligible": "TOD Eligible",
-    "noFloodZone": "No Flood Zone",
-    "noBrownfield": "No Brownfield",
-    "walkability": "Walkability",
+    "estAnnualTax": "Est. annual tax",
     "walkScore": "Walk Score",
     "transitScore": "Transit Score",
-    "bikeScore": "Bike Score",
-    "nearestTransit": "Nearest Transit",
-    "blueLine": "Blue Line, 0.3 mi",
-    "demographics": "Demographics",
-    "population": "Population",
-    "medIncome": "Med. Income",
-    "ownerOcc": "Owner-Occ.",
-    "medAge": "Med. Age",
-    "sampleClass": "2-11 Two-Story Residence",
-    "sampleBuilding": "2,450 sq ft · 2 stories",
-    "sampleLot": "3,125 sq ft",
     "sampleZoneDesc": "Community Shopping District"
   },
   "personas": {

@@ -25,7 +25,6 @@ import { ValueProps } from "./components/landing/ValueProps";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
 import { StorySection } from "./components/landing/StorySection";
 import { ChaosToVerdict } from "./components/landing/ChaosToVerdict";
-import { TimeCompression } from "./components/landing/TimeCompression";
 import { PersonaScenarios } from "./components/landing/PersonaScenarios";
 import { HowItWorks } from "./components/landing/HowItWorks";
 import {
@@ -872,9 +871,6 @@ export function App() {
             {/* Chaos → Verdict — the dense, coded municipal source material collapsing into one
                 cited verdict. Visualizes the problem (fragmentation) and the value (clarity). */}
             <ChaosToVerdict />
-
-            {/* Time Compression — the saved diligence time pulls the whole dev timeline forward. */}
-            <TimeCompression />
 
             {/* Value Props — professional positioning */}
             <ValueProps />

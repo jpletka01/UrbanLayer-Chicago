@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "motion/react";
+import { useTranslation } from "react-i18next";
 
 const flowDots = [0, 1, 2, 3, 4];
 
@@ -64,6 +65,7 @@ function Connector({ orientation }: { orientation: "horizontal" | "vertical" }) 
 }
 
 function Verdict() {
+  const { t } = useTranslation("landing");
   return (
     <div className="relative mx-auto w-full max-w-sm rounded-bento border border-dark-border bg-dark-surface p-6 shadow-glow">
       <div className="flex items-center justify-between">
@@ -71,22 +73,23 @@ function Verdict() {
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
-          Buildable
+          {t("heroPreview.verdict")}
         </span>
         <span className="rounded-md bg-accent-muted px-2 py-1 font-mono text-micro font-semibold text-accent">Zoning: B3-2</span>
       </div>
       <div className="mt-5 space-y-1.5">
         <div className="text-subtitle text-text-primary">1601 N Milwaukee Ave</div>
-        <div className="text-body text-text-secondary">Every rule verified. 0 active overlays.</div>
+        <div className="text-body text-text-secondary">{t("chaos.verified")}</div>
       </div>
       <div className="mt-5 border-t border-dark-border pt-4 text-caption text-accent font-semibold">
-        View the full Scorecard →
+        {t("heroPreview.cta")} →
       </div>
     </div>
   );
 }
 
 export function ChaosToVerdict() {
+  const { t } = useTranslation("landing");
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
@@ -99,10 +102,8 @@ export function ChaosToVerdict() {
           transition={{ duration: 0.5 }}
           className="mx-auto max-w-2xl space-y-4 text-center"
         >
-          <h2 className="text-section text-text-primary">Every rule in Chicago, resolved to one verdict.</h2>
-          <p className="text-lead text-text-secondary">
-            Zoning code, overlays, incentives, and assessments — read, cross-checked, and answered in seconds.
-          </p>
+          <h2 className="text-section text-text-primary">{t("chaos.heading")}</h2>
+          <p className="text-lead text-text-secondary">{t("chaos.subheading")}</p>
         </motion.div>
 
         <motion.div
