@@ -65,15 +65,15 @@
   --text-primary: 26 26 26;      /* #1a1a1a */
   --text-secondary: 82 82 91;    /* #52525b */
   --text-muted: 113 113 122;     /* #71717a — AA-large/UI only */
-  --text-on-accent: 255 255 255; /* #ffffff — white label on the deep-orange light fill */
-  /* light orange is too pale for AA text on white, so accent/link tones deepen; the brand
-     hue is preserved (burnt orange reads as the same family). */
-  --accent: 234 88 12;           /* #ea580c — orange-600, outline/brand marker on white */
-  --accent-text: 194 65 12;      /* #c2410c — orange-700, link on white ≈ 4.7 */
-  --accent-hover: 154 52 18;     /* #9a3412 — orange-800 */
-  --accent-muted-a: 0.12;
-  --action-primary: 194 65 12;   /* #c2410c — button FILL, white-on-fill ≈ 4.9 */
-  --action-primary-hover: 154 52 18;  /* #9a3412 — fill hover */
+  --text-on-accent: 26 18 13;    /* #1a120d — DARK label on the bright-orange fill (matches dark) */
+  /* Same bright orange as dark mode (per preference). Fills take a dark label; link TEXT keeps a
+     deeper orange so small orange type stays legible on white (bright peach on white is ~1.9:1). */
+  --accent: 249 164 116;         /* #f9a474 — same bright brand orange as dark */
+  --accent-text: 194 65 12;      /* #c2410c — link text, deep enough to read on white (AA) */
+  --accent-hover: 251 182 142;   /* #fbb68e */
+  --accent-muted-a: 0.14;
+  --action-primary: 249 164 116; /* #f9a474 — button FILL, dark label (matches dark mode) */
+  --action-primary-hover: 243 154 103;  /* #f39a67 — fill hover (deeper) */
   --highlight: 109 74 239;       /* #6d4aef — violet text/icon on white ≈ 5 */
   --highlight-fill: 109 74 239;  /* #6d4aef */
   --highlight-fg: 255 255 255;   /* #ffffff */

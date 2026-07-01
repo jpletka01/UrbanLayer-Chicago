@@ -113,7 +113,9 @@ export function HowItWorks() {
 
               <h3 className="text-subtitle text-text-primary">{step.title}</h3>
 
-              <div className="max-w-[280px] mx-auto">
+              {/* Fixed-height, centered slot so all three visuals occupy the same vertical
+                  space — keeps the titles and descriptions aligned across the columns. */}
+              <div className="min-h-[150px] flex items-center justify-center max-w-[280px] mx-auto">
                 <StepVisual index={i} query={step.query} t={t} />
               </div>
 
