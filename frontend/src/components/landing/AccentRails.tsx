@@ -10,7 +10,7 @@ export function AccentRails() {
       aria-hidden="true"
       style={{
         backgroundImage:
-          "linear-gradient(rgb(var(--accent) / 0.09) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--accent) / 0.09) 1px, transparent 1px)",
+          "linear-gradient(rgb(var(--accent) / 0.16) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--accent) / 0.16) 1px, transparent 1px)",
         backgroundSize: "170px 140px",
         maskImage: "linear-gradient(90deg, black, transparent 13%, transparent 87%, black)",
         WebkitMaskImage: "linear-gradient(90deg, black, transparent 13%, transparent 87%, black)",
