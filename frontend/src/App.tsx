@@ -24,7 +24,7 @@ import { Footer } from "./components/landing/Footer";
 import { ValueProps } from "./components/landing/ValueProps";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
 import { StorySection } from "./components/landing/StorySection";
-import { ProductShowcase } from "./components/landing/ProductShowcase";
+import { ProblemPivot } from "./components/landing/ProblemPivot";
 import { PersonaScenarios } from "./components/landing/PersonaScenarios";
 import { HowItWorks } from "./components/landing/HowItWorks";
 import {
@@ -868,10 +868,9 @@ export function App() {
 
             </div>
 
-            {/* Product Showcase — SHOW the output as ONE artifact (real Chicago map + full
-                Scorecard) instead of describing capabilities across two card-grids. Replaces
-                the former DepthShowcase + IntelligenceStack "tell" sections. */}
-            <ProductShowcase />
+            {/* Problem Pivot — VISUALIZE the problem we solve (a mind clogged with fragmented
+                sources → one simple source) + the time/money/stress saved. Not a product demo. */}
+            <ProblemPivot />
 
             {/* Value Props — professional positioning */}
             <ValueProps />

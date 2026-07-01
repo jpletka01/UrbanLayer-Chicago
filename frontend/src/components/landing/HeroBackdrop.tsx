@@ -1,32 +1,27 @@
-import { staticMapUrl, CHI_CITY } from "../../lib/staticMap";
-
-// Hero backdrop grounded in real geography: a dark-v11 Chicago basemap, faded and radial-masked
-// so the split hero content stays readable, warmed by an orange bloom. Falls back to just the
-// bloom when the Mapbox token is absent.
+// Clean abstract hero backdrop — a warm orange bloom over a faint, radial-masked grid. No map
+// (its labels fought the type) and no busy "radar" rings; just quiet depth behind the content.
 export function HeroBackdrop() {
-  const map = staticMapUrl({ ...CHI_CITY, zoom: 12, width: 1280, height: 760 });
-
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {map && (
-        <img
-          src={map}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-30"
-          style={{
-            maskImage: "radial-gradient(ellipse 85% 75% at 60% 42%, black 20%, transparent 78%)",
-            WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 60% 42%, black 20%, transparent 78%)",
-          }}
-        />
-      )}
       {/* Warm ambient bloom behind the headline */}
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-[38%] top-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          width: 900,
-          height: 900,
-          background: "radial-gradient(circle, rgba(249,164,116,0.14), transparent 70%)",
+          width: 820,
+          height: 820,
+          background: "radial-gradient(circle, rgba(249,164,116,0.16), transparent 70%)",
           filter: "blur(130px)",
+        }}
+      />
+      {/* Faint grid, radial-masked so it dissolves at the edges */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(ellipse 80% 70% at 50% 45%, black 30%, transparent 80%)",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 70% at 50% 45%, black 30%, transparent 80%)",
         }}
       />
     </div>
