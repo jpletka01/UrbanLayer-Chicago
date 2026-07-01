@@ -765,41 +765,35 @@ export function App() {
             transition={{ duration: 0.3 }}
             className="w-full"
           >
-            {/* Hero + value props — slideshow covers both */}
-            {/* Hero is a mode-locked dark island (Bento geometric canvas) regardless of theme. */}
-            <div className="relative bg-dark-bg" data-theme="dark">
+            {/* Persistent floating nav — stays pinned at the top as the page scrolls, and
+                follows the page theme (a themed pill over the always-dark hero). */}
+            <FloatingNav
+              position="floating"
+              languageVariant="splash"
+              onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              contextLeft={
+                conversations.length > 0 ? (
+                  <button
+                    onClick={() => setHistoryOpen(true)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors shrink-0"
+                    title={tc("viewHistory")}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                ) : null
+              }
+            />
+
+            {/* Hero is a mode-locked dark island (Bento geometric canvas) regardless of theme.
+                Negative top-margin pulls it up under the sticky nav so the nav floats over it. */}
+            <div className="relative bg-dark-bg -mt-[4.75rem]" data-theme="dark">
               <HeroBackdrop />
 
               {/* Hero section — full viewport */}
               <div className="relative z-10 min-h-screen flex flex-col">
-                {/* Top header bar — the unified floating nav, over-image variant */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <FloatingNav
-                    position="hero"
-                    tone="overImage"
-                    languageVariant="splash"
-                    onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                    contextLeft={
-                      conversations.length > 0 ? (
-                        <button
-                          onClick={() => setHistoryOpen(true)}
-                          className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all shrink-0"
-                          title={tc("viewHistory")}
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                          </svg>
-                        </button>
-                      ) : null
-                    }
-                  />
-                </motion.div>
-
-                <div className="flex-1 flex items-center px-4 md:px-8 py-16">
+                <div className="flex-1 flex items-center px-4 md:px-8 py-16 pt-28">
                   <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
                     {/* Left: message + entry (left-aligned on desktop, centered on mobile) */}
                     <div className="text-center lg:text-left space-y-8 max-w-2xl mx-auto lg:mx-0 w-full">
@@ -886,8 +880,9 @@ export function App() {
             {/* Intelligence Stack — breadth: 6 domain cards */}
             <IntelligenceStack />
 
-            {/* Story interstitial — site feasibility */}
+            {/* Story interstitial — site feasibility (Chicago cityscape). Swap the URL freely. */}
             <StorySection
+              image="https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=1400&q=80"
               title={t("story.feasibilityTitle")}
               subtitle={t("story.feasibilitySubtitle")}
               align="left"
@@ -896,8 +891,9 @@ export function App() {
             {/* Persona Scenarios — professional personas */}
             <PersonaScenarios />
 
-            {/* Story interstitial — report workflow */}
+            {/* Story interstitial — report workflow (construction/build). Swap the URL freely. */}
             <StorySection
+              image="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1400&q=80"
               title={t("story.reportTitle")}
               subtitle={t("story.reportSubtitle")}
               align="right"

@@ -110,7 +110,7 @@ export default function FloatingNav({
       ? `w-full h-14 px-3 md:px-6 flex items-center justify-between gap-3 border-b backdrop-blur-md ${
           over ? "border-white/10 bg-black/30" : "border-dark-border bg-dark-surface/80"
         }`
-      : `${maxWidthClass} mx-auto h-14 px-3 md:px-5 flex items-center justify-between gap-3 rounded-full border backdrop-blur-md shadow-glow ${
+      : `${maxWidthClass} mx-auto h-14 px-3 md:px-5 flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto_1fr] rounded-full border backdrop-blur-md shadow-glow ${
           over ? "border-white/15 bg-black/25" : "border-dark-border bg-dark-surface/70"
         }`;
 
@@ -134,8 +134,8 @@ export default function FloatingNav({
   return (
     <div className={outer}>
       <div className={bar}>
-        {/* Left: context controls + brand + nav read as one anchored unit */}
-        <div className="flex items-center gap-4 min-w-0">
+        {/* Left zone: context controls + brand */}
+        <div className="flex items-center gap-4 min-w-0 md:justify-self-start">
           {contextLeft}
           {onBrandClick ? (
             <button onClick={onBrandClick} className="flex items-center gap-2 group shrink-0 min-w-0">
@@ -146,27 +146,32 @@ export default function FloatingNav({
               {brandInner}
             </Link>
           )}
-          {showNav && (
-            <nav className="hidden md:flex items-center gap-5 min-w-0">
-              {navItems.map(({ to, key }) => {
-                const active = pathname === to.split("?")[0] && !to.includes("?");
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    aria-current={active ? "page" : undefined}
-                    className={`${linkBase} ${active ? linkActive : linkIdle}`}
-                  >
-                    {t(key)}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
         </div>
 
-        {/* Right: page/workspace actions, then the shared utilities cluster */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Center zone: nav links, truly centered (equal-width side columns). A placeholder
+            keeps the 3-column grid intact when nav is hidden so the right zone stays pinned. */}
+        {showNav ? (
+          <nav className="hidden md:flex items-center gap-7 md:justify-self-center">
+            {navItems.map(({ to, key }) => {
+              const active = pathname === to.split("?")[0] && !to.includes("?");
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  aria-current={active ? "page" : undefined}
+                  className={`${linkBase} ${active ? linkActive : linkIdle}`}
+                >
+                  {t(key)}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : (
+          <span className="hidden md:block" aria-hidden="true" />
+        )}
+
+        {/* Right zone: page/workspace actions, then the shared utilities cluster */}
+        <div className="flex items-center gap-2 shrink-0 md:justify-self-end">
           {contextRight}
           {!hideUtilities && (
             <>
