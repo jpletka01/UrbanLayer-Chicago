@@ -88,8 +88,16 @@ tax projections, permit outlook) is teased and gated.**
 2. Ask bar vs chat page: does an embedded input compete with "Ask the analyst" nav?
    (Proposal: same destination, one affordance on-page.)
 3. Which KPIs make the strip of 6? (Proposed above; needs Jack's cut.)
-4. Analytics pull (investigate_click by card, report_cta_click, CSV usage) — PENDING
-   prod access; will ground which modules earn their position.
+4. Analytics pull — DONE 2026-07-01, and the answer is "no signal": prod events
+   table (tracking live since ~2026-06-10) holds 42 events / ~33 visitors total.
+   page_view: `/` 33 visitors, `/scorecard` 2, `/discovery` 2; exactly one each of
+   investigate_click (verdict), report_cta_click, sample_report_click,
+   chat_message_sent, hero_address_submit. Traffic ≈ 1/day, likely incl. Jack +
+   bots. CONSEQUENCES: (a) usage data cannot arbitrate module priority — Phase 2
+   interviews are the only evidence source; (b) the funnel drop is at the
+   homepage or before it (acquisition), not inside the Scorecard; (c) instrument
+   the redesign properly from day one (add csv_export, section-visibility, and
+   scroll-depth events) so the next audit has data.
 
 ## Status
 - 2026-07-01: model drafted, discussion-stage. No implementation.
