@@ -4,6 +4,15 @@
     "verdict": "Buildable",
     "cta": "View the full Scorecard"
   },
+  "showcase": {
+    "heading": "The whole parcel, in one view.",
+    "caption": "Every answer assembled from 25+ city, county, and federal sources — in seconds.",
+    "zoning": "Zoning",
+    "incentives": "Incentives",
+    "tax": "Est. annual tax",
+    "comps": "Comparable sales",
+    "overlays": "Overlays"
+  },
   "heroSubtitle": "Site feasibility for any Chicago address. In seconds.",
   "heroSubline": "Zoning, incentives, tax projections, comparable sales, and municipal code analysis — all in one free Scorecard.",
   "stats": {

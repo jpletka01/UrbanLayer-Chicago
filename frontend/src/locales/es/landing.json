@@ -4,6 +4,15 @@
     "verdict": "Edificable",
     "cta": "Ver la Ficha completa"
   },
+  "showcase": {
+    "heading": "Toda la parcela, en una sola vista.",
+    "caption": "Cada respuesta se arma con más de 25 fuentes municipales, del condado y federales — en segundos.",
+    "zoning": "Zonificación",
+    "incentives": "Incentivos",
+    "tax": "Impuesto anual est.",
+    "comps": "Ventas comparables",
+    "overlays": "Superposiciones"
+  },
   "heroSubtitle": "Estudio de viabilidad para cualquier dirección de Chicago. En segundos.",
   "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo en una sola Ficha gratuita.",
   "stats": {

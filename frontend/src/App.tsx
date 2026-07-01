@@ -24,8 +24,7 @@ import { Footer } from "./components/landing/Footer";
 import { ValueProps } from "./components/landing/ValueProps";
 import { ScrollIndicator } from "./components/landing/ScrollIndicator";
 import { StorySection } from "./components/landing/StorySection";
-import { IntelligenceStack } from "./components/landing/IntelligenceStack";
-import { DepthShowcase } from "./components/landing/DepthShowcase";
+import { ProductShowcase } from "./components/landing/ProductShowcase";
 import { PersonaScenarios } from "./components/landing/PersonaScenarios";
 import { HowItWorks } from "./components/landing/HowItWorks";
 import {
@@ -869,16 +868,13 @@ export function App() {
 
             </div>
 
-            {/* Depth Showcase — SHOW the product output first (mock Scorecard), before the
-                prose. Surfaced above the value/breadth copy so the page demonstrates what it
-                does immediately instead of describing it for three screens. */}
-            <DepthShowcase />
+            {/* Product Showcase — SHOW the output as ONE artifact (real Chicago map + full
+                Scorecard) instead of describing capabilities across two card-grids. Replaces
+                the former DepthShowcase + IntelligenceStack "tell" sections. */}
+            <ProductShowcase />
 
             {/* Value Props — professional positioning */}
             <ValueProps />
-
-            {/* Intelligence Stack — breadth: 6 domain cards */}
-            <IntelligenceStack />
 
             {/* Story interstitial — site feasibility (Chicago cityscape). Swap the URL freely. */}
             <StorySection
