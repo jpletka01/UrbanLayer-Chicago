@@ -36,7 +36,9 @@
     "amount": "Monto",
     "reportTeaser": "Proyecciones de impuestos + potencial de desarrollo en el informe",
     "annualTax": "Impuesto anual",
-    "effectiveRate": "Tasa impositiva efect."
+    "effectiveRate": "Tasa impositiva efect.",
+    "otherAgencies": "Otras ({{count}})",
+    "fullRecords": "Registros completos"
   },
   "regulatory": {
     "title": "Normativo",
@@ -68,7 +70,11 @@
       "in_adu_area": "Área ADU",
       "in_aro_zone": "Zona ARO",
       "in_ssa": "Área de servicio especial"
-    }
+    },
+    "constraints": "Revisiones y restricciones",
+    "opportunities": "Oportunidades y contexto",
+    "constraintCount_one": "{{count}} restricción",
+    "constraintCount_other": "{{count}} restricciones"
   },
   "incentives": {
     "title": "Incentivos",

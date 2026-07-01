@@ -9,9 +9,9 @@ import ReportPurchasePrompt from "./ReportPurchasePrompt";
 import { ReportCTACard } from "./ReportCTACard";
 import { InvestigateButton } from "./InvestigateButton";
 import { setAddress as setTrackingAddress, track } from "../lib/tracking";
-import { PropertyCard } from "./sidebar/PropertyCard";
+import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
 import { ComparablesCard } from "./sidebar/ComparablesCard";
-import { RegulatoryCard } from "./sidebar/RegulatoryCard";
+import { ScorecardRegulatoryCard } from "./scorecard/ScorecardRegulatoryCard";
 import { IncentivesCard } from "./sidebar/IncentivesCard";
 import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { ViolationsCard } from "./sidebar/ViolationsCard";
@@ -699,7 +699,7 @@ export default function ScorecardPage() {
             <div className="columns-1 md:columns-2 gap-4">
               {ctx.property && (
                 <div id="scorecard-card-property" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <PropertyCard data={ctx.property} />
+                  <ScorecardPropertyCard data={ctx.property} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     <InvestigateButton
                       question={`Tell me about the building and property characteristics at ${addr}`}
@@ -756,7 +756,7 @@ export default function ScorecardPage() {
               )}
               {ctx.regulatory && (
                 <div id="scorecard-card-regulatory" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <RegulatoryCard data={ctx.regulatory} />
+                  <ScorecardRegulatoryCard data={ctx.regulatory} />
                   <div className="flex flex-wrap gap-2 mt-1.5 px-1">
                     {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" ? (
                       <InvestigateButton
