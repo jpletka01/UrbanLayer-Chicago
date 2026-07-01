@@ -14,7 +14,7 @@ type Variant = "bloom" | "plat" | "contour" | "geo";
 
 function activeVariant(): Variant {
   const v = new URLSearchParams(window.location.search).get("bg");
-  return v === "plat" || v === "contour" || v === "geo" ? v : "bloom";
+  return v === "bloom" || v === "contour" || v === "geo" ? v : "plat";
 }
 
 const MASK = {
@@ -30,7 +30,7 @@ function NeutralBloom() {
       style={{
         width: 820,
         height: 820,
-        background: "radial-gradient(circle, rgb(var(--text-primary) / 0.045), transparent 70%)",
+        background: "radial-gradient(circle, rgb(var(--text-primary) / 0.06), transparent 70%)",
         filter: "blur(130px)",
       }}
     />
@@ -83,15 +83,15 @@ function PlatBlock({ col, row }: { col: number; row: number }) {
   const lots: ReactElement[] = [];
   // Lot lines run from street to alley; top and bottom rows are staggered like a real plat.
   for (let x = x0 + inset + 10; x < x1 - inset; x += 21) {
-    lots.push(<line key={`t${x}`} x1={x} y1={y0 + inset} x2={x} y2={midY - 3} strokeOpacity={0.055} />);
+    lots.push(<line key={`t${x}`} x1={x} y1={y0 + inset} x2={x} y2={midY - 3} strokeOpacity={0.10} />);
   }
   for (let x = x0 + inset + 20; x < x1 - inset; x += 21) {
-    lots.push(<line key={`b${x}`} x1={x} y1={midY + 3} x2={x} y2={y1 - inset} strokeOpacity={0.055} />);
+    lots.push(<line key={`b${x}`} x1={x} y1={midY + 3} x2={x} y2={y1 - inset} strokeOpacity={0.10} />);
   }
   return (
     <g>
       {/* alley */}
-      <line x1={x0 + inset} y1={midY} x2={x1 - inset} y2={midY} strokeOpacity={0.05} strokeDasharray="4 5" />
+      <line x1={x0 + inset} y1={midY} x2={x1 - inset} y2={midY} strokeOpacity={0.09} strokeDasharray="4 5" />
       {lots}
     </g>
   );
@@ -112,21 +112,21 @@ function PlatVariant() {
       >
         {/* street grid */}
         {STREET_XS.map((x) => (
-          <line key={`v${x}`} x1={x} y1={0} x2={x} y2={900} strokeOpacity={0.09} />
+          <line key={`v${x}`} x1={x} y1={0} x2={x} y2={900} strokeOpacity={0.16} />
         ))}
         {STREET_YS.map((y) => (
-          <line key={`h${y}`} x1={0} y1={y} x2={1440} y2={y} strokeOpacity={0.09} />
+          <line key={`h${y}`} x1={0} y1={y} x2={1440} y2={y} strokeOpacity={0.16} />
         ))}
         {/* subdivided blocks */}
         {LOTTED_BLOCKS.map(([c, r]) => (
           <PlatBlock key={`${c}-${r}`} col={c} row={r} />
         ))}
         {/* diagonal avenue (double line, Milwaukee-style) */}
-        <line x1={150} y1={980} x2={1300} y2={-80} strokeOpacity={0.13} />
-        <line x1={168} y1={990} x2={1318} y2={-70} strokeOpacity={0.13} />
+        <line x1={150} y1={980} x2={1300} y2={-80} strokeOpacity={0.22} />
+        <line x1={168} y1={990} x2={1318} y2={-70} strokeOpacity={0.22} />
         {/* survey crosses at a few intersections */}
         {[[420, 340], [930, 200], [760, 620], [1270, 480]].map(([x, y]) => (
-          <g key={`${x}${y}`} strokeOpacity={0.16}>
+          <g key={`${x}${y}`} strokeOpacity={0.25}>
             <line x1={x - 5} y1={y} x2={x + 5} y2={y} />
             <line x1={x} y1={y - 5} x2={x} y2={y + 5} />
           </g>
@@ -173,14 +173,14 @@ function ContourVariant() {
             key={s}
             href="#hero-contour"
             vectorEffect="non-scaling-stroke"
-            strokeOpacity={i % 3 === 2 ? 0.15 : 0.07}
+            strokeOpacity={i % 3 === 2 ? 0.24 : 0.13}
             transform={`translate(${BLOB_CX * (1 - s)} ${BLOB_CY * (1 - s)}) scale(${s}) rotate(${(i - 3) * 3} ${BLOB_CX} ${BLOB_CY})`}
           />
         ))}
         {/* survey cross grid */}
         {Array.from({ length: 11 }, (_, i) => 100 + i * 130).flatMap((x) =>
           Array.from({ length: 7 }, (_, j) => 70 + j * 130).map((y) => (
-            <g key={`${x}-${y}`} strokeOpacity={0.07}>
+            <g key={`${x}-${y}`} strokeOpacity={0.12}>
               <line x1={x - 4} y1={y} x2={x + 4} y2={y} />
               <line x1={x} y1={y - 4} x2={x} y2={y + 4} />
             </g>
@@ -219,26 +219,26 @@ function GeoVariant() {
       >
         {/* fine grid */}
         {Array.from({ length: 23 }, (_, i) => (i + 1) * 64).map((x) => (
-          <line key={`v${x}`} x1={x} y1={0} x2={x} y2={900} strokeOpacity={0.045} />
+          <line key={`v${x}`} x1={x} y1={0} x2={x} y2={900} strokeOpacity={0.08} />
         ))}
         {Array.from({ length: 14 }, (_, i) => (i + 1) * 64).map((y) => (
-          <line key={`h${y}`} x1={0} y1={y} x2={1440} y2={y} strokeOpacity={0.045} />
+          <line key={`h${y}`} x1={0} y1={y} x2={1440} y2={y} strokeOpacity={0.08} />
         ))}
         {/* concentric survey arcs */}
         {[380, 520, 660].map((r) => (
-          <circle key={r} cx={1150} cy={200} r={r} strokeOpacity={0.10} />
+          <circle key={r} cx={1150} cy={200} r={r} strokeOpacity={0.17} />
         ))}
         {[300, 420].map((r) => (
-          <circle key={r} cx={250} cy={750} r={r} strokeOpacity={0.08} />
+          <circle key={r} cx={250} cy={750} r={r} strokeOpacity={0.14} />
         ))}
         {/* crosshair at the survey origin */}
-        <g strokeOpacity={0.3}>
+        <g strokeOpacity={0.45}>
           <line x1={1150 - 14} y1={200} x2={1150 + 14} y2={200} />
           <line x1={1150} y1={200 - 14} x2={1150} y2={200 + 14} />
         </g>
         {/* block squares on grid intersections */}
         {GEO_SQUARES.map(([x, y]) => (
-          <rect key={`${x}${y}`} x={x - 3} y={y - 3} width={6} height={6} fill="currentColor" fillOpacity={0.18} stroke="none" />
+          <rect key={`${x}${y}`} x={x - 3} y={y - 3} width={6} height={6} fill="currentColor" fillOpacity={0.3} stroke="none" />
         ))}
         {/* the found block */}
         <rect x={893} y={317} width={6} height={6} fill="rgb(249 164 116 / 0.9)" stroke="none" />
