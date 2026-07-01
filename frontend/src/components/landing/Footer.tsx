@@ -3,13 +3,21 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   const { t } = useTranslation("landing");
-  // Deep blueprint-navy footer band. data-theme="dark" keeps the text tokens light so they
-  // stay readable on the blue in BOTH app themes (a deliberate fixed-blue footer).
+  // Bento near-black footer band with a faint orange top bloom. data-theme="dark" keeps it a
+  // mode-locked dark island (dark grounding band under the near-white light theme too).
   return (
-    <footer data-theme="dark" className="bg-[#16284a] border-t border-white/10">
-      <div className="max-w-5xl mx-auto py-12 px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-sm">
+    <footer data-theme="dark" className="relative bg-dark-bg border-t border-dark-border overflow-hidden">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-28 left-1/2 -translate-x-1/2 w-[640px] h-48 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(249,164,116,0.10), transparent 70%)", filter: "blur(70px)" }}
+      />
+      <div className="relative max-w-6xl mx-auto py-14 px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-sm">
         <div className="space-y-3">
-          <h4 className="text-text-primary font-semibold text-base">UrbanLayer</h4>
+          <div className="flex items-center gap-2">
+            <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-full" />
+            <h4 className="font-display text-text-primary font-semibold text-base tracking-tight">UrbanLayer</h4>
+          </div>
           <p className="text-text-secondary leading-relaxed">
             {t("footer.tagline")}
           </p>

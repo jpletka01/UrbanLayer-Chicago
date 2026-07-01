@@ -861,6 +861,11 @@ export function App() {
 
             </div>
 
+            {/* Depth Showcase — SHOW the product output first (mock Scorecard), before the
+                prose. Surfaced above the value/breadth copy so the page demonstrates what it
+                does immediately instead of describing it for three screens. */}
+            <DepthShowcase />
+
             {/* Value Props — professional positioning */}
             <ValueProps />
 
@@ -874,9 +879,6 @@ export function App() {
               subtitle={t("story.feasibilitySubtitle")}
               align="left"
             />
-
-            {/* Depth Showcase — product UI previews */}
-            <DepthShowcase />
 
             {/* Persona Scenarios — professional personas */}
             <PersonaScenarios />
