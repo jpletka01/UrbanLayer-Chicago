@@ -90,6 +90,22 @@ Target IA — three tiers, one-column narrative with side rail (replaces flat ma
 card). Charts: extend the existing custom SVG chart primitives (`PieChart`/`BarChart` in
 sidebar analytics) or add small purpose-built SVGs; no chart library.
 
+## Discovery redesign spec (FINAL 2026-07-01 — Jack: "as close to perfect as possible")
+
+Execution refinements over the numbered items below:
+- Coverage banner MOVES INTO the left rail (under the title) — kills the floating-nav
+  collision structurally; on prod (coverage=all) it renders nothing, unchanged.
+- Auto-run picks the FIRST LIVE recipe (fieldsReady && count>0), only when the user
+  hasn't typed/filtered/searched yet; sets topicId telemetry like a manual click.
+- Result rows become two-zone: left = address (title) + PIN + use/size lines;
+  right rail = the active sort's value at body weight + an UpsideBadge pill colored
+  from the upsideColor ramp (same encoding as the map dots — exempt data colors,
+  inline styles, both themes). Map-hover row highlight gains a left accent bar.
+- Filter groups get real affordance: row-style headers w/ chevron + hover, active
+  count as an accent chip, and a "Clear all" action beside REFINE when filters set.
+- Export + ask-analyst actions restyle to the chip button language (match Scorecard).
+- Map: deck.gl getTooltip on hover (pin + upside) — PinPoint has no address; keep cheap.
+
 ## Discovery redesign spec
 
 1. **Kill the blank state**: on load with a live index, auto-run the first recipe with a
@@ -162,7 +178,14 @@ Verification per step: `npm run build` (CI gate) + Playwright screenshots dark A
   dark+light screenshots. NOT yet done: Address311Card/CrimeYoYCard still micro-scale
   (page-local, Tier 3 — acceptable); light-mode InfoTooltip underline contrast on
   overlay rows worth one look.
-- **Discovery: NOT STARTED** (items 1–6 in the spec above).
+- **Discovery: PASS 1 COMPLETE on branch (2026-07-01).** Auto-run first live recipe
+  (page never opens dead); coverage banner moved into the rail (nav collision gone);
+  result rows two-zone w/ ramp-colored UpsideBadge (same encoding as map) + the
+  active-sort metric as the right-rail lead; map hover tooltip (pin + upside);
+  filter group headers w/ chevron/hover/count-chip + Clear all; export + ask-analyst
+  as chip buttons. Verified: build, 88 tests, dark+light screenshots.
+  REMAINING for "perfect": free-tier teaser visual pass (needs auth-enabled env),
+  recipe card polish, results-header density, mobile pass.
 
 ## Decisions log
 

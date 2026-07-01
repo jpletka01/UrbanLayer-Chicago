@@ -499,6 +499,9 @@
       "ratio": "proporción",
       "count": "conteo",
       "index": "índice"
-    }
+    },
+    "clearAll": "Borrar todo ({{count}})",
+    "metricAssessed": "tasación",
+    "metricPerSqft": "$ / pie² edif."
   }
 }

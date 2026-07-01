@@ -71,13 +71,21 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
               type="button"
               onClick={() => toggle(cat)}
               aria-expanded={expanded}
-              className="flex w-full items-center justify-between text-overline uppercase text-text-muted transition-colors hover:text-text-secondary"
+              className="-mx-2 flex w-[calc(100%+1rem)] items-center justify-between rounded-lg px-2 py-1.5 text-overline uppercase text-text-muted transition-colors hover:bg-dark-elevated hover:text-text-secondary"
             >
-              <span>
+              <span className="flex items-center gap-1.5">
                 {t(`discovery.category.${cat}`, CATEGORY_LABELS[cat])}
-                {activeCount > 0 && <span className="ml-1 text-accent">({activeCount})</span>}
+                {activeCount > 0 && (
+                  <span className="rounded bg-accent/15 px-1.5 py-px text-micro normal-case text-accent">{activeCount}</span>
+                )}
               </span>
-              <span aria-hidden>{expanded ? "−" : "+"}</span>
+              <svg
+                aria-hidden
+                className={`h-3 w-3 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
             {expanded && (
               <div className="mt-2 space-y-3">

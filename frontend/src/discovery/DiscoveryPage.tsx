@@ -14,6 +14,7 @@ import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
 import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { RecipeShelf } from "./RecipeShelf";
+import { missingFieldsFor } from "./coverage";
 import { loadRegistry } from "./registryClient";
 import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
 import { summarize, seamPrompt } from "./summary";
@@ -142,6 +143,23 @@ export default function DiscoveryPage() {
     [registry, runWith],
   );
 
+  // Auto-run the first LIVE recipe on load (approved 2026-07-01): the page never opens
+  // to a dead results column. Skipped the moment the user typed, filtered, or searched
+  // first; behaves exactly like a manual recipe click (topicId telemetry included).
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (!registry || autoRanRef.current || loading) return;
+    if (response || text || Object.keys(panelState).length > 0) return;
+    const live = registry.topics.find(
+      (tp) =>
+        missingFieldsFor(registry, Object.keys(tp.presets)).length === 0 &&
+        (registry.recipeCounts?.[tp.id] ?? 0) > 0,
+    );
+    if (!live) return;
+    autoRanRef.current = true;
+    onPickRecipe(live);
+  }, [registry, response, text, panelState, loading, onPickRecipe]);
+
   // One-tap re-issue (06): fold the evaluated CQS back into the panel (so text-derived
   // constraints persist + stay editable), drop the chosen filter, and re-search. Never
   // re-expands a topic; clears the telemetry id since the query is now user-edited.
@@ -179,11 +197,16 @@ export default function DiscoveryPage() {
     navigate(`/?q=${encodeURIComponent(seamPrompt(response.cqs, registry))}`);
   }, [navigate, response, registry]);
 
+  const onClearAll = useCallback(() => {
+    setTopicId(null);
+    setPanelState({});
+  }, []);
+
+  const activeFilterCount = Object.keys(panelState).length;
+
   return (
     <div className="flex h-screen flex-col bg-dark-bg text-text-primary">
       <PageHeader sticky={false} maxWidthClass="max-w-[1920px]" />
-
-      {registry && <CoverageBanner registry={registry} />}
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         {/* Inputs column (desktop left rail; mobile top controls) */}
@@ -191,10 +214,13 @@ export default function DiscoveryPage() {
           <div className="flex-shrink-0 space-y-3 border-b border-dark-border p-4">
             <div>
               <h1 className="text-section">{t("discovery.title")}</h1>
-              <p className="text-micro text-text-muted">
+              <p className="text-caption text-text-muted">
                 {t("discovery.subtitle")}
               </p>
             </div>
+            {/* Coverage scope lives in the rail (a full-width banner collided with the
+                floating nav). Renders nothing when coverage is citywide (prod). */}
+            {registry && <CoverageBanner registry={registry} />}
             <input
               type="text"
               value={text}
@@ -248,9 +274,20 @@ export default function DiscoveryPage() {
               <>
                 <RecipeShelf registry={registry} onPick={onPickRecipe} />
                 <div>
-                  <h3 className="mb-2 text-overline uppercase text-text-muted">
-                    {t("discovery.refine")}
-                  </h3>
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-overline uppercase text-text-muted">
+                      {t("discovery.refine")}
+                    </h3>
+                    {activeFilterCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={onClearAll}
+                        className="text-micro text-text-muted transition-colors hover:text-accent"
+                      >
+                        {t("discovery.clearAll", { count: activeFilterCount })}
+                      </button>
+                    )}
+                  </div>
                   <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
                 </div>
               </>
@@ -277,7 +314,7 @@ export default function DiscoveryPage() {
                 <button
                   type="button"
                   onClick={onAskArea}
-                  className="inline-flex items-center gap-1 text-caption text-link transition-colors hover:text-accent-hover"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
                 >
                   {t("discovery.askAnalystArea")} <span aria-hidden>→</span>
                 </button>
@@ -331,6 +368,15 @@ export default function DiscoveryPage() {
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-xl border-t border-dark-border bg-dark-surface p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-title">{t("discovery.filtersHeading")}</h3>
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={onClearAll}
+                  className="ml-auto mr-3 text-micro text-text-muted transition-colors hover:text-accent"
+                >
+                  {t("discovery.clearAll", { count: activeFilterCount })}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setFiltersOpen(false)}

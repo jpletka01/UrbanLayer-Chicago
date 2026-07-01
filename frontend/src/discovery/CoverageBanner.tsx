@@ -19,7 +19,7 @@ export function CoverageBanner({ registry }: { registry: Registry }) {
   return (
     <div
       role="status"
-      className="flex items-start gap-2 border-b border-dark-border bg-dark-elevated/40 px-4 py-2 text-micro text-text-secondary"
+      className="flex items-start gap-2 rounded-lg border border-dark-border bg-dark-elevated/40 px-3 py-2 text-micro text-text-secondary"
     >
       <span aria-hidden className="mt-px text-text-muted">
         ⓘ

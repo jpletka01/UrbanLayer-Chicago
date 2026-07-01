@@ -13,6 +13,7 @@ import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { coverageOf, isPopulated } from "./coverage";
 import { summarize } from "./summary";
 import { humanizeShoutyCase } from "../lib/format";
+import { upsideColor } from "./upsideColor";
 import type { Registry, ResultRow, SearchResponse } from "./types";
 
 function humanize(s: string): string {
@@ -93,7 +94,7 @@ export function DiscoveryResults({
             <button
               type="button"
               onClick={exportLocked ? onUpgrade : onExport}
-              className="inline-flex items-center gap-1 text-micro text-accent transition-colors hover:text-accent-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
             >
               {exportLocked ? (
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -387,10 +388,31 @@ function ResultCard({
     row.year_built != null ? String(row.year_built) : null,
   ].filter(Boolean);
 
-  // Surface "what you sorted by": bold assessed value when sorting by it, else $/sqft.
-  const sortIsAssessed = activeSortKey === "assessed_value";
+  // Right rail leads with "what you sorted by" — the ranked metric IS the row's
+  // reason for its position. Falls back to $/sqft, then AV, when the sort key has
+  // no row field (pin, recency) or the value is missing.
   const assessed = fmtMoney(row.assessed_value);
   const ppsf = row.price_per_sf != null ? t("discovery.perSqft", { money: fmtMoney(row.price_per_sf) }) : null;
+  const sortValueByKey: Record<string, string | null> = {
+    assessed_value: assessed,
+    price_per_sf: ppsf,
+    lot_size: row.lot_sqft != null ? t("discovery.lot", { n: fmtNum(row.lot_sqft) }) : null,
+    building_size: row.bldg_sqft != null ? t("discovery.bldg", { n: fmtNum(row.bldg_sqft) }) : null,
+    year_built: row.year_built != null ? String(row.year_built) : null,
+  };
+  const sortValue = sortValueByKey[activeSortKey] ?? null;
+  const primary = sortValue ?? ppsf ?? assessed;
+  const primaryLabel = sortValue != null
+    ? t(`discovery.sort.${activeSortKey}`, activeSortKey.replace(/_/g, " "))
+    : primary === ppsf && ppsf != null
+      ? t("discovery.metricPerSqft")
+      : t("discovery.metricAssessed");
+  const secondary =
+    assessed && primary !== assessed
+      ? t("discovery.av", { money: assessed })
+      : ppsf && primary !== ppsf
+        ? ppsf
+        : null;
 
   return (
     <button
@@ -398,41 +420,55 @@ function ResultCard({
       onClick={() => onOpenParcel(row.pin)}
       onMouseEnter={() => onHoverPin?.(row.pin)}
       onMouseLeave={() => onHoverPin?.(null)}
-      className={`block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors ${
+      className={`relative block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors ${
         hovered ? "bg-dark-hover" : "hover:bg-dark-hover"
       }`}
     >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-body text-text-primary">{title}</span>
-        {row.upside_score != null && (
-          <span className="flex-shrink-0 text-micro text-accent">
-            ● {t("discovery.upsideShort", { n: Math.round(row.upside_score) })}
-          </span>
-        )}
-      </div>
-      {/* PIN demoted to a mono subtitle (shown when an address is the title). */}
-      {row.address && <div className="font-mono text-micro text-text-muted">{row.pin}</div>}
-      {useLine.length > 0 && (
-        <div className="mt-0.5 text-micro text-text-secondary">{useLine.join(" · ")}</div>
-      )}
-      {sizeLine.length > 0 && (
-        <div className="text-micro text-text-muted">{sizeLine.join(" · ")}</div>
-      )}
-      {(assessed || ppsf) && (
-        <div className="text-micro text-text-muted">
-          {assessed && (
-            <span className={sortIsAssessed ? "font-semibold text-text-secondary" : undefined}>
-              {t("discovery.av", { money: assessed })}
-            </span>
+      {/* Map-hover sync: an accent edge, not just a fill, so the synced row pops. */}
+      {hovered && <span aria-hidden className="absolute inset-y-0 left-0 w-0.5 bg-accent" />}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-body text-text-primary">{title}</div>
+          {row.address && <div className="font-mono text-micro text-text-muted">{row.pin}</div>}
+          {useLine.length > 0 && (
+            <div className="mt-0.5 text-caption text-text-secondary">{useLine.join(" · ")}</div>
           )}
-          {assessed && ppsf ? " · " : null}
-          {ppsf && (
-            <span className={!sortIsAssessed ? "font-semibold text-text-secondary" : undefined}>
-              {ppsf}
-            </span>
+          {sizeLine.length > 0 && (
+            <div className="text-micro text-text-muted">{sizeLine.join(" · ")}</div>
           )}
         </div>
-      )}
+        <div className="flex flex-shrink-0 flex-col items-end gap-1">
+          <UpsideBadge score={row.upside_score} />
+          {primary && (
+            <div className="text-right">
+              <div className="text-body font-semibold tabular-nums text-text-primary">{primary}</div>
+              <div className="text-micro text-text-muted">{primaryLabel}</div>
+            </div>
+          )}
+          {secondary && <div className="text-micro tabular-nums text-text-muted">{secondary}</div>}
+        </div>
+      </div>
     </button>
+  );
+}
+
+/** Upside score pill, colored from the SAME ramp as the map dots (upsideColor) so the
+    list and the legend speak one encoding. Data-encoding colors — inline by design. */
+function UpsideBadge({ score }: { score: number | null }) {
+  const { t } = useTranslation("pages");
+  if (score == null) return null;
+  const [r, g, b] = upsideColor(score);
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-micro font-medium"
+      style={{
+        color: `rgb(${r}, ${g}, ${b})`,
+        borderColor: `rgba(${r}, ${g}, ${b}, 0.4)`,
+        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.12)`,
+      }}
+    >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: `rgb(${r}, ${g}, ${b})` }} />
+      {t("discovery.upsideShort", { n: Math.round(score) })}
+    </span>
   );
 }

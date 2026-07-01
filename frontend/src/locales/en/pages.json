@@ -499,6 +499,9 @@
       "ratio": "ratio",
       "count": "count",
       "index": "index"
-    }
+    },
+    "clearAll": "Clear all ({{count}})",
+    "metricAssessed": "assessed",
+    "metricPerSqft": "$ / bldg sqft"
   }
 }

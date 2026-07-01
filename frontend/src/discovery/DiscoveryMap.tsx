@@ -83,8 +83,22 @@ export function DiscoveryMap({
 
   useEffect(() => {
     if (!overlayRef.current) return;
-    overlayRef.current.setProps({ layers: layer ? [layer] : [] });
-  }, [layer, overlayRef]);
+    overlayRef.current.setProps({
+      layers: layer ? [layer] : [],
+      // Hover identity on the map itself — the list window may not contain this pin.
+      getTooltip: interactive
+        ? ({ object }: { object?: PinPoint }) =>
+            object
+              ? {
+                  text:
+                    object.upside != null
+                      ? `${object.pin}\n${t("discovery.upsideShort", { n: Math.round(object.upside) })}`
+                      : object.pin,
+                }
+              : null
+        : undefined,
+    });
+  }, [layer, overlayRef, interactive, t]);
 
   // Fit to the mapped points' bounds when they change.
   useEffect(() => {
