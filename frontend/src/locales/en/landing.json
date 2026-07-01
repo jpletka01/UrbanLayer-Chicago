@@ -163,11 +163,11 @@
   },
   "valueProps": {
     "buildTitle": "Know what you can build.",
-    "buildBody": "Instant zoning classification with AI-powered code interpretation. Ask what's allowed, what the setbacks are, what FAR applies — get cited answers from 14,000+ municipal code sections.",
+    "buildBody": "Instant zoning, setbacks, and FAR — cited to 14,000+ code sections.",
     "worthTitle": "Know what it's worth.",
-    "worthBody": "Assessment history, comparable sales, PTAXSIM tax projections, and incentive eligibility. The financial picture for any Chicago address.",
+    "worthBody": "Assessment history, comps, tax projections, and incentives — the full financial picture.",
     "watchTitle": "Know what to watch for.",
-    "watchBody": "Regulatory overlays, environmental flags, building violations, and permit history. The risks and opportunities you need to see before committing capital."
+    "watchBody": "Overlays, environmental flags, violations, and permits — the risks before you commit capital."
   },
   "footer": {
     "tagline": "AI-powered site feasibility for Chicago real estate professionals.",

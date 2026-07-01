@@ -217,11 +217,11 @@
   },
   "valueProps": {
     "buildTitle": "Qué puedes construir",
-    "buildBody": "Clasificación de zonificación instantánea con interpretación del código impulsada por IA. Permite consultar usos permitidos, retiros (setbacks) y FAR, con respuestas citadas de más de 14,000 secciones del código municipal.",
+    "buildBody": "Zonificación, retiros y FAR al instante — citados a más de 14,000 secciones del código.",
     "worthTitle": "Cuánto vale",
-    "worthBody": "Historial de avalúo, propiedades comparables, proyecciones de impuestos PTAXSIM y elegibilidad de incentivos. El panorama financiero para cualquier dirección de Chicago.",
+    "worthBody": "Historial de avalúo, comparables, proyecciones de impuestos e incentivos — el panorama financiero completo.",
     "watchTitle": "Qué debes vigilar",
-    "watchBody": "Normativas superpuestas, alertas ambientales, infracciones de edificios, historial de permisos. Los riesgos y oportunidades que debes conocer antes de invertir."
+    "watchBody": "Superposiciones, alertas ambientales, infracciones y permisos — los riesgos antes de invertir capital."
   },
   "footer": {
     "tagline": "Estudios de viabilidad impulsados por IA para profesionales inmobiliarios de Chicago.",
