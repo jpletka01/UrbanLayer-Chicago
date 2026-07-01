@@ -888,7 +888,6 @@ export function App() {
 
             {/* Story interstitial — site feasibility */}
             <StorySection
-              image="https://images.unsplash.com/photo-1581373449483-37449f962b6c?w=1920&q=80"
               title={t("story.feasibilityTitle")}
               subtitle={t("story.feasibilitySubtitle")}
               align="left"
@@ -899,7 +898,6 @@ export function App() {
 
             {/* Story interstitial — report workflow */}
             <StorySection
-              image="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1920&q=80"
               title={t("story.reportTitle")}
               subtitle={t("story.reportSubtitle")}
               align="right"

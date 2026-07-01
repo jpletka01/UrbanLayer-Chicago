@@ -44,17 +44,19 @@ export function IntelligenceStack() {
 
   const domains = t("intelligence.domains", { returnObjects: true }) as { title: string; badge: string; points: string[] }[];
 
+  // Asymmetric bento spans on a 12-col grid — rows of 7/5, 5/7, 6/6 so no two rows repeat
+  // the same rhythm (breaks the uniform-grid monotony). Index 0 is the feature tile.
+  const SPANS = [
+    "lg:col-span-7",
+    "lg:col-span-5",
+    "lg:col-span-5",
+    "lg:col-span-7",
+    "lg:col-span-6",
+    "lg:col-span-6",
+  ];
+
   return (
     <section ref={ref} className="relative py-24 px-6 overflow-hidden bg-dark-bg">
-      {/* Faint architectural texture — a subtle wash over the themed bg so the section flips
-          with the theme (dark text was unreadable over the old full-bleed dark photo in light
-          mode). Robust to the remote image failing to load (bg token stands alone). */}
-      <img
-        src="https://images.unsplash.com/photo-1597411216858-8e8bfcbb37e3?w=1920&q=80"
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover opacity-[0.06] pointer-events-none"
-        loading="lazy"
-      />
       <div className="relative z-10 max-w-6xl mx-auto space-y-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -70,35 +72,49 @@ export function IntelligenceStack() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {domains.map((d, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.1 + i * 0.08, duration: 0.5, ease: "easeOut" }}
-            >
-              <Card surface="surface" padding="lg" className="h-full">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
-                      {DOMAIN_ICONS[i]}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
+          {domains.map((d, i) => {
+            const feature = i === 0;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.1 + i * 0.08, duration: 0.5, ease: "easeOut" }}
+                className={SPANS[i]}
+              >
+                <Card
+                  surface={feature ? "elevated" : "surface"}
+                  padding="lg"
+                  className={`h-full ${feature ? "ring-1 ring-accent/25 shadow-glow" : ""}`}
+                >
+                  <div className={`space-y-4 ${feature ? "md:space-y-6" : ""}`}>
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`rounded-xl bg-accent/15 flex items-center justify-center text-accent ${
+                          feature ? "w-14 h-14" : "w-10 h-10"
+                        }`}
+                      >
+                        {DOMAIN_ICONS[i]}
+                      </div>
+                      <Chip tone="accent" mono size="md" className="font-semibold">{d.badge}</Chip>
                     </div>
-                    <Chip tone="accent" mono size="md" className="font-semibold">{d.badge}</Chip>
+                    <h3 className={feature ? "text-section text-text-primary" : "text-subtitle text-text-primary"}>
+                      {d.title}
+                    </h3>
+                    <ul className={feature ? "grid sm:grid-cols-2 gap-x-6 gap-y-1.5" : "space-y-1.5"}>
+                      {d.points.map((p) => (
+                        <li key={p} className="text-body text-text-secondary flex items-start gap-2">
+                          <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <h3 className="text-subtitle text-text-primary">{d.title}</h3>
-                  <ul className="space-y-1.5">
-                    {d.points.map((p) => (
-                      <li key={p} className="text-body text-text-secondary flex items-start gap-2">
-                        <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-accent/60" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -1,66 +1,56 @@
 import { motion, useInView } from "motion/react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 interface Props {
-  image: string;
   title: string;
   subtitle: string;
   align?: "left" | "right";
 }
 
-export function StorySection({ image, title, subtitle, align = "left" }: Props) {
+// A themed statement band (no stock photography) — a big claim over the near-black canvas with
+// a directional accent bloom + a faint masked grid. Flips with the theme (token text).
+export function StorySection({ title, subtitle, align = "left" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
-  const [hovered, setHovered] = useState(false);
 
   return (
-    <section
-      ref={ref}
-      className="relative h-[50vh] min-h-[360px] overflow-hidden cursor-default"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <motion.img
-        src={image}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: "brightness(0.35)" }}
-        animate={{ scale: hovered ? 1.03 : 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        loading="lazy"
-      />
-      {/* Directional scrim so the copy keeps contrast over bright building lights. */}
+    <section ref={ref} className="relative py-28 md:py-32 px-6 overflow-hidden bg-dark-bg">
+      {/* Directional accent bloom on the copy side */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             align === "right"
-              ? "linear-gradient(to left, rgba(0,0,0,0.78), rgba(0,0,0,0.2) 55%, transparent 80%)"
-              : "linear-gradient(to right, rgba(0,0,0,0.78), rgba(0,0,0,0.2) 55%, transparent 80%)",
+              ? "radial-gradient(48rem 36rem at 100% 50%, rgb(var(--accent) / 0.10), transparent 60%)"
+              : "radial-gradient(48rem 36rem at 0% 50%, rgb(var(--accent) / 0.10), transparent 60%)",
         }}
       />
-      <div className="relative z-10 h-full flex items-center">
-        <motion.div
-          initial={{ opacity: 0, x: align === "left" ? -30 : 30 }}
-          animate={inView
-            ? { opacity: 1, x: 0, y: hovered ? -8 : 0 }
-            : {}
-          }
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className={`max-w-5xl mx-auto w-full px-4 md:px-8 ${align === "right" ? "text-right" : "text-left"}`}
-        >
-          {/* over-image text: white stays (exempt from the dark-chrome neutral ramp) */}
-          <h2 className="text-section text-white mb-3">
-            {title}
-          </h2>
-          <p
-            className="text-lead text-white/85 max-w-md"
-            style={align === "right" ? { marginLeft: "auto" } : {}}
-          >
-            {subtitle}
-          </p>
-        </motion.div>
-      </div>
+      {/* Faint technical grid, radial-masked to fade at the edges */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgb(var(--border) / 0.7) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--border) / 0.7) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          maskImage: "radial-gradient(ellipse at center, black 25%, transparent 75%)",
+          WebkitMaskImage: "radial-gradient(ellipse at center, black 25%, transparent 75%)",
+        }}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className={`relative z-10 max-w-5xl mx-auto w-full ${align === "right" ? "text-right" : "text-left"}`}
+      >
+        <h2 className={`text-section text-text-primary mb-4 max-w-2xl ${align === "right" ? "ml-auto" : ""}`}>
+          {title}
+        </h2>
+        <p className={`text-lead text-text-secondary max-w-lg ${align === "right" ? "ml-auto" : ""}`}>
+          {subtitle}
+        </p>
+      </motion.div>
     </section>
   );
 }
