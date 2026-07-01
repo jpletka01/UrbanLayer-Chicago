@@ -22,9 +22,10 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 | `src/components/PricingPage.tsx` | 3-card pricing page at `/pricing`: Free / $25 Development Feasibility Report (lead card, CTA → `/scorecard`) / Pro ($99/mo, "4 reports ≈ a month of Pro" upsell). Also linked from the landing footer |
 | `src/components/UpgradePrompt.tsx` | Modal shown when free user hits premium-gated feature (Discovery export, etc.) |
 | `src/components/ReportPurchasePrompt.tsx` | Modal for a la carte report purchase ($25 one-time) with dual CTA: buy single report or upgrade to Pro. Takes the `SelectedParcel`; checkout is PIN-keyed when pin exists (address/lat/lon still sent for display + legacy entitlement) |
-| `src/components/PageHeader.tsx` | Shared header for non-chat pages (Scorecard/Discovery/Pricing/About): 3-zone layout — logo left, nav centered (Analyst/Scorecard/Discovery/Pricing/About with active highlight; "Analyst" → `/?analyst=1` opens the hero in chat mode), LanguageSelector + UserMenu/sign-in right. `sticky`/`maxWidthClass` props. **Discovery is inserted into nav (after Scorecard — Explore's old slot) only when its index has data (`coverage.mode != "none"`, fetched via cached `registryClient`) — `navItemsFor()`; self-activated on prod 2026-06-14.** Splash & workspace keep their own headers |
-| `src/components/ScorecardPage.tsx` | Property Scorecard page. Param precedence `?pin=` → `?address=` → `?lat=&lon=`; pin-confirmed results canonicalize the URL to `?pin=&address=` (legacy URLs still work). Identity band: Mapbox Static thumbnail (pin-only, hidden on failure), i18n'd confidence badges with tooltip explanations, dash-formatted PIN → assessor link. **Verdict Band leads the page (2026-06-30)** — a deterministic, conclusion-first scored verdict (`lib/scorecardVerdict.ts` `computeVerdict`: 6 categories, no LLM, thresholds calibrated on 59 parcels) + 2–4 card-linked reasons (deep-link to the evidence cards) + ONE next step + honest caveats; `VerdictBand.tsx` renders it. Replaces the old facts-only flag line. Violations are **address-exact tri-state** (present / "no violations on record at this address" / omitted when the lookup couldn't run — `violations_checked`); crime + neighborhood demoted into a collapsed "Neighborhood context — describes {area}" section (so area numbers can't read as parcel facts; page length tracks verdict confidence); **one** report CTA (`ReportCTACard`; the redundant `FinancialSnapshotStrip` + the other report entry points were removed). **Nearest-parcel caveat (2026-06-21)**: when the API returns `nearest_parcel_unverified` (identity unconfirmed but property/comps cards were filled from the nearest, possibly-neighbor parcel), an amber banner above the cards warns to verify the PIN; the "Ask about this property" chat button stays hidden while `resolved_pin` is null (unchanged). Page-local cards: ZoningCard (renders `zone_definition` Title-17 standards from the scorecard API), CrimeYoYCard (shows prior-year base counts), Address311Card. One investigate link per card, muted style (solid accent reserved for purchase). `?report_purchased=1` post-purchase auto-download (Stripe success URL is `?pin=...&report_purchased=1` for pin-keyed purchases). Report download/access/purchase keyed on `parcel.pin` when present |
-| `src/discovery/` | **Property Discovery** workbench (`/discovery`, **LIVE on prod — full citywide, all 77 CAs / ~949k parcels, nav-linked** — premium full experience, free top-10 teaser). The FE never evaluates — it compiles panel/topic/text inputs into a `SearchRequest` and renders chips + summary **from `response.cqs`** (INV-4). Modules: `types.ts` (wire mirrors), `registryClient`, pure `uiCompiler`/`topicCompiler` (incl. `panelFromCqs`)/`summary`, `searchClient` (`runSearch`/`runPins`/`exportCsv`), `chips.tsx`, `DiscoveryFilterPanel`/`DiscoveryResults`/`DiscoveryPage`. **Wave 2 (PR1–PR10):** `coverage.ts` (coverage/populatedFields selectors, safe-dormant defaults), `CoverageBanner` (standalone, NEVER in the CQS/chips), `DiscoveryMap` (deck.gl, `colorBy` upside/land_use + `interactive` per tier — `useMapboxOverlay`/`ScatterplotLayer`), `upsideColor.ts` (upside ramp + DISTINCT no-data swatch + land-use ramp/legends), `RecipeShelf` (recipe click = `expandTopic`→panel as user filters, `topicId` telemetry-only; honest **3-state badges** "Live · N" / "No matches yet" / "Needs data" via `missingFieldsFor` + `registry.recipeCounts`). **Results:** address-first row-cards (PIN demoted, active sort bolded; address via `humanizeShoutyCase`, `~` prefix → "near …" for approximate/nearest), infinite scroll over `nextOffset` (append+dedupe; list never the map's source), 3-way zero state (NULL-backed/non-live-area/too-tight) from PR4 selectors, region via `caName()`. **Map split** fed by `/search/pins` (full coord set). **CSV export** via `/search/export` (premium; locked button → upgrade for free). **Free teaser:** server returns `gated` + true total + top-10; FE renders the query-aware `TeaserWall`. **Mobile:** `[List|Map]` toggle (map stays mounted), bottom-sheet filters, scroll-snap recipes. a11y: aria-pressed pills, radiogroup preset chips, labeled range inputs. i18n: fully keyed under `discovery.*` (UI strings + all 32 filter labels/enum/topic/preset) in en+es; registry labels translated by id with the backend English as `defaultValue` fallback (single English source, no drift). Spec/decisions: `claude-context/property-discovery/10-implementation-status.md` (Wave 3). Tests via **vitest** (`npm test`, 51; `src/test-setup.ts` inits i18n) |
+| `src/components/PageHeader.tsx` | Shared header for non-chat pages (Scorecard/Discovery/Pricing/About): 3-zone layout — logo left, nav centered (Analyst/Scorecard/Discovery/Pricing/About with active highlight; "Analyst" → `/?analyst=1` opens the hero in chat mode), LanguageSelector + UserMenu/sign-in right. `sticky`/`maxWidthClass` props. **Discovery is inserted into nav (after Scorecard — Explore's old slot) only when its index has data (`coverage.mode != "none"`, fetched via cached `registryClient`) — `navItemsFor()`; self-activated on prod 2026-06-14.** Splash & workspace keep their own headers  **Bento Pro:** PageHeader is now a thin wrapper over `FloatingNav.tsx` — ONE floating pill nav across every surface incl. the chat workspace. |
+| `src/components/ScorecardPage.tsx` | Property Scorecard page. Param precedence `?pin=` → `?address=` → `?lat=&lon=`; pin-confirmed results canonicalize the URL to `?pin=&address=` (legacy URLs still work). Identity band: Mapbox Static thumbnail (pin-only, hidden on failure), i18n'd confidence badges with tooltip explanations, dash-formatted PIN → assessor link. **Verdict Band leads the page (2026-06-30)** — a deterministic, conclusion-first scored verdict (`lib/scorecardVerdict.ts` `computeVerdict`: 6 categories, no LLM, thresholds calibrated on 59 parcels) + 2–4 card-linked reasons (deep-link to the evidence cards) + ONE next step + honest caveats; `VerdictBand.tsx` renders it. Replaces the old facts-only flag line. Violations are **address-exact tri-state** (present / "no violations on record at this address" / omitted when the lookup couldn't run — `violations_checked`); crime + neighborhood demoted into a collapsed "Neighborhood context — describes {area}" section (so area numbers can't read as parcel facts; page length tracks verdict confidence); **one** report CTA (`ReportCTACard`; the redundant `FinancialSnapshotStrip` + the other report entry points were removed). **Nearest-parcel caveat (2026-06-21)**: when the API returns `nearest_parcel_unverified` (identity unconfirmed but property/comps cards were filled from the nearest, possibly-neighbor parcel), an amber banner above the cards warns to verify the PIN; the "Ask about this property" chat button stays hidden while `resolved_pin` is null (unchanged). Page-local cards: ZoningCard (renders `zone_definition` Title-17 standards from the scorecard API), CrimeYoYCard (shows prior-year base counts), Address311Card. One investigate link per card, muted style (solid accent reserved for purchase). `?report_purchased=1` post-purchase auto-download (Stripe success URL is `?pin=...&report_purchased=1` for pin-keyed purchases). Report download/access/purchase keyed on `parcel.pin` when present  **Bento Pro restructure (2026-07-01, `feat/bento-pro`):** the data-source masonry is gone — three question sections (What you can build / What it costs / What to watch for) with equal-height card rows; VerdictBand gains a clickable evidence-tile rail (zoning/FAR, assessed+tax, comps, overlays — the ONLY full-weight headline numbers; cards carry detail at caption weight); a condensed sticky verdict strip appears on scroll (IntersectionObserver); page-scale cards live in `components/scorecard/` (see below); identity locator is 176px + click-to-expand Modal; investigate links are chip buttons. |
+| `src/components/scorecard/` | **Page-scale Scorecard card family** (Bento Pro): Property (assessment sparkline + tax-breakdown bars + facts grid), Regulatory (constraints as severity rows, opportunities as pills), Zoning (FAR-used meter), Comparables (price-strip dot plot), Incentives (positives-first, one-line "Not in:" negatives), Violations (compact), Environment (flood/brownfields). Chart specs follow the dataviz method; data colors from `upsideColor`/state tokens. The `sidebar/` cards remain the compact chat-rail variants — do not reuse them on pages. |
+| `src/discovery/` | **Property Discovery** workbench (`/discovery`, **LIVE on prod — full citywide, all 77 CAs / ~949k parcels, nav-linked** — premium full experience, free top-10 teaser). The FE never evaluates — it compiles panel/topic/text inputs into a `SearchRequest` and renders chips + summary **from `response.cqs`** (INV-4). Modules: `types.ts` (wire mirrors), `registryClient`, pure `uiCompiler`/`topicCompiler` (incl. `panelFromCqs`)/`summary`, `searchClient` (`runSearch`/`runPins`/`exportCsv`), `chips.tsx`, `DiscoveryFilterPanel`/`DiscoveryResults`/`DiscoveryPage`. **Wave 2 (PR1–PR10):** `coverage.ts` (coverage/populatedFields selectors, safe-dormant defaults), `CoverageBanner` (standalone, NEVER in the CQS/chips), `DiscoveryMap` (deck.gl, `colorBy` upside/land_use + `interactive` per tier — `useMapboxOverlay`/`ScatterplotLayer`), `upsideColor.ts` (upside ramp + DISTINCT no-data swatch + land-use ramp/legends), `RecipeShelf` (recipe click = `expandTopic`→panel as user filters, `topicId` telemetry-only; honest **3-state badges** "Live · N" / "No matches yet" / "Needs data" via `missingFieldsFor` + `registry.recipeCounts`). **Results:** address-first row-cards (PIN demoted, active sort bolded; address via `humanizeShoutyCase`, `~` prefix → "near …" for approximate/nearest), infinite scroll over `nextOffset` (append+dedupe; list never the map's source), 3-way zero state (NULL-backed/non-live-area/too-tight) from PR4 selectors, region via `caName()`. **Map split** fed by `/search/pins` (full coord set). **CSV export** via `/search/export` (premium; locked button → upgrade for free). **Free teaser:** server returns `gated` + true total + top-10; FE renders the query-aware `TeaserWall`. **Mobile:** `[List|Map]` toggle (map stays mounted), bottom-sheet filters, scroll-snap recipes. a11y: aria-pressed pills, radiogroup preset chips, labeled range inputs. i18n: fully keyed under `discovery.*` (UI strings + all 32 filter labels/enum/topic/preset) in en+es; registry labels translated by id with the backend English as `defaultValue` fallback (single English source, no drift). Spec/decisions: `claude-context/property-discovery/10-implementation-status.md` (Wave 3). Tests via **vitest** (`npm test`, 51; `src/test-setup.ts` inits i18n)  **Bento Pro pass 1 (2026-07-01, `feat/bento-pro`):** auto-runs the first LIVE recipe on load (page never opens dead; yields to user input); CoverageBanner moved into the left rail (was colliding with the floating nav; renders nothing on prod coverage=all); result rows are two-zone (address/PIN/use left; ACTIVE-SORT metric + ramp-tinted UpsideBadge right — one encoding with the map); deck.gl hover tooltip; filter group headers w/ chevron + accent count chip + "Clear all"; export/ask-analyst as chip buttons. |
 | `src/components/ProtectedRoute.tsx` | Route guard for auth + tier checks (used for `/admin`) |
 | `src/lib/mapColors.ts` | Shared colors for map + charts + zone categories + OVERLAY_INFO/ZONE_INFO definitions + hash-based incentive zone colors |
 | `src/lib/termDefinitions.ts` | Unified term lookup: overlays, zones, incentives, flood zones → `getTermInfo()` |
@@ -40,59 +41,53 @@ React + TypeScript + Vite + Tailwind v3. Map: Mapbox GL JS (dark-v11) + deck.gl 
 
 ## Design Tokens
 
-**Full design system: `claude-context/guides/design-system.md`** (shipped 2026-06-20). **Light/dark
-theming + palette revision: `claude-context/guides/light-dark-theming.md`** (branch
-`feat/light-dark-theming`, Phases 1–3 done 2026-06-29 — read it before any color/token work). The rules
-below are the canonical token set — don't reintroduce arbitrary `text-[Npx]`, raw `white/<opacity>`
-chrome, or off-palette hue.
+**Canonical design language: "Bento Pro"** (branch `feat/bento-pro`, 2026-06-30 →) — full spec in
+`claude-context/guides/bento-pro-redesign.md` (token system + landing) and
+`claude-context/guides/bento-pro-phase3-app-surfaces.md` (Scorecard/Discovery redesign, the
+active working doc). The previous "Cyanotype on Vellum" system (azure accent, vellum neutrals,
+Space Grotesk) is **retired**; `design-system.md` and `light-dark-theming.md` are historical.
 
-**Theming.** All color tokens are CSS-var-backed (`rgb(var(--x) / <alpha-value>)`); class names are
-**unchanged** (`bg-dark-surface`, `text-text-primary`, …) — only the backing flips. `:root` /
-`[data-theme="dark"]` hold the dark palette, `[data-theme="light"]` the light one (channel triplets in
-`src/index.css`). `ThemeProvider`/`useTheme` (`src/contexts/ThemeContext.tsx` + `src/lib/useTheme.ts`)
-own the preference (light/dark/**system** default, persisted as `urbanlayer-theme`); a pre-paint script
-in `index.html` sets `data-theme` before first paint (no FOUC); `ThemeToggle` (3-state) sits in the
-page/workspace/splash headers. **Mode-lock an over-image / always-dark island** by putting
-`data-theme="dark"` on its wrapper (re-applies the dark vars) — used by the hero, StorySection, the
-Footer. NOT for content sections (they must flip).
+**Theming (mechanics unchanged).** All color tokens are CSS-var-backed
+(`rgb(var(--x) / <alpha-value>)`); class names are stable (`bg-dark-surface`, `text-text-primary`,
+…) — only the backing flips. `:root`/`[data-theme="dark"]` + `[data-theme="light"]` hold the
+palettes in `src/index.css`. `ThemeProvider`/`useTheme` own the preference (light/dark/**system**,
+persisted as `urbanlayer-theme`); pre-paint script in `index.html` prevents FOUC. Mode-lock an
+always-dark island with `data-theme="dark"` on its wrapper (hero, Footer) — NOT content sections
+(they must flip).
 
-**Palette = "Cyanotype on Vellum"** (replaces terracotta-on-flat-gray). Blueprint-**azure** accent on
-**warm vellum** neutrals; exact per-theme hexes live in `index.css`. Neutral ramp (warm, flips): bg
-`bg-dark-bg` · surface `bg-dark-surface` · elevated `bg-dark-elevated` · hover `bg-dark-hover` ·
-`border-dark-border{,-subtle,-strong}`. Text: `text-text-primary / -secondary / -muted / -on-accent`.
-**Accent = bright azure**: `bg-accent`/`text-accent` (brand/outline/selected/focus) + `accent-hover` +
-`accent-text` (= `text-link`, the AA-safe link tone, lighter on dark) + `accent-muted` (selected fill).
+**Palette = Bento Pro.** Near-black canvas (`#0a0a0a`) in dark / warm near-white in light;
+separation via hairline borders (`border-dark-border` ≈10% white, `-strong` ≈20%), surfaces step
+up in tiny increments. **Orange `#F9A474` is the single brand/action accent in BOTH modes**
+(only small orange *link text* stays deeper `#c2410c` on light for AA). **Violet
+(`text-highlight` #c3a3ff / `bg-highlight-fill` #6d4aef) = premium/costs-money ONLY.**
+Dual-accent meaning: **orange = do the work, violet = costs money.** `state-*` tokens for
+genuine state (bright -400 dark / -700 light); never raw emerald/rose/amber chrome.
 
-**Action hierarchy** (reads by FORM, not by shade of blue): **Primary** = filled `bg-action` +
-`text-action-fg` + `hover:bg-action-hover` (a deeper azure, **decoupled** from `accent` so white labels
-keep AA). **Secondary** = `border-accent` + `text-link`. **Tertiary/link** = `text-link` only. **Inert**
-= neutral ramp. **Premium** (money / paid-report CTAs ONLY) = terracotta `bg-highlight-fill` +
-`text-highlight-fg` (icon/text: `text-highlight`). Dual-accent meaning: azure = do work, terracotta = costs money.
+**Action hierarchy**: primary = `bg-action` orange fill + `text-text-on-accent` (DARK label);
+secondary = border + `text-link`; tertiary = `text-link`; premium = `bg-highlight-fill` +
+`text-highlight-fg`. **Chip-buttons** (border-dark-border + caption + hover:accent) are the
+page-action idiom — `InvestigateButton variant="chip"` (Scorecard), Discovery export/ask.
 
-**State tones** = themed `state-{positive,negative,warning}` tokens (`bg-/text-/border-state-*`, with
-`/opacity`) — bright -400 in dark, -700 in light (AA). Use these, NOT raw `emerald/rose/amber-400`.
-Exempt (keep raw hue): `DataPill` (data-encoding category colors) + `MapView` overlays (always-dark map canvas).
+**Type**: same 10 named steps (`text-display / stat / section / subtitle / lead / title / body /
+caption / micro / overline`). Fonts: `font-sans` Inter · `font-display` **Inter Tight** (scoped
+to `.text-display`/`.text-section` via index.css) · `font-mono` **JetBrains Mono**.
+Page-scale rule (Scorecard/Discovery): values `text-body`+, labels `text-caption` — `text-micro`
+only for PINs/footnotes; the old sidebar-density micro-everywhere style is a chat-rail-only idiom.
 
-**Type scale** (10 named `fontSize` steps — replaces all arbitrary px): `text-display / stat /
-section / subtitle / lead / title / body / caption / micro / overline`. Size+line-height+weight baked
-in; pick the step, don't override weight. `overline` = pair with `uppercase`.
+**Radius**: cards/panels/modals `rounded-bento` (28px) / `rounded-bento-sm` (20px) — carried by
+the Card/Modal primitives; controls/inputs `rounded-lg`; chips/badges `rounded-md`.
 
-**Radius by role**: card/panel/modal `rounded-xl` · control/input/button `rounded-lg` · chip/badge
-`rounded-md` · inline code `rounded` · avatar/dot/pill `rounded-full`. (`2xl` only on chat bubbles +
-composer + Pricing cards, by intent.)
+**Glow/shadow/ambient**: `shadow-glow` (accent halo on interactive cards), theme-aware
+`shadow-card`/`shadow-modal`, `bg-brand-gradient` (orange CTA blend). `body::before` renders two
+faint orange/violet corner blooms site-wide; `AccentRails` adds edge-masked orange plat-grid
+rails to the landing's below-hero margins.
 
-**Fonts**: `font-sans` Inter (body/UI) · `font-display` **Space Grotesk** (headings — scoped to
-`.text-display`/`.text-section` only via `index.css`) · `font-mono` IBM Plex Mono (PINs/code/data).
+**Primitives** (`src/components/ui/`): `Card` (flex-col, `className` pass-through — equal-height
+section grids stretch cards via `flex-1`), `Chip`, `Modal`. Use these; don't hand-roll chrome.
 
-**Primitives** (`src/components/ui/`): `Card`, `Chip`, `Modal` — use these, don't hand-roll card/chip/
-dialog chrome. `CollapsibleCard` wraps `Card`. `Card` is `flex flex-col` (footer pins to the bottom in
-equal-height grids) and carries `shadow-card`; `Modal` uses `shadow-modal` — both are theme-aware
-elevation tokens (none in dark, soft shadow in light).
-
-**Color discipline (§6)**: chrome = accent + neutral only. Hue ONLY for genuine state (use the themed
-`state-*` tokens). Links = `text-link` (azure — on-brand; the old "links never blue" rule is **overridden**
-by the azure palette). Exempt: over-image text (white over photos), and functional data encoding
-(`mapColors.ts`, `DataPill`, `upsideColor.ts`, CTA-line/score colors).
+**Color discipline**: chrome = orange + neutral only; hue only for genuine state. Exempt
+functional data encodings: `lib/mapColors.ts`, `DataPill`, `discovery/upsideColor.ts` (the
+upside ramp also tints Discovery's list badges — same encoding as the map dots), map layers.
 
 ## Patterns
 

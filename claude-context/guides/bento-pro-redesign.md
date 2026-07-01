@@ -1,7 +1,7 @@
 # Bento Pro Frontend Redesign — Handoff
 
 **Status:** in progress on branch `feat/bento-pro` (NOT merged, NOT pushed).
-**Started:** 2026-06-30 · **Last updated:** 2026-07-01.
+**Started:** 2026-06-30 · **Last updated:** 2026-07-01 (evening — Scorecard restructure + Discovery pass 1 done; see `bento-pro-phase3-app-surfaces.md`).
 **⚠️ Pushing `feat/bento-pro` → `main` deploys to prod.** Do not push without Jack's OK. Commit freely on the branch.
 
 Full-site visual overhaul from the old "Cyanotype on Vellum" system (azure-on-vellum, Space
@@ -63,7 +63,7 @@ CSS-var tokens. **Always translate generic Tailwind → this project's tokens** 
 `state-positive`, `accent`, etc.) so both themes stay correct. Use `motion/react` (already a dep) for
 animation rather than adding global CSS keyframes.
 
-## What's DONE (19 commits, `git log main..HEAD`)
+## What's DONE (`git log main..HEAD` for the full list)
 
 **Phase 0 — Foundation** (`f076e34`): repointed all tokens to Bento (both themes); Inter Tight +
 JetBrains Mono; 28px radius, glow, brand gradient; reworked Card/Chip/Modal.
@@ -91,6 +91,13 @@ consumers + `PageHeader.nav.test.ts` working).
 7. **HowItWorks** — 3 steps; each visual now sits in a fixed-height slot so titles/descriptions align.
 8. **Footer** — Bento near-black band + orange bloom.
 
+Landing additions (2026-07-01): **HeroBackdrop** rebuilt — achromatic **plat-map** drawing
+(street grid, staggered lots, diagonal avenue, orange found-parcel) in `currentColor` under
+`text-text-primary` so it inverts with the theme; periphery-masked (voided over the content
+zone — line-work under translucent surfaces read as noise). Variants `?bg=bloom|contour|geo`
+remain for comparison; hero is still a dark-locked island (unlock = pending Jack's pick).
+**AccentRails** — faint orange plat-grid rails (16% alpha) along the below-hero margins.
+
 Also done: orange/violet across app surfaces (inherited via tokens); readability pass (contrast, spacing);
 light-mode orange = dark-mode orange (2026-07-01); How-it-works balance fix.
 
@@ -111,9 +118,9 @@ light-mode orange = dark-mode orange (2026-07-01); How-it-works balance fix.
    `bento-pro-phase3-app-surfaces.md` (the working doc for this phase).** Still simple reskins:
    **Pricing**, **About** (also still name-drops the old fonts in its copy — update), **chat
    workspace** (MessageBubble, ChatInput, sidebar cards).
-4. **Phase 4 — Cleanup & docs:** sweep remaining ad-hoc chrome (`grep -rn "white/\|text-\[" src`), and
-   **update `frontend/CLAUDE.md` "Design Tokens" + `claude-context/guides/design-system.md` +
-   `light-dark-theming.md`** — they still describe azure/vellum/Space Grotesk and will mislead future work.
+4. **Phase 4 — Cleanup & docs:** sweep remaining ad-hoc chrome (`grep -rn "white/\|text-\[" src`).
+   Docs DONE 2026-07-01: `frontend/CLAUDE.md` tokens/rows rewritten for Bento Pro;
+   `design-system.md` + `light-dark-theming.md` marked HISTORICAL (mechanics still valid, values retired).
 5. **Redundancy watch:** three "scorecard result" mini-cards now exist (hero preview, ChaosToVerdict
    verdict, How-it-works step 3). Acceptable, but keep an eye on it.
 6. **Ship:** when Jack approves — merge/push `feat/bento-pro` to `main` (= deploy). Run `npm run build`

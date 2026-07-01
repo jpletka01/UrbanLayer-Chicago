@@ -1,3 +1,9 @@
+> **⚠️ HISTORICAL — superseded by "Bento Pro" (2026-06-30, branch `feat/bento-pro`).**
+> The palette/fonts described below (azure "Cyanotype on Vellum", Space Grotesk, terracotta
+> premium) are RETIRED. Canonical design docs: `bento-pro-redesign.md` (token system + landing)
+> and `bento-pro-phase3-app-surfaces.md` (app surfaces). The CSS-var theming *mechanics*
+> described here are still accurate; the values are not.
+
 # Light/Dark Theming — Plan
 
 **Status: SHIPPED — merged to `main` & deployed live 2026-06-30 (`main` @ `679e236`), image-verified on prod.**
