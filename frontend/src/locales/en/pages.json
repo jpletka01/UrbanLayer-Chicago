@@ -123,7 +123,9 @@
       "far": "Max FAR",
       "maxHeight": "Max height",
       "lotCoverage": "Max lot coverage",
-      "viewMap": "View zoning map"
+      "viewMap": "View zoning map",
+      "farUsed": "FAR used",
+      "farHeadroom": "{{pct}}% of the as-of-right envelope unused"
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
@@ -262,7 +264,16 @@
       "overlaysNone": "None active",
       "overlaysFriction": "{{count}} add review friction",
       "overlaysContext": "Context — not blocking"
-    }
+    },
+    "sections": {
+      "capacityTitle": "What you can build",
+      "capacitySub": "Zoning envelope and the overlay layers that shape it",
+      "economicsTitle": "What it costs",
+      "economicsSub": "Assessment, taxes, comparable sales, and incentive money",
+      "riskTitle": "What to watch for",
+      "riskSub": "Violations, complaints, and environmental flags at this address"
+    },
+    "backToVerdict": "Back to the verdict"
   },
   "discovery": {
     "teaserCount": "{{total}} parcels match — you're seeing {{shown}}.",

@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchReport, checkReportAccess, type ScorecardResponse, type ZoneDefinition } from "../lib/api";
+import { fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
 import type { ParcelQuery } from "../lib/types";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSelectedParcel } from "../contexts/SelectedParcelContext";
@@ -10,15 +10,17 @@ import { ReportCTACard } from "./ReportCTACard";
 import { InvestigateButton } from "./InvestigateButton";
 import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
-import { ComparablesCard } from "./sidebar/ComparablesCard";
+import { ScorecardComparablesCard } from "./scorecard/ScorecardComparablesCard";
 import { ScorecardRegulatoryCard } from "./scorecard/ScorecardRegulatoryCard";
-import { IncentivesCard } from "./sidebar/IncentivesCard";
+import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
+import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
+import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
+import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
 import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
-import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
-import { VerdictBand, type VerdictTile } from "./VerdictBand";
+import { VerdictBand, verdictDotClass, type VerdictTile } from "./VerdictBand";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
-import { humanizeShoutyCase, localizeZoningValue } from "../lib/format";
+import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
 import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
@@ -84,60 +86,14 @@ function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: st
   );
 }
 
-const zoningIcon = (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-  </svg>
-);
-
-function ZoningCard({ def, mapUrl }: { def: ZoneDefinition; mapUrl?: string | null }) {
-  const { t } = useTranslation("pages");
+// Question-oriented section header — the page's reading order is explicit:
+// what you can build → what it costs → what to watch for.
+function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <Card
-      padding="sm"
-      icon={zoningIcon}
-      title={t("scorecard.zoningCard.title")}
-      headerRight={<Chip tone="accent" mono size="sm">{def.zone_class}</Chip>}
-    >
-      <div className="space-y-2">
-        <p className="text-caption font-medium text-text-primary">{def.name}</p>
-        <div className="space-y-1">
-          {def.far != null && (
-            <div className="flex justify-between items-baseline gap-2 text-micro">
-              <span className="text-text-muted">{t("scorecard.zoningCard.far")}</span>
-              <span className="text-text-primary font-mono">{def.far}</span>
-            </div>
-          )}
-          {def.max_height && (
-            <div className="flex justify-between items-baseline gap-2 text-micro">
-              <span className="text-text-muted">{t("scorecard.zoningCard.maxHeight")}</span>
-              <span className="text-text-primary font-mono text-right">{localizeZoningValue(def.max_height)}</span>
-            </div>
-          )}
-          {def.lot_coverage && (
-            <div className="flex justify-between items-baseline gap-2 text-micro">
-              <span className="text-text-muted">{t("scorecard.zoningCard.lotCoverage")}</span>
-              <span className="text-text-primary font-mono text-right">{localizeZoningValue(def.lot_coverage)}</span>
-            </div>
-          )}
-        </div>
-        {def.uses && <p className="text-micro text-text-secondary leading-snug">{def.uses}</p>}
-        {def.notes && <p className="text-micro text-text-muted leading-snug">{def.notes}</p>}
-        <div className="flex items-center justify-between gap-2 text-micro text-text-muted">
-          <span className="font-mono">{def.code_section}</span>
-          {mapUrl && (
-            <a
-              href={mapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-text-secondary hover:text-accent transition-colors"
-            >
-              {t("scorecard.zoningCard.viewMap")}
-            </a>
-          )}
-        </div>
-      </div>
-    </Card>
+    <div className="mt-10 mb-4">
+      <h3 className="text-title text-text-primary">{title}</h3>
+      <p className="text-caption text-text-muted mt-0.5">{subtitle}</p>
+    </div>
   );
 }
 
@@ -466,6 +422,19 @@ export default function ScorecardPage() {
     }
   }
 
+  // Sticky condensed verdict: once the band scrolls out of view, a compact strip
+  // (tone dot + headline + tile values) keeps the conclusion and a way back in
+  // reach on a long page.
+  const bandRef = useRef<HTMLDivElement | null>(null);
+  const [bandAway, setBandAway] = useState(false);
+  useEffect(() => {
+    const el = bandRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setBandAway(!e.isIntersecting && e.boundingClientRect.top < 0));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [data]);
+
   const scrollToCard = (anchor: CardId) => {
     document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -638,9 +607,9 @@ export default function ScorecardPage() {
                       track("investigate_click", { card_name: "ask_about_property" });
                       navigate(`/?pin=${parcel.pin}`);
                     }}
-                    className="group inline-flex items-center gap-1 text-micro text-text-secondary hover:text-accent transition-colors"
+                    className="group inline-flex items-center gap-1.5 text-caption text-accent border border-accent/40 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors"
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                     </svg>
                     {t("scorecard.askAboutProperty")}
@@ -659,9 +628,9 @@ export default function ScorecardPage() {
                     const date = new Date().toISOString().slice(0, 10);
                     downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
                   }}
-                  className="inline-flex items-center gap-1 text-micro text-text-secondary hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-1 text-caption text-text-secondary hover:text-accent transition-colors"
                 >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                   </svg>
                   {t("scorecard.downloadCsv")}
@@ -674,12 +643,37 @@ export default function ScorecardPage() {
                 evidence cards below; one next step. The nearest-parcel /
                 unconfirmed-identity caveat is folded into the band's caveats. */}
             {verdict && (
-              <VerdictBand
-                verdict={verdict}
-                tiles={tiles}
-                onChat={verdictChat}
-                onScrollTo={scrollToCard}
-              />
+              <div ref={bandRef}>
+                <VerdictBand
+                  verdict={verdict}
+                  tiles={tiles}
+                  onChat={verdictChat}
+                  onScrollTo={scrollToCard}
+                />
+              </div>
+            )}
+
+            {/* Condensed verdict strip — appears when the band scrolls away */}
+            {verdict && bandAway && (
+              <div className="fixed top-[4.25rem] left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-7xl">
+                <button
+                  type="button"
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  aria-label={t("scorecard.backToVerdict")}
+                  className="w-full flex items-center gap-3 rounded-lg border border-dark-border bg-dark-surface/95 backdrop-blur px-4 py-2 shadow-card text-left hover:border-dark-border-strong transition-colors"
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${verdictDotClass(verdict.category)}`} aria-hidden />
+                  <span className="text-caption text-text-primary truncate">{verdict.headline}</span>
+                  <span className="ml-auto hidden md:flex items-center gap-4 shrink-0">
+                    {tiles.slice(0, 4).map((tile) => (
+                      <span key={tile.label} className="text-caption text-text-secondary">
+                        {tile.value} <span className="text-text-muted">{tile.label}</span>
+                      </span>
+                    ))}
+                  </span>
+                  <span aria-hidden className="text-text-muted shrink-0">↑</span>
+                </button>
+              </div>
             )}
 
             {/* Report CTA — the single, dedicated money action on the page. */}
@@ -692,42 +686,24 @@ export default function ScorecardPage() {
               />
             </div>
 
-            {/* Card columns — ordered for developer evaluation flow. CSS multicol
-                instead of grid: each column flows independently, so a short card
-                never strands empty space beside a tall neighbor. break-inside-avoid
-                keeps a card and its ask-link together. */}
-            <div className="columns-1 md:columns-2 gap-4">
-              {ctx.property && (
-                <div id="scorecard-card-property" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <ScorecardPropertyCard data={ctx.property} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`Tell me about the building and property characteristics at ${addr}`}
-                      label={t("scorecard.investigate.buildingDetails")}
-                      cardName="property"
-                      pin={parcel?.pin}
-                    />
-                  </div>
-                </div>
-              )}
-              {data.comparables && data.comparables.sales.length > 0 && (
-                <div id="scorecard-card-comparables" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <ComparablesCard data={data.comparables} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`What are the recent comparable sales near ${addr} and what do they suggest about property values?`}
-                      label={t("scorecard.investigate.comparableSales")}
-                      cardName="comparables"
-                      pin={parcel?.pin}
-                    />
-                  </div>
-                </div>
-              )}
+            {/* Question-oriented sections replace the data-source masonry: the
+                reading order is explicit (build → cost → risk), and each card
+                keeps its verdict deep-link anchor. */}
+
+            {/* §1 — What you can build */}
+            <SectionHeader title={t("scorecard.sections.capacityTitle")} subtitle={t("scorecard.sections.capacitySub")} />
+            <div className="grid md:grid-cols-2 gap-4 items-start">
               {zdef && (
-                <div id="scorecard-card-zoning" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <ZoningCard def={zdef} mapUrl={zoning?.zoning_map_url} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                <div id="scorecard-card-zoning" className="scroll-mt-24">
+                  <ScorecardZoningCard
+                    def={zdef}
+                    mapUrl={zoning?.zoning_map_url}
+                    existingFar={verdict?.signals.existingFar}
+                    allowedFar={verdict?.signals.allowedFar}
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <InvestigateButton
+                      variant="chip"
                       question={`What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`}
                       label={t("scorecard.zoningRules", { zone: zdef.zone_class })}
                       cardName="zoning"
@@ -736,85 +712,137 @@ export default function ScorecardPage() {
                   </div>
                 </div>
               )}
-              {ctx.incentives && (
-                <div id="scorecard-card-incentives" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <IncentivesCard data={ctx.incentives} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
+              {ctx.regulatory && (
+                <div id="scorecard-card-regulatory" className="scroll-mt-24">
+                  <ScorecardRegulatoryCard data={ctx.regulatory} />
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <InvestigateButton
-                      question={ctx.incentives.in_tif_district && ctx.incentives.tif_name
-                        ? `How much TIF funding is available in ${ctx.incentives.tif_name} and what projects qualify?`
-                        : `What tax incentives and grant programs are available near ${addr}?`}
-                      label={ctx.incentives.in_tif_district && ctx.incentives.tif_name
-                        ? t("scorecard.investigate.tifFunding")
-                        : t("scorecard.investigate.incentivePrograms")}
-                      cardName="incentives"
+                      variant="chip"
+                      question={`What are the development restrictions from regulatory overlays at ${addr}?`}
+                      label={t("scorecard.investigate.overlayRestrictions")}
+                      cardName="regulatory"
                       pin={parcel?.pin}
                     />
                   </div>
                 </div>
               )}
-              {ctx.regulatory && (
-                <div id="scorecard-card-regulatory" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <ScorecardRegulatoryCard data={ctx.regulatory} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" ? (
-                      <InvestigateButton
-                        question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
-                        label={t("scorecard.investigate.overlaysAndFlood")}
-                        cardName="regulatory"
+            </div>
+
+            {/* §2 — What it costs */}
+            <SectionHeader title={t("scorecard.sections.economicsTitle")} subtitle={t("scorecard.sections.economicsSub")} />
+            <div className="grid md:grid-cols-2 gap-4 items-start">
+              {ctx.property && (
+                <div id="scorecard-card-property" className="scroll-mt-24">
+                  <ScorecardPropertyCard data={ctx.property} />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <InvestigateButton
+                      variant="chip"
+                      question={`Tell me about the building and property characteristics at ${addr}`}
+                      label={t("scorecard.investigate.buildingDetails")}
+                      cardName="property"
                       pin={parcel?.pin}
-                      />
-                    ) : (
-                      <InvestigateButton
-                        question={`What are the development restrictions from regulatory overlays at ${addr}?`}
-                        label={t("scorecard.investigate.overlayRestrictions")}
-                        cardName="regulatory"
-                      pin={parcel?.pin}
-                      />
-                    )}
+                    />
                   </div>
                 </div>
               )}
-              {/* Violations tri-state: a record at this address, a confirmed
-                  "none on record" (clean — lookup ran, zero rows), or nothing
-                  (lookup couldn't run → omitted). The middle state is shown, not
-                  silent, so "no card" can't be read as "clean." */}
-              {ctx.violations ? (
-                <div id="scorecard-card-violations" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <ViolationsCard data={ctx.violations} scopeLabel={t("scorecard.violationsScope")} />
-                  {ctx.violations.total > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+              <div className="space-y-4">
+                {data.comparables && data.comparables.sales.length > 0 && (
+                  <div id="scorecard-card-comparables" className="scroll-mt-24">
+                    <ScorecardComparablesCard data={data.comparables} />
+                    <div className="flex flex-wrap gap-2 mt-2">
                       <InvestigateButton
-                        question={`Explain the building violations at ${addr} and typical remediation steps`}
-                        label={t("scorecard.investigate.violationDetails")}
-                        cardName="violations"
+                        variant="chip"
+                        question={`What are the recent comparable sales near ${addr} and what do they suggest about property values?`}
+                        label={t("scorecard.investigate.comparableSales")}
+                        cardName="comparables"
+                        pin={parcel?.pin}
+                      />
+                    </div>
+                  </div>
+                )}
+                {ctx.incentives && (
+                  <div id="scorecard-card-incentives" className="scroll-mt-24">
+                    <ScorecardIncentivesCard data={ctx.incentives} />
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
+                      <InvestigateButton
+                        variant="chip"
+                        question={ctx.incentives.in_tif_district && ctx.incentives.tif_name
+                          ? `How much TIF funding is available in ${ctx.incentives.tif_name} and what projects qualify?`
+                          : `What tax incentives and grant programs are available near ${addr}?`}
+                        label={ctx.incentives.in_tif_district && ctx.incentives.tif_name
+                          ? t("scorecard.investigate.tifFunding")
+                          : t("scorecard.investigate.incentivePrograms")}
+                        cardName="incentives"
+                        pin={parcel?.pin}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* §3 — What to watch for */}
+            <SectionHeader title={t("scorecard.sections.riskTitle")} subtitle={t("scorecard.sections.riskSub")} />
+            <div className="grid md:grid-cols-2 gap-4 items-start">
+              <div className="space-y-4">
+                {/* Violations tri-state: a record at this address, a confirmed
+                    "none on record" (clean — lookup ran, zero rows), or nothing
+                    (lookup couldn't run → omitted). The middle state is shown, not
+                    silent, so "no card" can't be read as "clean." */}
+                {ctx.violations ? (
+                  <div id="scorecard-card-violations" className="scroll-mt-24">
+                    <ScorecardViolationsCard data={ctx.violations} scopeLabel={t("scorecard.violationsScope")} />
+                    {ctx.violations.total > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <InvestigateButton
+                          variant="chip"
+                          question={`Explain the building violations at ${addr} and typical remediation steps`}
+                          label={t("scorecard.investigate.violationDetails")}
+                          cardName="violations"
+                          pin={parcel?.pin}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : data.violations_checked ? (
+                  <div id="scorecard-card-violations" className="scroll-mt-24">
+                    <Card padding="sm" icon={cleanIcon} title={t("scorecard.violations.title")}>
+                      <p className="text-body text-state-positive">{t("scorecard.violations.noneOnRecord")}</p>
+                      <p className="text-caption text-text-muted mt-0.5">{t("scorecard.violationsScope")}</p>
+                    </Card>
+                  </div>
+                ) : null}
+                {/* 311 is address-point scoped, like the address-scoped violations. */}
+                {data.context.address_311 && (
+                  <div>
+                    <Address311Card data={data} />
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <InvestigateButton
+                        variant="chip"
+                        question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
+                        label={t("scorecard.investigate.complaints311")}
+                        cardName="311"
+                        pin={parcel?.pin}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.brownfield_sites.length > 0) && (
+                <div>
+                  <ScorecardEnvironmentCard data={ctx.regulatory} />
+                  {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <InvestigateButton
+                        variant="chip"
+                        question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
+                        label={t("scorecard.investigate.overlaysAndFlood")}
+                        cardName="environment"
                         pin={parcel?.pin}
                       />
                     </div>
                   )}
-                </div>
-              ) : data.violations_checked ? (
-                <div id="scorecard-card-violations" className="break-inside-avoid mb-4 scroll-mt-4">
-                  <Card padding="sm" icon={cleanIcon} title={t("scorecard.violations.title")}>
-                    <p className="text-caption text-state-positive">{t("scorecard.violations.noneOnRecord")}</p>
-                    <p className="text-micro text-text-muted mt-0.5">{t("scorecard.violationsScope")}</p>
-                  </Card>
-                </div>
-              ) : null}
-              {/* 311 stays in the parcel grid — it's address-point scoped, like
-                  the now-address-scoped violations. */}
-              {data.context.address_311 && (
-                <div className="break-inside-avoid mb-4">
-                  <Address311Card data={data} />
-                  <div className="flex flex-wrap gap-2 mt-1.5 px-1">
-                    <InvestigateButton
-                      question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
-                      label={t("scorecard.investigate.complaints311")}
-                      cardName="311"
-                      pin={parcel?.pin}
-                    />
-                  </div>
                 </div>
               )}
             </div>
@@ -836,12 +864,13 @@ export default function ScorecardPage() {
                     </span>
                   )}
                 </summary>
-                <div className="columns-1 gap-4 md:columns-2 mt-4">
+                <div className="grid md:grid-cols-2 gap-4 items-start mt-4">
                   {data.context.crime_last_90d && (
-                    <div className="break-inside-avoid mb-4">
+                    <div>
                       <CrimeYoYCard data={data} />
-                      <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                      <div className="flex flex-wrap gap-2 mt-2">
                         <InvestigateButton
+                          variant="chip"
                           question={`What are the crime trends and safety concerns near ${addr}?`}
                           label={t("scorecard.investigate.crimeAnalysis")}
                           cardName="crime"
@@ -851,10 +880,11 @@ export default function ScorecardPage() {
                     </div>
                   )}
                   {ctx.neighborhood && (
-                    <div className="break-inside-avoid mb-4">
+                    <div>
                       <NeighborhoodCard data={ctx.neighborhood} />
-                      <div className="flex flex-wrap gap-2 mt-1.5 px-1">
+                      <div className="flex flex-wrap gap-2 mt-2">
                         <InvestigateButton
+                          variant="chip"
                           question={`What's the neighborhood like around ${addr}?`}
                           label={t("scorecard.investigate.neighborhoodOverview")}
                           cardName="neighborhood"

@@ -13,7 +13,7 @@ import { Card } from "../ui/Card";
 
 function fmtDollar(n: number | null | undefined): string {
   if (n == null) return "—";
-  return `$${n.toLocaleString()}`;
+  return `$${Math.round(n).toLocaleString()}`;
 }
 
 function fmtCompact(n: number): string {
@@ -134,28 +134,16 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
   return (
     <Card title={t("property.title")} icon={BuildingIcon} divider>
       <div className="space-y-5">
-        {/* The three numbers this card exists for */}
+        {/* Headline numbers live at full weight in the verdict band's tiles; here
+            they appear once, at detail weight, with full precision. */}
         {(assessed != null || tax != null) && (
-          <div className="grid grid-cols-3 gap-3">
-            {assessed != null && (
-              <div>
-                <div className="text-subtitle text-text-primary">{fmtDollar(assessed)}</div>
-                <div className="text-caption text-text-muted mt-0.5">{t("property.assessedValue")}</div>
-              </div>
-            )}
-            {tax != null && (
-              <div>
-                <div className="text-subtitle text-text-primary">{fmtDollar(tax)}</div>
-                <div className="text-caption text-text-muted mt-0.5">{t("property.annualTax")}</div>
-              </div>
-            )}
-            {effectiveRate && (
-              <div>
-                <div className="text-subtitle text-text-primary">{effectiveRate}</div>
-                <div className="text-caption text-text-muted mt-0.5">{t("property.effectiveRate")}</div>
-              </div>
-            )}
-          </div>
+          <p className="text-caption text-text-secondary">
+            {[
+              assessed != null ? `${t("property.assessedValue")} ${fmtDollar(assessed)}` : null,
+              tax != null ? `${t("property.annualTax")} ${fmtDollar(tax)}` : null,
+              effectiveRate ? `${t("property.effectiveRate")} ${effectiveRate}` : null,
+            ].filter(Boolean).join(" · ")}
+          </p>
         )}
 
         {/* Assessment trajectory — drawn, not a hidden table */}

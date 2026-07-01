@@ -18,6 +18,11 @@ const TONE: Record<VerdictCategory, { bar: string; dot: string }> = {
   insufficient_data: { bar: "border-l-state-warning", dot: "bg-text-muted" },
 };
 
+/** Tone dot for external condensed renderings (sticky verdict strip). */
+export function verdictDotClass(category: VerdictCategory): string {
+  return TONE[category].dot;
+}
+
 function ReasonGlyph({ polarity }: { polarity: ReasonPolarity }) {
   if (polarity === "positive")
     return (

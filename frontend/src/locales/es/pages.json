@@ -123,7 +123,9 @@
       "far": "FAR máx.",
       "maxHeight": "Altura máx.",
       "lotCoverage": "Cobertura máx. del lote",
-      "viewMap": "Ver mapa de zonificación"
+      "viewMap": "Ver mapa de zonificación",
+      "farUsed": "FAR utilizado",
+      "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar"
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -262,7 +264,16 @@
       "overlaysNone": "Ninguna activa",
       "overlaysFriction": "{{count}} añaden revisión",
       "overlaysContext": "Contexto — no bloquea"
-    }
+    },
+    "sections": {
+      "capacityTitle": "Qué puede construir",
+      "capacitySub": "Envolvente de zonificación y las capas superpuestas que la definen",
+      "economicsTitle": "Qué cuesta",
+      "economicsSub": "Tasación, impuestos, ventas comparables y dinero de incentivos",
+      "riskTitle": "Qué vigilar",
+      "riskSub": "Infracciones, quejas y señales ambientales en esta dirección"
+    },
+    "backToVerdict": "Volver al veredicto"
   },
   "discovery": {
     "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",

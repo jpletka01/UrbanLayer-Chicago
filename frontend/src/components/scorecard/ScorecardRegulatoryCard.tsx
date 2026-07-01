@@ -6,7 +6,7 @@ import { useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
-import { humanizeShoutyCase, translateFloodSubtype } from "../../lib/format";
+import { humanizeShoutyCase } from "../../lib/format";
 import { getTermInfo } from "../../lib/termDefinitions";
 import { Card } from "../ui/Card";
 
@@ -170,33 +170,6 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
           </div>
         )}
 
-        {data.flood_zone && (
-          <div>
-            <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
-              {t("regulatory.floodZone")}
-            </div>
-            <div className={`rounded-lg border px-3 py-2.5 ${
-              data.in_special_flood_hazard
-                ? "bg-state-warning/10 border-state-warning/25"
-                : "bg-dark-elevated/40 border-dark-border"
-            }`}>
-              <div className="flex items-center gap-2">
-                <span className={`text-body font-medium ${data.in_special_flood_hazard ? "text-state-warning" : "text-text-primary"}`}>
-                  <InfoTooltip term={`flood:${data.flood_zone}`}>{t("regulatory.zone", { code: data.flood_zone })}</InfoTooltip>
-                </span>
-                {data.in_special_flood_hazard && (
-                  <span className="bg-state-warning/20 text-state-warning border border-state-warning/30 rounded px-1.5 py-0.5 text-micro uppercase font-medium">
-                    {t("regulatory.specialFloodHazard")}
-                  </span>
-                )}
-              </div>
-              {data.flood_zone_subtype && (
-                <p className="text-caption text-text-muted mt-0.5">{translateFloodSubtype(data.flood_zone_subtype)}</p>
-              )}
-            </div>
-          </div>
-        )}
-
         {data.aro_housing && data.aro_housing.total_projects > 0 && (
           <div>
             <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
@@ -238,23 +211,6 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
           </div>
         )}
 
-        {data.brownfield_sites.length > 0 && (
-          <div>
-            <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
-              {t("regulatory.nearbyBrownfield", { count: data.brownfield_sites.length })}
-            </div>
-            <div className="space-y-2">
-              {data.brownfield_sites.map((site, i) => (
-                <div key={i} className="rounded-lg bg-state-warning/5 border border-state-warning/15 px-3 py-2.5">
-                  <p className="text-body text-text-primary">{(site as Record<string, string>).site_name ?? t("regulatory.unknownSite")}</p>
-                  {(site as Record<string, string>).interest_type && (
-                    <p className="text-caption text-text-muted mt-0.5">{(site as Record<string, string>).interest_type}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </Card>
   );

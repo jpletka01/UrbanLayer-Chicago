@@ -74,7 +74,8 @@
     "constraints": "Reviews & restrictions",
     "opportunities": "Opportunities & context",
     "constraintCount_one": "{{count}} constraint",
-    "constraintCount_other": "{{count}} constraints"
+    "constraintCount_other": "{{count}} constraints",
+    "environment": "Environment"
   },
   "incentives": {
     "title": "Incentives",
@@ -111,7 +112,17 @@
     "standardClassDescription": "Standard classification — no tax incentive reduction applies.",
     "unavailableClassDescription": "Property class code not available from Cook County — tax incentive classification cannot be determined.",
     "censusTract": "Census Tract:",
-    "reportTeaser": "AI eligibility analysis + next steps in report"
+    "reportTeaser": "AI eligibility analysis + next steps in report",
+    "short": {
+      "tif": "TIF",
+      "oz": "Opportunity Zone",
+      "ez": "Enterprise Zone",
+      "qct": "QCT",
+      "nmtc": "NMTC"
+    },
+    "notInLine": "Not in: {{list}}",
+    "activeCount_one": "{{count}} active designation",
+    "activeCount_other": "{{count}} active designations"
   },
   "neighborhood": {
     "title": "Neighborhood",

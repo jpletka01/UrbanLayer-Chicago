@@ -112,6 +112,31 @@ sidebar analytics) or add small purpose-built SVGs; no chart library.
 7. **Chrome reskin** (the original Phase 3 item): bento cards for recipes/rows, tokens
    everywhere — but data colors untouched (constraint 4).
 
+## Scorecard restructure plan (2026-07-01, Jack: "plan all of it and execute")
+
+Target IA — question-oriented sections replace the data-source masonry:
+
+1. Identity header (locator, PIN, badges; actions upgraded from micro links to real buttons)
+2. Verdict band (narrative + evidence tiles) — tiles become the ONLY full-weight
+   headline numbers; a condensed sticky strip (headline + tile values, jump-to-top)
+   appears once the band scrolls away (IntersectionObserver)
+3. Report CTA (unchanged)
+4. **§ What you can build** — ScorecardZoningCard (page-scale, FAR-used meter when
+   building data exists) + ScorecardRegulatoryCard (overlays/ARO only)
+5. **§ What it costs** — ScorecardPropertyCard (stat row demoted to a caption line —
+   duplication kill) + ScorecardComparablesCard (price-strip dot plot) +
+   ScorecardIncentivesCard (positives-first; inactive designations collapse to one
+   "Not in: …" line)
+6. **§ What to watch for** — ScorecardViolationsCard (compact) + Address311Card
+   (rescaled) + ScorecardEnvironmentCard (flood/brownfields, split out of regulatory)
+7. Neighborhood context (collapsed, unchanged policy)
+
+Invariants: verdict deep-link anchors (zoning/incentives/regulatory/property/
+comparables/violations) keep their IDs on the new wrappers; violations tri-state,
+one report CTA, and area-scope labeling unchanged; sidebar card components untouched.
+Formatting rule: full numbers (no cents) in card detail; compact $K/$M only in tiles
+and chart labels. InvestigateButton gains a chip variant (page) keeping inline (chat).
+
 ## Order of work
 
 1. Scorecard Tier 1 (verdict hero band + stat tiles + map panel) — highest value.
@@ -125,6 +150,19 @@ sidebar analytics) or add small purpose-built SVGs; no chart library.
 
 Verification per step: `npm run build` (CI gate) + Playwright screenshots dark AND light
 + `npx vitest run` (Discovery has real tests; don't break INV-4 suites).
+
+## Status
+
+- **Scorecard: RESTRUCTURE COMPLETE on branch (2026-07-01).** Tier 1 (band + tiles +
+  locator), page-scale card family (`components/scorecard/`: Property w/ sparkline +
+  tax bars, Regulatory severity-sorted, Zoning w/ FAR meter, Comparables w/ price
+  strip, Incentives positives-first, Violations compact, Environment split), the
+  three question sections, sticky verdict strip, chip-style investigate buttons,
+  header-action affordance, formatting rules. Verified: `npm run build`, 88 tests,
+  dark+light screenshots. NOT yet done: Address311Card/CrimeYoYCard still micro-scale
+  (page-local, Tier 3 — acceptable); light-mode InfoTooltip underline contrast on
+  overlay rows worth one look.
+- **Discovery: NOT STARTED** (items 1–6 in the spec above).
 
 ## Decisions log
 

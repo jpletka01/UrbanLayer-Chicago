@@ -74,7 +74,8 @@
     "constraints": "Revisiones y restricciones",
     "opportunities": "Oportunidades y contexto",
     "constraintCount_one": "{{count}} restricción",
-    "constraintCount_other": "{{count}} restricciones"
+    "constraintCount_other": "{{count}} restricciones",
+    "environment": "Medio ambiente"
   },
   "incentives": {
     "title": "Incentivos",
@@ -111,7 +112,17 @@
     "nmtcEligible": "Comunidad de bajos ingresos NMTC",
     "notInQct": "No está en un distrito censal calificado",
     "notNmtcEligible": "No elegible para NMTC",
-    "severeDistress": "Gravemente desfavorecida — prioridad de asignación NMTC mejorada"
+    "severeDistress": "Gravemente desfavorecida — prioridad de asignación NMTC mejorada",
+    "short": {
+      "tif": "TIF",
+      "oz": "Zona de Oportunidad",
+      "ez": "Zona Empresarial",
+      "qct": "QCT",
+      "nmtc": "NMTC"
+    },
+    "notInLine": "No está en: {{list}}",
+    "activeCount_one": "{{count}} designación activa",
+    "activeCount_other": "{{count}} designaciones activas"
   },
   "neighborhood": {
     "title": "Vecindario",
