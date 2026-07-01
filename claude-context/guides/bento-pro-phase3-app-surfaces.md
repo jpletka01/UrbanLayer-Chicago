@@ -60,9 +60,11 @@ Target IA — three tiers, one-column narrative with side rail (replaces flat ma
 - Center: 3–4 stat tiles justifying the verdict: zoning capacity (FAR as-of-right, max
   height), assessed value + eff. tax rate, comps median, biggest constraint. Tiles
   deep-link to their evidence cards (keep existing anchor mechanism).
-- Right: **real map panel** — parcel location + overlay footprints. Decision needed
-  (see Open questions): Mapbox GL (interactive, heavier) vs larger Static API image
-  with overlay badges (cheap, fast). Recommendation: static-first, GL later.
+- **No map panel** (decided 2026-07-01): a map on this page only earns its place as
+  *identity confirmation* (the nearest-parcel/neighbor seam), not exploration — that job
+  is done by upgrading the identity-header thumbnail to a legible static locator
+  (~250px, click-to-expand); exploration maps live in chat/Discovery. Verdict band's
+  right side goes to stat tiles.
 - The band uses the full width in all states; empty-right-side bug dies here.
 
 **Tier 2 — The evidence (the money + rules, each with a visualization):**
@@ -130,16 +132,10 @@ Verification per step: `npm run build` (CI gate) + Playwright screenshots dark A
 - 2026-07-01 — Hero backdrop: plat-map variant chosen (periphery-masked, achromatic,
   currentColor inversion); accent plat-rails added below hero @ 16% alpha.
 
-## Open questions (for Jack)
+## Open questions — RESOLVED 2026-07-01
 
-1. **Scorecard map panel**: static image + overlay badges (fast, ships in step 1) or
-   interactive Mapbox GL with parcel polygon + overlay toggles (better, heavier)?
-   Recommendation: static now, GL as a later upgrade.
-2. **Discovery auto-run**: OK to fire one search on page load (backend cost per visit)?
-   Alternative: render the first recipe's cached top-10 as a preview.
-3. **"Documents section / workspace"** — needs a scope decision:
-   - If this meant *repo workspace for the redesign*: this doc is it (claude-context/ is
-     the established mechanism; guides/ + archive/ on ship).
-   - If this meant a *product feature* (users maintain a dossier/workspace of saved
-     scorecards, reports, notes per project): that's product scope, not part of this
-     visual overhaul — belongs on the North Star / coherence-audit track. Flag which.
+1. **Scorecard map panel**: Jack pushed to justify it. Verdict: exploration maps don't
+   belong here; only identity confirmation does. → No panel; upgrade the identity
+   thumbnail to a legible static locator instead. (Spec updated above.)
+2. **Discovery auto-run**: Jack approved auto-running the top live recipe on load.
+3. **Workspace**: repo planning docs — this doc is the workspace for the phase.

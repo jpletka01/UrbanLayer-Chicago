@@ -16,12 +16,13 @@ import { IncentivesCard } from "./sidebar/IncentivesCard";
 import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { ViolationsCard } from "./sidebar/ViolationsCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
-import { VerdictBand } from "./VerdictBand";
+import { VerdictBand, type VerdictTile } from "./VerdictBand";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase, localizeZoningValue } from "../lib/format";
 import PageHeader from "./PageHeader";
 import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
+import { Modal } from "./ui/Modal";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -44,23 +45,42 @@ function formatPin(pin: string): string {
   return `${pin.slice(0, 2)}-${pin.slice(2, 4)}-${pin.slice(4, 7)}-${pin.slice(7, 10)}-${pin.slice(10)}`;
 }
 
-// Static location thumbnail (Mapbox Static Images API). Pin-only by design:
+// Static location image (Mapbox Static Images API). Pin-only by design:
 // parcel polygon geometry isn't reliably available (county GIS), so the
 // default state must not depend on it. Hidden entirely if the image fails.
-function MapThumb({ lat, lon }: { lat: number; lon: number }) {
+// Sized to actually verify identity ("is that my corner?") — the one job a map
+// has on this page (nearest-parcel seam) — with a click-to-expand closer look.
+function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: string }) {
+  const { t } = useTranslation("pages");
   const [failed, setFailed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   if (!token || failed) return null;
   const pt = `${lon.toFixed(5)},${lat.toFixed(5)}`;
-  const url = `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+c96442(${pt})/${pt},15/224x224@2x?access_token=${token}&logo=false`;
+  const staticUrl = (w: number, h: number, zoom: number) =>
+    `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+c96442(${pt})/${pt},${zoom}/${w}x${h}@2x?access_token=${token}&logo=false`;
   return (
-    <img
-      src={url}
-      alt=""
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="hidden sm:block w-28 h-28 rounded-lg border border-dark-border object-cover shrink-0"
-    />
+    <>
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        title={t("scorecard.mapExpand")}
+        className="hidden sm:block shrink-0 rounded-lg overflow-hidden border border-dark-border hover:border-dark-border-strong transition-colors cursor-zoom-in"
+      >
+        <img
+          src={staticUrl(176, 176, 15)}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="w-44 h-44 object-cover"
+        />
+      </button>
+      {expanded && (
+        <Modal onClose={() => setExpanded(false)} title={address} description={t("scorecard.mapExpandNote")} size="lg">
+          <img src={staticUrl(480, 320, 16)} alt="" className="w-full rounded-lg border border-dark-border object-cover" />
+        </Modal>
+      )}
+    </>
   );
 }
 
@@ -393,6 +413,59 @@ export default function ScorecardPage() {
   // 2026-06-29 — see lib/scorecardVerdict.ts.
   const verdict = data && ctx ? computeVerdict(data, t) : null;
 
+  // Evidence rail for the verdict band: the 3–4 numbers that justify the verdict,
+  // each deep-linking to its card. Tiles with missing data are simply omitted
+  // (the band renders the rail only when ≥2 survive).
+  const fmtMoneyCompact = (n: number): string =>
+    n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
+    : n >= 1_000 ? `$${Math.round(n / 1_000)}K`
+    : `$${Math.round(n)}`;
+  const tiles: VerdictTile[] = [];
+  if (verdict && ctx) {
+    if (zoning) {
+      tiles.push({
+        anchor: "zoning",
+        label: t("scorecard.tiles.zoning"),
+        value: zoning.zone_class,
+        sub: verdict.signals.allowedFar != null
+          ? t("scorecard.tiles.zoningFar", { far: verdict.signals.allowedFar.toFixed(1) })
+          : t("scorecard.verdict.signal.entitlementDefined"),
+      });
+    }
+    const av = ctx.property?.total_assessed_value;
+    const estTax = ctx.property?.estimated_annual_tax;
+    if (av != null) {
+      tiles.push({
+        anchor: "property",
+        label: t("scorecard.tiles.assessed"),
+        value: fmtMoneyCompact(av),
+        sub: estTax != null ? t("scorecard.tiles.assessedTax", { tax: fmtMoneyCompact(estTax) }) : undefined,
+      });
+    }
+    if (data?.comparables?.median_sale_price != null) {
+      tiles.push({
+        anchor: "comparables",
+        label: t("scorecard.tiles.comps"),
+        value: fmtMoneyCompact(data.comparables.median_sale_price),
+        sub: t("scorecard.tiles.compsSub", { count: data.comparables.sales_volume }),
+      });
+    }
+    if (ctx.regulatory) {
+      const n = ctx.regulatory.overlays.length;
+      const friction = verdict.signals.frictionFlags.length;
+      tiles.push({
+        anchor: "regulatory",
+        label: t("scorecard.tiles.overlays"),
+        value: String(n),
+        sub: n === 0
+          ? t("scorecard.tiles.overlaysNone")
+          : friction > 0
+            ? t("scorecard.tiles.overlaysFriction", { count: friction })
+            : t("scorecard.tiles.overlaysContext"),
+      });
+    }
+  }
+
   const scrollToCard = (anchor: CardId) => {
     document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -501,7 +574,7 @@ export default function ScorecardPage() {
           <div>
             {/* Address header */}
             <div className="mb-6 pb-4 border-b border-dark-border flex gap-4 items-start">
-              <MapThumb lat={data.lat} lon={data.lon} />
+              <MapThumb lat={data.lat} lon={data.lon} address={data.address || ctx.property?.address || ""} />
               <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-3 flex-wrap">
                 <h2 className="text-subtitle">
@@ -603,6 +676,7 @@ export default function ScorecardPage() {
             {verdict && (
               <VerdictBand
                 verdict={verdict}
+                tiles={tiles}
                 onChat={verdictChat}
                 onScrollTo={scrollToCard}
               />

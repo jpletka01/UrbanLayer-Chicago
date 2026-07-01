@@ -247,6 +247,21 @@
     "violations": {
       "title": "Building violations",
       "noneOnRecord": "No violations on record at this address"
+    },
+    "mapExpand": "Expand map",
+    "mapExpandNote": "The pin marks the resolved location — verify it's the right lot.",
+    "tiles": {
+      "zoning": "Zoning",
+      "zoningFar": "FAR {{far}} as-of-right",
+      "assessed": "Assessed value",
+      "assessedTax": "≈ {{tax}}/yr est. tax",
+      "comps": "Comps median",
+      "compsSub_other": "{{count}} sales · ¼ mi · 3 yrs",
+      "compsSub_one": "{{count}} sale · ¼ mi · 3 yrs",
+      "overlays": "Overlays",
+      "overlaysNone": "None active",
+      "overlaysFriction": "{{count}} add review friction",
+      "overlaysContext": "Context — not blocking"
     }
   },
   "discovery": {

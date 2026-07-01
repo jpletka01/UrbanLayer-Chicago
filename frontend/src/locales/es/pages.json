@@ -247,6 +247,21 @@
     "violations": {
       "title": "Infracciones de construcción",
       "noneOnRecord": "Sin infracciones registradas en esta dirección"
+    },
+    "mapExpand": "Ampliar mapa",
+    "mapExpandNote": "El pin marca la ubicación resuelta — verifique que sea el lote correcto.",
+    "tiles": {
+      "zoning": "Zonificación",
+      "zoningFar": "FAR {{far}} de pleno derecho",
+      "assessed": "Valor catastral",
+      "assessedTax": "≈ {{tax}}/año impuesto est.",
+      "comps": "Mediana de comparables",
+      "compsSub_other": "{{count}} ventas · ¼ mi · 3 años",
+      "compsSub_one": "{{count}} venta · ¼ mi · 3 años",
+      "overlays": "Superposiciones",
+      "overlaysNone": "Ninguna activa",
+      "overlaysFriction": "{{count}} añaden revisión",
+      "overlaysContext": "Contexto — no bloquea"
     }
   },
   "discovery": {
