@@ -106,10 +106,10 @@ light-mode orange = dark-mode orange (2026-07-01); How-it-works balance fix.
    acceptable / swap for real defensible figures.
 2. **Personas** — optional light touch: flatten the nested quote boxes (card-in-card). Section otherwise
    earns its place (answers *who it's for*).
-3. **Phase 3 — App surfaces** (biggest remaining chunk; each inherits the palette but has NOT had a
-   dedicated bento pass): **Scorecard page** (highest value — VerdictBand, ReportCTACard, ZoningCard,
-   page-local cards), **Pricing**, **About** (also still name-drops the old fonts in its copy — update),
-   **Discovery** (reskin chrome ONLY; leave `upsideColor.ts`/`DiscoveryMap`/`DataPill` data colors), **chat
+3. **Phase 3 — App surfaces** (biggest remaining chunk): **Scorecard + Discovery are now a full
+   information-design overhaul, not a reskin — spec/plan/status live in
+   `bento-pro-phase3-app-surfaces.md` (the working doc for this phase).** Still simple reskins:
+   **Pricing**, **About** (also still name-drops the old fonts in its copy — update), **chat
    workspace** (MessageBubble, ChatInput, sidebar cards).
 4. **Phase 4 — Cleanup & docs:** sweep remaining ad-hoc chrome (`grep -rn "white/\|text-\[" src`), and
    **update `frontend/CLAUDE.md` "Design Tokens" + `claude-context/guides/design-system.md` +
