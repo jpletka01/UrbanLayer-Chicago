@@ -112,9 +112,14 @@ dot lattice whose dot size + alpha encode sampled luminance, so the *recognizabl
 figure* emerges from the dots. `landing/dotmatrix.ts` (pure: computeDots/coverCrop/
 pickAccentDot, unit-tested) + `DotMatrix.tsx` (canvas renderer: downsamples a bundled
 `assets/skyline-night.jpg` — cropped/downscaled from Jack's reference — one source px per
-grid cell, dots in resolved currentColor, one orange accent dot on the brightest window in
-the lower-left zone). The DotMatrix component is the site-wide system: any photo (e.g.
-StorySection images) can be run through it for on-brand dot art.
+grid cell, dots in resolved currentColor). The DotMatrix component is the site-wide system:
+any photo (e.g. StorySection images) can be run through it for on-brand dot art.
+Revision after Jack's review (`b6d6b97`): the lone orange accent dot REMOVED (read as noise
+without the found-parcel context) and **silhouette mode** added — measured luminance can't
+separate night sky from dark tower bodies (both ~0.04), so the figure is built structurally:
+per-column roofline detection, uniform bright lattice above (skyAlpha 0.38), black void below
+with only lit windows rendered (alpha floor 0.5) — the Hancock reads as a negative silhouette
+with its lit crown band. Mask dims only the left text column.
 **AccentRails** — faint orange plat-grid rails (16% alpha) along the below-hero margins.
 
 Also done: orange/violet across app surfaces (inherited via tokens); readability pass (contrast, spacing);
