@@ -1,0 +1,516 @@
+{
+  "built": "2026-07-02T20:37:04.661872+00:00",
+  "seed": 20260702,
+  "source": "78yw-iddh (Cook County Address Points)",
+  "strata": [
+    "10",
+    "13",
+    "14",
+    "16",
+    "17",
+    "20",
+    "25"
+  ],
+  "addresses": [
+    {
+      "address": "741 W 79Th St",
+      "truth_pin": "20331000020000",
+      "township": "20"
+    },
+    {
+      "address": "3341 S Kedzie Ave",
+      "truth_pin": "16361000270000",
+      "township": "16"
+    },
+    {
+      "address": "7334 N Meade Ave",
+      "truth_pin": "10293040020000",
+      "township": "10"
+    },
+    {
+      "address": "5503 S Halsted St",
+      "truth_pin": "20161000010000",
+      "township": "20"
+    },
+    {
+      "address": "5 S Austin Blvd",
+      "truth_pin": "16172000010000",
+      "township": "16"
+    },
+    {
+      "address": "3157 W Devon Ave",
+      "truth_pin": "13011000010000",
+      "township": "13"
+    },
+    {
+      "address": "623 W Madison St",
+      "truth_pin": "17161010230000",
+      "township": "17"
+    },
+    {
+      "address": "7167 W Irving Park Rd",
+      "truth_pin": "13191000090000",
+      "township": "13"
+    },
+    {
+      "address": "3101 W Touhy Ave",
+      "truth_pin": "10361000160000",
+      "township": "10"
+    },
+    {
+      "address": "1031 E 103Rd St",
+      "truth_pin": "25141000050000",
+      "township": "25"
+    },
+    {
+      "address": "625 W Madison St",
+      "truth_pin": "17161010220000",
+      "township": "17"
+    },
+    {
+      "address": "2250 E 130Th St",
+      "truth_pin": "25254010090000",
+      "township": "25"
+    },
+    {
+      "address": "7336 N Meade Ave",
+      "truth_pin": "10293040020000",
+      "township": "10"
+    },
+    {
+      "address": "6351 W Touhy Ave",
+      "truth_pin": "10321000020000",
+      "township": "10"
+    },
+    {
+      "address": "7149 W Belmont Ave",
+      "truth_pin": "13301000030000",
+      "township": "13"
+    },
+    {
+      "address": "1551 W Garfield Blvd",
+      "truth_pin": "20171000010000",
+      "township": "20"
+    },
+    {
+      "address": "929 E 103Rd St",
+      "truth_pin": "25141000080000",
+      "township": "25"
+    },
+    {
+      "address": "7101 S South Chicago Ave",
+      "truth_pin": "20261000010000",
+      "township": "20"
+    },
+    {
+      "address": "4539 W 31St St",
+      "truth_pin": "16341010110000",
+      "township": "16"
+    },
+    {
+      "address": "7030 N Sacramento Ave",
+      "truth_pin": "10361000030000",
+      "township": "10"
+    },
+    {
+      "address": "7115 S South Chicago Ave",
+      "truth_pin": "20261000020000",
+      "township": "20"
+    },
+    {
+      "address": "3100 S Kilbourn Ave",
+      "truth_pin": "16341010130000",
+      "township": "16"
+    },
+    {
+      "address": "933 E 95Th St",
+      "truth_pin": "25111000300000",
+      "township": "25"
+    },
+    {
+      "address": "757 W 79Th St",
+      "truth_pin": "20331000010000",
+      "township": "20"
+    },
+    {
+      "address": "5521 S Ashland Ave",
+      "truth_pin": "20171000050000",
+      "township": "20"
+    },
+    {
+      "address": "2329 W Madison St",
+      "truth_pin": "17181000100000",
+      "township": "17"
+    },
+    {
+      "address": "7155 W Belmont Ave",
+      "truth_pin": "13301000030000",
+      "township": "13"
+    },
+    {
+      "address": "4734 N Marine Dr",
+      "truth_pin": "14161000050000",
+      "township": "14"
+    },
+    {
+      "address": "3250 S Kilbourn Ave",
+      "truth_pin": "16341010060000",
+      "township": "16"
+    },
+    {
+      "address": "5501 S Halsted St",
+      "truth_pin": "20161000010000",
+      "township": "20"
+    },
+    {
+      "address": "1555 W 47Th St",
+      "truth_pin": "20081000020000",
+      "township": "20"
+    },
+    {
+      "address": "1409 W 19Th St",
+      "truth_pin": "172203210210000",
+      "township": "17"
+    },
+    {
+      "address": "11901 S Loomis St",
+      "truth_pin": "25291010210000",
+      "township": "25"
+    },
+    {
+      "address": "3151 W Devon Ave",
+      "truth_pin": "13011000010000",
+      "township": "13"
+    },
+    {
+      "address": "7136 N Nagle Ave",
+      "truth_pin": "10312080330000",
+      "township": "10"
+    },
+    {
+      "address": "6355 W Touhy Ave",
+      "truth_pin": "10321000010000",
+      "township": "10"
+    },
+    {
+      "address": "9611 S Cottage Grove Ave",
+      "truth_pin": "25111000170000",
+      "township": "25"
+    },
+    {
+      "address": "6321 N Cicero Ave",
+      "truth_pin": "13031000250000",
+      "township": "13"
+    },
+    {
+      "address": "1514 W 33Rd St",
+      "truth_pin": "17321000050000",
+      "township": "17"
+    },
+    {
+      "address": "4713 S Ashland Ave",
+      "truth_pin": "20081000030000",
+      "township": "20"
+    },
+    {
+      "address": "7140 N Nagle Ave",
+      "truth_pin": "10312080320000",
+      "township": "10"
+    },
+    {
+      "address": "1555 N State Pkwy",
+      "truth_pin": "17031000010000",
+      "township": "17"
+    },
+    {
+      "address": "1401 W 19Th St",
+      "truth_pin": "172203210210000",
+      "township": "17"
+    },
+    {
+      "address": "7 S Austin Blvd",
+      "truth_pin": "16172000010000",
+      "township": "16"
+    },
+    {
+      "address": "1 S Halsted St",
+      "truth_pin": "17161000480000",
+      "township": "17"
+    },
+    {
+      "address": "12200 S Hoxie Ave",
+      "truth_pin": "25252060250000",
+      "township": "25"
+    },
+    {
+      "address": "1427 W 111Th St",
+      "truth_pin": "25201020050000",
+      "township": "25"
+    },
+    {
+      "address": "3149 W Devon Ave",
+      "truth_pin": "13011000010000",
+      "township": "13"
+    },
+    {
+      "address": "1431 W 111Th St",
+      "truth_pin": "25201020030000",
+      "township": "25"
+    },
+    {
+      "address": "3425 S Kedzie Ave",
+      "truth_pin": "16361000250000",
+      "township": "16"
+    },
+    {
+      "address": "7141 N Kedzie Ave",
+      "truth_pin": "10361000150000",
+      "township": "10"
+    },
+    {
+      "address": "6327 N Cicero Ave",
+      "truth_pin": "13031000210000",
+      "township": "13"
+    },
+    {
+      "address": "11901 S Ashland Ave",
+      "truth_pin": "25291000060000",
+      "township": "25"
+    },
+    {
+      "address": "3949 N Clarendon Ave",
+      "truth_pin": "14211000010000",
+      "township": "14"
+    },
+    {
+      "address": "2327 W Madison St",
+      "truth_pin": "17181000100000",
+      "township": "17"
+    },
+    {
+      "address": "2243 S Pulaski Rd",
+      "truth_pin": "16261010060000",
+      "township": "16"
+    },
+    {
+      "address": "3947 N Clarendon Ave",
+      "truth_pin": "14211000010000",
+      "township": "14"
+    },
+    {
+      "address": "755 W Lawrence Ave",
+      "truth_pin": "14161000040000",
+      "township": "14"
+    },
+    {
+      "address": "3943 W Roosevelt Rd",
+      "truth_pin": "16231000060000",
+      "township": "16"
+    },
+    {
+      "address": "4757 N Ashland Ave",
+      "truth_pin": "14171000010000",
+      "township": "14"
+    },
+    {
+      "address": "3345 S Kedzie Ave",
+      "truth_pin": "16361000270000",
+      "township": "16"
+    },
+    {
+      "address": "3951 N Clarendon Ave",
+      "truth_pin": "14211000010000",
+      "township": "14"
+    },
+    {
+      "address": "4700 N Marine Dr",
+      "truth_pin": "14161010010000",
+      "township": "14"
+    },
+    {
+      "address": "3109 N Kedzie Ave",
+      "truth_pin": "13251000220000",
+      "township": "13"
+    },
+    {
+      "address": "4715 S Ashland Ave",
+      "truth_pin": "20081000030000",
+      "township": "20"
+    },
+    {
+      "address": "3955 N Western Ave",
+      "truth_pin": "14191000010000",
+      "township": "14"
+    },
+    {
+      "address": "1403 W 19Th St",
+      "truth_pin": "172203210210000",
+      "township": "17"
+    },
+    {
+      "address": "4761 N Western Ave",
+      "truth_pin": "14181000010000",
+      "township": "14"
+    },
+    {
+      "address": "6325 N Cicero Ave",
+      "truth_pin": "13031000240000",
+      "township": "13"
+    },
+    {
+      "address": "1525 N State Pkwy",
+      "truth_pin": "17031000020000",
+      "township": "17"
+    },
+    {
+      "address": "3111 N Kedzie Ave",
+      "truth_pin": "13251000210000",
+      "township": "13"
+    },
+    {
+      "address": "3953 W Roosevelt Rd",
+      "truth_pin": "16231000020000",
+      "township": "16"
+    },
+    {
+      "address": "2331 W Madison St",
+      "truth_pin": "17181000100000",
+      "township": "17"
+    },
+    {
+      "address": "1531 W Lawrence Ave",
+      "truth_pin": "14171000030000",
+      "township": "14"
+    },
+    {
+      "address": "1500 W 33Rd St",
+      "truth_pin": "17321000060000",
+      "township": "17"
+    },
+    {
+      "address": "5505 S Halsted St",
+      "truth_pin": "20161000010000",
+      "township": "20"
+    },
+    {
+      "address": "9633 S Cottage Grove Ave",
+      "truth_pin": "25111000220000",
+      "township": "25"
+    },
+    {
+      "address": "7338 N Meade Ave",
+      "truth_pin": "10293040010000",
+      "township": "10"
+    },
+    {
+      "address": "2239 S Pulaski Rd",
+      "truth_pin": "16261010060000",
+      "township": "16"
+    },
+    {
+      "address": "2337 W Irving Park Rd",
+      "truth_pin": "14191000030000",
+      "township": "14"
+    },
+    {
+      "address": "2343 W Irving Park Rd",
+      "truth_pin": "14191000020000",
+      "township": "14"
+    },
+    {
+      "address": "7171 W Irving Park Rd",
+      "truth_pin": "13191000090000",
+      "township": "13"
+    },
+    {
+      "address": "3955 W Roosevelt Rd",
+      "truth_pin": "16231000010000",
+      "township": "16"
+    },
+    {
+      "address": "2240 E 130Th St",
+      "truth_pin": "25253010040000",
+      "township": "25"
+    },
+    {
+      "address": "4759 N Western Ave",
+      "truth_pin": "14181000010000",
+      "township": "14"
+    },
+    {
+      "address": "1533 W Garfield Blvd",
+      "truth_pin": "20171000030000",
+      "township": "20"
+    },
+    {
+      "address": "6349 W Touhy Ave",
+      "truth_pin": "10321000030000",
+      "township": "10"
+    },
+    {
+      "address": "7117 S South Chicago Ave",
+      "truth_pin": "20261000030000",
+      "township": "20"
+    },
+    {
+      "address": "1440 W 33Rd St",
+      "truth_pin": "17321000070000",
+      "township": "17"
+    },
+    {
+      "address": "3117 N Kedzie Ave",
+      "truth_pin": "13251000190000",
+      "township": "13"
+    },
+    {
+      "address": "737 W 79Th St",
+      "truth_pin": "20331000030000",
+      "township": "20"
+    },
+    {
+      "address": "955 E 103Rd St",
+      "truth_pin": "25141000100000",
+      "township": "25"
+    },
+    {
+      "address": "1535 W Lawrence Ave",
+      "truth_pin": "14171000010000",
+      "township": "14"
+    },
+    {
+      "address": "9 S Austin Blvd",
+      "truth_pin": "16172000010000",
+      "township": "16"
+    },
+    {
+      "address": "7132 N Nagle Ave",
+      "truth_pin": "10312080340000",
+      "township": "10"
+    },
+    {
+      "address": "1460 W 112Th St",
+      "truth_pin": "25201010010000",
+      "township": "25"
+    },
+    {
+      "address": "4753 N Western Ave",
+      "truth_pin": "14181000010000",
+      "township": "14"
+    },
+    {
+      "address": "7153 W Belmont Ave",
+      "truth_pin": "13301000030000",
+      "township": "13"
+    },
+    {
+      "address": "1550 N Astor St",
+      "truth_pin": "17031000010000",
+      "township": "17"
+    },
+    {
+      "address": "1441 W 119Th St",
+      "truth_pin": "25291000050000",
+      "township": "25"
+    }
+  ]
+}

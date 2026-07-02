@@ -37,6 +37,7 @@ cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run b
                                                   # an unused import passes --noEmit but fails the build/deploy (hit 2026-06-30).
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark
+PYTHONPATH=. python -m eval.lot_coverage --full http://localhost:8001  # lot-info field completeness across the fixed 100-address panel (eval/lot_panel.json)
 
 # Docker (local)
 docker compose up -d                              # dev (backend + qdrant, hot-reload)
