@@ -93,6 +93,7 @@
     },
     "downloadPdf": "Descargar informe en PDF",
     "downloadCsv": "Descargar CSV",
+    "downloadCsvShort": "CSV",
     "generating": "Generando...",
     "dataAsOf": "Datos al {{date}}",
     "someDataUnavailable": "Algunos datos no están disponibles: {{sources}}",

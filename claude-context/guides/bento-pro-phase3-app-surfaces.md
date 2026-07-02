@@ -169,6 +169,24 @@ Verification per step: `npm run build` (CI gate) + Playwright screenshots dark A
 
 ## Status
 
+- **Scorecard: TOP-OF-PAGE COHESION PASS COMPLETE on branch (2026-07-02).** Jack's audit
+  found the above-the-sections stack incoherent (4 blocks, 4 chromes, 3 button styles).
+  Fixes: (1) **Decision card** — identity header (locator, address, PIN, badges, page
+  actions) + verdict narrative + evidence-tile rail merged into ONE `rounded-bento`
+  surface (VerdictBand gains a `header` slot; the tiles prop is restored after an
+  uncommitted removal was committed as `2bafbd3`); (2) verdict tone moved from the
+  amber left-border wall to a small dot on the headline (a "constrained" verdict no
+  longer reads as an error banner; amber = caveats only); (3) **Report CTA demoted to a
+  slim one-line strip** (violet button + sample link; the full sell lives in the
+  purchase modal + sample PDF — still ONE CTA, policy intact); (4) header actions
+  (Ask about this property, CSV) unified on the investigate-chip idiom, grouped —
+  solid orange is exclusively the verdict's next step; (5) **search unified on
+  `AddressInput`** (new `variant="page"` + `size` props; hero look unchanged) — the
+  Scorecard search gains autocomplete and matches the homepage pill; (6) locator thumb
+  112px, theme-aware style (light-v11/dark-v11), attribution only on the expanded
+  modal. Verified: build, 140 vitest, Playwright drive (autocomplete select, tile
+  deep-link, sticky strip, map modal, ask-chip nav, failed-search re-seed, question
+  redirect, mobile 390px no-overflow) dark+light.
 - **Scorecard: RESTRUCTURE COMPLETE on branch (2026-07-01).** Tier 1 (band + tiles +
   locator), page-scale card family (`components/scorecard/`: Property w/ sparkline +
   tax bars, Regulatory severity-sorted, Zoning w/ FAR meter, Comparables w/ price
@@ -189,6 +207,9 @@ Verification per step: `npm run build` (CI gate) + Playwright screenshots dark A
 
 ## Decisions log
 
+- 2026-07-02 — Scorecard top-of-page: identity + verdict + tiles are ONE decision card
+  (not stacked blocks); report CTA is a slim strip (sell moved to modal/sample); solid
+  orange belongs to the verdict next-step alone; Scorecard search reuses AddressInput.
 - 2026-07-01 — Plan created. Homepage visualization work deferred by Jack.
 - 2026-07-01 — Hero backdrop: plat-map variant chosen (periphery-masked, achromatic,
   currentColor inversion); accent plat-rails added below hero @ 16% alpha.

@@ -111,6 +111,7 @@
     },
     "downloadPdf": "Download PDF Report",
     "downloadCsv": "Download CSV",
+    "downloadCsvShort": "CSV",
     "generating": "Generating...",
     "dataAsOf": "Data as of {{date}}",
     "someDataUnavailable": "Some data unavailable: {{sources}}",

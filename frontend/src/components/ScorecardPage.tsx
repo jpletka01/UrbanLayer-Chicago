@@ -22,6 +22,8 @@ import { VerdictBand, verdictDotClass, type VerdictTile } from "./VerdictBand";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
+import { AddressInput } from "./AddressInput";
+import { useThemeContext } from "../contexts/ThemeContext";
 import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
 import { Modal } from "./ui/Modal";
@@ -50,17 +52,22 @@ function formatPin(pin: string): string {
 // Static location image (Mapbox Static Images API). Pin-only by design:
 // parcel polygon geometry isn't reliably available (county GIS), so the
 // default state must not depend on it. Hidden entirely if the image fails.
-// Sized to actually verify identity ("is that my corner?") — the one job a map
-// has on this page (nearest-parcel seam) — with a click-to-expand closer look.
+// Its ONLY job is identity confirmation ("is that my corner?" — the
+// nearest-parcel seam), so it's a small click-to-verify square in the decision
+// card's header, not a context map; the expanded view carries the legible look.
 function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: string }) {
   const { t } = useTranslation("pages");
+  const { resolvedTheme } = useThemeContext();
   const [failed, setFailed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   if (!token || failed) return null;
+  const style = resolvedTheme === "light" ? "light-v11" : "dark-v11";
   const pt = `${lon.toFixed(5)},${lat.toFixed(5)}`;
-  const staticUrl = (w: number, h: number, zoom: number) =>
-    `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+c96442(${pt})/${pt},${zoom}/${w}x${h}@2x?access_token=${token}&logo=false`;
+  // Attribution renders only on the expanded view — at 112px the overlay text
+  // is illegible clutter, and the click-through image keeps it accessible.
+  const staticUrl = (w: number, h: number, zoom: number, attribution = true) =>
+    `https://api.mapbox.com/styles/v1/mapbox/${style}/static/pin-s+c96442(${pt})/${pt},${zoom}/${w}x${h}@2x?access_token=${token}&logo=false${attribution ? "" : "&attribution=false"}`;
   return (
     <>
       <button
@@ -70,16 +77,16 @@ function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: st
         className="hidden sm:block shrink-0 rounded-lg overflow-hidden border border-dark-border hover:border-dark-border-strong transition-colors cursor-zoom-in"
       >
         <img
-          src={staticUrl(176, 176, 15)}
+          src={staticUrl(112, 112, 15.5, false)}
           alt=""
           loading="lazy"
           onError={() => setFailed(true)}
-          className="w-44 h-44 object-cover"
+          className="w-28 h-28 object-cover"
         />
       </button>
       {expanded && (
         <Modal onClose={() => setExpanded(false)} title={address} description={t("scorecard.mapExpandNote")} size="lg">
-          <img src={staticUrl(480, 320, 16)} alt="" className="w-full rounded-lg border border-dark-border object-cover" />
+          <img src={staticUrl(640, 400, 16)} alt="" className="w-full rounded-lg border border-dark-border object-cover" />
         </Modal>
       )}
     </>
@@ -306,6 +313,9 @@ export default function ScorecardPage() {
 
   const doSearch = useCallback((query: string) => {
     if (!query.trim()) return;
+    // Remember the submitted text so the prominent shell can re-seed the input
+    // after a failed lookup (the shells swap during loading, dropping DOM state).
+    setAddress(query.trim());
     runQuery({ address: query.trim() });
   }, [runQuery]);
 
@@ -346,11 +356,6 @@ export default function ScorecardPage() {
     url.searchParams.delete("report_purchased");
     window.history.replaceState({}, "", url.toString());
   }, [data, parcel, searchParams, triggerDownload]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    doSearch(address);
-  };
 
   const ctx = data?.context;
   const zoning = ctx?.parcel_zoning;
@@ -458,22 +463,18 @@ export default function ScorecardPage() {
             <p className="text-body text-text-muted mb-4">
               {t("scorecard.subtitle")}
             </p>
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="1601 N Milwaukee Ave"
-                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-4 py-2.5 text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={loading || !address.trim()}
-                className="px-5 py-2.5 bg-action hover:bg-action-hover disabled:opacity-50 text-text-on-accent text-title rounded-lg transition-colors"
-              >
-                {loading ? t("scorecard.loading") : t("scorecard.search")}
-              </button>
-            </form>
+            {/* Same component as the homepage hero (autocomplete included) — the
+                search experience must not degrade between surfaces. key re-seeds
+                the typed text after a failed lookup swaps the shells. */}
+            <AddressInput
+              key={`prominent-${address}`}
+              variant="page"
+              size="md"
+              defaultValue={address}
+              placeholder="1601 N Milwaukee Ave"
+              onSubmit={doSearch}
+              busy={loading}
+            />
             {error && errorShape === "address" && (
               <div className="mt-3 text-body text-state-negative bg-state-negative/10 border border-state-negative/20 rounded-lg px-4 py-2.5">
                 <div>{error}</div>
@@ -492,23 +493,15 @@ export default function ScorecardPage() {
           </div>
         ) : (
           <div className="max-w-2xl mx-auto mb-6">
-            <form onSubmit={handleSubmit} className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder={t("scorecard.searchAnother")}
-                aria-label={t("scorecard.searchAnother")}
-                className="flex-1 bg-dark-surface border border-dark-border rounded-lg px-3 py-1.5 text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={loading || !address.trim()}
-                className="px-3 py-1.5 bg-dark-elevated hover:bg-dark-hover disabled:opacity-50 text-text-secondary text-caption font-medium rounded-lg transition-colors shrink-0"
-              >
-                {loading ? t("scorecard.loading") : t("scorecard.search")}
-              </button>
-            </form>
+            {/* Compact re-search: same shared component, smaller step. Empty by
+                design — the loaded address lives in the decision card below. */}
+            <AddressInput
+              variant="page"
+              size="sm"
+              placeholder={t("scorecard.searchAnother")}
+              onSubmit={doSearch}
+              busy={loading}
+            />
           </div>
         )}
 
@@ -542,106 +535,110 @@ export default function ScorecardPage() {
 
         {data && ctx && !loading && (
           <div>
-            {/* Address header */}
-            <div className="mb-6 pb-4 border-b border-dark-border flex gap-4 items-start">
-              <MapThumb lat={data.lat} lon={data.lon} address={data.address || ctx.property?.address || ""} />
-              <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <h2 className="text-subtitle">
-                  {data.address || ctx.property?.address ||
-                    (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
-                </h2>
-                {data.community_area_name && (
-                  <span className="text-body text-text-muted">{data.community_area_name}</span>
-                )}
-              </div>
-              {/* Parcel identity strip */}
-              {parcel && (
-                <div className="flex items-center gap-3 mt-2 flex-wrap">
-                  {parcel.pin && (
-                    <a
-                      href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-caption font-mono text-text-secondary hover:text-accent transition-colors"
-                    >
-                      PIN {formatPin(parcel.pin)}
-                    </a>
-                  )}
-                  {parcel.pin === null ? (
-                    <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
-                      {t("scorecard.badges.unconfirmed")}
-                    </Chip>
-                  ) : parcel.confidence === "authoritative" ? (
-                    <Chip tone="positive" size="sm" title={t("scorecard.badges.exactTitle")} className="cursor-help">
-                      ✓ {t("scorecard.badges.exact")}
-                    </Chip>
-                  ) : (
-                    <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
-                      {t("scorecard.badges.approximate")}
-                    </Chip>
-                  )}
-                </div>
-              )}
-              {data.context.data_as_of && (
-                <div className="mt-2 text-micro text-text-muted">
-                  {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
-                </div>
-              )}
-              {data.partial_failures.length > 0 && (
-                <div className="mt-2 text-micro text-state-warning">
-                  {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
-                </div>
-              )}
-              {/* Investigate buttons */}
-              <div className="flex flex-wrap gap-3 mt-3 items-center">
-                {/* Open-ended chat entry: lands on the grounded "Ask about this
-                    property" starters (no auto-send) so the contextual path is
-                    the obvious one. Pin-only — the workspace hydrates grounding. */}
-                {parcel?.pin && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      track("investigate_click", { card_name: "ask_about_property" });
-                      navigate(`/?pin=${parcel.pin}`);
-                    }}
-                    className="group inline-flex items-center gap-1.5 text-caption text-accent border border-accent/40 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                    </svg>
-                    {t("scorecard.askAboutProperty")}
-                    <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  title={t("scorecard.downloadCsv")}
-                  aria-label={t("scorecard.downloadCsv")}
-                  onClick={() => {
-                    const slug = buildFilenameSlug(data.address || "property");
-                    const date = new Date().toISOString().slice(0, 10);
-                    downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
-                  }}
-                  className="ml-auto inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-muted hover:text-accent hover:bg-dark-elevated transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                  </svg>
-                </button>
-              </div>
-              </div>
-            </div>
-
-            {/* Verdict Band — leads with the conclusion; reasons deep-link to the
-                evidence cards below; one next step. The nearest-parcel /
+            {/* Decision card — ONE surface for identity + verdict + evidence
+                tiles. Leads with the conclusion; reasons and tiles deep-link to
+                the evidence cards below; one next step. The nearest-parcel /
                 unconfirmed-identity caveat is folded into the band's caveats. */}
             {verdict && (
               <div ref={bandRef}>
                 <VerdictBand
                   verdict={verdict}
+                  tiles={tiles}
                   onChat={verdictChat}
                   onScrollTo={scrollToCard}
+                  header={
+                    <div className="flex gap-4 items-start">
+                      <MapThumb lat={data.lat} lon={data.lon} address={data.address || ctx.property?.address || ""} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-3 flex-wrap">
+                          <h2 className="text-subtitle">
+                            {data.address || ctx.property?.address ||
+                              (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
+                          </h2>
+                          {data.community_area_name && (
+                            <span className="text-body text-text-muted">{data.community_area_name}</span>
+                          )}
+                        </div>
+                        {/* Parcel identity strip */}
+                        {parcel && (
+                          <div className="flex items-center gap-3 mt-2 flex-wrap">
+                            {parcel.pin && (
+                              <a
+                                href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-caption font-mono text-text-secondary hover:text-accent transition-colors"
+                              >
+                                PIN {formatPin(parcel.pin)}
+                              </a>
+                            )}
+                            {parcel.pin === null ? (
+                              <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
+                                {t("scorecard.badges.unconfirmed")}
+                              </Chip>
+                            ) : parcel.confidence === "authoritative" ? (
+                              <Chip tone="positive" size="sm" title={t("scorecard.badges.exactTitle")} className="cursor-help">
+                                ✓ {t("scorecard.badges.exact")}
+                              </Chip>
+                            ) : (
+                              <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
+                                {t("scorecard.badges.approximate")}
+                              </Chip>
+                            )}
+                          </div>
+                        )}
+                        {data.context.data_as_of && (
+                          <div className="mt-2 text-micro text-text-muted">
+                            {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
+                          </div>
+                        )}
+                        {data.partial_failures.length > 0 && (
+                          <div className="mt-2 text-micro text-state-warning">
+                            {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
+                          </div>
+                        )}
+                        {/* Page actions — ONE idiom (the investigate-chip
+                            language), grouped so neither floats alone. Solid
+                            orange stays reserved for the verdict's next step. */}
+                        <div className="flex flex-wrap gap-2 mt-3 items-center">
+                          {/* Open-ended chat entry: lands on the grounded "Ask
+                              about this property" starters (no auto-send).
+                              Pin-only — the workspace hydrates grounding. */}
+                          {parcel?.pin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                track("investigate_click", { card_name: "ask_about_property" });
+                                navigate(`/?pin=${parcel.pin}`);
+                              }}
+                              className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                              </svg>
+                              {t("scorecard.askAboutProperty")}
+                              <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            title={t("scorecard.downloadCsv")}
+                            onClick={() => {
+                              const slug = buildFilenameSlug(data.address || "property");
+                              const date = new Date().toISOString().slice(0, 10);
+                              downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
+                            }}
+                            className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            {t("scorecard.downloadCsvShort")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  }
                 />
               </div>
             )}

@@ -1,21 +1,24 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScorecardVerdict, VerdictCategory, CardId, ReasonPolarity } from "../lib/scorecardVerdict";
 
-// The Verdict Band — leads the Scorecard with a conclusion, supports it with
-// card-linked evidence, and commits to ONE next step. Replaces the old
-// facts-only flag line (which restated cards without concluding anything).
-// Skill basis: quiz-and-assessment-design (actionable segmentation, one mapped
-// next step) + comparison-tool-design (honest recommendation — negatives inline,
-// methodology disclosed). Bespoke hero element, like the parcel identity band.
+// The Decision Card — one full-width card that leads the Scorecard: parcel
+// identity (header slot), the scored conclusion with card-linked evidence and
+// ONE next step (body), and the numbers that justify it (tile rail). Merging
+// identity + verdict + tiles into a single surface is deliberate: the old
+// stack of four differently-chromed blocks read as clutter, and the amber
+// left-border treatment made a "constrained" verdict look like an error
+// banner. Tone now rides a small dot on the headline; amber is reserved for
+// genuine caveats. Verdict logic is calibrated and untouched (scorecardVerdict.ts).
 
-// One tone accent per band encodes favorability (genuine state, not rainbow chrome).
-const TONE: Record<VerdictCategory, { bar: string; dot: string }> = {
-  strong: { bar: "border-l-state-positive", dot: "bg-state-positive" },
-  incentive_driven: { bar: "border-l-accent", dot: "bg-accent" },
-  constrained: { bar: "border-l-state-warning", dot: "bg-state-warning" },
-  limited: { bar: "border-l-dark-border-strong", dot: "bg-text-muted" },
-  entitlement_defined: { bar: "border-l-dark-border-strong", dot: "bg-text-muted" },
-  insufficient_data: { bar: "border-l-state-warning", dot: "bg-text-muted" },
+// One tone dot per band encodes favorability (genuine state, not rainbow chrome).
+const TONE: Record<VerdictCategory, { dot: string }> = {
+  strong: { dot: "bg-state-positive" },
+  incentive_driven: { dot: "bg-accent" },
+  constrained: { dot: "bg-state-warning" },
+  limited: { dot: "bg-text-muted" },
+  entitlement_defined: { dot: "bg-text-muted" },
+  insufficient_data: { dot: "bg-text-muted" },
 };
 
 /** Tone dot for external condensed renderings (sticky verdict strip). */
@@ -50,16 +53,20 @@ export interface VerdictTile {
 
 export interface VerdictBandProps {
   verdict: ScorecardVerdict;
+  /** Parcel identity zone (locator, address, PIN, badges, page actions) —
+   *  rendered inside the card, above the verdict, under one chrome. */
+  header?: ReactNode;
+  tiles?: VerdictTile[];
   onChat: (question: string) => void;
   onScrollTo: (anchor: CardId) => void;
 }
 
-export function VerdictBand({ verdict, onChat, onScrollTo }: VerdictBandProps) {
+export function VerdictBand({ verdict, header, tiles, onChat, onScrollTo }: VerdictBandProps) {
   const { t } = useTranslation("pages");
   const tone = TONE[verdict.category];
 
-  // Single azure next-step only — the paid report lives in its own terracotta
-  // ReportCTACard below the band (no money action inside the verdict). See #4.
+  // Single orange next-step only — the paid report lives in its own violet
+  // strip below the card (no money action inside the verdict). See #4.
   function runStep(step: ScorecardVerdict["nextStep"]) {
     if (step.kind === "chat" && step.question) onChat(step.question);
     else if (step.kind === "scroll" && step.cardAnchor) onScrollTo(step.cardAnchor);
@@ -67,15 +74,25 @@ export function VerdictBand({ verdict, onChat, onScrollTo }: VerdictBandProps) {
 
   const primaryClasses = "bg-action hover:bg-action-hover text-action-fg";
 
+  const showTiles = !!tiles && tiles.length >= 2;
+
   return (
     <section
       aria-label={t("scorecard.verdict.ariaLabel")}
-      className={`mb-6 bg-dark-surface border border-dark-border ${tone.bar} border-l-4 rounded-xl shadow-card overflow-hidden`}
+      className="mb-6 bg-dark-surface border border-dark-border rounded-bento shadow-card overflow-hidden"
     >
+      {header && <div className="px-5 py-4 border-b border-dark-border">{header}</div>}
+
+      {/* Two zones: the verdict narrative (left) + the numbers that justify it
+          (right). The card owns its full width in every state — no empty flank. */}
+      <div className={showTiles ? "grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]" : ""}>
       <div className="p-5">
-      {/* Headline — the conclusion, leading */}
+      {/* Headline — the conclusion, leading; tone rides the dot, not the chrome */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h2 className="text-lead text-text-primary">{verdict.headline}</h2>
+        <h2 className="text-lead text-text-primary flex items-baseline gap-2.5">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 self-center ${tone.dot}`} aria-hidden />
+          {verdict.headline}
+        </h2>
         {verdict.confidence === "caveated" && (
           <span className="text-micro text-state-warning border border-state-warning/30 bg-state-warning/10 rounded-md px-2 py-0.5 shrink-0">
             {t("scorecard.verdict.caveatedBadge")}
@@ -103,7 +120,7 @@ export function VerdictBand({ verdict, onChat, onScrollTo }: VerdictBandProps) {
         ))}
       </ul>
 
-      {/* The single next step — one azure action, no money CTA in the band */}
+      {/* The single next step — one orange action, no money CTA in the band */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -148,6 +165,26 @@ export function VerdictBand({ verdict, onChat, onScrollTo }: VerdictBandProps) {
         </dl>
         <p className="mt-2 pl-3 text-micro text-text-muted leading-snug">{t("scorecard.verdict.howScoredNote")}</p>
       </details>
+      </div>
+
+      {/* Evidence rail — the verdict's numbers as clickable stat tiles */}
+      {showTiles && (
+        <div className="border-t lg:border-t-0 lg:border-l border-dark-border bg-dark-elevated/40 p-3 grid grid-cols-2 gap-2 content-center">
+          {tiles!.map((tile) => (
+            <button
+              key={tile.anchor + tile.label}
+              type="button"
+              onClick={() => onScrollTo(tile.anchor)}
+              title={t("scorecard.verdict.jumpToEvidence")}
+              className="group text-left rounded-lg border border-dark-border bg-dark-surface hover:border-dark-border-strong p-3 transition-colors"
+            >
+              <div className="text-overline uppercase text-text-muted">{tile.label}</div>
+              <div className="text-subtitle text-text-primary mt-1 truncate">{tile.value}</div>
+              {tile.sub && <div className="text-micro text-text-muted mt-0.5 leading-snug">{tile.sub}</div>}
+            </button>
+          ))}
+        </div>
+      )}
       </div>
     </section>
   );

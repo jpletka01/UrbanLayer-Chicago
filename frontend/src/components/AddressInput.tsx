@@ -7,22 +7,65 @@ import type { AddressSuggestion } from "../lib/types";
 interface Props {
   onSubmit: (address: string) => void;
   placeholder: string;
+  /** "hero" = over-image homepage styling (white chrome); "page" = token-backed
+   *  themeable styling for in-app pages (Scorecard). */
+  variant?: "hero" | "page";
+  /** md = full search field; sm = compact re-search bar. Hero is always md. */
+  size?: "md" | "sm";
+  /** Initial text (e.g. a failed query the user should correct). */
+  defaultValue?: string;
+  /** Disables submit while a lookup is in flight. */
+  busy?: boolean;
 }
 
+// Per-variant chrome. Hero keeps the original over-image styling verbatim; page
+// maps every piece onto theme tokens so it flips with light/dark.
+const CHROME = {
+  hero: {
+    formIdle: "bg-transparent border border-white/20 hover:border-white/30",
+    formActive: "bg-dark-surface/80 backdrop-blur-md border border-dark-border shadow-xl",
+    icon: "text-white/50",
+    input: "text-white placeholder-white/50",
+    submitIdle: "bg-white/10 hover:bg-white/20 text-white/70",
+    submitActive: "bg-action hover:bg-action-hover text-white",
+    suggestionActive: "bg-accent/20 text-white",
+    suggestionIdle: "text-text-secondary hover:bg-dark-elevated hover:text-white",
+  },
+  page: {
+    formIdle: "bg-dark-surface border border-dark-border hover:border-dark-border-strong",
+    formActive: "bg-dark-surface border border-dark-border-strong shadow-card",
+    icon: "text-text-muted",
+    input: "text-text-primary placeholder:text-text-muted",
+    submitIdle: "bg-dark-elevated hover:bg-dark-hover text-text-secondary",
+    submitActive: "bg-action hover:bg-action-hover text-text-on-accent",
+    suggestionActive: "bg-accent/15 text-text-primary",
+    suggestionIdle: "text-text-secondary hover:bg-dark-elevated hover:text-text-primary",
+  },
+} as const;
+
+// Size steps: radius, paddings, icon slot. sm is the compact "search another" bar.
+const SIZING = {
+  md: { form: "rounded-2xl", input: "pl-12 pr-12 py-3.5 text-base rounded-2xl", icon: "left-4 w-5 h-5", button: "right-2 w-8 h-8" },
+  sm: { form: "rounded-xl", input: "pl-10 pr-11 py-2 text-body rounded-xl", icon: "left-3.5 w-4 h-4", button: "right-1.5 w-7 h-7" },
+} as const;
+
 /**
- * Hero address input: the whole value is an address, so autocomplete runs on
- * the full input (no fragment detection). Selecting a suggestion submits
- * immediately — the address IS the terminal action. Free-text Enter also
- * submits; the backend resolves it server-side.
+ * Address search input — shared between the homepage hero and the Scorecard page
+ * so search looks and behaves the same everywhere: whole-value autocomplete
+ * (300ms debounce), suggestion select submits immediately, free-text Enter
+ * submits too (backend resolves it server-side).
  */
-export function AddressInput({ onSubmit, placeholder }: Props) {
+export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "md", defaultValue, busy = false }: Props) {
   const { t } = useTranslation("common");
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(defaultValue ?? "");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const chrome = CHROME[variant];
+  const sizing = SIZING[variant === "hero" ? "md" : size];
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -94,14 +137,10 @@ export function AddressInput({ onSubmit, placeholder }: Props) {
     <div ref={containerRef} className="relative w-full max-w-2xl mx-auto">
       <form
         onSubmit={submit}
-        className={`relative rounded-2xl transition-all duration-300 ${
-          isActive
-            ? "bg-dark-surface/80 backdrop-blur-md border border-dark-border shadow-xl"
-            : "bg-transparent border border-white/20 hover:border-white/30"
-        }`}
+        className={`relative transition-all duration-300 ${sizing.form} ${isActive ? chrome.formActive : chrome.formIdle}`}
       >
         <svg
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 pointer-events-none"
+          className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${sizing.icon} ${chrome.icon}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -118,15 +157,13 @@ export function AddressInput({ onSubmit, placeholder }: Props) {
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           placeholder={placeholder}
           autoComplete="off"
-          className="w-full bg-transparent pl-12 pr-12 py-3.5 rounded-2xl text-base text-white placeholder-white/50 focus:outline-none"
+          className={`w-full bg-transparent focus:outline-none ${sizing.input} ${chrome.input}`}
         />
         <button
           type="submit"
-          disabled={!value.trim()}
-          className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
-            isActive
-              ? "bg-action hover:bg-action-hover text-white"
-              : "bg-white/10 hover:bg-white/20 text-white/70"
+          disabled={!value.trim() || busy}
+          className={`absolute top-1/2 -translate-y-1/2 rounded-lg flex items-center justify-center transition-all duration-300 ${sizing.button} ${
+            isActive ? chrome.submitActive : chrome.submitIdle
           } disabled:opacity-30`}
           aria-label={t("submit")}
         >
@@ -144,9 +181,7 @@ export function AddressInput({ onSubmit, placeholder }: Props) {
               type="button"
               onClick={() => doSubmit(suggestion.address)}
               className={`w-full px-4 py-3 text-left text-sm transition-colors ${
-                index === selectedIndex
-                  ? "bg-accent/20 text-white"
-                  : "text-text-secondary hover:bg-dark-elevated hover:text-white"
+                index === selectedIndex ? chrome.suggestionActive : chrome.suggestionIdle
               }`}
             >
               <span className="flex items-center gap-2">
