@@ -120,6 +120,14 @@ separate night sky from dark tower bodies (both ~0.04), so the figure is built s
 per-column roofline detection, uniform bright lattice above (skyAlpha 0.38), black void below
 with only lit windows rendered (alpha floor 0.5) — the Hancock reads as a negative silhouette
 with its lit crown band. Mask dims only the left text column.
+Final polish round (2026-07-02, `97d7af4`→`178d292`): per-stat radial dark **halos** (tint
+over orange text — orange = action only); "Researching the code…" line centered; the constant
+20px bottom gap was a **layout bug** (hero pull-up `-mt-[4.75rem]` vs the nav's true flow
+height `h-14` → now `-mt-14`; coverCrop bottom-anchored, grid rows `ceil`); **spire rule**
+renders the Hancock's twin antenna masts (vertical-continuity roofline detection).
+**Full system doc — decision record, calibrated params, probe workflow, reuse recipes:
+`dot-matrix.md`.** `?bg=skyline` is Jack's pick; HeroBackdrop default still `plat` until he
+says flip it.
 **AccentRails** — faint orange plat-grid rails (16% alpha) along the below-hero margins.
 
 Also done: orange/violet across app surfaces (inherited via tokens); readability pass (contrast, spacing);
