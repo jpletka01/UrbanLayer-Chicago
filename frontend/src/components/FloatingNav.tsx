@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
 import { loadRegistry } from "../discovery/registryClient";
 import LanguageSelector from "./LanguageSelector";
-import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 
 // ── Nav model (single source; re-exported by PageHeader for the nav test) ───────────────
@@ -175,7 +174,10 @@ export default function FloatingNav({
           {contextRight}
           {!hideUtilities && (
             <>
-              <ThemeToggle overImage={over} />
+              {/* Theme control lives on /settings (+ landing footer for anonymous
+                  visitors) — the system default tracks the OS, so the nav pill
+                  doesn't need it. Language stays: it must be discoverable
+                  pre-sign-in. */}
               <LanguageSelector variant={languageVariant} />
               {user ? (
                 <UserMenu user={user} onSignOut={signOut} />

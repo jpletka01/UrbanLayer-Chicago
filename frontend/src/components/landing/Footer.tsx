@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import ThemeToggle from "../ThemeToggle";
 
 export function Footer() {
   const { t } = useTranslation("landing");
@@ -22,6 +23,10 @@ export function Footer() {
             {t("footer.tagline")}
           </p>
           <p className="text-text-muted text-xs">{t("footer.copyright")}</p>
+          {/* The anonymous escape hatch: theme control otherwise lives on the
+              auth-gated /settings page. The footer is a mode-locked dark island,
+              so the toggle renders dark here in both modes — intended. */}
+          <ThemeToggle />
         </div>
 
         <div className="space-y-3">
