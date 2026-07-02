@@ -76,6 +76,36 @@ describe("computeDots", () => {
   });
 });
 
+describe("computeDots silhouette mode", () => {
+  // 2 cols × 4 rows: col 0 = tower (bright roof at row 1, dark body, lit window at row 3);
+  // col 1 = open sky the full height (no cell above threshold)
+  const px = gray(2, 4, [
+    0.0, 0.0,
+    0.9, 0.0,
+    0.02, 0.0,
+    0.3, 0.0,
+  ]);
+  const grid = computeDots(px, { cols: 2, silhouette: { threshold: 0.4, lightCut: 0.08 }, skyAlpha: 0.38 });
+  const at = (x: number, y: number) => grid.dots.find((d) => d.cx === x + 0.5 && d.cy === y + 0.5);
+
+  it("renders sky above the roofline as uniform lattice, even for pitch-black cells", () => {
+    expect(at(0, 0)?.alpha).toBe(0.38);
+    // full column of sky where no roof light exists
+    expect(at(1, 0)?.alpha).toBe(0.38);
+    expect(at(1, 3)?.alpha).toBe(0.38);
+  });
+
+  it("leaves dark building-body cells as voids", () => {
+    expect(at(0, 2)).toBeUndefined();
+  });
+
+  it("renders roof + window lights on the ramp, brighter than the sky lattice", () => {
+    expect(at(0, 1)).toBeDefined();
+    expect(at(0, 3)).toBeDefined();
+    expect(at(0, 3)!.alpha).toBeGreaterThan(0.38);
+  });
+});
+
 describe("coverCrop", () => {
   it("crops width when the image is wider than the target", () => {
     const c = coverCrop(2000, 1000, 1); // square target

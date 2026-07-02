@@ -276,22 +276,30 @@ function CurtainVariant() {
 // ---------------------------------------------------------------------------
 
 // Unlike the line-work variants, the skyline is a *figure* — voiding or
-// heavily dimming the content zone amputates it. Readability comes from the
-// alpha ceiling instead (bright clusters cap well below text contrast); the
-// mask only mildly settles the zone under the headline/paragraph.
+// heavily dimming the content zone amputates it. The mask dims ONLY the left
+// text/input column (the preview card is opaque enough to occlude on its
+// own); the Hancock corridor at viewport center runs at full strength, so
+// the tower reads as a dark silhouette cut out of the bright sky lattice.
 const SKYLINE_MASK = {
   maskImage:
-    "radial-gradient(ellipse 72% 64% at 40% 44%, rgb(0 0 0 / 0.35) 34%, black 76%)",
+    "radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%)",
   WebkitMaskImage:
-    "radial-gradient(ellipse 72% 64% at 40% 44%, rgb(0 0 0 / 0.35) 34%, black 76%)",
+    "radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%)",
 } as const;
 
-// gamma < 1 keeps midtone buildings on the size ramp (1.6+ crushes them to
-// the floor); skyLevel quantizes flat sky into a perfectly uniform lattice.
-const SKYLINE_PARAMS = { gamma: 0.95, maxAlpha: 0.6, floorRadius: 0.14, skyLevel: 0.2, skyAlpha: 0.22 };
+// silhouette mode builds the figure structurally (sky lattice above each
+// column's roofline, black tower voids with lit windows below) — measured
+// luminance alone can't separate sky from tower bodies (both ~0.04).
+const SKYLINE_PARAMS = {
+  gamma: 0.95,
+  maxAlpha: 0.85,
+  floorRadius: 0.2,
+  skyAlpha: 0.38,
+  silhouette: { threshold: 0.4, lightCut: 0.08 },
+};
 
 function SkylineVariant() {
-  return <DotMatrix src={skylineUrl} cols={150} params={SKYLINE_PARAMS} style={SKYLINE_MASK} />;
+  return <DotMatrix src={skylineUrl} cols={150} accent={false} params={SKYLINE_PARAMS} style={SKYLINE_MASK} />;
 }
 
 export function HeroBackdrop() {

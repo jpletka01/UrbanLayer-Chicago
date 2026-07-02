@@ -28,6 +28,16 @@ export interface DotGridParams {
    */
   skyLevel?: number;
   skyAlpha?: number;
+  /**
+   * Skyline silhouette mode. Night-sky photos have NO luminance separation
+   * between sky and dark tower bodies (measured: both ~0.03–0.05), so the
+   * figure must be built structurally: per column, find the topmost cell
+   * brighter than `threshold` (a roof/crown light) — everything above is sky
+   * (uniform lattice), everything below is building, where only cells above
+   * `lightCut` render (lit windows); dark body cells stay true black voids.
+   * The tower then reads as a negative silhouette cut out of the lattice.
+   */
+  silhouette?: { threshold?: number; lightCut?: number };
 }
 
 export interface Dot {
@@ -88,21 +98,52 @@ export function computeDots(px: PixelSource, params: DotGridParams): DotGrid {
   const rows = px.height;
   if (px.width !== cols) throw new Error(`pixel buffer width ${px.width} != cols ${cols}`);
 
+  // silhouette mode: per-column roofline = topmost cell with a bright light
+  let roofline: number[] | null = null;
+  if (params.silhouette) {
+    const threshold = params.silhouette.threshold ?? 0.4;
+    roofline = new Array(cols).fill(rows);
+    for (let x = 0; x < cols; x++) {
+      for (let y = 0; y < rows; y++) {
+        if (luminanceAt(px, x, y) > threshold) {
+          roofline[x] = y;
+          break;
+        }
+      }
+    }
+  }
+  const lightCut = params.silhouette?.lightCut ?? 0.08;
+
   const dots: Dot[] = [];
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const lum = luminanceAt(px, x, y);
-      if (lum < cut) continue;
-      if (lum < skyLevel) {
-        dots.push({ cx: x + 0.5, cy: y + 0.5, r: floorRadius, alpha: skyAlpha });
-        continue;
+      let isBuildingLight = false;
+      if (roofline) {
+        if (y < roofline[x]) {
+          // sky above the roofline: perfectly uniform lattice
+          dots.push({ cx: x + 0.5, cy: y + 0.5, r: floorRadius, alpha: skyAlpha });
+          continue;
+        }
+        // building zone: lit windows on the ramp, dark body stays a void
+        if (lum < lightCut) continue;
+        isBuildingLight = true;
+      } else {
+        if (lum < cut) continue;
+        if (lum < skyLevel) {
+          dots.push({ cx: x + 0.5, cy: y + 0.5, r: floorRadius, alpha: skyAlpha });
+          continue;
+        }
       }
       const shaped = Math.pow(lum, gamma);
+      // building lights start well above the sky lattice's alpha, so the
+      // figure separates from the field even where dot sizes match
+      const base = isBuildingLight ? 0.5 + 0.5 * shaped : 0.3 + 0.7 * shaped;
       dots.push({
         cx: x + 0.5,
         cy: y + 0.5,
         r: Math.max(floorRadius, maxRadius * shaped),
-        alpha: Math.min(maxAlpha, 0.3 + 0.7 * shaped),
+        alpha: Math.min(maxAlpha, base),
       });
     }
   }
