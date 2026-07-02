@@ -8,15 +8,20 @@
 //   contour — topographic contour rings + survey crosses
 //   geo     — fine grid + concentric survey arcs + block squares
 //   curtain — procedural curtain-wall facade, the city in elevation (facade.ts)
+//   skyline — LED dot-matrix halftone of the night skyline (DotMatrix + dotmatrix.ts)
 
 import type { ReactElement } from "react";
 import { CurtainWall } from "./CurtainWall";
+import { DotMatrix } from "./DotMatrix";
+import skylineUrl from "../../assets/skyline-night.jpg";
 
-type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain";
+type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain" | "skyline";
 
 function activeVariant(): Variant {
   const v = new URLSearchParams(window.location.search).get("bg");
-  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" ? v : "plat";
+  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" || v === "skyline"
+    ? v
+    : "plat";
 }
 
 // Inverted mask: the hero's content (headline, input, preview card) lives in the middle of the
@@ -266,6 +271,29 @@ function CurtainVariant() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// skyline — LED dot-matrix halftone of the night skyline
+// ---------------------------------------------------------------------------
+
+// Unlike the line-work variants, the skyline is a *figure* — voiding or
+// heavily dimming the content zone amputates it. Readability comes from the
+// alpha ceiling instead (bright clusters cap well below text contrast); the
+// mask only mildly settles the zone under the headline/paragraph.
+const SKYLINE_MASK = {
+  maskImage:
+    "radial-gradient(ellipse 72% 64% at 40% 44%, rgb(0 0 0 / 0.35) 34%, black 76%)",
+  WebkitMaskImage:
+    "radial-gradient(ellipse 72% 64% at 40% 44%, rgb(0 0 0 / 0.35) 34%, black 76%)",
+} as const;
+
+// gamma < 1 keeps midtone buildings on the size ramp (1.6+ crushes them to
+// the floor); skyLevel quantizes flat sky into a perfectly uniform lattice.
+const SKYLINE_PARAMS = { gamma: 0.95, maxAlpha: 0.6, floorRadius: 0.14, skyLevel: 0.2, skyAlpha: 0.22 };
+
+function SkylineVariant() {
+  return <DotMatrix src={skylineUrl} cols={150} params={SKYLINE_PARAMS} style={SKYLINE_MASK} />;
+}
+
 export function HeroBackdrop() {
   const variant = activeVariant();
   return (
@@ -275,6 +303,7 @@ export function HeroBackdrop() {
       {variant === "contour" && <ContourVariant />}
       {variant === "geo" && <GeoVariant />}
       {variant === "curtain" && <CurtainVariant />}
+      {variant === "skyline" && <SkylineVariant />}
     </div>
   );
 }

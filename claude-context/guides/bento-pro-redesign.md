@@ -97,16 +97,24 @@ Landing additions (2026-07-01): **HeroBackdrop** rebuilt — achromatic **plat-m
 zone — line-work under translucent surfaces read as noise). Variants `?bg=bloom|contour|geo`
 remain for comparison; hero is still a dark-locked island (unlock = pending Jack's pick).
 **`?bg=curtain` added (2026-07-01, `e2d7df1`)** — procedural curtain-wall facade, the city in
-*elevation* (Concept B of the background exploration; Jack's pick to develop). Pure seeded
+*elevation* (Concept B of the background exploration). Pure seeded
 generator `landing/facade.ts` + `CurtainWall.tsx`: abutting towers with per-building modules
 (floors misalign at party walls), dialects miesian / chicagoSchool (1:2:1 Chicago-window
 mullions, spandrel bands) / braced (one full-width X-brace tower), line-weight hierarchy
 (party 0.20 > braces 0.13 > columns 0.12 > floors 0.09 > mullions 0.06), lit windows placed
 in clustered runs/stacks (~4% ratio, fill 0.15), one orange found-parcel pane at left
 periphery (mask-fade-aware placement). Batched to ~8 SVG path nodes; 35 generator tests
-(`facade.test.ts`). Planned phase 2 if picked as default: `band`/`watermark` presets to extend
-the facade system site-wide (pre-footer strip, section margins) — the component already takes
-seed/width/height.
+(`facade.test.ts`). **Jack's verdict: reads as "random squares"** — abstract texture with no
+macro figure. Lesson: figure beats texture for this hero.
+**`?bg=skyline` added (2026-07-01)** — the pivot Jack asked for, from a reference image he
+supplied (LED dot-matrix halftone of the night skyline, "unit-grid feed" look): a uniform
+dot lattice whose dot size + alpha encode sampled luminance, so the *recognizable skyline
+figure* emerges from the dots. `landing/dotmatrix.ts` (pure: computeDots/coverCrop/
+pickAccentDot, unit-tested) + `DotMatrix.tsx` (canvas renderer: downsamples a bundled
+`assets/skyline-night.jpg` — cropped/downscaled from Jack's reference — one source px per
+grid cell, dots in resolved currentColor, one orange accent dot on the brightest window in
+the lower-left zone). The DotMatrix component is the site-wide system: any photo (e.g.
+StorySection images) can be run through it for on-brand dot art.
 **AccentRails** — faint orange plat-grid rails (16% alpha) along the below-hero margins.
 
 Also done: orange/violet across app surfaces (inherited via tokens); readability pass (contrast, spacing);
