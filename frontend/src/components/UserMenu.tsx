@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { AuthUser } from "../lib/api";
-import { createBillingPortal } from "../lib/api";
 import { Chip } from "./ui/Chip";
 
 interface UserMenuProps {
@@ -26,17 +25,6 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
 
   const initial = (user.name || user.email)[0]?.toUpperCase() ?? "?";
   const isPro = user.tier === "premium" || user.tier === "admin";
-
-  async function handleManageSubscription() {
-    setOpen(false);
-    try {
-      const { url } = await createBillingPortal();
-      window.location.href = url;
-    } catch {
-      // No active subscription — send to pricing
-      window.location.href = "/pricing";
-    }
-  }
 
   return (
     <div ref={ref} className="relative">
@@ -68,14 +56,14 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             </div>
             <p className="text-caption text-text-muted truncate">{user.email}</p>
           </div>
-          {isPro ? (
-            <button
-              onClick={handleManageSubscription}
-              className="w-full text-left px-4 py-2 text-body text-text-secondary hover:bg-dark-hover hover:text-text-primary transition-colors"
-            >
-              {t("manageSubscription")}
-            </button>
-          ) : (
+          <Link
+            to="/settings"
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-4 py-2 text-body text-text-secondary hover:bg-dark-hover hover:text-text-primary transition-colors"
+          >
+            {t("settings")}
+          </Link>
+          {!isPro && (
             <Link
               to="/pricing"
               onClick={() => setOpen(false)}

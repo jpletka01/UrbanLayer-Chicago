@@ -227,6 +227,35 @@ async def _handle_subscription_deleted(subscription: dict) -> None:
     log.info("User %s downgraded to free (subscription canceled)", user["id"])
 
 
+async def cancel_user_subscription(user: dict) -> None:
+    """Cancel the user's active Stripe subscription immediately.
+
+    Raises HTTPException(502) when Stripe rejects the cancellation — the
+    caller (account deletion) must abort rather than orphan a live
+    subscription behind a deleted account. An already-canceled/missing
+    subscription counts as success.
+    """
+    sub_id = user.get("stripe_subscription_id")
+    if not sub_id:
+        return
+    _configure_stripe()
+    try:
+        stripe.Subscription.cancel(sub_id)
+    except stripe.InvalidRequestError as exc:
+        log.info("Subscription %s already inactive at Stripe: %s", sub_id, exc)
+    except stripe.StripeError as exc:
+        log.error("Failed to cancel subscription %s: %s", sub_id, exc)
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Could not cancel your subscription — your account was NOT "
+                "deleted. Try again or contact support."
+            ),
+        )
+    else:
+        log.info("Canceled subscription %s for user %s", sub_id, user["id"])
+
+
 async def get_subscription_status(user: dict) -> dict:
     """Return current subscription status for the user."""
     result = {

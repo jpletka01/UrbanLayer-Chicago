@@ -4723,6 +4723,35 @@ async def billing_portal(request: Request, user: dict = Depends(require_auth)) -
     return {"url": url}
 
 
+@app.get("/api/me/purchases")
+async def my_purchases(request: Request, user: dict = Depends(require_auth)) -> dict:
+    """Completed report purchases for the current user (settings billing list)."""
+    purchases = await db.get_user_report_purchases(user["id"])
+    return {"purchases": purchases}
+
+
+@app.delete("/api/me")
+async def delete_account(request: Request, user: dict = Depends(require_auth)):
+    """Permanently delete the authenticated user's account.
+
+    Stripe cancellation runs FIRST and aborts the deletion on failure — a
+    live subscription must never be orphaned behind a deleted account.
+    """
+    from backend.auth import _auth_enabled
+    if not _auth_enabled():
+        raise HTTPException(
+            status_code=400,
+            detail="Account deletion is not available in dev mode",
+        )
+    from backend.payments import cancel_user_subscription
+    await cancel_user_subscription(user)
+    await db.delete_user_account(user["id"])
+    from fastapi.responses import JSONResponse
+    resp = JSONResponse(content={"ok": True})
+    clear_auth_cookies(resp)
+    return resp
+
+
 # ---------------------------------------------------------------------------
 # Admin API
 # ---------------------------------------------------------------------------

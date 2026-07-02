@@ -187,6 +187,34 @@ export async function checkReportAccess(
   }
 }
 
+export interface ReportPurchase {
+  id: number;
+  address: string | null;
+  pin: string | null;
+  lat: number;
+  lon: number;
+  amount_cents: number;
+  created_at: number;
+  completed_at: number | null;
+}
+
+export async function fetchMyPurchases(): Promise<ReportPurchase[]> {
+  const resp = await authFetch(`${API_BASE}/api/me/purchases`);
+  if (!resp.ok) throw new Error(`Failed to load purchases: ${resp.status}`);
+  const data = await resp.json();
+  return data.purchases;
+}
+
+export async function deleteAccount(): Promise<void> {
+  const resp = await authFetch(`${API_BASE}/api/me`, { method: "DELETE" });
+  if (!resp.ok) {
+    const detail = (await resp.json().catch(() => null))?.detail;
+    throw new Error(
+      typeof detail === "string" ? detail : `Failed to delete account (${resp.status})`,
+    );
+  }
+}
+
 export async function createBillingPortal(): Promise<{ url: string }> {
   const resp = await authFetch(`${API_BASE}/api/billing/portal`, { method: "POST" });
   if (!resp.ok) throw new Error("Failed to create billing portal session");

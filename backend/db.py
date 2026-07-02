@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 11
+_SCHEMA_VERSION = 12
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -139,6 +139,52 @@ CREATE TABLE IF NOT EXISTS conversation_shares (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_shares_token ON conversation_shares(token);
 CREATE INDEX IF NOT EXISTS idx_shares_conv ON conversation_shares(conversation_id);
 """
+
+
+async def _migrate_v12(db: aiosqlite.Connection) -> None:
+    """Rebuild report_purchases with a nullable user_id (ON DELETE SET NULL).
+
+    Account deletion must not destroy purchase records — Stripe holds the
+    canonical financial trail, but admin revenue metrics read these rows.
+    The v9 table pinned user_id NOT NULL ON DELETE CASCADE, so deleting a
+    user row would silently drop their purchases; SET NULL turns the same
+    delete into an automatic tombstone.
+    """
+    cur = await db.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='report_purchases'"
+    )
+    row = await cur.fetchone()
+    if row and "ON DELETE SET NULL" in (row[0] or ""):
+        return
+    await db.executescript("""\
+CREATE TABLE report_purchases_v12 (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id               TEXT REFERENCES users(id) ON DELETE SET NULL,
+    stripe_session_id     TEXT UNIQUE,
+    stripe_payment_intent TEXT,
+    address               TEXT,
+    lat                   REAL NOT NULL,
+    lon                   REAL NOT NULL,
+    amount_cents          INTEGER NOT NULL DEFAULT 2500,
+    status                TEXT NOT NULL DEFAULT 'pending'
+        CHECK(status IN ('pending', 'completed', 'refunded')),
+    created_at            INTEGER NOT NULL,
+    completed_at          INTEGER,
+    pin                   TEXT
+);
+INSERT INTO report_purchases_v12
+    (id, user_id, stripe_session_id, stripe_payment_intent, address, lat, lon,
+     amount_cents, status, created_at, completed_at, pin)
+  SELECT id, user_id, stripe_session_id, stripe_payment_intent, address, lat, lon,
+         amount_cents, status, created_at, completed_at, pin
+  FROM report_purchases;
+DROP TABLE report_purchases;
+ALTER TABLE report_purchases_v12 RENAME TO report_purchases;
+CREATE INDEX IF NOT EXISTS idx_rp_user ON report_purchases(user_id);
+CREATE INDEX IF NOT EXISTS idx_rp_location ON report_purchases(user_id, lat, lon);
+CREATE INDEX IF NOT EXISTS idx_rp_session ON report_purchases(stripe_session_id);
+CREATE INDEX IF NOT EXISTS idx_rp_user_pin ON report_purchases(user_id, pin);
+""")
 
 
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
@@ -280,9 +326,11 @@ async def init_db() -> None:
         await _migrate_v9(_db)
         await _migrate_v10(_db)
         await _migrate_v11(_db)
+        await _migrate_v12(_db)
         await _db.commit()
     else:
         version = row[0]
+        start_version = version
         if version < 2:
             await _db.executescript(_SCHEMA_V2)
             version = 2
@@ -313,12 +361,21 @@ async def init_db() -> None:
         if version < 11:
             await _migrate_v11(_db)
             version = 11
-        if version != _SCHEMA_VERSION:
+        if version < 12:
+            await _migrate_v12(_db)
+            version = 12
+        # Compare against the STARTING version: after the chain runs, the local
+        # `version` always equals _SCHEMA_VERSION, so the old `version !=
+        # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
+        # every boot re-ran the (idempotent) migrations from the stale stamp.
+        if start_version != version:
             await _db.execute(
-                "UPDATE schema_version SET version = ?", (_SCHEMA_VERSION,)
+                "UPDATE schema_version SET version = ?", (version,)
             )
             await _db.commit()
-            log.info("Migrated database schema to v%d", _SCHEMA_VERSION)
+            log.info(
+                "Migrated database schema from v%d to v%d", start_version, version
+            )
 
 
 async def close_db() -> None:
@@ -1103,6 +1160,47 @@ async def revoke_all_user_refresh_tokens(user_id: str) -> None:
     await db.commit()
 
 
+async def delete_user_account(user_id: str) -> dict:
+    """Permanently delete a user and all their content.
+
+    Conversations cascade messages/uploads/shares (FK); the user row cascades
+    refresh_tokens and tombstones report_purchases (user_id SET NULL — the
+    purchase rows are financial history, Stripe keeps the canonical copy).
+    request_logs hold raw message text → deleted; llm_calls hold only token
+    counts → unlinked. Upload files on disk are removed best-effort AFTER the
+    commit so a filesystem failure can't leave dangling DB rows.
+
+    Only rows with user_id = ? are touched — legacy user_id IS NULL rows
+    (pre-auth data) are shared, not this user's.
+    """
+    conn = _get_db()
+    cur = await conn.execute(
+        "SELECT id FROM conversations WHERE user_id = ?", (user_id,)
+    )
+    conv_ids = [r["id"] for r in await cur.fetchall()]
+
+    await conn.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
+    await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
+    await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))
+    await conn.execute(
+        "UPDATE llm_calls SET user_id = NULL WHERE user_id = ?", (user_id,)
+    )
+    await conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    await conn.commit()
+
+    import shutil
+    settings = get_settings()
+    for conv_id in conv_ids:
+        try:
+            upload_dir = settings.upload_dir / conv_id
+            if upload_dir.is_dir():
+                shutil.rmtree(upload_dir)
+        except Exception:
+            pass
+
+    return {"conversations_deleted": len(conv_ids)}
+
+
 # ---------------------------------------------------------------------------
 # Report purchases (a la carte)
 # ---------------------------------------------------------------------------
@@ -1193,7 +1291,7 @@ async def get_user_report_purchases(user_id: str) -> list[dict]:
     conn = _get_db()
     cur = await conn.execute(
         """
-        SELECT id, address, lat, lon, amount_cents, created_at, completed_at
+        SELECT id, address, pin, lat, lon, amount_cents, created_at, completed_at
         FROM report_purchases
         WHERE user_id = ? AND status = 'completed'
         ORDER BY completed_at DESC

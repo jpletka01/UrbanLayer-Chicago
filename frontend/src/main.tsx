@@ -21,6 +21,7 @@ import { App } from './App.tsx'
 import { AboutPage } from './components/AboutPage.tsx'
 import { AdminDashboard } from './components/AdminDashboard.tsx'
 import PricingPage from './components/PricingPage.tsx'
+import SettingsPage from './components/SettingsPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
 import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
@@ -50,6 +51,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/explore" element={<Navigate to="/discovery" replace />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            } />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={
               <ProtectedRoute tier="admin">
