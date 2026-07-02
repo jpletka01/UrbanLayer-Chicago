@@ -36,8 +36,20 @@ export interface DotGridParams {
    * (uniform lattice), everything below is building, where only cells above
    * `lightCut` render (lit windows); dark body cells stay true black voids.
    * The tower then reads as a negative silhouette cut out of the lattice.
+   *
+   * Spire rule: thin antenna masts (the Hancock's twin poles) downsample to
+   * 0.15–0.35 — under `threshold` — so a roofline also starts at a cell over
+   * `spireTop` that heads a contiguous vertical run of `spireRun` cells over
+   * `spireCut`. Sky noise aliases to *isolated* bright cells (no vertical
+   * continuity), so the run requirement rejects it.
    */
-  silhouette?: { threshold?: number; lightCut?: number };
+  silhouette?: {
+    threshold?: number;
+    lightCut?: number;
+    spireTop?: number;
+    spireCut?: number;
+    spireRun?: number;
+  };
 }
 
 export interface Dot {
@@ -102,12 +114,23 @@ export function computeDots(px: PixelSource, params: DotGridParams): DotGrid {
   let roofline: number[] | null = null;
   if (params.silhouette) {
     const threshold = params.silhouette.threshold ?? 0.4;
+    const spireTop = params.silhouette.spireTop ?? 0.18;
+    const spireCut = params.silhouette.spireCut ?? 0.12;
+    const spireRun = params.silhouette.spireRun ?? 3;
     roofline = new Array(cols).fill(rows);
     for (let x = 0; x < cols; x++) {
       for (let y = 0; y < rows; y++) {
         if (luminanceAt(px, x, y) > threshold) {
           roofline[x] = y;
           break;
+        }
+        if (luminanceAt(px, x, y) > spireTop && y + spireRun <= rows) {
+          let run = 1;
+          while (run < spireRun && luminanceAt(px, x, y + run) > spireCut) run++;
+          if (run === spireRun) {
+            roofline[x] = y;
+            break;
+          }
         }
       }
     }

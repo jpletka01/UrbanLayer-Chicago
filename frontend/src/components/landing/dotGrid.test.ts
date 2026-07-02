@@ -104,6 +104,32 @@ describe("computeDots silhouette mode", () => {
     expect(at(0, 3)).toBeDefined();
     expect(at(0, 3)!.alpha).toBeGreaterThan(0.38);
   });
+
+  it("starts the roofline at a spire: a contiguous dim vertical run (antenna mast)", () => {
+    // col 0: antenna — 3-cell run of 0.2/0.15/0.14 (all under threshold 0.4), then crown
+    const spirePx = gray(2, 5, [
+      0.2, 0.0,
+      0.15, 0.0,
+      0.14, 0.0,
+      0.9, 0.0,
+      0.02, 0.0,
+    ]);
+    const g = computeDots(spirePx, { cols: 2, silhouette: { threshold: 0.4, lightCut: 0.08 }, skyAlpha: 0.38 });
+    const find = (x: number, y: number) => g.dots.find((d) => d.cx === x + 0.5 && d.cy === y + 0.5);
+    // antenna cells render as building lights (ramp), not sky lattice
+    expect(find(0, 0)!.alpha).toBeGreaterThan(0.38);
+    expect(find(0, 1)!.alpha).toBeGreaterThan(0.38);
+    // the dark body cell below the crown stays a void
+    expect(find(0, 4)).toBeUndefined();
+  });
+
+  it("rejects isolated bright sky cells (aliasing noise) — no vertical run, no roofline", () => {
+    // col 0: single 0.3 cell with dark below → stays sky; whole column is lattice
+    const noisePx = gray(1, 4, [0.3, 0.0, 0.0, 0.0]);
+    const g = computeDots(noisePx, { cols: 1, silhouette: { threshold: 0.4, lightCut: 0.08 }, skyAlpha: 0.38 });
+    expect(g.dots.length).toBe(4);
+    expect(g.dots.every((d) => d.alpha === 0.38)).toBe(true);
+  });
 });
 
 describe("coverCrop", () => {
