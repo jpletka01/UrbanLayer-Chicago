@@ -18,6 +18,13 @@ interface DotMatrixProps {
   cols?: number;
   /** Overall intensity multiplier applied to dot alpha (backdrop duty = keep < 1). */
   intensity?: number;
+  /**
+   * Translate the image down by N grid cells: the image's bottom N rows drop
+   * off the canvas and the vacated top rows stay transparent — in silhouette
+   * mode they render as synthesized sky lattice. Use to seat a skyline's
+   * bright base on the container's bottom edge.
+   */
+  shiftDown?: number;
   accent?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -31,6 +38,7 @@ export function DotMatrix({
   src,
   cols = 150,
   intensity = 1,
+  shiftDown = 0,
   accent = true,
   className = "absolute inset-0 h-full w-full",
   style,
@@ -65,7 +73,10 @@ export function DotMatrix({
       const ctx = canvas.getContext("2d");
       if (!octx || !ctx) return;
       const { sx, sy, sw, sh } = coverCrop(img.naturalWidth, img.naturalHeight, rect.width / rect.height);
-      octx.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
+      const shift = Math.max(0, Math.min(Math.round(shiftDown), rows - 1));
+      // translate down: drop the source's bottom `shift` cells, leave the top
+      // `shift` destination rows transparent (scale unchanged)
+      octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, cols, rows - shift);
       const px = octx.getImageData(0, 0, cols, rows);
 
       const grid = computeDots(px, { ...DOT_DEFAULTS, ...params, cols });
@@ -110,7 +121,7 @@ export function DotMatrix({
       cancelled = true;
       ro.disconnect();
     };
-  }, [src, cols, intensity, accent, params]);
+  }, [src, cols, intensity, shiftDown, accent, params]);
 
   return <canvas ref={canvasRef} className={className} style={style} aria-hidden="true" />;
 }

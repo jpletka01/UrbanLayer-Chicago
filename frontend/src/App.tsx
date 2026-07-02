@@ -851,14 +851,26 @@ export function App() {
                   {SPLASH_STATS.map((stat, i) => {
                     const labelKeys = ["stats.dataSources", "stats.codeSections", "stats.communityAreas", "stats.regulatoryLayers"];
                     return (
-                      <div key={i} className="text-center">
-                        <CountUp
-                          to={stat.value}
-                          format={stat.format}
-                          delay={0.6 + i * 0.15}
-                          className="text-3xl md:text-4xl font-semibold text-white"
+                      <div key={i} className="relative text-center">
+                        {/* Local dark halo — same job as the headline's masked tint: keeps the
+                            stat legible where the skyline dot lattice runs at full strength. */}
+                        <div
+                          aria-hidden="true"
+                          className="absolute -inset-x-14 -inset-y-6"
+                          style={{
+                            background:
+                              "radial-gradient(ellipse closest-side, rgba(10,10,10,0.95) 45%, rgba(10,10,10,0.6) 75%, transparent 100%)",
+                          }}
                         />
-                        <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{t(labelKeys[i])}</div>
+                        <div className="relative">
+                          <CountUp
+                            to={stat.value}
+                            format={stat.format}
+                            delay={0.6 + i * 0.15}
+                            className="text-3xl md:text-4xl font-semibold text-white"
+                          />
+                          <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{t(labelKeys[i])}</div>
+                        </div>
                       </div>
                     );
                   })}

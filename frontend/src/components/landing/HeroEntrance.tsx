@@ -42,8 +42,9 @@ export function HeroEntrance() {
         ))}
       </div>
       {/* Secondary, labeled door — subordinate to the address input, names the
-          fork (code/neighborhood research) so a returning user knows what it does. */}
-      <p className="text-body text-white/70">
+          fork (code/neighborhood research) so a returning user knows what it does.
+          Centered to match the example-address chip row above it. */}
+      <p className="text-body text-white/70 text-center">
         {t("hero.askAnalystLead")}{" "}
         <button
           type="button"

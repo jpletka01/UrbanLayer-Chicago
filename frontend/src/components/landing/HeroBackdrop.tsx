@@ -299,7 +299,16 @@ const SKYLINE_PARAMS = {
 };
 
 function SkylineVariant() {
-  return <DotMatrix src={skylineUrl} cols={150} accent={false} params={SKYLINE_PARAMS} style={SKYLINE_MASK} />;
+  return (
+    <DotMatrix
+      src={skylineUrl}
+      cols={150}
+      accent={false}
+      shiftDown={6}
+      params={SKYLINE_PARAMS}
+      style={SKYLINE_MASK}
+    />
+  );
 }
 
 export function HeroBackdrop() {
