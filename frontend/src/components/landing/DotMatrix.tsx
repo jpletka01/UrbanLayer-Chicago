@@ -63,7 +63,9 @@ export function DotMatrix({
       canvas.height = Math.round(rect.height * dpr);
 
       const cell = rect.width / cols;
-      const rows = Math.max(1, Math.round(rect.height / cell));
+      // ceil: the grid must cover the full height — a rounded-down row count
+      // leaves an unpainted strip at the bottom edge
+      const rows = Math.max(1, Math.ceil(rect.height / cell));
 
       // downsample: one source pixel per grid cell, cover-cropped
       const off = document.createElement("canvas");

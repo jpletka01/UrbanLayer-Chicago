@@ -787,8 +787,10 @@ export function App() {
             />
 
             {/* Hero is a mode-locked dark island (Bento geometric canvas) regardless of theme.
-                Negative top-margin pulls it up under the sticky nav so the nav floats over it. */}
-            <div className="relative bg-dark-bg -mt-[4.75rem]" data-theme="dark">
+                Negative top-margin pulls it up under the sticky nav so the nav floats over it —
+                it must equal the nav's FLOW height (h-14; sticky top-3 shifts the stuck position,
+                not the flow slot), or the hero ends short of the fold by the difference. */}
+            <div className="relative bg-dark-bg -mt-14" data-theme="dark">
               <HeroBackdrop />
 
               {/* Hero section — full viewport */}

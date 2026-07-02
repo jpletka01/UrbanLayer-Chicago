@@ -114,12 +114,11 @@ describe("coverCrop", () => {
     expect(c.sx).toBe(500);
   });
 
-  it("crops height with a bottom bias when the image is taller", () => {
+  it("anchors the height crop to the image bottom when the image is taller", () => {
     const c = coverCrop(1000, 2000, 2); // wide target
     expect(c.sw).toBe(1000);
     expect(c.sh).toBe(500);
-    expect(c.sy).toBeGreaterThan((2000 - 500) / 2); // biased below center
-    expect(c.sy).toBeLessThanOrEqual(2000 - 500);
+    expect(c.sy).toBe(2000 - 500); // bottom edge preserved exactly
   });
 });
 

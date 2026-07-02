@@ -165,8 +165,9 @@ export function coverCrop(
     return { sx: (imgW - sw) / 2, sy: 0, sw, sh: imgH };
   }
   const sh = imgW / targetAspect;
-  // bias the vertical crop toward the bottom: skylines live in the lower half
-  return { sx: 0, sy: (imgH - sh) * 0.75, sw: imgW, sh };
+  // anchor the vertical crop to the image bottom: skylines sit on their base,
+  // so the excess is always trimmed from the sky
+  return { sx: 0, sy: imgH - sh, sw: imgW, sh };
 }
 
 /**
