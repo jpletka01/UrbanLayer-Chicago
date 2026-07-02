@@ -39,17 +39,25 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
   allowedFar?: number | null;
+  ordinanceNum?: string | null;
 }) {
   const { t } = useTranslation("pages");
+  // PD/PMD standards are negotiated per-ordinance, not tabulated in Title 17 —
+  // say so explicitly instead of omitting the rows (a blank FAR on a PD parcel
+  // read as missing data, not as "set by ordinance").
+  const isPd = /^PMD|^PD/.test(def.zone_class.trim().toUpperCase());
   const standards: Array<{ label: string; value: string }> = [];
   if (def.far != null) standards.push({ label: t("scorecard.zoningCard.far"), value: String(def.far) });
+  else if (isPd) standards.push({ label: t("scorecard.zoningCard.far"), value: t("scorecard.zoningCard.setByPdOrdinance") });
   if (def.max_height) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: localizeZoningValue(def.max_height) });
+  else if (isPd) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: t("scorecard.zoningCard.setByPdOrdinance") });
   if (def.lot_coverage) standards.push({ label: t("scorecard.zoningCard.lotCoverage"), value: localizeZoningValue(def.lot_coverage) });
+  if (isPd && ordinanceNum) standards.push({ label: t("scorecard.zoningCard.pdOrdinance"), value: ordinanceNum });
 
   return (
     <Card

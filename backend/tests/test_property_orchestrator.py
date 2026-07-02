@@ -18,15 +18,20 @@ SAMPLE_PARCEL = {
     "address": "443 W WRIGHTWOOD AVE",
 }
 
-# Mirrors the real x54s-btds schema: `char_apts` (not char_units), `char_yrblt`
-# (age derived from it), `char_air`; there is no char_age/char_class_description.
+# Mirrors the real x54s-btds schema AND value domains (verified 2026-07-02):
+# `char_apts` is a decoded word ("Two".."Six", 211/212 only), `char_type_resd`
+# is "1 Story"/"1.5 Story"/"2 Story"/"3 Story +"/"Split Level", `char_use` is
+# "Single-Family"/"Multi-Family", `char_ncu` is the COMMERCIAL unit count
+# (previously mis-mapped to stories). No char_age/char_class_description.
 SAMPLE_CHARS = {
     "pin": "14241020170000",
     "year": "2024",
     "char_bldg_sf": "2600",
     "char_land_sf": "3200",
     "char_ncu": "3",
-    "char_apts": "2",
+    "char_apts": "Two",
+    "char_type_resd": "2 Story",
+    "char_use": "Multi-Family",
     "char_rooms": "8",
     "char_beds": "4",
     "char_fbath": "2",
@@ -66,8 +71,9 @@ async def test_assembles_full_summary():
         assert result.pin14 == "14241020170000"
         assert result.address == "443 W WRIGHTWOOD AVE"
         assert result.bldg_sqft == 2600  # CCAO overrides GIS
-        assert result.stories == 3
-        assert result.units == 2
+        assert result.stories == 2.0  # from char_type_resd, NOT char_ncu
+        assert result.units == 2  # decoded from char_apts word "Two"
+        assert result.commercial_units == 3  # char_ncu surfaced honestly
         assert result.rooms == 8
         assert result.bedrooms == 4
         assert result.full_baths == 2
@@ -178,6 +184,33 @@ def test_safe_float_handles_various_inputs():
     assert _safe_float(None) is None
     assert _safe_float("") is None
     assert _safe_float("N/A") is None
+
+
+def test_decode_stories_from_type_resd():
+    from backend.retrieval.property import _decode_stories
+    assert _decode_stories({"char_type_resd": "1 Story"}) == 1.0
+    assert _decode_stories({"char_type_resd": "1.5 Story"}) == 1.5
+    assert _decode_stories({"char_type_resd": "2 Story"}) == 2.0
+    assert _decode_stories({"char_type_resd": "3 Story +"}) == 3.0
+    # No defensible number for these — None over wrong
+    assert _decode_stories({"char_type_resd": "Split Level"}) is None
+    assert _decode_stories({"char_type_resd": None}) is None
+    assert _decode_stories({}) is None
+    # char_ncu must never leak into stories again (the 2026-07-02 benchmark bug)
+    assert _decode_stories({"char_ncu": "3"}) is None
+
+
+def test_decode_units_words_and_single_family():
+    from backend.retrieval.property import _decode_units
+    assert _decode_units({"char_apts": "Two"}) == 2
+    assert _decode_units({"char_apts": "Six"}) == 6
+    # "None" (literal dataset string) + confirmed single-family -> 1 dwelling unit
+    assert _decode_units({"char_apts": "None", "char_use": "Single-Family"}) == 1
+    # Multi-family without an apartment count stays unknown
+    assert _decode_units({"char_apts": "None", "char_use": "Multi-Family"}) is None
+    assert _decode_units({}) is None
+    # Legacy numeric strings (pre-decode vintages) don't decode — None over wrong
+    assert _decode_units({"char_apts": "2"}) is None
 
 
 @pytest.mark.asyncio

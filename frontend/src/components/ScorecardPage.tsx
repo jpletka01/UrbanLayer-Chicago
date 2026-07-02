@@ -690,6 +690,7 @@ export default function ScorecardPage() {
                     mapUrl={zoning?.zoning_map_url}
                     existingFar={verdict?.signals.existingFar}
                     allowedFar={verdict?.signals.allowedFar}
+                    ordinanceNum={zoning?.ordinance_num}
                   />
                   <div className="flex flex-wrap gap-2 mt-2">
                     <InvestigateButton

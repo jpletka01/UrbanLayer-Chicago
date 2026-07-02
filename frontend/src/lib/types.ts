@@ -247,6 +247,13 @@ export interface TaxLineItem {
   amount: number;
 }
 
+/** EAV deduction (taxable value removed before rates), NOT dollars off the bill.
+    Owner-occupancy exemptions drop at transfer — bill understates a buyer's bill. */
+export interface TaxExemption {
+  kind: string;
+  eav_reduction: number;
+}
+
 export interface PropertySummary {
   pin14: string | null;
   address: string | null;
@@ -256,6 +263,7 @@ export interface PropertySummary {
   land_sqft: number | null;
   stories: number | null;
   units: number | null;
+  commercial_units: number | null;
   rooms: number | null;
   bedrooms: number | null;
   full_baths: number | null;
@@ -265,6 +273,7 @@ export interface PropertySummary {
   estimated_annual_tax: number | null;
   tax_code: string | null;
   tax_breakdown: TaxLineItem[];
+  tax_exemptions: TaxExemption[];
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
   parcel_geometry?: Record<string, unknown> | null;

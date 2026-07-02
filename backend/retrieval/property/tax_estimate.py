@@ -19,6 +19,23 @@ log = logging.getLogger(__name__)
 _conn: aiosqlite.Connection | None = None
 _lock = asyncio.Lock()
 
+# ptaxsim `pin` table exemption columns -> human-readable kind. Ordered dict:
+# iteration order drives both the SELECT and the output list.
+_EXEMPTION_KINDS: dict[str, str] = {
+    "exe_homeowner": "Homeowner",
+    "exe_senior": "Senior Citizen",
+    "exe_freeze": "Senior Freeze",
+    "exe_longtime_homeowner": "Longtime Homeowner",
+    "exe_disabled": "Persons with Disabilities",
+    "exe_vet_returning": "Returning Veteran",
+    "exe_vet_dis_lt50": "Disabled Veteran (<50%)",
+    "exe_vet_dis_50_69": "Disabled Veteran (50-69%)",
+    "exe_vet_dis_ge70": "Disabled Veteran (70%+)",
+    "exe_vet_dis_100": "Disabled Veteran (100%)",
+    "exe_wwii": "WWII Veteran",
+    "exe_abate": "Abatement",
+}
+
 
 async def _get_conn() -> aiosqlite.Connection:
     global _conn
@@ -58,11 +75,9 @@ async def estimate_tax(year: int, pin14: str) -> dict | None:
     # Select the most recent available year at or before the requested one. The
     # PTAXSIM DB lags ~1 year behind the calendar (e.g. max year 2024 in 2026), so
     # a fixed ``today-1`` would 404 every report; this clamps gracefully per-PIN.
+    exe_cols = ", ".join(_EXEMPTION_KINDS)
     async with conn.execute(
-        "SELECT year, tax_code_num, tax_bill_total, av_clerk, "
-        "  exe_homeowner + exe_senior + exe_freeze + exe_longtime_homeowner + "
-        "  exe_disabled + exe_vet_returning + exe_vet_dis_lt50 + exe_vet_dis_50_69 + "
-        "  exe_vet_dis_ge70 + exe_vet_dis_100 + exe_wwii + exe_abate AS total_exe "
+        f"SELECT year, tax_code_num, tax_bill_total, av_clerk, {exe_cols} "
         "FROM pin WHERE pin = ? AND year <= ? ORDER BY year DESC LIMIT 1",
         (pin_clean, year),
     ) as cursor:
@@ -74,7 +89,15 @@ async def estimate_tax(year: int, pin14: str) -> dict | None:
     tax_code = row["tax_code_num"]
     tax_bill_total = row["tax_bill_total"]
     av_clerk = row["av_clerk"]
-    total_exe = row["total_exe"]
+    # NOTE semantics: exe_* values are EAV DEDUCTIONS (equalized assessed value
+    # removed before rates apply), NOT dollars off the bill. Present them as
+    # "reduces taxable value", never as savings.
+    exemptions = [
+        {"kind": _EXEMPTION_KINDS[col], "eav_reduction": row[col]}
+        for col in _EXEMPTION_KINDS
+        if row[col] and row[col] > 0
+    ]
+    total_exe = sum(e["eav_reduction"] for e in exemptions)
 
     async with conn.execute(
         "SELECT ai.agency_name, tc.agency_rate, tc.tax_code_rate "
@@ -104,5 +127,6 @@ async def estimate_tax(year: int, pin14: str) -> dict | None:
         "tax_bill_total": round(tax_bill_total, 2),
         "assessed_value": av_clerk,
         "total_exemptions": total_exe,
+        "exemptions": exemptions,
         "line_items": line_items[:15],
     }

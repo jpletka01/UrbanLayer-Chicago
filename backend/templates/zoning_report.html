@@ -880,6 +880,8 @@ a.glossary-link {
     {% if prop.land_sqft %}<dt>{{ t("prop.land_sqft") }}</dt><dd>{{ prop.land_sqft|fnum }}</dd>{% endif %}
     {% if prop.stories %}<dt>{{ t("prop.stories") }}</dt><dd>{{ prop.stories }}</dd>{% endif %}
     {% if prop.units %}<dt>{{ t("prop.units") }}</dt><dd>{{ prop.units }}</dd>{% endif %}
+    {% if prop.commercial_units %}<dt>{{ t("prop.commercial_units") }}</dt><dd>{{ prop.commercial_units }}</dd>{% endif %}
+    {% if prop.tax_exemptions %}<dt>{{ t("prop.exemptions") }}</dt><dd>{{ prop.tax_exemptions|map(attribute="kind")|join(", ") }} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.exemptions_caveat") }}</span></dd>{% endif %}
     {% if prop.bedrooms %}<dt>{{ t("prop.bedrooms") }}</dt><dd>{{ prop.bedrooms }}</dd>{% endif %}
     {% if prop.full_baths %}<dt>{{ t("prop.bathrooms") }}</dt><dd>{{ prop.full_baths }}{% if prop.half_baths %}{{ t("prop.half_suffix", n=prop.half_baths) }}{% endif %}</dd>{% endif %}
     {% if prop.year_built %}<dt>{{ t("prop.year_built") }}</dt><dd>{{ prop.year_built }}</dd>{% endif %}

@@ -12,7 +12,13 @@ import httpx
 import datetime
 
 from backend.config import get_settings
-from backend.models import AssessmentRecord, PropertySummary, SaleRecord, TaxLineItem
+from backend.models import (
+    AssessmentRecord,
+    PropertySummary,
+    SaleRecord,
+    TaxExemption,
+    TaxLineItem,
+)
 from backend.retrieval.property.assessments import get_assessments
 from backend.retrieval.property.characteristics import get_characteristics
 from backend.retrieval.property.parcels import lookup_parcel, lookup_parcel_by_pin
@@ -128,6 +134,38 @@ def _safe_float(val) -> float | None:
         return None
 
 
+# x54s-btds ships DECODED strings, not numbers (verified against the live
+# dataset + column metadata 2026-07-02): `char_apts` is "Two".."Six" (apartment
+# count, classes 211/212 only), `char_type_resd` is "1 Story"/"1.5 Story"/
+# "2 Story"/"3 Story +"/"Split Level", `char_use` is "Single-Family"/
+# "Multi-Family". `char_ncu` is the number of COMMERCIAL units — it was
+# previously (wrongly) surfaced as stories.
+_APTS_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
+
+_TYPE_RESD_STORIES = {
+    "1 story": 1.0,
+    "1.5 story": 1.5,
+    "2 story": 2.0,
+    "3 story +": 3.0,
+    # "Split Level" has no defensible story count -> None
+}
+
+
+def _decode_units(chars: dict) -> int | None:
+    """Dwelling units: decoded apartment count when CCAO provides one (211/212),
+    else 1 for a confirmed single-family parcel, else unknown."""
+    apts = _APTS_WORDS.get(str(chars.get("char_apts") or "").strip().lower())
+    if apts:
+        return apts
+    if str(chars.get("char_use") or "").strip().lower() == "single-family":
+        return 1
+    return None
+
+
+def _decode_stories(chars: dict) -> float | None:
+    return _TYPE_RESD_STORIES.get(str(chars.get("char_type_resd") or "").strip().lower())
+
+
 def _build_summary(
     parcel: dict,
     chars: dict | None,
@@ -146,6 +184,7 @@ def _build_summary(
     bldg_class_description = None
     stories = None
     units = None
+    commercial_units = None
     rooms = None
     bedrooms = None
     full_baths = None
@@ -164,8 +203,10 @@ def _build_summary(
         # `char_air` (not char_ac); there is no char_age or char_class_description.
         bldg_sqft = _safe_int(chars.get("char_bldg_sf")) or bldg_sqft
         land_sqft = _safe_int(chars.get("char_land_sf")) or land_sqft
-        stories = _safe_int(chars.get("char_ncu"))
-        units = _safe_int(chars.get("char_apts"))
+        stories = _decode_stories(chars)
+        units = _decode_units(chars)
+        ncu = _safe_int(chars.get("char_ncu"))
+        commercial_units = ncu if ncu is not None and ncu > 0 else None
         rooms = _safe_int(chars.get("char_rooms"))
         bedrooms = _safe_int(chars.get("char_beds"))
         full_baths = _safe_int(chars.get("char_fbath"))
@@ -227,6 +268,7 @@ def _build_summary(
     estimated_annual_tax = None
     tax_code = None
     tax_breakdown: list[TaxLineItem] = []
+    tax_exemptions: list[TaxExemption] = []
     if tax_result:
         estimated_annual_tax = tax_result.get("tax_bill_total")
         tax_code = tax_result.get("tax_code")
@@ -235,6 +277,11 @@ def _build_summary(
                 agency=item["agency"],
                 rate=item["rate"],
                 amount=item["amount"],
+            ))
+        for exe in tax_result.get("exemptions", []):
+            tax_exemptions.append(TaxExemption(
+                kind=exe["kind"],
+                eav_reduction=exe["eav_reduction"],
             ))
 
     return PropertySummary(
@@ -246,6 +293,7 @@ def _build_summary(
         land_sqft=land_sqft,
         stories=stories,
         units=units,
+        commercial_units=commercial_units,
         rooms=rooms,
         bedrooms=bedrooms,
         full_baths=full_baths,
@@ -262,6 +310,7 @@ def _build_summary(
         estimated_annual_tax=estimated_annual_tax,
         tax_code=tax_code,
         tax_breakdown=tax_breakdown,
+        tax_exemptions=tax_exemptions,
         assessment_history=assessment_history,
         sales_history=sales_history,
         parcel_geometry=parcel.get("geometry"),

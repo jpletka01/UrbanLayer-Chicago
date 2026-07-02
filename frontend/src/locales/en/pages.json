@@ -125,7 +125,9 @@
       "lotCoverage": "Max lot coverage",
       "viewMap": "View zoning map",
       "farUsed": "FAR used",
-      "farHeadroom": "{{pct}}% of the as-of-right envelope unused"
+      "farHeadroom": "{{pct}}% of the as-of-right envelope unused",
+      "setByPdOrdinance": "Set by PD ordinance",
+      "pdOrdinance": "PD ordinance"
     },
     "verdict": {
       "inTif": "in {{name}} TIF",

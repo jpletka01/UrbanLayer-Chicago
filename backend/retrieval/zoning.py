@@ -68,29 +68,40 @@ async def lookup_zoning(
     }
     if client is None:
         client = _get_arcgis_client()
+    # A failed request must RAISE, not return None: every caller runs this in a
+    # gather(return_exceptions=True) that maps an exception to the "parcel
+    # zoning" partial-failure the UI can caveat. Swallowing made a transient
+    # ArcGIS failure indistinguishable from "point has no zone" — the Scorecard
+    # rendered silent absence (4/100 first-hit misses in the 2026-07-02 lot
+    # coverage benchmark were exactly this). Only a definitive empty/zone-less
+    # response means not-found (and only that is negatively cached).
     try:
         resp = await client.get(ZONING_QUERY_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
-        features = data.get("features", [])
-        if not features:
-            _cache.set(key, _NOT_FOUND)
-            return None
-        attrs = features[0].get("attributes", {})
-        zone_class = attrs.get("ZONE_CLASS")
-        if not zone_class:
-            _cache.set(key, _NOT_FOUND)
-            return None
-        result = {
-            "zone_class": zone_class,
-            "zone_type": attrs.get("ZONE_TYPE"),
-            "ordinance_num": attrs.get("ORDINANCE_NUM"),
-        }
-        _cache.set(key, result)
-        return result
     except Exception as exc:
         log.warning("Zoning lookup failed for (%s, %s): %s", lat, lon, exc)
+        raise
+    # ArcGIS reports errors in a 200 body ({"error": {...}}) — that is a failed
+    # lookup, not an empty result.
+    if isinstance(data.get("error"), dict):
+        raise RuntimeError(f"ArcGIS zoning query error: {data['error'].get('message')}")
+    features = data.get("features", [])
+    if not features:
+        _cache.set(key, _NOT_FOUND)
         return None
+    attrs = features[0].get("attributes", {})
+    zone_class = attrs.get("ZONE_CLASS")
+    if not zone_class:
+        _cache.set(key, _NOT_FOUND)
+        return None
+    result = {
+        "zone_class": zone_class,
+        "zone_type": attrs.get("ZONE_TYPE"),
+        "ordinance_num": attrs.get("ORDINANCE_NUM"),
+    }
+    _cache.set(key, result)
+    return result
 
 
 async def adjacent_parcel_zoning(

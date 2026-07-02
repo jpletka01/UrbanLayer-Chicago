@@ -125,7 +125,9 @@
       "lotCoverage": "Cobertura máx. del lote",
       "viewMap": "Ver mapa de zonificación",
       "farUsed": "FAR utilizado",
-      "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar"
+      "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar",
+      "setByPdOrdinance": "Definido por la ordenanza del PD",
+      "pdOrdinance": "Ordenanza del PD"
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",

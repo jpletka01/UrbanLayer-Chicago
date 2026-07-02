@@ -173,6 +173,18 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           </div>
         )}
 
+        {/* Exemptions on the current bill — a buyer loses owner-occupancy
+            exemptions at transfer, so this bill understates their future bill. */}
+        {(data.tax_exemptions ?? []).length > 0 && (
+          <div className="text-caption text-text-secondary">
+            {t("property.exemptionsApplied", {
+              kinds: data.tax_exemptions.map((e) => e.kind).join(", "),
+              eav: Math.round(data.tax_exemptions.reduce((s, e) => s + e.eav_reduction, 0)).toLocaleString(),
+            })}
+            <span className="text-text-muted"> {t("property.exemptionsCaveat")}</span>
+          </div>
+        )}
+
         {/* Building facts — scannable grid, nulls omitted */}
         <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
           <Fact label={t("property.class")} value={classLabel || null} />
@@ -180,6 +192,7 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           <Fact label={t("property.landSqft")} value={data.land_sqft ? data.land_sqft.toLocaleString() : null} />
           <Fact label={t("property.stories")} value={data.stories ? String(data.stories) : null} />
           <Fact label={t("property.units")} value={data.units ? String(data.units) : null} />
+          <Fact label={t("property.commercialUnits")} value={data.commercial_units ? String(data.commercial_units) : null} />
           <Fact label={t("property.rooms")} value={data.rooms ? String(data.rooms) : null} />
           <Fact label={t("property.bedrooms")} value={data.bedrooms ? String(data.bedrooms) : null} />
           <Fact label={t("property.baths")} value={baths} />

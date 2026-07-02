@@ -59,23 +59,46 @@ async def test_lookup_returns_none_for_missing_zone_class():
 
 
 @pytest.mark.asyncio
-async def test_lookup_handles_http_error():
+async def test_lookup_raises_on_http_error():
+    """A failed request must RAISE (callers map it to the 'parcel zoning'
+    partial failure) — returning None here rendered transient ArcGIS outages
+    as silent 'no zoning' on the Scorecard (2026-07-02 benchmark finding)."""
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = AsyncMock(
         return_value=_mock_response({}, status_code=500)
     )
 
-    result = await lookup_zoning(41.9270, -87.6984, client=client)
-    assert result is None
+    with pytest.raises(httpx.HTTPStatusError):
+        await lookup_zoning(41.9270, -87.6984, client=client)
 
 
 @pytest.mark.asyncio
-async def test_lookup_handles_exception():
+async def test_lookup_raises_on_transport_error():
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = AsyncMock(side_effect=httpx.ConnectError("connection refused"))
 
+    with pytest.raises(httpx.ConnectError):
+        await lookup_zoning(41.9270, -87.6984, client=client)
+
+
+@pytest.mark.asyncio
+async def test_lookup_raises_on_arcgis_error_body():
+    """ArcGIS reports failures inside a 200 body — that's a failed lookup,
+    not an empty result, and must not be negatively cached."""
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(return_value=_mock_response(
+        {"error": {"code": 500, "message": "Unable to complete operation"}}
+    ))
+
+    with pytest.raises(RuntimeError):
+        await lookup_zoning(41.9270, -87.6984, client=client)
+
+    # A subsequent success must not be masked by a cached not-found
+    client.get = AsyncMock(return_value=_mock_response({
+        "features": [{"attributes": {"ZONE_CLASS": "RS-3", "ZONE_TYPE": 1, "ORDINANCE_NUM": None}}]
+    }))
     result = await lookup_zoning(41.9270, -87.6984, client=client)
-    assert result is None
+    assert result is not None and result["zone_class"] == "RS-3"
 
 
 @pytest.mark.asyncio

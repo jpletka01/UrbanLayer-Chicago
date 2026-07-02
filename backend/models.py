@@ -242,6 +242,18 @@ class TaxLineItem(BaseModel):
     amount: float
 
 
+class TaxExemption(BaseModel):
+    """An exemption applied to the parcel's most recent tax bill.
+
+    ``eav_reduction`` is the equalized-assessed-value deduction (taxable value
+    removed before rates apply) — NOT dollars off the bill. A buyer loses
+    owner-occupancy exemptions at transfer, so their presence means the listed
+    bill understates the buyer's future bill.
+    """
+    kind: str
+    eav_reduction: float
+
+
 class PropertySummary(BaseModel):
     pin14: str | None = None
     address: str | None = None
@@ -249,8 +261,12 @@ class PropertySummary(BaseModel):
     bldg_class_description: str | None = None
     bldg_sqft: int | None = None
     land_sqft: int | None = None
-    stories: int | None = None
+    # Fractional values are real ("1.5 Story" is a CCAO residence type)
+    stories: float | None = None
     units: int | None = None
+    # char_ncu — number of commercial units on the parcel (mostly class 212
+    # mixed-use). Distinct from dwelling `units`; was wrongly shown as stories.
+    commercial_units: int | None = None
     rooms: int | None = None
     bedrooms: int | None = None
     full_baths: int | None = None
@@ -271,6 +287,7 @@ class PropertySummary(BaseModel):
     tax_estimate_is_fallback: bool = False
     tax_code: str | None = None
     tax_breakdown: list[TaxLineItem] = Field(default_factory=list)
+    tax_exemptions: list[TaxExemption] = Field(default_factory=list)
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None

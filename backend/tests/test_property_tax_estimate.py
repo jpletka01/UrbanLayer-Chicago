@@ -146,6 +146,21 @@ async def test_estimate_tax_with_exemptions(ptaxsim_db):
         assert result is not None
         assert result["total_exemptions"] == 10000
         assert result["tax_bill_total"] == 14104.61
+        # Itemized breakdown: only nonzero kinds, labeled, with EAV semantics
+        assert result["exemptions"] == [
+            {"kind": "Homeowner", "eav_reduction": 10000}
+        ]
+
+
+@pytest.mark.asyncio
+async def test_estimate_tax_no_exemptions_empty_list(ptaxsim_db):
+    with patch("backend.retrieval.property.tax_estimate.get_settings") as mock_settings:
+        mock_settings.return_value.ptaxsim_enabled = True
+        mock_settings.return_value.ptaxsim_db_path = ptaxsim_db
+
+        result = await estimate_tax(2023, "17161000190000")
+        assert result is not None
+        assert result["exemptions"] == []
 
 
 @pytest.mark.asyncio
