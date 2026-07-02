@@ -40,6 +40,24 @@ class TestHealthEndpoint:
         assert "ok" in data
         assert "qdrant" in data
         assert "db" in data
+        assert "ptaxsim" in data
+
+    def test_health_flags_missing_ptaxsim_without_gating(self, client):
+        """A missing ptaxsim.db must be visible (ptaxsim: false) but must NOT
+        503 the health check — the app is degraded-but-up without tax data."""
+        from pathlib import Path
+        from unittest.mock import MagicMock
+        with patch("backend.main.get_settings") as mock_settings:
+            s = MagicMock()
+            s.ptaxsim_enabled = True
+            s.ptaxsim_db_path = Path("/nonexistent/ptaxsim.db")
+            s.qdrant_url = "http://localhost:6333"
+            mock_settings.return_value = s
+            response = client.get("/health")
+        data = response.json()
+        assert data["ptaxsim"] is False
+        # ok must not depend on ptaxsim
+        assert data["ok"] == (data["qdrant"] and data["db"])
 
 
 class TestAutocompleteEndpoint:

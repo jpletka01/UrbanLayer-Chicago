@@ -164,10 +164,21 @@ app.include_router(discovery_router)
 
 @app.on_event("startup")
 async def _startup() -> None:
-    get_settings()
+    settings = get_settings()
     await db.init_db()
     from backend.discovery import parcel_source
     parcel_source.ensure_loaded()
+    # ptaxsim.db is optional-by-design (estimate_tax degrades to None), which let
+    # prod run for weeks serving NO tax data with nothing in the logs. Missing DB
+    # must be loud: every scorecard/report tax figure depends on it.
+    if not settings.ptaxsim_enabled:
+        log.warning("PTAXSIM disabled by config — tax estimates will be absent")
+    elif not settings.ptaxsim_db_path.exists():
+        log.warning(
+            "PTAXSIM database missing at %s — ALL tax estimates (bill, rate, "
+            "breakdown) will be absent. Seed it with scripts/download_ptaxsim.py",
+            settings.ptaxsim_db_path,
+        )
     await _preload_datasets()
 
 
@@ -236,8 +247,13 @@ async def health() -> dict:
     except Exception:
         pass
 
+    # Informational, not gating: the app is degraded-but-up without ptaxsim
+    # (tax figures absent). Surfaced here so a deploy check / uptime probe can
+    # catch a missing DB — prod ran without one for weeks, silently.
+    ptaxsim_ok = bool(settings.ptaxsim_enabled and settings.ptaxsim_db_path.exists())
+
     ok = qdrant_ok and db_ok
-    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok}
+    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok, "ptaxsim": ptaxsim_ok}
     if not ok:
         from fastapi.responses import JSONResponse
         return JSONResponse(content=result, status_code=503)
