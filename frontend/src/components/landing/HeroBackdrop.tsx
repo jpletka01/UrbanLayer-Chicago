@@ -7,14 +7,16 @@
 //   plat    — abstract plat map: street grid, lot subdivisions, diagonal avenue
 //   contour — topographic contour rings + survey crosses
 //   geo     — fine grid + concentric survey arcs + block squares
+//   curtain — procedural curtain-wall facade, the city in elevation (facade.ts)
 
 import type { ReactElement } from "react";
+import { CurtainWall } from "./CurtainWall";
 
-type Variant = "bloom" | "plat" | "contour" | "geo";
+type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain";
 
 function activeVariant(): Variant {
   const v = new URLSearchParams(window.location.search).get("bg");
-  return v === "bloom" || v === "contour" || v === "geo" ? v : "plat";
+  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" ? v : "plat";
 }
 
 // Inverted mask: the hero's content (headline, input, preview card) lives in the middle of the
@@ -251,6 +253,19 @@ function GeoVariant() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// curtain — procedural curtain-wall facade (the city in elevation)
+// ---------------------------------------------------------------------------
+
+function CurtainVariant() {
+  return (
+    <>
+      <NeutralBloom />
+      <CurtainWall seed={11} style={MASK} />
+    </>
+  );
+}
+
 export function HeroBackdrop() {
   const variant = activeVariant();
   return (
@@ -259,6 +274,7 @@ export function HeroBackdrop() {
       {variant === "plat" && <PlatVariant />}
       {variant === "contour" && <ContourVariant />}
       {variant === "geo" && <GeoVariant />}
+      {variant === "curtain" && <CurtainVariant />}
     </div>
   );
 }
