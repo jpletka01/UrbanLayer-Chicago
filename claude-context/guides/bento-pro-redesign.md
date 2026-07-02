@@ -126,8 +126,8 @@ over orange text — orange = action only); "Researching the code…" line cente
 height `h-14` → now `-mt-14`; coverCrop bottom-anchored, grid rows `ceil`); **spire rule**
 renders the Hancock's twin antenna masts (vertical-continuity roofline detection).
 **Full system doc — decision record, calibrated params, probe workflow, reuse recipes:
-`dot-matrix.md`.** `?bg=skyline` is Jack's pick; HeroBackdrop default still `plat` until he
-says flip it.
+`dot-matrix.md`.** **`skyline` is now the HeroBackdrop DEFAULT** (flipped 2026-07-02 at
+Jack's request); `?bg=plat|bloom|contour|geo|curtain` remain for comparison.
 **AccentRails** — faint orange plat-grid rails (16% alpha) along the below-hero margins.
 
 Also done: orange/violet across app surfaces (inherited via tokens); readability pass (contrast, spacing);

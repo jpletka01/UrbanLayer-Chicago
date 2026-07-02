@@ -1,14 +1,15 @@
 // Abstract hero backdrop. All line-work is drawn in currentColor under a `text-text-primary`
 // wrapper, so it renders white-on-black in dark mode and inverts to black-on-white in light
-// mode with no per-theme code. Orange appears only as a single "found parcel" marker.
+// mode with no per-theme code.
 //
 // Variants (dev exploration, switch via ?bg=):
-//   bloom   — current shipped design: warm orange bloom + faint grid (default)
+//   skyline — LED dot-matrix halftone of the night skyline (DEFAULT — Jack's pick;
+//             DotMatrix + dotGrid.ts, see claude-context/guides/dot-matrix.md)
+//   bloom   — warm orange bloom + faint grid (previously shipped design)
 //   plat    — abstract plat map: street grid, lot subdivisions, diagonal avenue
 //   contour — topographic contour rings + survey crosses
 //   geo     — fine grid + concentric survey arcs + block squares
 //   curtain — procedural curtain-wall facade, the city in elevation (facade.ts)
-//   skyline — LED dot-matrix halftone of the night skyline (DotMatrix + dotmatrix.ts)
 
 import type { ReactElement } from "react";
 import { CurtainWall } from "./CurtainWall";
@@ -19,9 +20,9 @@ type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain" | "skyline";
 
 function activeVariant(): Variant {
   const v = new URLSearchParams(window.location.search).get("bg");
-  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" || v === "skyline"
+  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" || v === "plat"
     ? v
-    : "plat";
+    : "skyline";
 }
 
 // Inverted mask: the hero's content (headline, input, preview card) lives in the middle of the

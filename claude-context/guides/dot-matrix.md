@@ -1,10 +1,11 @@
 # DotMatrix — LED dot-grid halftone system (hero skyline + reusable renderer)
 
 **Status: built 2026-07-02 on `feat/bento-pro`** (commits `7a9b8ea` → `178d292`), the hero
-variant Jack picked after rejecting pure-texture procedural backdrops. Live at `/?bg=curtain`
-is the rejected predecessor; **`/?bg=skyline` is the pick** (HeroBackdrop default still `plat`
-until flipped). Read this before touching the hero backdrop, or when reusing DotMatrix on any
-other surface — Jack expects this component to travel.
+variant Jack picked after rejecting pure-texture procedural backdrops. **`skyline` is the
+HeroBackdrop DEFAULT** (flipped 2026-07-02 at Jack's request); the old variants (`plat`,
+`bloom`, `contour`, `geo`, `curtain`) remain reachable via `?bg=` for comparison. Read this
+before touching the hero backdrop, or when reusing DotMatrix on any other surface — Jack
+expects this component to travel.
 
 ## What it is
 
