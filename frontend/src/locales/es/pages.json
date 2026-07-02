@@ -76,7 +76,6 @@
     "openComplaints_one": "{{count}} queja abierta",
     "openComplaints_other": "{{count}} quejas abiertas",
     "highRiskFlags": "Alertas de alto riesgo",
-    "fullAnalysis": "Análisis completo",
     "askAboutProperty": "Pregunta sobre esta propiedad",
     "zoningRules": "Normativas de zonificación {{zone}}",
     "investigate": {

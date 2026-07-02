@@ -554,9 +554,6 @@ export default function ScorecardPage() {
                 {data.community_area_name && (
                   <span className="text-body text-text-muted">{data.community_area_name}</span>
                 )}
-                {zoning && (
-                  <Chip tone="accent" mono size="sm">{zoning.zone_class}</Chip>
-                )}
               </div>
               {/* Parcel identity strip */}
               {parcel && (
@@ -617,24 +614,20 @@ export default function ScorecardPage() {
                     <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                   </button>
                 )}
-                <InvestigateButton
-                  question={`What's going on near ${data.address}?`}
-                  label={t("scorecard.fullAnalysis")}
-                  cardName="full_analysis"
-                  pin={parcel?.pin}
-                />
                 <button
+                  type="button"
+                  title={t("scorecard.downloadCsv")}
+                  aria-label={t("scorecard.downloadCsv")}
                   onClick={() => {
                     const slug = buildFilenameSlug(data.address || "property");
                     const date = new Date().toISOString().slice(0, 10);
                     downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
                   }}
-                  className="inline-flex items-center gap-1 text-caption text-text-secondary hover:text-accent transition-colors"
+                  className="ml-auto inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-muted hover:text-accent hover:bg-dark-elevated transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                   </svg>
-                  {t("scorecard.downloadCsv")}
                 </button>
               </div>
               </div>
@@ -647,7 +640,6 @@ export default function ScorecardPage() {
               <div ref={bandRef}>
                 <VerdictBand
                   verdict={verdict}
-                  tiles={tiles}
                   onChat={verdictChat}
                   onScrollTo={scrollToCard}
                 />

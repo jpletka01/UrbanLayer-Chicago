@@ -50,12 +50,11 @@ export interface VerdictTile {
 
 export interface VerdictBandProps {
   verdict: ScorecardVerdict;
-  tiles?: VerdictTile[];
   onChat: (question: string) => void;
   onScrollTo: (anchor: CardId) => void;
 }
 
-export function VerdictBand({ verdict, tiles, onChat, onScrollTo }: VerdictBandProps) {
+export function VerdictBand({ verdict, onChat, onScrollTo }: VerdictBandProps) {
   const { t } = useTranslation("pages");
   const tone = TONE[verdict.category];
 
@@ -68,16 +67,11 @@ export function VerdictBand({ verdict, tiles, onChat, onScrollTo }: VerdictBandP
 
   const primaryClasses = "bg-action hover:bg-action-hover text-action-fg";
 
-  const showTiles = !!tiles && tiles.length >= 2;
-
   return (
     <section
       aria-label={t("scorecard.verdict.ariaLabel")}
       className={`mb-6 bg-dark-surface border border-dark-border ${tone.bar} border-l-4 rounded-xl shadow-card overflow-hidden`}
     >
-      {/* Two zones: the verdict narrative (left) + the numbers that justify it (right).
-          The band owns its full width in every state — no empty flank. */}
-      <div className={showTiles ? "grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]" : ""}>
       <div className="p-5">
       {/* Headline — the conclusion, leading */}
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -154,26 +148,6 @@ export function VerdictBand({ verdict, tiles, onChat, onScrollTo }: VerdictBandP
         </dl>
         <p className="mt-2 pl-3 text-micro text-text-muted leading-snug">{t("scorecard.verdict.howScoredNote")}</p>
       </details>
-      </div>
-
-      {/* Evidence rail — the verdict's numbers as clickable stat tiles */}
-      {showTiles && (
-        <div className="border-t lg:border-t-0 lg:border-l border-dark-border-subtle bg-dark-elevated/40 p-3 grid grid-cols-2 gap-2 content-center">
-          {tiles!.map((tile) => (
-            <button
-              key={tile.anchor + tile.label}
-              type="button"
-              onClick={() => onScrollTo(tile.anchor)}
-              title={t("scorecard.verdict.jumpToEvidence")}
-              className="group text-left rounded-lg border border-dark-border bg-dark-surface hover:border-dark-border-strong p-3 transition-colors"
-            >
-              <div className="text-overline uppercase text-text-muted">{tile.label}</div>
-              <div className="text-subtitle text-text-primary mt-1 truncate">{tile.value}</div>
-              {tile.sub && <div className="text-micro text-text-muted mt-0.5 leading-snug">{tile.sub}</div>}
-            </button>
-          ))}
-        </div>
-      )}
       </div>
     </section>
   );

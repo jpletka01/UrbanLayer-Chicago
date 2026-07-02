@@ -76,7 +76,6 @@
     "openComplaints_one": "{{count}} open complaint",
     "openComplaints_other": "{{count}} open complaints",
     "highRiskFlags": "High-risk flags",
-    "fullAnalysis": "Full analysis",
     "askAboutProperty": "Ask about this property",
     "zoningRules": "{{zone}} zoning rules",
     "investigate": {
