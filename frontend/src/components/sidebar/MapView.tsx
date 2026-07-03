@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "motion/react";
-import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, GeoJsonLayer, TextLayer } from "@deck.gl/layers";
 import { PathStyleExtension } from "@deck.gl/extensions";
 import type { MapData, MapCrime, MapRequest311, MapPermit, SourceTag, TransitStation } from "../../lib/types";
 import { fetchTransitStations } from "../../lib/api";
@@ -60,6 +60,67 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
 const CHICAGO_CENTER: [number, number] = [-87.6298, 41.8781];
 const INITIAL_ZOOM = 11;
+
+// Dense point sets zoomed out are unreadable dot soup — aggregate them into
+// count-labeled cluster dots until the user zooms in far enough for individual
+// dots to separate. Hand-rolled grid clustering: deck.gl's aggregation layers
+// (HeatmapLayer & co) don't render in interleaved MapboxOverlay mode, but
+// Scatterplot + Text layers do.
+const DENSE_POINT_THRESHOLD = 300;
+const CLUSTER_MAX_ZOOM = 13;
+const CLUSTER_CELL_PX = 56;
+
+interface ClusterCell { longitude: number; latitude: number; count: number }
+
+function clusterPoints(data: { longitude: number; latitude: number }[], zoom: number): ClusterCell[] {
+  // Web-mercator: the world spans 512·2^zoom px, so a CLUSTER_CELL_PX cell is
+  // this many degrees of longitude (latitude cells stretch a bit — fine here).
+  const cellDeg = (360 / (512 * Math.pow(2, zoom))) * CLUSTER_CELL_PX;
+  const cells = new Map<string, { lonSum: number; latSum: number; count: number }>();
+  for (const d of data) {
+    const key = `${Math.floor(d.longitude / cellDeg)}:${Math.floor(d.latitude / cellDeg)}`;
+    const c = cells.get(key) ?? { lonSum: 0, latSum: 0, count: 0 };
+    c.lonSum += d.longitude;
+    c.latSum += d.latitude;
+    c.count += 1;
+    cells.set(key, c);
+  }
+  return [...cells.values()].map((c) => ({
+    longitude: c.lonSum / c.count,
+    latitude: c.latSum / c.count,
+    count: c.count,
+  }));
+}
+
+function clusterLayers(id: string, data: { longitude: number; latitude: number }[], zoom: number) {
+  const clusters = clusterPoints(data, zoom);
+  const max = Math.max(...clusters.map((c) => c.count));
+  return [
+    new ScatterplotLayer<ClusterCell>({
+      id: `${id}-clusters`,
+      data: clusters,
+      getPosition: (d) => [d.longitude, d.latitude],
+      getRadius: (d) => 12 + 12 * Math.sqrt(d.count / max),
+      radiusUnits: "pixels",
+      getFillColor: (d) => [249, 164, 116, 150 + Math.round(80 * (d.count / max))],
+      stroked: true,
+      getLineColor: [255, 255, 255, 140],
+      lineWidthMinPixels: 1,
+      pickable: false,
+    }),
+    new TextLayer<ClusterCell>({
+      id: `${id}-cluster-labels`,
+      data: clusters,
+      getPosition: (d) => [d.longitude, d.latitude],
+      getText: (d) => String(d.count),
+      getSize: 11,
+      getColor: [26, 26, 26, 235],
+      fontFamily: "Inter, sans-serif",
+      fontWeight: 600,
+      pickable: false,
+    }),
+  ];
+}
 
 function buildCrimeTypeFilters(crimes: MapCrime[]): Record<string, boolean> {
   const counts = new Map<string, number>();
@@ -271,7 +332,22 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
     zoom: INITIAL_ZOOM,
     getTooltip: buildLayerTooltip,
     onClick: (info: LayerPickInfo) => onClickRef.current(info),
+    pickingRadius: isMobile ? 14 : undefined,
   });
+
+  // Current zoom drives the dots-vs-heatmap swap for dense point sets.
+  // zoomend (not zoom) so the layer rebuild fires once per gesture.
+  const [mapZoom, setMapZoom] = useState(INITIAL_ZOOM);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const onZoom = () => setMapZoom(map.getZoom());
+    onZoom();
+    map.on("zoomend", onZoom);
+    return () => {
+      map.off("zoomend", onZoom);
+    };
+  }, [mapReady, mapRef]);
 
   // Map click → open the detail modal for the picked feature.
   // For zone layers, multi-pick to find ALL overlapping features at the click point.
@@ -368,7 +444,8 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
   useEffect(() => {
     if (!overlayRef.current || !mapReady) return;
 
-    const layers: (ScatterplotLayer | GeoJsonLayer)[] = [];
+    const layers: (ScatterplotLayer | GeoJsonLayer | TextLayer)[] = [];
+    const asClusters = (count: number) => count > DENSE_POINT_THRESHOLD && mapZoom < CLUSTER_MAX_ZOOM;
 
     // Zoning polygons render first (underneath scatter dots)
     if (showZoning && hasZoning) {
@@ -471,9 +548,13 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
       });
 
       if (filteredCrimes.length > 0) {
-        layers.push(pointLayer("crimes", filteredCrimes, {
-          getFillColor: d => crimeColor(d.primary_type),
-        }));
+        if (asClusters(filteredCrimes.length)) {
+          layers.push(...clusterLayers("crimes", filteredCrimes, mapZoom));
+        } else {
+          layers.push(pointLayer("crimes", filteredCrimes, {
+            getFillColor: d => crimeColor(d.primary_type),
+          }));
+        }
       }
     } else if (showPoints && filterMode === "311" && mapData?.requests_311?.length) {
       const activeTypes = new Set(
@@ -493,11 +574,15 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
       });
 
       if (filtered.length > 0) {
-        layers.push(pointLayer("requests-311", filtered, {
-          getFillColor: d => srTypeMapColor(d.sr_type),
-          getRadius: 35,
-          radiusMaxPixels: 7,
-        }));
+        if (asClusters(filtered.length)) {
+          layers.push(...clusterLayers("requests-311", filtered, mapZoom));
+        } else {
+          layers.push(pointLayer("requests-311", filtered, {
+            getFillColor: d => srTypeMapColor(d.sr_type),
+            getRadius: 35,
+            radiusMaxPixels: 7,
+          }));
+        }
       }
     } else if (showPoints && filterMode === "permits" && mapData?.building_permits?.length) {
       const activeTypes = new Set(
@@ -516,11 +601,15 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
       });
 
       if (filteredPermits.length > 0) {
-        layers.push(pointLayer("permits", filteredPermits, {
-          getFillColor: d => permitColor(d.permit_type),
-          getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
-          radiusMaxPixels: 12,
-        }));
+        if (asClusters(filteredPermits.length)) {
+          layers.push(...clusterLayers("permits", filteredPermits, mapZoom));
+        } else {
+          layers.push(pointLayer("permits", filteredPermits, {
+            getFillColor: d => permitColor(d.permit_type),
+            getRadius: d => Math.max(40, Math.min(150, Math.sqrt(d.estimated_cost || 0) * 0.3)),
+            radiusMaxPixels: 12,
+          }));
+        }
       }
     }
 
@@ -561,7 +650,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
     }
 
     overlayRef.current.setProps({ layers });
-  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, hasIncentiveZones, hasOverlayDistricts, showTransit, showIncentives, showOverlays, transitStations, parcelGeometry, overlayRef, contextRestored]);
+  }, [mapData, filterMode, crimeTypeToggles, srTypeToggles, permitTypeToggles, arrestFilter, statusFilter, costFilter, dateRange, mapReady, showZoning, showPoints, hasZoning, hasIncentiveZones, hasOverlayDistricts, showTransit, showIncentives, showOverlays, transitStations, parcelGeometry, overlayRef, contextRestored, mapZoom]);
 
   // Fit map bounds to data points
   useEffect(() => {
@@ -660,6 +749,104 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
     + (capped.building_permits ? mapData!.building_permits.length : 0)
     || (mapData ? mapData.crimes.length + mapData.requests_311.length + mapData.building_permits.length : 0);
 
+  // Layer on/off chips — rendered top-left on desktop, inside the single
+  // "Layers" popover on mobile (one map control instead of a chip stack
+  // covering 70% of a phone-width map).
+  const layerChips = (
+    <div className="flex gap-1 flex-wrap">
+      {hasZoning && (
+        <button
+          onClick={() => setShowZoning(s => !s)}
+          className={`flex items-center gap-1 px-2 py-1 text-micro font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+            ${showZoning
+              ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+              : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+            }`}
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-sm inline-block border"
+            style={{
+              backgroundColor: showZoning ? "rgba(66,133,244,0.5)" : "transparent",
+              borderColor: showZoning ? "rgba(66,133,244,0.8)" : "#555",
+            }}
+          />
+          {t("layers.zoning")}
+        </button>
+      )}
+      {hasData && (
+        <button
+          onClick={() => setShowPoints(s => !s)}
+          className={`flex items-center gap-1 px-2 py-1 text-micro font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+            ${showPoints
+              ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+              : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+            }`}
+        >
+          <span
+            className="w-2 h-2 rounded-full inline-block"
+            style={{ backgroundColor: showPoints ? "#eee" : "#555" }}
+          />
+          {t("layers.points")}
+        </button>
+      )}
+      <button
+        onClick={() => setShowTransit(s => !s)}
+        className={`flex items-center gap-1 px-2 py-1 text-micro font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+          ${showTransit
+            ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+            : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+          }`}
+      >
+        <span
+          className="w-2 h-2 rounded-sm inline-block"
+          style={{
+            backgroundColor: showTransit ? "rgba(0,161,222,0.5)" : "transparent",
+            border: showTransit ? "1px solid rgba(0,161,222,0.8)" : "1px solid #555",
+          }}
+        />
+        {t("layers.transit")}
+      </button>
+      {mapData?.incentive_zones && (
+        <button
+          onClick={() => setShowIncentives(s => !s)}
+          className={`flex items-center gap-1 px-2 py-1 text-micro font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+            ${showIncentives
+              ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+              : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+            }`}
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-sm inline-block"
+            style={{
+              backgroundColor: showIncentives ? "rgba(255,87,34,0.5)" : "transparent",
+              border: showIncentives ? "1px solid rgba(255,87,34,0.8)" : "1px solid #555",
+            }}
+          />
+          {t("layers.incentives")}
+        </button>
+      )}
+      {mapData?.overlay_districts && (
+        <button
+          onClick={() => setShowOverlays(s => !s)}
+          className={`flex items-center gap-1 px-2 py-1 text-micro font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
+            ${showOverlays
+              ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
+              : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
+            }`}
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-sm inline-block"
+            style={{
+              backgroundColor: showOverlays ? "rgba(156,39,176,0.5)" : "transparent",
+              border: showOverlays ? "1px solid rgba(156,39,176,0.8)" : "1px solid #555",
+            }}
+          />
+          {t("layers.overlays")}
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
@@ -682,8 +869,9 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
         </div>
       )}
 
-      {/* Mobile: filter button (top-right) */}
-      {isMobile && mapReady && showPoints && hasData && (
+      {/* Mobile: ONE map control — layers + filters live in a single popover,
+          so toggle chips never cover the phone-width map. */}
+      {isMobile && mapReady && (
         <button
           onClick={() => setFilterPopoverOpen(o => !o)}
           className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-1 text-micro font-medium
@@ -691,9 +879,9 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                      text-text-primary transition-colors duration-150"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
           </svg>
-          {t("filters.filters")}
+          {t("layers.button")}
         </button>
       )}
 
@@ -717,7 +905,12 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
               className="absolute top-10 right-2 z-30 w-[240px] max-h-[60vh] overflow-y-auto
                          bg-dark-surface border border-dark-border rounded-xl p-3 shadow-2xl space-y-2.5"
             >
-              {isMultiSource && availableTabs.length > 1 && (
+              <div>
+                <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("layers.button")}</div>
+                {layerChips}
+              </div>
+
+              {showPoints && hasData && isMultiSource && availableTabs.length > 1 && (
                 <div className="flex w-full bg-dark-bg rounded-md overflow-hidden">
                   {availableTabs.map((tab) => {
                     const label = tab === "311" ? "311" : t(`filters.${tab}`);
@@ -739,14 +932,14 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                 </div>
               )}
 
-              {toggleConfigs.length > 0 && (
+              {showPoints && toggleConfigs.length > 0 && (
                 <div>
                   <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.typeFilters")}</div>
                   <MapLayerToggles layers={toggleConfigs} onToggle={onToggle} />
                 </div>
               )}
 
-              {filterMode === "crime" && crimeTotal > 0 && (
+              {showPoints && filterMode === "crime" && crimeTotal > 0 && (
                 <div>
                   <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.arrestStatus")}</div>
                   <ToggleGroup<ArrestFilterValue>
@@ -761,7 +954,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                 </div>
               )}
 
-              {filterMode === "311" && requests311Total > 0 && (
+              {showPoints && filterMode === "311" && requests311Total > 0 && (
                 <div>
                   <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.status")}</div>
                   <ToggleGroup<StatusFilterValue>
@@ -776,7 +969,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                 </div>
               )}
 
-              {filterMode === "permits" && permitsTotal > 0 && (
+              {showPoints && filterMode === "permits" && permitsTotal > 0 && (
                 <div>
                   <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.costRange")}</div>
                   <ToggleGroup<CostFilterValue>
@@ -792,7 +985,7 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
                 </div>
               )}
 
-              {dateBounds && dateRange && hasData && (
+              {showPoints && dateBounds && dateRange && hasData && (
                 <div>
                   <div className="text-micro text-text-muted uppercase tracking-wider mb-1.5">{t("filters.dateRange")}</div>
                   <DateRangeSlider
@@ -819,103 +1012,12 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
         />
       )}
 
-      {mapReady && (hasZoning || hasData || true) && (
-        <div className={`absolute top-2 left-2 z-10 flex flex-col gap-1.5 ${isMobile ? "max-w-[calc(70%-8px)]" : "max-w-[calc(50%-8px)]"}`}>
-          <div className="flex gap-1 flex-wrap">
-            {hasZoning && (
-              <button
-                onClick={() => setShowZoning(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                  ${showZoning
-                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
-                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
-                  }`}
-              >
-                <span
-                  className={`${isMobile ? "w-2 h-2" : "w-2.5 h-2.5"} rounded-sm inline-block border`}
-                  style={{
-                    backgroundColor: showZoning ? "rgba(66,133,244,0.5)" : "transparent",
-                    borderColor: showZoning ? "rgba(66,133,244,0.8)" : "#555",
-                  }}
-                />
-                {t("layers.zoning")}
-              </button>
-            )}
-            {hasData && (
-              <button
-                onClick={() => setShowPoints(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                  ${showPoints
-                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
-                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
-                  }`}
-              >
-                <span
-                  className="w-2 h-2 rounded-full inline-block"
-                  style={{ backgroundColor: showPoints ? "#eee" : "#555" }}
-                />
-                {t("layers.points")}
-              </button>
-            )}
-            <button
-              onClick={() => setShowTransit(s => !s)}
-              className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                ${showTransit
-                  ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
-                  : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
-                }`}
-            >
-              <span
-                className={`${isMobile ? "w-1.5 h-1.5" : "w-2 h-2"} rounded-sm inline-block`}
-                style={{
-                  backgroundColor: showTransit ? "rgba(0,161,222,0.5)" : "transparent",
-                  border: showTransit ? "1px solid rgba(0,161,222,0.8)" : "1px solid #555",
-                }}
-              />
-              {t("layers.transit")}
-            </button>
-            {mapData?.incentive_zones && (
-              <button
-                onClick={() => setShowIncentives(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                  ${showIncentives
-                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
-                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
-                  }`}
-              >
-                <span
-                  className={`${isMobile ? "w-2 h-2" : "w-2.5 h-2.5"} rounded-sm inline-block`}
-                  style={{
-                    backgroundColor: showIncentives ? "rgba(255,87,34,0.5)" : "transparent",
-                    border: showIncentives ? "1px solid rgba(255,87,34,0.8)" : "1px solid #555",
-                  }}
-                />
-                {t("layers.incentives")}
-              </button>
-            )}
-            {mapData?.overlay_districts && (
-              <button
-                onClick={() => setShowOverlays(s => !s)}
-                className={`flex items-center gap-1 ${isMobile ? "px-1.5 py-0.5 text-micro" : "px-2 py-1 text-micro"} font-medium rounded-md backdrop-blur-sm border transition-colors duration-150
-                  ${showOverlays
-                    ? "bg-dark-surface/90 text-text-primary border-dark-border shadow-sm"
-                    : "bg-dark-bg/60 text-text-muted border-transparent hover:bg-dark-surface/60"
-                  }`}
-              >
-                <span
-                  className={`${isMobile ? "w-2 h-2" : "w-2.5 h-2.5"} rounded-sm inline-block`}
-                  style={{
-                    backgroundColor: showOverlays ? "rgba(156,39,176,0.5)" : "transparent",
-                    border: showOverlays ? "1px solid rgba(156,39,176,0.8)" : "1px solid #555",
-                  }}
-                />
-                {t("layers.overlays")}
-              </button>
-            )}
-          </div>
+      {!isMobile && mapReady && (
+        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[calc(50%-8px)]">
+          {layerChips}
 
           {/* Desktop: inline source tabs + filters */}
-          {!isMobile && showPoints && hasData && (
+          {showPoints && hasData && (
             <>
               {isMultiSource && availableTabs.length > 1 && (
                 <div className="flex w-full bg-dark-surface/90 backdrop-blur-sm rounded-md border border-dark-border shadow-sm overflow-hidden">
@@ -1003,17 +1105,9 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
         </div>
       )}
 
-      {selectedItem && (
-        <div
-          className="absolute inset-0 z-30 flex items-center justify-center bg-black/30"
-          onClick={() => setSelectedItem(null)}
-        >
-          <div
-            className={`bg-dark-surface border border-dark-border rounded-xl p-4 shadow-2xl ${
-              selectedItem.type === "regulatory" ? "max-w-[320px] w-[92%]" : "max-w-[280px] w-[90%]"
-            }`}
-            onClick={e => e.stopPropagation()}
-          >
+      {selectedItem && (() => {
+        const detailInner = (
+          <>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-text-primary">
                 {selectedItem.type === "crime" ? t("detail.crimeIncident") :
@@ -1037,9 +1131,33 @@ export function MapView({ mapData, loading, sources, intent, parcelGeometry, has
             }`}>
               {renderDetailFields(selectedItem, t)}
             </div>
+          </>
+        );
+        // Mobile: slim card docked to the map's bottom edge (map stays visible
+        // and pannable; tapping empty map dismisses via handleMapClick's null
+        // pick). Desktop keeps the centered modal.
+        return isMobile ? (
+          <div className="absolute bottom-2 left-2 right-2 z-30">
+            <div className="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-2xl max-h-[45%] overflow-y-auto">
+              {detailInner}
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div
+            className="absolute inset-0 z-30 flex items-center justify-center bg-black/30"
+            onClick={() => setSelectedItem(null)}
+          >
+            <div
+              className={`bg-dark-surface border border-dark-border rounded-xl p-4 shadow-2xl ${
+                selectedItem.type === "regulatory" ? "max-w-[320px] w-[92%]" : "max-w-[280px] w-[90%]"
+              }`}
+              onClick={e => e.stopPropagation()}
+            >
+              {detailInner}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

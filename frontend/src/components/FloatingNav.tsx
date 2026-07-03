@@ -39,6 +39,8 @@ interface FloatingNavProps {
   showNav?: boolean;
   /** Drop one nav item by key (workspace hides the self-referential "Ask the analyst"). */
   omitNavKey?: string;
+  /** Hide the wordmark below md (workspace: the right-zone actions need the room on phones). */
+  compactBrand?: boolean;
   /** Max width of the inner bar (floating/hero). */
   maxWidthClass?: string;
   /** Brand target when it's a link (default "/"). Ignored if onBrandClick is set. */
@@ -71,6 +73,7 @@ export default function FloatingNav({
   tone = "solid",
   showNav = true,
   omitNavKey,
+  compactBrand = false,
   maxWidthClass = "max-w-6xl",
   brandTo = "/",
   onBrandClick,
@@ -126,7 +129,7 @@ export default function FloatingNav({
   const brandInner = (
     <>
       <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-full group-hover:scale-105 transition-transform" />
-      <span className={`font-display text-base font-semibold tracking-tight transition-colors ${brandText}`}>
+      <span className={`font-display text-base font-semibold tracking-tight transition-colors ${brandText} ${compactBrand ? "hidden md:inline" : ""}`}>
         UrbanLayer
       </span>
       {brandSuffix}

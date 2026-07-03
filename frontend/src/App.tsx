@@ -957,12 +957,13 @@ export function App() {
                 maxWidthClass="max-w-7xl"
                 languageVariant="workspace"
                 omitNavKey="nav.askAnalyst"
+                compactBrand
                 onBrandClick={reset}
                 brandSuffix={
                   <>
                     <span className="hidden md:inline text-sm text-text-secondary">— Chicago</span>
                     {context?.community_area_name && (
-                      <span className="flex items-center gap-2 text-sm min-w-0">
+                      <span className="hidden md:flex items-center gap-2 text-sm min-w-0">
                         <span className="text-text-muted">/</span>
                         <span className="text-text-primary truncate max-w-[120px] md:max-w-none">
                           {context.community_area_name}

@@ -77,6 +77,14 @@ export function MobileSidebarSheet({
   const subtitle = context?.community_area ? `CA ${context.community_area}` : undefined;
   const hasCodeChunks = (context?.code_chunks?.length ?? 0) > 0;
 
+  // One-line glanceable summary for the peek snap (20vh shows clipped card
+  // tops otherwise). Tap expands to the default height.
+  const peekParts: string[] = [];
+  if (mapData?.crimes?.length) peekParts.push(t("peek.crimes", { count: mapData.crimes.length }));
+  if (mapData?.requests_311?.length) peekParts.push(t("peek.requests", { count: mapData.requests_311.length }));
+  if (mapData?.building_permits?.length) peekParts.push(t("peek.permits", { count: mapData.building_permits.length }));
+  if (context?.code_chunks?.length) peekParts.push(t("peek.sources", { count: context.code_chunks.length }));
+
   // Same spatial-content rule as the desktop sidebar: no renderable layers →
   // no Map tab (map-relevance review, 2026-06-12).
   const hasMapContent = mapLoading ||
@@ -208,6 +216,18 @@ export function MobileSidebarSheet({
 
             {/* Content — MapView stays mounted to preserve GL context */}
             <div className="flex-1 overflow-hidden min-h-0 relative">
+              {/* Peek strip: overlays (never replaces) the content so the map's
+                  GL context survives the snap. */}
+              {snapVh === SNAP_PEEK && (
+                <button
+                  onClick={() => setSnapVh(SNAP_DEFAULT)}
+                  className="absolute inset-0 z-10 bg-dark-bg flex items-start justify-center px-4 pt-2"
+                >
+                  <span className="text-caption text-text-secondary truncate">
+                    {peekParts.length > 0 ? peekParts.join(" · ") : t("peek.expand")}
+                  </span>
+                </button>
+              )}
               <div
                 className="absolute inset-0"
                 style={{ display: activeView === "map" ? "block" : "none" }}

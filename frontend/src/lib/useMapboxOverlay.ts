@@ -11,6 +11,8 @@ interface UseMapboxOverlayOptions {
   getTooltip?: (info: LayerPickInfo) => TooltipContent | null;
   onClick?: (info: LayerPickInfo) => void;
   interactive?: boolean;
+  /** Extra pick tolerance in px around pointer events (touch needs ~14; mouse none). */
+  pickingRadius?: number;
 }
 
 /**
@@ -65,6 +67,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
 
     const overlay = new MapboxOverlay({
       interleaved: true,
+      pickingRadius: optsRef.current.pickingRadius,
       getTooltip: (info: LayerPickInfo) => optsRef.current.getTooltip?.(info) ?? null,
       onClick: (info: LayerPickInfo) => optsRef.current.onClick?.(info),
     });

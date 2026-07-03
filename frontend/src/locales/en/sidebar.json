@@ -1,4 +1,15 @@
 {
+  "peek": {
+    "crimes_one": "{{count}} crime",
+    "crimes_other": "{{count}} crimes",
+    "requests_one": "{{count}} 311 request",
+    "requests_other": "{{count}} 311 requests",
+    "permits_one": "{{count}} permit",
+    "permits_other": "{{count}} permits",
+    "sources_one": "{{count}} source",
+    "sources_other": "{{count}} sources",
+    "expand": "Tap to expand"
+  },
   "data": "Data",
   "sources": "Sources",
   "map": "Map",
