@@ -252,6 +252,7 @@ export function App() {
     errorMsg,
     rateLimited,
     atMessageLimit,
+    messagesRemaining,
     activities,
     sendMessage: sendChat,
     clearTurnState,
@@ -1013,7 +1014,7 @@ export function App() {
               />
             )}
 
-            {errorMsg && errorMsg !== "MESSAGE_LIMIT_REACHED" && (
+            {errorMsg && (
               <div className="px-6 py-3 bg-state-negative/10 border-b border-state-negative/20 text-state-negative text-sm flex items-center justify-between gap-4">
                 <span>{errorMsg}</span>
                 {rateLimited && !canPersist && (
@@ -1047,6 +1048,7 @@ export function App() {
                 onMessageClick={handleMessageClick}
                 selectedMessageIndex={selectedMessageIndex}
                 atMessageLimit={atMessageLimit}
+                messagesRemaining={messagesRemaining}
                 onNewChat={handleNewChat}
                 attachments={pendingAttachments}
                 onAttach={canPersist ? handleAttach : undefined}

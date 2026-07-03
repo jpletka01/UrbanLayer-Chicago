@@ -46,6 +46,8 @@
   "done": "Done",
   "close": "Close",
   "startNewConversation": "Start a new conversation",
+  "questionsLeft_one": "{{count}} question left in this chat.",
+  "questionsLeft_other": "{{count}} questions left in this chat.",
   "upgradeToPro": "Upgrade to Pro",
   "followUpPlaceholder": "Ask a follow-up...",
   "messageLimitReached": "You've reached the 10-message limit for this conversation.",

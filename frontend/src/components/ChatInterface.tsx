@@ -17,6 +17,9 @@ interface Props {
   onMessageClick?: (messageIndex: number) => void;
   selectedMessageIndex?: number | null;
   atMessageLimit?: boolean;
+  /** Turns left before the per-conversation cap — surfaced near the composer
+   *  from 2 remaining so the limit never lands as a surprise dead-end. */
+  messagesRemaining?: number;
   onNewChat?: () => void;
   attachments?: PendingAttachment[];
   onAttach?: (files: File[]) => void;
@@ -45,6 +48,7 @@ export function ChatInterface({
   onMessageClick,
   selectedMessageIndex,
   atMessageLimit,
+  messagesRemaining,
   onNewChat,
   attachments,
   onAttach,
@@ -168,16 +172,29 @@ export function ChatInterface({
               </button>
             </div>
           ) : (
-            <ChatInput
-              onSubmit={onSubmit}
-              disabled={streaming}
-              variant="compact"
-              placeholder={t("followUpPlaceholder")}
-              initialValue={composerSeed}
-              attachments={attachments}
-              onAttach={onAttach}
-              onRemoveAttachment={onRemoveAttachment}
-            />
+            <>
+              {messagesRemaining != null && messagesRemaining <= 2 && messagesRemaining > 0 && (
+                <p className="text-caption text-text-muted text-center pb-2">
+                  {t("questionsLeft", { count: messagesRemaining })}{" "}
+                  <button
+                    onClick={onNewChat}
+                    className="text-accent hover:text-accent-hover hover:underline transition-colors"
+                  >
+                    {t("startNewConversation")}
+                  </button>
+                </p>
+              )}
+              <ChatInput
+                onSubmit={onSubmit}
+                disabled={streaming}
+                variant="compact"
+                placeholder={t("followUpPlaceholder")}
+                initialValue={composerSeed}
+                attachments={attachments}
+                onAttach={onAttach}
+                onRemoveAttachment={onRemoveAttachment}
+              />
+            </>
           )}
         </div>
       </div>

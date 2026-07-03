@@ -46,6 +46,8 @@
   "done": "Listo",
   "close": "Cerrar",
   "startNewConversation": "Iniciar nueva conversación",
+  "questionsLeft_one": "Queda {{count}} pregunta en esta conversación.",
+  "questionsLeft_other": "Quedan {{count}} preguntas en esta conversación.",
   "upgradeToPro": "Mejorar a Pro",
   "followUpPlaceholder": "Escribe una consulta de seguimiento...",
   "messageLimitReached": "Ha alcanzado el límite de 10 mensajes para esta conversación.",

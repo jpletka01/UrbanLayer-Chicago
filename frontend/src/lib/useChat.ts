@@ -67,6 +67,8 @@ interface UseChat {
   errorMsg: string | null;
   rateLimited: boolean;
   atMessageLimit: boolean;
+  /** Turns left before the per-conversation cap (MESSAGE_LIMIT - sent). */
+  messagesRemaining: number;
   activities: ActivityItem[];
   sendMessage: (
     text: string,
@@ -302,6 +304,7 @@ export function useChat({
     errorMsg,
     rateLimited,
     atMessageLimit,
+    messagesRemaining: MESSAGE_LIMIT - userMessageCount,
     activities,
     sendMessage,
     clearTurnState,
