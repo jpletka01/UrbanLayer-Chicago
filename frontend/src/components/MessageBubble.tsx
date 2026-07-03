@@ -216,14 +216,16 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
     );
   }
 
+  // ActivityStatus lives OUTSIDE the shrink-to-fit flex item: the cycling
+  // activity label must not drive the bubble's width (it re-sizes every 1.2s).
   return (
     <div
-      className="flex justify-start group"
+      className="group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="max-w-[85%]">
-        <div className="relative rounded-2xl px-4 py-3 bg-dark-elevated">
+      <div className="flex justify-start">
+        <div className="max-w-[85%] relative rounded-2xl px-4 py-3 bg-dark-elevated">
           {hovered && !streaming && displayedContent && (
             <button
               onClick={copy}
@@ -268,10 +270,10 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
             </div>
           </div>
         </div>
-        {streaming && activities && activities.length > 0 && (
-          <ActivityStatus activities={activities} visible={!displayedContent} />
-        )}
       </div>
+      {streaming && activities && activities.length > 0 && (
+        <ActivityStatus activities={activities} visible={!displayedContent} />
+      )}
     </div>
   );
 }
