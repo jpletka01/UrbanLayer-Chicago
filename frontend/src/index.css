@@ -134,3 +134,19 @@ body::before {
   body > #root > *:not(.export-report) { display: none !important; }
   .export-report { display: block !important; }
 }
+
+/* ── Density scope ──────────────────────────────────────────────────────────
+   The sidebar data cards are rail-density (text-micro reading surfaces) — right
+   at ~340px on desktop, too small when the SAME cards render full-phone-width in
+   the mobile bottom sheet. `data-density="comfortable"` on a wrapper bumps the
+   reading surfaces one step (micro → ~caption, sm stat values → ~body) without
+   forking the card components — the type-axis sibling of the `[data-theme]`
+   island idiom. Applied by MobileSidebarSheet's Data pane. */
+[data-density="comfortable"] .text-micro {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+[data-density="comfortable"] .text-sm {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}

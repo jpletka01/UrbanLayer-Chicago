@@ -244,7 +244,7 @@ export function MobileSidebarSheet({
               </div>
 
               {activeView === "data" && (
-                <div className="h-full overflow-y-auto px-4 py-3">
+                <div className="h-full overflow-y-auto px-4 py-3" data-density="comfortable">
                   <DataView
                     context={context}
                     loading={loading}
