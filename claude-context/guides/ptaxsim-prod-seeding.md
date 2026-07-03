@@ -16,18 +16,22 @@ run the deploy first or this stays silent.
 df -h /
 docker system df   # reclaim with `docker system prune` if tight
 
-# 2. Download + decompress DIRECTLY into the persistent backend/data volume
-#    (same volume as chicago.db / discovery_index.db — survives redeploys).
+# 2. Download + decompress on the HOST first (~1 GB download, ~9.4 GB final).
+#    NOTE: /opt/urbanlayer/backend/data is just the git tree — the container's
+#    /app/backend/data is the NAMED VOLUME `backend_data`, so a host-side file
+#    is invisible to the container until copied in (step 3).
 cd /opt/urbanlayer
-python3 scripts/download_ptaxsim.py   # writes backend/data/ptaxsim.db (~1 GB download, ~9.4 GB final)
+python3 scripts/download_ptaxsim.py   # writes backend/data/ptaxsim.db on the host
 
-#    If the host lacks python3/bz2, run it inside the backend container instead:
-#    docker compose exec backend python scripts/download_ptaxsim.py
+# 3. Copy into the backend_data volume (this is what actually seeds it),
+#    then delete the host copy — disk is tight (the cp doubles usage briefly).
+docker compose cp ./backend/data/ptaxsim.db backend:/app/backend/data/
+rm backend/data/ptaxsim.db
 
-# 3. Confirm the container sees it (path must match settings.ptaxsim_db_path)
+# 4. Confirm the container sees it (path must match settings.ptaxsim_db_path)
 docker compose exec backend ls -la /app/backend/data/ptaxsim.db
 
-# 4. Restart backend so the lazy connection picks it up cleanly
+# 5. Restart backend so the lazy connection picks it up cleanly
 docker compose restart backend
 ```
 
