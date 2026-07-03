@@ -8,6 +8,7 @@ ingestion/data/
 !ingestion/data/community_areas.geojson
 !ingestion/data/transit_stations.json
 !ingestion/data/zoning_cache.json
+!ingestion/data/chrs_orange_red.json.gz
 chicago-il-codes.html
 eval/
 test-results/

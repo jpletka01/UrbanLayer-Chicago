@@ -86,6 +86,13 @@ def _no_external_property_fallbacks(request):
               new=AsyncMock(return_value=None)),
         patch("backend.retrieval.property.building_facts.get_footprint_facts",
               new=AsyncMock(return_value=None)),
+        patch("backend.retrieval.property.energy.get_energy_benchmark",
+              new=AsyncMock(return_value=None)),
+        # Same class of gotcha on the neighborhood side: the traffic-counts
+        # lookup is imported at call time by neighborhood_domain and would
+        # otherwise hit the network (with retry/backoff) in orchestrator tests.
+        patch("backend.retrieval.neighborhood.traffic.get_traffic_context",
+              new=AsyncMock(return_value=None)),
         patch("backend.retrieval.property.appeals.get_appeals",
               new=AsyncMock(return_value=None)),
         patch("backend.retrieval.property.parcel_flags.get_parcel_flags",

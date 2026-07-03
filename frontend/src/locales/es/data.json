@@ -21,12 +21,21 @@
       "geometry": "(según geometría de la parcela)",
       "condo_unit": "(unidad de condominio)",
       "commercial_valuation": "(valuación comercial del tasador)",
-      "footprint": "(datos de huella municipal)"
+      "footprint": "(datos de huella municipal)",
+      "energy_benchmark": "(reportado por el propietario, benchmarking energético)"
+    },
+    "energy": {
+      "rating": "Calificación Energética de Chicago {{rating}}/4",
+      "star": "ENERGY STAR {{score}}/100",
+      "eui": "EUI del sitio {{eui}} kBtu/pie²",
+      "notSubmitted": "Informe de benchmarking energético no presentado ({{year}}) — obligatorio para edificios de ≥50k pies²"
     },
     "flags": {
       "cityOwned": "Parcela propiedad de la ciudad",
       "cityOwnedApply": "información de solicitud",
       "scofflaw": "En la lista de infractores del código de edificación",
+      "chrs": "Calificación CHRS {{color}} (inventario histórico de 1996) — aplica una retención de demolición de 90 días",
+      "chrsColor": { "orange": "naranja", "red": "roja" },
       "strProhibited": "Alquileres de corto plazo prohibidos (exclusión del propietario)",
       "taxSale": "Apareció en la venta fiscal anual de {{years}} (histórico)",
       "scavengerSale": "Apareció en la venta scavenger de {{years}} (histórico)"
@@ -207,6 +216,9 @@
       "Minimal Bike Infrastructure": "Infraestructura ciclista mínima"
     },
     "noData": "No hay datos del vecindario disponibles.",
+    "traffic": "Tráfico vial",
+    "trafficDaily": "≈{{count}} vehículos/día en {{road}}",
+    "trafficAsOf": "al {{date}}",
     "aboveChicago": "{{pct}}% sobre Chicago",
     "belowChicago": "{{pct}}% bajo Chicago",
     "atChicagoMedian": "en la mediana de Chicago",

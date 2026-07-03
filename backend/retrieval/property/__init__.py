@@ -195,8 +195,13 @@ async def _fetch_building_fallbacks(
     if chars is None:
         # x54s-covered parcels never appear in the condo/commercial datasets;
         # only bother when the primary lookup came back empty.
+        from backend.retrieval.property.energy import get_energy_benchmark
         coros["condo"] = get_condo_characteristics(parcel["pin14"], client=client)
         coros["commercial_sqft"] = get_commercial_building_sqft(parcel["pin14"], client=client)
+        # ≥50k-sqft buildings live outside x54s by definition — the energy
+        # benchmarking lookup rides the same no-chars gate (CRE opex facts +
+        # sqft/year-built fill for the large-building segment).
+        coros["energy"] = get_energy_benchmark(lat, lon, client=client)
     coros["footprint"] = get_footprint_facts(lat, lon, client=client)
 
     done = await asyncio.gather(*coros.values(), return_exceptions=True)
@@ -379,6 +384,7 @@ def _build_summary(
     # per-field provenance so the UI/report can label non-assessor numbers.
     year_built_source = "assessor" if year_built else None
     stories_source = "assessor" if stories else None
+    energy_summary = None
     if building_fallbacks:
         condo = building_fallbacks.get("condo")
         if condo:
@@ -394,6 +400,19 @@ def _build_summary(
         if not bldg_sqft and building_fallbacks.get("commercial_sqft"):
             bldg_sqft = building_fallbacks["commercial_sqft"]
             bldg_sqft_source = "commercial_valuation"
+        energy = building_fallbacks.get("energy")
+        if energy:
+            from backend.models import EnergyBenchmark
+            energy_summary = EnergyBenchmark(**energy)
+            # Owner-reported GFA fills the ≥50k-sqft segment the assessor
+            # datasets don't cover; footprints stay the last resort.
+            # year_built is deliberately NOT merged: first live probe returned
+            # 2000 for the 1894 Old Colony Building — the column is owner-typed
+            # and materially wrong on exactly the historic buildings where the
+            # year matters. It stays inside `energy` as owner-reported context.
+            if not bldg_sqft and energy.get("gross_floor_area"):
+                bldg_sqft = energy["gross_floor_area"]
+                bldg_sqft_source = "energy_benchmark"
         footprint = building_fallbacks.get("footprint")
         if footprint:
             if not bldg_sqft and footprint.get("bldg_sqft"):
@@ -467,6 +486,7 @@ def _build_summary(
         tax_exemptions=tax_exemptions,
         appeals=appeals_summary,
         flags=parcel_flags,
+        energy=energy_summary,
         assessment_history=assessment_history,
         sales_history=sales_history,
         parcel_geometry=parcel_geometry,

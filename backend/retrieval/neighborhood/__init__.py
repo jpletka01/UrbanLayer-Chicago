@@ -63,6 +63,10 @@ async def neighborhood_domain(
             tasks["census_tract"] = asyncio.create_task(
                 _fetch_census_tract(lat, lon, client=client)
             )
+            from backend.retrieval.neighborhood.traffic import get_traffic_context
+            tasks["traffic"] = asyncio.create_task(
+                get_traffic_context(lat, lon, client=client)
+            )
 
         if has_coords and address:
             settings = get_settings()
@@ -92,6 +96,7 @@ async def neighborhood_domain(
             results.get("tod"),
             results.get("walkscore"),
             ward_info,
+            results.get("traffic"),
         )
     finally:
         if owns:
@@ -117,13 +122,18 @@ def _build_summary(
     tod_result: dict | None = None,
     walkscore_result: WalkScoreSummary | None = None,
     ward_info: dict | None = None,
+    traffic_result: dict | None = None,
 ) -> NeighborhoodSummary:
+    from backend.models import TrafficSummary
+
     transit = build_transit_access(station_result, tod_result)
     ward = WardInfo(**ward_info) if ward_info else None
+    traffic = TrafficSummary(**traffic_result) if traffic_result else None
     return NeighborhoodSummary(
         demographics=demographics,
         census_tract=census_tract,
         transit=transit,
         walkscore=walkscore_result,
         ward=ward,
+        traffic=traffic,
     )

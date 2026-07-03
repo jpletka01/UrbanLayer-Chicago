@@ -243,6 +243,39 @@ def test_build_summary_condo_unit_facts():
     assert s.bedrooms == 2
 
 
+def test_build_summary_energy_benchmark_merge():
+    """Large building (no chars, no commercial row): GFA + year built fill from
+    energy benchmarking with its own provenance; the full benchmark rides
+    PropertySummary.energy; footprints stay the last resort."""
+    parcel = {"pin14": "14211000010000", "bldg_class": "599", "address": None}
+    fallbacks = {
+        "condo": None,
+        "commercial_sqft": None,
+        "energy": {
+            "chicago_energy_rating": 3.5, "energy_star_score": 74,
+            "gross_floor_area": 249095, "year_built": 1927,
+            "primary_property_type": "Multifamily Housing", "site_eui": 88.5,
+            "ghg_intensity": 5.8, "data_year": 2022, "not_submitted": False,
+        },
+        "footprint": {"stories": 21, "year_built": 1930, "bldg_sqft": 999},
+    }
+    s = _build_summary(parcel, None, [], [], None, building_fallbacks=fallbacks)
+    assert s.bldg_sqft == 249095 and s.bldg_sqft_source == "energy_benchmark"
+    # year_built is deliberately NOT filled from energy (owner-typed, wrong on
+    # historic buildings) — the footprint fallback still supplies it.
+    assert s.year_built == 1930 and s.year_built_source == "footprint"
+    assert s.stories == 21.0 and s.stories_source == "footprint"
+    assert s.energy is not None
+    assert s.energy.chicago_energy_rating == 3.5
+    assert s.energy.energy_star_score == 74
+
+    # Commercial valuation (assessor-adjacent) still outranks energy GFA.
+    fallbacks2 = dict(fallbacks, commercial_sqft=200000)
+    s2 = _build_summary(parcel, None, [], [], None, building_fallbacks=fallbacks2)
+    assert s2.bldg_sqft == 200000 and s2.bldg_sqft_source == "commercial_valuation"
+    assert s2.energy is not None  # opex facts surface regardless of fill
+
+
 def test_decode_units_words_and_single_family():
     from backend.retrieval.property import _decode_units
     assert _decode_units({"char_apts": "Two"}) == 2

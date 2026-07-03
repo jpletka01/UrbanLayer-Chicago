@@ -266,6 +266,23 @@ export interface ParcelFlags {
   scofflaw: boolean;
   scofflaw_case: string | null;
   str_prohibited: boolean;
+  /** CHRS 1996 survey rating ("orange" | "red") — triggers the 90-day demolition hold. */
+  chrs_rating?: string | null;
+  chrs_name?: string | null;
+}
+
+/** Chicago Energy Benchmarking (buildings >=50k sqft). A null rating with
+    not_submitted=true is a compliance fact (owner didn't report), not a score. */
+export interface EnergyBenchmark {
+  chicago_energy_rating: number | null;
+  energy_star_score: number | null;
+  gross_floor_area: number | null;
+  year_built: number | null;
+  primary_property_type: string | null;
+  site_eui: number | null;
+  ghg_intensity: number | null;
+  data_year: number | null;
+  not_submitted: boolean;
 }
 
 export interface AppealRecord {
@@ -316,6 +333,7 @@ export interface PropertySummary {
   tax_exemptions: TaxExemption[];
   appeals?: AppealsSummary | null;
   flags?: ParcelFlags | null;
+  energy?: EnergyBenchmark | null;
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
   parcel_geometry?: Record<string, unknown> | null;
@@ -447,6 +465,18 @@ export interface NeighborhoodSummary {
   transit: TransitAccess | null;
   walkscore: WalkScoreSummary | null;
   ward?: WardInfo | null;
+  traffic?: TrafficSummary | null;
+}
+
+/** Daily traffic on the nearest counted street (both directions summed,
+    last-week average) — retail exposure context. */
+export interface TrafficSummary {
+  road: string | null;
+  daily_vehicles: number | null;
+  directions: number;
+  from_street: string | null;
+  to_street: string | null;
+  as_of: string | null;
 }
 
 export interface ComparableSale {

@@ -223,6 +223,16 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             {data.flags.scofflaw && (
               <span className="text-caption text-state-negative">{t("property.flags.scofflaw")}</span>
             )}
+            {data.flags.chrs_rating && (
+              <span className="text-caption text-state-warning">
+                {t("property.flags.chrs", {
+                  color: t(`property.flags.chrsColor.${data.flags.chrs_rating}`),
+                })}
+                {data.flags.chrs_name && (
+                  <span className="text-text-muted"> — {data.flags.chrs_name}</span>
+                )}
+              </span>
+            )}
             {data.flags.str_prohibited && (
               <span className="text-caption text-text-secondary">{t("property.flags.strProhibited")}</span>
             )}
@@ -290,6 +300,32 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             <span className="text-text-muted"> {t("property.exemptionsCaveat")}</span>
           </div>
         )}
+
+        {/* Energy benchmarking (≥50k-sqft buildings): the 0–4 placard + ENERGY
+            STAR score are direct opex context; a missing report is itself a
+            compliance fact, stated as such rather than silently omitted. */}
+        {data.energy && (data.energy.chicago_energy_rating != null || data.energy.energy_star_score != null) ? (
+          <div className="text-caption text-text-secondary">
+            {[
+              data.energy.chicago_energy_rating != null
+                ? t("property.energy.rating", { rating: data.energy.chicago_energy_rating })
+                : null,
+              data.energy.energy_star_score != null
+                ? t("property.energy.star", { score: data.energy.energy_star_score })
+                : null,
+              data.energy.site_eui != null
+                ? t("property.energy.eui", { eui: data.energy.site_eui })
+                : null,
+            ].filter(Boolean).join(" · ")}
+            {data.energy.data_year && (
+              <span className="text-text-muted"> ({data.energy.data_year})</span>
+            )}
+          </div>
+        ) : data.energy?.not_submitted ? (
+          <p className="text-caption text-text-muted">
+            {t("property.energy.notSubmitted", { year: data.energy.data_year ?? "" })}
+          </p>
+        ) : null}
 
         {/* Absent-building states: vacant = affirmative fact, else = honest gap */}
         {isVacantLand ? (

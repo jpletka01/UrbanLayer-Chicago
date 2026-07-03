@@ -21,12 +21,21 @@
       "geometry": "(from parcel geometry)",
       "condo_unit": "(condo unit)",
       "commercial_valuation": "(assessor commercial valuation)",
-      "footprint": "(city footprint data)"
+      "footprint": "(city footprint data)",
+      "energy_benchmark": "(owner-reported, energy benchmarking)"
+    },
+    "energy": {
+      "rating": "Chicago Energy Rating {{rating}}/4",
+      "star": "ENERGY STAR {{score}}/100",
+      "eui": "Site EUI {{eui}} kBtu/sq ft",
+      "notSubmitted": "Energy benchmarking report not submitted ({{year}}) — required for buildings ≥50k sq ft"
     },
     "flags": {
       "cityOwned": "City-owned parcel",
       "cityOwnedApply": "application info",
       "scofflaw": "On the Building Code Scofflaw List",
+      "chrs": "CHRS {{color}}-rated (1996 historic survey) — 90-day demolition hold applies",
+      "chrsColor": { "orange": "orange", "red": "red" },
       "strProhibited": "Short-term rentals prohibited (owner opt-out)",
       "taxSale": "Appeared in the {{years}} annual tax sale (historic)",
       "scavengerSale": "Appeared in the {{years}} scavenger sale (historic)"
@@ -207,6 +216,9 @@
       "Minimal Bike Infrastructure": "Minimal Bike Infrastructure"
     },
     "noData": "No neighborhood data available.",
+    "traffic": "Street traffic",
+    "trafficDaily": "≈{{count}} vehicles/day on {{road}}",
+    "trafficAsOf": "as of {{date}}",
     "aboveChicago": "{{pct}}% above Chicago",
     "belowChicago": "{{pct}}% below Chicago",
     "atChicagoMedian": "at Chicago median",

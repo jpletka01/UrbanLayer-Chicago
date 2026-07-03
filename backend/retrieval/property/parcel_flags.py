@@ -1,6 +1,6 @@
 """Distress / opportunity flags for a parcel.
 
-Four cheap, PIN- or point-keyed lookups that change how a buyer reads the
+Five cheap, PIN- or point-keyed lookups that change how a buyer reads the
 parcel, gathered in parallel:
 
 - Treasurer Annual Tax Sale ``55ju-2fs9`` + Scavenger Sale ``ydgz-vkrp``
@@ -15,6 +15,9 @@ parcel, gathered in parallel:
   out of short-term rentals — investor-relevant. PIN prefix match (rows carry
   unit-suffixed pins). The companion "restricted residential zone" dataset has
   no geometry (precinct numbers only) and is NOT flagged here.
+- CHRS orange/red rating (LOCAL committed artifact, 1996 survey — the API
+  asset is 403-restricted): either rating triggers the 90-day
+  demolition-permit hold. See ``chrs.py`` / ``ingestion.build_chrs_artifact``.
 """
 
 from __future__ import annotations
@@ -107,6 +110,10 @@ async def get_parcel_flags(
             "$select": "address,circuit_court_case_number,defendant_owner",
             "$limit": 1,
         }, **city)
+        # CHRS orange/red (1996 survey, frozen) — LOCAL committed artifact,
+        # no network; the thread hop only matters on the first call (tree build).
+        from backend.retrieval.property.chrs import lookup_chrs
+        coros["chrs"] = asyncio.to_thread(lookup_chrs, lat, lon)
 
     done = await asyncio.gather(*coros.values(), return_exceptions=True)
     results: dict[str, list | None] = {}
@@ -124,6 +131,7 @@ async def get_parcel_flags(
     city_owned_row = (results.get("city_owned") or [None])[0]
     scofflaw_row = (results.get("scofflaw") or [None])[0]
     str_prohibited = bool(results.get("str_prohibited"))
+    chrs = results.get("chrs")  # dict from lookup_chrs, not a Socrata row list
 
     flags = ParcelFlags(
         tax_sale_years=tax_years,
@@ -135,6 +143,8 @@ async def get_parcel_flags(
         scofflaw=bool(scofflaw_row),
         scofflaw_case=(scofflaw_row or {}).get("circuit_court_case_number"),
         str_prohibited=str_prohibited,
+        chrs_rating=(chrs or {}).get("color") if isinstance(chrs, dict) else None,
+        chrs_name=(chrs or {}).get("name") if isinstance(chrs, dict) else None,
     )
 
     if not flags.any_flag():

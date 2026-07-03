@@ -255,12 +255,35 @@ class ParcelFlags(BaseModel):
     scofflaw: bool = False
     scofflaw_case: str | None = None
     str_prohibited: bool = False
+    # CHRS (1996 survey, frozen): "orange" | "red" — either rating triggers the
+    # 90-day demolition-permit hold. From the committed local artifact.
+    chrs_rating: str | None = None
+    chrs_name: str | None = None
 
     def any_flag(self) -> bool:
         return bool(
             self.tax_sale_years or self.scavenger_sale_years or self.city_owned
-            or self.scofflaw or self.str_prohibited
+            or self.scofflaw or self.str_prohibited or self.chrs_rating
         )
+
+
+class EnergyBenchmark(BaseModel):
+    """Chicago Energy Benchmarking (xq83-jr8c) — buildings ≥ 50,000 sq ft.
+
+    ``chicago_energy_rating`` is the city's 0–4 placard scale; a "0" on a
+    non-submitting row is a compliance placeholder, so it surfaces here as
+    None + ``not_submitted=True`` (a compliance fact, not a performance score).
+    ``gross_floor_area`` is owner-reported for the whole property.
+    """
+    chicago_energy_rating: float | None = None
+    energy_star_score: int | None = None
+    gross_floor_area: int | None = None
+    year_built: int | None = None
+    primary_property_type: str | None = None
+    site_eui: float | None = None
+    ghg_intensity: float | None = None
+    data_year: int | None = None
+    not_submitted: bool = False
 
 
 class AppealRecord(BaseModel):
@@ -348,6 +371,7 @@ class PropertySummary(BaseModel):
     tax_exemptions: list[TaxExemption] = Field(default_factory=list)
     appeals: AppealsSummary | None = None
     flags: ParcelFlags | None = None
+    energy: EnergyBenchmark | None = None
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None
@@ -479,12 +503,25 @@ class WardInfo(BaseModel):
     website: str | None = None
 
 
+class TrafficSummary(BaseModel):
+    """Daily traffic on the nearest counted street (Chicago traffic counts,
+    live daily dataset). ``daily_vehicles`` sums both directions of the
+    fronting road, averaged over the last week — retail exposure context."""
+    road: str | None = None
+    daily_vehicles: int | None = None
+    directions: int = 0
+    from_street: str | None = None
+    to_street: str | None = None
+    as_of: str | None = None
+
+
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
     census_tract: CensusTractDemographics | None = None
     transit: TransitAccess | None = None
     walkscore: WalkScoreSummary | None = None
     ward: WardInfo | None = None
+    traffic: TrafficSummary | None = None
 
 
 class TurnSummary(BaseModel):

@@ -322,6 +322,22 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
           </div>
         )}
 
+        {/* Street traffic — retail exposure context from the live daily counts */}
+        {data.traffic?.daily_vehicles != null && data.traffic.road && (
+          <div className="space-y-0.5">
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("neighborhood.traffic")}</span>
+            <p className="text-micro text-text-secondary">
+              {t("neighborhood.trafficDaily", {
+                count: data.traffic.daily_vehicles.toLocaleString(),
+                road: data.traffic.road,
+              })}
+              {data.traffic.as_of && (
+                <span className="text-text-muted"> ({t("neighborhood.trafficAsOf", { date: data.traffic.as_of })})</span>
+              )}
+            </p>
+          </div>
+        )}
+
         {!demo && !transit && !data.walkscore && (
           <p className="text-micro text-text-muted">{t("neighborhood.noData")}</p>
         )}
