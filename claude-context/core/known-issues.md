@@ -8,6 +8,12 @@
 
 ## Known Limitations
 
+**Desktop map legend clips at the sidebar map's right edge** (noticed 2026-07-03 during chat-usability verification): with many crime-type rows, `MapLegend`'s right column renders flush against/past the map edge (e.g. "Criminal trespass" clipped). Cosmetic; sidebar-width map + legend/date-slider stacking. Untouched by the 2026-07-03 mobile-map pass (legend is desktop-only).
+
+**Loading an EMPTY conversation at `/c/:id` renders the splash**: if a conversation row exists but has zero messages (created but first send never persisted — e.g. an aborted request), `getConversation` succeeds with `messages: []` → `active=false` → splash renders at the conversation URL. Edge case; a "conversation not found / start fresh" state would be more honest.
+
+**Map cluster + starter thresholds are first-guess calibrations (2026-07-03)**: cluster swap at >300 points below zoom 13 (`MapView.tsx` `DENSE_POINT_THRESHOLD`/`CLUSTER_MAX_ZOOM`), traffic starter chip at ≥15k ADT (`scorecardContext.ts` `HEAVY_TRAFFIC_ADT`). One-line tweaks if real usage says otherwise.
+
 **Report parent-process RSS creeps ~20 MB/render (benign)** (measured 2026-06-16): the `/api/report` handler's per-request work that stays in the parent (matplotlib map generation + Jinja HTML assembly; the WeasyPrint render itself is isolated in a child) leaves ~20 MB/render of un-returned RSS. **Neither `MALLOC_ARENA_MAX=2` nor a per-report `malloc_trim(0)` flattened it** — it's evidently live caches (matplotlib/fonts) or fragmentation, not reclaimable free space. Benign: ~2.4 GB parent after 8 renders, 4.5 GB free + 8 GB swap, decelerating, worker restarts each deploy. Both mitigations kept as cheap/harmless. Watch over days; revisit only if RSS fails to plateau.
 
 **Report envelope map depends on parcel geometry**: The V5 development envelope visualization (`_generate_envelope_map()`) requires parcel polygon geometry from Cook County GIS. When GIS is down and the Socrata fallback is used, no geometry is available — the envelope map section silently omits. Edge classification assumes roughly rectangular lots; irregular parcels (5+ distinct edges, L-shapes) fall back to uniform minimum setback.

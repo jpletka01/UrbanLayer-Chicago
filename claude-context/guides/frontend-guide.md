@@ -17,10 +17,12 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 ### Chat
 | Component | Purpose |
 |-----------|---------|
-| `ChatInterface` | Message list, input, per-question click handling, message limit UI |
+| `ChatInterface` | Message list, input, per-question click handling, message limit UI (+ "N questions left" counter from 2 remaining), per-message `ContextChipStrip` wiring, grounded starters via `propertyStarterKeys()` |
 | `ChatInput` | Two variants: `hero` (glassmorphism, splash) and `compact` (workspace). Address autocomplete |
-| `MessageBubble` | react-markdown rendering, citation/data pill injection, typewriter effect, click-to-select for user messages |
-| `ActivityStatus` | Below-bubble API call tracker with cycling label, expandable checklist |
+| `MessageBubble` | react-markdown rendering, citation/data pill injection, typewriter effect, click-to-select for user messages, `footer` slot (per-message context chips) |
+| `ActivityStatus` | Below-bubble API call tracker with cycling label, expandable checklist. ⚠️ Must stay OUTSIDE the bubble's shrink-to-fit wrapper — inside it, the label cycle resizes the bubble (fixed 2026-07-03) |
+| `ConversationMenu` | "⋯" dropdown for current-conversation actions (Export transcript / Share) — icons in chrome, words in menus |
+| `ContextChipStrip` | `Map · N / Data · N / Sources · N` chips under each completed answer → panel/sheet scoped to that turn |
 | `CitationPill` | `[N]` → `§ section` reference with hover tooltip, click opens/expands source |
 | `DataPill` | `[data:*]` → colored marker, click opens Data tab |
 | `CrossRefPill` | Clickable cross-reference with hover preview of target section |
@@ -38,7 +40,7 @@ Other routes: `/admin` (dashboard), `/about` (technical deep dive).
 | `SourcesView` | Ranked code chunks with citations |
 | `SourceCitation` | Source card: rank badge, § pill, score, expandable text, cross-refs |
 | `SourceDetailDrawer` | Full-section viewer for cross-referenced sections |
-| `MapView` | Mapbox + deck.gl with click popups (Google Street View links), flyTo, zoning overlay, overlay/incentive polygons. `isMobile` prop: compact layer toggles + filter popover |
+| `MapView` | Mapbox + deck.gl with click popups (Google Street View links), flyTo, zoning overlay, overlay/incentive polygons. Dense points (>300, zoom<13) render as count-labeled cluster dots (hand-rolled — deck.gl aggregation layers don't render in interleaved MapboxOverlay mode). `isMobile` prop: ONE Layers popover (toggles + filters), bottom-docked tap detail, 14px pickingRadius |
 | `MapLayerToggles` | Dynamic toggle pills (crime types / 311 departments / source-level) |
 | `MapLegend` | Compact legend, zoning category legend in points-off mode |
 | `ArrestFilter` | Arrest status segmented control (crime mode) |
@@ -132,7 +134,7 @@ Framer Motion used for splash animations and CountUp stats. Sidebar uses CSS pix
 
 ## Responsive
 
-- **Mobile** (<768px): Single-column chat. Sidebar is `MobileSidebarSheet` — bottom sheet with 3 snap heights (20vh peek / 70vh default / 90vh full). Touch-drag handle with direct DOM manipulation during drag. 3-tab layout (Map / Data / Sources) bypasses `DataMapLayout`, rendering `MapView` and `DataView` independently at full height. MapView stays mounted (`display: none/block` toggle) to preserve GL context across tab switches. Smart default tab based on query type. `MapView isMobile={true}` activates compact layer toggles and filter popover (vs inline desktop controls). `MapLegend` hidden on mobile.
+- **Mobile** (<768px): Single-column chat. Sidebar is `MobileSidebarSheet` — bottom sheet with 3 snap heights (20vh peek / 70vh default / 90vh full). Touch-drag handle with direct DOM manipulation during drag. 3-tab layout (Map / Data / Sources) bypasses `DataMapLayout`, rendering `MapView` and `DataView` independently at full height. MapView stays mounted (`display: none/block` toggle) to preserve GL context across tab switches. Smart default tab based on query type. `MapView isMobile={true}` activates the single Layers popover (layer toggles + filters in one control), the bottom-docked tap-detail card, and 14px `pickingRadius`. `MapLegend` hidden on mobile. Peek snap (20vh) shows a one-line summary strip (overlay — never replace content or the GL context dies); the Data pane is wrapped in `[data-density="comfortable"]` (micro→13px). Workspace nav on phones: logo-only brand (`compactBrand`) + crumb hidden.
 - **Desktop** (768px+): Dual-pane, `SidebarPanel` with `hidden md:flex`. 2-tab Data/Sources with `DataMapLayout` stacking map + data cards. Drag-to-resize sidebar.
 - Hero title: `text-4xl md:text-5xl`.
 - Chat: `w-full` mobile, `w-[60%]` desktop (sidebar open).
