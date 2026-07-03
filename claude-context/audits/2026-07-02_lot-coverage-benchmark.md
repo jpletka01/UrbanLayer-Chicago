@@ -1,5 +1,9 @@
 # Lot-Information Coverage Benchmark — Findings (2026-07-02)
 
+> **RESOLVED 2026-07-03** — every gap below was fixed or explicitly accepted; shipped to prod.
+> Before→after + decisions: `archive/2026-07-03_lot-info-robustness.md`. This file is the
+> original diagnosis record. The benchmark itself stays active as the regression gate.
+
 **Context.** Founder hunch: "a large percentage of searched addresses are missing critical
 lot information — tax rate, built square footage." Built `eval/lot_coverage.py` (new benchmark)
 + `eval/lot_panel.json` (fixed 100-address panel) and measured. Hunch **confirmed, and

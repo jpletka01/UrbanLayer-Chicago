@@ -12,6 +12,7 @@ const SECTIONS = [
   { id: "synthesis", title: "Streaming Synthesis" },
   { id: "scorecard", title: "The Scorecard" },
   { id: "parcel-identity", title: "Parcel Identity" },
+  { id: "lot-facts", title: "Lot Facts & Provenance" },
   { id: "report", title: "Feasibility Report (PDF)" },
   { id: "zoning-cache", title: "Zoning Cache" },
   { id: "payments", title: "Payments & Monetization" },
@@ -929,6 +930,51 @@ Consumers → Scorecard (renders pin + confidence badge)
             assumption of it.</em>
           </P>
 
+          {/* ── Lot Facts & Provenance ── */}
+          <SectionHeading id="lot-facts">Lot Facts &amp; Provenance</SectionHeading>
+          <P>
+            The lot facts — land area, building sqft, tax bill, zoning envelope — are the product's paid core, and a
+            July 2026 audit started from nothing more than a hunch that too many of them were blank. Rather than fix
+            anecdotes, the first move was a <Accent>benchmark</Accent>: a frozen panel of 100 real addresses (sampled
+            from Cook County Address Points, stratified across all 7 Chicago township PIN prefixes, committed to the
+            repo so every run measures the same parcels) pushed through the live <Mono>/api/scorecard</Mono> surface,
+            with every field classified as present, missing, or <em>legitimately absent</em> — vacant land has no
+            building sqft, exempt parcels have no tax bill, and counting those as gaps would corrupt the metric. A
+            sequential retry pass split true data gaps from transient API failures.
+          </P>
+          <P>
+            The numbers were damning and precise: land and building sqft sat at <Accent>~20%</Accent> (0% outside
+            residential — the only populated source was the CCAO characteristics dataset, which covers regression-class
+            residential only), stories at 1% (a column-mapping bug: <Mono>char_ncu</Mono> is the <em>commercial unit
+            count</em>, not stories, and <Mono>char_apts</Mono> ships decoded words like <Mono>"Two"</Mono> that an
+            int-parse silently nulled), and — the sharpest finding — <Accent>production had served zero tax data since
+            launch</Accent>: the 9.4 GB PTAXSIM database was optional-by-design, was never seeded on the box, and
+            nothing anywhere surfaced its absence. Local ran at 100% while every real customer saw nulls.
+          </P>
+          <P>
+            The fixes came in waves, each re-measured against the same panel. The elegant one: PTAXSIM turned out to
+            ship an indexed <Mono>pin_geometry_raw</Mono> table — a WKT polygon for every parcel in the county — so
+            land area is now <Accent>computed on demand from the parcel's own boundary</Accent> (equirectangular
+            scaling, ~ms per lookup, no new dependency), covering every property class the assessor datasets don't.
+            Building facts fill through a provenance-labeled fallback chain: CCAO characteristics → condo unit
+            characteristics → the Commercial Valuation dataset (one row <em>per building</em> per economic unit — you
+            sum the latest year) → city building footprints. Fallbacks never override assessor data, and every derived
+            number carries its source (<Mono>land_sqft_source: "geometry"</Mono>), which the Scorecard renders as a
+            muted suffix. Honest beats complete: planned developments show "Set by PD ordinance" instead of a blank
+            FAR, and a failed zoning lookup now raises into a visible partial-failure instead of rendering as
+            "no zoning".
+          </P>
+          <P>
+            The same arc added fact families the product never had: per-PIN <Accent>tax exemptions</Accent> (with the
+            buyer caveat — owner-occupancy exemptions don't transfer, so the listed bill understates a buyer's bill),
+            <Accent> assessment appeal history</Accent> from both the Assessor and Board of Review stages plus a
+            spatial neighbor aggregate ("107 appeals within a block, 38 won reductions, median −16.9%"), ward +
+            alderman on the identity line, and distress/opportunity flags (city-owned land with application status,
+            scofflaw list, short-term-rental opt-outs, historic tax-sale years — always dated, never dressed up as
+            current distress). End state on the panel: <Accent>every critical field ≥85%, most at 100%</Accent>, and
+            the benchmark stays in the repo as the regression gate for the data layer.
+          </P>
+
           {/* ── Feasibility Report (PDF) ── */}
           <SectionHeading id="report">Development Feasibility Report (PDF)</SectionHeading>
           <P>
@@ -1481,6 +1527,26 @@ Consumers → Scorecard (renders pin + confidence badge)
               ["Sub-source checks", "41"],
               ["Covered", "38/41 (93%)"],
               ["Known gaps", "Property characteristics (GIS intermittent), Assessments (CCAO 400s), Tax (PTaxSim optional)"],
+            ]}
+          />
+
+          <Sub>Lot-Info Coverage Benchmark (100-address frozen panel)</Sub>
+          <P>
+            <Mono>eval/lot_coverage.py</Mono> measures field-level completeness of the lot facts customers pay for,
+            across a committed panel of 100 representative addresses (see the Lot Facts &amp; Provenance section for
+            the full story). Every field classifies as present / missing / expected-absent, and a sequential verify
+            pass splits persistent data gaps from transient retrieval failures — yielding both a first-hit and a
+            best-case coverage number per field.
+          </P>
+          <Table
+            headers={["Critical field", "Before (2026-07-02)", "After (2026-07-03)"]}
+            rows={[
+              ["Tax bill / rate (production)", "0% since launch", "100%"],
+              ["Land sqft", "21%", "100%"],
+              ["Building sqft", "20%", "85%"],
+              ["Zoning FAR", "83%", "98.9%"],
+              ["Zoning class (first hit)", "96%", "100%"],
+              ["Year built / stories", "20% / 1%", "47% / 46%"],
             ]}
           />
 

@@ -100,7 +100,7 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 | Source | Location | Use |
 |--------|----------|-----|
 | Municipal Code | Qdrant (14,535 chunks from 8,615 sections) | Vector search for legal questions |
-| PTAXSIM | `backend/data/ptaxsim.db` (9.4GB SQLite) | Property tax estimation by PIN (`tax_estimate.py`, incl. per-PIN `exe_*` exemption columns — EAV deductions, not dollars) **AND parcel polygons**: `pin_geometry_raw` (WKT per pin10, indexed PK) powers on-demand land area + parcel outline (`parcel_geometry.py`). NOT on prod until seeded — see guides/ptaxsim-prod-seeding.md; `/health` reports `ptaxsim` |
+| PTAXSIM | `backend/data/ptaxsim.db` (9.4GB SQLite) | Property tax estimation by PIN (`tax_estimate.py`, incl. per-PIN `exe_*` exemption columns — EAV deductions, not dollars) **AND parcel polygons**: `pin_geometry_raw` (WKT per pin10, indexed PK) powers on-demand land area + parcel outline (`parcel_geometry.py`). **Seeded on prod 2026-07-03** (runbook: guides/ptaxsim-prod-seeding.md — note the multi-stream bz2 + named-volume gotchas); `/health` reports `ptaxsim` |
 | Transit Stations | Parsed from GTFS at startup | Nearest station proximity |
 | Community Area Polygons | `ingestion/data/community_areas.geojson` | Point-in-polygon resolution |
 

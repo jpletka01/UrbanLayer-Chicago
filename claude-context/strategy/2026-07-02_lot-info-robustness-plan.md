@@ -1,5 +1,11 @@
 # Lot-Info Robustness Plan (2026-07-02)
 
+> **SHIPPED 2026-07-03** — phases 0–3 + Wave-4 part 1 live on prod (`main` 9b97444..936c912).
+> Execution record, final numbers, decisions & gotchas: `archive/2026-07-03_lot-info-robustness.md`.
+> Notable plan deviation: Phase 2's offline GIS builder was unnecessary — ptaxsim's own
+> `pin_geometry_raw` is indexed, so land area is computed on-demand. Remaining items live in the
+> archive's "What Remains" section. This file is kept as the original plan/feasibility record.
+
 **Companion to** `claude-context/audits/2026-07-02_lot-coverage-benchmark.md` (findings).
 Goal of the arc: the lot facts customers pay for (sqft, tax, zoning envelope, building
 basics) are present, provenance-labeled, and honestly caveated when truly absent —
