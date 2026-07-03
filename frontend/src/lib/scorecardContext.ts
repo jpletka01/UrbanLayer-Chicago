@@ -7,6 +7,41 @@ import { computeVerdict, type TFunc } from "./scorecardVerdict";
 // the summary stats (median, range, volume) already span the full set.
 const MAX_COMP_SALES = 8;
 
+// Starter chips fire on heavy traffic only when it's decision-relevant.
+const HEAVY_TRAFFIC_ADT = 15000;
+
+/**
+ * Flag-aware starter keys for the grounded "Ask about this property" empty
+ * state, priority-ordered and capped at 4 (ChatInterface translates them via
+ * chat:propertyStarters.*). Conditional slots fire on NOTABLE data only:
+ * - chrs: an orange/red CHRS rating triggers demolition-permit review —
+ *   consequence-laden, exactly what an analyst chat is for.
+ * - comparables: only when sales back it (never a dead-end prompt).
+ * - traffic: only at retail-relevant volume (≥15k vehicles/day).
+ * - incentives: only the discriminating designations (TIF/OZ/EZ — grants, TOD,
+ *   ADU, ARO are near-universal and would make the fallback dead code).
+ * - neighborhood: the fallback when nothing rarer claims the last slot.
+ */
+export function propertyStarterKeys(ctx: ScorecardContext | null): string[] {
+  if (!ctx) return [];
+  const cmp = ctx.comparables;
+  const hasComps = !!cmp && ((cmp.sales_volume ?? 0) > 0 || (cmp.sales?.length ?? 0) > 0);
+  const inc = ctx.incentives;
+  const hasProgram = !!(inc?.in_tif_district || inc?.in_opportunity_zone || inc?.in_enterprise_zone);
+  const chrsRating = ctx.property?.flags?.chrs_rating;
+  const hasChrs = chrsRating === "orange" || chrsRating === "red";
+  const hasHeavyTraffic = (ctx.traffic?.daily_vehicles ?? 0) >= HEAVY_TRAFFIC_ADT;
+  return [
+    "build",
+    "zoning",
+    ...(hasChrs ? ["chrs"] : []),
+    ...(hasComps ? ["comparables"] : []),
+    ...(hasHeavyTraffic ? ["traffic"] : []),
+    ...(hasProgram ? ["incentives"] : []),
+    "neighborhood",
+  ].slice(0, 4);
+}
+
 // Verdict strings resolve through the pages namespace (same keys the band uses).
 const groundingT: TFunc = (key, opts) => i18n.t(key, { ns: "pages", ...opts }) as string;
 
@@ -81,6 +116,9 @@ export function buildScorecardContext(resp: ScorecardResponse | null): Scorecard
     // tiers: the page shows the at-address violation state regardless of pin, so
     // the chat must be able to affirm it on the nearest-parcel case too.
     address_violations: deriveAddressViolations(resp),
+    // Nearest measured street (lat/lon-scoped, identity-independent) — lets a
+    // grounded "what's the traffic like here" answer from the page's number.
+    traffic: resp.context.neighborhood?.traffic ?? null,
   };
 
   // Zoning-only tier. DO NOT add property/comparables here: with no verified PIN

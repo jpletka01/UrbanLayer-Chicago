@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildScorecardContext } from "./scorecardContext";
+import { buildScorecardContext, propertyStarterKeys } from "./scorecardContext";
 import type { ScorecardResponse } from "./api";
 
 // Minimal ScorecardResponse builder. buildScorecardContext + computeVerdict read
@@ -139,5 +139,67 @@ describe("address violations tri-state (#4b) — chat agrees with the page", () 
     const present = buildScorecardContext(makeResp({ resolved_pin: null, violations_checked: true }))!;
     expect(present.address_violations).toBeTruthy();
     expect(present.property).toBeUndefined(); // still the zoning-only tier
+  });
+});
+
+describe("traffic grounding — nearest-street ADT rides the payload", () => {
+  const traffic = { road: "MILWAUKEE AVE", daily_vehicles: 21200, directions: 2 };
+  const withTraffic = (over: Partial<ScorecardResponse> = {}) =>
+    makeResp({
+      context: { ...makeResp().context, neighborhood: { traffic } } as ScorecardResponse["context"],
+      ...over,
+    });
+
+  it("lifts neighborhood.traffic into the grounding", () => {
+    expect(buildScorecardContext(withTraffic())!.traffic).toEqual(traffic);
+  });
+
+  it("ships in the pin-null tier too (lat/lon-scoped, identity-independent)", () => {
+    expect(buildScorecardContext(withTraffic({ resolved_pin: null }))!.traffic).toEqual(traffic);
+  });
+
+  it("null when the scorecard had no traffic row", () => {
+    expect(buildScorecardContext(makeResp())!.traffic).toBeNull();
+  });
+});
+
+describe("propertyStarterKeys — priority-ordered, notable-only, capped at 4", () => {
+  const ctxWith = (over: Record<string, unknown>) =>
+    ({ ...buildScorecardContext(makeResp())!, ...over }) as unknown as
+      import("./types").ScorecardContext;
+
+  it("baseline (fixture has comps + TIF): build, zoning, comparables, incentives", () => {
+    expect(propertyStarterKeys(buildScorecardContext(makeResp()))).toEqual([
+      "build", "zoning", "comparables", "incentives",
+    ]);
+  });
+
+  it("CHRS orange outranks comparables and claims a slot", () => {
+    const keys = propertyStarterKeys(
+      ctxWith({ property: { flags: { chrs_rating: "orange" } } }),
+    );
+    expect(keys).toEqual(["build", "zoning", "chrs", "comparables"]);
+  });
+
+  it("heavy traffic chips in only above the ADT threshold", () => {
+    const quiet = ctxWith({ comparables: null, incentives: null, traffic: { daily_vehicles: 4000 } });
+    expect(propertyStarterKeys(quiet)).toEqual(["build", "zoning", "neighborhood"]);
+    const busy = ctxWith({ comparables: null, incentives: null, traffic: { daily_vehicles: 21200 } });
+    expect(propertyStarterKeys(busy)).toEqual(["build", "zoning", "traffic", "neighborhood"]);
+  });
+
+  it("never exceeds 4 even when every flag fires", () => {
+    const keys = propertyStarterKeys(
+      ctxWith({
+        property: { flags: { chrs_rating: "red" } },
+        traffic: { daily_vehicles: 30000 },
+      }),
+    );
+    expect(keys).toHaveLength(4);
+    expect(keys).toEqual(["build", "zoning", "chrs", "comparables"]);
+  });
+
+  it("empty for a null (ungrounded) context", () => {
+    expect(propertyStarterKeys(null)).toEqual([]);
   });
 });

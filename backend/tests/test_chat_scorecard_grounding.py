@@ -19,10 +19,12 @@ from backend.models import (
     ComparablesSummary,
     IncentivesSummary,
     Location,
+    NeighborhoodSummary,
     PropertySummary,
     RegulatorySummary,
     RetrievalPlan,
     ScorecardContext,
+    TrafficSummary,
     ViolationSummary,
     ZoningSummary,
 )
@@ -50,7 +52,7 @@ def _plan(sources, *, pin=PIN, workflow="general", ca=7) -> RetrievalPlan:
     )
 
 
-def _sc(pin=PIN, *, verdict=None, address_violations=None) -> ScorecardContext:
+def _sc(pin=PIN, *, verdict=None, address_violations=None, traffic=None) -> ScorecardContext:
     return ScorecardContext(
         pin=pin,
         address="642 W Belden Ave",
@@ -65,6 +67,7 @@ def _sc(pin=PIN, *, verdict=None, address_violations=None) -> ScorecardContext:
         comparables=ComparablesSummary(median_sale_price=950000, sales_volume=6),
         verdict=verdict,
         address_violations=address_violations,
+        traffic=traffic,
     )
 
 
@@ -208,6 +211,50 @@ async def test_retrieve_grafts_address_violations_tristate(status):
     assert ctx.address_violations.status == status
     # Distinct field — never grafted onto the area-level ctx.violations.
     assert ctx.violations is None
+
+
+@pytest.mark.asyncio
+async def test_retrieve_grafts_traffic_into_neighborhood_shell():
+    """Nearest-street traffic (Scorecard Tier-2) rides into chat context inside
+    neighborhood — when the turn didn't run the neighborhood orchestrator, a
+    shell is created so the fact still serializes to the synthesizer."""
+    traffic = TrafficSummary(road="MILWAUKEE AVE", daily_vehicles=21200, directions=2)
+    sc = _sc(traffic=traffic)
+    plan = _plan(["property_domain"])
+
+    with patch.object(main_mod, "property_domain", new=AsyncMock()), \
+            patch.object(main_mod, "regulatory_domain", new=AsyncMock()), \
+            patch.object(main_mod, "incentives_domain", new=AsyncMock()), \
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock()), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()):
+        ctx = await _retrieve(plan, scorecard_context=sc)
+
+    assert ctx.neighborhood is not None
+    assert ctx.neighborhood.traffic is traffic
+    # And it survives serialization to the synthesizer's context JSON.
+    assert '"MILWAUKEE AVE"' in ctx.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_retrieve_traffic_never_overwrites_fresher_fetch():
+    """When the turn DID fetch neighborhood data, the grounded (older) traffic
+    row must not clobber the live one."""
+    fresh = TrafficSummary(road="MILWAUKEE AVE", daily_vehicles=19000, directions=2)
+    stale = TrafficSummary(road="MILWAUKEE AVE", daily_vehicles=21200, directions=2)
+    sc = _sc(traffic=stale)
+    plan = _plan(["property_domain", "neighborhood_domain"])
+
+    with patch.object(main_mod, "property_domain", new=AsyncMock()), \
+            patch.object(main_mod, "regulatory_domain", new=AsyncMock()), \
+            patch.object(main_mod, "incentives_domain", new=AsyncMock()), \
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock()), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()), \
+            patch.object(main_mod, "neighborhood_domain",
+                         new=AsyncMock(return_value=NeighborhoodSummary(traffic=fresh))):
+        ctx = await _retrieve(plan, scorecard_context=sc)
+
+    assert ctx.neighborhood is not None
+    assert ctx.neighborhood.traffic is fresh
 
 
 @pytest.mark.asyncio

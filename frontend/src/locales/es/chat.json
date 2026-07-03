@@ -1,9 +1,9 @@
 {
   "chips": {
     "map": "Mapa",
-    "mapCount": "Mapa \u00b7 {{count}}",
-    "data": "Datos \u00b7 {{count}}",
-    "sources": "Fuentes \u00b7 {{count}}"
+    "mapCount": "Mapa · {{count}}",
+    "data": "Datos · {{count}}",
+    "sources": "Fuentes · {{count}}"
   },
   "placeholder": "Pregunte sobre Chicago...",
   "analyzing": "Analizando su consulta...",
@@ -29,6 +29,8 @@
     "build": "¿Qué puedo construir en este lote?",
     "zoning": "Explica la zonificación y los distritos superpuestos aquí",
     "comparables": "¿Cómo se ven las ventas comparables recientes?",
+    "chrs": "¿Qué implica la clasificación del inventario histórico (CHRS) para demoler o renovar aquí?",
+    "traffic": "¿Qué implica el nivel de tráfico de la calle para los usos de este lote?",
     "incentives": "¿Qué incentivos y programas fiscales aplican aquí?",
     "neighborhood": "¿Qué está pasando en este vecindario?"
   },

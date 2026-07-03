@@ -691,6 +691,10 @@ class ScorecardContext(BaseModel):
     # unconfirmed), lifted from the held response's address-exact violation lookup
     # so the chat agrees with the page. ADDRESS-scoped — never the area feed.
     address_violations: AddressViolations | None = None
+    # Nearest counted street segment (Scorecard Tier-2 traffic chip), lifted so
+    # "what's the traffic like here" answers from the number the page shows.
+    # Scoped to the nearest measured street — not a parcel attribute.
+    traffic: TrafficSummary | None = None
 
 
 class ChatRequest(BaseModel):

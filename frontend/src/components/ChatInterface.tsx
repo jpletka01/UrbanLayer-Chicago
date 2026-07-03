@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ActivityItem, ContextObject, DataSource, Message, ScorecardContext, SidebarView } from "../lib/types";
+import { propertyStarterKeys } from "../lib/scorecardContext";
 import { ChatInput, type PendingAttachment } from "./ChatInput";
 import { ContextChipStrip } from "./ContextChipStrip";
 import { MessageBubble } from "./MessageBubble";
@@ -68,26 +69,12 @@ export function ChatInterface({
   const showEmptyState = messages.length === 0 && !streaming && !readOnly && !atMessageLimit;
 
   // Grounded variant: entered for a parcel → property-specific, flag-aware
-  // starters. Comparables/incentives questions only appear when the data backs
-  // them, so we never offer a dead-end prompt.
+  // starters (priority-ordered + capped in propertyStarterKeys — notable flags
+  // like a CHRS demolition-review rating or heavy street traffic claim a slot
+  // only when the data backs them, so we never offer a dead-end prompt).
   const grounded = showEmptyState && !!propertyContext;
-  const cmp = propertyContext?.comparables;
-  const hasComps = !!cmp && ((cmp.sales_volume ?? 0) > 0 || (cmp.sales?.length ?? 0) > 0);
-  const inc = propertyContext?.incentives;
-  // Only the parcel-specific incentive designations (TIF district / Opportunity
-  // Zone / Enterprise Zone) discriminate — grants, TOD, ADU and ARO are area-wide
-  // and near-universal in real data, so including them would fire the incentives
-  // starter on nearly every parcel and make the neighborhood fallback dead code.
-  const hasProgram = !!(
-    inc?.in_tif_district || inc?.in_opportunity_zone || inc?.in_enterprise_zone
-  );
   const propertyStarters: string[] = grounded
-    ? [
-        t("chat:propertyStarters.build"),
-        t("chat:propertyStarters.zoning"),
-        ...(hasComps ? [t("chat:propertyStarters.comparables")] : []),
-        hasProgram ? t("chat:propertyStarters.incentives") : t("chat:propertyStarters.neighborhood"),
-      ]
+    ? propertyStarterKeys(propertyContext).map((k) => t(`chat:propertyStarters.${k}`))
     : [];
 
   const examples = grounded

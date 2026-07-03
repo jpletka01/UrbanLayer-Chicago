@@ -527,6 +527,9 @@ export interface ScorecardContext {
   // Address-scoped building-violation tri-state, so chat affirms the same
   // at-address fact the Scorecard shows. ADDRESS-scoped — never the area feed.
   address_violations?: AddressViolationsGrounding | null;
+  // Nearest counted street segment (Tier-2 traffic chip) — lat/lon-scoped, not
+  // parcel identity, so it ships in both tiers.
+  traffic?: TrafficSummary | null;
 }
 
 // Parcel-scoped (address-keyed) building-violation tri-state shipped in grounding.

@@ -41,6 +41,7 @@ from backend.models import (
     ImportRequest,
     MapDataRequest,
     MapDataResponse,
+    NeighborhoodSummary,
     RetrievalPlan,
     SaveMessagesRequest,
     ScorecardContext,
@@ -863,6 +864,14 @@ async def _retrieve(
         # router asked for it). The prompt rule prioritizes this for parcel-level
         # questions; the two scopes stay separate.
         ctx.address_violations = sc.address_violations
+        # Nearest-street traffic rides inside neighborhood (its natural home in
+        # the serialized context); create the shell when this turn didn't run
+        # the neighborhood orchestrator. Never overwrite a fresher fetch.
+        if sc.traffic is not None:
+            if ctx.neighborhood is None:
+                ctx.neighborhood = NeighborhoodSummary(traffic=sc.traffic)
+            elif ctx.neighborhood.traffic is None:
+                ctx.neighborhood.traffic = sc.traffic
 
     return ctx
 
