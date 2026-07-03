@@ -254,6 +254,20 @@ export interface TaxExemption {
   eav_reduction: number;
 }
 
+/** Distress/opportunity flags. Tax-sale years are HISTORIC (datasets end
+    ~2014) — render with the years, never as current distress. */
+export interface ParcelFlags {
+  tax_sale_years: number[];
+  scavenger_sale_years: number[];
+  city_owned: boolean;
+  city_owned_status: string | null;
+  city_owned_sales_status: string | null;
+  city_owned_application_url: string | null;
+  scofflaw: boolean;
+  scofflaw_case: string | null;
+  str_prohibited: boolean;
+}
+
 export interface AppealRecord {
   year: number | null;
   stage: "assessor" | "board_of_review" | string;
@@ -299,6 +313,7 @@ export interface PropertySummary {
   tax_breakdown: TaxLineItem[];
   tax_exemptions: TaxExemption[];
   appeals?: AppealsSummary | null;
+  flags?: ParcelFlags | null;
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
   parcel_geometry?: Record<string, unknown> | null;

@@ -173,6 +173,44 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           </div>
         )}
 
+        {/* Distress/opportunity flags. Tax-sale mentions carry their years —
+            the public datasets end ~2014, so this is title history, not
+            current distress. City-owned reads as an opportunity. */}
+        {data.flags && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {data.flags.city_owned && (
+              <span className="text-caption text-state-positive">
+                {t("property.flags.cityOwned")}
+                {data.flags.city_owned_application_url && (
+                  <>
+                    {" · "}
+                    <a href={data.flags.city_owned_application_url} target="_blank" rel="noopener noreferrer"
+                      className="underline hover:text-accent">
+                      {t("property.flags.cityOwnedApply")}
+                    </a>
+                  </>
+                )}
+              </span>
+            )}
+            {data.flags.scofflaw && (
+              <span className="text-caption text-state-negative">{t("property.flags.scofflaw")}</span>
+            )}
+            {data.flags.str_prohibited && (
+              <span className="text-caption text-text-secondary">{t("property.flags.strProhibited")}</span>
+            )}
+            {data.flags.tax_sale_years.length > 0 && (
+              <span className="text-caption text-text-secondary">
+                {t("property.flags.taxSale", { years: data.flags.tax_sale_years.join(", ") })}
+              </span>
+            )}
+            {data.flags.scavenger_sale_years.length > 0 && (
+              <span className="text-caption text-text-secondary">
+                {t("property.flags.scavengerSale", { years: data.flags.scavenger_sale_years.join(", ") })}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Appeal history — "appealing here works" is direct-dollars context.
             Parcel rows first (wins bolded), then the neighborhood aggregate. */}
         {(data.appeals?.records?.length || data.appeals?.nearby_appeal_count) ? (

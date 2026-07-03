@@ -15,6 +15,14 @@
     "commercialUnits": "Commercial Units",
     "exemptionsApplied": "Exemptions applied: {{kinds}} (−${{eav}} taxable value)",
     "exemptionsCaveat": "Owner-occupancy exemptions don't transfer to a buyer.",
+    "flags": {
+      "cityOwned": "City-owned parcel",
+      "cityOwnedApply": "application info",
+      "scofflaw": "On the Building Code Scofflaw List",
+      "strProhibited": "Short-term rentals prohibited (owner opt-out)",
+      "taxSale": "Appeared in the {{years}} annual tax sale (historic)",
+      "scavengerSale": "Appeared in the {{years}} scavenger sale (historic)"
+    },
     "appeals": {
       "title": "Assessment appeals",
       "stageBor": "Board of Review",

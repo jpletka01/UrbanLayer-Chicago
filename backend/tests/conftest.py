@@ -88,5 +88,7 @@ def _no_external_property_fallbacks(request):
               new=AsyncMock(return_value=None)),
         patch("backend.retrieval.property.appeals.get_appeals",
               new=AsyncMock(return_value=None)),
+        patch("backend.retrieval.property.parcel_flags.get_parcel_flags",
+              new=AsyncMock(return_value=None)),
     ):
         yield

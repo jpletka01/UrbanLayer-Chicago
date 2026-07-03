@@ -242,6 +242,27 @@ class TaxLineItem(BaseModel):
     amount: float
 
 
+class ParcelFlags(BaseModel):
+    """Distress / opportunity flags. Tax-sale years are HISTORIC (the public
+    datasets end ~2014) — always present with the years, never as current
+    distress. City-owned = acquisition opportunity (ChiBlockBuilder)."""
+    tax_sale_years: list[int] = Field(default_factory=list)
+    scavenger_sale_years: list[int] = Field(default_factory=list)
+    city_owned: bool = False
+    city_owned_status: str | None = None
+    city_owned_sales_status: str | None = None
+    city_owned_application_url: str | None = None
+    scofflaw: bool = False
+    scofflaw_case: str | None = None
+    str_prohibited: bool = False
+
+    def any_flag(self) -> bool:
+        return bool(
+            self.tax_sale_years or self.scavenger_sale_years or self.city_owned
+            or self.scofflaw or self.str_prohibited
+        )
+
+
 class AppealRecord(BaseModel):
     """One assessment appeal outcome for the parcel."""
     year: int | None = None
@@ -323,6 +344,7 @@ class PropertySummary(BaseModel):
     tax_breakdown: list[TaxLineItem] = Field(default_factory=list)
     tax_exemptions: list[TaxExemption] = Field(default_factory=list)
     appeals: AppealsSummary | None = None
+    flags: ParcelFlags | None = None
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None

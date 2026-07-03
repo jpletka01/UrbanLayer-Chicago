@@ -15,6 +15,14 @@
     "commercialUnits": "Unidades comerciales",
     "exemptionsApplied": "Exenciones aplicadas: {{kinds}} (−${{eav}} de valor gravable)",
     "exemptionsCaveat": "Las exenciones por ocupación del propietario no se transfieren al comprador.",
+    "flags": {
+      "cityOwned": "Parcela propiedad de la ciudad",
+      "cityOwnedApply": "información de solicitud",
+      "scofflaw": "En la lista de infractores del código de edificación",
+      "strProhibited": "Alquileres de corto plazo prohibidos (exclusión del propietario)",
+      "taxSale": "Apareció en la venta fiscal anual de {{years}} (histórico)",
+      "scavengerSale": "Apareció en la venta scavenger de {{years}} (histórico)"
+    },
     "appeals": {
       "title": "Apelaciones de avalúo",
       "stageBor": "Junta de Revisión",

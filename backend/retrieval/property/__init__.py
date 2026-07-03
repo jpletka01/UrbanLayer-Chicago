@@ -81,6 +81,11 @@ async def property_domain(
         from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
         coros.append(get_parcel_geometry_facts(pin14))
 
+        # Distress/opportunity flags (tax-sale history, city-owned, scofflaw,
+        # STR-prohibited) — cheap parallel lookups, None when all clear.
+        from backend.retrieval.property.parcel_flags import get_parcel_flags
+        coros.append(get_parcel_flags(pin14, lat, lon, client=client))
+
         results = await asyncio.gather(*coros, return_exceptions=True)
 
         data_gaps: list[str] = []
@@ -127,6 +132,11 @@ async def property_domain(
         geometry_facts = results[idx] if not isinstance(results[idx], Exception) else None
         if isinstance(results[idx], Exception):
             log.warning("Parcel geometry facts failed: %s", results[idx])
+        idx += 1
+
+        parcel_flags = results[idx] if not isinstance(results[idx], Exception) else None
+        if isinstance(results[idx], Exception):
+            log.warning("Parcel flags failed: %s", results[idx])
 
         building_fallbacks = await _fetch_building_fallbacks(
             parcel, chars, assessments, lat, lon, client=client,
@@ -136,6 +146,7 @@ async def property_domain(
                               geometry_facts=geometry_facts,
                               building_fallbacks=building_fallbacks,
                               appeals_summary=appeals_summary,
+                              parcel_flags=parcel_flags,
                               data_gaps=data_gaps)
     finally:
         if owns:
@@ -259,6 +270,7 @@ def _build_summary(
     geometry_facts: dict | None = None,
     building_fallbacks: dict | None = None,
     appeals_summary=None,
+    parcel_flags=None,
     data_gaps: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
@@ -454,6 +466,7 @@ def _build_summary(
         tax_breakdown=tax_breakdown,
         tax_exemptions=tax_exemptions,
         appeals=appeals_summary,
+        flags=parcel_flags,
         assessment_history=assessment_history,
         sales_history=sales_history,
         parcel_geometry=parcel_geometry,
