@@ -48,6 +48,7 @@ COPY backend/ /app/backend/
 COPY ingestion/data/community_areas.geojson /app/ingestion/data/community_areas.geojson
 COPY ingestion/data/transit_stations.json /app/ingestion/data/transit_stations.json
 COPY ingestion/data/zoning_cache.json /app/ingestion/data/zoning_cache.json
+COPY ingestion/data/chrs_orange_red.json.gz /app/ingestion/data/chrs_orange_red.json.gz
 
 # Create data + uploads dirs for the SQLite volume mount
 RUN mkdir -p /app/backend/data/uploads && chown -R app:app /app/backend/data
