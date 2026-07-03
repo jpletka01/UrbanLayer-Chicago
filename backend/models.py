@@ -242,6 +242,31 @@ class TaxLineItem(BaseModel):
     amount: float
 
 
+class AppealRecord(BaseModel):
+    """One assessment appeal outcome for the parcel."""
+    year: int | None = None
+    stage: str  # "assessor" | "board_of_review"
+    before_total: float | None = None
+    after_total: float | None = None
+    result: str | None = None  # Decrease / No Change / Increase ("change"/"no change" at assessor stage)
+    reduction_pct: float | None = None  # positive = assessed value was reduced
+    appeal_type: str | None = None
+
+
+class AppealsSummary(BaseModel):
+    """Parcel appeal history + nearby Board-of-Review outcome stats.
+
+    The nearby aggregate ("N appeals within a block over the last reassessment
+    cycle, median reduction X%") is direct-dollars context: it tells the reader
+    whether appealing here historically works.
+    """
+    records: list[AppealRecord] = Field(default_factory=list)
+    nearby_window_years: list[int] = Field(default_factory=list)
+    nearby_appeal_count: int = 0
+    nearby_reduced_count: int = 0
+    nearby_median_reduction_pct: float | None = None
+
+
 class TaxExemption(BaseModel):
     """An exemption applied to the parcel's most recent tax bill.
 
@@ -297,6 +322,7 @@ class PropertySummary(BaseModel):
     tax_code: str | None = None
     tax_breakdown: list[TaxLineItem] = Field(default_factory=list)
     tax_exemptions: list[TaxExemption] = Field(default_factory=list)
+    appeals: AppealsSummary | None = None
     assessment_history: list[AssessmentRecord] = Field(default_factory=list)
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None

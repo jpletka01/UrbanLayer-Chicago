@@ -66,6 +66,8 @@ async def property_domain(
         if not skip_history:
             coros.append(get_assessments(pin14, client=client))
             coros.append(get_sales(pin14, client=client))
+            from backend.retrieval.property.appeals import get_appeals
+            coros.append(get_appeals(pin14, lat, lon, client=client))
 
         settings = get_settings()
         if settings.ptaxsim_enabled:
@@ -92,6 +94,7 @@ async def property_domain(
 
         assessments: list[dict] = []
         sales: list[dict] = []
+        appeals_summary = None
         if not skip_history:
             assessments = results[idx] if not isinstance(results[idx], Exception) else []
             if isinstance(results[idx], Exception):
@@ -103,6 +106,10 @@ async def property_domain(
             sales = results[idx] if not isinstance(results[idx], Exception) else []
             if isinstance(results[idx], Exception):
                 log.warning("CCAO sales failed: %s", results[idx])
+            idx += 1
+            appeals_summary = results[idx] if not isinstance(results[idx], Exception) else None
+            if isinstance(results[idx], Exception):
+                log.warning("Appeals lookup failed: %s", results[idx])
             idx += 1
 
         tax_result = None
@@ -128,6 +135,7 @@ async def property_domain(
         return _build_summary(parcel, chars, assessments, sales, tax_result,
                               geometry_facts=geometry_facts,
                               building_fallbacks=building_fallbacks,
+                              appeals_summary=appeals_summary,
                               data_gaps=data_gaps)
     finally:
         if owns:
@@ -250,6 +258,7 @@ def _build_summary(
     *,
     geometry_facts: dict | None = None,
     building_fallbacks: dict | None = None,
+    appeals_summary=None,
     data_gaps: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
@@ -444,6 +453,7 @@ def _build_summary(
         tax_code=tax_code,
         tax_breakdown=tax_breakdown,
         tax_exemptions=tax_exemptions,
+        appeals=appeals_summary,
         assessment_history=assessment_history,
         sales_history=sales_history,
         parcel_geometry=parcel_geometry,

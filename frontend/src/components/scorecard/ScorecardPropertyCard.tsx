@@ -173,6 +173,44 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           </div>
         )}
 
+        {/* Appeal history — "appealing here works" is direct-dollars context.
+            Parcel rows first (wins bolded), then the neighborhood aggregate. */}
+        {(data.appeals?.records?.length || data.appeals?.nearby_appeal_count) ? (
+          <div>
+            <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
+              {t("property.appeals.title")}
+            </div>
+            <div className="space-y-1">
+              {(data.appeals.records ?? []).slice(0, 3).map((r, i) => (
+                <div key={i} className="text-caption text-text-secondary">
+                  {r.year ?? "—"} · {r.stage === "board_of_review"
+                    ? t("property.appeals.stageBor") : t("property.appeals.stageAssessor")} ·{" "}
+                  {r.reduction_pct != null ? (
+                    <span className="text-state-positive">
+                      {t("property.appeals.won", {
+                        before: fmtDollar(r.before_total), after: fmtDollar(r.after_total),
+                        pct: r.reduction_pct,
+                      })}
+                    </span>
+                  ) : (
+                    <span>{t("property.appeals.noChange")}</span>
+                  )}
+                </div>
+              ))}
+              {data.appeals.nearby_appeal_count > 0 && (
+                <p className="text-caption text-text-muted">
+                  {t("property.appeals.nearby", {
+                    count: data.appeals.nearby_appeal_count,
+                    reduced: data.appeals.nearby_reduced_count,
+                  })}
+                  {data.appeals.nearby_median_reduction_pct != null &&
+                    ` ${t("property.appeals.nearbyMedian", { pct: data.appeals.nearby_median_reduction_pct })}`}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : null}
+
         {/* Exemptions on the current bill — a buyer loses owner-occupancy
             exemptions at transfer, so this bill understates their future bill. */}
         {(data.tax_exemptions ?? []).length > 0 && (

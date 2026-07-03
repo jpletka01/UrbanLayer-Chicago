@@ -15,6 +15,15 @@
     "commercialUnits": "Commercial Units",
     "exemptionsApplied": "Exemptions applied: {{kinds}} (−${{eav}} taxable value)",
     "exemptionsCaveat": "Owner-occupancy exemptions don't transfer to a buyer.",
+    "appeals": {
+      "title": "Assessment appeals",
+      "stageBor": "Board of Review",
+      "stageAssessor": "Assessor",
+      "won": "reduced {{before}} → {{after}} (−{{pct}}%)",
+      "noChange": "no change",
+      "nearby": "{{count}} appeals within a block recently — {{reduced}} won reductions",
+      "nearbyMedian": "(median −{{pct}}%)"
+    },
     "rooms": "Rooms",
     "bedrooms": "Bedrooms",
     "baths": "Baths",

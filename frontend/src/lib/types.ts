@@ -254,6 +254,24 @@ export interface TaxExemption {
   eav_reduction: number;
 }
 
+export interface AppealRecord {
+  year: number | null;
+  stage: "assessor" | "board_of_review" | string;
+  before_total: number | null;
+  after_total: number | null;
+  result: string | null;
+  reduction_pct: number | null;
+  appeal_type: string | null;
+}
+
+export interface AppealsSummary {
+  records: AppealRecord[];
+  nearby_window_years: number[];
+  nearby_appeal_count: number;
+  nearby_reduced_count: number;
+  nearby_median_reduction_pct: number | null;
+}
+
 export interface PropertySummary {
   pin14: string | null;
   address: string | null;
@@ -280,6 +298,7 @@ export interface PropertySummary {
   tax_code: string | null;
   tax_breakdown: TaxLineItem[];
   tax_exemptions: TaxExemption[];
+  appeals?: AppealsSummary | null;
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
   parcel_geometry?: Record<string, unknown> | null;

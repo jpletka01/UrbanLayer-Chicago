@@ -15,6 +15,15 @@
     "commercialUnits": "Unidades comerciales",
     "exemptionsApplied": "Exenciones aplicadas: {{kinds}} (−${{eav}} de valor gravable)",
     "exemptionsCaveat": "Las exenciones por ocupación del propietario no se transfieren al comprador.",
+    "appeals": {
+      "title": "Apelaciones de avalúo",
+      "stageBor": "Junta de Revisión",
+      "stageAssessor": "Tasador",
+      "won": "reducido {{before}} → {{after}} (−{{pct}}%)",
+      "noChange": "sin cambio",
+      "nearby": "{{count}} apelaciones a una cuadra recientemente — {{reduced}} lograron reducciones",
+      "nearbyMedian": "(mediana −{{pct}}%)"
+    },
     "rooms": "Habitaciones",
     "bedrooms": "Dormitorios",
     "baths": "Baños",
