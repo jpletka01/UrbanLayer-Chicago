@@ -63,6 +63,15 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
           >
             {t("settings")}
           </Link>
+          {user.tier === "admin" && (
+            <Link
+              to="/admin"
+              onClick={() => setOpen(false)}
+              className="block w-full text-left px-4 py-2 text-body text-text-secondary hover:bg-dark-hover hover:text-text-primary transition-colors"
+            >
+              {t("admin")}
+            </Link>
+          )}
           {!isPro && (
             <Link
               to="/pricing"

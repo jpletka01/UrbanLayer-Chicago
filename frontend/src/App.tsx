@@ -53,6 +53,7 @@ import { buildScorecardContext } from "./lib/scorecardContext";
 import { buildReportData, type ReportData } from "./lib/reportBuilder";
 import { ExportReport } from "./components/ExportReport";
 import { ShareModal } from "./components/ShareModal";
+import ConversationMenu from "./components/ConversationMenu";
 import { useAuthContext } from "./contexts/AuthContext";
 import AuthModal from "./components/AuthModal";
 import FloatingNav from "./components/FloatingNav";
@@ -114,7 +115,7 @@ export function App() {
   const [composing, setComposing] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const { user, isAuthenticated, authRequired, loading: authLoading, signIn } = useAuthContext();
+  const { isAuthenticated, authRequired, loading: authLoading, signIn } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
   const prevStreamingRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
@@ -950,6 +951,7 @@ export function App() {
                 position="floating"
                 maxWidthClass="max-w-7xl"
                 languageVariant="workspace"
+                omitNavKey="nav.askAnalyst"
                 onBrandClick={reset}
                 brandSuffix={
                   <>
@@ -983,7 +985,7 @@ export function App() {
                       onClick={() => setShowAuthModal(true)}
                       className="px-3 py-1.5 text-xs font-medium text-accent hover:text-accent/80 hover:bg-dark-elevated rounded-lg transition-colors"
                     >
-                      {tc("signInToSave")}
+                      {tc("signInToSaveShort")}
                     </button>
                   ) : undefined
                 }
@@ -998,54 +1000,23 @@ export function App() {
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                       </svg>
-                      {((!dataTabViewed && countDataCategories(activeSidebarContext) > 0) || (!sourcesTabViewed && (activeSidebarContext?.code_chunks?.length ?? 0) > 0) || (!mapTabViewed && mapData)) && (
-                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent" />
-                      )}
                     </button>
-                    {!streaming && messages.some((m) => m.role === "assistant" && m.context) && (
-                      <button
-                        onClick={handleExport}
-                        className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                        title={tc("export")}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                        </svg>
-                        <span className="hidden md:inline">{tc("export")}</span>
-                      </button>
-                    )}
-                    {!streaming && isAuthenticated && conversationId && messages.some((m) => m.role === "assistant" && m.context) && (
-                      <button
-                        onClick={() => setShareModalOpen(true)}
-                        className="flex w-9 h-9 md:w-auto md:h-auto md:px-3 md:py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors items-center justify-center md:justify-start gap-1.5"
-                        title={tc("shareConversation")}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        <span className="hidden md:inline">{tc("share")}</span>
-                      </button>
-                    )}
+                    <ConversationMenu
+                      canExport={!streaming && messages.some((m) => m.role === "assistant" && m.context)}
+                      onExport={handleExport}
+                      canShare={!streaming && isAuthenticated && !!conversationId && messages.some((m) => m.role === "assistant" && m.context)}
+                      onShare={() => setShareModalOpen(true)}
+                    />
                     <button
                       onClick={handleNewChat}
-                      className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-dark-elevated rounded-lg transition-colors"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
+                      title={tc("newChat")}
+                      aria-label={tc("newChat")}
                     >
-                      <span className="hidden md:inline">{tc("newChat")}</span>
-                      <svg className="w-4 h-4 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
                     </button>
-                    {user?.tier === "admin" && (
-                      <Link
-                        to="/admin"
-                        className="hidden md:flex px-2 py-1.5 text-text-muted hover:text-text-secondary transition-colors"
-                        title={tc("admin")}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                        </svg>
-                      </Link>
-                    )}
                   </>
                 }
               />

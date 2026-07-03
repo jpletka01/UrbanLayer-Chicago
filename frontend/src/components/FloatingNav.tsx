@@ -37,6 +37,8 @@ interface FloatingNavProps {
   tone?: Tone;
   /** Show the centered nav links. Off for shared read-only views. */
   showNav?: boolean;
+  /** Drop one nav item by key (workspace hides the self-referential "Ask the analyst"). */
+  omitNavKey?: string;
   /** Max width of the inner bar (floating/hero). */
   maxWidthClass?: string;
   /** Brand target when it's a link (default "/"). Ignored if onBrandClick is set. */
@@ -68,6 +70,7 @@ export default function FloatingNav({
   position = "floating",
   tone = "solid",
   showNav = true,
+  omitNavKey,
   maxWidthClass = "max-w-6xl",
   brandTo = "/",
   onBrandClick,
@@ -93,7 +96,7 @@ export default function FloatingNav({
       alive = false;
     };
   }, []);
-  const navItems = navItemsFor(discoveryLive);
+  const navItems = navItemsFor(discoveryLive).filter(({ key }) => key !== omitNavKey);
 
   const over = tone === "overImage";
 
