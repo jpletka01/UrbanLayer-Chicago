@@ -143,6 +143,7 @@ async def get_appeals(
     nearby_reduced = 0
     nearby_median = None
     nearby_years: list[int] = []
+    nearby_capped = bool(nearby_rows) and len(nearby_rows) >= NEARBY_ROW_CAP
     if nearby_rows:
         reductions: list[float] = []
         years: set[int] = set()
@@ -172,6 +173,7 @@ async def get_appeals(
         nearby_appeal_count=nearby_count,
         nearby_reduced_count=nearby_reduced,
         nearby_median_reduction_pct=nearby_median,
+        nearby_capped=nearby_capped,
     )
     _cache.set(key, summary)
     return summary

@@ -266,7 +266,9 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
               {data.appeals.nearby_appeal_count > 0 && (
                 <p className="text-caption text-text-muted">
                   {t("property.appeals.nearby", {
-                    count: data.appeals.nearby_appeal_count,
+                    count: data.appeals.nearby_capped
+                      ? `${data.appeals.nearby_appeal_count}+`
+                      : data.appeals.nearby_appeal_count,
                     reduced: data.appeals.nearby_reduced_count,
                   })}
                   {data.appeals.nearby_median_reduction_pct != null &&

@@ -43,6 +43,24 @@ async def test_appeals_merges_stages_and_neighbor_stats():
     assert s.nearby_reduced_count == 2
     assert s.nearby_median_reduction_pct == 15.0
     assert s.nearby_window_years == [2024, 2025]
+    assert s.nearby_capped is False
+
+
+@pytest.mark.asyncio
+async def test_appeals_nearby_capped_when_row_cap_saturated():
+    """A full page of nearby rows means the true count is a floor, not exact."""
+    from backend.retrieval.property.appeals import NEARBY_ROW_CAP
+    capped_rows = [
+        {"pin": f"2033100{i:04d}0000", "tax_year": "2025",
+         "assessor_totalvalue": "10000", "bor_totalvalue": "9000", "result": "Decrease"}
+        for i in range(NEARBY_ROW_CAP)
+    ]
+    with patch("backend.retrieval.property.appeals.socrata_get",
+               new=AsyncMock(side_effect=[[], [], capped_rows])):
+        s = await get_appeals("99999999990000", 41.75, -87.64)
+    assert s is not None
+    assert s.nearby_capped is True
+    assert s.nearby_appeal_count == NEARBY_ROW_CAP
 
 
 @pytest.mark.asyncio

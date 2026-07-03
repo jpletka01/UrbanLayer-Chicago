@@ -184,6 +184,7 @@ tr.summary td { border-top: 2px solid #374151; font-weight: 600; }
 .status-yes { color: #059669; font-weight: 600; }
 .status-no { color: #6b7280; }
 .status-warn { color: #d97706; font-weight: 600; }
+.status-good { color: #059669; font-weight: 600; }
 
 /* Traffic light indicators */
 .traffic-lights { margin-bottom: 16pt; }
@@ -881,7 +882,7 @@ a.glossary-link {
     {% if prop.stories %}<dt>{{ t("prop.stories") }}</dt><dd>{{ prop.stories }}</dd>{% endif %}
     {% if prop.units %}<dt>{{ t("prop.units") }}</dt><dd>{{ prop.units }}</dd>{% endif %}
     {% if prop.commercial_units %}<dt>{{ t("prop.commercial_units") }}</dt><dd>{{ prop.commercial_units }}</dd>{% endif %}
-    {% if prop.tax_exemptions %}<dt>{{ t("prop.exemptions") }}</dt><dd>{{ prop.tax_exemptions|map(attribute="kind")|join(", ") }} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.exemptions_caveat") }}</span></dd>{% endif %}
+    {% if prop.tax_exemptions %}<dt>{{ t("prop.exemptions") }}</dt><dd>{% for e in prop.tax_exemptions %}{{ e.kind }} ({{ t("prop.exemption_eav", eav=e.eav_reduction|fnum) }}){% if not loop.last %}, {% endif %}{% endfor %} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.exemptions_caveat") }}</span></dd>{% endif %}
     {% if prop.bedrooms %}<dt>{{ t("prop.bedrooms") }}</dt><dd>{{ prop.bedrooms }}</dd>{% endif %}
     {% if prop.full_baths %}<dt>{{ t("prop.bathrooms") }}</dt><dd>{{ prop.full_baths }}{% if prop.half_baths %}{{ t("prop.half_suffix", n=prop.half_baths) }}{% endif %}</dd>{% endif %}
     {% if prop.year_built %}<dt>{{ t("prop.year_built") }}</dt><dd>{{ prop.year_built }}</dd>{% endif %}
@@ -946,6 +947,38 @@ a.glossary-link {
   <p style="font-size: 9pt; margin-top: 4pt;">
     <strong>{{ t("prop.trend_label") }}</strong> {{ t("prop.trend_body", direction=report.assessment_trend.direction, pct="%.1f"|format(report.assessment_trend.total_change_pct), years=report.assessment_trend.years, oldest=report.assessment_trend.oldest_year, newest=report.assessment_trend.newest_year) }}{% if report.assessment_trend.cagr_pct %}{{ t("prop.trend_cagr", cagr="%.1f"|format(report.assessment_trend.cagr_pct)) }}{% endif %}.
     <span style="color: #888;">{{ t("prop.trend_note") }}</span>
+  </p>
+  {% endif %}
+  {% endif %}
+
+  {% if prop.appeals and (prop.appeals.records or prop.appeals.nearby_appeal_count) %}
+  <h3>{{ t("prop.appeal_history") }}</h3>
+  {% if prop.appeals.records %}
+  <table>
+    <thead><tr><th>{{ t("prop.th_year") }}</th><th>{{ t("prop.th_stage") }}</th><th class="num">{{ t("prop.th_before") }}</th><th class="num">{{ t("prop.th_after") }}</th><th class="num">{{ t("prop.th_change") }}</th></tr></thead>
+    <tbody>
+    {% for a in prop.appeals.records[:8] %}
+    <tr>
+      <td>{{ a.year or t("common.na") }}</td>
+      <td>{{ t("prop.appeal_stage_bor") if a.stage == "board_of_review" else t("prop.appeal_stage_assessor") }}</td>
+      <td class="num">{{ a.before_total|fcur if a.before_total is not none else "—" }}</td>
+      <td class="num">{{ a.after_total|fcur if a.after_total is not none else "—" }}</td>
+      <td class="num">{% if a.reduction_pct is not none %}<span class="status-good">−{{ a.reduction_pct }}%</span>{% elif a.before_total is not none and a.after_total is not none and a.after_total > a.before_total %}{{ t("prop.appeal_increased") }}{% else %}{{ t("prop.appeal_no_change") }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="section-note">{{ t("prop.no_own_appeals") }}</p>
+  {% endif %}
+  {% if prop.appeals.nearby_appeal_count > 0 %}
+  {% set yrs = prop.appeals.nearby_window_years %}
+  {% set years_label = t("prop.appeals_recent_years") if not yrs else (yrs|min|string if yrs|min == yrs|max else "%s–%s"|format(yrs|min, yrs|max)) %}
+  {% set nearby_n = prop.appeals.nearby_appeal_count %}
+  <p style="font-size: 9pt; margin-top: 4pt;">
+    <strong>{{ t("prop.appeals_nearby_label") }}</strong>
+    {{ tn("prop.appeals_nearby_body", nearby_n, n=("%d+"|format(nearby_n) if prop.appeals.nearby_capped else nearby_n), reduced=prop.appeals.nearby_reduced_count, years=years_label) }}{% if prop.appeals.nearby_median_reduction_pct is not none %}{{ t("prop.appeals_nearby_median", pct=prop.appeals.nearby_median_reduction_pct) }}{% endif %}.
+    <span style="color: #888;">{{ t("prop.appeals_note") }}</span>
   </p>
   {% endif %}
   {% endif %}
@@ -1225,6 +1258,9 @@ a.glossary-link {
   {% if other_amount|length > 5 %}
   <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("fin.top_agencies", n=other_amount|length) }}</p>
   {% endif %}
+  {% endif %}
+  {% if prop.tax_exemptions %}
+  <p style="font-size: 8.5pt; color: #b45309; margin-top: 4pt;">{{ t("fin.exemptions_buyer_note", kinds=prop.tax_exemptions|map(attribute="kind")|join(", "), eav=(prop.tax_exemptions|sum(attribute="eav_reduction"))|fnum) }}</p>
   {% endif %}
   {% endif %}
 </div>

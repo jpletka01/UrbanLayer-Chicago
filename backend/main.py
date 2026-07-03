@@ -4288,9 +4288,9 @@ def _build_envelope_summary(report: "ReportData") -> str | None:
 def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
     """Inject realistic test data for visual QA of all v2 sections."""
     from backend.models import (
-        AssessmentRecord, ComparableSale, ComparablesSummary,
-        DevelopmentPotential, NearbyDevelopment, SaleRecord,
-        TaxLineItem, ZoningStandards,
+        AppealRecord, AppealsSummary, AssessmentRecord, ComparableSale,
+        ComparablesSummary, DevelopmentPotential, NearbyDevelopment,
+        SaleRecord, TaxExemption, TaxLineItem, ZoningStandards,
     )
 
     # Force zoning extraction with high confidence
@@ -4412,6 +4412,26 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
                 SaleRecord(date="2014-03-22", price=285000, deed_type="WARRANTY"),
                 SaleRecord(date="2005-09-15", price=192000, deed_type="WARRANTY"),
                 SaleRecord(date="1998-06-01", price=125000, deed_type="TRUSTEE"),
+            ]
+
+        if not report_data.context.property.appeals:
+            report_data.context.property.appeals = AppealsSummary(
+                records=[
+                    AppealRecord(year=2024, stage="board_of_review", before_total=39900,
+                                 after_total=33200, result="Decrease", reduction_pct=16.8,
+                                 appeal_type="Over Valuation"),
+                    AppealRecord(year=2023, stage="assessor", before_total=37500,
+                                 after_total=37500, result="no change"),
+                ],
+                nearby_window_years=[2022, 2023, 2024],
+                nearby_appeal_count=107,
+                nearby_reduced_count=38,
+                nearby_median_reduction_pct=16.9,
+            )
+
+        if not report_data.context.property.tax_exemptions:
+            report_data.context.property.tax_exemptions = [
+                TaxExemption(kind="Homeowner", eav_reduction=10000),
             ]
 
         if not report_data.context.property.tax_breakdown:

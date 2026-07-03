@@ -284,6 +284,8 @@ export interface AppealsSummary {
   nearby_appeal_count: number;
   nearby_reduced_count: number;
   nearby_median_reduction_pct: number | null;
+  /** True when the nearby query hit its row cap — the count is a floor ("500+"). */
+  nearby_capped?: boolean;
 }
 
 export interface PropertySummary {

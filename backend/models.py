@@ -286,6 +286,9 @@ class AppealsSummary(BaseModel):
     nearby_appeal_count: int = 0
     nearby_reduced_count: int = 0
     nearby_median_reduction_pct: float | None = None
+    # The nearby query returns at most NEARBY_ROW_CAP rows; when saturated the
+    # count is a floor ("500+"), not an exact count — dense areas hit the cap.
+    nearby_capped: bool = False
 
 
 class TaxExemption(BaseModel):
