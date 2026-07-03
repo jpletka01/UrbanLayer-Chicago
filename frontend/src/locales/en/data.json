@@ -15,6 +15,12 @@
     "commercialUnits": "Commercial Units",
     "exemptionsApplied": "Exemptions applied: {{kinds}} (−${{eav}} taxable value)",
     "exemptionsCaveat": "Owner-occupancy exemptions don't transfer to a buyer.",
+    "sources": {
+      "geometry": "(from parcel geometry)",
+      "condo_unit": "(condo unit)",
+      "commercial_valuation": "(assessor commercial valuation)",
+      "footprint": "(city footprint data)"
+    },
     "flags": {
       "cityOwned": "City-owned parcel",
       "cityOwnedApply": "application info",

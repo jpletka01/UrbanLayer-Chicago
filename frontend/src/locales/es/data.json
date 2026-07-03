@@ -15,6 +15,12 @@
     "commercialUnits": "Unidades comerciales",
     "exemptionsApplied": "Exenciones aplicadas: {{kinds}} (−${{eav}} de valor gravable)",
     "exemptionsCaveat": "Las exenciones por ocupación del propietario no se transfieren al comprador.",
+    "sources": {
+      "geometry": "(según geometría de la parcela)",
+      "condo_unit": "(unidad de condominio)",
+      "commercial_valuation": "(valuación comercial del tasador)",
+      "footprint": "(datos de huella municipal)"
+    },
     "flags": {
       "cityOwned": "Parcela propiedad de la ciudad",
       "cityOwnedApply": "información de solicitud",

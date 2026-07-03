@@ -217,7 +217,14 @@ FIELD_SPECS: list[FieldSpec] = [
     FieldSpec(
         "zoning_far", "critical",
         lambda r, row: bool((r.get("zone_definition") or {}).get("far")),
-        note="Title-17 bulk FAR from zone_definition (PDs legitimately lack a table FAR but count as MISSING here — the customer still sees no number)",
+        expected_absent=lambda r: (
+            "PD/PMD standards are set per-ordinance, and the UI states so "
+            "explicitly (since 2026-07-03) instead of showing a blank"
+            if str(((r.get("context") or {}).get("parcel_zoning") or {})
+                   .get("zone_class") or "").upper().startswith(("PD", "PMD"))
+            else None
+        ),
+        note="Title-17 bulk FAR from zone_definition; PD/PMD = expected-absent now that the card renders 'Set by PD ordinance' + ordinance number",
     ),
     # ---- secondary facts --------------------------------------------------
     FieldSpec(

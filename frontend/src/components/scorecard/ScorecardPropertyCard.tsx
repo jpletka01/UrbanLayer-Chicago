@@ -99,14 +99,33 @@ function TaxBars({ breakdown }: { breakdown: PropertySummary["tax_breakdown"] })
   );
 }
 
-function Fact({ label, value }: { label: string; value: string | null | undefined }) {
+function Fact({ label, value, sourceHint }: {
+  label: string;
+  value: string | null | undefined;
+  /** Provenance note for non-assessor values ("via parcel geometry", "via city
+      footprint data") — rendered as a muted suffix so derived numbers are
+      honest without shouting. */
+  sourceHint?: string | null;
+}) {
   if (!value || value === "—") return null;
   return (
     <div>
       <dt className="text-caption text-text-muted">{label}</dt>
-      <dd className="text-body text-text-primary mt-0.5">{value}</dd>
+      <dd className="text-body text-text-primary mt-0.5">
+        {value}
+        {sourceHint && <span className="text-micro text-text-muted"> {sourceHint}</span>}
+      </dd>
     </div>
   );
+}
+
+/** Sources that deserve a label: everything except the assessor's own data
+    (assessor = the default expectation; gis is the county's parcel layer, close enough). */
+function sourceHintFor(source: string | null | undefined, t: (k: string) => string): string | null {
+  if (!source || source === "assessor" || source === "gis") return null;
+  const key = `property.sources.${source}`;
+  const label = t(key);
+  return label === key ? null : label;
 }
 
 export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
@@ -264,15 +283,19 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
         {/* Building facts — scannable grid, nulls omitted */}
         <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
           <Fact label={t("property.class")} value={classLabel || null} />
-          <Fact label={t("property.buildingSqft")} value={data.bldg_sqft ? data.bldg_sqft.toLocaleString() : null} />
-          <Fact label={t("property.landSqft")} value={data.land_sqft ? data.land_sqft.toLocaleString() : null} />
-          <Fact label={t("property.stories")} value={data.stories ? String(data.stories) : null} />
+          <Fact label={t("property.buildingSqft")} value={data.bldg_sqft ? data.bldg_sqft.toLocaleString() : null}
+            sourceHint={sourceHintFor(data.bldg_sqft_source, t)} />
+          <Fact label={t("property.landSqft")} value={data.land_sqft ? data.land_sqft.toLocaleString() : null}
+            sourceHint={sourceHintFor(data.land_sqft_source, t)} />
+          <Fact label={t("property.stories")} value={data.stories ? String(data.stories) : null}
+            sourceHint={sourceHintFor(data.stories_source, t)} />
           <Fact label={t("property.units")} value={data.units ? String(data.units) : null} />
           <Fact label={t("property.commercialUnits")} value={data.commercial_units ? String(data.commercial_units) : null} />
           <Fact label={t("property.rooms")} value={data.rooms ? String(data.rooms) : null} />
           <Fact label={t("property.bedrooms")} value={data.bedrooms ? String(data.bedrooms) : null} />
           <Fact label={t("property.baths")} value={baths} />
-          <Fact label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null} />
+          <Fact label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null}
+            sourceHint={sourceHintFor(data.year_built_source, t)} />
         </dl>
 
         {/* Full records (sales + assessment table) for the verifier persona */}
