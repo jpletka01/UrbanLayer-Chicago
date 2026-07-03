@@ -341,9 +341,6 @@ export function App() {
     opts?: { parcelPin?: string | null; scorecardContext?: import("./lib/types").ScorecardContext | null },
   ) {
     setHistoryOpen(false);
-    // The empty-state flag has done its job once a message exists; clearing it
-    // here keeps it from lingering true into later message-clearing paths.
-    setComposing(false);
     let cid = conversationId;
     if (!cid && canPersist) {
       cid = generateId();
@@ -376,6 +373,14 @@ export function App() {
 
     track("chat_message_sent");
     sendChat(text, uploadMetas, opts);
+    // Clear the empty-state flag only now: sendChat has synchronously appended
+    // the user message, so `active` never dips false mid-send. Clearing it
+    // before the awaited conversation creation opened a ~200ms active=false
+    // window in which AnimatePresence (mode="wait") began swapping the splash
+    // in and dropped the workspace's re-entry when `active` flipped back —
+    // stranding the app on the splash while the answer streamed unseen
+    // (flaky, mostly mobile; diagnosed 2026-07-03).
+    setComposing(false);
   }
 
   // Auto-send ?q= query parameter (from Investigate buttons on Scorecard).
