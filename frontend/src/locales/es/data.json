@@ -15,6 +15,8 @@
     "commercialUnits": "Unidades comerciales",
     "exemptionsApplied": "Exenciones aplicadas: {{kinds}} (−${{eav}} de valor gravable)",
     "exemptionsCaveat": "Las exenciones por ocupación del propietario no se transfieren al comprador.",
+    "noBuildingVacant": "Terreno baldío — sin edificación registrada.",
+    "buildingDetailsUnavailable": "Detalles del edificio no disponibles para esta parcela — sin registro del tasador, de valuación ni de huella.",
     "sources": {
       "geometry": "(según geometría de la parcela)",
       "condo_unit": "(unidad de condominio)",

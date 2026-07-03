@@ -15,6 +15,8 @@
     "commercialUnits": "Commercial Units",
     "exemptionsApplied": "Exemptions applied: {{kinds}} (−${{eav}} taxable value)",
     "exemptionsCaveat": "Owner-occupancy exemptions don't transfer to a buyer.",
+    "noBuildingVacant": "Vacant land — no building on record.",
+    "buildingDetailsUnavailable": "Building details unavailable for this parcel — no assessor, valuation, or footprint record found.",
     "sources": {
       "geometry": "(from parcel geometry)",
       "condo_unit": "(condo unit)",

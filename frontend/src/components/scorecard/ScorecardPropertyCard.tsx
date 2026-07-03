@@ -132,6 +132,15 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
   const { t } = useTranslation("data");
   const [showRecords, setShowRecords] = useState(false);
 
+  // Two distinct absent-building states, never conflated: vacant land (class
+  // 1xx) has NO building — a fact, stated affirmatively; anything else with no
+  // building facts is a data gap, stated as unavailable. Silence was the old
+  // behavior and it read as either, which is exactly the ambiguity the
+  // lot-info arc exists to kill.
+  const isVacantLand = /^1/.test(String(data.bldg_class ?? "").replace("-", ""));
+  const hasBuildingFacts = data.bldg_sqft != null || data.bldg_age != null
+    || data.stories != null || data.units != null || data.rooms != null;
+
   const assessed = data.total_assessed_value;
   const tax = data.estimated_annual_tax;
   const effectiveRate = assessed && assessed > 0 && tax && tax > 0
@@ -279,6 +288,13 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             <span className="text-text-muted"> {t("property.exemptionsCaveat")}</span>
           </div>
         )}
+
+        {/* Absent-building states: vacant = affirmative fact, else = honest gap */}
+        {isVacantLand ? (
+          <p className="text-caption text-text-secondary">{t("property.noBuildingVacant")}</p>
+        ) : !hasBuildingFacts ? (
+          <p className="text-caption text-text-muted">{t("property.buildingDetailsUnavailable")}</p>
+        ) : null}
 
         {/* Building facts — scannable grid, nulls omitted */}
         <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
