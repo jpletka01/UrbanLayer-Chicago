@@ -45,10 +45,12 @@ retrieval/
 ├── zoning_definitions.py   # Deterministic zone class lookup table (~50 entries). FAR, height, uses, code sections from Title 17. Used by PDF report for inline descriptions + definitions section AND serialized as `zone_definition` in /api/scorecard (frontend ZoningCard; contract test test_zone_definition_contract.py). Fallback chain: exact → prefix → PD/PMD → unknown
 ├── geo.py                  # Census Geocoder + community area resolution (77 areas + 30+ aliases) + census tract FIPS resolution (FCC API)
 ├── utils.py                # Shared helpers (cutoff_iso, format_pin)
-├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax] parallel. sales.py also has nearby_comparable_sales() (3-hop: Parcel Universe → Sales → Characteristics)
+├── property/               # Orchestrator: parcels (GIS primary, Socrata fallback) → PIN → [characteristics, assessments, sales, tax, parcel_geometry] parallel + a CONDITIONAL phase-2 (building_facts fallbacks, only when x54s left gaps; skipped for vacant 1xx). sales.py also has nearby_comparable_sales() (3-hop: Parcel Universe → Sales → Characteristics)
+│   ├── parcel_geometry.py  # Land area + parcel outline computed ON-DEMAND from ptaxsim pin_geometry_raw (indexed (pin10,start_year) PK, ~ms) — the only all-class land source; cos-lat planar area (no pyproj). Fills land_sqft (source="geometry") + parcel_geometry when GIS absent
+│   └── building_facts.py   # Non-residential building facts: condo unit chars (3r7i-mrz4), Commercial Valuation bldgsf (csik-bsws; SUM latest-year rows — one row PER BUILDING per keypin), Building Footprints stories/year_built (syp8-uezg; col is bldg_statu, bldg_sq_fo mostly 0). Fill-only merge, assessor wins; per-field provenance in PropertySummary.*_source
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA, triggered by any domain not just regulatory)
 ├── incentives/             # Orchestrator: point-based [TIF, EZ, grants] parallel → conditional [financials, OZ]; OR community-area-based TIF + grants. grant_programs.py queries SBIF + NOF
-└── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore] parallel
+└── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore] parallel + ward_by_point (wards.py: 50 ward polygons + alderman contacts preloaded at startup; NOTE Socrata URL columns are {"url":...} objects — normalize before pydantic)
 ```
 
 ## Patterns

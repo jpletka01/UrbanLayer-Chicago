@@ -6,6 +6,7 @@ then fetches CCAO characteristics, assessments, and sales in parallel.
 
 import asyncio
 import logging
+from typing import Any
 
 import httpx
 
@@ -72,6 +73,12 @@ async def property_domain(
             tax_year = datetime.date.today().year - 1
             coros.append(estimate_tax(tax_year, pin14))
 
+        # Geometry-derived land area + parcel outline from the local PTAXSIM
+        # polygon table — the only all-class land source (CCAO chars is
+        # residential-only; GIS is flaky and absent on the PIN-keyed path).
+        from backend.retrieval.property.parcel_geometry import get_parcel_geometry_facts
+        coros.append(get_parcel_geometry_facts(pin14))
+
         results = await asyncio.gather(*coros, return_exceptions=True)
 
         data_gaps: list[str] = []
@@ -106,14 +113,82 @@ async def property_domain(
                 data_gaps.append("property tax estimate")
             elif tax_result is None:
                 data_gaps.append("property tax estimate")
+            idx += 1
         else:
             data_gaps.append("property tax estimate")
 
+        geometry_facts = results[idx] if not isinstance(results[idx], Exception) else None
+        if isinstance(results[idx], Exception):
+            log.warning("Parcel geometry facts failed: %s", results[idx])
+
+        building_fallbacks = await _fetch_building_fallbacks(
+            parcel, chars, assessments, lat, lon, client=client,
+        )
+
         return _build_summary(parcel, chars, assessments, sales, tax_result,
+                              geometry_facts=geometry_facts,
+                              building_fallbacks=building_fallbacks,
                               data_gaps=data_gaps)
     finally:
         if owns:
             await client.aclose()
+
+
+async def _fetch_building_fallbacks(
+    parcel: dict,
+    chars: dict | None,
+    assessments: list[dict],
+    lat: float,
+    lon: float,
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> dict | None:
+    """Phase 2: building-fact fallbacks, fetched only when the primary CCAO
+    characteristics left gaps (x54s-btds covers regression-class residential
+    only — the 2026-07-02 benchmark measured 0% bldg facts everywhere else).
+
+    Returns {"condo": ..., "commercial_sqft": ..., "footprint": ...} (each
+    possibly None) or None when nothing was needed/fetched.
+    """
+    cls = str(
+        parcel.get("bldg_class")
+        or (assessments[0].get("class") if assessments else "")
+        or ""
+    ).strip().upper().replace("-", "")
+
+    # Vacant land (class 1xx) has no building to find; skip entirely.
+    if cls[:1] == "1":
+        return None
+
+    has_bldg = bool(chars and _safe_int(chars.get("char_bldg_sf")))
+    has_year = bool(chars and _safe_int(chars.get("char_yrblt")))
+    has_stories = bool(chars and _decode_stories(chars))
+    if has_bldg and has_year and has_stories:
+        return None
+
+    from backend.retrieval.property.building_facts import (
+        get_commercial_building_sqft,
+        get_condo_characteristics,
+        get_footprint_facts,
+    )
+
+    coros: dict[str, Any] = {}
+    if chars is None:
+        # x54s-covered parcels never appear in the condo/commercial datasets;
+        # only bother when the primary lookup came back empty.
+        coros["condo"] = get_condo_characteristics(parcel["pin14"], client=client)
+        coros["commercial_sqft"] = get_commercial_building_sqft(parcel["pin14"], client=client)
+    coros["footprint"] = get_footprint_facts(lat, lon, client=client)
+
+    done = await asyncio.gather(*coros.values(), return_exceptions=True)
+    fallbacks: dict[str, Any] = {}
+    for key, value in zip(coros.keys(), done):
+        if isinstance(value, Exception):
+            log.warning("Building fallback %s failed: %s", key, value)
+            fallbacks[key] = None
+        else:
+            fallbacks[key] = value
+    return fallbacks
 
 
 def _safe_int(val) -> int | None:
@@ -173,6 +248,8 @@ def _build_summary(
     sales: list[dict],
     tax_result: dict | None = None,
     *,
+    geometry_facts: dict | None = None,
+    building_fallbacks: dict | None = None,
     data_gaps: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
@@ -180,6 +257,8 @@ def _build_summary(
     bldg_class = parcel.get("bldg_class")
     bldg_sqft = _safe_int(parcel.get("bldg_sqft"))
     land_sqft = _safe_int(parcel.get("land_sqft"))
+    land_sqft_source = "gis" if land_sqft else None
+    bldg_sqft_source = "gis" if bldg_sqft else None
 
     bldg_class_description = None
     stories = None
@@ -201,8 +280,14 @@ def _build_summary(
     if chars:
         # NOTE: dataset x54s-btds column names — `char_apts` (not char_units),
         # `char_air` (not char_ac); there is no char_age or char_class_description.
-        bldg_sqft = _safe_int(chars.get("char_bldg_sf")) or bldg_sqft
-        land_sqft = _safe_int(chars.get("char_land_sf")) or land_sqft
+        ccao_bldg = _safe_int(chars.get("char_bldg_sf"))
+        if ccao_bldg:
+            bldg_sqft = ccao_bldg
+            bldg_sqft_source = "assessor"
+        ccao_land = _safe_int(chars.get("char_land_sf"))
+        if ccao_land:
+            land_sqft = ccao_land
+            land_sqft_source = "assessor"
         stories = _decode_stories(chars)
         units = _decode_units(chars)
         ncu = _safe_int(chars.get("char_ncu"))
@@ -257,6 +342,50 @@ def _build_summary(
         )
         sales_history.append(rec)
 
+    # Geometry-derived fill: assessor-stated area wins when present; the
+    # polygon-computed area covers every class the assessor datasets don't
+    # (commercial/multifamily/exempt/industrial — 0% before 2026-07-02).
+    parcel_geometry = parcel.get("geometry")
+    if geometry_facts:
+        if not land_sqft and geometry_facts.get("land_sqft_geom"):
+            land_sqft = geometry_facts["land_sqft_geom"]
+            land_sqft_source = "geometry"
+        if parcel_geometry is None:
+            parcel_geometry = geometry_facts.get("parcel_geometry")
+
+    # Building-fact fallbacks (condo unit chars → commercial valuation →
+    # city footprints), applied ONLY into holes the assessor data left, with
+    # per-field provenance so the UI/report can label non-assessor numbers.
+    year_built_source = "assessor" if year_built else None
+    stories_source = "assessor" if stories else None
+    if building_fallbacks:
+        condo = building_fallbacks.get("condo")
+        if condo:
+            if not bldg_sqft and condo.get("unit_sqft"):
+                bldg_sqft = condo["unit_sqft"]
+                bldg_sqft_source = "condo_unit"
+            if not year_built and condo.get("year_built"):
+                year_built = condo["year_built"]
+                year_built_source = "assessor"  # CCAO condo dataset — same authority
+                bldg_age = datetime.date.today().year - year_built
+            if not bedrooms and condo.get("bedrooms"):
+                bedrooms = condo["bedrooms"]
+        if not bldg_sqft and building_fallbacks.get("commercial_sqft"):
+            bldg_sqft = building_fallbacks["commercial_sqft"]
+            bldg_sqft_source = "commercial_valuation"
+        footprint = building_fallbacks.get("footprint")
+        if footprint:
+            if not bldg_sqft and footprint.get("bldg_sqft"):
+                bldg_sqft = footprint["bldg_sqft"]
+                bldg_sqft_source = "footprint"
+            if not year_built and footprint.get("year_built"):
+                year_built = footprint["year_built"]
+                year_built_source = "footprint"
+                bldg_age = datetime.date.today().year - year_built
+            if not stories and footprint.get("stories"):
+                stories = float(footprint["stories"])
+                stories_source = "footprint"
+
     # Exempt parcels (class "EX") carry zero assessed value / tax — a real,
     # decision-relevant fact (institutional ownership), not a data gap.
     assessment_class = assessments[0].get("class") if assessments else None
@@ -291,6 +420,10 @@ def _build_summary(
         bldg_class_description=bldg_class_description,
         bldg_sqft=bldg_sqft,
         land_sqft=land_sqft,
+        land_sqft_source=land_sqft_source,
+        bldg_sqft_source=bldg_sqft_source,
+        year_built_source=year_built_source,
+        stories_source=stories_source,
         stories=stories,
         units=units,
         commercial_units=commercial_units,
@@ -313,6 +446,6 @@ def _build_summary(
         tax_exemptions=tax_exemptions,
         assessment_history=assessment_history,
         sales_history=sales_history,
-        parcel_geometry=parcel.get("geometry"),
+        parcel_geometry=parcel_geometry,
         data_gaps=data_gaps or [],
     )

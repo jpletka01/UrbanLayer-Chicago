@@ -261,6 +261,12 @@ export interface PropertySummary {
   bldg_class_description: string | null;
   bldg_sqft: number | null;
   land_sqft: number | null;
+  /** Provenance labels ("assessor" | "gis" | "geometry" | "condo_unit" |
+      "commercial_valuation" | "footprint") — absent when the field is null. */
+  land_sqft_source?: string | null;
+  bldg_sqft_source?: string | null;
+  year_built_source?: string | null;
+  stories_source?: string | null;
   stories: number | null;
   units: number | null;
   commercial_units: number | null;
@@ -391,11 +397,20 @@ export interface CensusTractDemographics {
   city_median_income: number | null;
 }
 
+export interface WardInfo {
+  ward: number;
+  alderman: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+}
+
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
   census_tract: CensusTractDemographics | null;
   transit: TransitAccess | null;
   walkscore: WalkScoreSummary | null;
+  ward?: WardInfo | null;
 }
 
 export interface ComparableSale {

@@ -185,15 +185,17 @@ async def _startup() -> None:
 async def _preload_datasets() -> None:
     """Pre-warm lazy-loaded datasets in the background."""
     from backend.retrieval.incentives import tif, enterprise_zones
-    from backend.retrieval.neighborhood import transit, demographics
+    from backend.retrieval.neighborhood import transit, demographics, wards
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
-        labels = ["TIF boundaries", "EZ boundaries", "transit stations", "demographics"]
+        labels = ["TIF boundaries", "EZ boundaries", "transit stations", "demographics",
+                  "ward boundaries"]
         results = await asyncio.gather(
             tif.preload(client=client),
             enterprise_zones.preload(client=client),
             transit.preload(),
             demographics.preload(client=client),
+            wards.preload(client=client),
             return_exceptions=True,
         )
         for label, result in zip(labels, results):

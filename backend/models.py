@@ -261,6 +261,15 @@ class PropertySummary(BaseModel):
     bldg_class_description: str | None = None
     bldg_sqft: int | None = None
     land_sqft: int | None = None
+    # Per-field provenance so non-assessor numbers can be labeled honestly.
+    # land: "assessor" | "gis" | "geometry" (PTAXSIM parcel polygon area).
+    # bldg: "assessor" | "gis" | "condo_unit" | "commercial_valuation" (economic-
+    #   unit total) | "footprint" (city layer, uneven freshness).
+    # year/stories: "assessor" | "footprint".
+    land_sqft_source: str | None = None
+    bldg_sqft_source: str | None = None
+    year_built_source: str | None = None
+    stories_source: str | None = None
     # Fractional values are real ("1.5 Story" is a CCAO residence type)
     stories: float | None = None
     units: int | None = None
@@ -409,11 +418,22 @@ class WalkScoreSummary(BaseModel):
     ws_link: str | None = None
 
 
+class WardInfo(BaseModel):
+    """The parcel's ward + alderman — the operative political unit for any
+    rezoning/variance/PD conversation (aldermanic prerogative)."""
+    ward: int
+    alderman: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    website: str | None = None
+
+
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
     census_tract: CensusTractDemographics | None = None
     transit: TransitAccess | None = None
     walkscore: WalkScoreSummary | None = None
+    ward: WardInfo | None = None
 
 
 class TurnSummary(BaseModel):

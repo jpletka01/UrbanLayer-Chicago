@@ -248,6 +248,8 @@
     },
     "thisArea": "esta zona",
     "crimeAreaScope": "En {{area}} · últimos 90 días — no esta parcela",
+    "wardLabel": "Distrito {{ward}}",
+    "wardTooltip": "Concejal {{alderman}} — las recalificaciones y variaciones suelen requerir el apoyo del distrito",
     "violations": {
       "title": "Infracciones de construcción",
       "noneOnRecord": "Sin infracciones registradas en esta dirección"

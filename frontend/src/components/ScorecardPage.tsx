@@ -558,6 +558,16 @@ export default function ScorecardPage() {
                           {data.community_area_name && (
                             <span className="text-body text-text-muted">{data.community_area_name}</span>
                           )}
+                          {ctx.neighborhood?.ward && (
+                            <span className="text-body text-text-muted" title={ctx.neighborhood.ward.alderman
+                              ? t("scorecard.wardTooltip", { alderman: ctx.neighborhood.ward.alderman })
+                              : undefined}>
+                              {t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward })}
+                              {ctx.neighborhood.ward.alderman && (
+                                <span> · {ctx.neighborhood.ward.alderman}</span>
+                              )}
+                            </span>
+                          )}
                         </div>
                         {/* Parcel identity strip */}
                         {parcel && (

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from backend.retrieval.cache import TTLCache
 
@@ -60,3 +60,31 @@ def _clear_rate_limits():
     clear_rate_limits()
     yield
     clear_rate_limits()
+
+
+@pytest.fixture(autouse=True)
+def _no_external_property_fallbacks(request):
+    """Neutralize the property orchestrator's phase-2 lookups in unit tests.
+
+    `property_domain` calls the parcel-geometry lookup (opens the real 9.4 GB
+    ptaxsim.db) and, when characteristics are absent, the building-fact
+    fallbacks (real Socrata calls with retry/backoff — these HUNG the suite,
+    same class as the documented estimate_tax gotcha). The orchestrator imports
+    them at call time, so patching the source-module attributes covers every
+    orchestrator-level test; test_parcel_geometry / test_building_facts hold
+    direct references from module-top imports and are unaffected.
+    """
+    if request.node.get_closest_marker("integration"):
+        yield
+        return
+    with (
+        patch("backend.retrieval.property.parcel_geometry.get_parcel_geometry_facts",
+              new=AsyncMock(return_value=None)),
+        patch("backend.retrieval.property.building_facts.get_condo_characteristics",
+              new=AsyncMock(return_value=None)),
+        patch("backend.retrieval.property.building_facts.get_commercial_building_sqft",
+              new=AsyncMock(return_value=None)),
+        patch("backend.retrieval.property.building_facts.get_footprint_facts",
+              new=AsyncMock(return_value=None)),
+    ):
+        yield

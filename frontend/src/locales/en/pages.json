@@ -248,6 +248,8 @@
     },
     "thisArea": "this area",
     "crimeAreaScope": "Across {{area}} · last 90 days — not this parcel",
+    "wardLabel": "Ward {{ward}}",
+    "wardTooltip": "Alderman {{alderman}} — rezonings and variances typically need ward support",
     "violations": {
       "title": "Building violations",
       "noneOnRecord": "No violations on record at this address"

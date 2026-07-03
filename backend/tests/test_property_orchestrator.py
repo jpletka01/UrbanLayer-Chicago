@@ -200,6 +200,49 @@ def test_decode_stories_from_type_resd():
     assert _decode_stories({"char_ncu": "3"}) is None
 
 
+def test_build_summary_geometry_and_fallback_merge():
+    """Non-residential parcel (no chars): land from geometry, bldg from
+    commercial valuation, year/stories from footprints — each provenance-labeled.
+    Assessor values, when present, must win (second case)."""
+    bare_parcel = {"pin14": "20331000020000", "bldg_class": "517", "address": None}
+    fallbacks = {
+        "condo": None,
+        "commercial_sqft": 12500,
+        "footprint": {"stories": 2, "year_built": 1924, "bldg_sqft": None},
+    }
+    geo = {"land_sqft_geom": 7381, "parcel_geometry": {"type": "Polygon", "coordinates": []},
+           "geom_year": 2024}
+    s = _build_summary(bare_parcel, None, [], [], None,
+                       geometry_facts=geo, building_fallbacks=fallbacks)
+    assert s.land_sqft == 7381 and s.land_sqft_source == "geometry"
+    assert s.bldg_sqft == 12500 and s.bldg_sqft_source == "commercial_valuation"
+    assert s.year_built == 1924 and s.year_built_source == "footprint"
+    assert s.stories == 2.0 and s.stories_source == "footprint"
+    assert s.parcel_geometry == geo["parcel_geometry"]
+
+    # Assessor data present -> fallbacks must NOT override
+    s2 = _build_summary(SAMPLE_PARCEL, SAMPLE_CHARS, [], [], None,
+                        geometry_facts=geo, building_fallbacks=fallbacks)
+    assert s2.bldg_sqft == 2600 and s2.bldg_sqft_source == "assessor"
+    assert s2.land_sqft == 3200 and s2.land_sqft_source == "assessor"
+    assert s2.year_built == 1929 and s2.year_built_source == "assessor"
+    assert s2.stories == 2.0 and s2.stories_source == "assessor"
+
+
+def test_build_summary_condo_unit_facts():
+    """Condo PIN (no x54s row): unit sqft/year/bedrooms from the condo dataset."""
+    condo_parcel = {"pin14": "17102140281234", "bldg_class": "299", "address": None}
+    fallbacks = {
+        "condo": {"unit_sqft": 1150, "year_built": 2007, "bedrooms": 2},
+        "commercial_sqft": None,
+        "footprint": None,
+    }
+    s = _build_summary(condo_parcel, None, [], [], None, building_fallbacks=fallbacks)
+    assert s.bldg_sqft == 1150 and s.bldg_sqft_source == "condo_unit"
+    assert s.year_built == 2007
+    assert s.bedrooms == 2
+
+
 def test_decode_units_words_and_single_family():
     from backend.retrieval.property import _decode_units
     assert _decode_units({"char_apts": "Two"}) == 2

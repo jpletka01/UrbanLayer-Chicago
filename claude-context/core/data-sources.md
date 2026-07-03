@@ -23,6 +23,9 @@ Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Tok
 | NOF Small Grants | `rym7-49n8` | Same schema as NOF Large | 126 records. Neighborhood Opportunity Fund small grants | Queried by community_area (limit 15) |
 | ARO Housing | `s6ha-ppgi` | property_name, address, units, property_type, community_area, community_area_number, management_company, lat/lon | 598 records. Affordable Requirements Ordinance housing projects | Queried by community_area_number (limit 20) |
 | ACS 5-Year by Community Area | `t68z-cikk` | population, income brackets, poverty | Demographics (estimated medians) |
+| Boundaries - Wards (2023-) | `p293-wvbd` | ward, the_geom (multipolygon) | Preloaded at startup (`neighborhood/wards.py`), point-in-polygon → `NeighborhoodSummary.ward` |
+| Ward Offices | `htai-wnw4` | ward, alderman, ward_phone, email, **website (a `{"url":...}` OBJECT, not a string — normalize)** | Alderman contact joined onto ward lookup at preload |
+| Building Footprints | `syp8-uezg` | stories, year_built, bldg_sq_fo (mostly 0), **bldg_statu** (truncated col name) | Last-resort building facts via `within_circle` (25m), `building_facts.py`. City-maintained, uneven freshness → provenance "footprint" |
 | Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |
 
 ## Cook County Open Data (Socrata)
@@ -38,7 +41,9 @@ Base: `https://datacatalog.cookcountyil.gov/resource/{id}.json`. Same SODA 2.1 A
 | Assessed Values | `uzyt-m557` | pin, tax_year, mailed_tot, certified_tot, board_tot | PIN + year |
 | Parcel Sales | `wvhk-k5uv` | pin, sale_date, sale_price, deed_type | PIN |
 | Single/Multi-Family Characteristics | `x54s-btds` | pin, char_bldg_sf, char_land_sf, char_rooms, char_age | PIN |
-| Condo Characteristics | `3r7i-mrz4` | pin, char_bldg_sf, char_rooms | PIN |
+| Condo Characteristics | `3r7i-mrz4` | pin, char_unit_sf, char_yrblt, char_bedrooms, char_building_sf | PIN — condo UNIT facts fallback (`building_facts.py`); unit_sf (not building_sf) surfaces as the parcel's bldg_sqft |
+| Commercial Valuation | `csik-bsws` | keypin, pins, bldgsf, year | Dashed-PIN match on keypin OR `pins` membership; one row PER BUILDING per economic unit → SUM the latest year (`building_facts.py`). ~92% of Chicago 2024 rows carry bldgsf |
+| Assessor Appeals / BOR Appeal Decisions | `y282-6ig3` / `7pny-nedm` | pin, year, before/after values, result | **Not yet integrated** — planned (strategy/2026-07-02_data-expansion-candidates.md) |
 
 ## Chicago Zoning MapServer (ArcGIS)
 
@@ -95,7 +100,7 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 | Source | Location | Use |
 |--------|----------|-----|
 | Municipal Code | Qdrant (14,535 chunks from 8,615 sections) | Vector search for legal questions |
-| PTAXSIM | `backend/data/ptaxsim.db` (8.8GB SQLite) | Property tax estimation by PIN |
+| PTAXSIM | `backend/data/ptaxsim.db` (9.4GB SQLite) | Property tax estimation by PIN (`tax_estimate.py`, incl. per-PIN `exe_*` exemption columns — EAV deductions, not dollars) **AND parcel polygons**: `pin_geometry_raw` (WKT per pin10, indexed PK) powers on-demand land area + parcel outline (`parcel_geometry.py`). NOT on prod until seeded — see guides/ptaxsim-prod-seeding.md; `/health` reports `ptaxsim` |
 | Transit Stations | Parsed from GTFS at startup | Nearest station proximity |
 | Community Area Polygons | `ingestion/data/community_areas.geojson` | Point-in-polygon resolution |
 

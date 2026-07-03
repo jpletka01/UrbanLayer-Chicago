@@ -10,10 +10,16 @@ import logging
 import httpx
 
 from backend.config import get_settings
-from backend.models import CensusTractDemographics, NeighborhoodSummary, WalkScoreSummary
+from backend.models import (
+    CensusTractDemographics,
+    NeighborhoodSummary,
+    WalkScoreSummary,
+    WardInfo,
+)
 from backend.retrieval.geo import resolve_census_tract
 from backend.retrieval.neighborhood.census_tract import fetch_census_tract
 from backend.retrieval.neighborhood.demographics import fetch_demographics
+from backend.retrieval.neighborhood.wards import ward_by_point
 from backend.retrieval.neighborhood.transit import (
     build_transit_access,
     check_tod_eligibility,
@@ -75,12 +81,17 @@ async def neighborhood_domain(
                 else:
                     results[key] = value
 
+        # Ward + alderman: in-memory point-in-polygon over the preloaded ward
+        # layer — the political unit for any rezoning/variance conversation.
+        ward_info = ward_by_point(lat, lon) if has_coords else None
+
         return _build_summary(
             results.get("demographics"),
             results.get("census_tract"),
             results.get("stations"),
             results.get("tod"),
             results.get("walkscore"),
+            ward_info,
         )
     finally:
         if owns:
@@ -105,11 +116,14 @@ def _build_summary(
     station_result: dict | None = None,
     tod_result: dict | None = None,
     walkscore_result: WalkScoreSummary | None = None,
+    ward_info: dict | None = None,
 ) -> NeighborhoodSummary:
     transit = build_transit_access(station_result, tod_result)
+    ward = WardInfo(**ward_info) if ward_info else None
     return NeighborhoodSummary(
         demographics=demographics,
         census_tract=census_tract,
         transit=transit,
         walkscore=walkscore_result,
+        ward=ward,
     )
