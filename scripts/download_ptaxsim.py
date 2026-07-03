@@ -2,6 +2,7 @@
 """Download and decompress the PTAXSIM SQLite database from CCAO's S3 bucket."""
 
 import bz2
+import shutil
 import sys
 import urllib.request
 from pathlib import Path
@@ -34,13 +35,12 @@ def main():
     print()
 
     print("Decompressing...")
-    with open(BZ2_PATH, "rb") as f_in, open(DEST, "wb") as f_out:
-        decompressor = bz2.BZ2Decompressor()
-        while True:
-            chunk = f_in.read(1 << 20)
-            if not chunk:
-                break
-            f_out.write(decompressor.decompress(chunk))
+    # bz2.open (not a raw BZ2Decompressor): CCAO publishes a MULTI-STREAM bz2
+    # (parallel bzip2), and a single BZ2Decompressor raises "EOFError: End of
+    # stream already reached" at the first stream boundary — hit on the prod
+    # seeding 2026-07-03. bz2.open transparently chains streams.
+    with bz2.open(BZ2_PATH, "rb") as f_in, open(DEST, "wb") as f_out:
+        shutil.copyfileobj(f_in, f_out, 1 << 20)
 
     BZ2_PATH.unlink()
     print(f"Done. Database at {DEST} ({DEST.stat().st_size / 1e6:.1f} MB)")
