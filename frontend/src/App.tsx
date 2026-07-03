@@ -59,24 +59,9 @@ import AuthModal from "./components/AuthModal";
 import FloatingNav from "./components/FloatingNav";
 import { useTranslation } from "react-i18next";
 import { track } from "./lib/tracking";
+import { countDataCategories } from "./lib/contextSummary";
 
 const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-function countDataCategories(ctx: ContextObject | null): number {
-  if (!ctx) return 0;
-  let count = 0;
-  if (ctx.crime_last_90d) count++;
-  if (ctx.open_311_requests) count++;
-  if (ctx.permits) count++;
-  if (ctx.violations) count++;
-  if (ctx.businesses) count++;
-  if (ctx.parcel_zoning) count++;
-  if (ctx.regulatory) count++;
-  if (ctx.property) count++;
-  if (ctx.incentives) count++;
-  if (ctx.neighborhood) count++;
-  return count;
-}
 
 export function App() {
   const { t } = useTranslation("landing");
@@ -1070,6 +1055,15 @@ export function App() {
                 readOnly={isSharedView}
                 propertyContext={groundedContext}
                 onPropertyStarterClick={sendPropertyStarter}
+                onOpenPanel={(assistantIndex, tab) => {
+                  // Load that turn's context/plan/map (also opens the panel or
+                  // sheet responsively), then land on the tapped tab. "map" is
+                  // a mobile-sheet-only view; on desktop the map lives inside
+                  // the Data tab (DataMapLayout).
+                  handleMessageClick(assistantIndex - 1);
+                  const isMobile = window.innerWidth < 768;
+                  handleViewChange(tab === "map" && !isMobile ? "data" : tab);
+                }}
               />
               <SidebarPanel
                 context={activeSidebarContext}

@@ -1,4 +1,10 @@
 {
+  "chips": {
+    "map": "Mapa",
+    "mapCount": "Mapa \u00b7 {{count}}",
+    "data": "Datos \u00b7 {{count}}",
+    "sources": "Fuentes \u00b7 {{count}}"
+  },
   "placeholder": "Pregunte sobre Chicago...",
   "analyzing": "Analizando su consulta...",
   "analyzed": "Consulta analizada",

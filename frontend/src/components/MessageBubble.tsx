@@ -22,9 +22,11 @@ interface Props {
   isSelected?: boolean;
   onSelect?: () => void;
   activities?: ActivityItem[];
+  /** Rendered under a completed assistant bubble (per-message context chips). */
+  footer?: ReactNode;
 }
 
-export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect, activities }: Props) {
+export function MessageBubble({ message, streaming, showDisclaimer, onCitationClick, onDataClick, codeChunks = [], isSelected, onSelect, activities, footer }: Props) {
   const { t } = useTranslation("common");
   const isUser = message.role === "user";
   const [hovered, setHovered] = useState(false);
@@ -274,6 +276,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
       {streaming && activities && activities.length > 0 && (
         <ActivityStatus activities={activities} visible={!displayedContent} />
       )}
+      {!streaming && footer}
     </div>
   );
 }

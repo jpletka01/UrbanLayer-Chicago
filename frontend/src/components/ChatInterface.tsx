@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ActivityItem, ContextObject, DataSource, Message, ScorecardContext } from "../lib/types";
+import type { ActivityItem, ContextObject, DataSource, Message, ScorecardContext, SidebarView } from "../lib/types";
 import { ChatInput, type PendingAttachment } from "./ChatInput";
+import { ContextChipStrip } from "./ContextChipStrip";
 import { MessageBubble } from "./MessageBubble";
 
 interface Props {
@@ -27,6 +28,9 @@ interface Props {
   // stays available but is the secondary, ungrounded fallback.
   propertyContext?: ScorecardContext | null;
   onPropertyStarterClick?: (question: string) => void;
+  /** Open the side panel / mobile sheet on a tab, loading the given assistant
+   *  message's turn (per-message context chips under each answer). */
+  onOpenPanel?: (assistantIndex: number, tab: SidebarView) => void;
 }
 
 export function ChatInterface({
@@ -48,6 +52,7 @@ export function ChatInterface({
   readOnly,
   propertyContext,
   onPropertyStarterClick,
+  onOpenPanel,
 }: Props) {
   const { t } = useTranslation(["common", "chat"]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -127,6 +132,7 @@ export function ChatInterface({
             const isStreaming = isLastAssistant && streaming;
             const messageContext = isStreaming ? streamingContext : m.context;
             const codeChunks = messageContext?.code_chunks ?? [];
+            const showChips = m.role === "assistant" && !isStreaming && !readOnly && !!onOpenPanel;
             return (
               <MessageBubble
                 key={i}
@@ -141,6 +147,15 @@ export function ChatInterface({
                 isSelected={m.role === "user" && selectedMessageIndex === i}
                 onSelect={m.role === "user" ? () => onMessageClick?.(i) : undefined}
                 activities={isStreaming ? activities : undefined}
+                footer={
+                  showChips ? (
+                    <ContextChipStrip
+                      context={m.context ?? null}
+                      mapData={m.mapData ?? null}
+                      onOpen={(tab) => onOpenPanel!(i, tab)}
+                    />
+                  ) : undefined
+                }
               />
             );
           })}
