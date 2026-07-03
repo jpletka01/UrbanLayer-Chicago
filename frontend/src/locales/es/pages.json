@@ -166,13 +166,17 @@
         "nearCapacity": "Construido en o cerca del límite por derecho — poca capacidad adicional",
         "compsPointer": "Vea ventas comparables recientes para el rango de valor",
         "entitlement": "{{name}} — los derechos los define la ordenanza de Desarrollo Planificado, no las reglas por derecho",
-        "insufficient": "No se pudo confirmar la identidad de la parcela desde la dirección"
+        "insufficient": "No se pudo confirmar la identidad de la parcela desde la dirección",
+        "cityOwned": "Parcela propiedad de la ciudad — podría adquirirse mediante los programas municipales de venta de terrenos (ChiBlockBuilder)",
+        "appealUpside": "Las apelaciones de avalúo tienen éxito en la zona — {{wins}} victorias recientes, mediana −{{pct}}% — un potencial de ahorro fiscal"
       },
       "caveat": {
         "unverified": "Identidad de parcela sin confirmar — las cifras de propiedad y comparables podrían ser de una parcela vecina. Verifique el PIN antes de confiar en ellas.",
         "noBldgArea": "Superficie del edificio no disponible — no se calculó la capacidad de desarrollo para esta parcela.",
         "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
-        "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}."
+        "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
+        "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
+        "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR."
       },
       "next": {
         "strong": {

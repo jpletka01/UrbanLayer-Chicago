@@ -24,6 +24,11 @@ export const VACANT_FAR = 0.3;             // existingFAR below this on a builda
 export const STRONG_MIN_ALLOWED_FAR = 1.5; // single-family FAR headroom isn't real upside (decision B)
 export const TIF_WELL_FUNDED = 5_000_000;  // TIF fund balance above this counts toward "strong" incentive
 export const STACK_MIN = 2;                 // ≥ this many incentives ⇒ "strong" incentive
+// Appeal-upside gate: dense areas show a handful of small nearby wins everywhere
+// (median −4…−6% is background noise); the reason fires only where appealing
+// demonstrably pays — many wins AND a big median cut.
+export const APPEAL_UPSIDE_MIN_WINS = 10;
+export const APPEAL_UPSIDE_MIN_MEDIAN_PCT = 10;
 
 export type VerdictCategory =
   | "strong"
@@ -81,6 +86,13 @@ export interface VerdictSignals {
   frictionLevel: "meaningful" | "low";
   neutralFlags: string[]; // aro, etc. — context, never friction
   zoneClass: string | null;
+  // Parcel flags + appeal-history signals (2026-07-02 arc). These feed reasons
+  // and caveats ONLY — selectCategory never reads them, so the calibrated
+  // category assignments are stable by construction. Historic tax-sale years
+  // are deliberately excluded (datasets end ~2014).
+  flagSignals: string[]; // "city_owned" | "scofflaw" | "str_prohibited" | "appeal_upside"
+  appealNearbyWins: number;
+  appealNearbyMedianPct: number | null;
 }
 
 export interface ScorecardVerdict {
@@ -177,6 +189,21 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
   if (reg?.in_aro_zone) neutralFlags.push("aro");
   if (viol && (num(viol.open_count) ?? 0) > 0) neutralFlags.push("openViolations");
 
+  const pflags = prop?.flags ?? null;
+  const appeals = prop?.appeals ?? null;
+  const appealNearbyWins = appeals?.nearby_reduced_count ?? 0;
+  const appealNearbyMedianPct = appeals?.nearby_median_reduction_pct ?? null;
+  const flagSignals: string[] = [];
+  if (pflags?.city_owned) flagSignals.push("city_owned");
+  if (pflags?.scofflaw) flagSignals.push("scofflaw");
+  if (pflags?.str_prohibited) flagSignals.push("str_prohibited");
+  if (
+    appealNearbyWins >= APPEAL_UPSIDE_MIN_WINS &&
+    appealNearbyMedianPct != null &&
+    appealNearbyMedianPct >= APPEAL_UPSIDE_MIN_MEDIAN_PCT
+  )
+    flagSignals.push("appeal_upside");
+
   return {
     allowedFar,
     existingFar,
@@ -191,6 +218,9 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
     frictionLevel,
     neutralFlags,
     zoneClass: zdef?.zone_class ?? null,
+    flagSignals,
+    appealNearbyWins,
+    appealNearbyMedianPct,
   };
 }
 
@@ -234,6 +264,11 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   if (data.zone_definition?.is_fallback) caveats.push(t("scorecard.verdict.caveat.fallbackZone"));
   if ((data.partial_failures?.length ?? 0) > 0)
     caveats.push(t("scorecard.verdict.caveat.partial", { sources: data.partial_failures.join(", ") }));
+  // Parcel-risk caveats (scofflaw list, STR prohibition): rendered with the
+  // data-quality caveats but deliberately NOT part of the `caveated` confidence
+  // flip below — they are facts about the parcel, not about our data.
+  if (s.flagSignals.includes("scofflaw")) caveats.push(t("scorecard.verdict.caveat.scofflaw"));
+  if (s.flagSignals.includes("str_prohibited")) caveats.push(t("scorecard.verdict.caveat.strProhibited"));
 
   const caveated =
     !!data.nearest_parcel_unverified ||
@@ -296,6 +331,26 @@ function frictionReasons(s: VerdictSignals, data: ScorecardResponse, t: TFunc): 
   return out;
 }
 
+// Parcel-flag positives (city-owned acquisition path, proven tax-appeal upside).
+// Spliced in right after each category's headline reason: parcel-specific
+// opportunity outranks generic fillers (compsPointer etc.) but never displaces
+// the reason that justifies the category label.
+function flagReasons(s: VerdictSignals, t: TFunc): VerdictReason[] {
+  const out: VerdictReason[] = [];
+  if (s.flagSignals.includes("city_owned"))
+    out.push({ text: t("scorecard.verdict.reason.cityOwned"), polarity: "positive", cardAnchor: "property" });
+  if (s.flagSignals.includes("appeal_upside"))
+    out.push({
+      text: t("scorecard.verdict.reason.appealUpside", {
+        wins: s.appealNearbyWins,
+        pct: s.appealNearbyMedianPct ?? 0,
+      }),
+      polarity: "positive",
+      cardAnchor: "property",
+    });
+  return out;
+}
+
 function zoneReason(s: VerdictSignals, data: ScorecardResponse, t: TFunc): VerdictReason {
   const zdef = data.zone_definition;
   if (zdef?.far != null)
@@ -346,13 +401,22 @@ function buildReasons(category: VerdictCategory, s: VerdictSignals, data: Scorec
       break;
   }
 
-  // honesty guard: meaningful friction MUST surface ≥1 negative, whatever the label
-  if (s.frictionLevel === "meaningful" && !out.some((r) => r.polarity === "negative") && friction.length)
-    out.push(friction[0]);
+  // Parcel-flag positives ride every category, right behind the headline reason
+  // (parcels without flags render exactly as before).
+  const flags = flagReasons(s, t);
+  if (flags.length) out.splice(Math.min(1, out.length), 0, ...flags);
 
   // NB: ARO is deliberately NOT auto-added as a reason — it's citywide, so it
   // would be noise on every verdict. It lives in the incentives card + signals.
-  return out.slice(0, 4);
+  let final = out.slice(0, 4);
+
+  // honesty guard: meaningful friction MUST surface ≥1 negative, whatever the
+  // label — enforced AFTER the 4-cap so an inserted positive can never push
+  // the negative out of the rendered set.
+  if (s.frictionLevel === "meaningful" && !final.some((r) => r.polarity === "negative") && friction.length)
+    final = [...final.slice(0, 3), friction[0]];
+
+  return final;
 }
 
 // --- next step (one mapped action per category) -------------------------------

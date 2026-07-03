@@ -34,12 +34,46 @@ type Mk = {
   unverified?: boolean;
   approximate?: boolean;
   partial?: string[];
+  cityOwned?: boolean;
+  scofflaw?: boolean;
+  strProhibited?: boolean;
+  appealWins?: number;
+  appealMedian?: number | null;
 };
 
 function mk(o: Mk): ScorecardResponse {
   const property = o.noProperty
     ? null
-    : { bldg_sqft: o.bldg ?? null, land_sqft: o.land ?? null, bldg_class: o.bldgClass ?? "2-11", address: "1 Test St" };
+    : {
+        bldg_sqft: o.bldg ?? null,
+        land_sqft: o.land ?? null,
+        bldg_class: o.bldgClass ?? "2-11",
+        address: "1 Test St",
+        flags:
+          o.cityOwned || o.scofflaw || o.strProhibited
+            ? {
+                tax_sale_years: [2013], // historic — must never influence anything
+                scavenger_sale_years: [],
+                city_owned: !!o.cityOwned,
+                city_owned_status: null,
+                city_owned_sales_status: null,
+                city_owned_application_url: null,
+                scofflaw: !!o.scofflaw,
+                scofflaw_case: null,
+                str_prohibited: !!o.strProhibited,
+              }
+            : null,
+        appeals:
+          o.appealWins !== undefined
+            ? {
+                records: [],
+                nearby_window_years: [2024, 2025],
+                nearby_appeal_count: Math.max(o.appealWins ?? 0, 50),
+                nearby_reduced_count: o.appealWins ?? 0,
+                nearby_median_reduction_pct: o.appealMedian ?? null,
+              }
+            : null,
+      };
   const zone_definition = o.noZone
     ? null
     : { zone_class: o.zone ?? "RT-4", name: "Test", code_section: "§x", far: o.far === undefined ? 1.2 : o.far, max_height: null, lot_coverage: null, uses: "", notes: "", is_fallback: !!o.fallback };
@@ -169,5 +203,62 @@ describe("scorecardVerdict — output contract", () => {
   it("reasons carry a card anchor for deep-linking", () => {
     const v = computeVerdict(mk({ zone: "DS-5", far: 5.0, bldg: 1000, land: 970 }), t);
     for (const r of v.reasons) expect(["zoning", "incentives", "regulatory", "property", "comparables", "violations"]).toContain(r.cardAnchor);
+  });
+});
+
+describe("scorecardVerdict — parcel flags + appeal signals (2026-07-02 arc)", () => {
+  // Representative spread of the calibrated category space.
+  const CONFIGS: Mk[] = [
+    { far: 5.0, bldg: 2000, land: 5000, zone: "B3-5" }, // strong
+    { oz: true, tif: true, bldg: null, land: null }, // incentive_driven
+    { far: 5.0, bldg: 2000, land: 5000, zone: "B3-5", landmark: true }, // constrained
+    {}, // limited
+    { zone: "PD 1234", far: null }, // entitlement_defined
+  ];
+  const FLAGS: Partial<Mk> = { cityOwned: true, scofflaw: true, strProhibited: true, appealWins: 40, appealMedian: 16.9 };
+
+  it("categories are stable by construction — flags/appeals never change the label", () => {
+    for (const base of CONFIGS) {
+      expect(cat({ ...base, ...FLAGS })).toBe(cat(base));
+    }
+  });
+
+  it("city-owned adds a positive property-anchored reason", () => {
+    const v = computeVerdict(mk({ cityOwned: true }), t);
+    const r = v.reasons.find((x) => x.text.includes("reason.cityOwned"));
+    expect(r).toBeDefined();
+    expect(r!.polarity).toBe("positive");
+    expect(r!.cardAnchor).toBe("property");
+  });
+
+  it("appeal upside fires only above BOTH thresholds (wins ≥10 AND median ≥10%)", () => {
+    const fires = (o: Mk) =>
+      computeVerdict(mk(o), t).reasons.some((x) => x.text.includes("reason.appealUpside"));
+    expect(fires({ appealWins: 40, appealMedian: 16.9 })).toBe(true);
+    expect(fires({ appealWins: 9, appealMedian: 16.9 })).toBe(false);
+    expect(fires({ appealWins: 40, appealMedian: 5.8 })).toBe(false); // dense-area background noise
+    expect(fires({ appealWins: 40, appealMedian: null })).toBe(false);
+  });
+
+  it("scofflaw + STR-prohibited are caveats that do NOT flip confidence", () => {
+    const v = computeVerdict(mk({ scofflaw: true, strProhibited: true }), t);
+    expect(v.caveats.some((c) => c.includes("caveat.scofflaw"))).toBe(true);
+    expect(v.caveats.some((c) => c.includes("caveat.strProhibited"))).toBe(true);
+    expect(v.confidence).toBe("high");
+  });
+
+  it("historic tax-sale years never surface anywhere in the verdict", () => {
+    const v = computeVerdict(mk({ cityOwned: true }), t); // factory sets tax_sale_years=[2013]
+    const all = [...v.reasons.map((r) => r.text), ...v.caveats, v.headline].join(" ");
+    expect(all).not.toMatch(/tax.?sale/i);
+  });
+
+  it("flag positives never push the forced friction negative out of the 4-cap (constrained)", () => {
+    const v = computeVerdict(
+      mk({ far: 5.0, bldg: 2000, land: 5000, zone: "B3-5", landmark: true, tif: true, tifName: "X", ...FLAGS }),
+      t,
+    );
+    expect(v.reasons.length).toBeLessThanOrEqual(4);
+    expect(v.reasons.some((r) => r.polarity === "negative")).toBe(true);
   });
 });

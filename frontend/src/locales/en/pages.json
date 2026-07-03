@@ -166,13 +166,17 @@
         "nearCapacity": "Built at or near the as-of-right limit — little added capacity",
         "compsPointer": "See recent comparable sales for the value range",
         "entitlement": "{{name}} — entitlements set by the Planned Development ordinance, not as-of-right rules",
-        "insufficient": "Parcel identity couldn't be confirmed from the address"
+        "insufficient": "Parcel identity couldn't be confirmed from the address",
+        "cityOwned": "City-owned parcel — may be acquirable through the city's land-sale programs (ChiBlockBuilder)",
+        "appealUpside": "Assessment appeals succeed nearby — {{wins}} recent wins, median −{{pct}}% — a property-tax upside"
       },
       "caveat": {
         "unverified": "Parcel identity unconfirmed — property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
         "noBldgArea": "Building area unavailable — development capacity wasn't computed for this parcel.",
         "fallbackZone": "Zoning shown is a category default, not a parcel-specific lookup.",
-        "partial": "Some data sources were unavailable: {{sources}}."
+        "partial": "Some data sources were unavailable: {{sources}}.",
+        "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",
+        "strProhibited": "Short-term rentals are prohibited on this block (precinct owner opt-out) — relevant if you're underwriting STR income."
       },
       "next": {
         "strong": {
