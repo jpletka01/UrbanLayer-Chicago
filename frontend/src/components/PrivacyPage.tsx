@@ -138,8 +138,8 @@ export function PrivacyPage() {
         <Section title="Contact">
           <P>
             Questions, or want something deleted? Email{" "}
-            <a href="mailto:jack@pletka.com" className="text-accent-text hover:underline">
-              jack@pletka.com
+            <a href="mailto:jack@urbanlayerchicago.com" className="text-accent-text hover:underline">
+              jack@urbanlayerchicago.com
             </a>
             . This is a small product built by one person in the open — you'll get a real reply.
           </P>
