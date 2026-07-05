@@ -147,5 +147,13 @@
     "privacy": "Privacidad",
     "notAffiliated": "No afiliado con la Ciudad de Chicago",
     "dataDelay": "Los datos pueden tener un retraso de hasta 7 días"
+  },
+  "newsletter": {
+    "title": "Inteligencia de desarrollo de Chicago, mensual",
+    "description": "Un correo al mes: un hallazgo de datos y lo que se lanzó. Sin spam.",
+    "placeholder": "tu@ejemplo.com",
+    "button": "Suscribirse",
+    "done": "Estás en la lista.",
+    "error": "No funcionó — revisa el correo e inténtalo de nuevo."
   }
 }

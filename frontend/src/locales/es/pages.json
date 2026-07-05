@@ -250,6 +250,29 @@
       "title": "Contexto del vecindario",
       "scope": "— describe {{area}}, no esta parcela"
     },
+    "segmentPrompt": {
+      "question": "¿Qué te describe mejor?",
+      "hint": "Un toque — nos ayuda a construir para las personas correctas.",
+      "thanks": "Gracias — anotado.",
+      "dismiss": "Descartar",
+      "options": {
+        "developer": "Desarrollador",
+        "architect": "Arquitecto",
+        "attorney": "Abogado",
+        "broker": "Corredor / Tasador",
+        "investor": "Inversionista",
+        "homeowner": "Propietario",
+        "curious": "Solo curiosidad"
+      }
+    },
+    "feedback": {
+      "question": "¿Fue preciso este Scorecard?",
+      "up": "Sí",
+      "down": "Algo está mal",
+      "placeholder": "¿Qué falta o está mal? (opcional)",
+      "submit": "Enviar",
+      "thanks": "Gracias — los errores de datos se corrigen rápido."
+    },
     "thisArea": "esta zona",
     "crimeAreaScope": "En {{area}} · últimos 90 días — no esta parcela",
     "wardLabel": "Distrito {{ward}}",

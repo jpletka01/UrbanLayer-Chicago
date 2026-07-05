@@ -250,6 +250,29 @@
       "title": "Neighborhood context",
       "scope": "— describes {{area}}, not this parcel"
     },
+    "segmentPrompt": {
+      "question": "What best describes you?",
+      "hint": "One tap — it helps us build for the right people.",
+      "thanks": "Thanks — noted.",
+      "dismiss": "Dismiss",
+      "options": {
+        "developer": "Developer",
+        "architect": "Architect",
+        "attorney": "Attorney",
+        "broker": "Broker / Appraiser",
+        "investor": "Investor",
+        "homeowner": "Homeowner",
+        "curious": "Just curious"
+      }
+    },
+    "feedback": {
+      "question": "Was this Scorecard accurate?",
+      "up": "Yes",
+      "down": "Something's off",
+      "placeholder": "What's missing or wrong? (optional)",
+      "submit": "Send",
+      "thanks": "Thanks — data bugs get fixed fast."
+    },
     "thisArea": "this area",
     "crimeAreaScope": "Across {{area}} · last 90 days — not this parcel",
     "wardLabel": "Ward {{ward}}",

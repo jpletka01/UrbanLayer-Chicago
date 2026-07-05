@@ -133,6 +133,15 @@ export function getSignInUrl(): string {
 // Payments API
 // ---------------------------------------------------------------------------
 
+export async function subscribeNewsletter(email: string, source: string): Promise<void> {
+  const resp = await fetch(`${API_BASE}/api/newsletter`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, source }),
+  });
+  if (!resp.ok) throw new Error("Failed to subscribe");
+}
+
 export async function createCheckoutSession(): Promise<{ url: string }> {
   track("checkout_started", { type: "subscription" });
   flush(); // the page is about to redirect to Stripe

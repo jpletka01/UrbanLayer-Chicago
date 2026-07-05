@@ -23,6 +23,8 @@ import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
 import { AddressInput } from "./AddressInput";
+import { SegmentPrompt } from "./SegmentPrompt";
+import { ScorecardFeedback } from "./ScorecardFeedback";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
@@ -904,6 +906,11 @@ export default function ScorecardPage() {
                 </div>
               </details>
             )}
+
+            {/* Validation instrumentation: one-time segment ask + per-parcel
+                accuracy feedback. Quiet, bottom-of-page, dismissible. */}
+            <SegmentPrompt />
+            <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />
           </div>
         )}
 

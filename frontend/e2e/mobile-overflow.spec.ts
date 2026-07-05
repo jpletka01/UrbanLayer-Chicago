@@ -57,6 +57,7 @@ const PAGES: Array<{
   { id: "pricing", path: "/pricing" },
   { id: "about", path: "/about" },
   { id: "settings", path: "/settings" },
+  { id: "privacy", path: "/privacy" },
 ];
 
 const OUT_DIR = path.join(

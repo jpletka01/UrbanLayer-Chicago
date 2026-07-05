@@ -117,5 +117,13 @@
     "privacy": "Privacy",
     "notAffiliated": "Not affiliated with the City of Chicago",
     "dataDelay": "Data may be delayed up to 7 days"
+  },
+  "newsletter": {
+    "title": "Chicago development intel, monthly",
+    "description": "One email a month: a data finding and what shipped. No spam.",
+    "placeholder": "you@example.com",
+    "button": "Subscribe",
+    "done": "You're on the list.",
+    "error": "That didn't work — check the email and try again."
   }
 }

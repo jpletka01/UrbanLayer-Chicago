@@ -126,6 +126,7 @@ _CSRF_EXEMPT_PATHS = {
     "/api/auth/refresh",
     "/api/auth/logout",
     "/api/events",
+    "/api/newsletter",  # anonymous email capture; single INSERT OR IGNORE
 }
 
 
@@ -4912,10 +4913,31 @@ _VALID_EVENT_NAMES = {
     "checkout_started",
     "discovery_search",
     "signup_completed",
+    "segment_selected",
+    "scorecard_feedback",
+    "newsletter_signup",
     # NOTE: purchase_completed / subscription_started are deliberately NOT
     # accepted here — money events are written server-side by the Stripe
     # webhook (payments.py) so a browser can't spoof them into the funnel.
 }
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+@app.post("/api/newsletter")
+async def newsletter_signup(request: Request) -> dict:
+    """Anonymous newsletter capture — the owned email channel."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid body")
+    email = (body.get("email") or "").strip()
+    if not email or len(email) > 254 or not _EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Invalid email")
+    source = str(body.get("source") or "")[:64] or None
+    added = await db.add_subscriber(email, source)
+    return {"ok": True, "added": added}
 
 
 @app.post("/api/events")

@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 12
+_SCHEMA_VERSION = 13
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -187,6 +187,19 @@ CREATE INDEX IF NOT EXISTS idx_rp_user_pin ON report_purchases(user_id, pin);
 """)
 
 
+async def _migrate_v13(db: aiosqlite.Connection) -> None:
+    """Newsletter subscribers — the owned email channel. One row per email;
+    source records which surface captured it (footer, scorecard, …)."""
+    await db.executescript("""
+CREATE TABLE IF NOT EXISTS subscribers (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL UNIQUE,
+    source     TEXT,
+    created_at INTEGER NOT NULL
+);
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -327,6 +340,7 @@ async def init_db() -> None:
         await _migrate_v10(_db)
         await _migrate_v11(_db)
         await _migrate_v12(_db)
+        await _migrate_v13(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -364,6 +378,9 @@ async def init_db() -> None:
         if version < 12:
             await _migrate_v12(_db)
             version = 12
+        if version < 13:
+            await _migrate_v13(_db)
+            version = 13
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1304,6 +1321,17 @@ async def get_user_report_purchases(user_id: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Usage analytics
 # ---------------------------------------------------------------------------
+
+async def add_subscriber(email: str, source: str | None = None) -> bool:
+    """Store a newsletter subscriber. Returns True if newly added."""
+    db = _get_db()
+    cur = await db.execute(
+        "INSERT OR IGNORE INTO subscribers (email, source, created_at) VALUES (?, ?, ?)",
+        (email.strip().lower(), source, _now_ms()),
+    )
+    await db.commit()
+    return cur.rowcount > 0
+
 
 async def save_events(events: list[dict]) -> None:
     """Batch-insert analytics events. Never raises — logs on failure."""

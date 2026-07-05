@@ -636,3 +636,43 @@ class TestEngagementFunnel:
         ])
         stats = await db.get_engagement_stats("all")
         assert stats["channels"] == {"utm:newsletter": 1}
+
+
+class TestNewsletter:
+    """Subscribers table (schema v13) + /api/newsletter endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_add_subscriber_dedupes_case_insensitive(self, test_db):
+        assert await db.add_subscriber("A@B.com", "footer") is True
+        assert await db.add_subscriber("a@b.com", "scorecard") is False
+        conn = db._get_db()
+        cur = await conn.execute("SELECT email, source FROM subscribers")
+        rows = [dict(r) for r in await cur.fetchall()]
+        assert rows == [{"email": "a@b.com", "source": "footer"}]
+
+    @pytest.mark.asyncio
+    async def test_schema_v13_creates_subscribers(self, test_db):
+        conn = db._get_db()
+        cur = await conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='subscribers'"
+        )
+        assert await cur.fetchone() is not None
+
+    def test_newsletter_endpoint_validates_email(self):
+        # No context manager: entering TestClient runs the app lifespan
+        # (real db init + model preload) and poisons global state for the
+        # rest of the suite — match the TestCheckoutReportEndpoint pattern.
+        from fastapi.testclient import TestClient
+        from backend.main import app
+
+        client = TestClient(app)
+        with patch("backend.main.db.add_subscriber", new=AsyncMock(return_value=True)) as mock_add:
+            ok = client.post("/api/newsletter", json={"email": "x@y.com", "source": "footer"})
+            assert ok.status_code == 200
+            assert ok.json() == {"ok": True, "added": True}
+            mock_add.assert_awaited_once_with("x@y.com", "footer")
+
+            bad = client.post("/api/newsletter", json={"email": "not-an-email"})
+            assert bad.status_code == 400
+            empty = client.post("/api/newsletter", json={})
+            assert empty.status_code == 400
