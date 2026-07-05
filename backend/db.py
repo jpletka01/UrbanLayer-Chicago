@@ -1366,7 +1366,7 @@ async def get_engagement_stats(period: str) -> dict:
 
     # Simple counts
     counts = {}
-    for ev_name in ("report_cta_click", "chat_message_sent", "page_view"):
+    for ev_name in ("report_cta_click", "chat_message_sent", "page_view", "sample_report_click"):
         cur = await db.execute(
             f"SELECT COUNT(*) as cnt FROM events {ev_where}",
             _ev_params(ev_name),
@@ -1487,12 +1487,67 @@ async def get_engagement_stats(period: str) -> dict:
     )
     page_views = {r["page"]: r["cnt"] for r in await cur.fetchall()}
 
+    # Acquisition funnel: distinct visitors reaching each step, in order.
+    # purchase_completed / subscription_started are webhook-written (never
+    # client-ingested), so the last step can't be inflated by a browser.
+    async def _distinct_visitors(*event_names: str) -> int:
+        placeholders = ",".join("?" for _ in event_names)
+        cur = await db.execute(
+            f"""
+            SELECT COUNT(DISTINCT visitor_id) as cnt FROM events
+            WHERE event_name IN ({placeholders}) {ts_filter}
+            """,
+            (*event_names, *params),
+        )
+        return (await cur.fetchone())["cnt"]
+
+    funnel = [
+        {"step": "visited", "visitors": unique_visitors},
+        {"step": "address_entered", "visitors": await _distinct_visitors("hero_address_submit")},
+        {"step": "scorecard_viewed", "visitors": await _distinct_visitors("scorecard_view")},
+        {"step": "engaged", "visitors": await _distinct_visitors(
+            "investigate_click", "chat_message_sent", "report_cta_click")},
+        {"step": "checkout_started", "visitors": await _distinct_visitors("checkout_started")},
+        {"step": "purchased", "visitors": await _distinct_visitors(
+            "purchase_completed", "subscription_started")},
+    ]
+
+    # Acquisition channels from visit_start attribution: utm_source, else
+    # referrer host, else "direct" — one channel per distinct visitor,
+    # taken from their earliest visit_start in the period.
+    cur = await db.execute(
+        f"""
+        SELECT visitor_id, event_data, MIN(created_at) as first_ts FROM events
+        WHERE event_name = 'visit_start' {ts_filter}
+        GROUP BY visitor_id
+        """,
+        params,
+    )
+    from urllib.parse import urlparse
+    channels: dict[str, int] = {}
+    for r in await cur.fetchall():
+        label = "direct"
+        try:
+            data = json.loads(r["event_data"]) if r["event_data"] else {}
+            first_touch = data.get("first_touch") or {}
+            utm = data.get("utm_source") or first_touch.get("utm_source")
+            ref = data.get("referrer") or first_touch.get("referrer")
+            if utm:
+                label = f"utm:{utm}"
+            elif ref:
+                label = urlparse(ref).netloc or "direct"
+        except Exception:
+            pass
+        channels[label] = channels.get(label, 0) + 1
+    channels = dict(sorted(channels.items(), key=lambda kv: kv[1], reverse=True))
+
     return {
         "investigate_clicks": investigate_clicks,
         "hero_address_submits": hero_address_submits,
         "hero_librarian_clicks": hero_librarian_clicks,
         "scorecard_bridge_clicks": scorecard_bridge_clicks,
         "report_cta_clicks": counts["report_cta_click"],
+        "sample_report_clicks": counts["sample_report_click"],
         "report_purchases_count": report_purchases_count,
         "chat_messages": counts["chat_message_sent"],
         "unique_visitors": unique_visitors,
@@ -1501,6 +1556,8 @@ async def get_engagement_stats(period: str) -> dict:
         "scorecard_to_chat_rate": scorecard_to_chat_rate,
         "return_rate_by_behavior": return_rate_by_behavior,
         "page_views": page_views,
+        "funnel": funnel,
+        "channels": channels,
     }
 
 

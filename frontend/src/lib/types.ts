@@ -830,6 +830,7 @@ export interface EngagementMetrics {
   hero_librarian_clicks: Record<string, number>;
   scorecard_bridge_clicks: Record<string, number>;
   report_cta_clicks: number;
+  sample_report_clicks: number;
   report_purchases_count: number;
   chat_messages: number;
   unique_visitors: number;
@@ -838,4 +839,11 @@ export interface EngagementMetrics {
   scorecard_to_chat_rate: number | null;
   return_rate_by_behavior: Record<string, BehaviorReturnRate>;
   page_views: Record<string, number>;
+  funnel: FunnelStep[];
+  channels: Record<string, number>;
+}
+
+export interface FunnelStep {
+  step: string;
+  visitors: number;
 }

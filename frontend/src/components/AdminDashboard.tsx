@@ -384,6 +384,56 @@ export function AdminDashboard() {
             {/* Row 7: Engagement */}
             {engagement && (
               <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+                    <h2 className="text-body font-semibold text-text-secondary mb-3">
+                      Acquisition Funnel
+                    </h2>
+                    {engagement.funnel?.some((s) => s.visitors > 0) ? (
+                      <div className="space-y-2 py-1">
+                        {engagement.funnel.map((s, i) => {
+                          const base = engagement.funnel[0].visitors || 1;
+                          const prev = i > 0 ? engagement.funnel[i - 1].visitors : null;
+                          const stepRate =
+                            prev != null && prev > 0 ? (s.visitors / prev) * 100 : null;
+                          return (
+                            <div key={s.step} className="flex items-center gap-2">
+                              <span className="w-32 shrink-0 text-caption text-text-secondary capitalize">
+                                {s.step.replace(/_/g, " ")}
+                              </span>
+                              <div className="flex-1 h-4 rounded bg-dark-elevated overflow-hidden">
+                                <div
+                                  className="h-full rounded bg-accent/80"
+                                  style={{ width: `${Math.max(s.visitors > 0 ? 1 : 0, (s.visitors / base) * 100)}%` }}
+                                />
+                              </div>
+                              <span className="w-10 shrink-0 text-right text-caption font-semibold text-text-primary">
+                                {s.visitors}
+                              </span>
+                              <span className="w-12 shrink-0 text-right text-micro text-text-muted">
+                                {i > 0 && stepRate != null ? `${stepRate.toFixed(0)}%` : ""}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-text-muted text-body text-center py-8">No data</div>
+                    )}
+                  </section>
+                  <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+                    <h2 className="text-body font-semibold text-text-secondary mb-3">
+                      Acquisition Channels
+                    </h2>
+                    {engagement.channels && Object.keys(engagement.channels).length > 0 ? (
+                      <BarChart
+                        bars={Object.entries(engagement.channels).map(([label, value]) => ({ label, value }))}
+                      />
+                    ) : (
+                      <div className="text-text-muted text-body text-center py-8">No data</div>
+                    )}
+                  </section>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <StatCard
                     label="Unique Visitors"
@@ -460,6 +510,14 @@ export function AdminDashboard() {
                             </span>
                           )}
                         </div>
+                      </div>
+                    )}
+                    {engagement.sample_report_clicks > 0 && (
+                      <div className="mt-3 pt-3 border-t border-dark-border flex items-center justify-between">
+                        <span className="text-body text-text-secondary">Sample Report Clicks</span>
+                        <span className="text-body font-semibold text-text-primary">
+                          {engagement.sample_report_clicks}
+                        </span>
                       </div>
                     )}
                   </section>

@@ -557,3 +557,82 @@ class TestFunnelEvents:
             "discovery_search", "signup_completed",
         ):
             assert name in _VALID_EVENT_NAMES
+
+
+class TestEngagementFunnel:
+    """Funnel + channel rollups in get_engagement_stats (growth instrumentation)."""
+
+    @staticmethod
+    def _ev(name: str, visitor: str, data: dict | None = None) -> dict:
+        return {
+            "session_id": f"s-{visitor}",
+            "visitor_id": visitor,
+            "user_id": None,
+            "event_name": name,
+            "event_data": data,
+            "page": "/",
+            "address": None,
+        }
+
+    @pytest.mark.asyncio
+    async def test_funnel_counts_distinct_visitors_per_step(self, test_db):
+        ev = self._ev
+        await db.save_events([
+            # v1 goes all the way to purchase
+            ev("visit_start", "v1"),
+            ev("hero_address_submit", "v1"),
+            ev("scorecard_view", "v1"),
+            ev("investigate_click", "v1"),
+            ev("checkout_started", "v1"),
+            ev("purchase_completed", "v1"),
+            # v2 views a scorecard twice (distinct count must be 1) and stops
+            ev("visit_start", "v2"),
+            ev("hero_address_submit", "v2"),
+            ev("scorecard_view", "v2"),
+            ev("scorecard_view", "v2"),
+            # v3 only lands
+            ev("visit_start", "v3"),
+        ])
+
+        stats = await db.get_engagement_stats("all")
+        funnel = {s["step"]: s["visitors"] for s in stats["funnel"]}
+        assert funnel["visited"] == 3
+        assert funnel["address_entered"] == 2
+        assert funnel["scorecard_viewed"] == 2
+        assert funnel["engaged"] == 1
+        assert funnel["checkout_started"] == 1
+        assert funnel["purchased"] == 1
+        # steps stay in funnel order
+        assert [s["step"] for s in stats["funnel"]] == [
+            "visited", "address_entered", "scorecard_viewed",
+            "engaged", "checkout_started", "purchased",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_channels_classify_utm_referrer_direct(self, test_db):
+        ev = self._ev
+        await db.save_events([
+            ev("visit_start", "v1", {"utm_source": "hn", "referrer": "https://news.ycombinator.com/"}),
+            ev("visit_start", "v2", {"referrer": "https://www.google.com/search?q=x"}),
+            ev("visit_start", "v3", {"referrer": None}),
+            ev("visit_start", "v4", {}),
+        ])
+
+        stats = await db.get_engagement_stats("all")
+        assert stats["channels"]["utm:hn"] == 1  # utm wins over referrer
+        assert stats["channels"]["www.google.com"] == 1
+        assert stats["channels"]["direct"] == 2
+
+    @pytest.mark.asyncio
+    async def test_channels_fall_back_to_first_touch(self, test_db):
+        stats_before = await db.get_engagement_stats("all")
+        assert stats_before["channels"] == {}
+
+        await db.save_events([
+            self._ev("visit_start", "v1", {
+                "referrer": None,
+                "first_touch": {"utm_source": "newsletter", "referrer": None},
+            }),
+        ])
+        stats = await db.get_engagement_stats("all")
+        assert stats["channels"] == {"utm:newsletter": 1}
