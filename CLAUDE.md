@@ -35,7 +35,7 @@ cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run b
                                                   # failure here SILENTLY SKIPS the deploy (prod stays on the old image).
                                                   # `tsc -b` enforces noUnusedLocals etc. that `tsc --noEmit` MISSES —
                                                   # an unused import passes --noEmit but fails the build/deploy (hit 2026-06-30).
-cd frontend && npm run test:mobile                # phone-layout gate: Playwright overflow audit, 7 routes × 5 devices
+cd frontend && npm run test:mobile                # phone-layout gate: Playwright overflow audit, 8 routes × 5 devices
                                                   # (360–430w). Run after layout work. `npm run test:mobile:report` = matrix.
                                                   # E2E_BASE_URL=https://urbanlayerchicago.com audits prod post-deploy.
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
