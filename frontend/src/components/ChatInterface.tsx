@@ -188,7 +188,10 @@ export function ChatInterface({
                 onSubmit={onSubmit}
                 disabled={streaming}
                 variant="compact"
-                placeholder={t("followUpPlaceholder")}
+                placeholder={
+                  // A fresh conversation has nothing to "follow up" on yet.
+                  messages.length === 0 ? t("chat:placeholder") : t("followUpPlaceholder")
+                }
                 initialValue={composerSeed}
                 attachments={attachments}
                 onAttach={onAttach}
