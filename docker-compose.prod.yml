@@ -33,6 +33,9 @@ services:
         VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN}
         VITE_API_BASE: ""
         NGINX_CONF: nginx.prod.conf
+        # Microsoft Clarity session replay (validation window, disclosed on
+        # /privacy). The ID is public — it ships in every page's HTML anyway.
+        VITE_CLARITY_ID: ${VITE_CLARITY_ID:-xhsx626r62}
     ports:
       - "80:80"
       - "443:443"
