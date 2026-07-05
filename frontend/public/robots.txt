@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /settings
+Disallow: /api/
+Disallow: /c/
+Disallow: /s/
+
+Sitemap: https://urbanlayerchicago.com/sitemap.xml

@@ -77,6 +77,11 @@ export function Footer() {
                 {t("footer.pricing")}
               </Link>
             </li>
+            <li>
+              <Link to="/privacy" className="hover:text-accent transition-colors">
+                {t("footer.privacy")}
+              </Link>
+            </li>
             <li className="text-text-muted text-xs">{t("footer.notAffiliated")}</li>
             <li className="text-text-muted text-xs">{t("footer.dataDelay")}</li>
           </ul>

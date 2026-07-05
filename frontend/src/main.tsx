@@ -17,12 +17,22 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 initTracking();
 
+// Microsoft Clarity session replay — validation-window instrumentation,
+// disclosed on /privacy. Inert unless a project ID is provided at build time.
+if (import.meta.env.VITE_CLARITY_ID) {
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = `https://www.clarity.ms/tag/${import.meta.env.VITE_CLARITY_ID}`;
+  document.head.appendChild(s);
+}
+
 import { App } from './App.tsx'
 import { AboutPage } from './components/AboutPage.tsx'
 import { AdminDashboard } from './components/AdminDashboard.tsx'
 import PricingPage from './components/PricingPage.tsx'
 import SettingsPage from './components/SettingsPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
+import { PrivacyPage } from './components/PrivacyPage.tsx'
 import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
@@ -57,6 +67,7 @@ createRoot(document.getElementById('root')!).render(
               </ProtectedRoute>
             } />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/admin" element={
               <ProtectedRoute tier="admin">
                 <AdminDashboard />
