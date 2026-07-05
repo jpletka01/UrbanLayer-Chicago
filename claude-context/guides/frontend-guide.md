@@ -138,3 +138,7 @@ Framer Motion used for splash animations and CountUp stats. Sidebar uses CSS pix
 - **Desktop** (768px+): Dual-pane, `SidebarPanel` with `hidden md:flex`. 2-tab Data/Sources with `DataMapLayout` stacking map + data cards. Drag-to-resize sidebar.
 - Hero title: `text-4xl md:text-5xl`.
 - Chat: `w-full` mobile, `w-[60%]` desktop (sidebar open).
+- **Regression gate**: `npm run test:mobile` (frontend) — Playwright horizontal-overflow audit, 7 routes ×
+  5 phone profiles (360–430w, WebKit for iPhones), names offending elements + saves screenshots. Prod-capable
+  via `E2E_BASE_URL`. Added 2026-07-05 after the hero's decorative `-inset-*` bleeds made the homepage scroll
+  sideways on every phone (fix idiom: `overflow-x-clip` on the section root). Details: `frontend/CLAUDE.md` → Responsive.

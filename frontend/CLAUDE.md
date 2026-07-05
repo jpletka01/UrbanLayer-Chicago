@@ -127,6 +127,16 @@ upside ramp also tints Discovery's list badges — same encoding as the map dots
 - **Desktop** (768px+): Dual-pane, `SidebarPanel` with `hidden md:flex`. 2-tab Data/Sources with `DataMapLayout` stacking map + data cards.
 - Hero title: `text-4xl md:text-5xl`.
 - Chat: `w-full` mobile, `w-[60%]` desktop (sidebar open).
+- **Mobile overflow audit** (`npm run test:mobile`, 2026-07-05): `e2e/mobile-overflow.spec.ts` +
+  `playwright.config.ts` — asserts no horizontal scroll on every route across a 5-device panel
+  (Galaxy S24 360w / iPhone SE 375w / Pixel 3 393w / iPhone 15 393w / iPhone 15 Pro Max 430w;
+  iPhones on WebKit, Androids on Chromium). Failures name the exact offending element; also flags
+  fixed-position chrome extending past the viewport (clips invisibly — scrollWidth can't see it).
+  Screenshots + JSON in `test-results/mobile-audit/`; new routes = one entry in the spec's `PAGES`.
+  **Lessons baked in:** decorative `absolute -inset-*` bleeds widen the page — fix with
+  `overflow-x-clip` on the *section root* (clip ≠ hidden: no scroll container, sticky survives),
+  not per-decoration; instant `scrollTo` jumps skip IntersectionObserver (CountUp/`whileInView`
+  read as dead when they're fine — the spec scrolls in steps for this reason).
 
 ## Commands
 
@@ -134,6 +144,9 @@ upside ramp also tints Discovery's list badges — same encoding as the map dots
 npm run dev          # dev server on :5173
 npx tsc --noEmit     # quick type check — weaker than the build; NOT what CI gates on
 npm test             # vitest unit/component tests (Property Discovery)
+npm run test:mobile  # Playwright horizontal-overflow audit: 7 routes × 5 phone profiles (needs dev stack up;
+                     # E2E_BASE_URL=https://urbanlayerchicago.com audits prod). Run after layout work on any
+                     # page surface. npm run test:mobile:report prints the device×page matrix + offenders.
 npm run build        # ⚠️ CI-PARITY GATE — run before pushing to main. = tsc -b (noUnusedLocals etc.) + vite build.
                      # CI's test job runs this and deploy has `needs: test`, so a build failure SILENTLY SKIPS the
                      # deploy (prod keeps serving the old image). `tsc --noEmit` misses errors `tsc -b` catches —

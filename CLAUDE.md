@@ -35,6 +35,9 @@ cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run b
                                                   # failure here SILENTLY SKIPS the deploy (prod stays on the old image).
                                                   # `tsc -b` enforces noUnusedLocals etc. that `tsc --noEmit` MISSES —
                                                   # an unused import passes --noEmit but fails the build/deploy (hit 2026-06-30).
+cd frontend && npm run test:mobile                # phone-layout gate: Playwright overflow audit, 7 routes × 5 devices
+                                                  # (360–430w). Run after layout work. `npm run test:mobile:report` = matrix.
+                                                  # E2E_BASE_URL=https://urbanlayerchicago.com audits prod post-deploy.
 PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge
 python -m eval.source_coverage --full http://localhost:8001  # data source coverage benchmark
 PYTHONPATH=. python -m eval.lot_coverage --full http://localhost:8001  # lot-info field completeness across the fixed 100-address panel (eval/lot_panel.json)
@@ -60,7 +63,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 - Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) run sub-queries in parallel via `asyncio.gather` with graceful degradation.
 - TTLCache used for all external API queries. Clear caches between tests via autouse fixture in `conftest.py`.
 - Frontend state: `useChat` hook owns SSE consumption. `App.tsx` is the state machine. Per-message context architecture (each assistant message stores its own context/plan/mapData).
-- Theming: light/dark themeable (CSS-var-backed Tailwind tokens; `system` default; `ThemeProvider`/`ThemeToggle`). Palette = "Cyanotype on Vellum" (azure accent on warm vellum neutrals; terracotta = premium `highlight` only). On branch `feat/light-dark-theming` (not yet merged). See `claude-context/guides/light-dark-theming.md` + `frontend/CLAUDE.md` before any color/token work.
+- Theming: light/dark themeable (CSS-var-backed Tailwind tokens; `system` default; `ThemeProvider`/`useTheme`). **Canonical design language = "Bento Pro"** (orange action accent + violet premium on near-black/warm-white neutrals). The earlier "Cyanotype on Vellum" palette is retired. See `claude-context/guides/bento-pro-redesign.md` + `bento-pro-phase3-app-surfaces.md` + `frontend/CLAUDE.md` before any color/token work; `design-system.md`/`light-dark-theming.md` are historical (theming *mechanics* still valid).
 - Tests: mock external APIs, mark real-API tests with `@pytest.mark.integration`.
 - Env vars: `.env` (ANTHROPIC_API_KEY, SOCRATA_APP_TOKEN, WALKSCORE_API_KEY), `frontend/.env` (VITE_MAPBOX_TOKEN).
 
