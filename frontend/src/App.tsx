@@ -782,7 +782,10 @@ export function App() {
                 Negative top-margin pulls it up under the sticky nav so the nav floats over it —
                 it must equal the nav's FLOW height (h-14; sticky top-3 shifts the stuck position,
                 not the flow slot), or the hero ends short of the fold by the difference. */}
-            <div className="relative bg-dark-bg -mt-14" data-theme="dark">
+            {/* overflow-x-clip: the hero's decorative bleeds (stat halos, preview bloom)
+                extend past the viewport on phones and widened the page (audit 2026-07-05).
+                clip (not hidden) — no scroll container, sticky/vertical flow unaffected. */}
+            <div className="relative bg-dark-bg -mt-14 overflow-x-clip" data-theme="dark">
               <HeroBackdrop />
 
               {/* Hero section — full viewport */}
@@ -840,7 +843,7 @@ export function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="flex justify-around px-4 md:px-8 pb-6 gap-2"
+                  className="grid grid-cols-2 gap-x-2 gap-y-7 justify-items-center sm:flex sm:justify-around sm:gap-2 px-4 md:px-8 pb-6"
                 >
                   {SPLASH_STATS.map((stat, i) => {
                     const labelKeys = ["stats.dataSources", "stats.codeSections", "stats.communityAreas", "stats.regulatoryLayers"];

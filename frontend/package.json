@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:mobile": "playwright test",
+    "test:mobile:report": "node e2e/mobile-audit-report.mjs"
   },
   "dependencies": {
     "@deck.gl/core": "^9.3.2",
