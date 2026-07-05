@@ -1,5 +1,6 @@
 import i18n from "./i18n";
 import { parseSSE } from "./sse";
+import { flush, getVisitorId, track } from "./tracking";
 import type {
   PinsResponse as DiscoveryPinsResponse,
   Registry as DiscoveryRegistry,
@@ -133,7 +134,13 @@ export function getSignInUrl(): string {
 // ---------------------------------------------------------------------------
 
 export async function createCheckoutSession(): Promise<{ url: string }> {
-  const resp = await authFetch(`${API_BASE}/api/checkout`, { method: "POST" });
+  track("checkout_started", { type: "subscription" });
+  flush(); // the page is about to redirect to Stripe
+  const resp = await authFetch(`${API_BASE}/api/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ visitor_id: getVisitorId() }),
+  });
   if (!resp.ok) throw new Error("Failed to create checkout session");
   return resp.json();
 }
@@ -151,6 +158,8 @@ export async function getSubscription(): Promise<{
 export async function createReportCheckoutSession(
   parcel: SelectedParcel,
 ): Promise<{ url: string }> {
+  track("checkout_started", { type: "report", pin: parcel.pin ?? null });
+  flush(); // the page is about to redirect to Stripe
   // pin+address+lat+lon travel together: lat/lon let the backend skip
   // re-resolution, address stays display-only metadata on the purchase row.
   const resp = await authFetch(`${API_BASE}/api/checkout/report`, {
@@ -162,6 +171,7 @@ export async function createReportCheckoutSession(
       lon: parcel.lon,
       pin: parcel.pin ?? undefined,
       language: i18n.language && i18n.language !== "en" ? i18n.language : undefined,
+      visitor_id: getVisitorId(),
     }),
   });
   if (!resp.ok) throw new Error("Failed to create report checkout session");

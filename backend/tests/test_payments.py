@@ -438,3 +438,122 @@ class TestStripeIntegration:
         user = await db.get_user_by_id("u1")
         assert user["tier"] == "free"
         assert user["stripe_subscription_id"] is None
+
+
+class TestFunnelEvents:
+    """Server-side analytics events for purchases (growth instrumentation)."""
+
+    @pytest.fixture
+    def _payment_settings(self):
+        settings = MagicMock()
+        settings.stripe_secret_key = "sk_test_x"
+        settings.stripe_price_id_report = "price_x"
+        settings.stripe_price_id_pro_monthly = "price_pro"
+        settings.frontend_url = "http://localhost:5173"
+        with patch("backend.payments.get_settings", return_value=settings):
+            yield settings
+
+    async def _events_named(self, name: str) -> list[dict]:
+        conn = db._get_db()
+        cur = await conn.execute(
+            "SELECT * FROM events WHERE event_name = ?", (name,)
+        )
+        return [dict(r) for r in await cur.fetchall()]
+
+    @pytest.mark.asyncio
+    async def test_visitor_id_rides_report_checkout_metadata(self, test_db, _payment_settings):
+        from backend.payments import create_report_checkout_session
+
+        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
+        user = await db.get_user_by_id("u1")
+
+        session = MagicMock(id="cs_vid", url="https://checkout.stripe.com/c/v")
+        with patch("stripe.checkout.Session.create", return_value=session) as mock_create:
+            await create_report_checkout_session(
+                user, "642 W Belden Ave", 41.9236, -87.6439, visitor_id="vis-123",
+            )
+        assert mock_create.call_args.kwargs["metadata"]["visitor_id"] == "vis-123"
+
+    @pytest.mark.asyncio
+    async def test_visitor_id_rides_subscription_checkout_metadata(self, test_db, _payment_settings):
+        from backend.payments import create_checkout_session
+
+        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
+        user = await db.get_user_by_id("u1")
+
+        session = MagicMock(url="https://checkout.stripe.com/c/s")
+        with patch("stripe.checkout.Session.create", return_value=session) as mock_create:
+            await create_checkout_session(user, visitor_id="vis-456")
+        assert mock_create.call_args.kwargs["metadata"]["visitor_id"] == "vis-456"
+
+    @pytest.mark.asyncio
+    async def test_report_purchase_webhook_writes_purchase_event(self, test_db, _payment_settings):
+        from backend import payments
+        from backend.payments import create_report_checkout_session
+
+        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
+        user = await db.get_user_by_id("u1")
+        session = MagicMock(id="cs_evt", url="https://checkout.stripe.com/c/e")
+        with patch("stripe.checkout.Session.create", return_value=session):
+            await create_report_checkout_session(
+                user, "642 W Belden Ave", 41.9236, -87.6439,
+                pin="14331030110000", visitor_id="vis-789",
+            )
+
+        await payments._handle_report_purchase_completed({
+            "id": "cs_evt",
+            "payment_intent": "pi_x",
+            "customer": "cus_x",
+            "amount_total": 2500,
+            "metadata": {
+                "user_id": "u1",
+                "purchase_type": "report",
+                "address": "642 W Belden Ave",
+                "pin": "14331030110000",
+                "visitor_id": "vis-789",
+            },
+        })
+
+        events = await self._events_named("purchase_completed")
+        assert len(events) == 1
+        ev = events[0]
+        assert ev["visitor_id"] == "vis-789"
+        assert ev["user_id"] == "u1"
+        assert ev["address"] == "642 W Belden Ave"
+        import json as json_mod
+        data = json_mod.loads(ev["event_data"])
+        assert data["purchase_type"] == "report"
+        assert data["amount_total"] == 2500
+        assert data["pin"] == "14331030110000"
+
+    @pytest.mark.asyncio
+    async def test_subscription_webhook_writes_subscription_event(self, test_db, _payment_settings):
+        from backend import payments
+
+        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
+        await payments._handle_checkout_completed({
+            "metadata": {"user_id": "u1", "visitor_id": "vis-sub"},
+            "customer": "cus_sub",
+            "subscription": "sub_x",
+            "amount_total": 9900,
+        })
+
+        events = await self._events_named("subscription_started")
+        assert len(events) == 1
+        assert events[0]["visitor_id"] == "vis-sub"
+        assert events[0]["user_id"] == "u1"
+
+    def test_money_events_not_client_ingestable(self):
+        """The browser allowlist must never accept money events — the Stripe
+        webhook is their only writer, so the funnel's purchase step can't be
+        spoofed by a client."""
+        from backend.main import _VALID_EVENT_NAMES
+
+        assert "purchase_completed" not in _VALID_EVENT_NAMES
+        assert "subscription_started" not in _VALID_EVENT_NAMES
+        # ...and the new client-side funnel events ARE accepted.
+        for name in (
+            "visit_start", "scorecard_view", "checkout_started",
+            "discovery_search", "signup_completed",
+        ):
+            assert name in _VALID_EVENT_NAMES

@@ -283,7 +283,14 @@ export default function ScorecardPage() {
     const result = await select(query);
     if (result) {
       setData(result);
-      if (result.address) setAddress(result.address);
+      if (result.address) {
+        setAddress(result.address);
+        setTrackingAddress(result.address);
+      }
+      track("scorecard_view", {
+        confidence: result.resolved_confidence,
+        pin_resolved: !!result.resolved_pin,
+      });
       // Canonicalize the URL on a confirmed parcel; pin-less results keep
       // their original params. report_purchased survives the rewrite so the
       // post-purchase auto-download still fires.

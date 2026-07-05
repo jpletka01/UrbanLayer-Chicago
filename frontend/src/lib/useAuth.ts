@@ -7,6 +7,7 @@ import {
   logout as apiLogout,
   refreshAuthToken,
 } from "./api";
+import { track } from "./tracking";
 
 export interface UseAuth {
   user: AuthUser | null;
@@ -29,6 +30,16 @@ export function useAuth(): UseAuth {
     setUser(status.user);
     setIsAuthenticated(status.authenticated);
     setAuthRequired(status.auth_required);
+    // A sign-in initiated this session just completed (OAuth redirect returned).
+    // The server attaches user_id to events, so this one stitches visitor→user.
+    try {
+      if (status.authenticated && sessionStorage.getItem("ul_signin_pending")) {
+        sessionStorage.removeItem("ul_signin_pending");
+        track("signup_completed");
+      }
+    } catch {
+      // never let tracking break auth
+    }
   }, []);
 
   const checkAuth = useCallback(async () => {
@@ -67,6 +78,11 @@ export function useAuth(): UseAuth {
   }, [checkAuth]);
 
   const signIn = useCallback(() => {
+    try {
+      sessionStorage.setItem("ul_signin_pending", "1");
+    } catch {
+      // never let tracking break auth
+    }
     window.location.href = getSignInUrl();
   }, []);
 

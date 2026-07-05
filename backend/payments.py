@@ -19,8 +19,12 @@ def _configure_stripe() -> None:
     stripe.api_key = s.stripe_secret_key
 
 
-async def create_checkout_session(user: dict) -> str:
-    """Create a Stripe Checkout session and return the URL."""
+async def create_checkout_session(user: dict, visitor_id: str | None = None) -> str:
+    """Create a Stripe Checkout session and return the URL.
+
+    ``visitor_id`` (analytics) rides the session metadata so the webhook can
+    attribute the completed purchase to the originating visitor's funnel.
+    """
     _configure_stripe()
     s = get_settings()
 
@@ -32,7 +36,10 @@ async def create_checkout_session(user: dict) -> str:
         "line_items": [{"price": s.stripe_price_id_pro_monthly, "quantity": 1}],
         "success_url": f"{s.frontend_url}/?checkout=success",
         "cancel_url": f"{s.frontend_url}/pricing",
-        "metadata": {"user_id": user["id"]},
+        "metadata": {
+            "user_id": user["id"],
+            **({"visitor_id": visitor_id} if visitor_id else {}),
+        },
     }
 
     if user.get("stripe_customer_id"):
@@ -62,7 +69,7 @@ async def create_billing_portal_session(user: dict) -> str:
 
 async def create_report_checkout_session(
     user: dict, address: str | None, lat: float, lon: float,
-    pin: str | None = None,
+    pin: str | None = None, visitor_id: str | None = None,
 ) -> str:
     """Create a one-time Stripe Checkout session for a single report ($25).
 
@@ -91,6 +98,7 @@ async def create_report_checkout_session(
             "lat": str(round(lat, 4)),
             "lon": str(round(lon, 4)),
             **({"pin": pin} if pin else {}),
+            **({"visitor_id": visitor_id} if visitor_id else {}),
         },
     }
 
@@ -167,6 +175,7 @@ async def _handle_subscription_checkout_completed(session: dict) -> None:
     await db.update_user_stripe(user_id, customer_id, subscription_id)
     await db.update_user_tier(user_id, "premium")
     log.info("User %s upgraded to premium (customer=%s)", user_id, customer_id)
+    await _save_money_event("subscription_started", session)
 
 
 async def _handle_report_purchase_completed(session: dict) -> None:
@@ -192,6 +201,30 @@ async def _handle_report_purchase_completed(session: dict) -> None:
         "Report purchased: user=%s address=%s session=%s",
         user_id, address, session_id,
     )
+    await _save_money_event("purchase_completed", session)
+
+
+async def _save_money_event(event_name: str, session: dict) -> None:
+    """Write a server-side analytics event for a completed Stripe purchase.
+
+    Money events are never accepted from the browser (main.py allowlist
+    excludes them) — the webhook is the only writer, so the funnel's
+    purchase step can't be spoofed. save_events never raises.
+    """
+    metadata = session.get("metadata", {})
+    await db.save_events([{
+        "session_id": session.get("id") or "stripe",
+        "visitor_id": metadata.get("visitor_id"),
+        "user_id": metadata.get("user_id"),
+        "event_name": event_name,
+        "event_data": {
+            "purchase_type": metadata.get("purchase_type", "subscription"),
+            "amount_total": session.get("amount_total"),
+            **({"pin": metadata["pin"]} if metadata.get("pin") else {}),
+        },
+        "page": None,
+        "address": metadata.get("address") or None,
+    }])
 
 
 async def _handle_subscription_updated(subscription: dict) -> None:

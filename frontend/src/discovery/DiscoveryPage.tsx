@@ -17,6 +17,7 @@ import { RecipeShelf } from "./RecipeShelf";
 import { missingFieldsFor } from "./coverage";
 import { loadRegistry } from "./registryClient";
 import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
+import { track } from "../lib/tracking";
 import { summarize, seamPrompt } from "./summary";
 import { expandTopic, panelFromCqs } from "./topicCompiler";
 import type {
@@ -84,6 +85,12 @@ export default function DiscoveryPage() {
       // List + map fetched in parallel: list is the paginated window; map is the full
       // ordered coord set. They share the same request envelope → sequence-consistent.
       const [resp, pins] = await Promise.all([runSearch(inputs, registry), runPins(inputs, registry)]);
+      track("discovery_search", {
+        topic_id: tid,
+        has_text: !!txt,
+        total: resp?.result.total ?? null,
+        gated: resp?.result.gated ?? null,
+      });
       setResponse(resp);
       setRows(resp?.result.rows ?? []);
       setNextOffset(resp?.result.nextOffset ?? null);

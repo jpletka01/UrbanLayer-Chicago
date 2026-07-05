@@ -16,13 +16,63 @@ function getSessionId(): string {
   return id;
 }
 
-function getVisitorId(): string {
+export function getVisitorId(): string {
   let id = localStorage.getItem(VISITOR_KEY);
   if (!id) {
     id = uuid();
     localStorage.setItem(VISITOR_KEY, id);
   }
   return id;
+}
+
+const FIRST_TOUCH_KEY = "ul_first_touch";
+const VISIT_TRACKED_KEY = "ul_visit_tracked";
+
+interface Attribution {
+  referrer: string | null;
+  landing: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_term: string | null;
+  utm_content: string | null;
+  ts: number;
+}
+
+function captureAttribution(): Attribution {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    referrer: document.referrer || null,
+    landing: window.location.pathname + window.location.search,
+    utm_source: params.get("utm_source"),
+    utm_medium: params.get("utm_medium"),
+    utm_campaign: params.get("utm_campaign"),
+    utm_term: params.get("utm_term"),
+    utm_content: params.get("utm_content"),
+    ts: Date.now(),
+  };
+}
+
+/** Once per session: fire visit_start with the current touch + the stored
+ *  first touch, so channel attribution covers both new and returning visits. */
+function trackVisitStart(): void {
+  try {
+    if (sessionStorage.getItem(VISIT_TRACKED_KEY)) return;
+    sessionStorage.setItem(VISIT_TRACKED_KEY, "1");
+
+    const current = captureAttribution();
+    let firstTouch: Attribution | null = null;
+    const stored = localStorage.getItem(FIRST_TOUCH_KEY);
+    if (stored) {
+      firstTouch = JSON.parse(stored) as Attribution;
+    } else {
+      firstTouch = current;
+      localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(current));
+    }
+    track("visit_start", { ...current, first_touch: firstTouch });
+  } catch {
+    // never throw
+  }
 }
 
 interface TrackEvent {
@@ -117,4 +167,5 @@ export function initTracking(): void {
     if (document.visibilityState === "hidden") flush();
   });
   window.addEventListener("pagehide", flush);
+  trackVisitStart();
 }

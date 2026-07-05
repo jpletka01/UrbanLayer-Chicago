@@ -4703,7 +4703,11 @@ async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
 @app.post("/api/checkout")
 async def checkout(request: Request, user: dict = Depends(require_auth)) -> dict:
     from backend.payments import create_checkout_session
-    url = await create_checkout_session(user)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    url = await create_checkout_session(user, visitor_id=body.get("visitor_id"))
     return {"url": url}
 
 
@@ -4726,7 +4730,8 @@ async def checkout_report(request: Request, user: dict = Depends(require_auth)) 
         lat, lon = rl.lat, rl.lon
         address = address or rl.address
     url = await create_report_checkout_session(
-        user, address, float(lat), float(lon), pin=pin
+        user, address, float(lat), float(lon), pin=pin,
+        visitor_id=body.get("visitor_id"),
     )
     return {"url": url}
 
@@ -4902,6 +4907,14 @@ _VALID_EVENT_NAMES = {
     "hero_address_submit",
     "hero_librarian_click",
     "sample_report_click",
+    "visit_start",
+    "scorecard_view",
+    "checkout_started",
+    "discovery_search",
+    "signup_completed",
+    # NOTE: purchase_completed / subscription_started are deliberately NOT
+    # accepted here — money events are written server-side by the Stripe
+    # webhook (payments.py) so a browser can't spoof them into the funnel.
 }
 
 
