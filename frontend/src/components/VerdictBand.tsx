@@ -56,12 +56,16 @@ export interface VerdictBandProps {
   /** Parcel identity zone (locator, address, PIN, badges, page actions) —
    *  rendered inside the card, above the verdict, under one chrome. */
   header?: ReactNode;
+  /** Quiet bottom strip inside the card chrome (accuracy feedback) — the
+   *  verdict is the claim, so the "is this accurate?" affordance lives with
+   *  it, not orphaned at the page bottom. */
+  footer?: ReactNode;
   tiles?: VerdictTile[];
   onChat: (question: string) => void;
   onScrollTo: (anchor: CardId) => void;
 }
 
-export function VerdictBand({ verdict, header, tiles, onChat, onScrollTo }: VerdictBandProps) {
+export function VerdictBand({ verdict, header, footer, tiles, onChat, onScrollTo }: VerdictBandProps) {
   const { t } = useTranslation("pages");
   const tone = TONE[verdict.category];
 
@@ -186,6 +190,8 @@ export function VerdictBand({ verdict, header, tiles, onChat, onScrollTo }: Verd
         </div>
       )}
       </div>
+
+      {footer && <div className="px-5 py-2.5 border-t border-dark-border">{footer}</div>}
     </section>
   );
 }

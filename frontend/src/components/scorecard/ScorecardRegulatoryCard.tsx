@@ -96,9 +96,15 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
   );
 }
 
+// Content budget: the module's height must not track overlay volume (the old
+// "card = data source, height = data volume" model is what left its pair card
+// with a dead-space flank). Top-N rows always visible, the tail discloses.
+const CONSTRAINT_BUDGET = 6;
+
 export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
   const { t } = useTranslation("data");
   const [showAroProjects, setShowAroProjects] = useState(false);
+  const [showAllConstraints, setShowAllConstraints] = useState(false);
 
   // Same dedup as the sidebar card: status flags that restate an overlay are dropped.
   const overlayCores = new Set(data.overlays.map((ov) => flagCore(ov.layer_type)));
@@ -155,8 +161,19 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
               {t("regulatory.constraints")}
             </div>
             <div className="space-y-2">
-              {constraints.map((r) => <OverlayRowView key={r.key} row={r} />)}
+              {(showAllConstraints ? constraints : constraints.slice(0, CONSTRAINT_BUDGET)).map((r) => (
+                <OverlayRowView key={r.key} row={r} />
+              ))}
             </div>
+            {constraints.length > CONSTRAINT_BUDGET && !showAllConstraints && (
+              <button
+                type="button"
+                onClick={() => setShowAllConstraints(true)}
+                className="mt-2 text-caption text-text-muted hover:text-text-secondary transition-colors"
+              >
+                {t("regulatory.moreConstraints", { count: constraints.length - CONSTRAINT_BUDGET })}
+              </button>
+            )}
           </div>
         )}
 

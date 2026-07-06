@@ -426,6 +426,31 @@ export function App() {
     if (heldScorecard?.resolved_pin !== pin) selectParcel({ pin });
   }, [searchParams, conversationIdFromUrl, shareTokenFromUrl, heldScorecard]);
 
+  // Quick-chat dock escalation: the Scorecard's MiniChatDock stashes its
+  // ephemeral transcript in sessionStorage and navigates here (/?pin= for the
+  // grounding door). Seed those turns into the workspace so the conversation
+  // continues instead of restarting — from this point it lives (and persists)
+  // like any other conversation. Consumed exactly once; a stale handoff never
+  // overwrites an active chat.
+  const dockHandoffConsumedRef = useRef(false);
+  useEffect(() => {
+    if (dockHandoffConsumedRef.current) return;
+    if (conversationIdFromUrl || shareTokenFromUrl) return;
+    let seeded: { role: "user" | "assistant"; content: string }[] | null = null;
+    try {
+      const raw = sessionStorage.getItem("ul_dock_handoff");
+      if (!raw) return;
+      sessionStorage.removeItem("ul_dock_handoff");
+      seeded = JSON.parse(raw).messages ?? null;
+    } catch {
+      return;
+    }
+    dockHandoffConsumedRef.current = true;
+    if (!seeded?.length || messages.length > 0 || streaming) return;
+    setComposing(true);
+    setMessages(seeded.map((m) => ({ role: m.role, content: m.content })));
+  }, [conversationIdFromUrl, shareTokenFromUrl, messages.length, streaming]);
+
   // Bare ?ask=1 — the labeled "Ask the analyst" door (Home hero + page nav).
   // Opens an EMPTY, UNGROUNDED chat: the user hasn't named a parcel here, so
   // clear any sticky grounding left from a prior in-session conversation and just

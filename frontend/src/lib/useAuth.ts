@@ -36,6 +36,11 @@ export function useAuth(): UseAuth {
       if (status.authenticated && sessionStorage.getItem("ul_signin_pending")) {
         sessionStorage.removeItem("ul_signin_pending");
         track("signup_completed");
+        // Sign-in is the natural moment to ask "what best describes you" —
+        // SegmentPrompt (global) picks this flag up. Never re-ask an answer.
+        if (!localStorage.getItem("ul_segment")) {
+          sessionStorage.setItem("ul_segment_due", "1");
+        }
       }
     } catch {
       // never let tracking break auth

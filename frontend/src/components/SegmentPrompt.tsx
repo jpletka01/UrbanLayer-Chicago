@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { track } from "../lib/tracking";
+import { useAuthContext } from "../contexts/AuthContext";
+import { Modal } from "./ui/Modal";
 
 // One-question segment self-identification — the single highest-value datum
-// for customer validation ("who is actually showing up?"). Asks once per
-// browser; an answer or a dismiss both silence it permanently.
+// for customer validation ("who is actually showing up?"). Asked ONCE, at the
+// moment it belongs to: right after a sign-in completes (useAuth sets
+// `ul_segment_due` on the OAuth return). Mounted globally in main.tsx — it
+// renders nothing unless that flag is set and no answer is stored. An answer
+// or a dismiss both silence it permanently.
 
 const SEGMENTS = [
   "developer",
@@ -17,81 +22,55 @@ const SEGMENTS = [
 ] as const;
 
 const STORAGE_KEY = "ul_segment";
-
-function storedState(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return "unavailable";
-  }
-}
+const DUE_KEY = "ul_segment_due";
 
 export function SegmentPrompt() {
   const { t } = useTranslation("pages");
-  const [state, setState] = useState<"open" | "thanks" | "hidden">(() =>
-    storedState() ? "hidden" : "open",
-  );
+  const { isAuthenticated } = useAuthContext();
+  const [open, setOpen] = useState(false);
 
-  if (state === "hidden") return null;
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    try {
+      if (sessionStorage.getItem(DUE_KEY) && !localStorage.getItem(STORAGE_KEY)) {
+        setOpen(true);
+      }
+    } catch {
+      // storage unavailable → never prompt
+    }
+  }, [isAuthenticated]);
 
-  const remember = (value: string) => {
+  if (!open) return null;
+
+  const settle = (value: string) => {
     try {
       localStorage.setItem(STORAGE_KEY, value);
+      sessionStorage.removeItem(DUE_KEY);
     } catch {
-      // still track; just may re-ask next visit
+      // still track; just may re-ask next sign-in
     }
+    track("segment_selected", { segment: value });
+    setOpen(false);
   };
-
-  const choose = (segment: string) => {
-    remember(segment);
-    track("segment_selected", { segment });
-    setState("thanks");
-  };
-
-  const dismiss = () => {
-    remember("dismissed");
-    track("segment_selected", { segment: "dismissed" });
-    setState("hidden");
-  };
-
-  if (state === "thanks") {
-    return (
-      <div className="mt-6 rounded-bento-sm border border-dark-border bg-dark-surface px-4 py-3 text-caption text-text-secondary">
-        {t("scorecard.segmentPrompt.thanks")}
-      </div>
-    );
-  }
 
   return (
-    <div className="mt-6 rounded-bento-sm border border-dark-border bg-dark-surface px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-caption font-semibold text-text-primary">
-            {t("scorecard.segmentPrompt.question")}
-          </p>
-          <p className="text-micro text-text-muted mt-0.5">
-            {t("scorecard.segmentPrompt.hint")}
-          </p>
-        </div>
-        <button
-          onClick={dismiss}
-          aria-label={t("scorecard.segmentPrompt.dismiss")}
-          className="shrink-0 text-text-muted hover:text-text-secondary transition-colors leading-none text-lg"
-        >
-          ×
-        </button>
-      </div>
-      <div className="flex flex-wrap gap-2 mt-3">
+    <Modal
+      onClose={() => settle("dismissed")}
+      title={t("scorecard.segmentPrompt.question")}
+      description={t("scorecard.segmentPrompt.hint")}
+      size="md"
+    >
+      <div className="flex flex-wrap gap-2 mt-1">
         {SEGMENTS.map((s) => (
           <button
             key={s}
-            onClick={() => choose(s)}
-            className="rounded-md border border-dark-border px-2.5 py-1 text-caption text-text-secondary hover:border-accent hover:text-text-primary transition-colors"
+            onClick={() => settle(s)}
+            className="rounded-md border border-dark-border px-3 py-1.5 text-caption text-text-secondary hover:border-accent hover:text-text-primary transition-colors"
           >
             {t(`scorecard.segmentPrompt.options.${s}`)}
           </button>
         ))}
       </div>
-    </div>
+    </Modal>
   );
 }

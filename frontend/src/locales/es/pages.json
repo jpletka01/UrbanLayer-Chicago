@@ -273,6 +273,17 @@
       "submit": "Enviar",
       "thanks": "Gracias — los errores de datos se corrigen rápido."
     },
+    "dock": {
+      "open": "Preguntar",
+      "title": "Preguntas rápidas",
+      "groundedOn": "Respuestas sobre {{address}}",
+      "notSaved": "no se guarda",
+      "startersHint": "Pregunta lo que quieras sobre esta parcela, o empieza con una de estas:",
+      "placeholder": "Pregunta sobre esta parcela…",
+      "send": "Enviar",
+      "escalate": "Continuar en el analista completo",
+      "minimize": "Minimizar"
+    },
     "thisArea": "esta zona",
     "crimeAreaScope": "En {{area}} · últimos 90 días — no esta parcela",
     "wardLabel": "Distrito {{ward}}",

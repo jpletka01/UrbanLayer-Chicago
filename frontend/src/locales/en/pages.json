@@ -273,6 +273,17 @@
       "submit": "Send",
       "thanks": "Thanks — data bugs get fixed fast."
     },
+    "dock": {
+      "open": "Ask",
+      "title": "Quick questions",
+      "groundedOn": "Answers about {{address}}",
+      "notSaved": "not saved",
+      "startersHint": "Ask anything about this parcel, or start from one of these:",
+      "placeholder": "Ask about this parcel…",
+      "send": "Send",
+      "escalate": "Continue in the full analyst",
+      "minimize": "Minimize"
+    },
     "thisArea": "this area",
     "crimeAreaScope": "Across {{area}} · last 90 days — not this parcel",
     "wardLabel": "Ward {{ward}}",

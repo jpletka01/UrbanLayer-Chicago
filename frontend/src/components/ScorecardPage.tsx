@@ -23,8 +23,8 @@ import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
 import { AddressInput } from "./AddressInput";
-import { SegmentPrompt } from "./SegmentPrompt";
 import { ScorecardFeedback } from "./ScorecardFeedback";
+import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
@@ -453,9 +453,17 @@ export default function ScorecardPage() {
   const scrollToCard = (anchor: CardId) => {
     document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  // Quick-chat dock: every on-page ask (investigate chips, verdict next-step,
+  // the header ask button) opens/sends in the dock instead of navigating away.
+  // The full workspace stays reachable through the dock's escalation link.
+  const [dockSignal, setDockSignal] = useState<DockSignal | null>(null);
+  const askDock = (question: string | null) =>
+    setDockSignal({ question, id: Date.now() });
+
   const verdictChat = (question: string) => {
     track("investigate_click", { card_name: "verdict" });
-    navigate(`/?q=${encodeURIComponent(question)}${parcel?.pin ? `&pin=${parcel.pin}` : ""}`);
+    askDock(question);
   };
 
   return (
@@ -555,6 +563,7 @@ export default function ScorecardPage() {
                   tiles={tiles}
                   onChat={verdictChat}
                   onScrollTo={scrollToCard}
+                  footer={<ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />}
                   header={
                     <div className="flex gap-4 items-start">
                       <MapThumb lat={data.lat} lon={data.lon} address={data.address || ctx.property?.address || ""} />
@@ -620,15 +629,15 @@ export default function ScorecardPage() {
                             language), grouped so neither floats alone. Solid
                             orange stays reserved for the verdict's next step. */}
                         <div className="flex flex-wrap gap-2 mt-3 items-center">
-                          {/* Open-ended chat entry: lands on the grounded "Ask
-                              about this property" starters (no auto-send).
-                              Pin-only — the workspace hydrates grounding. */}
+                          {/* Open-ended ask: opens the quick-chat dock (empty,
+                              starters showing) — answers arrive in place. The
+                              full workspace is the dock's escalation link. */}
                           {parcel?.pin && (
                             <button
                               type="button"
                               onClick={() => {
                                 track("investigate_click", { card_name: "ask_about_property" });
-                                navigate(`/?pin=${parcel.pin}`);
+                                askDock(null);
                               }}
                               className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
                             >
@@ -701,7 +710,7 @@ export default function ScorecardPage() {
 
             {/* §1 — What you can build */}
             <SectionHeader title={t("scorecard.sections.capacityTitle")} subtitle={t("scorecard.sections.capacitySub")} />
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 md:items-start">
               {zdef && (
                 <div id="scorecard-card-zoning" className="scroll-mt-24 flex flex-col">
                   <ScorecardZoningCard
@@ -718,6 +727,7 @@ export default function ScorecardPage() {
                       label={t("scorecard.zoningRules", { zone: zdef.zone_class })}
                       cardName="zoning"
                       pin={parcel?.pin}
+                      onAsk={askDock}
                     />
                   </div>
                 </div>
@@ -732,6 +742,7 @@ export default function ScorecardPage() {
                       label={t("scorecard.investigate.overlayRestrictions")}
                       cardName="regulatory"
                       pin={parcel?.pin}
+                      onAsk={askDock}
                     />
                   </div>
                 </div>
@@ -740,7 +751,7 @@ export default function ScorecardPage() {
 
             {/* §2 — What it costs */}
             <SectionHeader title={t("scorecard.sections.economicsTitle")} subtitle={t("scorecard.sections.economicsSub")} />
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 md:items-start">
               {ctx.property && (
                 <div id="scorecard-card-property" className="scroll-mt-24 flex flex-col">
                   <ScorecardPropertyCard data={ctx.property} />
@@ -751,6 +762,7 @@ export default function ScorecardPage() {
                       label={t("scorecard.investigate.buildingDetails")}
                       cardName="property"
                       pin={parcel?.pin}
+                      onAsk={askDock}
                     />
                   </div>
                 </div>
@@ -766,6 +778,7 @@ export default function ScorecardPage() {
                         label={t("scorecard.investigate.comparableSales")}
                         cardName="comparables"
                         pin={parcel?.pin}
+                        onAsk={askDock}
                       />
                     </div>
                   </div>
@@ -785,6 +798,7 @@ export default function ScorecardPage() {
                           : t("scorecard.investigate.incentivePrograms")}
                         cardName="incentives"
                         pin={parcel?.pin}
+                        onAsk={askDock}
                       />
                     </div>
                   </div>
@@ -794,7 +808,7 @@ export default function ScorecardPage() {
 
             {/* §3 — What to watch for */}
             <SectionHeader title={t("scorecard.sections.riskTitle")} subtitle={t("scorecard.sections.riskSub")} />
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 md:items-start">
               <div className="flex flex-col gap-4">
                 {/* Violations tri-state: a record at this address, a confirmed
                     "none on record" (clean — lookup ran, zero rows), or nothing
@@ -811,6 +825,7 @@ export default function ScorecardPage() {
                           label={t("scorecard.investigate.violationDetails")}
                           cardName="violations"
                           pin={parcel?.pin}
+                          onAsk={askDock}
                         />
                       </div>
                     )}
@@ -834,6 +849,7 @@ export default function ScorecardPage() {
                           label={t("scorecard.investigate.overlaysAndFlood")}
                           cardName="environment"
                           pin={parcel?.pin}
+                          onAsk={askDock}
                         />
                       </div>
                     )}
@@ -851,6 +867,7 @@ export default function ScorecardPage() {
                       label={t("scorecard.investigate.complaints311")}
                       cardName="311"
                       pin={parcel?.pin}
+                      onAsk={askDock}
                     />
                   </div>
                 </div>
@@ -885,6 +902,7 @@ export default function ScorecardPage() {
                           label={t("scorecard.investigate.crimeAnalysis")}
                           cardName="crime"
                           pin={parcel?.pin}
+                          onAsk={askDock}
                         />
                       </div>
                     </div>
@@ -899,6 +917,7 @@ export default function ScorecardPage() {
                           label={t("scorecard.investigate.neighborhoodOverview")}
                           cardName="neighborhood"
                           pin={parcel?.pin}
+                          onAsk={askDock}
                         />
                       </div>
                     </div>
@@ -907,14 +926,16 @@ export default function ScorecardPage() {
               </details>
             )}
 
-            {/* Validation instrumentation: one-time segment ask + per-parcel
-                accuracy feedback. Quiet, bottom-of-page, dismissible. */}
-            <SegmentPrompt />
-            <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />
           </div>
         )}
 
       </main>
+
+      {/* Quick-chat dock — keyed per parcel so a new address opens fresh
+          (ephemeral by design; escalation carries the transcript out). */}
+      {data && ctx && !loading && (
+        <MiniChatDock key={data.resolved_pin ?? data.address ?? "parcel"} data={data} signal={dockSignal} />
+      )}
 
       {showPurchasePrompt && data && parcel && (
         <ReportPurchasePrompt

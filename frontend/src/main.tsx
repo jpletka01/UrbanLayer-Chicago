@@ -48,6 +48,7 @@ import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { SelectedParcelProvider } from './contexts/SelectedParcelContext.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
+import { SegmentPrompt } from './components/SegmentPrompt.tsx'
 
 function TrackPageView() {
   const { pathname } = useLocation();
@@ -62,6 +63,9 @@ createRoot(document.getElementById('root')!).render(
         <AuthProvider>
           <SelectedParcelProvider>
           <TrackPageView />
+          {/* Post-sign-in "what best describes you" — renders nothing unless
+              a sign-in just completed and no segment is stored. */}
+          <SegmentPrompt />
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/c/:id" element={<App />} />
