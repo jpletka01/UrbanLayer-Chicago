@@ -89,7 +89,10 @@ export function buildScorecardCSV(ctx: ContextObject, address: string, comparabl
       { field: "Half Baths", value: p.half_baths ?? "" },
       { field: "Building Age", value: p.bldg_age ?? "" },
       { field: "Total Assessed Value", value: p.total_assessed_value ?? "" },
+      { field: "Implied Market Value", value: p.implied_market_value ?? "" },
       { field: "Estimated Annual Tax", value: p.estimated_annual_tax ?? "" },
+      { field: "Tax Year", value: p.tax_year ?? "" },
+      { field: "Effective Tax Rate", value: p.effective_tax_rate != null ? `${(p.effective_tax_rate * 100).toFixed(2)}%` : "" },
     ];
     addSection(parts, "Property Summary", toCSV(kvRows, [
       { key: "field", header: "Field" },

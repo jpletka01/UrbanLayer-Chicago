@@ -895,8 +895,8 @@ a.glossary-link {
     {% if prop.tax_exempt %}<dt>{{ t("prop.tax_status") }}</dt><dd><strong>{{ t("prop.tax_exempt_value") }}</strong>{{ t("prop.tax_exempt_class") }}{% if prop.bldg_class %} — {{ prop.bldg_class }}{% endif %}</dd>{% endif %}
     {% if not prop.tax_exempt %}
     {% if prop.total_assessed_value %}<dt>{{ t("prop.assessed_value") }}</dt><dd>{{ prop.total_assessed_value|fcur }}</dd>{% endif %}
-    {% if report.market_value %}<dt>{{ t("prop.market_value") }}</dt><dd>{{ report.market_value|fcur }} <span style="font-size: 7pt; color: #888;">{{ t("prop.market_value_hint") }}</span></dd>{% endif %}
-    {% if prop.estimated_annual_tax %}<dt>{{ t("prop.annual_tax") }}</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.tax_fallback_hint") }}</span>{% endif %}</dd>{% endif %}
+    {% if report.market_value %}<dt>{{ t("prop.market_value") }}</dt><dd>{{ report.market_value|fcur }} <span style="font-size: 7pt; color: #888;">{{ t("prop.market_value_hint", level="%d%%"|format(((report.assessment_level or 0.10) * 100)|round)) }}</span></dd>{% endif %}
+    {% if prop.estimated_annual_tax %}<dt>{{ t("prop.annual_tax") }}{% if prop.tax_year %} ({{ prop.tax_year }}){% endif %}</dt><dd>{{ prop.estimated_annual_tax|fcur }}{% if prop.tax_estimate_is_fallback %} <span style="font-size: 7pt; color: #b45309;">{{ t("prop.tax_fallback_hint") }}</span>{% endif %}</dd>{% endif %}
     {% if report.effective_tax_rate %}<dt>{{ t("prop.effective_tax_rate") }}</dt><dd>{{ report.effective_tax_rate|fpct }} <span style="font-size: 7pt; color: #888;">{{ t("prop.effective_tax_hint") }}</span></dd>{% endif %}
     {% endif %}
   </dl>

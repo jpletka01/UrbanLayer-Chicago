@@ -89,8 +89,9 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
 
   const assessed = data.total_assessed_value;
   const tax = data.estimated_annual_tax;
-  const effectiveRate = assessed && assessed > 0 && tax && tax > 0
-    ? `${((tax / (assessed / 0.10)) * 100).toFixed(2)}%`
+  // Server-computed, class-aware (see types.ts) — never derive this here.
+  const effectiveRate = data.effective_tax_rate != null
+    ? `${(data.effective_tax_rate * 100).toFixed(2)}%`
     : null;
 
   const hasFinancials = assessed != null || tax != null;
@@ -102,7 +103,9 @@ export function PropertyCard({ data, scorecardHref }: { data: PropertySummary; s
           <div className="grid grid-cols-3 gap-2 py-1">
             <StatBox label={t("property.assessedValue")} value={assessed != null ? fmtDollar(assessed) : null}
               naLabel={t("na.value")} naTitle={t("na.title")} />
-            <StatBox label={t("property.annualTax")} value={tax != null ? fmtDollar(tax) : null}
+            <StatBox
+              label={data.tax_year ? `${t("property.annualTax")} (${data.tax_year})` : t("property.annualTax")}
+              value={tax != null ? fmtDollar(tax) : null}
               naLabel={t("na.value")} naTitle={t("na.title")} />
             <StatBox label={t("property.effectiveRate")} value={effectiveRate}
               naLabel={t("na.value")} naTitle={t("na.title")} />

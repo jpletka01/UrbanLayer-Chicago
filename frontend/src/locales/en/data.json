@@ -55,6 +55,7 @@
     "buildingAge": "Building Age",
     "yrs": "yrs",
     "assessedValue": "Assessed Value",
+    "impliedMarketValue": "Implied Market Value",
     "annualTax": "Annual Tax",
     "effectiveRate": "Eff. Tax Rate",
     "assessmentHistory": "Assessment History",
@@ -112,6 +113,8 @@
     "opportunities": "Opportunities & context",
     "constraintCount_one": "{{count}} constraint",
     "constraintCount_other": "{{count}} constraints",
+    "moreConstraints_one": "and {{count}} more",
+    "moreConstraints_other": "and {{count}} more",
     "environment": "Environment"
   },
   "incentives": {

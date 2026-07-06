@@ -123,7 +123,7 @@ def test_comps_table_uses_bldg_sf_column():
 def test_market_value_persisted_for_taxable_parcel():
     prop = PropertySummary(pin14="1", total_assessed_value=114600,
                            estimated_annual_tax=23024)
-    rate, mv = _resolve_market_value_and_tax(prop)
+    rate, mv, _level = _resolve_market_value_and_tax(prop)
     assert mv == 1146000               # assessed / 0.10
     assert rate == round(23024 / 1146000, 4)
     assert prop.tax_estimate_is_fallback is False
@@ -131,7 +131,7 @@ def test_market_value_persisted_for_taxable_parcel():
 
 def test_exempt_parcel_no_market_value():
     prop = PropertySummary(pin14="1", tax_exempt=True, total_assessed_value=0)
-    rate, mv = _resolve_market_value_and_tax(prop)
+    rate, mv, _level = _resolve_market_value_and_tax(prop)
     assert rate is None and mv is None
 
 
@@ -143,7 +143,7 @@ def test_annual_tax_fallback_from_assessment_history():
         total_assessed_value=None,
         assessment_history=[AssessmentRecord(year=2024, total=90000)],
     )
-    rate, mv = _resolve_market_value_and_tax(prop)
+    rate, mv, _level = _resolve_market_value_and_tax(prop)
     assert mv == 900000                              # 90000 / 0.10
     assert prop.total_assessed_value == 90000        # backfilled for display
     expected = round(900000 * get_settings().report_fallback_tax_rate)
@@ -158,7 +158,7 @@ def test_effective_rate_renders_once_as_labeled_value():
     traffic-light risk pill is a separate conditional signal, not a value)."""
     prop = PropertySummary(pin14="1", total_assessed_value=114600,
                            estimated_annual_tax=23024)
-    rate, mv = _resolve_market_value_and_tax(prop)
+    rate, mv, _level = _resolve_market_value_and_tax(prop)
     r = _report(prop=prop, effective_tax_rate=rate, market_value=mv)
     html = _render(r)
     # One labeled "Effective Tax Rate" value row.
@@ -177,7 +177,7 @@ def test_fallback_tax_label_rendered():
         estimated_annual_tax=None,
         assessment_history=[AssessmentRecord(year=2024, total=90000)],
     )
-    rate, mv = _resolve_market_value_and_tax(prop)
+    rate, mv, _level = _resolve_market_value_and_tax(prop)
     r = _report(prop=prop, effective_tax_rate=rate, market_value=mv)
     html = _render(r)
     assert "estimated from assessed value" in html

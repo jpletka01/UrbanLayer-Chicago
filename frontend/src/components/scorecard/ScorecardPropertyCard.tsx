@@ -143,9 +143,11 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
 
   const assessed = data.total_assessed_value;
   const tax = data.estimated_annual_tax;
-  const effectiveRate = assessed && assessed > 0 && tax && tax > 0
-    ? `${((tax / (assessed / 0.10)) * 100).toFixed(2)}%`
+  // Server-computed, class-aware (see types.ts) — never derive these here.
+  const effectiveRate = data.effective_tax_rate != null
+    ? `${(data.effective_tax_rate * 100).toFixed(2)}%`
     : null;
+  const marketValue = data.implied_market_value;
 
   const baths = [
     data.full_baths ? `${data.full_baths}F` : null,
@@ -168,7 +170,12 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           <p className="text-caption text-text-secondary">
             {[
               assessed != null ? `${t("property.assessedValue")} ${fmtDollar(assessed)}` : null,
-              tax != null ? `${t("property.annualTax")} ${fmtDollar(tax)}` : null,
+              // Implied market value sits between assessed and rate so the
+              // reader sees which base the effective rate applies to.
+              marketValue != null ? `${t("property.impliedMarketValue")} ${fmtDollar(marketValue)}` : null,
+              tax != null
+                ? `${t("property.annualTax")}${data.tax_year ? ` (${data.tax_year})` : ""} ${fmtDollar(tax)}`
+                : null,
               effectiveRate ? `${t("property.effectiveRate")} ${effectiveRate}` : null,
             ].filter(Boolean).join(" · ")}
           </p>

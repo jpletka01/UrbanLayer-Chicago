@@ -55,6 +55,7 @@
     "buildingAge": "Antigüedad",
     "yrs": "años",
     "assessedValue": "Valor de avalúo",
+    "impliedMarketValue": "Valor de mercado implícito",
     "assessmentHistory": "Historial de avalúo",
     "yrsCount": "{{count}} años",
     "year": "Año",
@@ -112,6 +113,8 @@
     "opportunities": "Oportunidades y contexto",
     "constraintCount_one": "{{count}} restricción",
     "constraintCount_other": "{{count}} restricciones",
+    "moreConstraints_one": "y {{count}} más",
+    "moreConstraints_other": "y {{count}} más",
     "environment": "Medio ambiente"
   },
   "incentives": {

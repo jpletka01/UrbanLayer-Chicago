@@ -20,6 +20,7 @@ from backend.models import (
     TaxExemption,
     TaxLineItem,
 )
+from backend.retrieval.property.assessment_level import assessment_level_for_class
 from backend.retrieval.property.assessments import get_assessments
 from backend.retrieval.property.characteristics import get_characteristics
 from backend.retrieval.property.parcels import lookup_parcel, lookup_parcel_by_pin
@@ -436,11 +437,13 @@ def _build_summary(
 
     estimated_annual_tax = None
     tax_code = None
+    tax_year = None
     tax_breakdown: list[TaxLineItem] = []
     tax_exemptions: list[TaxExemption] = []
     if tax_result:
         estimated_annual_tax = tax_result.get("tax_bill_total")
         tax_code = tax_result.get("tax_code")
+        tax_year = tax_result.get("year")
         for item in tax_result.get("line_items", []):
             tax_breakdown.append(TaxLineItem(
                 agency=item["agency"],
@@ -452,6 +455,16 @@ def _build_summary(
                 kind=exe["kind"],
                 eav_reduction=exe["eav_reduction"],
             ))
+
+    # Class-aware market value + effective rate — assessed value alone invites
+    # the reader to divide by the wrong level (see assessment_level.py).
+    assessment_level = assessment_level_for_class(bldg_class or assessment_class)
+    implied_market_value = None
+    effective_tax_rate = None
+    if not tax_exempt and assessment_level and total_assessed_value and total_assessed_value > 0:
+        implied_market_value = round(total_assessed_value / assessment_level)
+        if estimated_annual_tax and estimated_annual_tax > 0:
+            effective_tax_rate = round(estimated_annual_tax / implied_market_value, 4)
 
     return PropertySummary(
         pin14=pin14,
@@ -481,6 +494,10 @@ def _build_summary(
         tax_exempt=tax_exempt,
         total_assessed_value=total_assessed_value,
         estimated_annual_tax=estimated_annual_tax,
+        assessment_level=assessment_level,
+        implied_market_value=implied_market_value,
+        effective_tax_rate=effective_tax_rate,
+        tax_year=tax_year,
         tax_code=tax_code,
         tax_breakdown=tax_breakdown,
         tax_exemptions=tax_exemptions,

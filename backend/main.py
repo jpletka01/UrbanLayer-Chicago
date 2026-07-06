@@ -59,6 +59,7 @@ from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests
 from backend.retrieval.incentives import incentives_domain
 from backend.retrieval.neighborhood import neighborhood_domain
 from backend.retrieval.property import property_domain
+from backend.retrieval.property.assessment_level import assessment_level_for_class
 from backend.retrieval.regulatory import regulatory_domain
 from backend.retrieval.regulatory.aro_housing import aro_housing_by_community_area
 from backend.retrieval.zoning import adjacent_parcel_zoning, lookup_zoning
@@ -2450,7 +2451,7 @@ async def _fetch_report_data(
             dev_potential = calculate_development_potential(standards, land_sqft, bldg_sqft)
 
     # Step 4: Market value, effective tax rate, and annual-tax fallback (Q6).
-    effective_tax_rate, market_value = _resolve_market_value_and_tax(ctx.property)
+    effective_tax_rate, market_value, assessment_level = _resolve_market_value_and_tax(ctx.property)
 
     # Step 5: Static map URL
     mapbox_token = settings.mapbox_token or settings.vite_mapbox_token
@@ -2683,6 +2684,7 @@ async def _fetch_report_data(
         nearby_development=nearby_dev,
         effective_tax_rate=effective_tax_rate,
         market_value=market_value,
+        assessment_level=assessment_level,
         assessment_trend=assessment_trend,
         ownership_signals=ownership_signals,
         parcel_map_b64=parcel_map_b64,
@@ -3816,14 +3818,17 @@ def _synthesize_opportunities_constraints(
     return opportunities[:4], constraints[:4]
 
 
-def _resolve_market_value_and_tax(prop) -> tuple[float | None, float | None]:
-    """Derive (effective_tax_rate, market_value) for the property, with an
-    annual-tax fallback (Q6).
+def _resolve_market_value_and_tax(
+    prop,
+) -> tuple[float | None, float | None, float | None]:
+    """Derive (effective_tax_rate, market_value, assessment_level) for the
+    property, with an annual-tax fallback (Q6).
 
     market_value and effective_tax_rate are surfaced together with assessed
     value in the template so a reader can't misread the effective rate — which
-    is computed against *market* value (assessed ÷ 10% Cook County residential
-    level) — as if it applied to the much-smaller assessed value.
+    is computed against *market* value (assessed ÷ the class's Cook County
+    assessment level: 10% residential, 25% commercial, …) — as if it applied
+    to the much-smaller assessed value.
 
     When the ptaxsim bill is missing, annual tax is estimated from the
     documented effective rate (`report_fallback_tax_rate`) so the tax row isn't
@@ -3833,7 +3838,7 @@ def _resolve_market_value_and_tax(prop) -> tuple[float | None, float | None]:
     tax_estimate_is_fallback) for downstream rendering.
     """
     if not prop or prop.tax_exempt:
-        return None, None
+        return None, None, None
     assessed = prop.total_assessed_value
     annual_tax = prop.estimated_annual_tax
     # Fallback: use most recent assessment total if the direct value is missing.
@@ -3843,19 +3848,27 @@ def _resolve_market_value_and_tax(prop) -> tuple[float | None, float | None]:
                 assessed = ah.total
                 break
     if not (assessed and assessed > 0):
-        return None, None
-    market_value = round(assessed / 0.10)
+        return None, None, None
+    # Class-aware level (0.10 residential / 0.25 commercial / …); the old
+    # hardcoded 0.10 overstated commercial market value 2.5×. Falls back to
+    # 0.10 only when the class is entirely unknown.
+    level = (
+        getattr(prop, "assessment_level", None)
+        or assessment_level_for_class(getattr(prop, "bldg_class", None))
+        or 0.10
+    )
+    market_value = round(assessed / level)
     # Keep the displayed assessed value consistent with market value when it was
     # only recoverable from assessment history.
     if not prop.total_assessed_value:
         prop.total_assessed_value = assessed
     if annual_tax and annual_tax > 0:
-        return round(annual_tax / market_value, 4), market_value
+        return round(annual_tax / market_value, 4), market_value, level
     prop.estimated_annual_tax = round(
         market_value * get_settings().report_fallback_tax_rate
     )
     prop.tax_estimate_is_fallback = True
-    return None, market_value
+    return None, market_value, level
 
 
 def _compute_land_value_range(report: "ReportData") -> dict | None:
@@ -4341,8 +4354,13 @@ def _apply_mock_overrides(report_data: "ReportData") -> "ReportData":
             report_data.context.property.estimated_annual_tax = 8720
         if not report_data.context.property.total_assessed_value:
             report_data.context.property.total_assessed_value = 40000
+        mock_level = (
+            assessment_level_for_class(report_data.context.property.bldg_class)
+            or 0.10
+        )
+        report_data.assessment_level = mock_level
         report_data.market_value = round(
-            report_data.context.property.total_assessed_value / 0.10
+            report_data.context.property.total_assessed_value / mock_level
         )
 
     # Force comparable sales

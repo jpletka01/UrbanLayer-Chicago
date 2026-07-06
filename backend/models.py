@@ -366,6 +366,18 @@ class PropertySummary(BaseModel):
     # documented effective-rate fallback (ptaxsim bill unavailable), not a
     # parcel-specific ptaxsim computation. Drives an "estimated" label.
     tax_estimate_is_fallback: bool = False
+    # Class-aware tax interpretation, computed server-side ONCE so every
+    # surface (scorecard, chat sidebar, $25 report) shows the same math.
+    # assessment_level: ordinance level for this class (0.10 residential,
+    # 0.25 commercial, …). implied_market_value = assessed ÷ level.
+    # effective_tax_rate = annual tax ÷ implied market value (fraction).
+    # tax_year: which ptaxsim bill year estimated_annual_tax came from — the
+    # DB lags the calendar 1–2 years, so an unlabeled bill next to the current
+    # assessed value silently mixes years.
+    assessment_level: float | None = None
+    implied_market_value: float | None = None
+    effective_tax_rate: float | None = None
+    tax_year: int | None = None
     tax_code: str | None = None
     tax_breakdown: list[TaxLineItem] = Field(default_factory=list)
     tax_exemptions: list[TaxExemption] = Field(default_factory=list)
@@ -849,6 +861,10 @@ class ReportData(BaseModel):
     nearby_development: NearbyDevelopment | None = None
     effective_tax_rate: float | None = None
     market_value: float | None = None
+    # Cook County assessment level used to derive market_value (0.10
+    # residential, 0.25 commercial, …) — rendered in the market-value hint so
+    # the derivation is stated, not assumed residential.
+    assessment_level: float | None = None
     assessment_trend: dict | None = None
     ownership_signals: list[dict] = Field(default_factory=list)
     parcel_map_b64: str | None = None

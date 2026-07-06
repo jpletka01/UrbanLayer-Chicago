@@ -328,6 +328,16 @@ export interface PropertySummary {
   bldg_age: number | null;
   total_assessed_value: number | null;
   estimated_annual_tax: number | null;
+  /** Class-aware tax interpretation, computed server-side (assessment_level.py):
+      level is the ordinance assessment level for this class (0.10 residential,
+      0.25 commercial); market = assessed ÷ level; rate = tax ÷ market as a
+      fraction. NEVER recompute these client-side — the old hardcoded 10%
+      showed 2.06% for a commercial parcel whose true rate was ~5.15%. */
+  assessment_level?: number | null;
+  implied_market_value?: number | null;
+  effective_tax_rate?: number | null;
+  /** ptaxsim bill year for estimated_annual_tax (lags the calendar 1–2 yrs). */
+  tax_year?: number | null;
   tax_code: string | null;
   tax_breakdown: TaxLineItem[];
   tax_exemptions: TaxExemption[];
