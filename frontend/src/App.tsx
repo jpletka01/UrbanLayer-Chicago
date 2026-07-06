@@ -55,6 +55,7 @@ import { ExportReport } from "./components/ExportReport";
 import { ShareModal } from "./components/ShareModal";
 import ConversationMenu from "./components/ConversationMenu";
 import { useAuthContext } from "./contexts/AuthContext";
+import { useThemeContext } from "./contexts/ThemeContext";
 import AuthModal from "./components/AuthModal";
 import FloatingNav from "./components/FloatingNav";
 import { useTranslation } from "react-i18next";
@@ -65,6 +66,8 @@ const MAP_STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function App() {
   const { t } = useTranslation("landing");
+  const { resolvedTheme } = useThemeContext();
+  const heroLight = resolvedTheme === "light";
   const { t: tc } = useTranslation("common");
   const { conversationIdFromUrl, shareTokenFromUrl, navigateToConversation, navigateToSplash, navigateReplace, navigateBack } =
     useConversationRouter();
@@ -785,8 +788,22 @@ export function App() {
             {/* overflow-x-clip: the hero's decorative bleeds (stat halos, preview bloom)
                 extend past the viewport on phones and widened the page (audit 2026-07-05).
                 clip (not hidden) — no scroll container, sticky/vertical flow unaffected. */}
-            <div className="relative bg-dark-bg -mt-14 overflow-x-clip" data-theme="dark">
+            <div className="relative bg-dark-bg -mt-14 overflow-x-clip" data-theme={heroLight ? undefined : "dark"}>
               <HeroBackdrop />
+              {/* Light-mode paper scrim: lets the full-bleed halftone recede behind the
+                  left text column so grey text isn't sitting on grey dots. Dots stay full
+                  strength in the periphery / behind the card. Dark mode uses the DotMatrix
+                  mask + drop-shadows for the same job, so this is light-only. */}
+              {heroLight && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse 54% 58% at 27% 44%, rgb(var(--bg) / 0.96), rgb(var(--bg) / 0.68) 46%, transparent 74%)",
+                  }}
+                />
+              )}
 
               {/* Hero section — full viewport */}
               <div className="relative z-10 min-h-screen flex flex-col">
@@ -801,19 +818,19 @@ export function App() {
                       >
                         {/* Badge pill — live-status dot + provenance */}
                         <div
-                          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-4 py-1.5 backdrop-blur-sm mb-7"
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 backdrop-blur-sm mb-7 ${heroLight ? "border-dark-border-strong bg-dark-surface/70" : "border-white/15 bg-white/[0.03]"}`}
                           style={{ boxShadow: "0 0 20px rgba(249,164,116,0.10)" }}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                          <span className="text-caption tracking-wide text-white/70">{t("heroBadge")}</span>
+                          <span className={`text-caption tracking-wide ${heroLight ? "text-text-secondary" : "text-white/70"}`}>{t("heroBadge")}</span>
                         </div>
                         <h1
-                          className="text-display mb-5 bg-gradient-to-b from-white via-white to-white/55 bg-clip-text text-transparent [text-wrap:balance]"
-                          style={{ filter: "drop-shadow(0 2px 24px rgba(0,0,0,0.45))" }}
+                          className={`text-display mb-5 bg-gradient-to-b bg-clip-text text-transparent [text-wrap:balance] ${heroLight ? "from-text-primary via-text-primary to-text-primary/60" : "from-white via-white to-white/55"}`}
+                          style={{ filter: heroLight ? "none" : "drop-shadow(0 2px 24px rgba(0,0,0,0.45))" }}
                         >
                           {t("heroSubtitle")}
                         </h1>
-                        <p className="text-lead text-white/75 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                        <p className={`text-lead max-w-xl mx-auto lg:mx-0 leading-relaxed ${heroLight ? "text-text-secondary" : "text-white/75"}`}>
                           {t("heroSubline")}
                         </p>
                       </motion.div>
@@ -855,8 +872,9 @@ export function App() {
                           aria-hidden="true"
                           className="absolute -inset-x-14 -inset-y-6"
                           style={{
-                            background:
-                              "radial-gradient(ellipse closest-side, rgba(10,10,10,0.95) 45%, rgba(10,10,10,0.6) 75%, transparent 100%)",
+                            background: heroLight
+                              ? "radial-gradient(ellipse closest-side, rgba(250,250,249,0.95) 45%, rgba(250,250,249,0.6) 75%, transparent 100%)"
+                              : "radial-gradient(ellipse closest-side, rgba(10,10,10,0.95) 45%, rgba(10,10,10,0.6) 75%, transparent 100%)",
                           }}
                         />
                         <div className="relative">
@@ -864,9 +882,9 @@ export function App() {
                             to={stat.value}
                             format={stat.format}
                             delay={0.6 + i * 0.15}
-                            className="text-3xl md:text-4xl font-semibold text-white"
+                            className={`text-3xl md:text-4xl font-semibold ${heroLight ? "text-text-primary" : "text-white"}`}
                           />
-                          <div className="text-sm text-white/60 uppercase tracking-wider mt-2">{t(labelKeys[i])}</div>
+                          <div className={`text-sm uppercase tracking-wider mt-2 ${heroLight ? "text-text-secondary" : "text-white/60"}`}>{t(labelKeys[i])}</div>
                         </div>
                       </div>
                     );

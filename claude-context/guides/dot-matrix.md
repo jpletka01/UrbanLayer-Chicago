@@ -120,3 +120,60 @@ page context** and measure, rather than eyeballing screenshots:
   stat (App.tsx), not orange text — orange = action only (§ color discipline).
 - `params` prop must be a module-level const (new object identity per render would re-run the
   draw effect).
+
+## Light mode (2026-07-06) — SEPARATE asset, not an inversion
+
+The hero used to be a **dark-locked island** (`data-theme="dark"` on the wrapper), so a
+light-mode visitor still got the white-on-black night skyline. It's now **theme-aware**:
+`HeroBackdrop`'s `SkylineVariant` reads `useThemeContext().resolvedTheme` and swaps both the
+asset and the params.
+
+**Why two assets, not one inverted.** The night photo is a *dark-mode* artifact — its
+recognizability comes from bright window-glow on a black field. Every attempt to reuse it for
+light failed (recorded so we don't retry):
+1. **Naive color invert** (dark dots on paper): the building *voids* become paper-white — the
+   lightest value — against a near-white sky, so the towers vanish. The negative-silhouette
+   trick only reads when the void is the *darkest* value.
+2. **Positive silhouette** (ink the tower mass; briefly lived in `dotGrid` as a `positive`
+   param, since removed): fixed contrast but flattened the window/tonal detail, so it read as
+   "random vertical bars," not Chicago. Recognizability lived in the detail it destroyed.
+3. **Hand-authored vector skyline / vector Bean**: recognizable-ish but read as a crude
+   cartoon — same lesson as the curtain-wall predecessor ("figure beats texture," and a
+   *drawing* isn't enough).
+
+**What shipped:** a purpose-built **daytime photo** asset, `frontend/src/assets/cloudgate-day.jpg`
+— a grayscale Unsplash **Cloud Gate** photo, pre-processed to a **NEGATIVE** (PIL:
+`ImageOps.autocontrast` → `ImageOps.invert`) so it feeds the *existing* halftone ramp as an ink
+print: originally-dark steel → bright → big ink dots; originally-bright sky → dark → faint
+lattice. Under the light theme wrapper the dots resolve to `#1a1a1a` ink on warm paper. Light
+params (`SKYLINE_PARAMS_LIGHT` in `HeroBackdrop.tsx`) are a **plain halftone** (no silhouette
+mode — the photo has real sky/subject luminance separation): `gamma 1.5, maxRadius 0.5, cut 0,
+skyLevel 0.1, skyAlpha 0.2`. The night photo stays the dark figure.
+
+**Compose the source for the layout, cover-crop can't.** `coverCrop` centers horizontally, so a
+subject centered in the source lands under the Scorecard card. Compose the intended framing INTO
+the asset (crop/pad), and put denser content at the image *bottom* — `coverCrop` bottom-anchors,
+so a light plaza at the base reads as "the image doesn't reach the bottom" (it does; the content
+is just faint there). Full-scene edge-to-edge = full-bleed; a small subject on a black-padded
+canvas = a small floating image (black pad → faint lattice, reads empty).
+
+**Legibility scrim (light only).** A full-bleed halftone competes with text. `App.tsx` adds a
+light-only radial **paper scrim** (`rgb(var(--bg)/…)` fading to transparent) behind the left
+text column so grey text isn't sitting on grey dots — the light analog of dark mode's DotMatrix
+mask + headline drop-shadows. Left column legible, dots stay full-strength in the periphery.
+
+**Search bar = primary action, must not hide.** On paper a white field (`bg-dark-surface`) with
+a hairline border vanishes. `AddressInput` `page` + `hero` variants now: (a) a persistent
+**orange submit button** (`bg-accent/15 text-accent`, solid on typing), and (b) a gentle idle
+**`animate-search-pulse`** that breathes `box-shadow` from the resting shadow (`--shadow-card`)
+to the accent glow (`--glow-accent`) — the *same* shadow the field holds on hover, so hover/focus
+settles onto the identical orange. `motion-reduce:animate-none` guard; `hover:animate-none` stops
+the pulse. Both `--shadow-card` and `--glow-accent` are 2-layer theme-aware shadows so the
+`var()` endpoints interpolate smoothly.
+
+- **⚠️ Tailwind config gotcha (cost a debugging round):** adding `keyframes`/`animation` to
+  `tailwind.config.js` requires a **dev-server restart** — Vite HMR does NOT re-scan the config,
+  so the `animate-*` class applies with *no CSS behind it* (`animationName: none`, no
+  `@keyframes`), which looks exactly like "the animation is broken." Verify via
+  `getComputedStyle(el).animationName` + checking the built CSS; the production `npm run build`
+  picks it up correctly (the issue is dev-only).

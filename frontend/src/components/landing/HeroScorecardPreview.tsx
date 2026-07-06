@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Chip } from "../ui/Chip";
+import { useThemeContext } from "../../contexts/ThemeContext";
 
 // A compact, realistic mock Scorecard shown beside the hero headline — the product, on the
 // first screen. Conclusion-first: leads with the verdict, then a few high-signal metrics
@@ -11,16 +12,20 @@ const SCORES = [
 
 export function HeroScorecardPreview() {
   const { t } = useTranslation("landing");
+  // On the light hero the card reads as a dark "product screenshot" floating on
+  // warm paper: mode-lock it to dark + give it an opaque surface (the hero's dark
+  // bg no longer sits behind it, so the translucent chrome would wash out).
+  const light = useThemeContext().resolvedTheme === "light";
 
   return (
-    <div className="relative mx-auto w-full max-w-md">
+    <div className="relative mx-auto w-full max-w-md" data-theme={light ? "dark" : undefined}>
       {/* Ambient bloom behind the card */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -inset-6 rounded-full"
         style={{ background: "radial-gradient(circle, rgba(249,164,116,0.16), transparent 70%)", filter: "blur(50px)" }}
       />
-      <div className="relative rounded-bento border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 space-y-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]">
+      <div className={`relative rounded-bento border border-white/10 backdrop-blur-md p-6 space-y-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ${light ? "bg-dark-surface" : "bg-white/[0.03]"}`}>
         {/* Header: provenance + address + PIN */}
         <div>
           <div className="flex items-center gap-1.5 text-overline uppercase text-accent">

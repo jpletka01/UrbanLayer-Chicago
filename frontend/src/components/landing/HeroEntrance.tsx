@@ -4,6 +4,7 @@ import { AddressInput } from "../AddressInput";
 import { PromptSuggestionChip } from "../PromptSuggestionChip";
 import { buildScorecardHref } from "../sidebar/ScorecardBridgeCard";
 import { track } from "../../lib/tracking";
+import { useThemeContext } from "../../contexts/ThemeContext";
 
 /**
  * The homepage entry surface. The primary action asks one question — "Which
@@ -14,6 +15,7 @@ import { track } from "../../lib/tracking";
 export function HeroEntrance() {
   const { t } = useTranslation("landing");
   const navigate = useNavigate();
+  const light = useThemeContext().resolvedTheme === "light";
 
   function submitAddress(address: string, source: "hero" | "chip") {
     track("hero_address_submit", { source, address });
@@ -34,9 +36,10 @@ export function HeroEntrance() {
       <AddressInput
         onSubmit={(addr) => submitAddress(addr, "hero")}
         placeholder={t("hero.addressPlaceholder")}
+        variant={light ? "page" : "hero"}
       />
       <div className="flex flex-wrap gap-2 justify-center items-center">
-        <span className="text-body text-white/70">{t("hero.try")}</span>
+        <span className={`text-body ${light ? "text-text-secondary" : "text-white/70"}`}>{t("hero.try")}</span>
         {addressExamples.map((addr) => (
           <PromptSuggestionChip key={addr} label={addr} onClick={() => submitAddress(addr, "chip")} />
         ))}
@@ -44,12 +47,12 @@ export function HeroEntrance() {
       {/* Secondary, labeled door — subordinate to the address input, names the
           fork (code/neighborhood research) so a returning user knows what it does.
           Centered to match the example-address chip row above it. */}
-      <p className="text-body text-white/70 text-center">
+      <p className={`text-body text-center ${light ? "text-text-secondary" : "text-white/70"}`}>
         {t("hero.askAnalystLead")}{" "}
         <button
           type="button"
           onClick={openAnalyst}
-          className="text-white/80 hover:text-white underline underline-offset-2 transition-colors"
+          className={`underline underline-offset-2 transition-colors ${light ? "text-link hover:text-text-primary" : "text-white/80 hover:text-white"}`}
         >
           {t("hero.askAnalystCta")} →
         </button>

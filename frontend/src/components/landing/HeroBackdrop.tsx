@@ -15,6 +15,8 @@ import type { ReactElement } from "react";
 import { CurtainWall } from "./CurtainWall";
 import { DotMatrix } from "./DotMatrix";
 import skylineUrl from "../../assets/skyline-night.jpg";
+import skylineDayUrl from "../../assets/cloudgate-day.jpg";
+import { useThemeContext } from "../../contexts/ThemeContext";
 
 type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain" | "skyline";
 
@@ -299,9 +301,33 @@ const SKYLINE_PARAMS = {
   silhouette: { threshold: 0.4, lightCut: 0.08 },
 };
 
+// Light surfaces use a PURPOSE-BUILT daytime asset (cloudgate-day.png): a
+// grayscale Cloud Gate photo pre-processed to a NEGATIVE (dark steel → bright,
+// bright sky → dark) so it runs through the plain halftone ramp as an ink
+// print — bright(=originally dark) cells → big dots, dark(=originally sky)
+// cells → faint lattice. Under the light theme wrapper the dots resolve to dark
+// ink on warm paper. The night photo stays the dark-mode figure (its window
+// glow needs a black field); an inversion of it never read on white.
+const SKYLINE_PARAMS_LIGHT = {
+  gamma: 1.5,
+  maxRadius: 0.5,
+  floorRadius: 0.08,
+  cut: 0,
+  skyLevel: 0.1,
+  skyAlpha: 0.2,
+  maxAlpha: 0.95,
+};
+
 function SkylineVariant() {
+  const light = useThemeContext().resolvedTheme === "light";
   return (
-    <DotMatrix src={skylineUrl} cols={150} accent={false} params={SKYLINE_PARAMS} style={SKYLINE_MASK} />
+    <DotMatrix
+      src={light ? skylineDayUrl : skylineUrl}
+      cols={150}
+      accent={false}
+      params={light ? SKYLINE_PARAMS_LIGHT : SKYLINE_PARAMS}
+      style={SKYLINE_MASK}
+    />
   );
 }
 

@@ -130,6 +130,14 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(100%)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // Idle search field: gently breathe from the resting shadow to the accent
+        // glow (same box-shadow the field holds on hover), so it draws the eye but
+        // lands on the identical orange once hovered/focused. Both endpoints are
+        // 2-layer, theme-aware shadows so the interpolation is smooth.
+        'search-pulse': {
+          '0%, 100%': { boxShadow: 'var(--shadow-card)' },
+          '50%': { boxShadow: 'var(--glow-accent)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 2s ease-in-out forwards',
@@ -139,6 +147,7 @@ export default {
         'text-glow': 'text-glow 2s ease-in-out infinite',
         'trace-in': 'trace-in 0.2s ease-out both',
         'slide-up': 'slide-up 0.3s ease-out forwards',
+        'search-pulse': 'search-pulse 2.6s ease-in-out infinite',
       },
     },
   },
