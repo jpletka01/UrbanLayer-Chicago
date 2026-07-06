@@ -19,11 +19,21 @@ initTracking();
 
 // Microsoft Clarity session replay — validation-window instrumentation,
 // disclosed on /privacy. Inert unless a project ID is provided at build time.
+// Official bootstrap snippet: define the window.clarity queue-stub function
+// BEFORE the remote tag loads. Clarity's own duplicate-load guard inside
+// clarity.js calls window.clarity("event", …); injecting the bare <script> tag
+// skipped the stub, so that call threw "a[c] is not a function" (Sentry, 2026-07-06).
 if (import.meta.env.VITE_CLARITY_ID) {
+  type ClarityFn = { (...args: unknown[]): void; q?: unknown[] };
+  const w = window as unknown as { clarity?: ClarityFn };
+  w.clarity = w.clarity || function (...args: unknown[]) {
+    (w.clarity!.q = w.clarity!.q || []).push(args);
+  };
   const s = document.createElement("script");
   s.async = true;
   s.src = `https://www.clarity.ms/tag/${import.meta.env.VITE_CLARITY_ID}`;
-  document.head.appendChild(s);
+  const first = document.getElementsByTagName("script")[0];
+  first.parentNode?.insertBefore(s, first);
 }
 
 import { App } from './App.tsx'
