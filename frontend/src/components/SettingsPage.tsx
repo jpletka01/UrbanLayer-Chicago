@@ -1,8 +1,13 @@
 // Settings — account chrome for signed-in users (/settings, ProtectedRoute).
-// Account identity is Google's (read-only here); theme/language controls are the
-// same components as the headers; billing links out to the Stripe portal and
-// lists purchased reports for re-download. Deletion is the page's only
-// destructive action — typed confirmation, Stripe-cancel-first on the backend.
+// Account identity is Google's (read-only here); theme is the same control as the
+// footer (language switching lives in the nav globe, not duplicated here); billing
+// links out to the Stripe portal and lists purchased reports for re-download.
+// Deletion is the page's only destructive action — typed confirmation,
+// Stripe-cancel-first on the backend.
+//
+// Layout is deliberately flat (no boxed Cards): labelled sections divided by
+// hairlines on one continuous surface, so the page reads as a quiet preferences
+// list rather than a stack of competing panels.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,11 +22,20 @@ import {
 import { buildFilenameSlug } from "../lib/csvExport";
 import { formatDate } from "../lib/format";
 import PageHeader from "./PageHeader";
-import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
 import { Modal } from "./ui/Modal";
 import ThemeToggle from "./ThemeToggle";
-import LanguageSelector from "./LanguageSelector";
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="py-8 border-b border-dark-border last:border-b-0">
+      <h2 className="text-caption font-medium text-text-muted uppercase tracking-wide mb-4">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
 
 function SettingsRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -182,10 +196,10 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-dark-bg text-text-primary">
       <PageHeader />
 
-      <main className="max-w-2xl mx-auto px-6 py-16 space-y-6">
+      <main className="max-w-2xl mx-auto px-6 py-16">
         <h1 className="text-section mb-2">{t("settings.title")}</h1>
 
-        <Card title={t("settings.account")} padding="lg">
+        <Section title={t("settings.account")}>
           <div className="flex items-center gap-4">
             {user.picture_url ? (
               <img
@@ -210,20 +224,15 @@ export default function SettingsPage() {
               </p>
             </div>
           </div>
-        </Card>
+        </Section>
 
-        <Card title={t("settings.appearance")} padding="lg">
-          <div className="divide-y divide-dark-border">
-            <SettingsRow label={t("settings.theme")}>
-              <ThemeToggle />
-            </SettingsRow>
-            <SettingsRow label={t("settings.language")}>
-              <LanguageSelector />
-            </SettingsRow>
-          </div>
-        </Card>
+        <Section title={t("settings.appearance")}>
+          <SettingsRow label={t("settings.theme")}>
+            <ThemeToggle />
+          </SettingsRow>
+        </Section>
 
-        <Card title={t("settings.billing")} padding="lg">
+        <Section title={t("settings.billing")}>
           <SettingsRow label={t("settings.currentPlan")}>
             <div className="flex items-center gap-3">
               <span className="text-body text-text-primary font-medium">{planLabel}</span>
@@ -268,11 +277,11 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
-        </Card>
+        </Section>
 
-        {/* Deletion is impossible in dev mode (no real user row) — hide the zone. */}
+        {/* Deletion is impossible in dev mode (no real user row) — hide the section. */}
         {authRequired && (
-          <Card title={t("settings.dangerZone")} padding="lg">
+          <Section title={t("settings.deleteAccount")}>
             <div className="flex items-center justify-between gap-4">
               <p className="text-body text-text-secondary max-w-sm">
                 {t("settings.deleteBlurb")}
@@ -281,10 +290,10 @@ export default function SettingsPage() {
                 onClick={() => setConfirmingDelete(true)}
                 className="shrink-0 px-3 py-2 rounded-lg border border-state-negative/40 text-body text-state-negative hover:bg-state-negative/10 transition-colors"
               >
-                {t("settings.deleteAccount")}
+                {t("settings.delete")}
               </button>
             </div>
-          </Card>
+          </Section>
         )}
       </main>
 
