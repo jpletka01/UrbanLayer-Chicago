@@ -17,6 +17,8 @@ import {
   deleteAccount,
   fetchMyPurchases,
   fetchReport,
+  getSubscription,
+  redeemVoucher,
   type ReportPurchase,
 } from "../lib/api";
 import { buildFilenameSlug } from "../lib/csvExport";
@@ -102,6 +104,72 @@ function PurchaseRow({ purchase }: { purchase: ReportPurchase }) {
   );
 }
 
+function AccessCodeRow({ onRedeemed }: { onRedeemed: () => void }) {
+  const { t } = useTranslation("pages");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function handleApply() {
+    const trimmed = code.trim();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setMessage(null);
+    const result = await redeemVoucher(trimmed);
+    setBusy(false);
+    if (result.ok) {
+      setCode("");
+      setMessage({
+        ok: true,
+        text: t("settings.accessCodeSuccess", {
+          date: formatDate(new Date(result.premium_until).toISOString()),
+        }),
+      });
+      onRedeemed();
+    } else {
+      const key = {
+        invalid: "settings.accessCodeInvalid",
+        already_redeemed: "settings.accessCodeAlreadyUsed",
+        exhausted: "settings.accessCodeExhausted",
+        error: "settings.accessCodeError",
+      }[result.reason];
+      setMessage({ ok: false, text: t(key) });
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between gap-4 py-2">
+        <span className="text-body text-text-secondary">{t("settings.accessCode")}</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleApply()}
+            placeholder={t("settings.accessCodePlaceholder")}
+            className="w-40 px-2.5 py-1 rounded-md bg-dark-elevated border border-dark-border text-caption text-text-primary uppercase placeholder:normal-case focus:outline-none focus:border-accent/60"
+          />
+          <button
+            onClick={handleApply}
+            disabled={busy || !code.trim()}
+            className="px-2.5 py-1 rounded-md border border-dark-border text-caption text-text-secondary hover:text-accent hover:border-accent/40 transition-colors disabled:opacity-50"
+          >
+            {busy ? t("settings.accessCodeApplying") : t("settings.accessCodeApply")}
+          </button>
+        </div>
+      </div>
+      {message && (
+        <p
+          className={`text-caption ${message.ok ? "text-state-positive" : "text-state-negative"}`}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("pages");
   const [confirmText, setConfirmText] = useState("");
@@ -162,14 +230,25 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 
 export default function SettingsPage() {
   const { t } = useTranslation("pages");
-  const { user, authRequired } = useAuthContext();
+  const { user, authRequired, checkAuth } = useAuthContext();
   const [purchases, setPurchases] = useState<ReportPurchase[] | null>(null);
+  const [subscription, setSubscription] = useState<Awaited<
+    ReturnType<typeof getSubscription>
+  > | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     fetchMyPurchases().then(setPurchases).catch(() => setPurchases([]));
+    getSubscription().then(setSubscription).catch(() => {});
   }, []);
+
+  // A redeemed code changes the effective tier server-side; re-read both the
+  // auth user (Pro chip) and the subscription payload (comp_until caption).
+  function handleRedeemed() {
+    checkAuth();
+    getSubscription().then(setSubscription).catch(() => {});
+  }
 
   if (!user) return null; // ProtectedRoute redirects; this is a type guard.
 
@@ -236,7 +315,9 @@ export default function SettingsPage() {
           <SettingsRow label={t("settings.currentPlan")}>
             <div className="flex items-center gap-3">
               <span className="text-body text-text-primary font-medium">{planLabel}</span>
-              {isPro ? (
+              {/* Comp (voucher) premium has no Stripe subscription — the portal
+                  would fail, so only real subscribers get the manage button. */}
+              {isPro && subscription?.subscription_active !== false ? (
                 <button
                   onClick={handleManageSubscription}
                   disabled={portalBusy}
@@ -255,8 +336,18 @@ export default function SettingsPage() {
             </div>
           </SettingsRow>
           <p className="text-caption text-text-muted mb-4">
-            {isPro ? t("settings.proBlurb") : t("settings.freeBlurb")}
+            {subscription?.comp_until
+              ? t("settings.compBlurb", {
+                  date: formatDate(new Date(subscription.comp_until).toISOString()),
+                })
+              : isPro
+                ? t("settings.proBlurb")
+                : t("settings.freeBlurb")}
           </p>
+
+          {!subscription?.subscription_active && (
+            <AccessCodeRow onRedeemed={handleRedeemed} />
+          )}
 
           <h3 className="text-caption font-medium text-text-secondary uppercase tracking-wide mb-1">
             {t("settings.purchases")}

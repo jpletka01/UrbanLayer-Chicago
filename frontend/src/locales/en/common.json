@@ -71,7 +71,8 @@
     "orPro": "Or get unlimited reports with Pro",
     "upgrade": "Upgrade — $99/month",
     "redirectingShort": "Redirecting…",
-    "bodyPrefix": "Download a professional development feasibility report for"
+    "bodyPrefix": "Download a professional development feasibility report for",
+    "haveCode": "Have an access code?"
   },
   "loadConversationError": "Couldn't load conversation. It may have been deleted or you may not have access.",
   "transcriptTitle": "Chicago Transcript",

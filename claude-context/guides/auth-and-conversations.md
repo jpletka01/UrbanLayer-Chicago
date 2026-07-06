@@ -17,6 +17,8 @@ Google OAuth2 Authorization Code flow + self-rolled JWT sessions. Auth is opt-in
 
 **User tiers**: `free` (default on sign-up), `premium` (Stripe subscription), `admin` (manual DB flag).
 
+**Comp premium (vouchers, 2026-07-06)**: `users.premium_until` (epoch ms) grants *effective* premium to a free user while in the future — applied by `_apply_comp_premium()` inside `get_current_user()`, the single choke point every gate reads (report, Discovery, rate limits, `require_tier`). The tier column stays `free` (CHECK constraint untouched), so Stripe webhooks can never clobber a grant and expiry is implicit. The dict gains `comp_premium: True`; `get_subscription_status` reports `comp_until` and keeps `subscription_active` false for comp (no Stripe customer → no billing portal). Grants come from voucher redemption (`POST /api/voucher/redeem`, settings page + report-paywall modal, per-user attempt cap) or admin (`POST /api/admin/grant` by email, `GET/POST /api/admin/vouchers` to mint/list codes — AdminDashboard "Early Access" section). Stacking codes extends from the current expiry. Tests: `test_vouchers.py`.
+
 **Config settings**: `google_client_id`, `google_client_secret`, `jwt_secret`, `jwt_access_token_ttl` (900s), `jwt_refresh_token_ttl` (604800s), `auth_cookie_secure`, `frontend_url`.
 
 **CSRF enforcement**: `CSRFMiddleware` in `main.py` on all POST/PUT/DELETE/PATCH. Exempt paths: `/api/webhook/stripe` (server-to-server), `/api/auth/refresh` (cookie may be expired), `/api/auth/logout`. In dev mode (no `GOOGLE_CLIENT_ID`), CSRF is skipped entirely.

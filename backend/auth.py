@@ -166,6 +166,24 @@ async def get_current_user(request: Request) -> dict | None:
         return None
 
     user = await db.get_user_by_id(payload["sub"])
+    return _apply_comp_premium(user)
+
+
+def _apply_comp_premium(user: dict | None) -> dict | None:
+    """Effective tier: an unexpired premium_until grants premium to a free user.
+
+    This is the single choke point — every gate (report, discovery, rate
+    limits, require_tier) reads the dict returned here. The tier COLUMN stays
+    'free', so Stripe webhooks and the CHECK constraint are untouched;
+    comp_premium marks the grant so /api/subscription can distinguish it
+    from a real subscription.
+    """
+    if (
+        user
+        and user.get("tier") == "free"
+        and (user.get("premium_until") or 0) > int(time.time() * 1000)
+    ):
+        return {**user, "tier": "premium", "comp_premium": True}
     return user
 
 

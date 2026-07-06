@@ -231,7 +231,7 @@ export default function ScorecardPage() {
   const { t } = useTranslation("pages");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const { user, checkAuth } = useAuthContext();
   const { parcel, select } = useSelectedParcel();
   const [address, setAddress] = useState(searchParams.get("address") || "");
   const [data, setData] = useState<ScorecardResponse | null>(null);
@@ -920,6 +920,12 @@ export default function ScorecardPage() {
         <ReportPurchasePrompt
           parcel={parcel}
           onClose={() => setShowPurchasePrompt(false)}
+          onAccessGranted={() => {
+            // Voucher redeemed: the user is now comp-premium server-side.
+            setShowPurchasePrompt(false);
+            setReportAccess({ has_access: true, reason: "subscription" });
+            checkAuth();
+          }}
         />
       )}
     </div>

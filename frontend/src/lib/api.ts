@@ -158,10 +158,41 @@ export async function getSubscription(): Promise<{
   tier: string;
   stripe_customer_id: string | null;
   subscription_active: boolean;
+  comp_until: number | null;
 }> {
   const resp = await authFetch(`${API_BASE}/api/subscription`);
   if (!resp.ok) throw new Error("Failed to get subscription");
   return resp.json();
+}
+
+// Voucher redemption failure reasons, mapped from the endpoint's status codes.
+export type VoucherRedeemError = "invalid" | "already_redeemed" | "exhausted" | "error";
+
+export async function redeemVoucher(
+  code: string,
+): Promise<{ ok: true; premium_until: number } | { ok: false; reason: VoucherRedeemError }> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/voucher/redeem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return { ok: true, premium_until: data.premium_until };
+    }
+    const reason: VoucherRedeemError =
+      resp.status === 404 || resp.status === 400
+        ? "invalid"
+        : resp.status === 409
+          ? "already_redeemed"
+          : resp.status === 410
+            ? "exhausted"
+            : "error";
+    return { ok: false, reason };
+  } catch {
+    return { ok: false, reason: "error" };
+  }
 }
 
 export async function createReportCheckoutSession(
@@ -517,6 +548,65 @@ export async function deleteUpload(uploadId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Admin API
 // ---------------------------------------------------------------------------
+
+export interface VoucherRedemption {
+  user_id: string;
+  redeemed_at: number;
+  email: string | null;
+  name: string | null;
+}
+
+export interface AdminVoucher {
+  code: string;
+  label: string | null;
+  duration_days: number;
+  max_redemptions: number;
+  disabled: number;
+  created_at: number;
+  redemptions: VoucherRedemption[];
+}
+
+export async function fetchAdminVouchers(): Promise<AdminVoucher[]> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/vouchers`);
+    if (!resp.ok) return [];
+    return (await resp.json()).vouchers;
+  } catch { return []; }
+}
+
+export async function createAdminVoucher(params: {
+  label: string;
+  duration_days: number;
+  max_redemptions: number;
+  code?: string;
+}): Promise<AdminVoucher> {
+  const resp = await authFetch(`${API_BASE}/api/admin/vouchers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!resp.ok) {
+    const detail = (await resp.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : "Failed to create voucher");
+  }
+  return resp.json();
+}
+
+export async function adminGrantPremium(
+  email: string,
+  days: number,
+): Promise<{ email: string; premium_until: number }> {
+  const resp = await authFetch(`${API_BASE}/api/admin/grant`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, days }),
+  });
+  if (!resp.ok) {
+    const detail = (await resp.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : "Failed to grant access");
+  }
+  return resp.json();
+}
 
 export async function fetchAdminEngagement(period: string): Promise<EngagementMetrics | null> {
   try {

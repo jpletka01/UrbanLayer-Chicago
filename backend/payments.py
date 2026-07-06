@@ -291,9 +291,13 @@ async def cancel_user_subscription(user: dict) -> None:
 
 async def get_subscription_status(user: dict) -> dict:
     """Return current subscription status for the user."""
+    comp = bool(user.get("comp_premium"))
     result = {
         "tier": user["tier"],
         "stripe_customer_id": user.get("stripe_customer_id"),
-        "subscription_active": user["tier"] in ("premium", "admin"),
+        # Comp (voucher) premium is not a Stripe subscription — the billing
+        # portal would 500 for these users, so the UI must not offer it.
+        "subscription_active": user["tier"] in ("premium", "admin") and not comp,
+        "comp_until": user.get("premium_until") if comp else None,
     }
     return result

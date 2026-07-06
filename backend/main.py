@@ -4776,6 +4776,39 @@ async def billing_portal(request: Request, user: dict = Depends(require_auth)) -
     return {"url": url}
 
 
+# Voucher redemption — early-adopter comp premium (see db.redeem_voucher).
+# In-memory attempt cap: codes are unguessable, this just makes enumeration
+# by a signed-in user pointless. Resets on restart, which is fine.
+_VOUCHER_ATTEMPTS: dict[str, list[float]] = {}
+_VOUCHER_ATTEMPT_LIMIT = 10  # per user per hour
+
+
+@app.post("/api/voucher/redeem")
+async def voucher_redeem(request: Request, user: dict = Depends(require_auth)) -> dict:
+    body = await request.json()
+    code = str(body.get("code", "")).strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="code is required")
+
+    now = time.time()
+    attempts = [t for t in _VOUCHER_ATTEMPTS.get(user["id"], []) if now - t < 3600]
+    if len(attempts) >= _VOUCHER_ATTEMPT_LIMIT:
+        raise HTTPException(
+            status_code=429, detail="Too many attempts — try again in an hour"
+        )
+    attempts.append(now)
+    _VOUCHER_ATTEMPTS[user["id"]] = attempts
+
+    try:
+        premium_until = await db.redeem_voucher(code, user["id"])
+    except db.VoucherError as exc:
+        status = {"not_found": 404, "already_redeemed": 409, "exhausted": 410}[
+            exc.reason
+        ]
+        raise HTTPException(status_code=status, detail={"error": exc.reason})
+    return {"premium_until": premium_until}
+
+
 @app.get("/api/me/purchases")
 async def my_purchases(request: Request, user: dict = Depends(require_auth)) -> dict:
     """Completed report purchases for the current user (settings billing list)."""
@@ -4808,6 +4841,67 @@ async def delete_account(request: Request, user: dict = Depends(require_auth)):
 # ---------------------------------------------------------------------------
 # Admin API
 # ---------------------------------------------------------------------------
+
+# Unambiguous code alphabet: no 0/O, 1/I/L — codes get read aloud and retyped.
+_VOUCHER_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+
+
+@app.get("/api/admin/vouchers")
+async def admin_vouchers(
+    request: Request, _admin: dict = Depends(require_admin)
+) -> dict:
+    return {"vouchers": await db.list_vouchers()}
+
+
+@app.post("/api/admin/vouchers")
+async def admin_create_voucher(
+    request: Request, _admin: dict = Depends(require_admin)
+) -> dict:
+    import secrets
+
+    body = await request.json()
+    duration_days = int(body.get("duration_days", 30))
+    max_redemptions = int(body.get("max_redemptions", 1))
+    if duration_days < 1 or max_redemptions < 1:
+        raise HTTPException(
+            status_code=400, detail="duration_days and max_redemptions must be >= 1"
+        )
+    code = str(body.get("code") or "").strip().upper()
+    if not code:
+        code = "UL-" + "".join(
+            secrets.choice(_VOUCHER_ALPHABET) for _ in range(8)
+        )
+    if await db.get_voucher(code):
+        raise HTTPException(status_code=409, detail="Code already exists")
+    return await db.create_voucher(
+        code, body.get("label"), duration_days, max_redemptions
+    )
+
+
+@app.post("/api/admin/grant")
+async def admin_grant_premium(
+    request: Request, _admin: dict = Depends(require_admin)
+) -> dict:
+    """Grant comp premium by email — only works after the user's first sign-in."""
+    body = await request.json()
+    email = str(body.get("email", "")).strip()
+    days = int(body.get("days", 30))
+    if not email or days < 1:
+        raise HTTPException(status_code=400, detail="email and days >= 1 are required")
+    target = await db.get_user_by_email(email)
+    if target is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No account with that email — have them sign in once, "
+                "or send a voucher code instead."
+            ),
+        )
+    now_ms = int(time.time() * 1000)
+    until = max(now_ms, target.get("premium_until") or 0) + days * 86_400_000
+    await db.set_premium_until(target["id"], until)
+    return {"user_id": target["id"], "email": target["email"], "premium_until": until}
+
 
 @app.get("/api/admin/cache")
 async def admin_cache(request: Request, _admin: dict = Depends(require_admin)) -> dict:

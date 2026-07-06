@@ -565,6 +565,16 @@
     "deleteConfirmWord": "eliminar",
     "deleteConfirm": "Eliminar permanentemente",
     "deleting": "Eliminando…",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "accessCode": "Código de acceso",
+    "accessCodePlaceholder": "Ingresa el código",
+    "accessCodeApply": "Aplicar",
+    "accessCodeApplying": "Aplicando…",
+    "accessCodeSuccess": "Acceso anticipado activo hasta {{date}}.",
+    "accessCodeInvalid": "Ese código no es válido.",
+    "accessCodeAlreadyUsed": "Ya has usado este código.",
+    "accessCodeExhausted": "Este código alcanzó su límite de canjes.",
+    "accessCodeError": "Algo salió mal — inténtalo de nuevo.",
+    "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}."
   }
 }

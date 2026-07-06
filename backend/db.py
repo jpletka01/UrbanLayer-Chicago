@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 13
+_SCHEMA_VERSION = 14
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -200,6 +200,39 @@ CREATE TABLE IF NOT EXISTS subscribers (
 """)
 
 
+async def _migrate_v14(db: aiosqlite.Connection) -> None:
+    """Early-adopter vouchers: time-boxed complimentary premium.
+
+    users.premium_until (epoch ms) grants premium while in the future —
+    deliberately a separate column from tier, so Stripe webhooks (which write
+    tier) can never clobber a comp grant and expiry needs no revocation job.
+    """
+    cur = await db.execute("PRAGMA table_info(users)")
+    cols = {row[1] for row in await cur.fetchall()}
+    if "premium_until" not in cols:
+        await db.execute("ALTER TABLE users ADD COLUMN premium_until INTEGER")
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS vouchers (
+    code            TEXT PRIMARY KEY,
+    label           TEXT,
+    duration_days   INTEGER NOT NULL,
+    max_redemptions INTEGER NOT NULL DEFAULT 1,
+    disabled        INTEGER NOT NULL DEFAULT 0,
+    created_at      INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS voucher_redemptions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    voucher_code TEXT NOT NULL REFERENCES vouchers(code),
+    user_id      TEXT NOT NULL,
+    redeemed_at  INTEGER NOT NULL,
+    UNIQUE(voucher_code, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vr_code ON voucher_redemptions(voucher_code);
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -341,6 +374,7 @@ async def init_db() -> None:
         await _migrate_v11(_db)
         await _migrate_v12(_db)
         await _migrate_v13(_db)
+        await _migrate_v14(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -381,6 +415,9 @@ async def init_db() -> None:
         if version < 13:
             await _migrate_v13(_db)
             version = 13
+        if version < 14:
+            await _migrate_v14(_db)
+            version = 14
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -1120,6 +1157,15 @@ async def get_user_by_stripe_customer(customer_id: str) -> dict | None:
     return dict(row) if row else None
 
 
+async def get_user_by_email(email: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT * FROM users WHERE lower(email) = lower(?)", (email,)
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
 async def update_user_tier(user_id: str, tier: str) -> None:
     db = _get_db()
     await db.execute(
@@ -1138,6 +1184,113 @@ async def update_user_stripe(
         (customer_id, subscription_id, _now_ms(), user_id),
     )
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Vouchers — time-boxed complimentary premium for early adopters
+# ---------------------------------------------------------------------------
+
+class VoucherError(Exception):
+    """Redemption failure with a machine-readable reason:
+    'not_found' | 'already_redeemed' | 'exhausted'."""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+async def set_premium_until(user_id: str, until_ms: int | None) -> None:
+    db = _get_db()
+    await db.execute(
+        "UPDATE users SET premium_until = ?, updated_at = ? WHERE id = ?",
+        (until_ms, _now_ms(), user_id),
+    )
+    await db.commit()
+
+
+async def create_voucher(
+    code: str,
+    label: str | None,
+    duration_days: int,
+    max_redemptions: int = 1,
+) -> dict:
+    db = _get_db()
+    await db.execute(
+        """
+        INSERT INTO vouchers (code, label, duration_days, max_redemptions, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (code, label, duration_days, max_redemptions, _now_ms()),
+    )
+    await db.commit()
+    return (await get_voucher(code)) or {}
+
+
+async def get_voucher(code: str) -> dict | None:
+    db = _get_db()
+    cur = await db.execute("SELECT * FROM vouchers WHERE code = ?", (code,))
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def list_vouchers() -> list[dict]:
+    """All vouchers, newest first, each with its redemption history."""
+    db = _get_db()
+    cur = await db.execute("SELECT * FROM vouchers ORDER BY created_at DESC")
+    vouchers = [dict(row) for row in await cur.fetchall()]
+    for v in vouchers:
+        cur = await db.execute(
+            """
+            SELECT vr.user_id, vr.redeemed_at, u.email, u.name
+            FROM voucher_redemptions vr
+            LEFT JOIN users u ON u.id = vr.user_id
+            WHERE vr.voucher_code = ?
+            ORDER BY vr.redeemed_at
+            """,
+            (v["code"],),
+        )
+        v["redemptions"] = [dict(r) for r in await cur.fetchall()]
+    return vouchers
+
+
+async def redeem_voucher(code: str, user_id: str) -> int:
+    """Redeem a voucher for a user; returns the new premium_until (epoch ms).
+
+    Extends from max(now, existing premium_until) so stacking a second code
+    adds its full duration. Raises VoucherError on any validation failure.
+    """
+    db = _get_db()
+    voucher = await get_voucher(code)
+    if voucher is None or voucher["disabled"]:
+        raise VoucherError("not_found")
+
+    cur = await db.execute(
+        "SELECT COUNT(*), MAX(user_id = ?) FROM voucher_redemptions WHERE voucher_code = ?",
+        (user_id, code),
+    )
+    count, already = await cur.fetchone()
+    if already:
+        raise VoucherError("already_redeemed")
+    if count >= voucher["max_redemptions"]:
+        raise VoucherError("exhausted")
+
+    user = await get_user_by_id(user_id)
+    if user is None:
+        raise VoucherError("not_found")
+
+    now = _now_ms()
+    base = max(now, user.get("premium_until") or 0)
+    until = base + voucher["duration_days"] * 86_400_000
+    await db.execute(
+        "INSERT INTO voucher_redemptions (voucher_code, user_id, redeemed_at) VALUES (?, ?, ?)",
+        (code, user_id, now),
+    )
+    await db.execute(
+        "UPDATE users SET premium_until = ?, updated_at = ? WHERE id = ?",
+        (until, now, user_id),
+    )
+    await db.commit()
+    return until
 
 
 async def save_refresh_token(

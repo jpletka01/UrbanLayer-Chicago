@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createReportCheckoutSession, createCheckoutSession } from "../lib/api";
+import { createReportCheckoutSession, createCheckoutSession, redeemVoucher } from "../lib/api";
 import type { SelectedParcel } from "../lib/types";
 import { track } from "../lib/tracking";
 import { Modal } from "./ui/Modal";
@@ -8,14 +8,42 @@ import { Modal } from "./ui/Modal";
 interface ReportPurchasePromptProps {
   parcel: SelectedParcel;
   onClose: () => void;
+  /** Called after a successful voucher redemption — the caller owns
+      refreshing report access and auth state. */
+  onAccessGranted?: () => void;
 }
 
 export default function ReportPurchasePrompt({
   parcel,
   onClose,
+  onAccessGranted,
 }: ReportPurchasePromptProps) {
   const { t } = useTranslation(["pages", "common"]);
   const [loading, setLoading] = useState<"report" | "pro" | null>(null);
+  const [showCode, setShowCode] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+
+  async function handleApplyCode() {
+    const trimmed = code.trim();
+    if (!trimmed || codeBusy) return;
+    setCodeBusy(true);
+    setCodeError(null);
+    const result = await redeemVoucher(trimmed);
+    setCodeBusy(false);
+    if (result.ok) {
+      onAccessGranted?.();
+    } else {
+      const key = {
+        invalid: "settings.accessCodeInvalid",
+        already_redeemed: "settings.accessCodeAlreadyUsed",
+        exhausted: "settings.accessCodeExhausted",
+        error: "settings.accessCodeError",
+      }[result.reason];
+      setCodeError(t(key));
+    }
+  }
 
   async function handleBuyReport() {
     setLoading("report");
@@ -83,6 +111,43 @@ export default function ReportPurchasePrompt({
           >
             {loading === "pro" ? t("common:reportPrompt.redirectingShort") : t("common:reportPrompt.upgrade")}
           </button>
+        </div>
+
+        <div className="mt-3 text-center">
+          {showCode ? (
+            <div>
+              <div className="flex items-center justify-center gap-2">
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyCode()}
+                  autoFocus
+                  placeholder={t("settings.accessCodePlaceholder")}
+                  className="w-40 px-2.5 py-1 rounded-md bg-dark-elevated border border-dark-border text-caption text-text-primary uppercase placeholder:normal-case focus:outline-none focus:border-accent/60"
+                />
+                <button
+                  onClick={handleApplyCode}
+                  disabled={codeBusy || !code.trim()}
+                  className="px-2.5 py-1 rounded-md border border-dark-border text-caption text-text-secondary hover:text-accent hover:border-accent/40 transition-colors disabled:opacity-50"
+                >
+                  {codeBusy
+                    ? t("settings.accessCodeApplying")
+                    : t("settings.accessCodeApply")}
+                </button>
+              </div>
+              {codeError && (
+                <p className="mt-1.5 text-caption text-state-negative">{codeError}</p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCode(true)}
+              className="text-caption text-text-secondary hover:text-accent transition-colors"
+            >
+              {t("common:reportPrompt.haveCode")}
+            </button>
+          )}
         </div>
 
         <button

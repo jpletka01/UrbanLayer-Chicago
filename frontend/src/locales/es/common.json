@@ -71,7 +71,8 @@
     "orPro": "O obtén informes ilimitados con Pro",
     "upgrade": "Actualizar — $99/mes",
     "redirectingShort": "Redirigiendo…",
-    "bodyPrefix": "Descarga un informe profesional de viabilidad de desarrollo para"
+    "bodyPrefix": "Descarga un informe profesional de viabilidad de desarrollo para",
+    "haveCode": "¿Tienes un código de acceso?"
   },
   "loadConversationError": "No se pudo cargar la conversación. Es posible que se haya eliminado o que no tengas acceso.",
   "transcriptTitle": "Transcripción de Chicago",

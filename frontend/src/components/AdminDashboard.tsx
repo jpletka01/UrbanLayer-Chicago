@@ -27,6 +27,7 @@ import { LatencyTable } from "./admin/LatencyTable";
 import { RequestsTable } from "./admin/RequestsTable";
 import { BenchmarkSection } from "./admin/BenchmarkSection";
 import { JudgeSection } from "./admin/JudgeSection";
+import { VouchersSection } from "./admin/VouchersSection";
 import { PieChart } from "./sidebar/PieChart";
 import { BarChart } from "./sidebar/BarChart";
 import { CountUp } from "./CountUp";
@@ -569,6 +570,14 @@ export function AdminDashboard() {
                 onLoadMore={handleLoadMore}
                 hasMore={requests.length >= requestOffset}
               />
+            </section>
+
+            {/* Row 9: Early-adopter access (voucher codes + email grants) */}
+            <section className="bg-dark-surface border border-dark-border rounded-xl p-4">
+              <h2 className="text-body font-semibold text-text-secondary mb-3">
+                Early Access
+              </h2>
+              <VouchersSection />
             </section>
           </div>
         )}

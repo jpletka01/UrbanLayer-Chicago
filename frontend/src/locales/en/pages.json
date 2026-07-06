@@ -565,6 +565,16 @@
     "deleteConfirmWord": "delete",
     "deleteConfirm": "Permanently delete",
     "deleting": "Deleting…",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "accessCode": "Access code",
+    "accessCodePlaceholder": "Enter code",
+    "accessCodeApply": "Apply",
+    "accessCodeApplying": "Applying…",
+    "accessCodeSuccess": "Early access active until {{date}}.",
+    "accessCodeInvalid": "That code isn't valid.",
+    "accessCodeAlreadyUsed": "You've already used this code.",
+    "accessCodeExhausted": "This code has reached its redemption limit.",
+    "accessCodeError": "Something went wrong — please try again.",
+    "compBlurb": "Early access — complimentary Pro features until {{date}}."
   }
 }
