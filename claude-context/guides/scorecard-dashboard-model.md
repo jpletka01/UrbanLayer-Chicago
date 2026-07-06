@@ -1,5 +1,14 @@
 # Scorecard as a Property Dashboard — design model (2026-07-01, NO CODE YET)
 
+> **2026-07-06 partial supersede** (`archive/2026-07-06_scorecard-usability.md`): diagnosis #1
+> (stretch gaps) is mitigated in production — section grids are `md:items-start` + the regulatory
+> card has a top-6 constraint budget; diagnosis #3 (action afterthought) is RESOLVED differently
+> than proposed: the sticky **ask bar is superseded by MiniChatDock** (bottom-right grounded
+> quick-chat; per-card chips now open it in place via `InvestigateButton onAsk` instead of dying
+> or navigating away; ephemeral-unless-escalated). Open question 2 (ask bar vs chat page) is
+> thereby answered. Still open: the fixed-height 12-col module layout, KPI strip w/ benchmarks,
+> identity rail, and the Phase A/B insight layer.
+
 Companion to `bento-pro-phase3-app-surfaces.md`. Output of the "what is this page
 for" discussion with Jack; supersedes the question-section layout as the *target*
 (what shipped on the branch stays until this is approved and built).

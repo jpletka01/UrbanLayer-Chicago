@@ -1,8 +1,9 @@
 # Parcel Resolution — Canonical Truth Model & Design Spec
 
-**Status:** DESIGN OF RECORD (decided 2026-06-11). Supersedes the ad-hoc resolution
-behavior described across R5/R6/R7 in `report-status.md`. **No code yet** — this doc
-defines the target before implementation.
+**Status:** DESIGN OF RECORD (decided 2026-06-11) — **IMPLEMENTED & LIVE.** Superseded the
+ad-hoc coordinate-driven resolution of the R5/R6/R7 era. The seam fix shipped 2026-06-21
+(`main` @ `6a23793`; see `archive/2026-06-21_pin-resolution-seam.md`); current caveats live in
+`core/known-issues.md`. This doc remains the canonical contract for how identity may be written.
 
 **Problem being closed:** R7 — under the current (indefinite) Cook County GIS outage,
 address-typed report/scorecard requests resolve the **wrong parcel ~77%** of the time
