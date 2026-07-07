@@ -30,6 +30,19 @@ EXPLICIT_COORDS = (41.8500, -87.6500)
 # 14283190070000 (481 W Deming Pl, class EX) has no address point.
 
 
+@pytest.fixture(autouse=True)
+def _assessor_step_off():
+    """Step 3.5 (assessor address→PIN) defaults ON since 2026-07-07. These tests
+    isolate steps 1–4 with mocks; without this, any address-path test whose AP
+    mock returns None falls through to the LIVE assessor + Parcel Universe
+    lookups. The dedicated step-3.5 tests re-enable it via _enable_assessor()
+    (their inner patch wins over this fixture's)."""
+    with patch.object(
+        main_mod.get_settings(), "assessor_address_resolution_enabled", False
+    ):
+        yield
+
+
 def _patch_pin_lookup(lat_lon):
     """Patch the lazily-imported socrata_get used by the PIN branch (step 2)."""
     rows = [] if lat_lon is None else [{"lat": str(lat_lon[0]), "lon": str(lat_lon[1])}]

@@ -320,6 +320,7 @@ export interface PropertySummary {
   bldg_sqft_source?: string | null;
   year_built_source?: string | null;
   stories_source?: string | null;
+  units_source?: string | null;
   stories: number | null;
   units: number | null;
   commercial_units: number | null;

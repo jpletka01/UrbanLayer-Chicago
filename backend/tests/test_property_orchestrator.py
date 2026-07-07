@@ -282,7 +282,7 @@ def test_build_summary_geometry_and_fallback_merge():
     bare_parcel = {"pin14": "20331000020000", "bldg_class": "517", "address": None}
     fallbacks = {
         "condo": None,
-        "commercial_sqft": 12500,
+        "commercial": {"bldg_sqft": 12500, "year_built": None, "units": None},
         "footprint": {"stories": 2, "year_built": 1924, "bldg_sqft": None},
     }
     geo = {"land_sqft_geom": 7381, "parcel_geometry": {"type": "Polygon", "coordinates": []},
@@ -309,7 +309,7 @@ def test_build_summary_condo_unit_facts():
     condo_parcel = {"pin14": "17102140281234", "bldg_class": "299", "address": None}
     fallbacks = {
         "condo": {"unit_sqft": 1150, "year_built": 2007, "bedrooms": 2},
-        "commercial_sqft": None,
+        "commercial": None,
         "footprint": None,
     }
     s = _build_summary(condo_parcel, None, [], [], None, building_fallbacks=fallbacks)
@@ -325,7 +325,7 @@ def test_build_summary_energy_benchmark_merge():
     parcel = {"pin14": "14211000010000", "bldg_class": "599", "address": None}
     fallbacks = {
         "condo": None,
-        "commercial_sqft": None,
+        "commercial": None,
         "energy": {
             "chicago_energy_rating": 3.5, "energy_star_score": 74,
             "gross_floor_area": 249095, "year_built": 1927,
@@ -345,7 +345,7 @@ def test_build_summary_energy_benchmark_merge():
     assert s.energy.energy_star_score == 74
 
     # Commercial valuation (assessor-adjacent) still outranks energy GFA.
-    fallbacks2 = dict(fallbacks, commercial_sqft=200000)
+    fallbacks2 = dict(fallbacks, commercial={"bldg_sqft": 200000, "year_built": None, "units": None})
     s2 = _build_summary(parcel, None, [], [], None, building_fallbacks=fallbacks2)
     assert s2.bldg_sqft == 200000 and s2.bldg_sqft_source == "commercial_valuation"
     assert s2.energy is not None  # opex facts surface regardless of fill

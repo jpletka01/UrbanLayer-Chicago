@@ -338,11 +338,14 @@ class PropertySummary(BaseModel):
     # land: "assessor" | "gis" | "geometry" (PTAXSIM parcel polygon area).
     # bldg: "assessor" | "gis" | "condo_unit" | "commercial_valuation" (economic-
     #   unit total) | "footprint" (city layer, uneven freshness).
-    # year/stories: "assessor" | "footprint".
+    # year/stories: "assessor" | "commercial_valuation" (year only) | "footprint".
+    # units: "assessor" (decoded 2xx chars) | "commercial_valuation" (CCAO
+    #   valuation tot_units — filled only for single-PIN economic units).
     land_sqft_source: str | None = None
     bldg_sqft_source: str | None = None
     year_built_source: str | None = None
     stories_source: str | None = None
+    units_source: str | None = None
     # Fractional values are real ("1.5 Story" is a CCAO residence type)
     stories: float | None = None
     units: int | None = None

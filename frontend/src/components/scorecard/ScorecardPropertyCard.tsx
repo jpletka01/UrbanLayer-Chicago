@@ -241,7 +241,8 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 sourceHint={sourceHintFor(data.land_sqft_source, t)} />
               <Fact label={t("property.stories")} value={data.stories ? String(data.stories) : null}
                 sourceHint={sourceHintFor(data.stories_source, t)} />
-              <Fact label={t("property.units")} value={data.units ? String(data.units) : null} />
+              <Fact label={t("property.units")} value={data.units ? String(data.units) : null}
+                sourceHint={sourceHintFor(data.units_source, t)} />
               <Fact label={t("property.commercialUnits")} value={data.commercial_units ? String(data.commercial_units) : null} />
               <Fact label={t("property.rooms")} value={data.rooms ? String(data.rooms) : null} />
               <Fact label={t("property.bedrooms")} value={data.bedrooms ? String(data.bedrooms) : null} />

@@ -104,8 +104,10 @@ async def test_socrata_error_returns_none():
     assert result is None
 
 
-async def test_query_shape_uses_abbrev_direction_year_and_like():
-    """Lock the query: year filter, like on number+abbrev-direction+name, select."""
+async def test_query_shape_uses_abbrev_direction_city_and_like():
+    """Lock the query: like on number+abbrev-direction+name, Chicago scope,
+    newest-first order, NO hard year filter (a `year=<current>` equality missed
+    addresses whose rows stop earlier — 1425 N Wells St ends at 2001)."""
     rows = [{"pin": "14283190070000", "prop_address_full": "481 W DEMING PL"}]
     mock = AsyncMock(return_value=rows)
     with patch.object(parcel_addresses, "socrata_get", new=mock):
@@ -113,8 +115,44 @@ async def test_query_shape_uses_abbrev_direction_year_and_like():
     args = mock.call_args.args
     params = args[1]
     where = params["$where"]
-    assert "year=" in where
+    assert "year=" not in where
     # abbreviated single-letter directional (the dataset stores "481 W DEMING PL")
     assert "like '481 W DEMING%'" in where
-    assert params["$select"] == "pin,prop_address_full"
+    # county-wide dataset scoped to Chicago (suburb street-name collisions)
+    assert "upper(prop_address_city_name)='CHICAGO'" in where
+    assert params["$select"] == "pin,prop_address_full,year"
+    assert params["$order"] == "year DESC"
     assert "$limit" in params
+
+
+async def test_newest_year_wins_over_historical_mapping():
+    """A re-addressed parcel resolves to the CURRENT mapping — older-year rows
+    pointing at a different PIN must not force a false multi-match."""
+    rows = [
+        {"pin": "11111111111111", "prop_address_full": "481 W DEMING PL", "year": "2026.0"},
+        {"pin": "22222222222222", "prop_address_full": "481 W DEMING PL", "year": "2001"},
+    ]
+    with _patch_socrata(rows):
+        result = await parcel_addresses.assessor_address_to_pin("481 W Deming Pl")
+    assert result == "11111111111111"
+
+
+async def test_historical_only_address_resolves_its_last_mapping():
+    """An address whose rows stop in the past (1425 N Wells St → retired parcel)
+    still returns that last PIN — the caller's Parcel Universe centroid
+    requirement is what rejects a PIN that no longer exists."""
+    rows = [
+        {"pin": "17042050520000", "prop_address_full": "1425 N WELLS ST", "year": "2001"},
+        {"pin": "17042050520000", "prop_address_full": "1425 N WELLS ST", "year": "2000"},
+    ]
+    with _patch_socrata(rows):
+        result = await parcel_addresses.assessor_address_to_pin("1425 N Wells St")
+    assert result == "17042050520000"
+
+
+async def test_malformed_pin_rejected_not_padded():
+    """Non-14-digit PINs are never repaired by padding (corrupt-PIN hazard)."""
+    rows = [{"pin": "1428319007000", "prop_address_full": "481 W DEMING PL", "year": "2026"}]
+    with _patch_socrata(rows):
+        result = await parcel_addresses.assessor_address_to_pin("481 W Deming Pl")
+    assert result is None

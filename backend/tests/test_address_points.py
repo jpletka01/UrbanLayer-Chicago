@@ -87,6 +87,47 @@ async def test_socrata_error_returns_none():
     assert result is None
 
 
+async def test_malformed_short_pin_rejected_not_padded():
+    """A corrupt 13-digit PIN (1620 N Orchard, found 2026-07-07) must be a
+    no-match — zfill would left-pad it into a nonexistent township-01 PIN
+    served as authoritative identity."""
+    rows = [{"pin": "1433314059000", "lat": "41.9116", "long": "-87.6462"}]
+    with _patch_socrata(rows):
+        result = await address_points.address_to_pin("1620 N Orchard St")
+    assert result is None
+
+
+async def test_malformed_long_pin_rejected():
+    """15-digit corrupt PIN (1401-11 W 19th St rows) → no-match."""
+    rows = [{"pin": "172203210210000", "lat": "41.85", "long": "-87.66"}]
+    with _patch_socrata(rows):
+        result = await address_points.address_to_pin("1401 W 19th St")
+    assert result is None
+
+
+async def test_malformed_pin_row_ignored_beside_valid_row():
+    """A corrupt row alongside a well-formed one must not force a multi-match."""
+    rows = [
+        {"pin": "1433314059000", "lat": "41.9", "long": "-87.6"},
+        {"pin": "14333140590000", "lat": "41.9116", "long": "-87.6462"},
+    ]
+    with _patch_socrata(rows):
+        result = await address_points.address_to_pin("1620 N Orchard St")
+    assert result is not None
+    assert result["pin14"] == "14333140590000"
+
+
+async def test_query_scopes_to_chicago_municipality():
+    """78yw-iddh is county-wide; without inc_muni a suburban row with the same
+    number+direction+street collides (1401 W 19th St exists in Maywood too)."""
+    rows = [{"pin": "14283180570000", "lat": "41.9", "long": "-87.6"}]
+    mock = AsyncMock(return_value=rows)
+    with patch.object(address_points, "socrata_get", new=mock):
+        await address_points.address_to_pin("443 W Wrightwood Ave")
+    where = mock.call_args.args[1]["$where"]
+    assert "inc_muni='Chicago'" in where
+
+
 async def test_match_with_null_coords_returns_none():
     """Authoritative PIN but unusable point → None (caller will geocode)."""
     rows = [{"pin": "14283180570000", "lat": None, "long": None}]

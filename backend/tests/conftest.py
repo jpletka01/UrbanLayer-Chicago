@@ -82,7 +82,7 @@ def _no_external_property_fallbacks(request):
               new=AsyncMock(return_value=None)),
         patch("backend.retrieval.property.building_facts.get_condo_characteristics",
               new=AsyncMock(return_value=None)),
-        patch("backend.retrieval.property.building_facts.get_commercial_building_sqft",
+        patch("backend.retrieval.property.building_facts.get_commercial_facts",
               new=AsyncMock(return_value=None)),
         patch("backend.retrieval.property.building_facts.get_footprint_facts",
               new=AsyncMock(return_value=None)),

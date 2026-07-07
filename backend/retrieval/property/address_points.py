@@ -32,6 +32,11 @@ _NOT_FOUND = object()
 # so the query is robust to mixed encodings but still direction-constrained.
 _DIRECTION_WORD = {"N": "NORTH", "S": "SOUTH", "E": "EAST", "W": "WEST"}
 
+# A Cook County PIN is exactly 14 digits. Chicago Address Points holds 582k
+# well-formed PINs and 7 corrupt ones (12–15 digits, verified 2026-07-07) —
+# anything else is treated as no-match, never repaired by padding.
+_PIN14_RE = re.compile(r"\d{14}")
+
 
 async def address_to_pin(
     address: str,
@@ -61,13 +66,18 @@ async def address_to_pin(
     settings = get_settings()
     # Columns confirmed against the live 78yw-iddh schema: add_number, st_predir
     # (spelled-out word, e.g. "WEST"), st_name (no suffix), pin, lat, long (note:
-    # `long`, not `lon`).
+    # `long`, not `lon`). inc_muni scopes the match to Chicago — the dataset is
+    # county-wide, and an unscoped number+direction+street match collides with
+    # suburban rows (1401 W 19th St also exists in Maywood/Berwyn): at best a
+    # false multi-match fall-through, at worst a unique *suburban* parcel
+    # returned as this Chicago address's identity.
     dir_word = _DIRECTION_WORD.get(direction, direction)
     params = {
         "$where": (
             f"add_number='{number}' "
             f"AND upper(st_predir) in ('{direction}','{dir_word}') "
-            f"AND upper(st_name)='{name.upper()}'"
+            f"AND upper(st_name)='{name.upper()}' "
+            "AND inc_muni='Chicago'"
         ),
         "$select": "pin,lat,long",
         "$limit": settings.limit_address_points,
@@ -88,9 +98,17 @@ async def address_to_pin(
         _cache.set(key, _NOT_FOUND)
         return None
 
-    # A confident match is a single distinct PIN. Multiple distinct PINs (address
-    # range, multi-PIN building, ambiguous parse) is NOT confident → fall through.
-    distinct_pins = {str(r.get("pin", "")).replace("-", "").zfill(14) for r in rows}
+    # A confident match is a single distinct WELL-FORMED PIN. A Cook County PIN
+    # is exactly 14 digits; Address Points carries a handful of corrupt rows
+    # (13/15-digit PINs — e.g. 1620 N Orchard, 1401-11 W 19th, found 2026-07-07)
+    # and zfill alone would left-pad a short one into a *different, nonexistent*
+    # PIN ("1433314059000" → township-01) served as authoritative identity.
+    # Malformed PINs are treated as no-match → fall through to step 3.5/degraded.
+    distinct_pins = {
+        cleaned
+        for r in rows
+        if _PIN14_RE.fullmatch(cleaned := str(r.get("pin", "")).replace("-", ""))
+    }
     distinct_pins.discard("00000000000000")
     if len(distinct_pins) != 1:
         log.info(

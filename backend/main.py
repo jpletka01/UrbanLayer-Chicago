@@ -1748,6 +1748,20 @@ async def scorecard(
                 resolved_confidence = "authoritative"
             else:
                 nearest_parcel_unverified = True
+    # INV-1 guard: one artifact, one parcel. An authoritative resolved PIN whose
+    # property record came back for a DIFFERENT pin14 means the PIN-keyed lookup
+    # missed (PIN absent from Parcel Universe) and the orchestrator's coordinate
+    # fallback resolved a nearby parcel instead — the identity is still the
+    # resolved PIN, but the property/tax/comps figures describe the neighbor, so
+    # they must carry the same caveat the approximate path uses.
+    elif resolved_pin and resolved_confidence == "authoritative":
+        prop = data["context"].property
+        if prop and prop.pin14 and prop.pin14 != resolved_pin:
+            log.warning(
+                "INV-1 mismatch: resolved_pin=%s but property record is %s",
+                resolved_pin, prop.pin14,
+            )
+            nearest_parcel_unverified = True
 
     data["resolved_pin"] = resolved_pin
     data["resolved_confidence"] = resolved_confidence

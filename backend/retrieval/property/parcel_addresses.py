@@ -65,13 +65,25 @@ async def assessor_address_to_pin(
     # `prop_address_full` stores the full string with the abbreviated directional
     # ("481 W DEMING PL"). Prefix-match on number+dir+name (a coarse server-side
     # filter), then re-parse each row below to keep only exact-component matches.
+    # The dataset is per-YEAR (one address-of-record row per PIN per year); no
+    # year equality here — a hard `year=<current>` missed addresses whose rows
+    # stop earlier (1425 N Wells St ends at 2001; the parcel was redeveloped).
+    # Rows are ordered newest-first and only the newest matching year is used
+    # (below), so a re-addressed parcel resolves to its CURRENT mapping and a
+    # retired PIN is later rejected by the caller's Parcel Universe centroid
+    # requirement (a PIN with no current PU row never becomes identity).
     like = f"{number} {direction} {name_upper}%"
     params = {
-        "$select": "pin,prop_address_full",
+        "$select": "pin,prop_address_full,year",
         "$where": (
-            f"year={settings.assessor_address_year} "
-            f"AND upper(prop_address_full) like '{like}'"
+            f"upper(prop_address_full) like '{like}' "
+            # County-wide dataset: scope to Chicago so a same-named suburban
+            # street can't collide into a false multi-match or, worse, a unique
+            # suburban parcel (same defect class as 78yw-iddh's inc_muni,
+            # fixed 2026-07-07).
+            "AND upper(prop_address_city_name)='CHICAGO'"
         ),
+        "$order": "year DESC",
         "$limit": settings.limit_assessor_addresses,
     }
     try:
@@ -93,8 +105,10 @@ async def assessor_address_to_pin(
     # Keep only rows whose own address re-parses to the SAME number+direction+name.
     # Numbered streets share a stripped name across suffixes ("87TH ST"/"87TH PL"),
     # so they can still multi-match here → conservative fall-through (same limit as
-    # Address Points), never a wrong pick.
-    distinct_pins: set[str] = set()
+    # Address Points), never a wrong pick. Matches are bucketed by dataset year and
+    # only the NEWEST year with any exact match counts — a parcel re-addressed in
+    # 2019 must resolve to the current mapping, not multi-match against its history.
+    matches_by_year: dict[str, set[str]] = {}
     for r in rows:
         rp = parse_chicago_address(r.get("prop_address_full", "") or "")
         if not rp:
@@ -104,7 +118,23 @@ async def assessor_address_to_pin(
             and rp["direction"] == direction
             and rp["name"].upper() == name_upper
         ):
-            distinct_pins.add(str(r.get("pin", "")).replace("-", "").zfill(14))
+            # Exactly 14 digits or it isn't a PIN — never repaired by padding
+            # (same corrupt-PIN hazard as Address Points, fixed 2026-07-07).
+            cleaned = str(r.get("pin", "")).replace("-", "")
+            if len(cleaned) == 14 and cleaned.isdigit():
+                year = str(r.get("year", "") or "")
+                matches_by_year.setdefault(year, set()).add(cleaned)
+    def _year_num(y: str) -> float:
+        # The portal renders the year column inconsistently ("2026.0" vs "2025").
+        try:
+            return float(y)
+        except ValueError:
+            return float("-inf")
+
+    newest_year = max(matches_by_year, key=_year_num, default=None)
+    distinct_pins = (
+        matches_by_year[newest_year] if newest_year is not None else set()
+    )
     distinct_pins.discard("00000000000000")
 
     # A confident match is a single distinct PIN. Zero (no exact match survived the

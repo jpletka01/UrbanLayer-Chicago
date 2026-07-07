@@ -147,7 +147,9 @@ async def property_domain(
             chars = None
 
         building_fallbacks = await _fetch_building_fallbacks(
-            parcel, chars, assessments, lat, lon, client=client,
+            parcel, chars, assessments, lat, lon,
+            parcel_geojson=(geometry_facts or {}).get("parcel_geometry"),
+            client=client,
         )
 
         return _build_summary(parcel, chars, assessments, sales, tax_result,
@@ -168,13 +170,14 @@ async def _fetch_building_fallbacks(
     lat: float,
     lon: float,
     *,
+    parcel_geojson: dict | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> dict | None:
     """Phase 2: building-fact fallbacks, fetched only when the primary CCAO
     characteristics left gaps (x54s-btds covers regression-class residential
     only — the 2026-07-02 benchmark measured 0% bldg facts everywhere else).
 
-    Returns {"condo": ..., "commercial_sqft": ..., "footprint": ...} (each
+    Returns {"condo": ..., "commercial": ..., "footprint": ...} (each
     possibly None) or None when nothing was needed/fetched.
     """
     cls = str(
@@ -194,7 +197,7 @@ async def _fetch_building_fallbacks(
         return None
 
     from backend.retrieval.property.building_facts import (
-        get_commercial_building_sqft,
+        get_commercial_facts,
         get_condo_characteristics,
         get_footprint_facts,
     )
@@ -205,12 +208,16 @@ async def _fetch_building_fallbacks(
         # only bother when the primary lookup came back empty.
         from backend.retrieval.property.energy import get_energy_benchmark
         coros["condo"] = get_condo_characteristics(parcel["pin14"], client=client)
-        coros["commercial_sqft"] = get_commercial_building_sqft(parcel["pin14"], client=client)
+        coros["commercial"] = get_commercial_facts(parcel["pin14"], client=client)
         # ≥50k-sqft buildings live outside x54s by definition — the energy
         # benchmarking lookup rides the same no-chars gate (CRE opex facts +
         # sqft/year-built fill for the large-building segment).
         coros["energy"] = get_energy_benchmark(lat, lon, client=client)
-    coros["footprint"] = get_footprint_facts(lat, lon, client=client)
+    # Point-in-parcel when the PTAXSIM polygon is available (the 25 m circle
+    # missed large parcels and risks the neighbor's building on narrow lots).
+    coros["footprint"] = get_footprint_facts(
+        lat, lon, parcel_geojson=parcel_geojson, client=client
+    )
 
     done = await asyncio.gather(*coros.values(), return_exceptions=True)
     fallbacks: dict[str, Any] = {}
@@ -429,6 +436,7 @@ def _build_summary(
     # per-field provenance so the UI/report can label non-assessor numbers.
     year_built_source = "assessor" if year_built else None
     stories_source = "assessor" if stories else None
+    units_source = "assessor" if units else None
     energy_summary = None
     if building_fallbacks:
         condo = building_fallbacks.get("condo")
@@ -442,9 +450,19 @@ def _build_summary(
                 bldg_age = datetime.date.today().year - year_built
             if not bedrooms and condo.get("bedrooms"):
                 bedrooms = condo["bedrooms"]
-        if not bldg_sqft and building_fallbacks.get("commercial_sqft"):
-            bldg_sqft = building_fallbacks["commercial_sqft"]
-            bldg_sqft_source = "commercial_valuation"
+        commercial = building_fallbacks.get("commercial")
+        if commercial:
+            if not bldg_sqft and commercial.get("bldg_sqft"):
+                bldg_sqft = commercial["bldg_sqft"]
+                bldg_sqft_source = "commercial_valuation"
+            if not year_built and commercial.get("year_built"):
+                year_built = commercial["year_built"]
+                year_built_source = "commercial_valuation"
+                bldg_age = datetime.date.today().year - year_built
+            if not units and commercial.get("units"):
+                # Filled only for single-PIN economic units (get_commercial_facts).
+                units = commercial["units"]
+                units_source = "commercial_valuation"
         energy = building_fallbacks.get("energy")
         if energy:
             from backend.models import EnergyBenchmark
@@ -534,6 +552,7 @@ def _build_summary(
         bldg_sqft_source=bldg_sqft_source,
         year_built_source=year_built_source,
         stories_source=stories_source,
+        units_source=units_source,
         stories=stories,
         units=units,
         commercial_units=commercial_units,

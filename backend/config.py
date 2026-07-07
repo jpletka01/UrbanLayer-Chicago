@@ -78,17 +78,20 @@ class Settings(BaseSettings):
     # Cook County Assessor Parcel Addresses — a SECOND authoritative address→PIN
     # source, consulted only when Address Points (78yw-iddh) has no confident match.
     # Covers parcels absent from Address Points (e.g. 481 W Deming Pl). Carries no
-    # coordinates — the caller backfills the centroid from Parcel Universe. The year
-    # pins query results to one vintage (addresses are stable, so a fixed vintage is
-    # fine; bump only to pick up parcels created after it). limit is the per-query
-    # candidate cap before the exact-component re-parse filter.
+    # coordinates — the caller backfills the centroid from Parcel Universe (which
+    # doubles as the retired-PIN gate: a PIN with no current PU row never becomes
+    # identity). The per-year rows are queried newest-first with no year equality
+    # (a hard year= filter missed addresses whose rows stop earlier). limit is the
+    # per-query candidate cap before the exact-component re-parse filter.
     dataset_assessor_addresses: str = "3723-97qp"
-    assessor_address_year: int = 2026
     limit_assessor_addresses: int = 50
     # Kill-switch for the assessor address→PIN fallback (step 3.5 of _resolve_location).
-    # Default OFF until recovered PINs are spot-checked against the county parcel viewer;
-    # flip True (no redeploy) to enable the coverage-gap recovery.
-    assessor_address_resolution_enabled: bool = False
+    # Enabled 2026-07-07 after geometric validation: 20 recovered PINs checked against
+    # Census-geocoded points vs the PIN's own ptaxsim parcel polygon — every deviation
+    # beyond the measured geocoder noise floor (p90 ≈ 71 m) was a multi-parcel
+    # industrial campus whose county geometry sources are self-consistent; zero
+    # wrong-parcel mappings found. See audits/2026-07-07_data-integrity-audit.md.
+    assessor_address_resolution_enabled: bool = True
     limit_ccao_characteristics: int = 1
     limit_ccao_assessments: int = 5
     limit_ccao_sales: int = 10
