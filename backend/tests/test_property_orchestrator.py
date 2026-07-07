@@ -90,6 +90,81 @@ async def test_assembles_full_summary():
 
 
 @pytest.mark.asyncio
+async def test_vacant_parcel_drops_prior_structure_chars():
+    """A now-vacant (1xx) parcel must not report building facts from a stale
+    x54s row describing a prior/demolished structure. Real case: 622 W Deming Pl
+    (PIN 14283130520000) — a 2013 class-207 coach-house row (621 sqft, 4 rooms,
+    built 2012) on what is now a class-100 vacant lot with $0 building AV."""
+    vacant_parcel = {
+        "pin14": "14283130520000",
+        "bldg_class": "100",
+        "address": "622 W DEMING PL",
+    }
+    stale_chars = {
+        "pin": "14283130520000",
+        "year": "2013",
+        "class": "207",
+        "char_bldg_sf": "621",
+        "char_land_sf": "17499",
+        "char_rooms": "4",
+        "char_beds": "1",
+        "char_fbath": "1",
+        "char_yrblt": "2012",
+        "char_type_resd": "2 Story",
+        "char_use": "Single-Family",
+    }
+    vacant_assessments = [
+        {"year": "2024", "class": "100", "mailed_land": "260735", "mailed_bldg": "0", "mailed_tot": "260735"},
+    ]
+    with patch("backend.retrieval.property.lookup_parcel", new_callable=AsyncMock) as mock_parcel, \
+         patch("backend.retrieval.property.get_characteristics", new_callable=AsyncMock) as mock_chars, \
+         patch("backend.retrieval.property.get_assessments", new_callable=AsyncMock) as mock_assess, \
+         patch("backend.retrieval.property.get_sales", new_callable=AsyncMock) as mock_sales:
+
+        mock_parcel.return_value = vacant_parcel
+        mock_chars.return_value = stale_chars
+        mock_assess.return_value = vacant_assessments
+        mock_sales.return_value = []
+
+        client = AsyncMock()
+        result = await property_domain(41.927, -87.643, client=client)
+
+        assert result is not None
+        assert result.bldg_class == "100"
+        # None of the prior structure's facts may survive as current facts.
+        assert result.bldg_sqft is None
+        assert result.rooms is None
+        assert result.bedrooms is None
+        assert result.stories is None
+        assert result.year_built is None
+        assert result.bldg_age is None
+        assert result.full_baths is None
+        assert result.exterior_wall is None
+        # Assessment record (land-only) still flows through.
+        assert result.total_assessed_value == 260735.0
+
+
+def test_chars_prior_structure_guard_scope():
+    """The guard fires ONLY for vacant-classed parcels whose chars row asserts
+    building facts — occupied classes and land-only rows pass through."""
+    from backend.retrieval.property import _chars_describe_prior_structure
+
+    stale = {"class": "207", "char_bldg_sf": "621", "char_yrblt": "2012"}
+    # Vacant parcel + building-fact row → drop.
+    assert _chars_describe_prior_structure({"bldg_class": "100"}, [], stale) is True
+    # Class from assessments when the parcel row lacks it.
+    assert _chars_describe_prior_structure({}, [{"class": "100"}], stale) is True
+    # Occupied residential parcel → keep.
+    assert _chars_describe_prior_structure({"bldg_class": "2-11"}, [], stale) is False
+    # Vacant parcel, land-only chars row → keep (nothing false to report).
+    assert _chars_describe_prior_structure(
+        {"bldg_class": "100"}, [], {"class": "100", "char_land_sf": "17499"}
+    ) is False
+    # No chars at all → no-op.
+    assert _chars_describe_prior_structure({"bldg_class": "100"}, [], None) is False
+
+
+@pytest.mark.asyncio
 async def test_returns_none_when_no_parcel():
     with patch("backend.retrieval.property.lookup_parcel", new_callable=AsyncMock) as mock_parcel:
         mock_parcel.return_value = None

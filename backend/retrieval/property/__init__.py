@@ -139,6 +139,13 @@ async def property_domain(
         if isinstance(results[idx], Exception):
             log.warning("Parcel flags failed: %s", results[idx])
 
+        if _chars_describe_prior_structure(parcel, assessments, chars):
+            log.info(
+                "Dropping stale CCAO chars for %s: row year=%s class=%s but parcel is vacant (1xx)",
+                pin14, chars.get("year"), chars.get("class"),
+            )
+            chars = None
+
         building_fallbacks = await _fetch_building_fallbacks(
             parcel, chars, assessments, lat, lon, client=client,
         )
@@ -264,6 +271,31 @@ def _decode_units(chars: dict) -> int | None:
 
 def _decode_stories(chars: dict) -> float | None:
     return _TYPE_RESD_STORIES.get(str(chars.get("char_type_resd") or "").strip().lower())
+
+
+def _chars_describe_prior_structure(
+    parcel: dict, assessments: list[dict], chars: dict | None
+) -> bool:
+    """True when the CCAO characteristics row cannot describe the CURRENT parcel:
+    the parcel is classed vacant land (1xx — no improvement on the books, $0
+    building AV) while the row asserts building facts. x54s-btds keeps the last
+    regression-class row forever, so a demolished/reclassified structure keeps
+    reporting its rooms/beds/year-built (622 W Deming Pl: a 2013 class-207
+    coach-house row on a now-class-100 lot, caught 2026-07-06)."""
+    if not chars:
+        return False
+    current = str(
+        parcel.get("bldg_class")
+        or (assessments[0].get("class") if assessments else "")
+        or ""
+    ).strip().upper().replace("-", "")
+    if current[:1] != "1":
+        return False
+    has_building_facts = any(
+        _safe_int(chars.get(f))
+        for f in ("char_bldg_sf", "char_yrblt", "char_rooms", "char_beds")
+    ) or bool(str(chars.get("char_type_resd") or "").strip())
+    return has_building_facts
 
 
 def _build_summary(
