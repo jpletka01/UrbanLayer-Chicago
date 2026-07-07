@@ -132,12 +132,17 @@ def test_far_utilization_missing_data_none():
 # --- V5-1b / P2: land value range + comp valuation --------------------------
 
 def _comps_with_land(n_with_land: int, land_sqft: int = 2500) -> ComparablesSummary:
+    """n_with_land comps are confirmed VACANT-LAND sales (sale_type LAND, bldg 0)
+    — the only basis the land-value range accepts; the rest have unknown land."""
     sales = []
     for i in range(5):
-        ls = land_sqft if i < n_with_land else None
+        is_land = i < n_with_land
+        ls = land_sqft if is_land else None
         price = 500_000 + i * 50_000
         sales.append(ComparableSale(
             pin=str(i), sale_price=price, land_sqft=ls,
+            bldg_sqft=0 if is_land else None,
+            sale_type="LAND" if is_land else None,
             price_per_land_sqft=round(price / ls, 2) if ls else None,
         ))
     return ComparablesSummary(
@@ -145,6 +150,23 @@ def _comps_with_land(n_with_land: int, land_sqft: int = 2500) -> ComparablesSumm
         sales_volume=5, comp_basis="Class 2xx sales within 0.25 mi, last 3 yr (n=5)",
         sales=sales,
     )
+
+
+def test_land_value_range_excludes_improved_sales():
+    """An improved comp's price ÷ land sqft bakes the building into the
+    'land value' — improved sales must never feed the range even when they
+    carry a land area (2026-07-06 audit)."""
+    r = _report(property=PropertySummary(pin="1", land_sqft=3000))
+    comps = _comps_with_land(2)
+    # Give the remaining comps land areas + prices-per-land-sqft, but as
+    # IMPROVED sales — plenty of data, wrong basis.
+    for s in comps.sales[2:]:
+        s.land_sqft = 2500
+        s.bldg_sqft = 1800
+        s.sale_type = "LAND AND BUILDING"
+        s.price_per_land_sqft = round(s.sale_price / 2500, 2)
+    r.comparables = comps
+    assert _compute_land_value_range(r) is None
 
 
 def test_land_value_range_requires_three_land_comps():

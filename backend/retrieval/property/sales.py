@@ -228,10 +228,26 @@ async def _query_comps(
             seen_pins.add(pin)
 
             price = float(s["sale_price"]) if s.get("sale_price") else None
+            # A comp without a price contributes nothing to any valuation stat
+            # but would still inflate sales_volume (the "n=" the report
+            # discloses) — drop it.
+            if price is None:
+                continue
             norm_pin = _normalize_pin(pin)
             chars = chars_by_pin.get(norm_pin, {})
             land_sf = int(float(chars["char_land_sf"])) if chars.get("char_land_sf") else None
             bldg_sf = int(float(chars["char_bldg_sf"])) if chars.get("char_bldg_sf") else None
+
+            # Three-state: the characteristics dataset is residential-only, so a
+            # missing building sqft means UNKNOWN improvement status — it must
+            # not be conflated with a vacant-land sale (the old `(bldg_sf or 0)
+            # == 0` labeled most non-residential comps "LAND").
+            if bldg_sf is None:
+                sale_type = None
+            elif bldg_sf == 0:
+                sale_type = "LAND"
+            else:
+                sale_type = "LAND AND BUILDING"
 
             coords = pin_coords.get(norm_pin, (0, 0))
             dist = _haversine_mi(lat, lon, coords[0], coords[1]) if coords[0] else None
@@ -246,7 +262,7 @@ async def _query_comps(
                 "price_per_land_sqft": round(price / land_sf, 2) if price and land_sf else None,
                 "price_per_bldg_sqft": round(price / bldg_sf, 2) if price and bldg_sf else None,
                 "deed_type": s.get("deed_type"),
-                "sale_type": "LAND" if (bldg_sf or 0) == 0 else "LAND AND BUILDING",
+                "sale_type": sale_type,
                 "distance_mi": round(dist, 2) if dist else None,
                 "lat": coords[0] if coords[0] else None,
                 "lon": coords[1] if coords[1] else None,

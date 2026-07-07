@@ -515,7 +515,9 @@ a.glossary-link {
       <span class="tl-topic">{{ t("topic.financial") }}</span>
       <span class="tl-detail">{{ t("tl.fin_incentives") }} ({% if inc.in_tif_district %}<a href="#glossary-tif" class="glossary-link">TIF</a>{% endif %}{% if inc.in_opportunity_zone %} <a href="#glossary-oz" class="glossary-link">OZ</a>{% endif %}{% if inc.in_enterprise_zone %} <a href="#glossary-ez" class="glossary-link">EZ</a>{% endif %}{% if inc.in_qct %} <a href="#glossary-qct" class="glossary-link">QCT</a>{% endif %}{% if inc.in_nmtc %} <a href="#glossary-nmtc" class="glossary-link">NMTC</a>{% endif %})</span>
     </div>
-    {% elif report.effective_tax_rate and report.effective_tax_rate > 0.03 %}
+    {# Class-relative: normalize by assessment level so ~5% commercial (level
+       0.25) doesn't trip a threshold calibrated for residential (0.10). #}
+    {% elif report.effective_tax_rate and report.effective_tax_rate * 0.10 / (report.assessment_level or 0.10) > 0.03 %}
     <div class="tl-item tl-red">
       <span class="tl-pill tl-pill-red">{{ t("pill.risk") }}</span>
       <span class="tl-topic">{{ t("topic.financial") }}</span>

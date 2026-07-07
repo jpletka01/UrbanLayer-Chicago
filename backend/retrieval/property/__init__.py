@@ -336,16 +336,28 @@ def _build_summary(
     assessment_history = []
     total_assessed_value = None
     for row in assessments:
+        # Prefer the most FINAL value for each year: board (post-Board-of-Review
+        # appeals — what taxes are actually computed on) > certified (post-
+        # assessor review) > mailed (the initial notice; the only one present
+        # for an in-progress year). The old mailed-first order silently ignored
+        # every appeal reduction, overstating AV → implied market value for
+        # exactly the parcels whose owners won a cut (2026-07-06 audit).
         rec = AssessmentRecord(
             year=_safe_int(row.get("year")),
-            land=_safe_float(row.get("mailed_land") or row.get("certified_land")),
+            land=_safe_float(
+                row.get("board_land")
+                or row.get("certified_land")
+                or row.get("mailed_land")
+            ),
             building=_safe_float(
-                row.get("mailed_bldg") or row.get("certified_bldg")
+                row.get("board_bldg")
+                or row.get("certified_bldg")
+                or row.get("mailed_bldg")
             ),
             total=_safe_float(
-                row.get("mailed_tot")
+                row.get("board_tot")
                 or row.get("certified_tot")
-                or row.get("board_tot")
+                or row.get("mailed_tot")
             ),
         )
         # The CCAO's in-progress year (e.g. 2026) carries NULL value columns until
@@ -461,10 +473,20 @@ def _build_summary(
     assessment_level = assessment_level_for_class(bldg_class or assessment_class)
     implied_market_value = None
     effective_tax_rate = None
-    if not tax_exempt and assessment_level and total_assessed_value and total_assessed_value > 0:
-        implied_market_value = round(total_assessed_value / assessment_level)
-        if estimated_annual_tax and estimated_annual_tax > 0:
-            effective_tax_rate = round(estimated_annual_tax / implied_market_value, 4)
+    if not tax_exempt and assessment_level:
+        if total_assessed_value and total_assessed_value > 0:
+            implied_market_value = round(total_assessed_value / assessment_level)
+        # Effective rate is a SAME-YEAR fact: the PTAXSIM bill divided by that
+        # bill year's own assessed value (av_clerk), not the newest assessment.
+        # PTAXSIM lags 1-2 years, so pairing the bill with a post-reassessment
+        # AV understated the rate materially in reassessment years (2026-07-06
+        # audit). Falls back to the latest AV only when av_clerk is missing.
+        av_for_rate = _safe_float(tax_result.get("assessed_value")) if tax_result else None
+        rate_base = av_for_rate or total_assessed_value
+        if estimated_annual_tax and estimated_annual_tax > 0 and rate_base and rate_base > 0:
+            effective_tax_rate = round(
+                estimated_annual_tax / (rate_base / assessment_level), 4
+            )
 
     return PropertySummary(
         pin14=pin14,

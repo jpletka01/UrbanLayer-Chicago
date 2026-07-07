@@ -239,11 +239,14 @@ class Settings(BaseSettings):
     report_render_rlimit_as_bytes: int = 4 * 1024 * 1024 * 1024  # 4 GiB
 
     # Fallback effective property-tax rate on *market value* for Chicago
-    # residential parcels, applied to derive an estimated annual tax when the
-    # ptaxsim bill is unavailable (so the tax row isn't all-or-nothing). ~2.1%
-    # is consistent with Cook County Treasurer / Civic Federation effective-rate
-    # figures for residential Chicago and the report's own mock assumption
-    # (0.0218). Displayed values derived this way are labeled "estimated".
+    # RESIDENTIAL (assessment level 0.10) parcels, applied to derive an
+    # estimated annual tax when the ptaxsim bill is unavailable (so the tax row
+    # isn't all-or-nothing). ~2.1% is consistent with Cook County Treasurer /
+    # Civic Federation effective-rate figures for residential Chicago and the
+    # report's own mock assumption (0.0218). _resolve_market_value_and_tax
+    # scales it by (assessment_level / 0.10) for non-residential classes — a
+    # class-5 commercial parcel pays ~2.5× this rate. Displayed values derived
+    # this way are labeled "estimated".
     report_fallback_tax_rate: float = 0.021
 
     # Stripe

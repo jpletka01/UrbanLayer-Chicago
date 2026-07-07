@@ -3733,12 +3733,20 @@ def _synthesize_opportunities_constraints(
         })
 
     # --- Financial ---
-    if report.effective_tax_rate and report.effective_tax_rate > 0.035:
-        constraints.append({
-            "signal": t("oc.high_tax.signal", rate=f"{report.effective_tax_rate:.1%}"),
-            "detail": t("oc.high_tax.detail"),
-            "category": "financial",
-        })
+    # "High tax burden" must be judged relative to the CLASS-NORMAL rate: the
+    # effective rate scales with the assessment level, so ~5% is ordinary for
+    # class-5 commercial (0.25) while it would be alarming for residential
+    # (0.10). Normalizing to a residential-equivalent rate keeps the 3.5%
+    # threshold meaning "high for what this parcel is" — the absolute test
+    # flagged every correctly-computed commercial parcel (2026-07-06 audit).
+    if report.effective_tax_rate:
+        _level = report.assessment_level or 0.10
+        if report.effective_tax_rate * (0.10 / _level) > 0.035:
+            constraints.append({
+                "signal": t("oc.high_tax.signal", rate=f"{report.effective_tax_rate:.1%}"),
+                "detail": t("oc.high_tax.detail"),
+                "category": "financial",
+            })
 
     if report.assessment_trend and report.assessment_trend.get("cagr_pct", 0) > 5:
         # Rising assessed value is a reassessment-cycle signal, not realized market
@@ -3874,24 +3882,48 @@ def _resolve_market_value_and_tax(
     if not prop.total_assessed_value:
         prop.total_assessed_value = assessed
     if annual_tax and annual_tax > 0:
-        return round(annual_tax / market_value, 4), market_value, level
+        # Prefer the summary's rate: it pairs the PTAXSIM bill with the bill
+        # year's OWN assessed value (same-year fact). Recomputing against the
+        # newest AV mixes years and understates the rate after a reassessment.
+        rate = getattr(prop, "effective_tax_rate", None)
+        if not rate:
+            rate = round(annual_tax / market_value, 4)
+        return rate, market_value, level
+    # `report_fallback_tax_rate` documents the typical RESIDENTIAL (level 0.10)
+    # effective rate. The composite tax rate applies to assessed value, so the
+    # effective-on-market rate scales linearly with the class's assessment
+    # level — a class-5 (0.25) parcel pays ~2.5× the residential rate. The old
+    # flat multiply understated commercial fallback bills by the same factor.
     prop.estimated_annual_tax = round(
-        market_value * get_settings().report_fallback_tax_rate
+        market_value * get_settings().report_fallback_tax_rate * (level / 0.10)
     )
     prop.tax_estimate_is_fallback = True
     return None, market_value, level
 
 
 def _compute_land_value_range(report: "ReportData") -> dict | None:
-    """Compute estimated land value range from comparable sales."""
+    """Compute estimated land value range from comparable VACANT-LAND sales.
+
+    Only confirmed land sales (``sale_type == "LAND"`` — building sqft known
+    to be zero) qualify: an improved comp's sale price divided by its land
+    area bakes the building's value into the numerator, so a range built from
+    it systematically overstates land value (2026-07-06 audit). When fewer
+    than 3 vacant-land comps exist we return None and the decision box falls
+    back to the honest observed-sales line rather than a fabricated
+    "land value".
+    """
     comps = report.comparables
     prop = report.context.property
-    if not comps or not comps.sales or comps.sales_volume < 3:
+    if not comps or not comps.sales:
         return None
     if not prop or not prop.land_sqft or prop.land_sqft <= 0:
         return None
 
-    prices_per_sqft = [s.price_per_land_sqft for s in comps.sales if s.price_per_land_sqft and s.price_per_land_sqft > 0]
+    prices_per_sqft = [
+        s.price_per_land_sqft
+        for s in comps.sales
+        if s.sale_type == "LAND" and s.price_per_land_sqft and s.price_per_land_sqft > 0
+    ]
     if len(prices_per_sqft) < 3:
         return None
 
