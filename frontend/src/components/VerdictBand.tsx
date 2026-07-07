@@ -63,20 +63,15 @@ export interface VerdictBandProps {
   /** Quiet trailing row (accuracy feedback) — the verdict is the claim, so the
    *  "is this accurate?" affordance lives with it. */
   footer?: ReactNode;
-  onChat: (question: string) => void;
   onScrollTo: (anchor: CardId) => void;
 }
 
-export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBandProps) {
+// The next step no longer renders here: the page composes ONE hero action row
+// (violet report CTA + this step as a chip) so two filled buttons never stack.
+
+export function VerdictBand({ verdict, footer, onScrollTo }: VerdictBandProps) {
   const { t } = useTranslation("pages");
   const tone = TONE[verdict.category];
-
-  // Single orange next-step only — the paid report lives in its own violet
-  // strip below (no money action inside the verdict).
-  function runStep(step: ScorecardVerdict["nextStep"]) {
-    if (step.kind === "chat" && step.question) onChat(step.question);
-    else if (step.kind === "scroll" && step.cardAnchor) onScrollTo(step.cardAnchor);
-  }
 
   // The phrase explains itself on hover/tap (tooltip rule: definitions never
   // live as on-page copy) — plain-English gloss per category, scoring untouched.
@@ -86,7 +81,7 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
   const explain = t(`scorecard.verdict.explain.${verdict.category}`, { defaultValue: "" });
 
   return (
-    <section aria-label={t("scorecard.verdict.ariaLabel")} className="mb-6 max-w-3xl">
+    <section aria-label={t("scorecard.verdict.ariaLabel")} className="max-w-3xl">
       {/* Headline — the conclusion, leading; tone rides the dot, not the chrome */}
       <div className="flex items-start gap-3 mb-3">
         <h2 className="text-lead text-text-primary flex items-baseline gap-2.5">
@@ -109,7 +104,7 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
 
       {/* Reasons — defended, each deep-links to its evidence module; tag
           chrome matches the Regulatory pills (one signal language site-wide) */}
-      <ul className="flex flex-col gap-1.5 mb-4 items-start">
+      <ul className="flex flex-col gap-1.5 items-start">
         {verdict.reasons.map((r, i) => (
           <li key={i} className="max-w-full">
             <button
@@ -128,20 +123,9 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
         ))}
       </ul>
 
-      {/* The single next step — one orange action, no money CTA in the verdict */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => runStep(verdict.nextStep)}
-          className="px-4 py-2 text-title rounded-lg transition-colors bg-action hover:bg-action-hover text-action-fg"
-        >
-          {verdict.nextStep.label}
-        </button>
-      </div>
-
       {/* Caveats — honesty folded INTO the verdict, not a separate banner */}
       {verdict.caveats.length > 0 && (
-        <div className="mt-4 space-y-1">
+        <div className="mt-3 space-y-1">
           {verdict.caveats.map((c, i) => (
             <p key={i} className="text-micro text-state-warning flex items-start gap-1.5">
               <span className="w-1 h-1 rounded-full bg-state-warning mt-1.5 shrink-0" aria-hidden />

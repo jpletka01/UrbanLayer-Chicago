@@ -649,6 +649,15 @@ export default function ScorecardPage() {
     askDock(question);
   };
 
+  // The verdict's next step, run from the hero action row (the step itself
+  // moved out of VerdictBand so the hero has exactly ONE filled CTA).
+  const runNextStep = () => {
+    if (!verdict) return;
+    const step = verdict.nextStep;
+    if (step.kind === "chat" && step.question) verdictChat(step.question);
+    else if (step.kind === "scroll" && step.cardAnchor) scrollToCard(step.cardAnchor);
+  };
+
   // ONE ask affordance per module (replaces the per-card chip sprawl) — the
   // module's most useful grounded question, opened in the dock.
   const moduleAsk = (cardName: string, question: string) => (
@@ -789,13 +798,15 @@ export default function ScorecardPage() {
                 {/* Verdict lead — the conclusion, phrase explained on hover */}
                 {verdict && (
                   <div ref={bandRef} className="mt-6">
-                    <VerdictBand verdict={verdict} onChat={verdictChat} onScrollTo={scrollToCard} />
+                    <VerdictBand verdict={verdict} onScrollTo={scrollToCard} />
                   </div>
                 )}
 
-                {/* The ONE money action — a bare violet button, no card; the
-                    full sell stays in the purchase modal + sample PDF. */}
-                <div className="flex flex-wrap items-center gap-3 mt-2">
+                {/* ONE action row, ONE filled CTA: the violet money action
+                    leads, the verdict's next step rides along as a chip (the
+                    page-action idiom), the sample stays a quiet link. Two
+                    filled buttons never stack in the hero. */}
+                <div className="flex flex-wrap items-center gap-3 mt-5">
                   <button
                     type="button"
                     onClick={handleDownloadPdf}
@@ -808,6 +819,15 @@ export default function ScorecardPage() {
                         ? t("scorecard.reportCTA.download")
                         : `${t("scorecard.reportCTA.title")} · $25`}
                   </button>
+                  {verdict && (
+                    <button
+                      type="button"
+                      onClick={runNextStep}
+                      className="inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                    >
+                      {verdict.nextStep.label}
+                    </button>
+                  )}
                   <a
                     href="/sample-report.pdf"
                     target="_blank"
