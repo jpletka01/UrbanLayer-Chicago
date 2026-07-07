@@ -659,12 +659,13 @@ export default function ScorecardPage() {
   };
 
   // ONE ask affordance per module (replaces the per-card chip sprawl) — the
-  // module's most useful grounded question, opened in the dock.
-  const moduleAsk = (cardName: string, question: string) => (
+  // module's most useful grounded question, opened in the dock. Each chip says
+  // WHAT it asks about (a page of identical "Ask" buttons carried no scent).
+  const moduleAsk = (cardName: string, labelKey: string, question: string) => (
     <InvestigateButton
       variant="chip"
       question={question}
-      label={t("scorecard.askModule")}
+      label={t(labelKey)}
       cardName={cardName}
       pin={parcel?.pin}
       onAsk={askDock}
@@ -784,15 +785,60 @@ export default function ScorecardPage() {
                 page footer; ask/CSV chips are gone (dock FAB + nav export). */}
             <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,42%)] lg:gap-10 mb-8">
               <div className="min-w-0">
-                <h2 className="text-section text-text-primary">
-                  {data.address || ctx.property?.address ||
-                    (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
-                </h2>
+                {/* Identity: address + resolution badge (a circled glyph, meaning
+                    on hover/tap), PIN in the subline with area · ward. */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <h2 className="text-section text-text-primary min-w-0">
+                    {data.address || ctx.property?.address ||
+                      (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
+                  </h2>
+                  {parcel && (parcel.pin !== null && parcel.confidence === "authoritative" ? (
+                    <InfoTooltip plain content={{ label: t("scorecard.badges.exact"), description: t("scorecard.badges.exactTitle"), bullets: [] }}>
+                      <span
+                        className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-state-positive/40 bg-state-positive/10 text-state-positive shrink-0"
+                        aria-label={t("scorecard.badges.exact")}
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      </span>
+                    </InfoTooltip>
+                  ) : (
+                    <InfoTooltip
+                      plain
+                      content={{
+                        label: t(parcel.pin === null ? "scorecard.badges.unconfirmed" : "scorecard.badges.approximate"),
+                        description: t(parcel.pin === null ? "scorecard.badges.unconfirmedTitle" : "scorecard.badges.approximateTitle"),
+                        bullets: [],
+                      }}
+                    >
+                      <span
+                        className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-state-warning/40 bg-state-warning/10 text-state-warning shrink-0 text-caption font-semibold leading-none"
+                        aria-label={t(parcel.pin === null ? "scorecard.badges.unconfirmed" : "scorecard.badges.approximate")}
+                      >
+                        !
+                      </span>
+                    </InfoTooltip>
+                  ))}
+                </div>
                 <div className="text-body text-text-muted mt-1">
                   {[
                     data.community_area_name,
                     ctx.neighborhood?.ward ? t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward }) : null,
                   ].filter(Boolean).join(" · ")}
+                  {parcel?.pin && (
+                    <>
+                      {(data.community_area_name || ctx.neighborhood?.ward) && " · "}
+                      <a
+                        href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-caption text-text-secondary hover:text-accent transition-colors"
+                      >
+                        PIN {formatPin(parcel.pin)} ↗
+                      </a>
+                    </>
+                  )}
                 </div>
 
                 {/* Verdict lead — the conclusion, phrase explained on hover */}
@@ -819,15 +865,8 @@ export default function ScorecardPage() {
                         ? t("scorecard.reportCTA.download")
                         : `${t("scorecard.reportCTA.title")} · $25`}
                   </button>
-                  {verdict && (
-                    <button
-                      type="button"
-                      onClick={runNextStep}
-                      className="inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
-                    >
-                      {verdict.nextStep.label}
-                    </button>
-                  )}
+                  {/* Sample rides DIRECTLY beside the report button, always —
+                      they are one offer; the ask chip is a separate action. */}
                   <a
                     href="/sample-report.pdf"
                     target="_blank"
@@ -837,6 +876,15 @@ export default function ScorecardPage() {
                   >
                     {t("scorecard.reportCTA.viewSample")} ↗
                   </a>
+                  {verdict && (
+                    <button
+                      type="button"
+                      onClick={runNextStep}
+                      className="ml-auto sm:ml-3 inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                    >
+                      {verdict.nextStep.label}
+                    </button>
+                  )}
                 </div>
 
                 {data.partial_failures.length > 0 && (
@@ -845,43 +893,9 @@ export default function ScorecardPage() {
                   </div>
                 )}
 
-                {/* Provenance — one quiet meta line, the only one on the page */}
-                <div className="flex items-center gap-3 flex-wrap mt-5 text-micro text-text-muted">
-                  {parcel?.pin && (
-                    <a
-                      href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-text-secondary hover:text-accent transition-colors"
-                    >
-                      PIN {formatPin(parcel.pin)} ↗
-                    </a>
-                  )}
-                  {parcel && (parcel.pin === null ? (
-                    <InfoTooltip content={{ label: t("scorecard.badges.unconfirmed"), description: t("scorecard.badges.unconfirmedTitle"), bullets: [] }}>
-                      <span className="text-state-warning">{t("scorecard.badges.unconfirmed")}</span>
-                    </InfoTooltip>
-                  ) : parcel.confidence === "authoritative" ? (
-                    <InfoTooltip content={{ label: t("scorecard.badges.exact"), description: t("scorecard.badges.exactTitle"), bullets: [] }}>
-                      <span className="text-state-positive">✓ {t("scorecard.badges.exact")}</span>
-                    </InfoTooltip>
-                  ) : (
-                    <InfoTooltip content={{ label: t("scorecard.badges.approximate"), description: t("scorecard.badges.approximateTitle"), bullets: [] }}>
-                      <span className="text-state-warning">{t("scorecard.badges.approximate")}</span>
-                    </InfoTooltip>
-                  ))}
-                  {data.context.data_as_of && (
-                    <span>{t("scorecard.dataAsOf", { date: data.context.data_as_of })}</span>
-                  )}
-                </div>
-
-                {/* Methodology — provenance, so it lives with the meta line
-                    (not between the verdict action and the report button). */}
-                {verdict && (
-                  <div className="mt-2">
-                    <VerdictMethodology verdict={verdict} />
-                  </div>
-                )}
+                {/* Identity/provenance moved out of the meta line: the badge sits
+                    on the address, PIN in the subline, data-as-of + "how we
+                    scored this" live in the page footer (the provenance zone). */}
               </div>
 
               {/* The place map — satellite default, parcel outline, comps, transit */}
@@ -956,7 +970,7 @@ export default function ScorecardPage() {
                     id="module-build"
                     title={t("scorecard.sections.capacityTitle")}
                     takeaway={takeaways.build}
-                    action={moduleAsk("build", zdef
+                    action={moduleAsk("build", "scorecard.ask.build", zdef
                       ? `What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`
                       : `What are the development restrictions from regulatory overlays at ${addr}?`)}
                   >
@@ -1007,7 +1021,7 @@ export default function ScorecardPage() {
                     id="module-economics"
                     title={t("scorecard.sections.economicsTitle")}
                     takeaway={takeaways.costs}
-                    action={moduleAsk("economics", `Tell me about the building, taxes, and assessment history at ${addr}`)}
+                    action={moduleAsk("economics", "scorecard.ask.costs", `Tell me about the building, taxes, and assessment history at ${addr}`)}
                   >
                     <div className="space-y-10">
                       {ctx.property && (
@@ -1030,7 +1044,7 @@ export default function ScorecardPage() {
                     id="module-market"
                     title={t("scorecard.sections.marketTitle")}
                     takeaway={takeaways.market}
-                    action={moduleAsk("market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
+                    action={moduleAsk("market", "scorecard.ask.market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
                   >
                     <div id="scorecard-card-comparables" className="scroll-mt-28">
                       <ScorecardComparablesCard data={data.comparables} />
@@ -1044,9 +1058,9 @@ export default function ScorecardPage() {
                     id="module-record"
                     title={t("scorecard.sections.riskTitle")}
                     takeaway={takeaways.record}
-                    action={moduleAsk("record", ctx.violations && ctx.violations.total > 0
-                      ? `Explain the building violations at ${addr} and typical remediation steps`
-                      : `What are the 311 complaint patterns at ${addr} and what do they indicate?`)}
+                    action={ctx.violations && ctx.violations.total > 0
+                      ? moduleAsk("record", "scorecard.ask.recordViolations", `Explain the building violations at ${addr} and typical remediation steps`)
+                      : moduleAsk("record", "scorecard.ask.record311", `What are the 311 complaint patterns at ${addr} and what do they indicate?`)}
                   >
                     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-8 md:items-start">
                       {/* Violations tri-state: a record at this address, a confirmed
@@ -1084,7 +1098,7 @@ export default function ScorecardPage() {
                     takeaway={data.community_area_name
                       ? t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })
                       : null}
-                    action={moduleAsk("neighborhood", `What's the neighborhood like around ${addr}?`)}
+                    action={moduleAsk("neighborhood", "scorecard.ask.area", `What's the neighborhood like around ${addr}?`)}
                   >
                     {ctx.neighborhood && <NeighborhoodBlock data={ctx.neighborhood} />}
                     {data.context.crime_last_90d && (
@@ -1095,14 +1109,18 @@ export default function ScorecardPage() {
                   </ProfileModule>
                 )}
 
-                {/* Page footer — feedback lives with the end of the read */}
-                <div className="border-t border-dark-border mt-10 pt-5 flex items-center justify-between flex-wrap gap-3">
-                  <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />
-                  {data.context.data_as_of && (
-                    <span className="text-micro text-text-muted">
-                      {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
-                    </span>
-                  )}
+                {/* Page footer — the provenance zone: feedback, data-as-of, and
+                    the verdict methodology disclosure end the read together. */}
+                <div className="border-t border-dark-border mt-10 pt-5 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />
+                    {data.context.data_as_of && (
+                      <span className="text-micro text-text-muted">
+                        {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
+                      </span>
+                    )}
+                  </div>
+                  {verdict && <VerdictMethodology verdict={verdict} />}
                 </div>
               </div>
             </div>

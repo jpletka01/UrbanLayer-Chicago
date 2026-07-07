@@ -337,7 +337,14 @@
     "backToVerdict": "Volver al veredicto",
     "newCategory": "nuevo",
     "showMore": "y {{count}} más",
-    "askModule": "Preguntar",
+    "ask": {
+      "build": "Preguntar sobre zonificación",
+      "costs": "Preguntar sobre impuestos",
+      "market": "Preguntar sobre comparables",
+      "recordViolations": "Preguntar sobre infracciones",
+      "record311": "Preguntar sobre el 311",
+      "area": "Preguntar sobre el barrio"
+    },
     "sectionsNav": "Secciones de la ficha",
     "moduleNav": {
       "build": "Construir",

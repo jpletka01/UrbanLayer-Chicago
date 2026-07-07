@@ -5,10 +5,13 @@ import { getTermInfo, type TermInfo } from "../lib/termDefinitions";
 interface Props {
   term?: string;
   content?: TermInfo;
+  /** Skip the dotted-underline trigger chrome — for icon/badge triggers where
+      an underline reads as a stray mark. Hover/tap behavior unchanged. */
+  plain?: boolean;
   children: ReactNode;
 }
 
-export function InfoTooltip({ term, content, children }: Props) {
+export function InfoTooltip({ term, content, plain = false, children }: Props) {
   const [visible, setVisible] = useState(false);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -39,7 +42,9 @@ export function InfoTooltip({ term, content, children }: Props) {
     <>
       <span
         ref={triggerRef}
-        className="border-b border-dotted border-current opacity-70 hover:opacity-100 cursor-help transition-opacity"
+        className={plain
+          ? "cursor-help"
+          : "border-b border-dotted border-current opacity-70 hover:opacity-100 cursor-help transition-opacity"}
         onMouseEnter={show}
         onMouseLeave={scheduleHide}
         onClick={(e) => {

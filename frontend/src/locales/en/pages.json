@@ -337,7 +337,14 @@
     "backToVerdict": "Back to the verdict",
     "newCategory": "new",
     "showMore": "and {{count}} more",
-    "askModule": "Ask",
+    "ask": {
+      "build": "Ask about zoning",
+      "costs": "Ask about taxes",
+      "market": "Ask about comps",
+      "recordViolations": "Ask about violations",
+      "record311": "Ask about 311 activity",
+      "area": "Ask about the area"
+    },
     "sectionsNav": "Profile sections",
     "moduleNav": {
       "build": "Build",
