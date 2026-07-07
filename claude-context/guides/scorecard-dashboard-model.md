@@ -1,4 +1,16 @@
-# Scorecard as a Property Dashboard — design model (2026-07-01, NO CODE YET)
+# Scorecard as a Property Dashboard — design model (2026-07-01)
+
+> **2026-07-07 IMPLEMENTED on branch `feat/property-profile`** (Jack-approved direction:
+> cards out, dashboard hierarchy, interactive viz, rename to **Property Profile** en /
+> **Ficha** es). What shipped vs this model: identity bar + de-carded verdict + 6-tile
+> KPI strip (benchmark deltas still pending the CA-aggregate endpoint — Phase B below),
+> four band modules (Build/Costs/Market/Record) w/ sticky scrollspy rail replacing the
+> fixed 12-col grid, `PropertyTimeline` (land/building stacked columns + sale/appeal
+> event markers, hover layer) as the Economics centerpiece, ONE ask affordance per
+> module (chips sprawl killed; MiniChatDock unchanged), one ShowMore disclosure idiom
+> (accordions killed). Identity rail folded into the identity bar instead of a right
+> column. Route stays `/scorecard`; display-name-only rename. Phase B (benchmarks) is
+> the open follow-up.
 
 > **2026-07-06 partial supersede** (`archive/2026-07-06_scorecard-usability.md`): diagnosis #1
 > (stretch gaps) is mitigated in production — section grids are `md:items-start` + the regulatory
