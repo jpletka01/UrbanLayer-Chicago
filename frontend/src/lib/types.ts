@@ -504,6 +504,8 @@ export interface ComparableSale {
   deed_type: string | null;
   sale_type: string | null;
   distance_mi: number | null;
+  lat: number | null;
+  lon: number | null;
 }
 
 export interface ComparablesSummary {

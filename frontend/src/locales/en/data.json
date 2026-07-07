@@ -108,7 +108,9 @@
       "chicago_transit_authority": "Chicago Transit Authority",
       "north_shore_mosquito": "Mosquito Abatement (North Shore)",
       "mosquito_abatement": "Mosquito Abatement"
-    }
+    },
+    "floorArea": "Floor area",
+    "floorAreaTip": "Total finished area summed across all stories — a multi-story building's floor area can exceed its lot size."
   },
   "regulatory": {
     "title": "Regulatory",
@@ -325,7 +327,8 @@
     "noData": "No comparable sales found nearby.",
     "radius": "Within 0.25 mi, last 3 yrs",
     "reportTeaser": "Sales trend chart + full analysis in report",
-    "stripAriaLabel": "{{count}} comparable sale prices"
+    "stripAriaLabel": "{{count}} comparable sale prices",
+    "class": "Class"
   },
   "violations": {
     "title": "Violations",

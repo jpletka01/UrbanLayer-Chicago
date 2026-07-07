@@ -21,6 +21,46 @@
 > thereby answered. Still open: the fixed-height 12-col module layout, KPI strip w/ benchmarks,
 > identity rail, and the Phase A/B insight layer.
 
+> **2026-07-07 v2 SPEC LOCKED with Jack** (supersedes the v1 branch build's layout —
+> Jack's review: "still a spreadsheet"; uniform label/value texture, no pictorial
+> anchor, no interpretation). The locked v2:
+> - **Hero** = place + read + map, nothing else. Display-scale address + `area · ward`
+>   subline; verdict with TOOLTIP-explained phrase (no appended clause) + reasons +
+>   ONE orange action; **violet `Development Feasibility Report · $25` button + quiet
+>   `sample ↗` under the verdict** (ReportCTACard strip dies; full sell stays in the
+>   modal); ONE provenance meta line (PIN ✓ · assessor ↗ · data-as-of). Ask/CSV chips
+>   CUT (dock FAB owns ask; **CSV → nav-bar action slot**, chat's export pattern);
+>   feedback → page footer; alderman → Neighborhood module.
+> - **Three maps, one question each** (replaces v1's one-map-with-toggle-zoo AND the
+>   outbound "View zoning map" button): hero **place map** (satellite default ⇄
+>   streets, parcel outline from ptaxsim geometry, comps dots, transit, flood-if-not-X);
+>   Build **zoning quilt map** (mapColors zone encoding, district labels, official city
+>   map demoted to footnote link); Regulatory/Incentives **boundary map** (TIF/OZ/EZ/
+>   TOD/historic/ARO). Module maps lazy-mount, tap-to-activate <md, render ONLY when
+>   they have content; click-to-activate zoom everywhere; static-image fallback.
+> - **KPI band = 4 tiles** (Zoning · Assessed w/ state-colored ▲▼ + Δ + area benchmark ·
+>   Est. tax w/ eff-rate vs class norm · Comps median). Overlays-count tile CUT (a
+>   count of heterogeneous overlays indicates nothing — Jack). Lot area → Build module
+>   next to FAR; bldg sqft relabeled **"Floor area"** (sums stories; can exceed lot —
+>   the lot-vs-bldg juxtaposition read as a data error).
+> - **Benchmarks built NOW** (Phase B pulled forward): per-CA aggregate rows written at
+>   Discovery `finalize_index` (77 rows, rides the monthly refresh timer) + small
+>   `GET /api/area-stats` + deterministic class-norm eff-rate comparisons (index holds
+>   no tax bills — a true area eff-rate median would be dishonest).
+> - **Tooltip rule**: definitions/explainers = hover/tap `InfoTooltip`, NEVER on-page
+>   copy. Module subtitle lines die. **Takeaway sentences stay** — one deterministic
+>   parcel-specific insight sentence leads each module (content, not explainer).
+> - **Cut list → "Full detail"**: tax agency bars (kept in CSV/report), roof/AC/garage/
+>   basement facts, TIF fund-history table, ARO project list.
+> - **Chart-color rule**: series 1 = brand orange, series 2 = neutral gray step (the
+>   timeline's blue is retired — validated-but-off-brand), never blue/violet/rainbow;
+>   state colors only for genuine state; map encodings reuse mapColors/upsideColor;
+>   dataviz validator still run per theme.
+> - **Neighborhood** = designed, VISIBLE module (walk/transit chips, crime trend as a
+>   small chart, demographics stat row, ward+alderman) with the explicit area-scope
+>   banner — scope policy kept via labeling, not burial (the collapsed appendix read
+>   as "forgotten").
+
 Companion to `bento-pro-phase3-app-surfaces.md`. Output of the "what is this page
 for" discussion with Jack; supersedes the question-section layout as the *target*
 (what shipped on the branch stays until this is approved and built).

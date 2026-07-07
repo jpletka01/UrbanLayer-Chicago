@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchReport, checkReportAccess, type ScorecardResponse } from "../lib/api";
+import { fetchReport, checkReportAccess, fetchAreaStats, fetchParcelMapLayers, type ScorecardResponse } from "../lib/api";
 import type { ParcelQuery } from "../lib/types";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSelectedParcel } from "../contexts/SelectedParcelContext";
 import ReportPurchasePrompt from "./ReportPurchasePrompt";
-import { ReportCTACard } from "./ReportCTACard";
 import { InvestigateButton } from "./InvestigateButton";
 import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
@@ -18,7 +17,7 @@ import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
 import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
 import { ProfileModule, SubSection } from "./scorecard/ProfileModule";
 import { KpiStrip, type KpiTile } from "./scorecard/KpiStrip";
-import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
+import type { NeighborhoodSummary } from "../lib/types";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
 import { VerdictBand, verdictDotClass } from "./VerdictBand";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
@@ -27,9 +26,8 @@ import PageHeader from "./PageHeader";
 import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
-import { useThemeContext } from "../contexts/ThemeContext";
+import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
 import { Chip } from "./ui/Chip";
-import { Modal } from "./ui/Modal";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -52,49 +50,22 @@ function formatPin(pin: string): string {
   return `${pin.slice(0, 2)}-${pin.slice(2, 4)}-${pin.slice(4, 7)}-${pin.slice(7, 10)}-${pin.slice(10)}`;
 }
 
-// Static location image (Mapbox Static Images API). Pin-only by design:
-// parcel polygon geometry isn't reliably available (county GIS), so the
-// default state must not depend on it. Hidden entirely if the image fails.
-// Its ONLY job is identity confirmation ("is that my corner?" — the
-// nearest-parcel seam), so it's a small click-to-verify square in the identity
-// bar, not a context map; the expanded view carries the legible look.
-function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: string }) {
-  const { t } = useTranslation("pages");
-  const { resolvedTheme } = useThemeContext();
-  const [failed, setFailed] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
-  if (!token || failed) return null;
-  const style = resolvedTheme === "light" ? "light-v11" : "dark-v11";
-  const pt = `${lon.toFixed(5)},${lat.toFixed(5)}`;
-  // Attribution renders only on the expanded view — at 112px the overlay text
-  // is illegible clutter, and the click-through image keeps it accessible.
-  const staticUrl = (w: number, h: number, zoom: number, attribution = true) =>
-    `https://api.mapbox.com/styles/v1/mapbox/${style}/static/pin-s+c96442(${pt})/${pt},${zoom}/${w}x${h}@2x?access_token=${token}&logo=false${attribution ? "" : "&attribution=false"}`;
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        title={t("scorecard.mapExpand")}
-        className="hidden sm:block shrink-0 rounded-lg overflow-hidden border border-dark-border hover:border-dark-border-strong transition-colors cursor-zoom-in"
-      >
-        <img
-          src={staticUrl(112, 112, 15.5, false)}
-          alt=""
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="w-28 h-28 object-cover"
-        />
-      </button>
-      {expanded && (
-        <Modal onClose={() => setExpanded(false)} title={address} description={t("scorecard.mapExpandNote")} size="lg">
-          <img src={staticUrl(640, 400, 16)} alt="" className="w-full rounded-lg border border-dark-border object-cover" />
-        </Modal>
-      )}
-    </>
-  );
+// Community-area benchmark aggregates for the KPI band (see backend
+// retrieval/area_stats.py). All-None when the Discovery index is absent —
+// the tiles then render no benchmark line.
+interface AreaStats {
+  community_area: number;
+  n_parcels: number;
+  median_assessed: number | null;
+  median_av_per_land_sqft: number | null;
 }
+
+// Deterministic class-norm effective tax rate: Chicago composite rate (~7% of
+// EAV) × state equalizer (~3.0) ≈ 21% of assessed value → norm = 0.21 × the
+// class's assessment level (residential 10% → ~2.1%, commercial 25% → ~5.3%).
+// The Discovery index holds no tax bills, so this published-rate arithmetic is
+// the honest comparison (an "area median eff-rate" would be fabricated).
+const EFF_RATE_PER_ASSESSMENT_LEVEL = 0.21;
 
 const crimeIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -112,49 +83,107 @@ function CrimeYoYBlock({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
   const crime = data.context.crime_last_90d;
   if (!crime) return null;
-  const yoy = crime.yoy;
+  const yoy = (crime.yoy ?? []).slice(0, 5);
+  const maxCount = Math.max(1, ...yoy.flatMap((i) => [i.current_count, i.prior_year_count ?? 0]));
   return (
     <SubSection
       icon={crimeIcon}
       title={t("scorecard.crimeArea")}
       meta={t("scorecard.incidents90d", { count: crime.total })}
     >
-      <div className="space-y-2">
-        {/* Self-disclose the area scope on the block itself — so even read in
-            isolation (collapsed section, screenshot) the count can't be mistaken
-            for parcel-level. */}
-        <p className="text-micro text-text-muted">
-          {t("scorecard.crimeAreaScope", { area: data.community_area_name || t("scorecard.thisArea") })}
-        </p>
-        <div className="flex gap-4 text-micro">
-          <span className="text-text-muted">{t("scorecard.arrestRate")}</span>
-          <span className="text-text-primary font-mono">{(crime.arrest_rate * 100).toFixed(1)}%</span>
-        </div>
-        {yoy && yoy.length > 0 && (
-          <div>
-            <div className="text-micro text-text-muted mb-1.5">{crime.yoy_period || t("scorecard.yearOverYear")}</div>
-            <div className="space-y-1">
-              {yoy.slice(0, 6).map((item) => (
-                <div key={item.category} className="flex items-center justify-between text-micro">
-                  <span className="text-text-secondary truncate flex-1 mr-2">{humanizeShoutyCase(item.category)}</span>
-                  <span className="font-mono text-text-primary w-8 text-right">{item.current_count}</span>
-                  {/* prior-year base makes large percentage swings honest (54 → 209 reads differently than +287%) */}
-                  <span className="font-mono text-text-muted w-14 text-right">
-                    {t("scorecard.vsPrior", { count: item.prior_year_count })}
-                  </span>
-                  <span className={`font-mono w-14 text-right ${
+      <div className="space-y-3">
+        {/* Paired bars: prior period (neutral) vs current (accent) — the trend
+            reads as marks, not a mono table. Prior-year base keeps big swings
+            honest (54 → 209 reads differently than +287%). */}
+        {yoy.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-micro text-text-muted">{crime.yoy_period || t("scorecard.yearOverYear")}</div>
+            {yoy.map((item) => (
+              <div key={item.category} className="grid grid-cols-[minmax(0,38%)_1fr_auto] items-center gap-x-3">
+                <span className="text-caption text-text-secondary truncate">{humanizeShoutyCase(item.category)}</span>
+                <span className="min-w-0">
+                  <span className="block h-2 rounded-r bg-accent" style={{ width: `${Math.max((item.current_count / maxCount) * 100, 1.5)}%` }} />
+                  <span className="block h-2 rounded-r bg-dark-border-strong mt-0.5" style={{ width: `${Math.max(((item.prior_year_count ?? 0) / maxCount) * 100, 1.5)}%` }} />
+                </span>
+                <span className="text-micro font-mono text-right whitespace-nowrap">
+                  <span className="text-text-primary">{item.current_count}</span>
+                  <span className="text-text-muted"> / {item.prior_year_count ?? 0}</span>
+                  <span className={`ml-2 ${
                     (item.change_pct ?? 0) > 0 ? "text-state-negative" : (item.change_pct ?? 0) < 0 ? "text-state-positive" : "text-text-muted"
                   }`}>
-                    {/* null = prior year was 0 — a % here would be fabricated */}
                     {item.change_pct == null ? t("scorecard.newCategory") : `${item.change_pct > 0 ? "+" : ""}${item.change_pct}%`}
                   </span>
-                </div>
-              ))}
+                </span>
+              </div>
+            ))}
+            <div className="flex gap-4 text-micro text-text-muted">
+              <span><span className="inline-block w-2.5 h-2 rounded-r bg-accent mr-1.5 align-middle" aria-hidden />{t("scorecard.crimeCurrent")}</span>
+              <span><span className="inline-block w-2.5 h-2 rounded-r bg-dark-border-strong mr-1.5 align-middle" aria-hidden />{t("scorecard.crimePrior")}</span>
+              <span>{t("scorecard.arrestRate")} <span className="font-mono text-text-secondary">{(crime.arrest_rate * 100).toFixed(1)}%</span></span>
             </div>
           </div>
         )}
       </div>
     </SubSection>
+  );
+}
+
+/** Designed area-context block: access + demographics as a stat row, ward
+    representation as a line. Every number here describes the community area —
+    the module header carries the scope label. */
+function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
+  const { t } = useTranslation("pages");
+  const demo = data.demographics;
+  const ws = data.walkscore;
+  const tr = data.transit;
+  const stats: Array<{ label: string; value: string; sub?: string }> = [];
+  if (ws?.walk_score != null) {
+    stats.push({ label: t("scorecard.area.walk"), value: String(ws.walk_score), sub: ws.walk_description ?? undefined });
+  }
+  if (ws?.transit_score != null) {
+    stats.push({ label: t("scorecard.area.transitScore"), value: String(ws.transit_score), sub: ws.transit_description ?? undefined });
+  }
+  if (tr?.nearest_cta_rail && tr.cta_rail_distance_mi != null) {
+    stats.push({
+      label: t("scorecard.area.nearestRail"),
+      value: tr.nearest_cta_rail,
+      sub: `${tr.cta_rail_distance_mi.toFixed(1)} mi${tr.cta_lines.length ? ` · ${tr.cta_lines.join(", ")}` : ""}`,
+    });
+  }
+  if (demo?.median_household_income != null) {
+    stats.push({ label: t("scorecard.area.income"), value: `$${Math.round(demo.median_household_income / 1000)}K` });
+  }
+  if (demo?.median_gross_rent != null) {
+    stats.push({ label: t("scorecard.area.rent"), value: `$${Math.round(demo.median_gross_rent).toLocaleString()}` });
+  }
+  if (demo?.population != null) {
+    stats.push({
+      label: t("scorecard.area.population"), value: demo.population.toLocaleString(),
+      sub: demo.owner_occupied_pct != null ? t("scorecard.area.ownerOcc", { pct: Math.round(demo.owner_occupied_pct) }) : undefined,
+    });
+  }
+  if (stats.length === 0 && !data.ward) return null;
+  return (
+    <div className="space-y-4">
+      {stats.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-x-6 gap-y-4">
+          {stats.map((s) => (
+            <div key={s.label} className="min-w-0">
+              <div className="text-overline uppercase tracking-wider text-text-muted">{s.label}</div>
+              <div className="text-subtitle text-text-primary mt-0.5 truncate">{s.value}</div>
+              {s.sub && <div className="text-caption text-text-muted mt-0.5 leading-snug">{s.sub}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      {data.ward?.ward && (
+        <p className="text-caption text-text-secondary">
+          {t("scorecard.wardLabel", { ward: data.ward.ward })}
+          {data.ward.alderman && <span> · {data.ward.alderman}</span>}
+          {tr?.tod_eligible && <span className="text-state-positive"> · {t("scorecard.area.todEligible")}</span>}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -216,7 +245,7 @@ function ScorecardSkeleton() {
 }
 
 // Dashboard section registry — nav labels + presence drive the sticky rail.
-const MODULE_IDS = ["module-build", "module-economics", "module-market", "module-record"] as const;
+const MODULE_IDS = ["module-build", "module-economics", "module-market", "module-record", "module-area"] as const;
 type ModuleId = (typeof MODULE_IDS)[number];
 
 export default function ScorecardPage() {
@@ -237,6 +266,8 @@ export default function ScorecardPage() {
   const [downloading, setDownloading] = useState(false);
   const [showPurchasePrompt, setShowPurchasePrompt] = useState(false);
   const [reportAccess, setReportAccess] = useState<{ has_access: boolean; reason: string } | null>(null);
+  const [areaStats, setAreaStats] = useState<AreaStats | null>(null);
+  const [mapLayers, setMapLayers] = useState<ParcelMapLayers | null>(null);
 
   const isPro = user?.tier === "premium" || user?.tier === "admin";
   const hasReportAccess = isPro || reportAccess?.has_access === true;
@@ -347,6 +378,19 @@ export default function ScorecardPage() {
     return () => setTrackingAddress(null);
   }, [data?.address]);
 
+  // Benchmark aggregates + module-map geometry layers, fetched once per parcel.
+  useEffect(() => {
+    if (!data) { setAreaStats(null); setMapLayers(null); return; }
+    let cancelled = false;
+    if (data.community_area != null) {
+      fetchAreaStats(data.community_area).then((s) => { if (!cancelled) setAreaStats(s); });
+    }
+    const mlat = data.resolved_lat ?? data.lat;
+    const mlon = data.resolved_lon ?? data.lon;
+    fetchParcelMapLayers(mlat, mlon).then((l) => { if (!cancelled) setMapLayers(l); });
+    return () => { cancelled = true; };
+  }, [data]);
+
   // Handle post-purchase redirect: auto-download the report
   useEffect(() => {
     if (!data || !parcel || (!parcel.pin && !parcel.address)) return;
@@ -393,22 +437,11 @@ export default function ScorecardPage() {
           : t("scorecard.verdict.signal.entitlementDefined"),
       });
     }
-    const land = ctx.property?.land_sqft;
-    if (land != null && land > 0) {
-      const bldg = ctx.property?.bldg_sqft;
-      tiles.push({
-        anchor: "property",
-        label: t("scorecard.tiles.lot"),
-        value: `${land.toLocaleString()} ft²`,
-        sub: bldg != null && bldg > 0
-          ? t("scorecard.tiles.lotBldg", { sqft: bldg.toLocaleString() })
-          : undefined,
-      });
-    }
     const av = ctx.property?.total_assessed_value;
     const estTax = ctx.property?.estimated_annual_tax;
     if (av != null) {
-      // Δ since the earliest assessment year — the trajectory in one number.
+      // Δ since the earliest assessment year, direction-colored (state tokens);
+      // second line benchmarks the subject's AV/land-ft² against the area median.
       const hist = (ctx.property?.assessment_history ?? [])
         .filter((a) => a.year != null && a.total != null && a.total > 0)
         .sort((a, b) => a.year! - b.year!);
@@ -416,22 +449,52 @@ export default function ScorecardPage() {
       const deltaPct = first?.total && first.total > 0
         ? Math.round(((av - first.total) / first.total) * 100)
         : null;
+      const land = ctx.property?.land_sqft;
+      const avPsf = land && land > 0 ? av / land : null;
+      const medPsf = areaStats?.median_av_per_land_sqft ?? null;
       tiles.push({
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
         value: fmtMoneyCompact(av),
-        sub: deltaPct != null && deltaPct !== 0 && first.year != null
-          ? t("scorecard.tiles.assessedDelta", { pct: `${deltaPct > 0 ? "+" : ""}${deltaPct}%`, year: first.year })
-          : undefined,
+        sub: (
+          <>
+            {deltaPct != null && first.year != null && (
+              <span className={deltaPct > 0 ? "text-state-positive" : deltaPct < 0 ? "text-state-negative" : ""}>
+                <span aria-hidden>{deltaPct > 0 ? "▲" : deltaPct < 0 ? "▼" : "—"}</span>{" "}
+                {deltaPct === 0
+                  ? t("scorecard.tiles.assessedFlat", { year: first.year })
+                  : t("scorecard.tiles.assessedDelta", { pct: `${Math.abs(deltaPct)}%`, year: first.year })}
+              </span>
+            )}
+            {avPsf != null && medPsf != null && medPsf > 0 && (
+              <span className="block">
+                {t("scorecard.tiles.avBenchmark", {
+                  psf: Math.round(avPsf), median: Math.round(medPsf),
+                })}
+              </span>
+            )}
+          </>
+        ),
       });
     }
     if (estTax != null) {
       const rate = ctx.property?.effective_tax_rate;
+      const level = ctx.property?.assessment_level;
+      const norm = level != null ? level * EFF_RATE_PER_ASSESSMENT_LEVEL : null;
       tiles.push({
         anchor: "property",
         label: t("scorecard.tiles.tax"),
         value: `${fmtMoneyCompact(estTax)}/yr`,
-        sub: rate != null ? t("scorecard.tiles.taxRate", { rate: (rate * 100).toFixed(2) }) : undefined,
+        sub: rate != null ? (
+          <>
+            {t("scorecard.tiles.taxRate", { rate: (rate * 100).toFixed(2) })}
+            {norm != null && (
+              <span className="block">
+                {t("scorecard.tiles.taxNorm", { norm: (norm * 100).toFixed(1) })}
+              </span>
+            )}
+          </>
+        ) : undefined,
       });
     }
     if (data?.comparables?.median_sale_price != null) {
@@ -442,20 +505,60 @@ export default function ScorecardPage() {
         sub: t("scorecard.tiles.compsSub", { count: data.comparables.sales_volume }),
       });
     }
-    if (ctx.regulatory) {
-      const n = ctx.regulatory.overlays.length;
-      const friction = verdict.signals.frictionFlags.length;
-      tiles.push({
-        anchor: "regulatory",
-        label: t("scorecard.tiles.overlays"),
-        value: String(n),
-        sub: n === 0
-          ? t("scorecard.tiles.overlaysNone")
-          : friction > 0
-            ? t("scorecard.tiles.overlaysFriction", { count: friction })
-            : t("scorecard.tiles.overlaysContext"),
+  }
+
+  // Per-module takeaways — ONE deterministic, parcel-specific insight sentence
+  // per module (the "so what" a first-time reader actually reads). Templated
+  // like verdict reasons; null when there's nothing honest to say.
+  const takeaways: Record<string, string | null> = { build: null, costs: null, market: null, record: null };
+  if (ctx) {
+    const far = verdict?.signals.allowedFar;
+    const landSq = ctx.property?.land_sqft;
+    if (zoning && far != null && far > 0 && landSq && landSq > 0) {
+      let s = t("scorecard.takeaway.build", {
+        zone: zoning.zone_class, sqft: Math.round(far * landSq).toLocaleString(),
       });
+      const exFar = verdict?.signals.existingFar;
+      if (exFar != null) {
+        s += " " + t("scorecard.takeaway.buildUsed", { pct: Math.min(Math.round((exFar / far) * 100), 100) });
+      }
+      takeaways.build = s;
     }
+    const taxNow = ctx.property?.estimated_annual_tax;
+    const rateNow = ctx.property?.effective_tax_rate;
+    const levelNow = ctx.property?.assessment_level;
+    if (taxNow != null && rateNow != null) {
+      let s = t("scorecard.takeaway.costs", {
+        year: ctx.property?.tax_year ?? "", tax: `$${Math.round(taxNow).toLocaleString()}`,
+        rate: (rateNow * 100).toFixed(2),
+      });
+      const norm = levelNow != null ? levelNow * EFF_RATE_PER_ASSESSMENT_LEVEL : null;
+      if (norm && norm > 0) {
+        const ratio = rateNow / norm;
+        if (ratio >= 1.3) s += " " + t("scorecard.takeaway.costsHigh", { x: ratio.toFixed(1) });
+        else if (ratio <= 0.7) s += " " + t("scorecard.takeaway.costsLow");
+        else s += " " + t("scorecard.takeaway.costsTypical");
+      }
+      takeaways.costs = s;
+    }
+    if (data?.comparables?.median_sale_price != null) {
+      let s = t("scorecard.takeaway.market", {
+        count: data.comparables.sales_volume,
+        median: fmtMoneyCompact(data.comparables.median_sale_price),
+      });
+      if ((data.comparables.sales_volume ?? 0) < 3) s += " " + t("scorecard.takeaway.marketThin");
+      takeaways.market = s;
+    }
+    const recParts: string[] = [];
+    if (ctx.violations) {
+      recParts.push(t("scorecard.takeaway.recordViolations", {
+        count: ctx.violations.total, open: ctx.violations.open_count,
+      }));
+    } else if (data?.violations_checked) {
+      recParts.push(t("scorecard.takeaway.recordClean"));
+    }
+    if (ctx.address_311) recParts.push(t("scorecard.takeaway.record311", { count: ctx.address_311.total }));
+    takeaways.record = recParts.join(" ") || null;
   }
 
   // Sticky condensed verdict: once the lead scrolls out of view, a compact strip
@@ -486,6 +589,7 @@ export default function ScorecardPage() {
     "module-economics": hasEconomics,
     "module-market": hasMarket,
     "module-record": hasRecord,
+    "module-area": !!(data?.context.crime_last_90d || ctx?.neighborhood),
   };
   const navSections = MODULE_IDS.filter((id) => modulePresence[id]);
 
@@ -538,7 +642,25 @@ export default function ScorecardPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
-      <PageHeader />
+      <PageHeader
+        contextRight={data && ctx && !loading ? (
+          <button
+            type="button"
+            title={t("scorecard.downloadCsv")}
+            aria-label={t("scorecard.downloadCsv")}
+            onClick={() => {
+              const slug = buildFilenameSlug(data.address || "property");
+              const date = new Date().toISOString().slice(0, 10);
+              downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
+            }}
+            className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+          </button>
+        ) : undefined}
+      />
 
       {/* pb-24 clears the sticky report bar so the last module is never hidden behind it */}
       <main className={`max-w-7xl mx-auto px-4 py-8 ${data && !loading ? "pb-24" : ""}`}>
@@ -622,126 +744,107 @@ export default function ScorecardPage() {
 
         {data && ctx && !loading && (
           <div>
-            {/* ── Level 1: identity → verdict → KPI strip ─────────────────── */}
-
-            {/* Identity bar — one quiet line owning "which parcel is this":
-                address, area, ward, PIN, confidence, freshness, page actions.
-                The locator thumb is identity confirmation only (nearest-parcel
-                seam), never an exploration map. */}
-            <div className="flex gap-4 items-start mb-6">
-              <MapThumb lat={data.lat} lon={data.lon} address={addr} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <h2 className="text-subtitle">
-                    {data.address || ctx.property?.address ||
-                      (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
-                  </h2>
-                  {data.community_area_name && (
-                    <span className="text-body text-text-muted">{data.community_area_name}</span>
-                  )}
-                  {ctx.neighborhood?.ward && (
-                    <span className="text-body text-text-muted" title={ctx.neighborhood.ward.alderman
-                      ? t("scorecard.wardTooltip", { alderman: ctx.neighborhood.ward.alderman })
-                      : undefined}>
-                      {t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward })}
-                      {ctx.neighborhood.ward.alderman && (
-                        <span> · {ctx.neighborhood.ward.alderman}</span>
-                      )}
-                    </span>
-                  )}
+            {/* ── Hero: the place, the read, the map — nothing else ─────────
+                Provenance compresses into ONE meta line; feedback lives in the
+                page footer; ask/CSV chips are gone (dock FAB + nav export). */}
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,42%)] lg:gap-10 mb-8">
+              <div className="min-w-0">
+                <h2 className="text-section text-text-primary">
+                  {data.address || ctx.property?.address ||
+                    (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
+                </h2>
+                <div className="text-body text-text-muted mt-1">
+                  {[
+                    data.community_area_name,
+                    ctx.neighborhood?.ward ? t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward }) : null,
+                  ].filter(Boolean).join(" · ")}
                 </div>
-                {/* Parcel identity strip */}
-                {parcel && (
-                  <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    {parcel.pin && (
-                      <a
-                        href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-caption font-mono text-text-secondary hover:text-accent transition-colors"
-                      >
-                        PIN {formatPin(parcel.pin)}
-                      </a>
-                    )}
-                    {parcel.pin === null ? (
-                      <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
-                        {t("scorecard.badges.unconfirmed")}
-                      </Chip>
-                    ) : parcel.confidence === "authoritative" ? (
-                      <Chip tone="positive" size="sm" title={t("scorecard.badges.exactTitle")} className="cursor-help">
-                        ✓ {t("scorecard.badges.exact")}
-                      </Chip>
-                    ) : (
-                      <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
-                        {t("scorecard.badges.approximate")}
-                      </Chip>
-                    )}
-                    {data.context.data_as_of && (
-                      <span className="text-micro text-text-muted">
-                        {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
-                      </span>
-                    )}
+
+                {/* Verdict lead — the conclusion, phrase explained on hover */}
+                {verdict && (
+                  <div ref={bandRef} className="mt-6">
+                    <VerdictBand verdict={verdict} onChat={verdictChat} onScrollTo={scrollToCard} />
                   </div>
                 )}
+
+                {/* The ONE money action — a bare violet button, no card; the
+                    full sell stays in the purchase modal + sample PDF. */}
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    disabled={downloading}
+                    className="px-4 py-2 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-title disabled:opacity-60"
+                  >
+                    {downloading
+                      ? t("scorecard.reportCTA.generating")
+                      : hasReportAccess
+                        ? t("scorecard.reportCTA.download")
+                        : `${t("scorecard.reportCTA.title")} · $25`}
+                  </button>
+                  <a
+                    href="/sample-report.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track("sample_report_click", { source: "hero_link" })}
+                    className="text-caption text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    {t("scorecard.reportCTA.viewSample")} ↗
+                  </a>
+                </div>
+
                 {data.partial_failures.length > 0 && (
-                  <div className="mt-2 text-micro text-state-warning">
+                  <div className="mt-4 text-micro text-state-warning">
                     {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
                   </div>
                 )}
-                {/* Page actions — ONE idiom (the chip language), grouped. Solid
-                    orange stays reserved for the verdict's next step. */}
-                <div className="flex flex-wrap gap-2 mt-3 items-center">
-                  {/* Open-ended ask: opens the quick-chat dock (empty, starters
-                      showing) — answers arrive in place. The full workspace is
-                      the dock's escalation link. */}
+
+                {/* Provenance — one quiet meta line, the only one on the page */}
+                <div className="flex items-center gap-3 flex-wrap mt-5 text-micro text-text-muted">
                   {parcel?.pin && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        track("investigate_click", { card_name: "ask_about_property" });
-                        askDock(null);
-                      }}
-                      className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                    <a
+                      href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-text-secondary hover:text-accent transition-colors"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                      </svg>
-                      {t("scorecard.askAboutProperty")}
-                      <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                    </button>
+                      PIN {formatPin(parcel.pin)} ↗
+                    </a>
                   )}
-                  <button
-                    type="button"
-                    title={t("scorecard.downloadCsv")}
-                    onClick={() => {
-                      const slug = buildFilenameSlug(data.address || "property");
-                      const date = new Date().toISOString().slice(0, 10);
-                      downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
-                    }}
-                    className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                    </svg>
-                    {t("scorecard.downloadCsvShort")}
-                  </button>
+                  {parcel && (parcel.pin === null ? (
+                    <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
+                      {t("scorecard.badges.unconfirmed")}
+                    </Chip>
+                  ) : parcel.confidence === "authoritative" ? (
+                    <span title={t("scorecard.badges.exactTitle")} className="cursor-help">
+                      ✓ {t("scorecard.badges.exact")}
+                    </span>
+                  ) : (
+                    <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
+                      {t("scorecard.badges.approximate")}
+                    </Chip>
+                  ))}
+                  {data.context.data_as_of && (
+                    <span>{t("scorecard.dataAsOf", { date: data.context.data_as_of })}</span>
+                  )}
                 </div>
+              </div>
+
+              {/* The place map — satellite default, parcel outline, comps, transit */}
+              <div className="mt-6 lg:mt-0 h-72 lg:h-auto lg:min-h-[24rem]">
+                <ParcelMap
+                  variant="place"
+                  lat={data.resolved_lat ?? data.lat}
+                  lon={data.resolved_lon ?? data.lon}
+                  parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                  comps={data.comparables?.sales}
+                  showTransit
+                  className="h-full"
+                />
               </div>
             </div>
 
-            {/* Verdict lead — the conclusion, de-carded */}
-            {verdict && (
-              <div ref={bandRef}>
-                <VerdictBand
-                  verdict={verdict}
-                  onChat={verdictChat}
-                  onScrollTo={scrollToCard}
-                  footer={<ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />}
-                />
-              </div>
-            )}
-
-            {/* KPI strip — the level-1 numbers row */}
+            {/* KPI band — the level-1 numbers row */}
             <KpiStrip tiles={tiles} onScrollTo={scrollToCard} />
 
             {/* Condensed verdict strip — appears when the lead scrolls away */}
@@ -767,16 +870,6 @@ export default function ScorecardPage() {
               </div>
             )}
 
-            {/* Report CTA — the single, dedicated money action on the page. */}
-            <div className="mb-6">
-              <ReportCTACard
-                hasReportAccess={hasReportAccess}
-                downloading={downloading}
-                onDownload={handleDownloadPdf}
-                onShowPurchase={() => setShowPurchasePrompt(true)}
-              />
-            </div>
-
             {/* ── Level 2: the evidence modules + sticky section rail ─────── */}
             <div className="lg:grid lg:grid-cols-[8.5rem_minmax(0,1fr)] lg:gap-10">
               {/* Section rail — wayfinding for the dashboard (desktop only;
@@ -801,17 +894,19 @@ export default function ScorecardPage() {
               </nav>
 
               <div className="min-w-0">
-                {/* §1 — What you can build */}
+                {/* §1 — What you can build: standards beside the zoning quilt,
+                    overlay rows beside the boundary map — every spatial claim
+                    is SHOWN next to the row that makes it. */}
                 {hasBuild && (
                   <ProfileModule
                     id="module-build"
                     title={t("scorecard.sections.capacityTitle")}
-                    subtitle={t("scorecard.sections.capacitySub")}
+                    takeaway={takeaways.build}
                     action={moduleAsk("build", zdef
                       ? `What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`
                       : `What are the development restrictions from regulatory overlays at ${addr}?`)}
                   >
-                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-start">
+                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch">
                       {zdef && (
                         <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col">
                           <ScorecardZoningCard
@@ -823,12 +918,32 @@ export default function ScorecardPage() {
                           />
                         </div>
                       )}
-                      {ctx.regulatory && (
+                      <ParcelMap
+                        variant="zoning"
+                        lazy
+                        lat={data.resolved_lat ?? data.lat}
+                        lon={data.resolved_lon ?? data.lon}
+                        parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                        layers={mapLayers}
+                        className="min-h-[16rem]"
+                      />
+                    </div>
+                    {ctx.regulatory && (
+                      <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch mt-8">
                         <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">
                           <ScorecardRegulatoryCard data={ctx.regulatory} />
                         </div>
-                      )}
-                    </div>
+                        <ParcelMap
+                          variant="boundaries"
+                          lazy
+                          lat={data.resolved_lat ?? data.lat}
+                          lon={data.resolved_lon ?? data.lon}
+                          parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                          layers={mapLayers}
+                          className="min-h-[16rem]"
+                        />
+                      </div>
+                    )}
                   </ProfileModule>
                 )}
 
@@ -837,7 +952,7 @@ export default function ScorecardPage() {
                   <ProfileModule
                     id="module-economics"
                     title={t("scorecard.sections.economicsTitle")}
-                    subtitle={t("scorecard.sections.economicsSub")}
+                    takeaway={takeaways.costs}
                     action={moduleAsk("economics", `Tell me about the building, taxes, and assessment history at ${addr}`)}
                   >
                     <div className="space-y-10">
@@ -860,7 +975,7 @@ export default function ScorecardPage() {
                   <ProfileModule
                     id="module-market"
                     title={t("scorecard.sections.marketTitle")}
-                    subtitle={t("scorecard.sections.marketSub")}
+                    takeaway={takeaways.market}
                     action={moduleAsk("market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
                   >
                     <div id="scorecard-card-comparables" className="scroll-mt-28 max-w-3xl">
@@ -874,7 +989,7 @@ export default function ScorecardPage() {
                   <ProfileModule
                     id="module-record"
                     title={t("scorecard.sections.riskTitle")}
-                    subtitle={t("scorecard.sections.riskSub")}
+                    takeaway={takeaways.record}
                     action={moduleAsk("record", ctx.violations && ctx.violations.total > 0
                       ? `Explain the building violations at ${addr} and typical remediation steps`
                       : `What are the 311 complaint patterns at ${addr} and what do they indicate?`)}
@@ -905,27 +1020,36 @@ export default function ScorecardPage() {
                   </ProfileModule>
                 )}
 
-                {/* ── Level 3: appendix — AREA-level context (the whole community
-                    area), NOT this parcel. Collapsed by default: background, not
-                    parcel-decision data; keeping area counts out of the parcel
-                    modules stops them reading as parcel facts. */}
+                {/* §5 — The neighborhood: AREA-level context, a designed module
+                    (not a buried appendix). The scope label rides the module
+                    header so area numbers can never read as parcel facts. */}
                 {(data.context.crime_last_90d || ctx.neighborhood) && (
-                  <details className="border-t border-dark-border pt-8 mt-10 group">
-                    <summary className="flex cursor-pointer list-none items-center gap-2 text-body text-text-secondary transition-colors hover:text-text-primary">
-                      <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
-                      {t("scorecard.neighborhoodContext.title")}
-                      {data.community_area_name && (
-                        <span className="text-caption text-text-muted">
-                          {t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })}
-                        </span>
-                      )}
-                    </summary>
-                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 mt-6">
-                      {data.context.crime_last_90d && <CrimeYoYBlock data={data} />}
-                      {ctx.neighborhood && <NeighborhoodCard data={ctx.neighborhood} />}
-                    </div>
-                  </details>
+                  <ProfileModule
+                    id="module-area"
+                    title={t("scorecard.neighborhoodContext.title")}
+                    takeaway={data.community_area_name
+                      ? t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })
+                      : null}
+                    action={moduleAsk("neighborhood", `What's the neighborhood like around ${addr}?`)}
+                  >
+                    {ctx.neighborhood && <NeighborhoodBlock data={ctx.neighborhood} />}
+                    {data.context.crime_last_90d && (
+                      <div className="mt-8 max-w-3xl">
+                        <CrimeYoYBlock data={data} />
+                      </div>
+                    )}
+                  </ProfileModule>
                 )}
+
+                {/* Page footer — feedback lives with the end of the read */}
+                <div className="border-t border-dark-border mt-10 pt-5 flex items-center justify-between flex-wrap gap-3">
+                  <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />
+                  {data.context.data_as_of && (
+                    <span className="text-micro text-text-muted">
+                      {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

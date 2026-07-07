@@ -7,10 +7,12 @@
 // text in text tokens. The land/building split is the honest view — a vacant
 // parcel reads as land-only bars instead of hiding behind a total line.
 //
-// Series colors are functional data encodings (exempt from chrome tokens),
-// validated per mode with the dataviz palette validator (2026-07-07):
-//   dark  (#0a0a0a): land #3b82f6 · building #e06f28 — all checks pass
-//   light (#fafaf9): land #2563eb · building #c2410c — all checks pass
+// Chart-color rule (2026-07-07, Jack): series 1 = BRAND ORANGE, series 2 = a
+// NEUTRAL gray step — never an off-brand hue (the first cut used a validated
+// blue and read as clip-art). Identity is carried by stacking position (land
+// is always the base) + the legend, so the neutral's low chroma is deliberate
+// de-emphasis, not a validator miss. Building wears the accent: it's the
+// series that changes when something is built or torn down.
 import { useMemo, useState, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { AssessmentRecord, SaleRecord, AppealRecord } from "../../lib/types";
@@ -18,8 +20,8 @@ import { formatDate } from "../../lib/format";
 import { useThemeContext } from "../../contexts/ThemeContext";
 
 const SERIES = {
-  dark: { land: "#3b82f6", building: "#e06f28" },
-  light: { land: "#2563eb", building: "#c2410c" },
+  dark: { land: "#55555e", building: "#f9a474" },
+  light: { land: "#b5b1ab", building: "#c2410c" },
 };
 
 function fmtCompact(n: number): string {

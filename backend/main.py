@@ -26,6 +26,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.analytics import compute_analytics
+from backend.retrieval.cache import TTLCache
 from backend.retrieval.utils import FT_PER_DEG_LAT, MI_PER_DEG_LAT
 from backend.assembler import assemble_context
 from backend.config import get_settings
@@ -1658,6 +1659,61 @@ async def _fetch_scorecard_data(
         "partial_failures": partial_failures,
         "violations_checked": violations_checked,
     }
+
+
+@app.get("/api/area-stats")
+async def area_stats(ca: int) -> dict:
+    """Community-area benchmark aggregates for the Property Profile KPI band.
+    Served from a daily in-process scan of the Discovery index; every stat is
+    None/empty when the index is absent — the UI then renders no benchmark."""
+    from backend.retrieval.area_stats import get_area_stats
+
+    stats = await get_area_stats(ca)
+    return stats or {
+        "community_area": ca,
+        "n_parcels": 0,
+        "median_assessed": None,
+        "median_av_per_land_sqft": None,
+        "by_land_use": {},
+    }
+
+
+_parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")
+
+
+@app.get("/api/parcel-map")
+async def parcel_map(lat: float, lon: float) -> dict:
+    """Geometry layers for the Property Profile's module maps: the zoning quilt
+    around the parcel (Build module) and the overlay/TIF/EZ boundaries that hit
+    the point (Regulatory/Incentives module). Every layer degrades to None —
+    the maps render only the layers that arrive."""
+    key = f"{lat:.4f},{lon:.4f}"
+    cached = _parcel_map_cache.get(key)
+    if cached is not None:
+        return cached
+
+    from backend.retrieval.zoning import zoning_polygons_near
+    from backend.retrieval.incentives.tif import tif_geojson_feature
+    from backend.retrieval.incentives.enterprise_zones import ez_geojson_feature
+
+    results = await asyncio.gather(
+        _limited(zoning_polygons_near(lat, lon)),
+        _limited(_fetch_overlay_geojson(lat, lon)),
+        _limited(tif_geojson_feature(lat, lon)),
+        _limited(ez_geojson_feature(lat, lon)),
+        return_exceptions=True,
+    )
+    zoning_fc, overlays_fc, tif_feat, ez_feat = (
+        None if isinstance(r, Exception) else r for r in results
+    )
+    payload = {
+        "zoning": _simplify_geojson(zoning_fc),
+        "overlays": _simplify_geojson(overlays_fc),
+        "tif": tif_feat,
+        "ez": ez_feat,
+    }
+    _parcel_map_cache.set(key, payload)
+    return payload
 
 
 @app.get("/api/scorecard")

@@ -5,11 +5,13 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-/** Top-level dashboard band: title + subtitle + optional right-side action. */
-export function ProfileModule({ id, title, subtitle, action, children }: {
+/** Top-level dashboard band: title + optional takeaway + right-side action.
+    The takeaway is parcel-specific computed insight ("the so-what"), NOT
+    definitional copy — definitions live in tooltips (2026-07-07 rule). */
+export function ProfileModule({ id, title, takeaway, action, children }: {
   id?: string;
   title: string;
-  subtitle?: string;
+  takeaway?: string | null;
   /** Right-aligned quiet action (the module's single "Ask" affordance). */
   action?: ReactNode;
   children: ReactNode;
@@ -17,9 +19,9 @@ export function ProfileModule({ id, title, subtitle, action, children }: {
   return (
     <section id={id} className="scroll-mt-28 border-t border-dark-border pt-8 mt-10 first:border-t-0 first:mt-0 first:pt-0">
       <div className="flex items-start justify-between gap-4 mb-5">
-        <div>
+        <div className="min-w-0">
           <h3 className="text-subtitle text-text-primary">{title}</h3>
-          {subtitle && <p className="text-caption text-text-muted mt-0.5">{subtitle}</p>}
+          {takeaway && <p className="text-body text-text-secondary mt-1.5 max-w-3xl leading-relaxed">{takeaway}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>

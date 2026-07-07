@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { InfoTooltip } from "./InfoTooltip";
 import type { ScorecardVerdict, VerdictCategory, CardId, ReasonPolarity } from "../lib/scorecardVerdict";
 
 // The verdict lead — the Property Profile's conclusion, de-carded (2026-07-07):
@@ -67,13 +68,23 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
     else if (step.kind === "scroll" && step.cardAnchor) onScrollTo(step.cardAnchor);
   }
 
+  // The phrase explains itself on hover/tap (tooltip rule: definitions never
+  // live as on-page copy) — plain-English gloss per category, scoring untouched.
+  const explain = t(`scorecard.verdict.explain.${verdict.category}`, { defaultValue: "" });
+
   return (
     <section aria-label={t("scorecard.verdict.ariaLabel")} className="mb-6 max-w-3xl">
       {/* Headline — the conclusion, leading; tone rides the dot, not the chrome */}
       <div className="flex items-start gap-3 mb-3">
         <h2 className="text-lead text-text-primary flex items-baseline gap-2.5">
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 self-center ${tone.dot}`} aria-hidden />
-          {verdict.headline}
+          {explain ? (
+            <InfoTooltip content={{ label: verdict.headline, description: explain, bullets: [] }}>
+              {verdict.headline}
+            </InfoTooltip>
+          ) : (
+            verdict.headline
+          )}
         </h2>
         {verdict.confidence === "caveated" && (
           <span className="text-micro text-state-warning border border-state-warning/30 bg-state-warning/10 rounded-md px-2 py-0.5 shrink-0 mt-1.5">

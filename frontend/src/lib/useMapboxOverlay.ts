@@ -13,6 +13,12 @@ interface UseMapboxOverlayOptions {
   interactive?: boolean;
   /** Extra pick tolerance in px around pointer events (touch needs ~14; mouse none). */
   pickingRadius?: number;
+  /** Mapbox style URL; defaults to dark-v11 (the chat map). Read once at init —
+      runtime style swaps go through mapRef.current.setStyle(). */
+  style?: string;
+  /** Disable scroll-zoom until the map is clicked (page-scroll trap guard for
+      inline page maps; the chat/Discovery maps keep default behavior). */
+  clickToActivate?: boolean;
 }
 
 /**
@@ -44,7 +50,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: optsRef.current.style ?? "mapbox://styles/mapbox/dark-v11",
       center: optsRef.current.center,
       zoom: optsRef.current.zoom,
       attributionControl: false,
@@ -53,6 +59,12 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     });
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
+
+    if (optsRef.current.clickToActivate) {
+      map.scrollZoom.disable();
+      map.on("click", () => map.scrollZoom.enable());
+      map.on("mouseout", () => map.scrollZoom.disable());
+    }
 
     // A lost WebGL context can otherwise log as an uncaught error; preventing
     // the default lets the browser restore it (common during dev remounts).

@@ -108,7 +108,9 @@
       "appealWon": "Apelación ganada −{{pct}}%",
       "sale": "Venta",
       "appeal": "Apelación ganada"
-    }
+    },
+    "floorArea": "Superficie construida",
+    "floorAreaTip": "Área total sumando todos los pisos — en un edificio de varios pisos puede superar el tamaño del lote."
   },
   "regulatory": {
     "title": "Normativo",
@@ -630,7 +632,8 @@
     "noData": "No se encontraron ventas comparables cercanas.",
     "radius": "En 0.25 mi, últimos 3 años",
     "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe",
-    "stripAriaLabel": "{{count}} precios de ventas comparables"
+    "stripAriaLabel": "{{count}} precios de ventas comparables",
+    "class": "Clase"
   },
   "trends": {
     "new": "nuevo"

@@ -6,18 +6,13 @@
 import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
+import { InfoTooltip } from "../InfoTooltip";
 import { PropertyTimeline } from "./PropertyTimeline";
 import { SubSection, ShowMore } from "./ProfileModule";
 
 function fmtDollar(n: number | null | undefined): string {
   if (n == null) return "—";
   return `$${Math.round(n).toLocaleString()}`;
-}
-
-function fmtCompact(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
-  return `$${Math.round(n)}`;
 }
 
 const TaxIcon = (
@@ -34,54 +29,26 @@ const BuildingIcon = (
   </svg>
 );
 
-function agencyLabel(agency: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const key = agency.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-  const translated = t(`property.agencyNames.${key}`, { defaultValue: "" });
-  return translated || agency;
-}
-
-/** Tax-breakdown bars: magnitude of parts → one hue; top agencies + Other;
-    ≤24px thick, rounded data-end, square baseline, value at the tip. */
-function TaxBars({ breakdown }: { breakdown: PropertySummary["tax_breakdown"] }) {
-  const { t } = useTranslation("data");
-  const sorted = [...breakdown].sort((a, b) => b.amount - a.amount);
-  const top = sorted.slice(0, 4);
-  const rest = sorted.slice(4);
-  const rows = [
-    ...top.map((b) => ({ label: agencyLabel(b.agency, t), amount: b.amount })),
-    ...(rest.length > 0
-      ? [{ label: t("property.otherAgencies", { count: rest.length }), amount: rest.reduce((s, b) => s + b.amount, 0) }]
-      : []),
-  ];
-  const max = Math.max(...rows.map((r) => r.amount));
-  if (!(max > 0)) return null;
-  return (
-    <div className="space-y-1.5">
-      {rows.map((r) => (
-        <div key={r.label} className="grid grid-cols-[minmax(0,42%)_1fr] items-center gap-x-3">
-          <div className="text-caption text-text-secondary truncate" title={r.label}>{r.label}</div>
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="h-2.5 rounded-r bg-accent shrink-0" style={{ width: `${Math.max((r.amount / max) * 100 * 0.8, 1.5)}%` }} />
-            <span className="text-caption text-text-primary whitespace-nowrap">{fmtCompact(r.amount)}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Fact({ label, value, sourceHint }: {
+function Fact({ label, value, sourceHint, tip }: {
   label: string;
   value: string | null | undefined;
   /** Provenance note for non-assessor values ("via parcel geometry", "via city
       footprint data") — rendered as a muted suffix so derived numbers are
       honest without shouting. */
   sourceHint?: string | null;
+  /** Term definition, shown on hover/tap (tooltip rule — never on-page copy). */
+  tip?: string;
 }) {
   if (!value || value === "—") return null;
   return (
     <div>
-      <dt className="text-caption text-text-muted">{label}</dt>
+      <dt className="text-caption text-text-muted">
+        {tip ? (
+          <InfoTooltip content={{ label, description: tip, bullets: [] }}>{label}</InfoTooltip>
+        ) : (
+          label
+        )}
+      </dt>
       <dd className="text-body text-text-primary mt-0.5">
         {value}
         {sourceHint && <span className="text-micro text-text-muted"> {sourceHint}</span>}
@@ -176,13 +143,10 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
               </div>
             )}
 
-            {/* Where the bill goes — visible by default (was behind a toggle) */}
-            {data.tax_breakdown.length > 0 && (
-              <div>
-                <div className="text-caption text-text-muted mb-1.5">{t("property.taxBreakdownToggle")}</div>
-                <TaxBars breakdown={data.tax_breakdown} />
-              </div>
-            )}
+            {/* The agency-by-agency breakdown is deliberately NOT here (2026-07-07
+                cut list): every Chicago parcel splits roughly the same way, so it's
+                trivia at decision time — it stays in the CSV export and the $25
+                report. What remains is the decision-relevant tax context. */}
 
             {/* Exemptions on the current bill — a buyer loses owner-occupancy
                 exemptions at transfer, so this bill understates their future bill. */}
@@ -247,7 +211,8 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Fact label={t("property.class")} value={classLabel || null} />
-              <Fact label={t("property.buildingSqft")} value={data.bldg_sqft ? data.bldg_sqft.toLocaleString() : null}
+              <Fact label={t("property.floorArea")} tip={t("property.floorAreaTip")}
+                value={data.bldg_sqft ? `${data.bldg_sqft.toLocaleString()} ft²` : null}
                 sourceHint={sourceHintFor(data.bldg_sqft_source, t)} />
               <Fact label={t("property.landSqft")} value={data.land_sqft ? data.land_sqft.toLocaleString() : null}
                 sourceHint={sourceHintFor(data.land_sqft_source, t)} />

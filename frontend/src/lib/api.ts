@@ -824,6 +824,43 @@ export async function discoveryExportCsv(req: DiscoverySearchRequest): Promise<b
   } catch { return false; }
 }
 
+// --- Property Profile: area benchmarks + module-map layers ---
+
+/** Community-area benchmark aggregates for the Property Profile KPI band.
+    All-null stats when the Discovery index is absent — callers render no
+    benchmark line. */
+export async function fetchAreaStats(ca: number): Promise<{
+  community_area: number;
+  n_parcels: number;
+  median_assessed: number | null;
+  median_av_per_land_sqft: number | null;
+} | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Geometry layers for the Property Profile module maps (zoning quilt +
+    overlay/TIF/EZ boundaries). Every layer degrades to null. */
+export async function fetchParcelMapLayers(lat: number, lon: number): Promise<{
+  zoning: GeoJSON.FeatureCollection | null;
+  overlays: GeoJSON.FeatureCollection | null;
+  tif: GeoJSON.Feature | null;
+  ez: GeoJSON.Feature | null;
+} | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/parcel-map?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
 // --- Transit Stations ---
 
 let _transitStationsCache: import("./types").TransitStation[] | null = null;

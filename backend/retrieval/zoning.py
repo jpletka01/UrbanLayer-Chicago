@@ -184,3 +184,49 @@ async def zoning_polygons_for_map(
     except Exception as exc:
         log.warning("Zoning polygon fetch failed for CA %s: %s", community_area, exc)
         return _EMPTY_FC
+
+
+async def zoning_polygons_near(
+    lat: float,
+    lon: float,
+    *,
+    radius_mi: float = 0.25,
+    client: httpx.AsyncClient | None = None,
+) -> dict:
+    """Zoning district polygons in a small envelope around a point, as GeoJSON.
+
+    The parcel-scale variant of ``zoning_polygons_for_map`` (whole community
+    areas are ~1 MB; the Property Profile's zoning module map only needs the
+    blocks around the parcel). Cache key rounds the point to ~100 m so nearby
+    lookups share an entry.
+    """
+    import math
+
+    key = f"zoning_near:{lat:.3f},{lon:.3f}:{radius_mi}"
+    cached = _polygon_cache.get(key)
+    if cached is not None:
+        return cached
+
+    dlat = radius_mi / 69.0
+    dlon = radius_mi / (69.0 * max(math.cos(math.radians(lat)), 0.2))
+    params = {
+        "geometry": f"{lon - dlon},{lat - dlat},{lon + dlon},{lat + dlat}",
+        "geometryType": "esriGeometryEnvelope",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "outFields": "ZONE_CLASS,ZONE_TYPE,ORDINANCE_NUM",
+        "returnGeometry": "true",
+        "outSR": "4326",
+        "f": "geojson",
+    }
+    if client is None:
+        client = _get_arcgis_client()
+    try:
+        resp = await client.get(ZONING_QUERY_URL, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        _polygon_cache.set(key, data)
+        return data
+    except Exception as exc:
+        log.warning("Zoning polygon fetch failed near (%s, %s): %s", lat, lon, exc)
+        return _EMPTY_FC

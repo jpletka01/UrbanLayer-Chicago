@@ -123,7 +123,7 @@
       "far": "Max FAR",
       "maxHeight": "Max height",
       "lotCoverage": "Max lot coverage",
-      "viewMap": "View zoning map",
+      "viewMap": "Official zoning map ↗",
       "farUsed": "FAR used",
       "farHeadroom": "{{pct}}% of the as-of-right envelope unused",
       "setByPdOrdinance": "Set by PD ordinance",
@@ -235,6 +235,14 @@
         "strong": "strong ({{count}})",
         "some": "present ({{count}})",
         "none": "none"
+      },
+      "explain": {
+        "strong": "The zoning leaves meaningful unused building capacity, and nothing on record blocks using it.",
+        "incentive_driven": "The upside here comes mainly from incentive programs (TIF, Opportunity Zone, …) rather than unused zoning capacity.",
+        "constrained": "There is buildable room, but overlays or reviews (landmark, historic, flood, …) add time, cost, or approvals.",
+        "limited": "Little unused capacity under current zoning — a bigger project would need a rezoning or variance.",
+        "entitlement_defined": "A negotiated Planned Development governs this parcel — its ordinance, not the standard zoning table, defines what is allowed.",
+        "insufficient_data": "Key inputs (building area, zoning, …) could not be verified, so this read is directional only."
       }
     },
     "badges": {
@@ -311,7 +319,10 @@
       "lotBldg": "bldg {{sqft}} ft²",
       "assessedDelta": "{{pct}} since {{year}}",
       "tax": "Est. tax",
-      "taxRate": "{{rate}}% effective"
+      "taxRate": "{{rate}}% effective",
+      "assessedFlat": "flat since {{year}}",
+      "avBenchmark": "${{psf}}/ft² · area median ${{median}}/ft²",
+      "taxNorm": "class norm ≈{{norm}}%"
     },
     "sections": {
       "capacityTitle": "What you can build",
@@ -332,7 +343,42 @@
       "build": "Build",
       "economics": "Costs",
       "market": "Market",
-      "record": "Record"
+      "record": "Record",
+      "area": "Area"
+    },
+    "takeaway": {
+      "build": "Zoned {{zone}} — up to ≈{{sqft}} ft² buildable as-of-right.",
+      "buildUsed": "About {{pct}}% of that envelope is used today.",
+      "costs": "The {{year}} bill was {{tax}} — {{rate}}% of implied market value.",
+      "costsHigh": "That's ≈{{x}}× the norm for this property class.",
+      "costsLow": "That's below the norm for this property class.",
+      "costsTypical": "In line with the norm for this property class.",
+      "market_one": "{{count}} comparable sale within ¼ mile in 3 years — median {{median}}.",
+      "market_other": "{{count}} comparable sales within ¼ mile in 3 years — median {{median}}.",
+      "marketThin": "Thin data — treat as indicative.",
+      "recordViolations_one": "{{count}} violation on record at this address ({{open}} open).",
+      "recordViolations_other": "{{count}} violations on record at this address ({{open}} open).",
+      "recordClean": "No violations on record at this address.",
+      "record311_other": "The address logged {{count}} 311 service requests in the past year.",
+      "record311_one": "The address logged {{count}} 311 service request in the past year."
+    },
+    "map": {
+      "satellite": "Satellite",
+      "streets": "Streets",
+      "compsLegend_one": "{{count}} comparable sale",
+      "compsLegend_other": "{{count}} comparable sales"
+    },
+    "crimeCurrent": "Current period",
+    "crimePrior": "Prior year",
+    "area": {
+      "walk": "Walk Score",
+      "transitScore": "Transit Score",
+      "nearestRail": "Nearest 'L'",
+      "income": "Median income",
+      "rent": "Median rent",
+      "population": "Population",
+      "ownerOcc": "{{pct}}% owner-occupied",
+      "todEligible": "TOD-eligible"
     }
   },
   "discovery": {

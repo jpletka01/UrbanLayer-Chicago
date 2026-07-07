@@ -12,9 +12,19 @@ export { navItemsFor } from "./FloatingNav";
  */
 export default function PageHeader({
   maxWidthClass = "max-w-7xl",
+  contextRight,
 }: {
   sticky?: boolean;
   maxWidthClass?: string;
+  /** Page actions rendered in the nav's right zone (e.g. the Profile's CSV export). */
+  contextRight?: import("react").ReactNode;
 }) {
-  return <FloatingNav position="floating" languageVariant="workspace" maxWidthClass={maxWidthClass} />;
+  return (
+    <FloatingNav
+      position="floating"
+      languageVariant="workspace"
+      maxWidthClass={maxWidthClass}
+      contextRight={contextRight}
+    />
+  );
 }

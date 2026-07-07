@@ -123,7 +123,7 @@
       "far": "FAR máx.",
       "maxHeight": "Altura máx.",
       "lotCoverage": "Cobertura máx. del lote",
-      "viewMap": "Ver mapa de zonificación",
+      "viewMap": "Mapa oficial de zonificación ↗",
       "farUsed": "FAR utilizado",
       "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar",
       "setByPdOrdinance": "Definido por la ordenanza del PD",
@@ -235,6 +235,14 @@
         "strong": "fuerte ({{count}})",
         "some": "presente ({{count}})",
         "none": "ninguno"
+      },
+      "explain": {
+        "strong": "La zonificación deja capacidad de construcción sin usar significativa, y nada registrado impide aprovecharla.",
+        "incentive_driven": "El potencial aquí proviene principalmente de programas de incentivos (TIF, Opportunity Zone, …) más que de capacidad de zonificación sin usar.",
+        "constrained": "Hay margen para construir, pero superposiciones o revisiones (monumento, distrito histórico, inundación, …) añaden tiempo, costo o aprobaciones.",
+        "limited": "Poca capacidad sin usar bajo la zonificación actual — un proyecto mayor requeriría rezonificación o variación.",
+        "entitlement_defined": "Un Planned Development negociado rige esta parcela — su ordenanza, no la tabla de zonificación estándar, define lo permitido.",
+        "insufficient_data": "Datos clave (superficie construida, zonificación, …) no pudieron verificarse; esta lectura es solo orientativa."
       }
     },
     "badges": {
@@ -311,7 +319,10 @@
       "lotBldg": "edif. {{sqft}} ft²",
       "assessedDelta": "{{pct}} desde {{year}}",
       "tax": "Impuesto est.",
-      "taxRate": "{{rate}}% efectivo"
+      "taxRate": "{{rate}}% efectivo",
+      "assessedFlat": "sin cambio desde {{year}}",
+      "avBenchmark": "${{psf}}/ft² · mediana del área ${{median}}/ft²",
+      "taxNorm": "norma de clase ≈{{norm}}%"
     },
     "sections": {
       "capacityTitle": "Qué puede construir",
@@ -332,7 +343,42 @@
       "build": "Construir",
       "economics": "Costos",
       "market": "Mercado",
-      "record": "Historial"
+      "record": "Historial",
+      "area": "Área"
+    },
+    "takeaway": {
+      "build": "Zonificado {{zone}} — hasta ≈{{sqft}} ft² edificables de pleno derecho.",
+      "buildUsed": "Hoy se usa cerca del {{pct}}% de esa envolvente.",
+      "costs": "La factura de {{year}} fue {{tax}} — {{rate}}% del valor de mercado implícito.",
+      "costsHigh": "Eso es ≈{{x}}× la norma para esta clase de propiedad.",
+      "costsLow": "Está por debajo de la norma para esta clase de propiedad.",
+      "costsTypical": "En línea con la norma para esta clase de propiedad.",
+      "market_one": "{{count}} venta comparable en ¼ de milla en 3 años — mediana {{median}}.",
+      "market_other": "{{count}} ventas comparables en ¼ de milla en 3 años — mediana {{median}}.",
+      "marketThin": "Datos escasos — tómelo como indicativo.",
+      "recordViolations_one": "{{count}} infracción registrada en esta dirección ({{open}} abierta).",
+      "recordViolations_other": "{{count}} infracciones registradas en esta dirección ({{open}} abiertas).",
+      "recordClean": "Sin infracciones registradas en esta dirección.",
+      "record311_other": "La dirección registró {{count}} solicitudes 311 en el último año.",
+      "record311_one": "La dirección registró {{count}} solicitud 311 en el último año."
+    },
+    "map": {
+      "satellite": "Satélite",
+      "streets": "Calles",
+      "compsLegend_one": "{{count}} venta comparable",
+      "compsLegend_other": "{{count}} ventas comparables"
+    },
+    "crimeCurrent": "Período actual",
+    "crimePrior": "Año anterior",
+    "area": {
+      "walk": "Walk Score",
+      "transitScore": "Transit Score",
+      "nearestRail": "Tren 'L' más cercano",
+      "income": "Ingreso mediano",
+      "rent": "Renta mediana",
+      "population": "Población",
+      "ownerOcc": "{{pct}}% ocupado por dueños",
+      "todEligible": "Elegible TOD"
     }
   },
   "discovery": {
