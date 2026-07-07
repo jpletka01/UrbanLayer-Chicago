@@ -20,6 +20,7 @@ import datetime
 import json
 import logging
 import math
+import sqlite3
 import time
 from collections import defaultdict
 from typing import Any, Iterable
@@ -113,6 +114,48 @@ def _recency_days(sale_date: str | None, as_of: datetime.date) -> int | None:
     return (as_of - d).days
 
 
+def _load_geometry_land(db_path, pin10s: set[str]) -> dict[str, float]:
+    """pin10 → polygon land sqft from the local PTAXSIM ``pin_geometry_raw`` table.
+
+    The only all-class land source (CCAO chars is residential-only — before this
+    fill, land_sqft was populated on ~4% of e.g. Uptown, starving the Profile's
+    area $/ft² benchmark and every land-based Discovery filter/derived field).
+    Same source the live profile uses (`property/parcel_geometry.py`); the
+    newest boundary per pin10 wins. Returns {} when ptaxsim is absent — the
+    build proceeds and `populated_fields` reflects reality.
+    """
+    from backend.retrieval.property.parcel_geometry import _polygon_area_sqft
+
+    if not pin10s:
+        return {}
+    out: dict[str, float] = {}
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        log.warning("discovery index: pin_geometry unavailable (%s); land fill skipped", exc)
+        return {}
+    try:
+        pins = sorted(pin10s)
+        for i in range(0, len(pins), 900):
+            chunk = pins[i:i + 900]
+            marks = ",".join("?" * len(chunk))
+            # ASC + dict-overwrite → the newest end_year's boundary wins.
+            for pin10, wkt in conn.execute(
+                f"SELECT pin10, geometry FROM pin_geometry_raw "
+                f"WHERE pin10 IN ({marks}) AND geometry IS NOT NULL "
+                "ORDER BY end_year ASC",
+                chunk,
+            ):
+                parsed = _polygon_area_sqft(wkt)
+                if parsed:
+                    out[pin10] = parsed[0]
+    except sqlite3.Error as exc:
+        log.warning("discovery index: pin_geometry scan failed (%s); partial land fill", exc)
+    finally:
+        conn.close()
+    return out
+
+
 def _point_in_any(polys: Iterable[Any], lat: float, lon: float) -> bool:
     point = Point(lon, lat)
     return any(poly.contains(point) for poly in polys)
@@ -159,6 +202,7 @@ def assemble_parcel(
     sale: dict | None,
     *,
     address: str | None = None,
+    geom_land_sqft: float | None = None,
     zoning_polys: list[tuple[str, Any]],
     tif_polys: Iterable[Any],
     ez_polys: Iterable[Any],
@@ -166,7 +210,14 @@ def assemble_parcel(
     neighborhood_ca: int | None,
     as_of: datetime.date,
 ) -> tuple[str, float, float, dict[str, Any], list[str]]:
-    """Pure: assemble one parcel's (pin, lat, lon, attrs, regions) from fetched inputs."""
+    """Pure: assemble one parcel's (pin, lat, lon, attrs, regions) from fetched inputs.
+
+    ``geom_land_sqft`` is the PTAXSIM-polygon land area, filled only into the
+    hole CCAO chars leaves (assessor-stated area wins). Callers must pass it
+    ONLY for base parcels (PIN suffix 0000) — a condo unit-PIN sharing the
+    building's pin10 would otherwise claim the whole lot as its own land,
+    polluting land-based filters and the area $/ft² medians.
+    """
     lat, lon = spine["lat"], spine["lon"]
     cls = spine.get("class", "")
 
@@ -188,6 +239,8 @@ def assemble_parcel(
         attrs["bldg_sqft"] = _num(chars.get("char_bldg_sf"))
         attrs["year_built"] = _int(chars.get("char_yrblt"))
         attrs["units"] = _int(chars.get("char_apts"))
+    if attrs.get("land_sqft") is None and geom_land_sqft and geom_land_sqft > 0:
+        attrs["land_sqft"] = float(round(geom_land_sqft))
 
     if assess:
         attrs["total_assessed_value"] = _num(
@@ -653,14 +706,22 @@ async def _assemble_ca(
     addr_tree, addr_list = _address_tree(await _fetch_address_points(ca, client=client))
     zoning_polys = _zoning_index(await zoning_polygons_for_map(ca, client=client))
 
+    # Geometry land for BASE parcels only (suffix 0000) — see assemble_parcel.
+    geom_land: dict[str, float] = {}
+    if settings.ptaxsim_enabled and settings.ptaxsim_db_path.exists():
+        base10s = {p[:10] for p in pins if p[10:] == "0000"}
+        geom_land = _load_geometry_land(settings.ptaxsim_db_path, base10s)
+
     rows: list[tuple] = []
     for s in spine:
         ca_real = community_area_by_point(s["lat"], s["lon"]) or ca
+        pd = s["pin_digits"]
         rows.append(assemble_parcel(
-            s, chars.get(s["pin_digits"]), assess.get(s["pin_digits"]), sales.get(s["pin_digits"]),
+            s, chars.get(pd), assess.get(pd), sales.get(pd),
             address=_address_for(
-                s["pin_digits"], s["lat"], s["lon"], addrs, base_addrs, addr_tree, addr_list
+                pd, s["lat"], s["lon"], addrs, base_addrs, addr_tree, addr_list
             ),
+            geom_land_sqft=geom_land.get(pd[:10]) if pd[10:] == "0000" else None,
             zoning_polys=zoning_polys, tif_polys=tif_polys, ez_polys=ez_polys,
             rail_stations=rail_stations, neighborhood_ca=ca_real, as_of=as_of,
         ))

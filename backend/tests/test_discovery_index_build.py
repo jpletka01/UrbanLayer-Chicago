@@ -186,6 +186,59 @@ def test_assemble_minimal_parcel_no_joins_no_layers():
     assert regions == ["neighborhood:24"]
 
 
+def test_assemble_geometry_land_fills_only_the_hole():
+    """PTAXSIM-polygon land fills a chars-less parcel; assessor land wins when
+    present; zero/None geometry never writes."""
+    spine = {"pin": "p-comm", "class": "517", "lat": 41.0, "lon": -88.0}
+    # no chars (commercial): geometry fills
+    _, _, _, attrs, _ = _assemble(spine, geom_land_sqft=9825.4)
+    assert attrs["land_sqft"] == 9825.0
+    # chars land present: assessor wins
+    _, _, _, attrs2, _ = _assemble(
+        spine, chars={"char_land_sf": "3200"}, geom_land_sqft=9825.4)
+    assert attrs2["land_sqft"] == 3200.0
+    # chars row exists but land null: geometry still fills the hole
+    _, _, _, attrs3, _ = _assemble(
+        spine, chars={"char_bldg_sf": "2600"}, geom_land_sqft=9825.4)
+    assert attrs3["land_sqft"] == 9825.0
+    # no geometry -> absent as before
+    _, _, _, attrs4, _ = _assemble(spine, geom_land_sqft=None)
+    assert "land_sqft" not in attrs4
+
+
+def test_load_geometry_land_latest_boundary_wins(tmp_path):
+    """_load_geometry_land: WKT → sqft via the shared parcel-geometry math;
+    the newest end_year boundary wins; requested-but-absent pins are omitted."""
+    import sqlite3
+
+    from backend.discovery.index_build import _load_geometry_land
+
+    db = tmp_path / "ptaxsim.db"
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "CREATE TABLE pin_geometry_raw (pin10 TEXT, start_year INT, end_year INT, geometry TEXT)"
+    )
+    # ~0.0001° square at the equator-ish latitude used: area is deterministic;
+    # we assert relative behavior (newest wins), not the exact sqft.
+    small = "POLYGON((-88.0 41.0, -87.9999 41.0, -87.9999 41.0001, -88.0 41.0001, -88.0 41.0))"
+    big = "POLYGON((-88.0 41.0, -87.9998 41.0, -87.9998 41.0002, -88.0 41.0002, -88.0 41.0))"
+    conn.executemany(
+        "INSERT INTO pin_geometry_raw VALUES (?,?,?,?)",
+        [
+            ("1433314059", 2010, 2015, small),
+            ("1433314059", 2016, 2024, big),   # newest -> wins
+            ("1717000000", 2016, 2024, small),
+            ("9999999999", 2016, 2024, None),  # NULL geometry -> skipped
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+    out = _load_geometry_land(db, {"1433314059", "1717000000", "9999999999", "0000000000"})
+    assert set(out) == {"1433314059", "1717000000"}
+    assert out["1433314059"] > out["1717000000"] * 3  # the 2x-by-2x newer boundary won
+
+
 def test_resolve_address_falls_back_to_building_base_pin():
     base = {"13363160480000": {"cmpaddabrv": "1755 N KEDZIE AVE"}}
     # a condo unit-PIN with no own address point -> its building's base PIN

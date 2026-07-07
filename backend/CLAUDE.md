@@ -104,7 +104,14 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
   3-tier addresses (`_address_for`: own → building base-PIN → nearest-approx `~` via shapely STRtree),
   `populated_fields` + `recipe_counts` manifest. **`--refresh`** rebuilds the current `meta.community_areas`
   (monthly timer). **Assessment join filters for a present value** (latest CCAO year is valueless — see
-  known-issues). `index_validate.py` = non-blocking validation CLI.
+  known-issues). **Geometry land fill (2026-07-07):** `_load_geometry_land` reads the local ptaxsim
+  `pin_geometry_raw` polygons (same source as the profile's `parcel_geometry.py`) and fills
+  `land_sqft` where CCAO chars leaves it NULL — **BASE parcels only (PIN suffix 0000)**, so condo
+  unit-PINs never each claim the whole lot (that would pollute land filters + the area $/ft²
+  medians). Before the fill land_sqft covered ~4% of e.g. Uptown (chars is residential-only) —
+  starving `/api/area-stats` and every land-based filter/derived field. ptaxsim absent ⇒ fill
+  skipped, build proceeds. Prod picks it up on the next off-box `--refresh` (ptaxsim.db lives on
+  the same `backend/data` volume the builder mounts). `index_validate.py` = non-blocking validation CLI.
   **Memory-bounded by construction (2026-06-14):** per-CA `_assemble_ca`→`upsert_parcels` ingest
   (peak = one CA) then a streaming `finalize_index` that recomputes the cross-parcel fields + meta
   over the SQLite index in chunks (value_percentile float-maps, chunked `evaluate()` recipe counts,

@@ -142,6 +142,12 @@ $217.5/ft² at n=189 disclosed; the class-517 subject now reads ~$101/ft² vs $2
 corrected. D4: `/api/parcel-map` caches only payloads with ≥1 non-empty layer; a failed area-stats
 scan caches for 5 min instead of 24 h.
 
+**Discovery-index land fill implemented (same day, third commit)**: `index_build.py` fills
+`land_sqft` from ptaxsim `pin_geometry_raw` polygons (base parcels only — suffix-0000 — so condo
+units never claim the whole lot). Validation rebuild of CA 3: parcels with AV+land 189 → 2,721;
+per-land-use medians became viable (residential/commercial/multi_family/vacant). Prod picks it up
+via one off-box `--refresh` (ptaxsim.db is on the same volume) or the monthly timer post-deploy.
+
 **Still open from the plan**: D5 eff-rate constant derivation/doc, POS/T eval expected-absent,
-Discovery-index land rebuild (would grow the benchmark sample from ~4% to near-full), exempt
-bldg_sqft estimate decision.
+exempt bldg_sqft estimate decision; nicety unlocked by the land fill — benchmark against the
+subject's own land-use median (`by_land_use` now has real n) instead of the all-class median.

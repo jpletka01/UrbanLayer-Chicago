@@ -21,6 +21,16 @@ liveAreas**, `populatedFields` + `recipeCounts` serving; Discovery is **nav-link
 `run --rm`, auto-follows all 77). The index persists on the `backend/data` volume across deploys.
 **Remaining:** deferred index fields only (OZ/ward/overlay/adu/aro/flood/units — each a `data_version` bump).
 
+**Geometry land fill (2026-07-07, `feat/property-profile`):** the builder now fills `land_sqft`
+from the local ptaxsim `pin_geometry_raw` polygons (`_load_geometry_land`, same source/math as the
+profile's `parcel_geometry.py`) where CCAO chars leaves it NULL — **base parcels only (PIN suffix
+0000)** so condo unit-PINs never each claim the whole lot. Chars land was residential-only, so
+land-based filters, `upside_score` FAR-headroom, and the Profile's `/api/area-stats` $/ft²
+benchmark were starved (Uptown: 189 of ~16k parcels). Validation rebuild of CA 3: **189 → 2,721**
+parcels with AV+land; per-land-use medians became viable (residential n=1,740 / commercial n=370 /
+multi_family n=500). **Prod needs one off-box rebuild** (`--refresh` mounts the same `backend/data`
+volume that holds ptaxsim.db) — or just wait for the monthly timer after the branch deploys.
+
 This doc records **what was actually built, the decisions made during implementation that were not
 fully pinned by the spec (00–09), and what remains.** The spec docs 00–09 stay the normative design.
 
