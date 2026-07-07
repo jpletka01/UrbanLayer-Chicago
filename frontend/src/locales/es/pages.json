@@ -321,7 +321,7 @@
       "tax": "Impuesto est.",
       "taxRate": "{{rate}}% efectivo",
       "assessedFlat": "sin cambio desde {{year}}",
-      "avBenchmark": "${{psf}}/ft² · mediana del área ${{median}}/ft²",
+      "mvBenchmark": "Mercado ≈ ${{psf}}/ft² terreno · mediana del área ${{median}}/ft²",
       "taxNorm": "norma de clase ≈{{norm}}%"
     },
     "sections": {
@@ -392,7 +392,7 @@
     },
     "tips": {
       "zoningTile": "El distrito de zonificación de la parcela. FAR (coeficiente de edificabilidad) × área del lote = la superficie que puede construir sin rezonificación.",
-      "assessedTile": "El valor imponible del Tasador del Condado de Cook (una fracción del valor de mercado según la clase de propiedad). La mediana del área proviene de nuestro índice de ~949,000 parcelas de Chicago.",
+      "assessedTile": "El valor imponible del Tasador del Condado de Cook (una fracción del valor de mercado según la clase de propiedad). El indicador compara el valor de mercado implícito por pie cuadrado de terreno (tasado ÷ nivel de clase) con la mediana del área calculada igual desde nuestro índice de parcelas; se oculta para unidades de condominio y áreas con muestras escasas.",
       "taxTile": "Última factura de impuestos calculable (datos PTAXSIM del Condado de Cook). Tasa efectiva = factura ÷ valor de mercado implícito; la norma de clase se deriva de tasas publicadas y niveles de tasación.",
       "compsTile": "Precio mediano de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años.",
       "walkScore": "Walk Score (0–100) califica qué tan caminables son las diligencias diarias en esta ubicación. 90+ significa que rara vez se necesita auto.",

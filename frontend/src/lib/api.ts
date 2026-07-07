@@ -833,7 +833,9 @@ export async function fetchAreaStats(ca: number): Promise<{
   community_area: number;
   n_parcels: number;
   median_assessed: number | null;
-  median_av_per_land_sqft: number | null;
+  n_assessed: number;
+  median_mv_per_land_sqft: number | null;
+  n_mv_psf: number;
 } | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}`);

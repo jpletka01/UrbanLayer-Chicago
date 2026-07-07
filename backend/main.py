@@ -1673,7 +1673,9 @@ async def area_stats(ca: int) -> dict:
         "community_area": ca,
         "n_parcels": 0,
         "median_assessed": None,
-        "median_av_per_land_sqft": None,
+        "n_assessed": 0,
+        "median_mv_per_land_sqft": None,
+        "n_mv_psf": 0,
         "by_land_use": {},
     }
 
@@ -1712,7 +1714,16 @@ async def parcel_map(lat: float, lon: float) -> dict:
         "tif": tif_feat,
         "ez": ez_feat,
     }
-    _parcel_map_cache.set(key, payload)
+    # Cache only payloads with content: an all-empty result is a transient
+    # upstream failure more often than a real empty area (the zoning quilt has
+    # features anywhere in the city), and caching it blanked the maps for an
+    # hour after one ArcGIS hiccup (2026-07-07 audit D4).
+    def _feats(fc: Any) -> bool:
+        return bool(isinstance(fc, dict) and fc.get("features"))
+
+    if _feats(payload["zoning"]) or _feats(payload["overlays"]) \
+            or payload["tif"] or payload["ez"]:
+        _parcel_map_cache.set(key, payload)
     return payload
 
 

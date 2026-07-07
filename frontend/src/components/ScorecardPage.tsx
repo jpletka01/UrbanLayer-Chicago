@@ -52,13 +52,21 @@ function formatPin(pin: string): string {
 
 // Community-area benchmark aggregates for the KPI band (see backend
 // retrieval/area_stats.py). All-None when the Discovery index is absent —
-// the tiles then render no benchmark line.
+// the tiles then render no benchmark line. The $/ft² median is MARKET VALUE
+// per land ft² (AV ÷ class assessment level) — raw AV/ft² mixed 10% and 25%
+// levels and inverted the comparison for commercial subjects (2026-07-07).
 interface AreaStats {
   community_area: number;
   n_parcels: number;
   median_assessed: number | null;
-  median_av_per_land_sqft: number | null;
+  n_assessed: number;
+  median_mv_per_land_sqft: number | null;
+  n_mv_psf: number;
 }
+
+// The $/ft² benchmark line renders only when the area median rests on a real
+// sample (the index's land_sqft is sparse — some areas have a handful).
+const MIN_BENCHMARK_N = 50;
 
 // Deterministic class-norm effective tax rate: Chicago composite rate (~7% of
 // EAV) × state equalizer (~3.0) ≈ 21% of assessed value → norm = 0.21 × the
@@ -468,9 +476,19 @@ export default function ScorecardPage() {
       const deltaPct = first?.total && first.total > 0
         ? Math.round(((av - first.total) / first.total) * 100)
         : null;
+      // Benchmark in MARKET-VALUE $/ft² of land: the subject's implied market
+      // value (server-derived, class-aware) ÷ land area vs the area median
+      // computed the same way. Suppressed for condo units (unit AV ÷ whole-lot
+      // land is meaningless) and for thin area samples.
       const land = ctx.property?.land_sqft;
-      const avPsf = land && land > 0 ? av / land : null;
-      const medPsf = areaStats?.median_av_per_land_sqft ?? null;
+      const mv = ctx.property?.implied_market_value;
+      const isCondoUnit = ["299", "399"].includes(
+        String(ctx.property?.bldg_class ?? "").replace(/\D/g, ""),
+      );
+      const mvPsf = !isCondoUnit && mv != null && land && land > 0 ? mv / land : null;
+      const medPsf = (areaStats?.n_mv_psf ?? 0) >= MIN_BENCHMARK_N
+        ? areaStats?.median_mv_per_land_sqft ?? null
+        : null;
       tiles.push({
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
@@ -486,10 +504,10 @@ export default function ScorecardPage() {
                   : t("scorecard.tiles.assessedDelta", { pct: `${Math.abs(deltaPct)}%`, year: first.year })}
               </span>
             )}
-            {avPsf != null && medPsf != null && medPsf > 0 && (
+            {mvPsf != null && medPsf != null && medPsf > 0 && (
               <span className="block">
-                {t("scorecard.tiles.avBenchmark", {
-                  psf: Math.round(avPsf), median: Math.round(medPsf),
+                {t("scorecard.tiles.mvBenchmark", {
+                  psf: Math.round(mvPsf), median: Math.round(medPsf),
                 })}
               </span>
             )}

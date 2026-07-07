@@ -321,7 +321,7 @@
       "tax": "Est. tax",
       "taxRate": "{{rate}}% effective",
       "assessedFlat": "flat since {{year}}",
-      "avBenchmark": "${{psf}}/ft² · area median ${{median}}/ft²",
+      "mvBenchmark": "Mkt ≈ ${{psf}}/ft² land · area median ${{median}}/ft²",
       "taxNorm": "class norm ≈{{norm}}%"
     },
     "sections": {
@@ -392,7 +392,7 @@
     },
     "tips": {
       "zoningTile": "The parcel's zoning district. FAR (floor area ratio) × lot area = the floor area you can build without a rezoning.",
-      "assessedTile": "The Cook County Assessor's taxable value (a fraction of market value set by property class). The area median comes from our index of ~949,000 Chicago parcels.",
+      "assessedTile": "The Cook County Assessor's taxable value (a fraction of market value set by property class). The benchmark compares implied market value per square foot of land (assessed ÷ class level) against an area median computed the same way from our parcel index; it's hidden for condo units and areas with thin samples.",
       "taxTile": "Latest computable tax bill (Cook County PTAXSIM data). Effective rate = bill ÷ implied market value; the class norm is derived from published county rates and assessment levels.",
       "compsTile": "Median price of arm's-length sales of similar-class parcels within ¼ mile over the last 3 years.",
       "walkScore": "Walk Score (0–100) rates daily-errand walkability at this location. 90+ means errands rarely need a car.",

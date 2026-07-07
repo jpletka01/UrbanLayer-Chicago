@@ -133,5 +133,15 @@ move as predicted) + the zoning parity and property test suites.
   the exempt tail (schools/churches outside every assessor dataset). `comparables` wobbles 80–90%
   across runs (live sales data), unrelated to this work.
 
-**Still open from the plan**: D3 KPI benchmark fix, D4 failure-caching, D5 eff-rate constant, POS/T
-eval expected-absent, Discovery-index land rebuild, exempt bldg_sqft estimate decision.
+**D3 + D4 implemented (same day, follow-up commit)**: area-stats medians are now MARKET-VALUE per
+land ft² (AV ÷ class assessment level; exempt excluded) with per-stat `n` (`n_assessed`,
+`n_mv_psf`); the FE compares the subject's server-derived `implied_market_value`/land ft² against
+it, suppresses under `MIN_BENCHMARK_N=50` and for condo units (299/399), and the tile copy/tooltips
+say "market value" (key renamed `avBenchmark`→`mvBenchmark`, en+es). Verified live: Uptown median
+$217.5/ft² at n=189 disclosed; the class-517 subject now reads ~$101/ft² vs $218 — direction
+corrected. D4: `/api/parcel-map` caches only payloads with ≥1 non-empty layer; a failed area-stats
+scan caches for 5 min instead of 24 h.
+
+**Still open from the plan**: D5 eff-rate constant derivation/doc, POS/T eval expected-absent,
+Discovery-index land rebuild (would grow the benchmark sample from ~4% to near-full), exempt
+bldg_sqft estimate decision.
