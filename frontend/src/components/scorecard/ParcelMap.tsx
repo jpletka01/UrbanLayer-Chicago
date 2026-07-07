@@ -124,7 +124,29 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     [],
   );
 
-  const zoom = variant === "zoning" ? 15.2 : variant === "boundaries" ? 14.2 : 16.8;
+  // Zoning and boundaries share a scale so the two Build-module maps read as
+  // one pair (Jack, 2026-07-07); the place map is parcel-tight.
+  const zoom = variant === "place" ? 16.8 : 15.2;
+
+  // The place map only shows what its opening viewport can contain — comps or
+  // stations beyond it would exist solely as legend entries nobody can see.
+  const VIEW_RADIUS_MI = 0.12;
+  const milesFrom = (plat: number, plon: number) => {
+    const dLat = (plat - lat) * 69;
+    const dLon = (plon - lon) * 69 * Math.cos((lat * Math.PI) / 180);
+    return Math.sqrt(dLat * dLat + dLon * dLon);
+  };
+  const compsInView = useMemo(
+    () => (comps ?? []).filter((c) => c.lat != null && c.lon != null
+      && (c.distance_mi != null ? c.distance_mi <= VIEW_RADIUS_MI : milesFrom(c.lat!, c.lon!) <= VIEW_RADIUS_MI)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [comps, lat, lon],
+  );
+
+  // Box ref so the tooltip closure (created before the hook returns) can
+  // multi-pick through the live overlay — the chat map's pattern for points
+  // where several boundary layers stack.
+  const overlayBoxRef = useRef<import("@deck.gl/mapbox").MapboxOverlay | null>(null);
 
   const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
     center: [lon, lat],
@@ -147,18 +169,42 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
         const cat = zonePrefixLabel(zonePrefix(zc));
         const def = getTermInfo(zc)?.description ?? getTermInfo(zonePrefix(zc))?.description ?? "";
         html = `<strong>${esc(zc)}</strong>${cat ? `<br/><span style="opacity:0.75">${esc(cat)}</span>` : ""}${def ? `<br/><span style="opacity:0.6">${esc(def)}</span>` : ""}`;
-      } else if (lid.startsWith("overlay-districts")) {
-        const type = String(props.overlay_type ?? props.layer_type ?? "");
-        const label = overlayLabel(type) || type.replace(/_/g, " ");
-        const name = String(props.NAME ?? props.DIST_NAME ?? props.PD_NAME ?? props.name ?? "");
-        const def = getTermInfo(type)?.description ?? "";
-        html = `<strong>${esc(label)}</strong>${name && name !== label ? `<br/>${esc(name)}` : ""}${def ? `<br/><span style="opacity:0.6">${esc(def)}</span>` : ""}`;
-      } else if (lid.startsWith("incentive-zones")) {
-        const kind = String(props.__kind ?? "");
-        const name = String(props.name ?? "");
-        const term = kind === "TIF" ? "tif_district" : "enterprise_zone";
-        const def = getTermInfo(term)?.description ?? "";
-        html = `<strong>${esc(kind)}</strong>${name ? `<br/>${esc(name)}` : ""}${def ? `<br/><span style="opacity:0.6">${esc(def)}</span>` : ""}`;
+      } else if (lid.startsWith("overlay-districts") || lid.startsWith("incentive-zones")) {
+        // Boundaries stack — list EVERY layer under the pointer (chat map's
+        // multi-pick pattern), with the definition of the topmost one.
+        const pickInfo = info as { x?: number; y?: number };
+        const picks = (pickInfo.x != null && pickInfo.y != null
+          ? overlayBoxRef.current?.pickMultipleObjects({ x: pickInfo.x, y: pickInfo.y, radius: 4, depth: 12 })
+          : null) ?? [];
+        const rows: string[] = [];
+        const seen = new Set<string>();
+        let topDef = "";
+        const source = picks.length > 0 ? picks : [{ layer: { id: lid }, object: p }];
+        for (const pk of source) {
+          const pid = pk.layer?.id ?? "";
+          const pp = ((pk.object as { properties?: Record<string, unknown> } | undefined)?.properties ?? {}) as Record<string, unknown>;
+          if (pid.startsWith("overlay-districts")) {
+            const type = String(pp.overlay_type ?? pp.layer_type ?? "");
+            const label = overlayLabel(type) || type.replace(/_/g, " ");
+            const name = String(pp.NAME ?? pp.DIST_NAME ?? pp.PD_NAME ?? pp.name ?? "");
+            const key = `${label}|${name}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            if (!topDef) topDef = getTermInfo(type)?.description ?? "";
+            rows.push(`<strong>${esc(label)}</strong>${name && name !== label ? ` — ${esc(name)}` : ""}`);
+          } else if (pid.startsWith("incentive-zones")) {
+            const kind = String(pp.__kind ?? "");
+            const name = String(pp.name ?? "");
+            const key = `${kind}|${name}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            if (!topDef) topDef = getTermInfo(kind === "TIF" ? "tif_district" : "enterprise_zone")?.description ?? "";
+            rows.push(`<strong>${esc(kind)}</strong>${name ? ` — ${esc(name)}` : ""}`);
+          }
+        }
+        if (rows.length) {
+          html = rows.join("<br/>") + (topDef ? `<br/><span style="opacity:0.6">${esc(topDef)}</span>` : "");
+        }
       } else if (lid === "comps" && typeof p.sale_price === "number") {
         html = `<strong>${esc(fmtPrice(p.sale_price as number))}</strong>${p.sale_date ? `<br/>${esc(String(p.sale_date).slice(0, 10))}` : ""}`;
       } else if (lid === "transit-stations" && typeof p.name === "string") {
@@ -167,6 +213,10 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
       return html ? { html, style: TIP_STYLE } : null;
     },
   });
+
+  useEffect(() => {
+    overlayBoxRef.current = overlayRef.current;
+  }, [overlayRef, mapReady]);
 
   // Satellite ⇄ streets toggle (place variant) + theme flips for street styles.
   useEffect(() => {
@@ -177,7 +227,11 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
   }, [satellite, themeStyle, mapReady, mapRef]);
 
   useEffect(() => {
-    if (variant === "place" && showTransit) fetchTransitStations().then(setTransit).catch(() => {});
+    if (variant === "place" && showTransit) {
+      fetchTransitStations()
+        .then((all) => setTransit(all.filter((st) => milesFrom(st.lat, st.lon) <= VIEW_RADIUS_MI)))
+        .catch(() => {});
+    }
   }, [variant, showTransit]);
 
   // deck layers
@@ -251,10 +305,10 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     }
 
     if (variant === "place") {
-      if (comps?.length) {
+      if (compsInView.length) {
         layerList.push(new ScatterplotLayer({
           id: "comps",
-          data: comps.filter((c) => c.lat != null && c.lon != null),
+          data: compsInView,
           getPosition: (c: ComparableSale) => [c.lon!, c.lat!],
           getRadius: 6,
           radiusUnits: "pixels",
@@ -311,20 +365,20 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     // Attach tooltips for comps/transit via object augmentation at pick time.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     overlay.setProps({ layers: layerList as any });
-  }, [variant, layers, comps, transit, parcelGeometry, mapReady, contextRestored, satellite, resolvedTheme, lat, lon, overlayRef]);
+  }, [variant, layers, compsInView, transit, parcelGeometry, mapReady, contextRestored, satellite, resolvedTheme, lat, lon, overlayRef]);
 
   // Map key (top-RIGHT — the Mapbox wordmark owns the bottom-left corner, so
   // that space stays empty on every map): one row per encoding on the map.
   const legend: Array<{ key: string; swatchCSS: string; label: string; kind: "line" | "fill" | "dot" }> = [];
   legend.push({ key: "parcel", swatchCSS: "rgb(249,164,116)", label: t("scorecard.map.keyParcel"), kind: "line" });
   if (variant === "place") {
-    if (comps?.some((c) => c.lat != null)) {
+    if (compsInView.length) {
       legend.push({
         key: "comps", swatchCSS: "rgb(249,164,116)", kind: "dot",
-        label: t("scorecard.map.compsLegend", { count: comps.filter((c) => c.lat != null).length }),
+        label: t("scorecard.map.compsLegend", { count: compsInView.length }),
       });
     }
-    if (showTransit) legend.push({ key: "transit", swatchCSS: "#ffffff", label: t("scorecard.map.keyTransit"), kind: "dot" });
+    if (transit?.length) legend.push({ key: "transit", swatchCSS: "#ffffff", label: t("scorecard.map.keyTransit"), kind: "dot" });
   } else if (variant === "zoning" && layers?.zoning) {
     const seen = new Map<string, string>();
     for (const f of layers.zoning.features ?? []) {

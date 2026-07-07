@@ -24,6 +24,16 @@ export function verdictDotClass(category: VerdictCategory): string {
   return TONE[category].dot;
 }
 
+// Reason rows wear the same tag chrome as the Regulatory module's
+// opportunity/constraint pills (Jack, 2026-07-07): green tint for positives,
+// amber + warning glyph for non-positives, muted for neutral — one visual
+// language for "signals about this parcel" across the page.
+const REASON_TONE: Record<ReasonPolarity, string> = {
+  positive: "border-state-positive/25 bg-state-positive/5",
+  negative: "border-state-warning/25 bg-state-warning/5",
+  neutral: "border-dark-border bg-dark-elevated/40",
+};
+
 function ReasonGlyph({ polarity }: { polarity: ReasonPolarity }) {
   if (polarity === "positive")
     return (
@@ -34,7 +44,7 @@ function ReasonGlyph({ polarity }: { polarity: ReasonPolarity }) {
   if (polarity === "negative")
     return (
       <svg className="w-3.5 h-3.5 text-state-warning shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
       </svg>
     );
   return <span className="w-1.5 h-1.5 rounded-full bg-text-muted shrink-0 mt-1.5" aria-hidden />;
@@ -97,14 +107,15 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
         )}
       </div>
 
-      {/* Reasons — defended, each deep-links to its evidence module */}
-      <ul className="space-y-1.5 mb-4">
+      {/* Reasons — defended, each deep-links to its evidence module; tag
+          chrome matches the Regulatory pills (one signal language site-wide) */}
+      <ul className="flex flex-col gap-1.5 mb-4 items-start">
         {verdict.reasons.map((r, i) => (
-          <li key={i}>
+          <li key={i} className="max-w-full">
             <button
               type="button"
               onClick={() => onScrollTo(r.cardAnchor)}
-              className="group w-full flex items-start gap-2 text-left text-caption text-text-secondary hover:text-text-primary transition-colors"
+              className={`group inline-flex items-start gap-2 text-left rounded-md border px-2.5 py-1.5 text-caption text-text-primary hover:border-dark-border-strong transition-colors ${REASON_TONE[r.polarity]}`}
               title={t("scorecard.verdict.jumpToEvidence")}
             >
               <ReasonGlyph polarity={r.polarity} />

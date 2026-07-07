@@ -28,7 +28,9 @@ export function KpiStrip({ tiles, onScrollTo }: {
     ? "grid-cols-2 md:grid-cols-4"
     : "grid-cols-2 md:grid-cols-3 xl:grid-cols-5";
   return (
-    <div className={`grid ${cols} gap-x-8 gap-y-5 py-5 border-y border-dark-border mb-6`}>
+    // Tiles center within their columns — left-aligned content in stretched
+    // cells piled all the whitespace on the right (read as off-center).
+    <div className={`grid ${cols} gap-x-8 gap-y-5 py-5 border-y border-dark-border mb-6 text-center`}>
       {tiles.map((tile) => (
         <div key={tile.anchor + tile.label} className="min-w-0">
           <div className="text-overline uppercase tracking-wider text-text-muted">
@@ -44,7 +46,7 @@ export function KpiStrip({ tiles, onScrollTo }: {
             type="button"
             onClick={() => onScrollTo(tile.anchor)}
             title={t("scorecard.verdict.jumpToEvidence")}
-            className="group block text-left min-w-0 max-w-full"
+            className="group block mx-auto min-w-0 max-w-full"
           >
             <div className="text-stat text-text-primary mt-1 truncate group-hover:text-accent transition-colors">
               {tile.value}
