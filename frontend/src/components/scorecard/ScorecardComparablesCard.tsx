@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ComparablesSummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
+import { InfoTooltip } from "../InfoTooltip";
 import { SubSection, ShowMore } from "./ProfileModule";
 
 const ChartIcon = (
@@ -126,7 +127,10 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
           <div>
             <div className="text-subtitle text-text-primary">{fmtFull(data.median_sale_price)}</div>
             <div className="text-caption text-text-muted mt-0.5">
-              {t("comparables.medianPrice")} · {t("comparables.salesVolume")}: {data.sales_volume}
+              <InfoTooltip content={{ label: t("comparables.medianPrice"), description: t("comparables.tips.median"), bullets: [] }}>
+                {t("comparables.medianPrice")}
+              </InfoTooltip>
+              {" · "}{t("comparables.salesVolume")}: {data.sales_volume}
             </div>
           </div>
         )}
@@ -136,13 +140,21 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
           {data.median_price_per_land_sqft != null && (
             <div>
-              <dt className="text-caption text-text-muted">{t("comparables.priceLandSqft")}</dt>
+              <dt className="text-caption text-text-muted">
+                <InfoTooltip content={{ label: t("comparables.priceLandSqft"), description: t("comparables.tips.psfLand"), bullets: [] }}>
+                  {t("comparables.priceLandSqft")}
+                </InfoTooltip>
+              </dt>
               <dd className="text-body text-text-primary mt-0.5">${data.median_price_per_land_sqft.toFixed(0)}</dd>
             </div>
           )}
           {data.median_price_per_bldg_sqft != null && (
             <div>
-              <dt className="text-caption text-text-muted">{t("comparables.priceBldgSqft")}</dt>
+              <dt className="text-caption text-text-muted">
+                <InfoTooltip content={{ label: t("comparables.priceBldgSqft"), description: t("comparables.tips.psfBldg"), bullets: [] }}>
+                  {t("comparables.priceBldgSqft")}
+                </InfoTooltip>
+              </dt>
               <dd className="text-body text-text-primary mt-0.5">${data.median_price_per_bldg_sqft.toFixed(0)}</dd>
             </div>
           )}

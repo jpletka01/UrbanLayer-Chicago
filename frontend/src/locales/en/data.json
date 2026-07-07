@@ -110,7 +110,15 @@
       "mosquito_abatement": "Mosquito Abatement"
     },
     "floorArea": "Floor area",
-    "floorAreaTip": "Total finished area summed across all stories — a multi-story building's floor area can exceed its lot size."
+    "floorAreaTip": "Total finished area summed across all stories — a multi-story building's floor area can exceed its lot size.",
+    "tips": {
+      "assessed": "The Cook County Assessor's taxable value — a class-set fraction of market value (10% for residential, 25% for commercial), not a sale price.",
+      "implied": "Assessed value ÷ the class's assessment level — the market value the county's numbers imply. A method, not an appraisal.",
+      "annualTax": "The most recent bill computable from Cook County PTAXSIM data (typically lags 1–2 years).",
+      "effRate": "Annual tax ÷ implied market value — what the property actually pays per dollar of value; comparable across parcels.",
+      "class": "Cook County property class code — it sets the assessment level and signals the property's use (1xx vacant, 2xx residential, 5xx commercial).",
+      "appeals": "Assessment appeals filed for this parcel (Assessor and Board of Review stages) plus how appeals fare on this block — a signal of whether appealing here works."
+    }
   },
   "regulatory": {
     "title": "Regulatory",
@@ -328,7 +336,12 @@
     "radius": "Within 0.25 mi, last 3 yrs",
     "reportTeaser": "Sales trend chart + full analysis in report",
     "stripAriaLabel": "{{count}} comparable sale prices",
-    "class": "Class"
+    "class": "Class",
+    "tips": {
+      "median": "Median of arm's-length sales of similar-class parcels within ¼ mile over the last 3 years. Small samples are labeled — treat them as indicative.",
+      "psfLand": "Median sale price divided by lot square footage — the cleanest yardstick for land value.",
+      "psfBldg": "Median sale price divided by building floor area — the standard per-square-foot comparison."
+    }
   },
   "violations": {
     "title": "Violations",

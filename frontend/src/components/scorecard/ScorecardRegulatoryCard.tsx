@@ -192,7 +192,7 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
         {data.aro_housing && data.aro_housing.total_projects > 0 && (
           <div>
             <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
-              {t("regulatory.affordableHousing")}
+              <InfoTooltip term="in_aro_zone">{t("regulatory.affordableHousing")}</InfoTooltip>
             </div>
             <div className="rounded-lg bg-dark-elevated/40 border border-dark-border px-3 py-2.5">
               <div className="flex gap-6">

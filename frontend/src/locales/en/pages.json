@@ -366,7 +366,10 @@
       "satellite": "Satellite",
       "streets": "Streets",
       "compsLegend_one": "{{count}} comparable sale",
-      "compsLegend_other": "{{count}} comparable sales"
+      "compsLegend_other": "{{count}} comparable sales",
+      "keyParcel": "This parcel",
+      "keyTransit": "Transit station",
+      "keyEz": "Enterprise Zone"
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",
@@ -379,6 +382,25 @@
       "population": "Population",
       "ownerOcc": "{{pct}}% owner-occupied",
       "todEligible": "TOD-eligible"
+    },
+    "tips": {
+      "zoningTile": "The parcel's zoning district. FAR (floor area ratio) × lot area = the floor area you can build without a rezoning.",
+      "assessedTile": "The Cook County Assessor's taxable value (a fraction of market value set by property class). The area median comes from our index of ~949,000 Chicago parcels.",
+      "taxTile": "Latest computable tax bill (Cook County PTAXSIM data). Effective rate = bill ÷ implied market value; the class norm is derived from published county rates and assessment levels.",
+      "compsTile": "Median price of arm's-length sales of similar-class parcels within ¼ mile over the last 3 years.",
+      "walkScore": "Walk Score (0–100) rates daily-errand walkability at this location. 90+ means errands rarely need a car.",
+      "transitScore": "Transit Score (0–100) rates access to public transit at this location."
+    },
+    "walkDesc": {
+      "walker_s_paradise": "Walker's Paradise",
+      "very_walkable": "Very Walkable",
+      "somewhat_walkable": "Somewhat Walkable",
+      "car_dependent": "Car-Dependent",
+      "rider_s_paradise": "Rider's Paradise",
+      "excellent_transit": "Excellent Transit",
+      "good_transit": "Good Transit",
+      "some_transit": "Some Transit",
+      "minimal_transit": "Minimal Transit"
     }
   },
   "discovery": {

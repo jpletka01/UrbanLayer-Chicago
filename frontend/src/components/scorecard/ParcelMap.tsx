@@ -12,7 +12,12 @@ import { useTranslation } from "react-i18next";
 import { GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
 import { useThemeContext } from "../../contexts/ThemeContext";
-import { zoneColor, overlayColor, incentiveZoneColor } from "../../lib/mapColors";
+import {
+  zoneColor, zoneColorCSS, zonePrefix, zonePrefixLabel,
+  overlayColor, overlayColorCSS, overlayLabel,
+  incentiveZoneColor, incentiveZoneColorCSS,
+} from "../../lib/mapColors";
+import { getTermInfo } from "../../lib/termDefinitions";
 import { fetchTransitStations } from "../../lib/api";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 
@@ -127,20 +132,39 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     interactive: true,
     clickToActivate: true,
     style: initialStyle,
-    pickingRadius: 8,
+    pickingRadius: 14,
+    // Definition-carrying tooltips, same content model as the chat map
+    // (label + name) extended with the termDefinitions description — works on
+    // tap too (deck picks on touch; pickingRadius widens the target).
     getTooltip: (info) => {
       const p = (info as { object?: Record<string, unknown> & { properties?: Record<string, unknown> } }).object;
+      const lid = (info as { layer?: { id?: string } }).layer?.id ?? "";
       if (!p) return null;
-      let tip = (p.__tip as string | undefined)
-        ?? (p.properties?.__tip as string | undefined)
-        ?? (p.properties?.ZONE_CLASS as string | undefined);
-      if (!tip && typeof p.sale_price === "number") {
-        tip = `${fmtPrice(p.sale_price as number)}${p.sale_date ? ` · ${String(p.sale_date).slice(0, 10)}` : ""}`;
+      const props = (p.properties ?? {}) as Record<string, unknown>;
+      let html: string | null = null;
+      if (lid === "zoning") {
+        const zc = String(props.ZONE_CLASS ?? "");
+        const cat = zonePrefixLabel(zonePrefix(zc));
+        const def = getTermInfo(zc)?.description ?? getTermInfo(zonePrefix(zc))?.description ?? "";
+        html = `<strong>${esc(zc)}</strong>${cat ? `<br/><span style="opacity:0.75">${esc(cat)}</span>` : ""}${def ? `<br/><span style="opacity:0.6">${esc(def)}</span>` : ""}`;
+      } else if (lid.startsWith("overlay-districts")) {
+        const type = String(props.overlay_type ?? props.layer_type ?? "");
+        const label = overlayLabel(type) || type.replace(/_/g, " ");
+        const name = String(props.NAME ?? props.DIST_NAME ?? props.PD_NAME ?? props.name ?? "");
+        const def = getTermInfo(type)?.description ?? "";
+        html = `<strong>${esc(label)}</strong>${name && name !== label ? `<br/>${esc(name)}` : ""}${def ? `<br/><span style="opacity:0.6">${esc(def)}</span>` : ""}`;
+      } else if (lid.startsWith("incentive-zones")) {
+        const kind = String(props.__kind ?? "");
+        const name = String(props.name ?? "");
+        const term = kind === "TIF" ? "tif_district" : "enterprise_zone";
+        const def = getTermInfo(term)?.description ?? "";
+        html = `<strong>${esc(kind)}</strong>${name ? `<br/>${esc(name)}` : ""}${def ? `<br/><span style="opacity:0.6">${esc(def)}</span>` : ""}`;
+      } else if (lid === "comps" && typeof p.sale_price === "number") {
+        html = `<strong>${esc(fmtPrice(p.sale_price as number))}</strong>${p.sale_date ? `<br/>${esc(String(p.sale_date).slice(0, 10))}` : ""}`;
+      } else if (lid === "transit-stations" && typeof p.name === "string") {
+        html = `<strong>${esc(p.name)}</strong>${Array.isArray(p.lines) ? `<br/>${esc((p.lines as string[]).join(", "))}` : ""}`;
       }
-      if (!tip && typeof p.name === "string" && (p.type === "cta_rail" || p.type === "metra")) {
-        tip = `${p.name}${Array.isArray(p.lines) ? ` · ${(p.lines as string[]).join(", ")}` : ""}`;
-      }
-      return tip ? { html: `<div>${esc(tip)}</div>`, style: TIP_STYLE } : null;
+      return html ? { html, style: TIP_STYLE } : null;
     },
   });
 
@@ -164,7 +188,7 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
 
     if (variant === "zoning" && layers?.zoning) {
       layerList.push(new GeoJsonLayer({
-        id: "pm-zoning",
+        id: "zoning",
         data: layers.zoning as unknown as GeoJSON.FeatureCollection,
         getFillColor: (f: GeoJSON.Feature) => {
           const c = zoneColor(String(f.properties?.ZONE_CLASS ?? ""));
@@ -195,27 +219,31 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     }
 
     if (variant === "boundaries" && layers) {
-      for (const f of layers.overlays?.features ?? []) {
-        const type = String(f.properties?.layer_type ?? f.properties?.type ?? "overlay");
+      // Same color encodings as the chat map (overlayColor by type,
+      // incentiveZoneColor by name) — distinct hues per boundary; overlap
+      // stays readable because fills are faint washes and identity rides the
+      // 2px strokes + the legend.
+      (layers.overlays?.features ?? []).forEach((f, i) => {
+        const type = String(f.properties?.overlay_type ?? f.properties?.layer_type ?? "overlay");
         const c = overlayColor(type);
         layerList.push(new GeoJsonLayer({
-          id: `pm-ov-${type}-${layerList.length}`,
-          data: [{ ...f, properties: { ...f.properties, __tip: String(f.properties?.name ?? type).replace(/_/g, " ") } }],
-          getFillColor: [c[0], c[1], c[2], 40],
-          getLineColor: [c[0], c[1], c[2], 220],
+          id: `overlay-districts-${i}`,
+          data: [f],
+          getFillColor: [c[0], c[1], c[2], 35],
+          getLineColor: [c[0], c[1], c[2], 230],
           lineWidthMinPixels: 2,
           pickable: true,
         }));
-      }
+      });
       for (const [feat, kind] of [[layers.tif, "TIF"], [layers.ez, "Enterprise Zone"]] as const) {
         if (!feat) continue;
         const name = String(feat.properties?.name ?? kind);
         const c = incentiveZoneColor(name);
         layerList.push(new GeoJsonLayer({
-          id: `pm-inc-${kind}`,
-          data: [{ ...feat, properties: { ...feat.properties, __tip: `${kind}: ${name}` } }],
-          getFillColor: [c[0], c[1], c[2], 30],
-          getLineColor: [c[0], c[1], c[2], 220],
+          id: `incentive-zones-${kind}`,
+          data: [{ ...feat, properties: { ...feat.properties, __kind: kind, name } }],
+          getFillColor: [c[0], c[1], c[2], 25],
+          getLineColor: [c[0], c[1], c[2], 230],
           lineWidthMinPixels: 2,
           pickable: true,
         }));
@@ -225,7 +253,7 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     if (variant === "place") {
       if (comps?.length) {
         layerList.push(new ScatterplotLayer({
-          id: "pm-comps",
+          id: "comps",
           data: comps.filter((c) => c.lat != null && c.lon != null),
           getPosition: (c: ComparableSale) => [c.lon!, c.lat!],
           getRadius: 6,
@@ -240,7 +268,7 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
       }
       if (transit?.length) {
         layerList.push(new ScatterplotLayer({
-          id: "pm-transit",
+          id: "transit-stations",
           data: transit,
           getPosition: (s: TransitStation) => [s.lon, s.lat],
           getRadius: 5,
@@ -285,6 +313,49 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     overlay.setProps({ layers: layerList as any });
   }, [variant, layers, comps, transit, parcelGeometry, mapReady, contextRestored, satellite, resolvedTheme, lat, lon, overlayRef]);
 
+  // Map key (top-RIGHT — the Mapbox wordmark owns the bottom-left corner, so
+  // that space stays empty on every map): one row per encoding on the map.
+  const legend: Array<{ key: string; swatchCSS: string; label: string; kind: "line" | "fill" | "dot" }> = [];
+  legend.push({ key: "parcel", swatchCSS: "rgb(249,164,116)", label: t("scorecard.map.keyParcel"), kind: "line" });
+  if (variant === "place") {
+    if (comps?.some((c) => c.lat != null)) {
+      legend.push({
+        key: "comps", swatchCSS: "rgb(249,164,116)", kind: "dot",
+        label: t("scorecard.map.compsLegend", { count: comps.filter((c) => c.lat != null).length }),
+      });
+    }
+    if (showTransit) legend.push({ key: "transit", swatchCSS: "#ffffff", label: t("scorecard.map.keyTransit"), kind: "dot" });
+  } else if (variant === "zoning" && layers?.zoning) {
+    const seen = new Map<string, string>();
+    for (const f of layers.zoning.features ?? []) {
+      const zc = String(f.properties?.ZONE_CLASS ?? "");
+      const pfx = zonePrefix(zc);
+      if (pfx && !seen.has(pfx)) seen.set(pfx, zoneColorCSS(zc));
+    }
+    for (const [pfx, css] of [...seen.entries()].slice(0, 6)) {
+      legend.push({ key: `z-${pfx}`, swatchCSS: css, label: zonePrefixLabel(pfx) || pfx, kind: "fill" });
+    }
+  } else if (variant === "boundaries" && layers) {
+    const seenTypes = new Set<string>();
+    for (const f of layers.overlays?.features ?? []) {
+      const type = String(f.properties?.overlay_type ?? f.properties?.layer_type ?? "");
+      if (!type || seenTypes.has(type)) continue;
+      seenTypes.add(type);
+      legend.push({
+        key: `ov-${type}`, swatchCSS: overlayColorCSS(type),
+        label: overlayLabel(type) || type.replace(/_/g, " "), kind: "fill",
+      });
+    }
+    if (layers.tif) {
+      const name = String(layers.tif.properties?.name ?? "TIF");
+      legend.push({ key: "tif", swatchCSS: incentiveZoneColorCSS(name), label: `TIF — ${name}`, kind: "fill" });
+    }
+    if (layers.ez) {
+      const name = String(layers.ez.properties?.name ?? "Enterprise Zone");
+      legend.push({ key: "ez", swatchCSS: incentiveZoneColorCSS(name), label: t("scorecard.map.keyEz"), kind: "fill" });
+    }
+  }
+
   return (
     <div className="relative w-full h-full min-h-[16rem] rounded-lg overflow-hidden border border-dark-border">
       <div ref={containerRef} className="absolute inset-0" />
@@ -306,13 +377,20 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
           </button>
         </div>
       )}
-      {variant === "place" && comps?.some((c) => c.lat != null) && (
-        <div className="absolute bottom-2 left-2 rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1 text-micro text-text-secondary">
-          <span className="inline-block w-2 h-2 rounded-full bg-accent mr-1.5 align-middle" aria-hidden />
-          {t("scorecard.map.compsLegend", { count: comps.filter((c) => c.lat != null).length })}
-          {comps[0]?.sale_price != null && (
-            <span className="text-text-muted"> · {fmtPrice(comps[0].sale_price)}…</span>
-          )}
+      {legend.length > 0 && (
+        <div className="absolute top-2 right-2 max-w-[55%] rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
+          {legend.map((row) => (
+            <div key={row.key} className="flex items-center gap-1.5 text-micro text-text-secondary leading-tight">
+              {row.kind === "dot" ? (
+                <span className="w-2 h-2 rounded-full shrink-0 border border-dark-bg" style={{ background: row.swatchCSS }} aria-hidden />
+              ) : row.kind === "line" ? (
+                <span className="w-3 h-0 border-t-2 shrink-0" style={{ borderColor: row.swatchCSS }} aria-hidden />
+              ) : (
+                <span className="w-2.5 h-2.5 rounded-[3px] shrink-0 opacity-80" style={{ background: row.swatchCSS }} aria-hidden />
+              )}
+              <span className="truncate">{row.label}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

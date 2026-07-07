@@ -5,12 +5,15 @@
 // the sub line is the context slot they will occupy.)
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { InfoTooltip } from "../InfoTooltip";
 
 export interface KpiTile {
   anchor: string;
   label: string;
   value: string;
   sub?: ReactNode;
+  /** How-this-is-computed gloss, shown on hover/tap (tooltip rule). */
+  tip?: string;
 }
 
 export function KpiStrip({ tiles, onScrollTo }: {
@@ -19,24 +22,38 @@ export function KpiStrip({ tiles, onScrollTo }: {
 }) {
   const { t } = useTranslation("pages");
   if (tiles.length < 2) return null;
+  // Columns track the tile count so the band fills its row evenly — a fixed
+  // 6-col grid left dead columns when only 4 tiles had data (looked off-center).
+  const cols = tiles.length <= 4
+    ? "grid-cols-2 md:grid-cols-4"
+    : "grid-cols-2 md:grid-cols-3 xl:grid-cols-5";
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-x-6 gap-y-5 py-5 border-y border-dark-border mb-6">
+    <div className={`grid ${cols} gap-x-8 gap-y-5 py-5 border-y border-dark-border mb-6`}>
       {tiles.map((tile) => (
-        <button
-          key={tile.anchor + tile.label}
-          type="button"
-          onClick={() => onScrollTo(tile.anchor)}
-          title={t("scorecard.verdict.jumpToEvidence")}
-          className="group text-left min-w-0"
-        >
-          <div className="text-overline uppercase tracking-wider text-text-muted">{tile.label}</div>
-          <div className="text-stat text-text-primary mt-1 truncate group-hover:text-accent transition-colors">
-            {tile.value}
+        <div key={tile.anchor + tile.label} className="min-w-0">
+          <div className="text-overline uppercase tracking-wider text-text-muted">
+            {tile.tip ? (
+              <InfoTooltip content={{ label: tile.label, description: tile.tip, bullets: [] }}>
+                {tile.label}
+              </InfoTooltip>
+            ) : (
+              tile.label
+            )}
           </div>
+          <button
+            type="button"
+            onClick={() => onScrollTo(tile.anchor)}
+            title={t("scorecard.verdict.jumpToEvidence")}
+            className="group block text-left min-w-0 max-w-full"
+          >
+            <div className="text-stat text-text-primary mt-1 truncate group-hover:text-accent transition-colors">
+              {tile.value}
+            </div>
+          </button>
           {tile.sub && (
             <div className="text-caption text-text-muted mt-0.5 leading-snug">{tile.sub}</div>
           )}
-        </button>
+        </div>
       ))}
     </div>
   );

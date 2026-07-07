@@ -116,27 +116,41 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 {assessed != null && (
                   <div>
-                    <div className="text-caption text-text-muted">{t("property.assessedValue")}</div>
+                    <div className="text-caption text-text-muted">
+                      <InfoTooltip content={{ label: t("property.assessedValue"), description: t("property.tips.assessed"), bullets: [] }}>
+                        {t("property.assessedValue")}
+                      </InfoTooltip>
+                    </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(assessed)}</div>
                   </div>
                 )}
                 {marketValue != null && (
                   <div>
-                    <div className="text-caption text-text-muted">{t("property.impliedMarketValue")}</div>
+                    <div className="text-caption text-text-muted">
+                      <InfoTooltip content={{ label: t("property.impliedMarketValue"), description: t("property.tips.implied"), bullets: [] }}>
+                        {t("property.impliedMarketValue")}
+                      </InfoTooltip>
+                    </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(marketValue)}</div>
                   </div>
                 )}
                 {tax != null && (
                   <div>
                     <div className="text-caption text-text-muted">
-                      {t("property.annualTax")}{data.tax_year ? ` (${data.tax_year})` : ""}
+                      <InfoTooltip content={{ label: t("property.annualTax"), description: t("property.tips.annualTax"), bullets: [] }}>
+                        {`${t("property.annualTax")}${data.tax_year ? ` (${data.tax_year})` : ""}`}
+                      </InfoTooltip>
                     </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(tax)}</div>
                   </div>
                 )}
                 {effectiveRate && (
                   <div>
-                    <div className="text-caption text-text-muted">{t("property.effectiveRate")}</div>
+                    <div className="text-caption text-text-muted">
+                      <InfoTooltip content={{ label: t("property.effectiveRate"), description: t("property.tips.effRate"), bullets: [] }}>
+                        {t("property.effectiveRate")}
+                      </InfoTooltip>
+                    </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{effectiveRate}</div>
                   </div>
                 )}
@@ -163,7 +177,11 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             {/* Appeal history — "appealing here works" is direct-dollars context. */}
             {(data.appeals?.records?.length || data.appeals?.nearby_appeal_count) ? (
               <div>
-                <div className="text-caption text-text-muted mb-1">{t("property.appeals.title")}</div>
+                <div className="text-caption text-text-muted mb-1">
+                  <InfoTooltip content={{ label: t("property.appeals.title"), description: t("property.tips.appeals"), bullets: [] }}>
+                    {t("property.appeals.title")}
+                  </InfoTooltip>
+                </div>
                 <div className="space-y-1">
                   {(data.appeals.records ?? []).slice(0, 3).map((r, i) => (
                     <div key={i} className="text-caption text-text-secondary">
@@ -210,7 +228,7 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             ) : null}
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <Fact label={t("property.class")} value={classLabel || null} />
+              <Fact label={t("property.class")} tip={t("property.tips.class")} value={classLabel || null} />
               <Fact label={t("property.floorArea")} tip={t("property.floorAreaTip")}
                 value={data.bldg_sqft ? `${data.bldg_sqft.toLocaleString()} ft²` : null}
                 sourceHint={sourceHintFor(data.bldg_sqft_source, t)} />

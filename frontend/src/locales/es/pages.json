@@ -366,7 +366,10 @@
       "satellite": "Satélite",
       "streets": "Calles",
       "compsLegend_one": "{{count}} venta comparable",
-      "compsLegend_other": "{{count}} ventas comparables"
+      "compsLegend_other": "{{count}} ventas comparables",
+      "keyParcel": "Esta parcela",
+      "keyTransit": "Estación de transporte",
+      "keyEz": "Zona Empresarial"
     },
     "crimeCurrent": "Período actual",
     "crimePrior": "Año anterior",
@@ -379,6 +382,25 @@
       "population": "Población",
       "ownerOcc": "{{pct}}% ocupado por dueños",
       "todEligible": "Elegible TOD"
+    },
+    "tips": {
+      "zoningTile": "El distrito de zonificación de la parcela. FAR (coeficiente de edificabilidad) × área del lote = la superficie que puede construir sin rezonificación.",
+      "assessedTile": "El valor imponible del Tasador del Condado de Cook (una fracción del valor de mercado según la clase de propiedad). La mediana del área proviene de nuestro índice de ~949,000 parcelas de Chicago.",
+      "taxTile": "Última factura de impuestos calculable (datos PTAXSIM del Condado de Cook). Tasa efectiva = factura ÷ valor de mercado implícito; la norma de clase se deriva de tasas publicadas y niveles de tasación.",
+      "compsTile": "Precio mediano de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años.",
+      "walkScore": "Walk Score (0–100) califica qué tan caminables son las diligencias diarias en esta ubicación. 90+ significa que rara vez se necesita auto.",
+      "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación."
+    },
+    "walkDesc": {
+      "walker_s_paradise": "Paraíso del peatón",
+      "very_walkable": "Muy caminable",
+      "somewhat_walkable": "Algo caminable",
+      "car_dependent": "Dependiente del auto",
+      "rider_s_paradise": "Paraíso del transporte",
+      "excellent_transit": "Transporte excelente",
+      "good_transit": "Buen transporte",
+      "some_transit": "Algo de transporte",
+      "minimal_transit": "Transporte mínimo"
     }
   },
   "discovery": {

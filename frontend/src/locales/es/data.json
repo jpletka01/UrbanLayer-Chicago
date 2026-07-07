@@ -110,7 +110,15 @@
       "appeal": "Apelación ganada"
     },
     "floorArea": "Superficie construida",
-    "floorAreaTip": "Área total sumando todos los pisos — en un edificio de varios pisos puede superar el tamaño del lote."
+    "floorAreaTip": "Área total sumando todos los pisos — en un edificio de varios pisos puede superar el tamaño del lote.",
+    "tips": {
+      "assessed": "El valor imponible del Tasador del Condado de Cook — una fracción del valor de mercado fijada por clase (10% residencial, 25% comercial), no un precio de venta.",
+      "implied": "Valor catastral ÷ el nivel de tasación de la clase — el valor de mercado que implican las cifras del condado. Un método, no un avalúo.",
+      "annualTax": "La factura más reciente calculable con datos PTAXSIM del Condado de Cook (suele atrasarse 1–2 años).",
+      "effRate": "Impuesto anual ÷ valor de mercado implícito — lo que la propiedad realmente paga por dólar de valor; comparable entre parcelas.",
+      "class": "Código de clase del Condado de Cook — fija el nivel de tasación e indica el uso (1xx baldío, 2xx residencial, 5xx comercial).",
+      "appeals": "Apelaciones de tasación de esta parcela (etapas del Tasador y la Junta de Revisión) y cómo les va a las apelaciones en esta cuadra — señal de si apelar aquí funciona."
+    }
   },
   "regulatory": {
     "title": "Normativo",
@@ -633,7 +641,12 @@
     "radius": "En 0.25 mi, últimos 3 años",
     "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe",
     "stripAriaLabel": "{{count}} precios de ventas comparables",
-    "class": "Clase"
+    "class": "Clase",
+    "tips": {
+      "median": "Mediana de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años. Las muestras pequeñas se señalan — tómelas como indicativas.",
+      "psfLand": "Precio de venta mediano dividido por los pies cuadrados del lote — la vara más limpia para el valor del terreno.",
+      "psfBldg": "Precio de venta mediano dividido por la superficie construida — la comparación estándar por pie cuadrado."
+    }
   },
   "trends": {
     "new": "nuevo"

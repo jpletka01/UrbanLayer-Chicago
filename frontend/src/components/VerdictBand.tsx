@@ -70,6 +70,9 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
 
   // The phrase explains itself on hover/tap (tooltip rule: definitions never
   // live as on-page copy) — plain-English gloss per category, scoring untouched.
+  // Trigger is a small ⓘ AFTER the phrase: a dotted underline under a headline
+  // read as broken styling (Jack, 2026-07-07), so the body-text idiom stays in
+  // body text and headlines get the icon.
   const explain = t(`scorecard.verdict.explain.${verdict.category}`, { defaultValue: "" });
 
   return (
@@ -78,12 +81,13 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
       <div className="flex items-start gap-3 mb-3">
         <h2 className="text-lead text-text-primary flex items-baseline gap-2.5">
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 self-center ${tone.dot}`} aria-hidden />
-          {explain ? (
+          {verdict.headline}
+          {explain && (
             <InfoTooltip content={{ label: verdict.headline, description: explain, bullets: [] }}>
-              {verdict.headline}
+              <svg className="w-4 h-4 self-center text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-label={explain}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12v-.008z" />
+              </svg>
             </InfoTooltip>
-          ) : (
-            verdict.headline
           )}
         </h2>
         {verdict.confidence === "caveated" && (
@@ -136,31 +140,38 @@ export function VerdictBand({ verdict, footer, onChat, onScrollTo }: VerdictBand
         </div>
       )}
 
-      {/* Methodology disclosure — cheap, critical for the attorney persona */}
-      <details className="mt-3 group">
-        <summary className="text-micro text-text-muted cursor-pointer hover:text-text-secondary transition-colors list-none inline-flex items-center gap-1">
-          <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
-          {t("scorecard.verdict.howScored")}
-        </summary>
-        <dl className="mt-2 pl-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-micro">
-          <Row label={t("scorecard.verdict.signal.zone")} value={verdict.signals.zoneClass ?? "—"} />
-          <Row label={t("scorecard.verdict.signal.allowedFar")} value={verdict.signals.allowedFar?.toFixed(1) ?? t("scorecard.verdict.signal.entitlementDefined")} />
-          <Row
-            label={t("scorecard.verdict.signal.existingFar")}
-            value={verdict.signals.existingFar?.toFixed(2) ?? t("scorecard.verdict.signal.unavailable")}
-          />
-          <Row label={t("scorecard.verdict.signal.capacity")} value={t(`scorecard.verdict.band.${verdict.signals.capacityBand}`)} />
-          <Row label={t("scorecard.verdict.signal.incentives")} value={t(`scorecard.verdict.strength.${verdict.signals.incentiveStrength}`, { count: verdict.signals.incentiveCount })} />
-          <Row
-            label={t("scorecard.verdict.signal.friction")}
-            value={verdict.signals.frictionFlags.length ? verdict.signals.frictionFlags.length.toString() : t("scorecard.verdict.signal.none")}
-          />
-        </dl>
-        <p className="mt-2 pl-3 text-micro text-text-muted leading-snug">{t("scorecard.verdict.howScoredNote")}</p>
-      </details>
-
       {footer && <div className="mt-3">{footer}</div>}
     </section>
+  );
+}
+
+/** Methodology disclosure — the signal table behind the verdict. Rendered by
+    the page in the provenance zone (meta line), NOT between the verdict's
+    action and the report button (it's provenance, not a next step). */
+export function VerdictMethodology({ verdict }: { verdict: ScorecardVerdict }) {
+  const { t } = useTranslation("pages");
+  return (
+    <details className="group">
+      <summary className="text-micro text-text-muted cursor-pointer hover:text-text-secondary transition-colors list-none inline-flex items-center gap-1">
+        <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
+        {t("scorecard.verdict.howScored")}
+      </summary>
+      <dl className="mt-2 pl-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-micro max-w-xl">
+        <Row label={t("scorecard.verdict.signal.zone")} value={verdict.signals.zoneClass ?? "—"} />
+        <Row label={t("scorecard.verdict.signal.allowedFar")} value={verdict.signals.allowedFar?.toFixed(1) ?? t("scorecard.verdict.signal.entitlementDefined")} />
+        <Row
+          label={t("scorecard.verdict.signal.existingFar")}
+          value={verdict.signals.existingFar?.toFixed(2) ?? t("scorecard.verdict.signal.unavailable")}
+        />
+        <Row label={t("scorecard.verdict.signal.capacity")} value={t(`scorecard.verdict.band.${verdict.signals.capacityBand}`)} />
+        <Row label={t("scorecard.verdict.signal.incentives")} value={t(`scorecard.verdict.strength.${verdict.signals.incentiveStrength}`, { count: verdict.signals.incentiveCount })} />
+        <Row
+          label={t("scorecard.verdict.signal.friction")}
+          value={verdict.signals.frictionFlags.length ? verdict.signals.frictionFlags.length.toString() : t("scorecard.verdict.signal.none")}
+        />
+      </dl>
+      <p className="mt-2 pl-3 text-micro text-text-muted leading-snug max-w-xl">{t("scorecard.verdict.howScoredNote")}</p>
+    </details>
   );
 }
 

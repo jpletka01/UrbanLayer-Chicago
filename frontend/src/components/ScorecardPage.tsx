@@ -19,7 +19,8 @@ import { ProfileModule, SubSection } from "./scorecard/ProfileModule";
 import { KpiStrip, type KpiTile } from "./scorecard/KpiStrip";
 import type { NeighborhoodSummary } from "../lib/types";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
-import { VerdictBand, verdictDotClass } from "./VerdictBand";
+import { VerdictBand, VerdictMethodology, verdictDotClass } from "./VerdictBand";
+import { InfoTooltip } from "./InfoTooltip";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
@@ -27,7 +28,6 @@ import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
-import { Chip } from "./ui/Chip";
 
 // Classify a failed address-resolution input: did the user type an address
 // (a typo to fix here) or a code question (redirect to the analyst)? Computed
@@ -136,12 +136,19 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
   const demo = data.demographics;
   const ws = data.walkscore;
   const tr = data.transit;
-  const stats: Array<{ label: string; value: string; sub?: string }> = [];
+  // Walk Score description strings arrive in English from the API — translate
+  // the known canonical set, pass anything novel through untouched.
+  const walkDesc = (s: string | null | undefined): string | undefined => {
+    if (!s) return undefined;
+    const slug = s.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    return t(`scorecard.walkDesc.${slug}`, { defaultValue: s });
+  };
+  const stats: Array<{ label: string; value: string; sub?: string; tip?: string }> = [];
   if (ws?.walk_score != null) {
-    stats.push({ label: t("scorecard.area.walk"), value: String(ws.walk_score), sub: ws.walk_description ?? undefined });
+    stats.push({ label: t("scorecard.area.walk"), value: String(ws.walk_score), sub: walkDesc(ws.walk_description), tip: t("scorecard.tips.walkScore") });
   }
   if (ws?.transit_score != null) {
-    stats.push({ label: t("scorecard.area.transitScore"), value: String(ws.transit_score), sub: ws.transit_description ?? undefined });
+    stats.push({ label: t("scorecard.area.transitScore"), value: String(ws.transit_score), sub: walkDesc(ws.transit_description), tip: t("scorecard.tips.transitScore") });
   }
   if (tr?.nearest_cta_rail && tr.cta_rail_distance_mi != null) {
     stats.push({
@@ -169,7 +176,13 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-x-6 gap-y-4">
           {stats.map((s) => (
             <div key={s.label} className="min-w-0">
-              <div className="text-overline uppercase tracking-wider text-text-muted">{s.label}</div>
+              <div className="text-overline uppercase tracking-wider text-text-muted">
+                {s.tip ? (
+                  <InfoTooltip content={{ label: s.label, description: s.tip, bullets: [] }}>{s.label}</InfoTooltip>
+                ) : (
+                  s.label
+                )}
+              </div>
               <div className="text-subtitle text-text-primary mt-0.5 truncate">{s.value}</div>
               {s.sub && <div className="text-caption text-text-muted mt-0.5 leading-snug">{s.sub}</div>}
             </div>
@@ -180,7 +193,12 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
         <p className="text-caption text-text-secondary">
           {t("scorecard.wardLabel", { ward: data.ward.ward })}
           {data.ward.alderman && <span> · {data.ward.alderman}</span>}
-          {tr?.tod_eligible && <span className="text-state-positive"> · {t("scorecard.area.todEligible")}</span>}
+          {tr?.tod_eligible && (
+            <span className="text-state-positive">
+              {" · "}
+              <InfoTooltip term="in_tod_area">{t("scorecard.area.todEligible")}</InfoTooltip>
+            </span>
+          )}
         </p>
       )}
     </div>
@@ -432,6 +450,7 @@ export default function ScorecardPage() {
         anchor: "zoning",
         label: t("scorecard.tiles.zoning"),
         value: zoning.zone_class,
+        tip: t("scorecard.tips.zoningTile"),
         sub: verdict.signals.allowedFar != null
           ? t("scorecard.tiles.zoningFar", { far: verdict.signals.allowedFar.toFixed(1) })
           : t("scorecard.verdict.signal.entitlementDefined"),
@@ -456,6 +475,7 @@ export default function ScorecardPage() {
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
         value: fmtMoneyCompact(av),
+        tip: t("scorecard.tips.assessedTile"),
         sub: (
           <>
             {deltaPct != null && first.year != null && (
@@ -485,6 +505,7 @@ export default function ScorecardPage() {
         anchor: "property",
         label: t("scorecard.tiles.tax"),
         value: `${fmtMoneyCompact(estTax)}/yr`,
+        tip: t("scorecard.tips.taxTile"),
         sub: rate != null ? (
           <>
             {t("scorecard.tiles.taxRate", { rate: (rate * 100).toFixed(2) })}
@@ -502,6 +523,7 @@ export default function ScorecardPage() {
         anchor: "comparables",
         label: t("scorecard.tiles.comps"),
         value: fmtMoneyCompact(data.comparables.median_sale_price),
+        tip: t("scorecard.tips.compsTile"),
         sub: t("scorecard.tiles.compsSub", { count: data.comparables.sales_volume }),
       });
     }
@@ -662,8 +684,9 @@ export default function ScorecardPage() {
         ) : undefined}
       />
 
-      {/* pb-24 clears the sticky report bar so the last module is never hidden behind it */}
-      <main className={`max-w-7xl mx-auto px-4 py-8 ${data && !loading ? "pb-24" : ""}`}>
+      {/* Full-bleed width (the dashboard breathes past the nav pill, like
+          Discovery); pb-24 clears the dock so the footer is never hidden. */}
+      <main className={`w-full max-w-[110rem] mx-auto px-4 md:px-8 xl:px-12 py-8 ${data && !loading ? "pb-24" : ""}`}>
         {/* Search shell — prominent (empty / address-typo) vs compact (loading /
             success / code-question redirect). One boolean, two shells. */}
         {searchProminent ? (
@@ -702,11 +725,12 @@ export default function ScorecardPage() {
           </div>
         ) : (
           <div className="max-w-2xl mx-auto mb-6">
-            {/* Compact re-search: same shared component, smaller step. Empty by
-                design — the loaded address lives in the identity bar below. */}
+            {/* Compact re-search: same shared component at the homepage's md
+                scale (the sm step read as a different control — Jack 2026-07-07).
+                Empty by design — the loaded address lives in the hero below. */}
             <AddressInput
               variant="page"
-              size="sm"
+              size="md"
               placeholder={t("scorecard.searchAnother")}
               onSubmit={doSearch}
               busy={loading}
@@ -812,22 +836,30 @@ export default function ScorecardPage() {
                     </a>
                   )}
                   {parcel && (parcel.pin === null ? (
-                    <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
-                      {t("scorecard.badges.unconfirmed")}
-                    </Chip>
+                    <InfoTooltip content={{ label: t("scorecard.badges.unconfirmed"), description: t("scorecard.badges.unconfirmedTitle"), bullets: [] }}>
+                      <span className="text-state-warning">{t("scorecard.badges.unconfirmed")}</span>
+                    </InfoTooltip>
                   ) : parcel.confidence === "authoritative" ? (
-                    <span title={t("scorecard.badges.exactTitle")} className="cursor-help">
-                      ✓ {t("scorecard.badges.exact")}
-                    </span>
+                    <InfoTooltip content={{ label: t("scorecard.badges.exact"), description: t("scorecard.badges.exactTitle"), bullets: [] }}>
+                      <span className="text-state-positive">✓ {t("scorecard.badges.exact")}</span>
+                    </InfoTooltip>
                   ) : (
-                    <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
-                      {t("scorecard.badges.approximate")}
-                    </Chip>
+                    <InfoTooltip content={{ label: t("scorecard.badges.approximate"), description: t("scorecard.badges.approximateTitle"), bullets: [] }}>
+                      <span className="text-state-warning">{t("scorecard.badges.approximate")}</span>
+                    </InfoTooltip>
                   ))}
                   {data.context.data_as_of && (
                     <span>{t("scorecard.dataAsOf", { date: data.context.data_as_of })}</span>
                   )}
                 </div>
+
+                {/* Methodology — provenance, so it lives with the meta line
+                    (not between the verdict action and the report button). */}
+                {verdict && (
+                  <div className="mt-2">
+                    <VerdictMethodology verdict={verdict} />
+                  </div>
+                )}
               </div>
 
               {/* The place map — satellite default, parcel outline, comps, transit */}
