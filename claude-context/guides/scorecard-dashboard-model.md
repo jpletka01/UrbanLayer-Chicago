@@ -34,7 +34,14 @@
 > vitest 171, 5-device mobile audit. **v2.3.1**: the hero's stacked orange
 > next-step + violet report buttons collapsed into ONE action row with ONE
 > filled CTA — violet report leads, the verdict step rides as a chip (rendered
-> by the page now, not VerdictBand), sample stays a quiet link.
+> by the page now, not VerdictBand), sample stays a quiet link. **v2.3.2**
+> (Jack's 5-point pass): resolution state = circled badge ON the address
+> (green ✓ / amber !, tooltip meaning; `InfoTooltip plain` prop added); PIN↗
+> joins the `area · ward` subline; the hero provenance meta line is GONE —
+> data-as-of + "How we scored this" moved to the page footer (the provenance
+> zone, with feedback); sample link locked beside the report button; module
+> ask chips are contextual (`scorecard.ask.*` — "Ask about zoning" etc.,
+> `askModule` retired).
 >
 > **STATUS: v2 spec IMPLEMENTED through v2.3 on `feat/property-profile`**
 > (`f52da69` v2 → `f144904` v2.1 Jack's 11-point polish → `9526fb9` v2.2). Post-spec
