@@ -31,7 +31,10 @@
 > = one divided stat-card row; (4) composed rows that fill their band — Costs is
 > chart ⅔ + tax panel ⅓ then a 3-col facts/sales/assessment row, Market is a stat
 > row + full-width comps table (the max-w-3xl half-band died). Gates run: build,
-> vitest 171, 5-device mobile audit.
+> vitest 171, 5-device mobile audit. **v2.3.1**: the hero's stacked orange
+> next-step + violet report buttons collapsed into ONE action row with ONE
+> filled CTA — violet report leads, the verdict step rides as a chip (rendered
+> by the page now, not VerdictBand), sample stays a quiet link.
 >
 > **STATUS: v2 spec IMPLEMENTED through v2.3 on `feat/property-profile`**
 > (`f52da69` v2 → `f144904` v2.1 Jack's 11-point polish → `9526fb9` v2.2). Post-spec
