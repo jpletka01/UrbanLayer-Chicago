@@ -21,7 +21,7 @@ and the definitive architecture + design-decision + war-story archive is the web
 |---|---|
 | **The $25 Feasibility Report** (PDF, synthesis, envelope, render) | `guides/report.md` → `guides/zoning-cache.md` → `core/known-issues.md` |
 | **Zoning extraction / FAR / Title-17 standards** | `guides/zoning-cache.md` → `guides/report.md` |
-| **Scorecard / Verdict Band / decision-support** | `guides/scorecard-dashboard-model.md` → `frontend/CLAUDE.md` (ScorecardPage) → `archive/2026-06-30_verdict-grounding-ux.md` |
+| **Property Profile (fka Scorecard) / Verdict / parcel maps / KPI benchmarks** | `guides/scorecard-dashboard-model.md` → `frontend/CLAUDE.md` (ScorecardPage) → `archive/2026-06-30_verdict-grounding-ux.md` |
 | **Chat pipeline** (router, assembler, synthesizer, RAG) | `core/architecture.md` → `guides/backend-guide.md` |
 | **Chat grounding / Scorecard→chat handoff** | `frontend/CLAUDE.md` (grounding patterns) → `archive/2026-06-21_scorecard-chat-grounding.md` + `archive/2026-06-30_verdict-grounding-ux.md` |
 | **Parcel resolution / address→PIN / geocoding** | `guides/parcel-resolution-truth-model.md` → `core/known-issues.md` (Cook County GIS) → `archive/2026-06-21_pin-resolution-seam.md` |

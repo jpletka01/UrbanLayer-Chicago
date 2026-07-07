@@ -21,6 +21,20 @@
 > thereby answered. Still open: the fixed-height 12-col module layout, KPI strip w/ benchmarks,
 > identity rail, and the Phase A/B insight layer.
 
+> **STATUS: v2 spec IMPLEMENTED through v2.2 on `feat/property-profile`**
+> (`f52da69` v2 → `f144904` v2.1 Jack's 11-point polish → `9526fb9` v2.2). Post-spec
+> additions from review: KPI columns track tile count + tiles centered; page full-bleed
+> `max-w-[110rem]`; map keys top-right on every map with **bottom-left always empty**
+> (Mapbox wordmark); boundaries hover **multi-picks all stacked layers** (chat
+> `pickMultipleObjects` pattern) + boundaries zoom paired with the zoning map (15.2);
+> verdict reasons wear the Regulatory tag chrome (green/amber/muted pills); verdict ⓘ
+> trigger (dotted underline under a headline reads broken) + methodology relocated to
+> the provenance meta line; place map scopes comps/transit to its opening viewport;
+> tooltip audit (KPI methodology glosses, tax stats, class, appeals, comps, ARO,
+> Walk/Transit, TOD — max ONE per item); es catalog incl. Walk Score descriptions.
+> NOT merged/deployed — awaiting Jack. Living component detail: `frontend/CLAUDE.md`
+> (ScorecardPage / scorecard/ / ParcelMap rows).
+>
 > **2026-07-07 v2 SPEC LOCKED with Jack** (supersedes the v1 branch build's layout —
 > Jack's review: "still a spreadsheet"; uniform label/value texture, no pictorial
 > anchor, no interpretation). The locked v2:

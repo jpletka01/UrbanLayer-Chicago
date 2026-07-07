@@ -1,6 +1,6 @@
 # UrbanLayer — Chicago
 
-Parcel feasibility engine for Chicago real-estate professionals, built on RAG over the municipal code plus 25+ city/county/federal data sources. Killer query: type "1601 N Milwaukee Ave" → the parcel's full Scorecard (zoning, overlays, incentives, tax projection, comps) in ~2 seconds, free and anonymous — then interrogate it via chat with cited municipal code, and buy the $25 Development Feasibility Report. Chat also answers parcel-less code-research and neighborhood questions (crime, 311, permits, demographics, transit) with interactive maps and clickable source citations.
+Parcel feasibility engine for Chicago real-estate professionals, built on RAG over the municipal code plus 25+ city/county/federal data sources. Killer query: type "1601 N Milwaukee Ave" → the parcel's full **Property Profile** (renamed from "Scorecard" 2026-07-07 on `feat/property-profile`, unmerged; es "Ficha"; route stays `/scorecard`, i18n keys stay `scorecard.*`) — zoning, overlays, incentives, taxes, comps, three scoped parcel maps — in ~2 seconds, free and anonymous — then interrogate it via chat with cited municipal code, and buy the $25 Development Feasibility Report. Chat also answers parcel-less code-research and neighborhood questions (crime, 311, permits, demographics, transit) with interactive maps and clickable source citations.
 
 ## Tech Stack
 

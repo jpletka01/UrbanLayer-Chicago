@@ -1,6 +1,12 @@
 # Bento Pro Phase 3 — Scorecard & Discovery Redesign (working doc)
 
-**Status:** PLANNING on branch `feat/bento-pro`. Started 2026-07-01.
+**Status:** Scorecard sections of this doc are **SUPERSEDED (2026-07-07)** — the page was
+rebuilt as the de-carded **Property Profile** dashboard on `feat/property-profile`; the
+governing design record is now `guides/scorecard-dashboard-model.md` (v2 spec + status
+blocks). The question-section/card layout described below shipped 2026-07-02 and was
+retired a week later ("still a spreadsheet" — Jack). Discovery sections remain current.
+
+**Status (historical):** PLANNING on branch `feat/bento-pro`. Started 2026-07-01.
 **This is the project workspace** for the app-surface overhaul: spec, decisions log, and
 status live here. Companion to `bento-pro-redesign.md` (Phases 0–2, homepage — done there
 stays there). Homepage *visualization* work (real-map section, ChaosToVerdict rebuild) is
