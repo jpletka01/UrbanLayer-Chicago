@@ -11,7 +11,7 @@ from backend.retrieval.zoning_definitions import get_zone_definition
 
 EXPECTED_KEYS = {
     "zone_class", "name", "code_section", "far", "max_height",
-    "lot_coverage", "uses", "notes", "is_fallback",
+    "lot_coverage", "min_lot_sqft", "uses", "notes", "is_fallback",
 }
 
 

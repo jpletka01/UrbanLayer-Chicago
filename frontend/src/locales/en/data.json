@@ -35,7 +35,10 @@
       "cityOwnedApply": "application info",
       "scofflaw": "On the Building Code Scofflaw List",
       "chrs": "CHRS {{color}}-rated (1996 historic survey) — 90-day demolition hold applies",
-      "chrsColor": { "orange": "orange", "red": "red" },
+      "chrsColor": {
+        "orange": "orange",
+        "red": "red"
+      },
       "strProhibited": "Short-term rentals prohibited (owner opt-out)",
       "taxSale": "Appeared in the {{years}} annual tax sale (historic)",
       "scavengerSale": "Appeared in the {{years}} scavenger sale (historic)"
@@ -518,7 +521,10 @@
   "zoning": {
     "variesByLotFrontage": "varies by lot frontage",
     "noMaxBonuses": "No max (bonuses available)",
-    "feetUnit": "ft"
+    "feetUnit": "ft",
+    "variesByFrontageCommercial": "varies by lot frontage & ground-floor commercial",
+    "noFixedCapPd": "No fixed cap — tall buildings require PD review",
+    "noHeightStandard": "No height standard in the zoning code"
   },
   "report": {
     "siteReport": "UrbanLayer Conversation Transcript",

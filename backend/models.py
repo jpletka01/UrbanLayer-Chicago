@@ -814,7 +814,11 @@ class ZoningStandards(BaseModel):
     max_height_ft: int | None = None
     max_stories: int | None = None
     lot_coverage_pct: float | None = None
+    # Minimum lot AREA (size of the zoning lot — an R-district standard only).
     min_lot_area_sqft: int | None = None
+    # Minimum lot area PER DWELLING UNIT (the as-of-right density control in
+    # R/B/C/D districts) — a different standard; do not conflate with the above.
+    min_lot_area_per_unit_sqft: int | None = None
     front_setback_ft: int | None = None
     side_setback_ft: int | None = None
     rear_setback_ft: int | None = None

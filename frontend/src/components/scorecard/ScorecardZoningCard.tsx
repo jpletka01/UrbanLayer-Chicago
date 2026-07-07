@@ -57,6 +57,7 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   if (def.max_height) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: localizeZoningValue(def.max_height) });
   else if (isPd) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: t("scorecard.zoningCard.setByPdOrdinance") });
   if (def.lot_coverage) standards.push({ label: t("scorecard.zoningCard.lotCoverage"), value: localizeZoningValue(def.lot_coverage) });
+  if (def.min_lot_sqft != null) standards.push({ label: t("scorecard.zoningCard.minLotArea"), value: `${def.min_lot_sqft.toLocaleString()} ft²` });
   if (isPd && ordinanceNum) standards.push({ label: t("scorecard.zoningCard.pdOrdinance"), value: ordinanceNum });
 
   return (

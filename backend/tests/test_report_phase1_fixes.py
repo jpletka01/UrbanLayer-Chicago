@@ -12,14 +12,23 @@ from backend.zoning_extract import standards_from_definitions
 # --- R1: zoning definitions fallback ---------------------------------------
 
 def test_r1_definitions_fallback_rm6():
-    """RM-6 must resolve to authoritative base-district standards (FAR 4.4)."""
+    """RM-6 must resolve to authoritative base-district standards (FAR 4.4).
+
+    Table 17-2-0305 sets NO numeric height cap for RM-6 (tall buildings go
+    through PD review) and Title 17 has no base-district lot-coverage standard
+    — both previously carried fabricated values (70 ft / 60%; 2026-07-06 audit,
+    see test_zoning_ordinance_parity.py).
+    """
     s = standards_from_definitions("RM-6")
     assert s is not None
     assert s.far == 4.4
-    assert s.max_height_ft == 70
-    assert s.lot_coverage_pct == 0.6
+    assert s.max_height_ft is None
+    assert s.lot_coverage_pct is None
+    assert s.min_lot_area_sqft == 1650
+    assert s.min_lot_area_per_unit_sqft == 300
     assert s.extraction_confidence == "definitions"
     assert s.permitted_uses  # residential uses, not commercial/manufacturing
+    assert any("Height:" in n for n in s.notes)  # the no-cap explanation surfaces
 
 
 def test_r1_definitions_fallback_commercial():

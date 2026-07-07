@@ -44,8 +44,18 @@ def test_mla_per_unit_known_districts():
     assert min_lot_area_per_unit("RM 6") == 300
 
 
-def test_mla_per_unit_non_r_districts_none():
-    for z in ("B3-2", "C1-1", "M1-2", "DX-5", "PD 100", "", None):
+def test_mla_per_unit_bc_and_d_dash_tables():
+    """B/C and D districts now resolve through their dash-number per-unit
+    tables (17-3-0400 / 17-4-0400) — values guarded against the ordinance by
+    test_zoning_ordinance_parity.py."""
+    assert min_lot_area_per_unit("B3-2") == 1000
+    assert min_lot_area_per_unit("C1-1") == 2500
+    assert min_lot_area_per_unit("DX-5") == 200
+
+
+def test_mla_per_unit_no_dwelling_unit_districts_none():
+    """Districts that permit no dwelling units, PDs, and unknowns yield None."""
+    for z in ("M1-2", "C3-2", "DS-3", "PD 100", "", None):
         assert min_lot_area_per_unit(z) is None
 
 
@@ -61,12 +71,27 @@ def test_unit_yield_rm5_lot():
     assert uy["zone_class"] == "RM-5"
 
 
-def test_unit_yield_non_r_district_none():
+def test_unit_yield_bc_district_uses_dash_table():
+    """B/C districts have their own per-dwelling-unit table (17-3-0400) —
+    dash-2 = 1,000 sq ft/unit — so a yield IS computable (was R-only)."""
     r = _report(
         property=PropertySummary(pin="1", land_sqft=5000),
         parcel_zoning=ZoningSummary(zone_class="B3-2"),
     )
-    assert _compute_unit_yield(r) is None
+    uy = _compute_unit_yield(r)
+    assert uy is not None
+    assert uy["units"] == 5  # 5000 // 1000
+    assert uy["mla_per_unit"] == 1000
+
+
+def test_unit_yield_no_dwelling_unit_district_none():
+    """Districts that permit no dwelling units (M, C3, DS) must never yield."""
+    for zone in ("M1-2", "C3-2", "DS-3"):
+        r = _report(
+            property=PropertySummary(pin="1", land_sqft=5000),
+            parcel_zoning=ZoningSummary(zone_class=zone),
+        )
+        assert _compute_unit_yield(r) is None, zone
 
 
 def test_unit_yield_no_lot_size_none():

@@ -140,6 +140,13 @@ def get_cached_zoning_standards(zone_class: str | None) -> ZoningStandards | Non
 
     A ``None`` return is the caller's signal to use the existing R1 Title-17 table
     fallback — never to run the live reranker on the report path.
+
+    The deterministic table authority is re-applied on every read (not only at
+    build time): ``config_version`` fingerprints the extraction inputs, so a
+    correction to ``zoning_definitions.py`` alone would otherwise leave the
+    committed artifact serving the old bulk numbers until someone remembered to
+    rebuild (2026-07-06 audit — exactly how fabricated heights shipped at
+    "high" confidence).
     """
     if not zone_class:
         return None
@@ -147,10 +154,13 @@ def get_cached_zoning_standards(zone_class: str | None) -> ZoningStandards | Non
     if not entry:
         return None
     try:
-        return ZoningStandards.model_validate(entry["standards"])
+        standards = ZoningStandards.model_validate(entry["standards"])
     except Exception as exc:
         log.warning("Invalid cached zoning entry for %s: %s", zone_class, exc)
         return None
+    from backend.zoning_extract import apply_table_authority
+
+    return apply_table_authority(standards, zone_class)
 
 
 def reset_cache() -> None:

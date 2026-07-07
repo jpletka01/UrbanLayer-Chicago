@@ -127,7 +127,8 @@
       "farUsed": "FAR utilizado",
       "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar",
       "setByPdOrdinance": "Definido por la ordenanza del PD",
-      "pdOrdinance": "Ordenanza del PD"
+      "pdOrdinance": "Ordenanza del PD",
+      "minLotArea": "Área mínima de lote"
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",

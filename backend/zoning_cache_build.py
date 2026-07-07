@@ -57,21 +57,18 @@ async def _build(zone_classes: list[str]) -> dict:
         if standards is None:
             failures.append(zone_class)
             continue
-        # The deterministic Title-17 table is AUTHORITATIVE for the bulk numbers it
-        # carries (FAR / height / coverage). AI extraction over the full section gets
-        # these mostly right but mis-rows ~7/59 zones (e.g. B3-1 FAR 3.0 vs true 1.2),
-        # which is unacceptable on a paid report. So overwrite those fields from the
-        # table where it has them, and keep the AI's value-add (setbacks, min lot area,
-        # special conditions — fields the table lacks). Cache = authoritative bulk +
-        # AI nuance, with zero FAR-correctness risk.
-        from backend.zoning_extract import standards_from_definitions
+        # The deterministic Title-17 table is AUTHORITATIVE for the bulk numbers
+        # (FAR / height / lot sizes / per-unit density). AI extraction over the
+        # full section gets these mostly right but mis-rows some zones (e.g.
+        # B3-1 FAR 3.0 vs true 1.2; B3-1 min-lot 400 vs true 2,500/unit), which
+        # is unacceptable on a paid report. The SAME authority pass also runs on
+        # every cache read (zoning_cache.get_cached_zoning_standards), so this
+        # build-time application only keeps the committed artifact honest when
+        # inspected — table corrections never require a rebuild to take effect.
+        # AI keeps its value-add: setbacks, parking, special conditions.
+        from backend.zoning_extract import apply_table_authority
 
-        table = standards_from_definitions(zone_class)
-        if table is not None:
-            for field in ("far", "max_height_ft", "lot_coverage_pct"):
-                tv = getattr(table, field)
-                if tv is not None:
-                    setattr(standards, field, tv)
+        apply_table_authority(standards, zone_class)
         entries[zoning_cache._normalize_zone_class(zone_class)] = {
             "standards": standards.model_dump(mode="json"),
             "provenance": provenance,

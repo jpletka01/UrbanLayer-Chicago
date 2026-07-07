@@ -19,12 +19,70 @@ from backend.retrieval.vector_search import get_full_section, semantic_search
 log = logging.getLogger(__name__)
 
 
+def _height_ft_from_definition(max_height: str | None) -> int | None:
+    """Numeric as-of-right height floor from a ZoneDefinition display string.
+
+    Height strings lead with the LOWEST tier of frontage-dependent ranges
+    ("45–47 ft (varies by lot frontage)" → 45) so the number that flows into
+    calculations is true everywhere in the district. Digit-free strings
+    ("No fixed cap — tall buildings require PD review") parse to None. The
+    anchor matters: an unanchored search would pull digits out of prose.
+    """
+    if not max_height:
+        return None
+    m = re.match(r"\s*(\d+)", max_height)
+    return int(m.group(1)) if m else None
+
+
+def apply_table_authority(standards: ZoningStandards, zone_class: str) -> ZoningStandards:
+    """Overwrite (in place) the fields the deterministic Title-17 table owns.
+
+    Applied on EVERY zoning-cache read as well as at build time, so a correction
+    to ``zoning_definitions.py`` takes effect immediately — the committed cache
+    can never serve stale bulk numbers (``config_version`` fingerprints the
+    extraction inputs, not the table). AI extraction keeps only the fields the
+    table genuinely lacks: setbacks, parking, uses, special uses, notes.
+
+    Field semantics (2026-07-06 audit):
+    - far / max_height_ft: table-authoritative (AI mis-rowed ~7/59 zones).
+    - lot_coverage_pct: force-None — NO Chicago base district has a Title-17
+      lot-coverage standard; extraction tends to pick up rear-yard open-space
+      percentages that are a different rule.
+    - min_lot_area_sqft: table-authoritative (real for R districts only; B/C/M/D
+      have no minimum lot size — the AI values were per-unit mis-rows).
+    - min_lot_area_per_unit_sqft: deterministic dash-number/table rule.
+    """
+    from backend.retrieval.zoning_definitions import (
+        get_zone_definition,
+        min_lot_area_per_unit,
+    )
+
+    d = get_zone_definition(zone_class)
+    # Fallback defs (PD/PMD/unknown) carry no standards — nothing authoritative.
+    if d.is_fallback:
+        return standards
+
+    standards.far = d.far
+    standards.max_height_ft = _height_ft_from_definition(d.max_height)
+    standards.lot_coverage_pct = None
+    standards.min_lot_area_sqft = d.min_lot_sqft
+    standards.min_lot_area_per_unit_sqft = min_lot_area_per_unit(zone_class)
+    # A district with no numeric cap (RM-6+, M, D) would otherwise just drop the
+    # height row — surface the table's explanation instead. Guarded for
+    # idempotence: the pass runs at build time AND on every read.
+    if standards.max_height_ft is None and d.max_height:
+        note = f"Height: {d.max_height}."
+        if note not in standards.notes:
+            standards.notes.append(note)
+    return standards
+
+
 def standards_from_definitions(zone_class: str) -> ZoningStandards | None:
     """Synthesize ZoningStandards from the deterministic Title 17 zone-class table.
 
     R1 fallback: when AI extraction is unavailable or low-confidence, the
     deterministic table (``zoning_definitions``) provides authoritative base-district
-    FAR / height / coverage / uses for known classes. Returns ``None`` for zones the
+    FAR / height / density for known classes. Returns ``None`` for zones the
     table cannot resolve to real numbers (PD / PMD / unknown), so callers can preserve
     the raw-code-section path only for genuinely unknown districts.
     """
@@ -35,18 +93,6 @@ def standards_from_definitions(zone_class: str) -> ZoningStandards | None:
     # Fallback defs (PD/PMD/unknown) carry no FAR — nothing reliable to surface.
     if d.is_fallback and d.far is None:
         return None
-
-    max_height_ft: int | None = None
-    if d.max_height:
-        m = re.search(r"(\d+)", d.max_height)
-        if m:
-            max_height_ft = int(m.group(1))
-
-    lot_coverage_pct: float | None = None
-    if d.lot_coverage:
-        m = re.search(r"(\d+(?:\.\d+)?)", d.lot_coverage)
-        if m:
-            lot_coverage_pct = round(float(m.group(1)) / 100.0, 4)
 
     # Keep the use description intact as a single line rather than naively
     # comma-splitting (which mangles commercial-district sentences).
@@ -61,14 +107,13 @@ def standards_from_definitions(zone_class: str) -> ZoningStandards | None:
     if d.notes:
         notes.insert(0, d.notes)
 
-    return ZoningStandards(
-        far=d.far,
-        max_height_ft=max_height_ft,
-        lot_coverage_pct=lot_coverage_pct,
+    standards = ZoningStandards(
         permitted_uses=permitted_uses,
         notes=notes,
         extraction_confidence="definitions",
     )
+    # Same authority pass the cache path uses — one source for the bulk numbers.
+    return apply_table_authority(standards, zone_class)
 
 EXTRACTION_SYSTEM = """You are a zoning code extraction specialist for Chicago's Municipal Code (Title 17).
 Given retrieved text chunks from the zoning ordinance, extract structured development standards for the specified zone class.

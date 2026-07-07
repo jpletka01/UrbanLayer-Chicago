@@ -127,7 +127,8 @@
       "farUsed": "FAR used",
       "farHeadroom": "{{pct}}% of the as-of-right envelope unused",
       "setByPdOrdinance": "Set by PD ordinance",
-      "pdOrdinance": "PD ordinance"
+      "pdOrdinance": "PD ordinance",
+      "minLotArea": "Min lot area"
     },
     "verdict": {
       "inTif": "in {{name}} TIF",

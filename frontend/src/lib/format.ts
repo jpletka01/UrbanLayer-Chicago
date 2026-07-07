@@ -67,7 +67,10 @@ export function localizeZoningValue(value: string | null | undefined): string {
   if (!value) return value ?? "";
   if (i18n.language.startsWith("en")) return value;
   if (value === "No max (bonuses available)") return i18n.t("data:zoning.noMaxBonuses");
+  if (value === "No fixed cap — tall buildings require PD review") return i18n.t("data:zoning.noFixedCapPd");
+  if (value === "No height standard in the zoning code") return i18n.t("data:zoning.noHeightStandard");
   return value
+    .replace("(varies by lot frontage & ground-floor commercial)", `(${i18n.t("data:zoning.variesByFrontageCommercial")})`)
     .replace("(varies by lot frontage)", `(${i18n.t("data:zoning.variesByLotFrontage")})`)
     .replace(/\bft\b/g, i18n.t("data:zoning.feetUnit"));
 }

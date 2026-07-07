@@ -656,6 +656,7 @@ a.glossary-link {
     {% if standards.max_stories is not none %}<tr><td>{{ t("zoning.max_stories") }}</td><td>{{ standards.max_stories }}</td></tr>{% endif %}
     {% if standards.lot_coverage_pct is not none %}<tr><td><a id="glossary-lot-coverage">{{ t("zoning.lot_coverage") }}</a> <span style="font-size: 7.5pt; color: #6b7280;">{{ t("zoning.lot_coverage_hint") }}</span></td><td>{{ "%.0f"|format(standards.lot_coverage_pct * 100) }}%</td></tr>{% endif %}
     {% if standards.min_lot_area_sqft is not none %}<tr><td>{{ t("zoning.min_lot_area") }}</td><td>{{ standards.min_lot_area_sqft|fnum }} {{ t("common.sqft") }}</td></tr>{% endif %}
+    {% if standards.min_lot_area_per_unit_sqft is not none %}<tr><td>{{ t("zoning.min_lot_area_per_unit") }} <span style="font-size: 7.5pt; color: #6b7280;">{{ t("zoning.min_lot_area_per_unit_hint") }}</span></td><td>{{ standards.min_lot_area_per_unit_sqft|fnum }} {{ t("common.sqft") }}</td></tr>{% endif %}
     </tbody>
   </table>
 

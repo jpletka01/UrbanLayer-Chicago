@@ -3504,6 +3504,13 @@ def _generate_envelope_map(
         return None, None
 
 
+# Conservative height-per-story estimate for the nonconformity check below.
+# Chicago residential floors run ~10–12 ft floor-to-floor; using the low bound
+# means we under-estimate building height and so never claim "exceeds the
+# height limit" on a building that actually complies.
+_EST_FT_PER_STORY = 10
+
+
 def _synthesize_opportunities_constraints(
     report: "ReportData",
 ) -> tuple[list[dict], list[dict]]:
@@ -3650,7 +3657,11 @@ def _synthesize_opportunities_constraints(
             if prop.bldg_sqft > allowed_sqft * 1.05:
                 nonconformities.append(t("oc.nonconf_floor_area", bldg=f"{prop.bldg_sqft:,}", allowed=f"{allowed_sqft:,.0f}", far=standards.far))
         if standards and standards.max_height_ft and prop.stories:
-            est_height = prop.stories * 10
+            # Deliberately LOW ft-per-story so an "exceeds the height limit"
+            # claim only fires when it would survive a real measurement; the
+            # limit itself is the ordinance floor tier (apply_table_authority),
+            # which points the same conservative direction.
+            est_height = prop.stories * _EST_FT_PER_STORY
             if est_height > standards.max_height_ft:
                 nonconformities.append(t("oc.nonconf_height", stories=prop.stories, est=est_height, limit=f"{standards.max_height_ft:.0f}"))
         if nonconformities:
@@ -3968,9 +3979,11 @@ def _compute_far_utilization(report: "ReportData") -> dict | None:
 def _compute_unit_yield(report: "ReportData") -> dict | None:
     """As-of-right dwelling-unit yield from minimum lot area per unit (P8).
 
-    Uses the binding R-district density control (Title 17 Table 17-2-0303-A),
-    not FAR, which is the actual as-of-right cap on unit count. Returns ``None``
-    for non-R districts / unknown classes so we never fabricate a yield.
+    Uses the binding lot-area-per-unit density control (Table 17-2-0303-A for
+    R districts; the dash-number tables in §17-3-0400 / §17-4-0400 for B/C and
+    D districts), not FAR, which is the actual as-of-right cap on unit count.
+    Returns ``None`` for districts that permit no dwelling units (C3, M, DS)
+    and unknown classes so we never fabricate a yield.
     """
     from backend.retrieval.zoning_definitions import min_lot_area_per_unit
     prop = report.context.property

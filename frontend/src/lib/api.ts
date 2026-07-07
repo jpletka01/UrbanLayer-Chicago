@@ -687,7 +687,11 @@ export interface ZoneDefinition {
   code_section: string;
   far: number | null;
   max_height: string | null;
+  // Never populated: Title 17 has no base-district lot-coverage standard
+  // (kept for payload stability; the card row simply doesn't render).
   lot_coverage: string | null;
+  // Minimum lot SIZE (Table 17-2-0303) — R districts only.
+  min_lot_sqft: number | null;
   uses: string;
   notes: string;
   is_fallback: boolean;

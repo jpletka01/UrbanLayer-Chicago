@@ -19,7 +19,8 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
-        "min_lot_area_sqft": 2500,
+        "min_lot_area_per_unit_sqft": 2500,
+        "min_lot_area_sqft": null,
         "notes": [
           "B1-1 is a Business and Commercial district with bulk and density designation '-1'",
           "Minimum lot area per unit: 2,500 sq ft for dwelling units and efficiency units; SRO units not allowed",
@@ -53,6 +54,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 1350,
         "min_lot_area_sqft": null,
         "notes": [
           "Front setback: 0 feet required in B-1.5 districts, except when abutting R-zoned lots (then 50% of abutting R-zone front yard required)",
@@ -82,9 +84,10 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": 45,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 1000,
+        "min_lot_area_sqft": null,
         "notes": [
           "Front setback of 0 feet unless abutting R-zoned lot with same street frontage; in that case, setback equals 50% of front yard on R-zoned lot",
           "Side setback of 0 feet unless abutting R-zoned property; in that case, setback equals that required for residential use on R-zoned lot",
@@ -114,8 +117,9 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": 50,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": null,
         "notes": [
           "B1-3 zone class not found in provided text. Text covers B-3 and C-3 districts only.",
@@ -148,9 +152,10 @@
         "far": 5.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 80,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 200,
+        "min_lot_area_per_unit_sqft": 200,
+        "min_lot_area_sqft": null,
         "notes": [
           "B1-5 district: Minimum lot area per unit is 200 sq ft for dwelling units, 135 sq ft for efficiency units, 100 sq ft for SRO units",
           "Maximum building height of 80 ft applies only to buildings with ground-floor commercial space complying with Sec. 17-3-0305 on lots with 100+ ft frontage; buildings without ground-floor commercial are limited to 75 ft on 100+ ft lots",
@@ -183,7 +188,8 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 2500,
+        "min_lot_area_sqft": null,
         "notes": [
           "Front setback of 0 feet applies unless B-2-1 property abuts R-zoned property, in which case a 50% setback of the adjacent R-zone front yard is required",
           "Side setback of 0 feet unless B-2-1 property abuts R-zoned property, in which case the R-zone side setback applies",
@@ -212,9 +218,10 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": 45,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 1000,
+        "min_lot_area_sqft": null,
         "notes": [
           "Min lot area per unit: 1,000 sq ft for dwelling units; 700 sq ft for efficiency units; 700 sq ft for SRO units",
           "Max building height varies by lot frontage: 47 ft (\u226425 ft frontage, with ground-floor commercial); 50 ft (>25-<50 ft or 50-99.9 ft frontage, with ground-floor commercial); 50 ft (\u226450-99.9 ft frontage, without ground-floor commercial); 45 ft (all frontages, without ground-floor commercial)",
@@ -244,8 +251,9 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": 50,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": null,
         "notes": [
           "FAR of 3.0 applies to standard B2-3 development; FAR can increase to 3.5, 3.75, or 4.0 if project provides 50%, 75%, or 100% of required affordable units on-site under Affordable Requirements Ordinance",
@@ -282,9 +290,10 @@
         "far": 5.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 80,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 200,
+        "min_lot_area_per_unit_sqft": 200,
+        "min_lot_area_sqft": null,
         "notes": [
           "B2-5 is a Business district with bulk/density designation 5. Building height varies by lot frontage and ground-floor commercial space presence: with ground-floor commercial: 50 ft (\u226425 ft frontage), 55 ft (>25-<50 ft), 70 ft (50-99.9 ft), 80 ft (100+ ft); without ground-floor commercial: 50 ft (\u226425 ft frontage), 50 ft (>25-<50 ft), 65 ft (50-99.9 ft), 75 ft (100+ ft). Heights for 100+ foot lots may be exceeded only via Planned Development procedure per 17-3-0408-A note [1].",
           "Minimum lot area per unit: 200 sq ft per dwelling unit; 135 sq ft per efficiency unit; 100 sq ft per SRO unit.",
@@ -315,7 +324,8 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
-        "min_lot_area_sqft": 400,
+        "min_lot_area_per_unit_sqft": 2500,
+        "min_lot_area_sqft": null,
         "notes": [
           "Min lot area per unit: 400 sq ft for dwelling units, 300 sq ft for efficiency units, 200 sq ft for SRO units",
           "FAR can increase to 3.5, 3.75, or 4.0 with 50%, 75%, or 100% affordable units respectively (ARO requirement)",
@@ -349,6 +359,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 1350,
         "min_lot_area_sqft": null,
         "notes": [
           "Minimum lot area per unit for dwelling units: 1,350 sq ft",
@@ -381,9 +392,10 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": 45,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 1000,
+        "min_lot_area_sqft": null,
         "notes": [
           "B3-2 refers to B-2 district (dash 2 designation) in Business and Commercial Districts",
           "Minimum lot area per unit: 1,000 sq ft for dwelling units; 700 sq ft for efficiency units; 700 sq ft for SRO units",
@@ -414,9 +426,10 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 400,
+        "min_lot_area_per_unit_sqft": 400,
+        "min_lot_area_sqft": null,
         "notes": [
           "FAR of 3.0 is base standard; can increase to 3.5, 3.75, or 4.0 with affordable housing requirements (50%, 75%, 100% on-site respectively)",
           "Min lot area per unit: 400 sq ft for dwelling units, 300 sq ft for efficiency units, 200 sq ft for SRO units; reduced to 350/250/180 (50% affordability), 325/225/160 (75%), or 300/200/135 (100%)",
@@ -447,9 +460,10 @@
         "far": 5.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 80,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 200,
+        "min_lot_area_per_unit_sqft": 200,
+        "min_lot_area_sqft": null,
         "notes": [
           "Min lot area per unit: 200 sq ft for dwelling units, 135 sq ft for efficiency units, 100 sq ft for SRO units (17-3-0402)",
           "Maximum building height of 80 ft applies to buildings with ground-floor commercial space on lots with 100+ ft frontage; note [1] indicates this may be exceeded only via Planned Development approval (17-3-0408-A)",
@@ -483,7 +497,8 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
-        "min_lot_area_sqft": 2500,
+        "min_lot_area_per_unit_sqft": 2500,
+        "min_lot_area_sqft": null,
         "notes": [
           "C1-1 is a Commercial district with bulk and density designation '-1'",
           "Front setback: No front setback required except when abutting R-zoned property (then 50% of R-lot front yard)",
@@ -516,7 +531,8 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
-        "min_lot_area_sqft": 1350,
+        "min_lot_area_per_unit_sqft": 1350,
+        "min_lot_area_sqft": null,
         "notes": [
           "Front setback: No setback required except when abutting R-zoned lots (then 50% of adjacent lot's front yard)",
           "Side setback: No setback required except when abutting R-zoned property (then equal to R-zone requirement); reversed corner lot requires 50% of front yard on abutting R-zoned lot",
@@ -546,9 +562,10 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": 45,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 1000,
+        "min_lot_area_sqft": null,
         "notes": [
           "Maximum building height for C1-2 varies by lot frontage and building type: 47 ft (\u226425 ft frontage with ground-floor commercial), 50 ft (>25-<50 ft or 50-99.9 ft with ground-floor commercial), 50 ft (100+ ft with ground-floor commercial); 45 ft (all frontages without ground-floor commercial)",
           "Minimum lot area per unit: 1,000 sq ft for dwelling units, 700 sq ft for efficiency units, 700 sq ft for SRO units",
@@ -578,9 +595,10 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 400,
+        "min_lot_area_per_unit_sqft": 400,
+        "min_lot_area_sqft": null,
         "notes": [
           "Max height varies by lot frontage: 50 ft (\u226425 ft frontage), 55 ft (>25-<50 ft), 65 ft (50-99.9 ft), 75 ft (\u2265100 ft) for buildings with ground-floor commercial; 50 ft (\u226450 ft frontage), 60-65 ft (\u226550 ft) for buildings without ground-floor commercial (with different standards noted)",
           "Height increases available for transit-served locations within 2,640 ft of CTA/METRA rail or 1,320 ft of bus corridor",
@@ -612,9 +630,10 @@
         "far": 5.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 80,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 200,
+        "min_lot_area_per_unit_sqft": 200,
+        "min_lot_area_sqft": null,
         "notes": [
           "FAR of 5.0 applies to C1-5 district per Table 17-3-0403-A",
           "Max height of 80 ft applies to buildings with ground-floor commercial space on lots 100+ feet, per Table 17-3-0408-A",
@@ -647,7 +666,8 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 2500,
+        "min_lot_area_sqft": null,
         "notes": [
           "C2-1 minimum lot area per unit: 1,000 sq ft per dwelling unit; 700 sq ft per efficiency unit; 700 sq ft per SRO unit",
           "Front setback: No setback required except when abutting R-zoned lots (50% of abutting R-zone front yard)",
@@ -676,9 +696,10 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": 45,
         "max_stories": null,
-        "min_lot_area_sqft": 1000,
+        "min_lot_area_per_unit_sqft": 1000,
+        "min_lot_area_sqft": null,
         "notes": [
           "Min lot area per unit: 1,000 sq ft for dwelling units; 700 sq ft for efficiency units; 700 sq ft for SRO units",
           "Front setback: 0 feet required, except 50% of abutting R-zoned lot's front yard when B/C lot abuts R-zoned lot",
@@ -707,8 +728,9 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": 50,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": null,
         "notes": [
           "Min lot area per unit (residential): 400 sq ft for dwelling units, 300 sq ft for efficiency units, 200 sq ft for SRO units",
@@ -738,9 +760,10 @@
         "far": 5.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 80,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 200,
+        "min_lot_area_per_unit_sqft": 200,
+        "min_lot_area_sqft": null,
         "notes": [
           "Min lot area per unit: 200 sq ft for dwelling units, 135 sq ft for efficiency units, 100 sq ft for SRO units",
           "Front setback: 0 ft required except when abutting R-zoned lots (then 50% of R-zoned front yard)",
@@ -772,6 +795,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "C3-1 is a C district with dash-3 bulk/density designation. Standard FAR is 3.0; may increase to 3.5, 3.75, or 4.0 with affordable housing compliance under Section 2-44-085-G.",
@@ -801,8 +825,9 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": 45,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "Height standards vary by lot frontage and building type (with/without ground-floor commercial). For buildings with ground-floor commercial: 50 ft (\u226425 ft frontage), 55 ft (>25-<50 ft), 65 ft (50-99.9 ft), 65 ft (100+ ft). For buildings without ground-floor commercial: 50 ft (\u226425 ft frontage), 50 ft (>25-<50 ft), 60 ft (50-99.9 ft), 60 ft (100+ ft).",
@@ -834,8 +859,9 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": 50,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "Maximum height varies by lot frontage and building type: With ground-floor commercial: 50-65 ft (frontage 25 ft or less to 100+ ft); Without ground-floor commercial: 50-70 ft (frontage 25 ft or less to 100+ ft)",
@@ -870,9 +896,10 @@
         "far": 5.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 80,
+        "max_height_ft": 50,
         "max_stories": null,
-        "min_lot_area_sqft": 200,
+        "min_lot_area_per_unit_sqft": null,
+        "min_lot_area_sqft": null,
         "notes": [
           "FAR of 5.0 applies to all development in C-5 districts",
           "Min lot area per unit: 200 sq ft for dwelling units, 135 sq ft for efficiency units, 100 sq ft for SRO units",
@@ -908,6 +935,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 115,
         "min_lot_area_sqft": null,
         "notes": [
           "DC-12 is exempt from rear setback requirement (30 feet standard does not apply)",
@@ -919,7 +947,8 @@
           "Minimum average dwelling unit size: 500 sq ft gross residential floor area",
           "Commercial ground floor space requires minimum 13 feet floor-to-floor height",
           "Floor area bonuses available under Sec. 17-4-1000",
-          "No front setback required in DC districts"
+          "No front setback required in DC districts",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -941,6 +970,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 100,
         "min_lot_area_sqft": null,
         "notes": [
           "DC-16 is a Downtown District with -16 bulk and density designation",
@@ -956,7 +986,8 @@
           "Required on-site open space: 36 sq ft per dwelling unit with minimum dimension 5 feet (private) or 15 feet (common)",
           "Commercial ground floor must have minimum 13-foot floor-to-floor height",
           "Minimum lot area per unit reductions may not be capped for dash-16 designations when using floor area bonus provisions",
-          "Density waivers available for landmark buildings and contributing buildings in DC-16 upon Zoning Administrator approval with aldermanic recommendation"
+          "Density waivers available for landmark buildings and contributing buildings in DC-16 upon Zoning Administrator approval with aldermanic recommendation",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -978,6 +1009,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 115,
         "min_lot_area_sqft": null,
         "notes": [
           "DR-10 is a Downtown Residential district with dash-10 bulk and density designation",
@@ -992,7 +1024,8 @@
           "Maximum 50% efficiency units allowed",
           "Minimum 36 sq ft useable on-site open space per dwelling unit required",
           "Ground floor commercial space must have minimum 13-foot floor-to-floor height",
-          "MLA and FAR reductions available for floor area bonus projects and transit-served locations (D-3 only)"
+          "MLA and FAR reductions available for floor area bonus projects and transit-served locations (D-3 only)",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1014,6 +1047,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": null,
         "notes": [
           "DR-3 is a Downtown Residential district with bulk and density designation of -3",
@@ -1028,7 +1062,8 @@
           "Maximum efficiency units: 20% of total units",
           "Minimum on-site open space: 36 sq ft per dwelling unit with minimum 5 ft dimension (private) or 15 ft dimension (common)",
           "Ground floor commercial space minimum floor-to-floor height: 13 feet",
-          "Transit-served reduction options available for D-3 within 2,640 ft of CTA/METRA rail or 1,320 ft of CTA bus corridor"
+          "Transit-served reduction options available for D-3 within 2,640 ft of CTA/METRA rail or 1,320 ft of CTA bus corridor",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1050,6 +1085,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 200,
         "min_lot_area_sqft": null,
         "notes": [
           "DR-5 is a Downtown Residential district with dash-5 bulk and density designation",
@@ -1064,7 +1100,8 @@
           "Maximum efficiency units: 30% of total units",
           "Required on-site open space: 36 sq ft per dwelling unit with minimum 5 ft dimension (private) or 15 ft dimension (common)",
           "Ground floor commercial space requires minimum 13 feet floor-to-floor height",
-          "FAR bonuses available under Sec. 17-4-1000"
+          "FAR bonuses available under Sec. 17-4-1000",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1086,6 +1123,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 145,
         "min_lot_area_sqft": null,
         "notes": [
           "DR-7 is a Downtown Residential district with dash designation -7",
@@ -1101,7 +1139,8 @@
           "On-site open space requirement: 36 square feet per dwelling unit minimum",
           "Ground floor commercial space must have minimum 13-foot floor-to-floor height",
           "FAR bonuses allowed under Section 17-4-1000",
-          "This zone class is not specifically called out for special transit-served or landmark building exceptions detailed in sections 17-4-0404-C or 17-4-0404-D"
+          "This zone class is not specifically called out for special transit-served or landmark building exceptions detailed in sections 17-4-0404-C or 17-4-0404-D",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1123,6 +1162,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "DS-3 is a Downtown Downtown-Shopfront district with dash-3 bulk and density designation",
@@ -1136,7 +1176,8 @@
           "Minimum average dwelling unit size: 500 sq ft gross residential floor area",
           "Maximum efficiency units: 20% of total units",
           "Minimum on-site open space: 36 sq ft per dwelling unit with minimum 5-foot dimension (private) or 15-foot dimension (common)",
-          "Ground-floor commercial space must have minimum 13-foot floor-to-floor height"
+          "Ground-floor commercial space must have minimum 13-foot floor-to-floor height",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1158,6 +1199,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "DS-5 is a Downtown District with dash-5 bulk and density designation",
@@ -1171,7 +1213,8 @@
           "Minimum average dwelling unit size of 500 gross residential floor area",
           "Maximum efficiency units: 30% of total units",
           "Minimum on-site open space: 36 sq ft per dwelling unit with minimum 5 ft dimension (private) or 15 ft dimension (common)",
-          "Ground floor commercial space requires minimum 13 ft floor-to-floor height in DS districts"
+          "Ground floor commercial space requires minimum 13 ft floor-to-floor height in DS districts",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1193,6 +1236,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 115,
         "min_lot_area_sqft": null,
         "notes": [
           "DX-12 is exempt from rear setback requirements (30 feet standard does not apply)",
@@ -1204,7 +1248,8 @@
           "Floor area bonuses available under Sec. 17-4-1000",
           "Minimum average dwelling unit size: 500 gross residential sq ft",
           "Required on-site open space: 36 sq ft per dwelling unit",
-          "Ground floor commercial space must have minimum floor-to-floor height of 13 feet"
+          "Ground floor commercial space must have minimum floor-to-floor height of 13 feet",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1226,6 +1271,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 100,
         "min_lot_area_sqft": null,
         "notes": [
           "DX-16 is a Downtown District with no minimum lot area or frontage requirements",
@@ -1239,7 +1285,8 @@
           "MLA reduction cap does not apply to dash-16 designations",
           "Minimum 36 sq ft useable on-site open space per dwelling unit required",
           "Minimum 500 sq ft average gross residential floor area per dwelling unit",
-          "Ground-floor commercial space requires minimum 13-foot floor-to-floor height"
+          "Ground-floor commercial space requires minimum 13-foot floor-to-floor height",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1261,6 +1308,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": null,
         "notes": [
           "DX-3 is a Downtown District with bulk and density designation -3",
@@ -1276,7 +1324,8 @@
           "Ground floor commercial space minimum floor-to-floor height: 13 feet",
           "FAR bonuses allowed under Sec. 17-4-1000",
           "Transit-served location FAR increases available for projects within 2,640 feet of CTA/METRA rail or 1,320 feet of CTA bus corridor",
-          "Transit-served location minimum lot area per unit reductions available with same proximity requirements"
+          "Transit-served location minimum lot area per unit reductions available with same proximity requirements",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1298,6 +1347,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 200,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage standards in D districts",
@@ -1310,7 +1360,8 @@
           "Maximum 30% efficiency units of total units",
           "Minimum 36 square feet of useable on-site open space per dwelling unit required",
           "Ground-floor commercial space must have minimum 13-foot floor-to-floor height",
-          "FAR bonuses available under Sec. 17-4-1000"
+          "FAR bonuses available under Sec. 17-4-1000",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1332,6 +1383,7 @@
         "lot_coverage_pct": null,
         "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 145,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area standard for D districts",
@@ -1345,7 +1397,8 @@
           "Minimum average dwelling unit size: 500 sq ft gross residential floor area per unit",
           "Minimum on-site open space: 36 sq ft per dwelling unit; minimum dimensions 5 ft (private) or 15 ft (common)",
           "Ground floor commercial space minimum floor-to-floor height: 13 feet",
-          "FAR bonuses available under Sec. 17-4-1000"
+          "FAR bonuses available under Sec. 17-4-1000",
+          "Height: No max (bonuses available)."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1365,15 +1418,17 @@
         "far": 1.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 38,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage required in M districts",
           "Front and side setbacks: 0 feet required in general, except industrial/business parks must provide 10-foot landscaped setback along public streets",
           "Front setback may be required when across from R district (equal to R-zoned setback)",
           "Front/side setback required when abutting R-zoned lot with street frontage (equal to abutting R-zoned setback)",
-          "Rear setback: 0 feet in general, except 30 feet required when abutting or separated by alley from R district"
+          "Rear setback: 0 feet in general, except 30 feet required when abutting or separated by alley from R district",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1393,14 +1448,16 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage requirements in M districts",
           "No front or side setback required except: (1) industrial/business parks in M1 require 10 ft landscaped setback along public streets; (2) M-zoned lots across from R districts require setback equal to minimum front setback of abutting R district; (3) M-zoned lots abutting R-zoned lots with same street frontage require setback equal to minimum front setback of abutting R district",
           "No rear setback required except when rear property line abuts or is separated by alley from R district property line, then 30 ft minimum rear setback applies",
-          "Extracted text does not include height, stories, lot coverage, or use permissions for M1-2"
+          "Extracted text does not include height, stories, lot coverage, or use permissions for M1-2",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1420,14 +1477,16 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage required in M districts",
           "Front and side setbacks are 0 feet in standard M1-3 conditions, but exceptions apply: industrial/business parks require 10-foot landscaped setback along public streets; setback may be required if across from R district or abutting R-zoned lot",
           "Rear setback is 0 feet unless rear property line abuts or is separated by alley from R district property, in which case 30-foot rear setback required",
-          "Permitted uses and special uses not included in provided text chunks"
+          "Permitted uses and special uses not included in provided text chunks",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1447,14 +1506,16 @@
         "far": 1.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 38,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage standards in M districts",
           "No front or side setback required in M-1 district, except: (1) industrial/business parks require 10 ft landscaped setback along public streets; (2) M-zoned lots across from R districts must match R district setbacks; (3) M-zoned lots abutting R-zoned lots must match R district setbacks",
           "No rear setback required except when abutting or separated by alley from R district, then 30 ft rear setback required",
-          "Permitted and special uses not included in provided text chunks"
+          "Permitted and special uses not included in provided text chunks",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1474,14 +1535,16 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage requirements in M districts",
           "No front or side setback required in M-2, except when abutting R-zoned lots (setback must equal minimum required on adjacent R zone)",
           "No rear setback required except when abutting or separated by alley from R-zoned property (30 feet minimum in that case)",
-          "Setback requirements vary based on proximity to residential districts"
+          "Setback requirements vary based on proximity to residential districts",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1501,13 +1564,15 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage standards in M districts",
           "Front and side setbacks: 0 ft (no requirement) except when M-zoned lot is across street from R district or abuts R-zoned lot with street frontage\u2014in those cases, setback must equal minimum required on abutting R-zoned lot",
-          "Rear setback: 0 ft (no requirement) except when rear property line abuts or is separated by alley from R district property\u2014minimum 30 ft rear setback required in that case"
+          "Rear setback: 0 ft (no requirement) except when rear property line abuts or is separated by alley from R district property\u2014minimum 30 ft rear setback required in that case",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1527,15 +1592,17 @@
         "far": 1.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 38,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage required in M districts",
           "No front or side setback required except when abutting R districts",
           "Rear setback of 30 feet required only when abutting or separated by alley from R district rear/side property lines",
           "Industrial parks and business parks in M1 require 10-foot landscaped setback along public streets",
-          "Text does not specify permitted or special uses for M3-1"
+          "Text does not specify permitted or special uses for M3-1",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1555,14 +1622,16 @@
         "far": 2.2,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 50,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage standards in M districts",
           "Front and side setbacks: 0 feet required in M districts, except when abutting R districts or across from R districts (see conditional setback rules)",
           "Rear setback: 0 feet required unless rear property line abuts or is separated by alley from R district property line, in which case 30 feet minimum rear setback required",
-          "Extracted text does not include permitted uses, special uses, or parking requirements for M3-2"
+          "Extracted text does not include permitted uses, special uses, or parking requirements for M3-2",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1582,13 +1651,15 @@
         "far": 3.0,
         "front_setback_ft": 0,
         "lot_coverage_pct": null,
-        "max_height_ft": 65,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": null,
         "min_lot_area_sqft": null,
         "notes": [
           "No minimum lot area or lot frontage requirements in M districts",
           "Front and side setbacks: 0 feet required, except when abutting R districts (conditional setbacks apply)",
-          "Rear setback: 0 feet required, except 30 feet minimum when rear property line abuts or is separated by alley from R district property"
+          "Rear setback: 0 feet required, except 30 feet minimum when rear property line abuts or is separated by alley from R district property",
+          "Height: No height standard in the zoning code."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1607,9 +1678,10 @@
         "extraction_confidence": "high",
         "far": 1.7,
         "front_setback_ft": 15,
-        "lot_coverage_pct": 0.6,
-        "max_height_ft": 38,
+        "lot_coverage_pct": null,
+        "max_height_ft": 45,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 700,
         "min_lot_area_sqft": 1650,
         "notes": [
           "Front setback: 15 feet or 12% of lot depth (whichever is less) as fixed standard, OR average front yard depth of nearest 2 lots on either side. Builder/property owner choice except on primary boulevards.",
@@ -1639,9 +1711,10 @@
         "extraction_confidence": "high",
         "far": 2.0,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.6,
+        "lot_coverage_pct": null,
         "max_height_ft": 45,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": 1650,
         "notes": [
           "Front setback in RM5: minimum 15 feet or 12% of lot depth (whichever is less), or average front yard depth of nearest 2 lots on either side, at builder/property owner discretion. On primary boulevards, must use average setback with no maximum depth.",
@@ -1672,9 +1745,10 @@
         "extraction_confidence": "high",
         "far": 2.5,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.6,
-        "max_height_ft": 50,
+        "lot_coverage_pct": null,
+        "max_height_ft": 47,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 400,
         "min_lot_area_sqft": 1650,
         "notes": [
           "Front setback: 15 feet or 12% of lot depth (whichever is less), OR average of nearest 2 lots on either side (builder/owner choice), except on primary boulevards where average front yard depth applies with no maximum",
@@ -1703,9 +1777,10 @@
         "extraction_confidence": "high",
         "far": 4.4,
         "front_setback_ft": 15,
-        "lot_coverage_pct": 0.6,
-        "max_height_ft": 70,
+        "lot_coverage_pct": null,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 300,
         "min_lot_area_sqft": 1650,
         "notes": [
           "RM6 has no maximum building height limit; tall buildings require Planned Development approval per Section 17-13-0600",
@@ -1716,7 +1791,8 @@
           "Rear setback applies to portions 18 feet or more above grade; for other portions applies per standard (30% of lot depth or 50 feet, whichever less)",
           "On-site open space requirement: 36 sq ft per dwelling unit with minimum dimensions of 5 feet (private) or 15 feet (common)",
           "FAR premiums available: up to 25% increase for developments on 50+ unit lots with density reductions (0.5% FAR increase per 1% unit reduction)",
-          "Rear setback standard applies only to portions 18 feet or more above grade in RM6 districts"
+          "Rear setback standard applies only to portions 18 feet or more above grade in RM6 districts",
+          "Height: No fixed cap \u2014 tall buildings require PD review."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1735,9 +1811,10 @@
         "extraction_confidence": "high",
         "far": 6.6,
         "front_setback_ft": 15,
-        "lot_coverage_pct": 0.6,
-        "max_height_ft": 90,
+        "lot_coverage_pct": null,
+        "max_height_ft": null,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 300,
         "min_lot_area_sqft": 1650,
         "notes": [
           "RM6.5 FAR of 6.6 may be increased up to 25% via floor area ratio premium (Sec. 17-2-0304-C) for multi-unit residential buildings on lots permitting 50+ dwelling units, based on reduction in dwelling unit density",
@@ -1749,7 +1826,8 @@
           "Side setbacks: None required abutting street/alley or for buildings covering \u226450% of lot; buildings covering >50% of lot require individual side setbacks of at least 10% of lot width or 10% of total building height (whichever greater), not to exceed 20 feet",
           "Building height: No maximum (tall buildings require Planned Development approval per Sec. 17-13-0600)",
           "Average dwelling unit size minimum: 500 sq ft gross residential floor area per unit",
-          "Minimum rear yard separation when walls face each other on same lot: 26 feet (per building separation standards)"
+          "Minimum rear yard separation when walls face each other on same lot: 26 feet (per building separation standards)",
+          "Height: No fixed cap \u2014 tall buildings require PD review."
         ],
         "parking_commercial": null,
         "parking_residential": null,
@@ -1768,9 +1846,10 @@
         "extraction_confidence": "high",
         "far": 0.5,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.5,
+        "lot_coverage_pct": null,
         "max_height_ft": 30,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 6250,
         "min_lot_area_sqft": 6250,
         "notes": [
           "Front setback is contextual: average front yard depth of nearest 2 lots on either side, excluding lot with least depth",
@@ -1800,9 +1879,10 @@
         "extraction_confidence": "high",
         "far": 0.65,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.5,
+        "lot_coverage_pct": null,
         "max_height_ft": 30,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 5000,
         "min_lot_area_sqft": 5000,
         "notes": [
           "Front setback in RS2 is contextual: must equal average front yard depth of nearest 2 lots on either side of subject lot, excluding lot with least front yard depth",
@@ -1833,9 +1913,10 @@
         "extraction_confidence": "high",
         "far": 0.9,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.55,
+        "lot_coverage_pct": null,
         "max_height_ft": 30,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 2500,
         "min_lot_area_sqft": 2500,
         "notes": [
           "Front setback for RS-3: Average front yard depth of nearest 2 lots on either side, excluding lot with least depth (Sec. 17-2-0305-A)",
@@ -1865,9 +1946,10 @@
         "extraction_confidence": "high",
         "far": 1.05,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.55,
+        "lot_coverage_pct": null,
         "max_height_ft": 35,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 1250,
         "min_lot_area_sqft": 2500,
         "notes": [
           "Minimum lot area per dwelling unit: 1,250 sq ft",
@@ -1898,9 +1980,10 @@
         "extraction_confidence": "high",
         "far": 1.2,
         "front_setback_ft": null,
-        "lot_coverage_pct": 0.6,
+        "lot_coverage_pct": null,
         "max_height_ft": 38,
         "max_stories": null,
+        "min_lot_area_per_unit_sqft": 1000,
         "min_lot_area_sqft": 1650,
         "notes": [
           "Minimum lot area per dwelling unit: 1,000 sq ft for standard dwelling units; 1,000 sq ft for efficiency units; 500 sq ft for SRO units",

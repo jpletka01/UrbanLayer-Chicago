@@ -35,7 +35,10 @@
       "cityOwnedApply": "información de solicitud",
       "scofflaw": "En la lista de infractores del código de edificación",
       "chrs": "Calificación CHRS {{color}} (inventario histórico de 1996) — aplica una retención de demolición de 90 días",
-      "chrsColor": { "orange": "naranja", "red": "roja" },
+      "chrsColor": {
+        "orange": "naranja",
+        "red": "roja"
+      },
       "strProhibited": "Alquileres de corto plazo prohibidos (exclusión del propietario)",
       "taxSale": "Apareció en la venta fiscal anual de {{years}} (histórico)",
       "scavengerSale": "Apareció en la venta scavenger de {{years}} (histórico)"
@@ -502,7 +505,10 @@
   "zoning": {
     "variesByLotFrontage": "varía según el frente del lote",
     "noMaxBonuses": "Sin máximo (bonificaciones disponibles)",
-    "feetUnit": "pies"
+    "feetUnit": "pies",
+    "variesByFrontageCommercial": "varía según el frente del lote y el comercio en planta baja",
+    "noFixedCapPd": "Sin límite fijo — los edificios altos requieren revisión PD",
+    "noHeightStandard": "Sin estándar de altura en el código de zonificación"
   },
   "report": {
     "siteReport": "Transcripción de conversación UrbanLayer",

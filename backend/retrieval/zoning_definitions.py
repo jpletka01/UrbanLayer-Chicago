@@ -23,8 +23,20 @@ class ZoneDefinition:
     name: str
     code_section: str
     far: float | None = None
+    # Display string. Frontage-tiered districts carry the full range with the
+    # LOWEST (as-of-right-everywhere) bound first — numeric consumers parse the
+    # leading integer, so the floor is what flows into calculations. Districts
+    # with no numeric cap carry a digit-free explanation (parses to None).
     max_height: str | None = None
+    # Title 17 sets NO lot-coverage standard for any base district (verified
+    # against the bulk tables 2026-07-06); the field remains for API stability
+    # but is never populated. R-district bulk is governed by setbacks and
+    # rear-yard open space, not a coverage percentage.
     lot_coverage: str | None = None
+    # Minimum lot AREA for the zoning lot (Table 17-2-0303 — R districts only;
+    # B/C/M/D districts have no minimum lot size). Distinct from the per-unit
+    # density minimums in _MIN_LOT_AREA_PER_UNIT below.
+    min_lot_sqft: int | None = None
     uses: str = ""
     notes: str = ""
     is_fallback: bool = field(default=False, repr=False)
@@ -81,74 +93,77 @@ _DS_USES = "Service and support uses for downtown: parking, utilities, warehousi
 
 ZONE_CLASS_DATA: dict[str, ZoneDefinition] = {
     # --- Residential Single-Unit (§17-2-0102, §17-2-0300) ---
-    "RS-1": ZoneDefinition("RS-1", "Residential Single-Unit", "§17-2-0102", far=0.50, max_height="30 ft", lot_coverage="50%", uses=_RS_USES, notes="Largest lot size. Detached houses only."),
-    "RS-2": ZoneDefinition("RS-2", "Residential Single-Unit", "§17-2-0102", far=0.65, max_height="30 ft", lot_coverage="50%", uses=_RS_USES, notes="Standard single-family. Detached houses only."),
-    "RS-3": ZoneDefinition("RS-3", "Residential Single-Unit", "§17-2-0102", far=0.90, max_height="30 ft", lot_coverage="55%", uses=_RS_USES, notes="Most common RS district. Smaller lots."),
+    # Heights from Table 17-2-0305 (principal residential buildings; nonresidential
+    # buildings in R districts have no numeric cap). Verified against the ingested
+    # ordinance text 2026-07-06 — see tests/test_zoning_ordinance_parity.py.
+    "RS-1": ZoneDefinition("RS-1", "Residential Single-Unit", "§17-2-0102", far=0.50, max_height="30 ft", min_lot_sqft=6250, uses=_RS_USES, notes="Largest lot size. Detached houses only."),
+    "RS-2": ZoneDefinition("RS-2", "Residential Single-Unit", "§17-2-0102", far=0.65, max_height="30 ft", min_lot_sqft=5000, uses=_RS_USES, notes="Standard single-family. Detached houses only."),
+    "RS-3": ZoneDefinition("RS-3", "Residential Single-Unit", "§17-2-0102", far=0.90, max_height="30 ft", min_lot_sqft=2500, uses=_RS_USES, notes="Most common RS district. Smaller lots."),
 
     # --- Residential Two-Flat/Townhouse (§17-2-0103, §17-2-0300) ---
-    "RT-3.5": ZoneDefinition("RT-3.5", "Residential Two-Flat, Townhouse & Multi-Unit", "§17-2-0103", far=1.05, max_height="35 ft", lot_coverage="55%", uses=_RES_USES),
-    "RT-4": ZoneDefinition("RT-4", "Residential Two-Flat, Townhouse & Multi-Unit", "§17-2-0103", far=1.20, max_height="38 ft", lot_coverage="60%", uses=_RES_USES),
+    "RT-3.5": ZoneDefinition("RT-3.5", "Residential Two-Flat, Townhouse & Multi-Unit", "§17-2-0103", far=1.05, max_height="35 ft", min_lot_sqft=2500, uses=_RES_USES),
+    "RT-4": ZoneDefinition("RT-4", "Residential Two-Flat, Townhouse & Multi-Unit", "§17-2-0103", far=1.20, max_height="38 ft", min_lot_sqft=1650, uses=_RES_USES),
 
     # --- Residential Multi-Unit (§17-2-0104, §17-2-0300) ---
-    "RM-4.5": ZoneDefinition("RM-4.5", "Residential Multi-Unit", "§17-2-0104", far=1.70, max_height="38 ft", lot_coverage="60%", uses=_RM_USES, notes="Transition district between RT-4 and RM-5."),
-    "RM-5": ZoneDefinition("RM-5", "Residential Multi-Unit", "§17-2-0104", far=2.00, max_height="45 ft", lot_coverage="60%", uses=_RM_USES, notes="Moderate-density multi-unit."),
-    "RM-5.5": ZoneDefinition("RM-5.5", "Residential Multi-Unit", "§17-2-0104", far=2.50, max_height="50 ft", lot_coverage="60%", uses=_RM_USES),
-    "RM-6": ZoneDefinition("RM-6", "Residential Multi-Unit", "§17-2-0104", far=4.40, max_height="70 ft", lot_coverage="60%", uses=_RM_USES, notes="High-density. FAR premium may apply (§17-2-0304)."),
-    "RM-6.5": ZoneDefinition("RM-6.5", "Residential Multi-Unit", "§17-2-0104", far=6.60, max_height="90 ft", lot_coverage="60%", uses=_RM_USES, notes="Highest-density residential."),
+    "RM-4.5": ZoneDefinition("RM-4.5", "Residential Multi-Unit", "§17-2-0104", far=1.70, max_height="45–47 ft (varies by lot frontage)", min_lot_sqft=1650, uses=_RM_USES, notes="Transition district between RT-4 and RM-5."),
+    "RM-5": ZoneDefinition("RM-5", "Residential Multi-Unit", "§17-2-0104", far=2.00, max_height="45–47 ft (varies by lot frontage)", min_lot_sqft=1650, uses=_RM_USES, notes="Moderate-density multi-unit."),
+    "RM-5.5": ZoneDefinition("RM-5.5", "Residential Multi-Unit", "§17-2-0104", far=2.50, max_height="47–60 ft (varies by lot frontage)", min_lot_sqft=1650, uses=_RM_USES),
+    "RM-6": ZoneDefinition("RM-6", "Residential Multi-Unit", "§17-2-0104", far=4.40, max_height="No fixed cap — tall buildings require PD review", min_lot_sqft=1650, uses=_RM_USES, notes="High-density. FAR premium may apply (§17-2-0304). Table 17-2-0305 sets no numeric height limit; 'tall' buildings need Planned Development approval (§17-13-0600)."),
+    "RM-6.5": ZoneDefinition("RM-6.5", "Residential Multi-Unit", "§17-2-0104", far=6.60, max_height="No fixed cap — tall buildings require PD review", min_lot_sqft=1650, uses=_RM_USES, notes="Highest-density residential. Table 17-2-0305 sets no numeric height limit; 'tall' buildings need Planned Development approval (§17-13-0600)."),
 
     # --- Business: B1 Neighborhood Shopping (§17-3-0102, §17-3-0400) ---
-    "B1-1": ZoneDefinition("B1-1", "Neighborhood Shopping", "§17-3-0102", far=1.2, max_height="38 ft (varies by lot frontage)", uses=_B1_USES),
-    "B1-1.5": ZoneDefinition("B1-1.5", "Neighborhood Shopping", "§17-3-0102", far=1.5, max_height="38 ft (varies by lot frontage)", uses=_B1_USES),
-    "B1-2": ZoneDefinition("B1-2", "Neighborhood Shopping", "§17-3-0102", far=2.2, max_height="50 ft (varies by lot frontage)", uses=_B1_USES),
-    "B1-3": ZoneDefinition("B1-3", "Neighborhood Shopping", "§17-3-0102", far=3.0, max_height="65 ft (varies by lot frontage)", uses=_B1_USES),
-    "B1-5": ZoneDefinition("B1-5", "Neighborhood Shopping", "§17-3-0102", far=5.0, max_height="80 ft (varies by lot frontage)", uses=_B1_USES),
+    "B1-1": ZoneDefinition("B1-1", "Neighborhood Shopping", "§17-3-0102", far=1.2, max_height="38 ft", uses=_B1_USES),
+    "B1-1.5": ZoneDefinition("B1-1.5", "Neighborhood Shopping", "§17-3-0102", far=1.5, max_height="38 ft", uses=_B1_USES),
+    "B1-2": ZoneDefinition("B1-2", "Neighborhood Shopping", "§17-3-0102", far=2.2, max_height="45–50 ft (varies by lot frontage & ground-floor commercial)", uses=_B1_USES),
+    "B1-3": ZoneDefinition("B1-3", "Neighborhood Shopping", "§17-3-0102", far=3.0, max_height="50–65 ft (varies by lot frontage & ground-floor commercial)", uses=_B1_USES),
+    "B1-5": ZoneDefinition("B1-5", "Neighborhood Shopping", "§17-3-0102", far=5.0, max_height="50–80 ft (varies by lot frontage & ground-floor commercial)", uses=_B1_USES),
 
     # --- Business: B2 Neighborhood Mixed-Use (§17-3-0103, §17-3-0400) ---
-    "B2-1": ZoneDefinition("B2-1", "Neighborhood Mixed-Use", "§17-3-0103", far=1.2, max_height="38 ft (varies by lot frontage)", uses=_B2_USES),
-    "B2-2": ZoneDefinition("B2-2", "Neighborhood Mixed-Use", "§17-3-0103", far=2.2, max_height="50 ft (varies by lot frontage)", uses=_B2_USES, notes="Residential permitted on or above ground floor."),
-    "B2-3": ZoneDefinition("B2-3", "Neighborhood Mixed-Use", "§17-3-0103", far=3.0, max_height="65 ft (varies by lot frontage)", uses=_B2_USES),
-    "B2-5": ZoneDefinition("B2-5", "Neighborhood Mixed-Use", "§17-3-0103", far=5.0, max_height="80 ft (varies by lot frontage)", uses=_B2_USES),
+    "B2-1": ZoneDefinition("B2-1", "Neighborhood Mixed-Use", "§17-3-0103", far=1.2, max_height="38 ft", uses=_B2_USES),
+    "B2-2": ZoneDefinition("B2-2", "Neighborhood Mixed-Use", "§17-3-0103", far=2.2, max_height="45–50 ft (varies by lot frontage & ground-floor commercial)", uses=_B2_USES, notes="Residential permitted on or above ground floor."),
+    "B2-3": ZoneDefinition("B2-3", "Neighborhood Mixed-Use", "§17-3-0103", far=3.0, max_height="50–65 ft (varies by lot frontage & ground-floor commercial)", uses=_B2_USES),
+    "B2-5": ZoneDefinition("B2-5", "Neighborhood Mixed-Use", "§17-3-0103", far=5.0, max_height="50–80 ft (varies by lot frontage & ground-floor commercial)", uses=_B2_USES),
 
     # --- Business: B3 Community Shopping (§17-3-0104, §17-3-0400) ---
-    "B3-1": ZoneDefinition("B3-1", "Community Shopping", "§17-3-0104", far=1.2, max_height="38 ft (varies by lot frontage)", uses=_B3_USES),
-    "B3-1.5": ZoneDefinition("B3-1.5", "Community Shopping", "§17-3-0104", far=1.5, max_height="38 ft (varies by lot frontage)", uses=_B3_USES),
-    "B3-2": ZoneDefinition("B3-2", "Community Shopping", "§17-3-0104", far=2.2, max_height="50 ft (varies by lot frontage)", uses=_B3_USES),
-    "B3-3": ZoneDefinition("B3-3", "Community Shopping", "§17-3-0104", far=3.0, max_height="65 ft (varies by lot frontage)", uses=_B3_USES),
-    "B3-5": ZoneDefinition("B3-5", "Community Shopping", "§17-3-0104", far=5.0, max_height="80 ft (varies by lot frontage)", uses=_B3_USES),
+    "B3-1": ZoneDefinition("B3-1", "Community Shopping", "§17-3-0104", far=1.2, max_height="38 ft", uses=_B3_USES),
+    "B3-1.5": ZoneDefinition("B3-1.5", "Community Shopping", "§17-3-0104", far=1.5, max_height="38 ft", uses=_B3_USES),
+    "B3-2": ZoneDefinition("B3-2", "Community Shopping", "§17-3-0104", far=2.2, max_height="45–50 ft (varies by lot frontage & ground-floor commercial)", uses=_B3_USES),
+    "B3-3": ZoneDefinition("B3-3", "Community Shopping", "§17-3-0104", far=3.0, max_height="50–65 ft (varies by lot frontage & ground-floor commercial)", uses=_B3_USES),
+    "B3-5": ZoneDefinition("B3-5", "Community Shopping", "§17-3-0104", far=5.0, max_height="50–80 ft (varies by lot frontage & ground-floor commercial)", uses=_B3_USES),
 
     # --- Commercial: C1 Neighborhood Commercial (§17-3-0105, §17-3-0400) ---
-    "C1-1": ZoneDefinition("C1-1", "Neighborhood Commercial", "§17-3-0105", far=1.2, max_height="38 ft (varies by lot frontage)", uses=_C1_USES),
-    "C1-1.5": ZoneDefinition("C1-1.5", "Neighborhood Commercial", "§17-3-0105", far=1.5, max_height="38 ft (varies by lot frontage)", uses=_C1_USES),
-    "C1-2": ZoneDefinition("C1-2", "Neighborhood Commercial", "§17-3-0105", far=2.2, max_height="50 ft (varies by lot frontage)", uses=_C1_USES),
-    "C1-3": ZoneDefinition("C1-3", "Neighborhood Commercial", "§17-3-0105", far=3.0, max_height="65 ft (varies by lot frontage)", uses=_C1_USES),
-    "C1-5": ZoneDefinition("C1-5", "Neighborhood Commercial", "§17-3-0105", far=5.0, max_height="80 ft (varies by lot frontage)", uses=_C1_USES),
+    "C1-1": ZoneDefinition("C1-1", "Neighborhood Commercial", "§17-3-0105", far=1.2, max_height="38 ft", uses=_C1_USES),
+    "C1-1.5": ZoneDefinition("C1-1.5", "Neighborhood Commercial", "§17-3-0105", far=1.5, max_height="38 ft", uses=_C1_USES),
+    "C1-2": ZoneDefinition("C1-2", "Neighborhood Commercial", "§17-3-0105", far=2.2, max_height="45–50 ft (varies by lot frontage & ground-floor commercial)", uses=_C1_USES),
+    "C1-3": ZoneDefinition("C1-3", "Neighborhood Commercial", "§17-3-0105", far=3.0, max_height="50–65 ft (varies by lot frontage & ground-floor commercial)", uses=_C1_USES),
+    "C1-5": ZoneDefinition("C1-5", "Neighborhood Commercial", "§17-3-0105", far=5.0, max_height="50–80 ft (varies by lot frontage & ground-floor commercial)", uses=_C1_USES),
 
     # --- Commercial: C2 Motor Vehicle-Related (§17-3-0106, §17-3-0400) ---
-    "C2-1": ZoneDefinition("C2-1", "Motor Vehicle-Related Commercial", "§17-3-0106", far=1.2, max_height="38 ft (varies by lot frontage)", uses=_C2_USES),
-    "C2-2": ZoneDefinition("C2-2", "Motor Vehicle-Related Commercial", "§17-3-0106", far=2.2, max_height="50 ft (varies by lot frontage)", uses=_C2_USES),
-    "C2-3": ZoneDefinition("C2-3", "Motor Vehicle-Related Commercial", "§17-3-0106", far=3.0, max_height="65 ft (varies by lot frontage)", uses=_C2_USES),
-    "C2-5": ZoneDefinition("C2-5", "Motor Vehicle-Related Commercial", "§17-3-0106", far=5.0, max_height="80 ft (varies by lot frontage)", uses=_C2_USES),
+    "C2-1": ZoneDefinition("C2-1", "Motor Vehicle-Related Commercial", "§17-3-0106", far=1.2, max_height="38 ft", uses=_C2_USES),
+    "C2-2": ZoneDefinition("C2-2", "Motor Vehicle-Related Commercial", "§17-3-0106", far=2.2, max_height="45–50 ft (varies by lot frontage & ground-floor commercial)", uses=_C2_USES),
+    "C2-3": ZoneDefinition("C2-3", "Motor Vehicle-Related Commercial", "§17-3-0106", far=3.0, max_height="50–65 ft (varies by lot frontage & ground-floor commercial)", uses=_C2_USES),
+    "C2-5": ZoneDefinition("C2-5", "Motor Vehicle-Related Commercial", "§17-3-0106", far=5.0, max_height="50–80 ft (varies by lot frontage & ground-floor commercial)", uses=_C2_USES),
 
     # --- Commercial: C3 Commercial/Manufacturing (§17-3-0107, §17-3-0400) ---
-    "C3-1": ZoneDefinition("C3-1", "Commercial, Manufacturing & Employment", "§17-3-0107", far=1.2, max_height="38 ft (varies by lot frontage)", uses=_C3_USES),
-    "C3-2": ZoneDefinition("C3-2", "Commercial, Manufacturing & Employment", "§17-3-0107", far=2.2, max_height="50 ft (varies by lot frontage)", uses=_C3_USES),
-    "C3-3": ZoneDefinition("C3-3", "Commercial, Manufacturing & Employment", "§17-3-0107", far=3.0, max_height="65 ft (varies by lot frontage)", uses=_C3_USES),
-    "C3-5": ZoneDefinition("C3-5", "Commercial, Manufacturing & Employment", "§17-3-0107", far=5.0, max_height="80 ft (varies by lot frontage)", uses=_C3_USES),
+    "C3-1": ZoneDefinition("C3-1", "Commercial, Manufacturing & Employment", "§17-3-0107", far=1.2, max_height="38 ft", uses=_C3_USES),
+    "C3-2": ZoneDefinition("C3-2", "Commercial, Manufacturing & Employment", "§17-3-0107", far=2.2, max_height="45–50 ft (varies by lot frontage & ground-floor commercial)", uses=_C3_USES),
+    "C3-3": ZoneDefinition("C3-3", "Commercial, Manufacturing & Employment", "§17-3-0107", far=3.0, max_height="50–65 ft (varies by lot frontage & ground-floor commercial)", uses=_C3_USES),
+    "C3-5": ZoneDefinition("C3-5", "Commercial, Manufacturing & Employment", "§17-3-0107", far=5.0, max_height="50–80 ft (varies by lot frontage & ground-floor commercial)", uses=_C3_USES),
 
     # --- Manufacturing: M1 Limited (§17-5-0102, §17-5-0400) ---
-    "M1-1": ZoneDefinition("M1-1", "Limited Manufacturing / Business Park", "§17-5-0102", far=1.2, max_height="38 ft", uses=_M1_USES),
-    "M1-2": ZoneDefinition("M1-2", "Limited Manufacturing / Business Park", "§17-5-0102", far=2.2, max_height="50 ft", uses=_M1_USES),
-    "M1-3": ZoneDefinition("M1-3", "Limited Manufacturing / Business Park", "§17-5-0102", far=3.0, max_height="65 ft", uses=_M1_USES),
+    "M1-1": ZoneDefinition("M1-1", "Limited Manufacturing / Business Park", "§17-5-0102", far=1.2, max_height="No height standard in the zoning code", uses=_M1_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
+    "M1-2": ZoneDefinition("M1-2", "Limited Manufacturing / Business Park", "§17-5-0102", far=2.2, max_height="No height standard in the zoning code", uses=_M1_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
+    "M1-3": ZoneDefinition("M1-3", "Limited Manufacturing / Business Park", "§17-5-0102", far=3.0, max_height="No height standard in the zoning code", uses=_M1_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
 
     # --- Manufacturing: M2 Light Industry (§17-5-0103, §17-5-0400) ---
-    "M2-1": ZoneDefinition("M2-1", "Light Industry", "§17-5-0103", far=1.2, max_height="38 ft", uses=_M2_USES),
-    "M2-2": ZoneDefinition("M2-2", "Light Industry", "§17-5-0103", far=2.2, max_height="50 ft", uses=_M2_USES),
-    "M2-3": ZoneDefinition("M2-3", "Light Industry", "§17-5-0103", far=3.0, max_height="65 ft", uses=_M2_USES),
+    "M2-1": ZoneDefinition("M2-1", "Light Industry", "§17-5-0103", far=1.2, max_height="No height standard in the zoning code", uses=_M2_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
+    "M2-2": ZoneDefinition("M2-2", "Light Industry", "§17-5-0103", far=2.2, max_height="No height standard in the zoning code", uses=_M2_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
+    "M2-3": ZoneDefinition("M2-3", "Light Industry", "§17-5-0103", far=3.0, max_height="No height standard in the zoning code", uses=_M2_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
 
     # --- Manufacturing: M3 Heavy Industry (§17-5-0104, §17-5-0400) ---
-    "M3-1": ZoneDefinition("M3-1", "Heavy Industry", "§17-5-0104", far=1.2, max_height="38 ft", uses=_M3_USES),
-    "M3-2": ZoneDefinition("M3-2", "Heavy Industry", "§17-5-0104", far=2.2, max_height="50 ft", uses=_M3_USES),
-    "M3-3": ZoneDefinition("M3-3", "Heavy Industry", "§17-5-0104", far=3.0, max_height="65 ft", uses=_M3_USES),
+    "M3-1": ZoneDefinition("M3-1", "Heavy Industry", "§17-5-0104", far=1.2, max_height="No height standard in the zoning code", uses=_M3_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
+    "M3-2": ZoneDefinition("M3-2", "Heavy Industry", "§17-5-0104", far=2.2, max_height="No height standard in the zoning code", uses=_M3_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
+    "M3-3": ZoneDefinition("M3-3", "Heavy Industry", "§17-5-0104", far=3.0, max_height="No height standard in the zoning code", uses=_M3_USES, notes="Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks)."),
 
     # --- Downtown: DX Mixed-Use (§17-4-0102, §17-4-0400) ---
     "DX-3": ZoneDefinition("DX-3", "Downtown Mixed-Use", "§17-4-0102", far=3.0, max_height="No max (bonuses available)", uses=_DX_USES),
@@ -312,12 +327,16 @@ def collect_report_zone_definitions(
 
 
 # ---------------------------------------------------------------------------
-# Minimum lot area per dwelling unit (density) — Title 17, Table 17-2-0303-A
+# Minimum lot area per dwelling unit (density)
 # ---------------------------------------------------------------------------
-# Square feet of lot area required per *dwelling* unit. This is the binding
-# as-of-right density control in R districts (separate from FAR), used to
-# estimate as-of-right unit yield. Values transcribed verbatim from the indexed
-# Chicago Zoning Ordinance (Sec. 17-2-0303-A, "Dwelling units" column).
+# Square feet of lot area required per *dwelling* unit — the binding as-of-right
+# density control (separate from FAR), used to estimate as-of-right unit yield.
+# Values transcribed verbatim from the indexed Chicago Zoning Ordinance and
+# guarded against the ingested ordinance text by
+# tests/test_zoning_ordinance_parity.py:
+#   - R districts: Table 17-2-0303-A ("Dwelling units" column)
+#   - B/C districts: the dash-number table in §17-3-0400 (per dwelling unit)
+#   - D districts: the dash-number table in §17-4-0400 (per dwelling unit)
 _MIN_LOT_AREA_PER_UNIT: dict[str, int] = {
     "RS-1": 6250,
     "RS-2": 5000,
@@ -331,23 +350,52 @@ _MIN_LOT_AREA_PER_UNIT: dict[str, int] = {
     "RM-6.5": 300,
 }
 
+# B/C districts share one per-dwelling-unit table keyed on the dash number.
+# C3 and M districts permit no dwelling units, so they have no entry.
+_BC_PER_UNIT_BY_DASH: dict[str, int] = {
+    "1": 2500,
+    "1.5": 1350,
+    "2": 1000,
+    "3": 400,
+    "5": 200,
+}
+_BC_RESIDENTIAL_PREFIXES = ("B1", "B2", "B3", "C1", "C2")
+
+# Downtown districts (DS permits no dwelling units).
+_D_PER_UNIT_BY_DASH: dict[str, int] = {
+    "3": 400,
+    "5": 200,
+    "7": 145,
+    "10": 115,
+    "12": 115,
+    "16": 100,
+}
+_D_RESIDENTIAL_PREFIXES = ("DX", "DC", "DR")
+
 
 def min_lot_area_per_unit(zone_class: str | None) -> int | None:
-    """Return the minimum lot area (sq ft) per dwelling unit for an R district.
+    """Return the minimum lot area (sq ft) per dwelling unit for a district.
 
-    Looks up the exact class, then the prefix family (e.g. "RM-5" for "RM-5"),
-    returning ``None`` for non-R districts or unknown classes so callers can
-    skip an as-of-right unit-yield estimate rather than fabricate one.
+    Covers R districts (exact class), B/C and D districts (dash-number rule).
+    Returns ``None`` for districts that permit no dwelling units (C3, M, DS) or
+    unknown classes so callers skip an as-of-right unit-yield estimate rather
+    than fabricate one.
     """
     if not zone_class:
         return None
     norm = zone_class.strip().upper()
     if norm in _MIN_LOT_AREA_PER_UNIT:
         return _MIN_LOT_AREA_PER_UNIT[norm]
-    # Normalise spacing variants like "RM 5" → "RM-5".
+    # Normalise spacing variants like "RM 5" → "RM-5", then fall through to the
+    # dash-number families.
     prefix, num = _parse_zone_prefix(norm)
-    if num is not None:
-        candidate = f"{prefix}-{num}"
-        if candidate in _MIN_LOT_AREA_PER_UNIT:
-            return _MIN_LOT_AREA_PER_UNIT[candidate]
+    if num is None:
+        return None
+    candidate = f"{prefix}-{num}"
+    if candidate in _MIN_LOT_AREA_PER_UNIT:
+        return _MIN_LOT_AREA_PER_UNIT[candidate]
+    if prefix in _BC_RESIDENTIAL_PREFIXES:
+        return _BC_PER_UNIT_BY_DASH.get(num)
+    if prefix in _D_RESIDENTIAL_PREFIXES:
+        return _D_PER_UNIT_BY_DASH.get(num)
     return None

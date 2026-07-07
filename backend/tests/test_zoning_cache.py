@@ -38,10 +38,21 @@ def _entry(**kw):
 
 
 def test_cache_hit_returns_standards(tmp_path, monkeypatch):
-    _write_cache(tmp_path, monkeypatch, {"RM-5": _entry(far=2.5, max_height_ft=47)})
+    """A cache hit serves the entry — with the Title-17 table authority applied
+    on READ: a stored mis-row (far=2.5) or stale height can never reach a
+    report, whatever the artifact says (2026-07-06 audit). AI-only fields
+    (setbacks) pass through untouched."""
+    _write_cache(tmp_path, monkeypatch, {
+        "RM-5": _entry(far=2.5, max_height_ft=99, lot_coverage_pct=0.6, rear_setback_ft=30),
+    })
     out = zoning_cache.get_cached_zoning_standards("RM-5")
     assert out is not None
-    assert out.far == 2.5 and out.max_height_ft == 47
+    assert out.far == 2.0            # table-authoritative (Table 17-2-0304)
+    assert out.max_height_ft == 45   # lowest ordinance tier (Table 17-2-0305)
+    assert out.lot_coverage_pct is None  # not a Title-17 standard
+    assert out.min_lot_area_sqft == 1650
+    assert out.min_lot_area_per_unit_sqft == 400
+    assert out.rear_setback_ft == 30  # AI value-add survives
 
 
 def test_cache_miss_returns_none(tmp_path, monkeypatch):
