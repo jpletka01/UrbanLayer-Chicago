@@ -12,7 +12,7 @@ This doc is the carry-across record for the report's zoning-extraction rework. N
 
 Root cause = **partial-chunk retrieval, not the reranker.** The FAR/height numbers live in big Title-17 tables (e.g. `17-2-0300` "Bulk and density standards" is ~30K chars / 9 tables). The chunker splits them at 1,800 chars, so each semantic search returned a **single ~1,800-char slice** — almost never the slice with the target zone's row. Haiku then wrote "values not provided in retrieved text." The report **silently fell back to the deterministic Title-17 table** (`zoning_definitions.py` → `standards_from_definitions`) the whole time, so users always saw the *correct* bulk numbers — just never any AI value-add.
 
-Key reframing carried forward: **the deterministic table is authoritative and correct for FAR/height/coverage for every base district.** AI's only potential value is the fields the table lacks (setbacks, min-lot-per-unit, special conditions).
+Key reframing carried forward: **the deterministic table is authoritative for the bulk numbers.** AI's only potential value is the fields the table lacks (setbacks, special conditions). *(2026-07-06 correction: "authoritative" ≠ "correct" — the table's FARs were right, but its heights/coverage were partly hand-typed fictions; see the amendment at the bottom.)*
 
 ## What we built
 
@@ -25,7 +25,7 @@ Precompute the zoning extraction **offline** into a committed JSON artifact read
    - manufacturing `M` → `17-5-0400`
    - shared parking ratios = `17-10-0200`
    - `POS/PMD/PD/T` → no chapter bulk table → `None` → table/raw-code fallback (POS-1/2 are the 2 of 61 zones with no cache entry, by design)
-2. **Hybrid merge (the correctness guarantee).** AI mis-rows FAR on ~7/59 zones — always the low-density "-1" variants (e.g. **B3-1 → 3.0 when the true FAR is 1.2**, 2.5× too high). Unacceptable on a paid report. So the builder **overwrites FAR/height/coverage from the deterministic table** (`standards_from_definitions`) where the table has them, and keeps the AI's value-add fields. Result: **0 FAR errors**, plus AI setbacks (48-49/59) and min-lot (29/59) the table never had. Cache = authoritative bulk + AI nuance.
+2. **Table authority (the correctness guarantee).** AI mis-rows FAR on ~7/59 zones — always the low-density "-1" variants (e.g. **B3-1 → 3.0 when the true FAR is 1.2**, 2.5× too high). Unacceptable on a paid report. So the bulk numbers are **overwritten from the deterministic table** — since 2026-07-06 via `apply_table_authority()` (`zoning_extract.py`) applied on **every cache read** as well as at build time, because `config_version` fingerprints the extraction inputs and NOT the table (build-time-only application let a table correction silently desync from the committed artifact). Fields owned by the table: `far`, `max_height_ft` (ordinance floor tier), `min_lot_area_sqft` (R-only lot size), `min_lot_area_per_unit_sqft` (dash-table density), `lot_coverage_pct` (force-None — no base district has one). AI keeps setbacks/special conditions. Result: **0 FAR errors**, AI setbacks (48-49/59).
 3. **Serving + invalidation.** Report reads `get_cached_zoning_standards(zone_class)`; a miss or `config_version` mismatch returns `None` → the **existing R1 table fallback** (no new degradation path; can't 504). `config_version` = hash of the section map + extraction prompt + Haiku model. `corpus_fingerprint` = hash of all Title-17 section content-hashes; `ingestion.update` prints a flag when a re-ingest touches Title 17, and `zoning_cache_build --check` reports fresh/stale.
 
 ## Files
@@ -51,9 +51,9 @@ Then commit the JSON. **Rebuild whenever ingestion re-ingests Title 17** (the `i
 
 ## Known issues / limitations (carry forward)
 
-- **AI setbacks / min-lot are NOT cross-validated.** The table gives an authoritative check for FAR/height/coverage, but there's no equivalent source for setbacks/min-lot, so those AI values are plausible-but-unverified and carry the same multi-row mis-read risk that FAR did. They're a genuine uplift the table lacks, labeled as extracted — but treat as lower-trust than the merged bulk numbers.
+- **AI setbacks are NOT cross-validated.** No table-equivalent source exists for setbacks, so those AI values are plausible-but-unverified (same multi-row mis-read risk FAR had). Treat as lower-trust than the table-owned bulk numbers. (Min-lot fields are table-owned since 2026-07-06 — the AI values had mis-rows like B3-1 = 400 vs the true 2,500/unit.)
 - **Parking ratios are NOT populated.** Feeding the shared parking section (`17-10-0200`) *alongside* the bulk section regressed FAR (B3-2 → 3.0 vs 2.2 — the extra context made Haiku grab the wrong row), so the builder uses `include_parking=False`. Parking is a **deferred separate-call enhancement** (extract parking-only from `17-10-0200` and merge).
-- **`lot_coverage_pct` only 10/59** — the deterministic table genuinely lacks a coverage limit for most non-residential districts; not a bug.
+- **`lot_coverage_pct` is always None (2026-07-06)** — NO Chicago base district has a Title-17 lot-coverage standard (verified against the bulk sections); the 10/59 values that existed were invented R-district numbers, force-nulled by `apply_table_authority`.
 - **`.gitignore` had a latent bug** (now fixed): `ingestion/data/` excluded the *directory*, so `!ingestion/data/<file>` negations were inert — git can't re-include a file under an excluded dir. The pre-existing committed artifacts (`transit_stations.json`, `community_areas.geojson`) only worked because they were already tracked. Fixed by globbing dir *contents* (`ingestion/data/*`). If you add another committed data artifact, the `!` allowlist now actually works.
 
 ## Remaining work / expected next steps
@@ -71,3 +71,22 @@ Haiku 4.5 = $1/1M in, $5/1M out. Full-section input is **1.4×** the old partial
 ## Reranker status (related, carry forward)
 
 `RERANKER_ENABLED=false` stays. **Verified on prod 2026-06-18** (empty site = the real 4-vCPU/8 GB box): the committed reranker fix (`e59990b`: bounded single-worker executor + 20-candidate batch) engages perfectly (pairs=20, serialized, swap negligible — **124 swap pages, NOT swap-bound**) but a single 20-pair `predict()` is still **~40s** and the 5-way report path **~280s ≫ 180s** — the bge-reranker cross-encoder is simply too slow on these vCPUs (~15× the M4 Pro per-core). Rolled back; the zoning cache now keeps the reranker **out of the report path entirely**, so this is moot for reports. Chat's ad-hoc (non-templated) rerank stays off; a smaller/ONNX-quantized cross-encoder is the deferred option there. Full reranker story: `archive/2026-06-16_report-oom-reranker.md` + `core/known-issues.md`. Verification harness: `scripts/rerank_repro.py` + `scripts/rerank_profile_run.py`.
+
+
+## Amended 2026-07-06 — calculation audit (`archive/2026-07-06_calc-audit.md`)
+
+The 2026-07-06 audit diffed the deterministic table against the **ingested ordinance text**
+(`ingestion/data/sections/17-*-0*00.json`) and found the table's heights partly fabricated:
+RM-4.5/5 are 45–47 ft by frontage (was 38/45), RM-5.5 is 47–60 (was 50), **RM-6/6.5 and all
+M districts have no numeric cap at all** (was 70/90/38/50/65), B/C heights are
+frontage+commercial tiers (numeric field now carries the ordinance FLOOR tier), and the
+R-district lot-coverage percentages appeared nowhere in Title 17. The build-time merge had
+stamped all of it "high confidence."
+
+Fixes: corrected `zoning_definitions.py` (height display strings carry the honest range or a
+digit-free "no cap" explanation that parses to numeric None); authority applied on every read
+(`apply_table_authority`); cache regenerated (58/59 entries changed); `min_lot_area_per_unit`
+extended to the B/C and D dash tables. **Guard: `backend/tests/test_zoning_ordinance_parity.py`**
+parses the bulk tables from the corpus and diffs FAR / heights / lot sizes / per-unit density /
+lot-coverage-absence for both the table and the served cache — after any Title-17 re-ingest or
+table edit, run it; it points at the exact drifted value.
