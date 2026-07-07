@@ -135,6 +135,8 @@ export const PERMIT_TYPE_ORDER = [
   "REINSTATE REVOKED PMT", "EASY PERMIT PROCESS",
 ];
 
+// JS port of backend.analytics._normalize_permit_type — keep the keyword
+// list in sync or the sidebar buckets diverge from the chat context.
 export function normalizePermitType(raw: string): string {
   const upper = (raw || "").toUpperCase();
   if (upper.includes("EXPRESS")) return "EXPRESS PERMIT";

@@ -441,6 +441,9 @@ def _build_summary(
 
     # Exempt parcels (class "EX") carry zero assessed value / tax — a real,
     # decision-relevant fact (institutional ownership), not a data gap.
+    # assessments[0] is the newest raw row — possibly the valueless in-progress
+    # year filtered out of assessment_history above; its CLASS column is still
+    # populated and current, which is all we read here.
     assessment_class = assessments[0].get("class") if assessments else None
     tax_exempt = any(
         (c or "").strip().upper().startswith("EX")

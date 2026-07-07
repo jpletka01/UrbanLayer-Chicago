@@ -26,6 +26,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.analytics import compute_analytics
+from backend.retrieval.utils import FT_PER_DEG_LAT, MI_PER_DEG_LAT
 from backend.assembler import assemble_context
 from backend.config import get_settings
 from backend.context_manager import summarize_turn
@@ -2720,7 +2721,11 @@ async def _fetch_report_data(
     from backend import report_i18n
     report.language = report_i18n.normalize_lang(language)
 
-    # V5 synthesis (all deterministic, no API calls)
+    # V5 synthesis (all deterministic, no API calls). far_utilization comes
+    # first: it only needs property + standards, and the opportunities pass
+    # reads it — one utilization computation instead of a drift-prone inline
+    # twin (2026-07-06 audit).
+    report.far_utilization = _compute_far_utilization(report)
     report.opportunities, report.constraints = _synthesize_opportunities_constraints(report)
     report.estimated_land_value = _compute_land_value_range(report)
     report.approval_pathway = _compute_approval_pathway(report)
@@ -2729,7 +2734,6 @@ async def _fetch_report_data(
     report.envelope_summary = _build_envelope_summary(report)
 
     # Phase 3 decision-quality synthesis (depends on the V5 fields above)
-    report.far_utilization = _compute_far_utilization(report)
     report.unit_yield = _compute_unit_yield(report)
     report.comp_valuation = _compute_comp_valuation(report)
     report.ownership_interpretation = _ownership_interpretation(report)
@@ -2876,16 +2880,16 @@ def _derive_ownership_signals(prop) -> list[dict]:
                 except (ValueError, TypeError):
                     continue
 
-    if prop.tax_breakdown:
-        for item in prop.tax_breakdown:
-            agency_upper = item.agency.upper()
-            if "HOMEOWNER" in agency_upper or "HOME OWNER" in agency_upper:
-                signals.append({
-                    "signal": "Owner-Occupied (Homeowner Exemption)",
-                    "detail": f"Homeowner exemption found in tax breakdown",
-                    "category": "occupancy",
-                })
-                break
+    # Exemptions live in tax_exemptions (PTAXSIM exe_* columns → kind labels).
+    # The old check scanned tax_breakdown AGENCY names for "HOMEOWNER" — those
+    # are taxing districts (City of Chicago, Board of Education…), so the
+    # signal could never fire (2026-07-06 audit).
+    if any(e.kind == "Homeowner" for e in (prop.tax_exemptions or [])):
+        signals.append({
+            "signal": "Owner-Occupied (Homeowner Exemption)",
+            "detail": "Homeowner exemption claimed on the tax bill",
+            "category": "occupancy",
+        })
 
     return signals
 
@@ -2914,8 +2918,8 @@ def _compute_parcel_dimensions(geojson_polygon: dict) -> dict | None:
     for i in range(len(coords) - 1):
         lon1, lat1 = coords[i]
         lon2, lat2 = coords[i + 1]
-        dx = (lon2 - lon1) * cos_lat * 364567.2
-        dy = (lat2 - lat1) * 364567.2
+        dx = (lon2 - lon1) * cos_lat * FT_PER_DEG_LAT
+        dy = (lat2 - lat1) * FT_PER_DEG_LAT
         length_ft = math.sqrt(dx * dx + dy * dy)
         bearing = math.degrees(math.atan2(dx, dy)) % 360
         edges.append({"length_ft": round(length_ft, 1), "bearing": round(bearing, 1)})
@@ -2924,8 +2928,8 @@ def _compute_parcel_dimensions(geojson_polygon: dict) -> dict | None:
         return None
 
     # Area via shoelace formula in local feet
-    xs = [(c[0] - coords[0][0]) * cos_lat * 364567.2 for c in coords]
-    ys = [(c[1] - coords[0][1]) * 364567.2 for c in coords]
+    xs = [(c[0] - coords[0][0]) * cos_lat * FT_PER_DEG_LAT for c in coords]
+    ys = [(c[1] - coords[0][1]) * FT_PER_DEG_LAT for c in coords]
     n = len(xs)
     area = 0.0
     for i in range(n - 1):
@@ -3149,8 +3153,8 @@ def _classify_edges(
     for i in range(len(coords) - 1):
         lon1, lat1 = coords[i]
         lon2, lat2 = coords[i + 1]
-        dx = (lon2 - lon1) * cos_lat * 364567.2
-        dy = (lat2 - lat1) * 364567.2
+        dx = (lon2 - lon1) * cos_lat * FT_PER_DEG_LAT
+        dy = (lat2 - lat1) * FT_PER_DEG_LAT
         length_ft = math.sqrt(dx * dx + dy * dy)
         bearing = math.degrees(math.atan2(dx, dy)) % 360
         # Inward normal (perpendicular, pointing into polygon center)
@@ -3162,8 +3166,8 @@ def _classify_edges(
         nx1, ny1 = -dy, dx
         nx2, ny2 = dy, -dx
         # Pick the one pointing toward centroid
-        to_cx = (cx - mx) * cos_lat * 364567.2
-        to_cy = (cy - my) * 364567.2
+        to_cx = (cx - mx) * cos_lat * FT_PER_DEG_LAT
+        to_cy = (cy - my) * FT_PER_DEG_LAT
         if nx1 * to_cx + ny1 * to_cy > nx2 * to_cx + ny2 * to_cy:
             nx, ny = nx1, ny1
         else:
@@ -3246,7 +3250,15 @@ def _compute_inset_polygon(
     coords: list[list[float]],
     edges: list[dict],
 ) -> tuple[list[tuple[float, float]], float] | None:
-    """Compute the buildable footprint polygon by insetting each edge."""
+    """Compute the buildable footprint polygon by insetting each edge.
+
+    CONVEX-ONLY method: adjacent offset lines are intersected pairwise —
+    exact for rectangular Chicago lots, but a concave (L-shaped) parcel can
+    yield a self-intersecting "footprint" with a nonsense shoelace area. The
+    inset-smaller-than-parcel check at the end rejects the gross failures;
+    a shapely buffer-based inset is the upgrade path if irregular lots ever
+    matter here.
+    """
     import math
 
     if not edges or len(coords) < 4:
@@ -3254,8 +3266,8 @@ def _compute_inset_polygon(
 
     lat_mid = sum(c[1] for c in coords) / len(coords)
     cos_lat = math.cos(math.radians(lat_mid))
-    ft_to_lon = 1.0 / (cos_lat * 364567.2)
-    ft_to_lat = 1.0 / 364567.2
+    ft_to_lon = 1.0 / (cos_lat * FT_PER_DEG_LAT)
+    ft_to_lat = 1.0 / FT_PER_DEG_LAT
 
     # For each edge, compute the offset line (shifted inward by setback)
     offset_lines = []
@@ -3306,14 +3318,26 @@ def _compute_inset_polygon(
         inner_pts.append(inner_pts[0])
 
     # Compute area via shoelace in feet
-    xs = [(p[0] - inner_pts[0][0]) * cos_lat * 364567.2 for p in inner_pts]
-    ys = [(p[1] - inner_pts[0][1]) * 364567.2 for p in inner_pts]
+    xs = [(p[0] - inner_pts[0][0]) * cos_lat * FT_PER_DEG_LAT for p in inner_pts]
+    ys = [(p[1] - inner_pts[0][1]) * FT_PER_DEG_LAT for p in inner_pts]
     area = 0.0
     for i in range(len(xs) - 1):
         area += xs[i] * ys[i + 1] - xs[i + 1] * ys[i]
     area_sqft = abs(area) / 2.0
 
     if area_sqft < 10:
+        return None
+
+    # Sanity: an inset polygon can never out-measure its parcel. A larger
+    # "footprint" means the pairwise-intersection method self-intersected
+    # (concave lot) — return None rather than print a fabricated number.
+    pxs = [(c[0] - coords[0][0]) * cos_lat * FT_PER_DEG_LAT for c in coords]
+    pys = [(c[1] - coords[0][1]) * FT_PER_DEG_LAT for c in coords]
+    parcel_area = 0.0
+    for i in range(len(pxs) - 1):
+        parcel_area += pxs[i] * pys[i + 1] - pxs[i + 1] * pys[i]
+    parcel_area_sqft = abs(parcel_area) / 2.0
+    if parcel_area_sqft > 0 and area_sqft >= parcel_area_sqft:
         return None
 
     return inner_pts, area_sqft
@@ -3381,8 +3405,8 @@ def _generate_envelope_map(
         # Convert to local feet for rendering
         def to_ft(lon_v, lat_v):
             return (
-                (lon_v - coords[0][0]) * cos_lat * 364567.2,
-                (lat_v - coords[0][1]) * 364567.2,
+                (lon_v - coords[0][0]) * cos_lat * FT_PER_DEG_LAT,
+                (lat_v - coords[0][1]) * FT_PER_DEG_LAT,
             )
 
         parcel_ft = [to_ft(c[0], c[1]) for c in coords]
@@ -3419,8 +3443,8 @@ def _generate_envelope_map(
             p1_ft = to_ft(e["p1"][0], e["p1"][1])
             p2_ft = to_ft(e["p2"][0], e["p2"][1])
             # Offset points
-            ft_to_lon = 1.0 / (cos_lat * 364567.2)
-            ft_to_lat = 1.0 / 364567.2
+            ft_to_lon = 1.0 / (cos_lat * FT_PER_DEG_LAT)
+            ft_to_lat = 1.0 / FT_PER_DEG_LAT
             dx_lon = e["nx_ft"] * sb * ft_to_lon
             dy_lat = e["ny_ft"] * sb * ft_to_lat
             p1_off_ft = to_ft(e["p1"][0] + dx_lon, e["p1"][1] + dy_lat)
@@ -3641,14 +3665,15 @@ def _synthesize_opportunities_constraints(
             "category": "zoning",
         })
 
-    if prop and prop.bldg_sqft and dev and dev.development_surplus_sqft and dev.max_buildable_sqft:
-        utilization = prop.bldg_sqft / dev.max_buildable_sqft
-        if utilization < 0.3:
-            opportunities.append({
-                "signal": t("oc.under_improved.signal", pct=f"{utilization:.0%}".rstrip("%")),
-                "detail": t("oc.under_improved.detail", existing=f"{prop.bldg_sqft:,}", pct=f"{utilization:.0%}".rstrip("%"), buildable=f"{dev.max_buildable_sqft:,}"),
-                "category": "zoning",
-            })
+    # Single source: _compute_far_utilization (runs just before this pass) —
+    # the previous inline bldg/max_buildable twin could drift from it.
+    fu = report.far_utilization
+    if fu and not fu["vacant"] and fu["utilization_pct"] < 30:
+        opportunities.append({
+            "signal": t("oc.under_improved.signal", pct=fu["utilization_pct"]),
+            "detail": t("oc.under_improved.detail", existing=f"{fu['existing_sqft']:,}", pct=fu["utilization_pct"], buildable=f"{fu['allowed_sqft']:,}"),
+            "category": "zoning",
+        })
 
     if prop and prop.bldg_sqft and dev and dev.development_surplus_sqft is not None and dev.development_surplus_sqft <= 0:
         constraints.append({
@@ -4239,7 +4264,7 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
 
     # Radius label derived from the actual construction-search config (0.5mi),
     # not a stale hardcoded "0.25mi" that contradicts the section header.
-    radius_mi = round(get_settings().nearby_construction_radius_deg * 69.0, 2)
+    radius_mi = round(get_settings().nearby_construction_radius_deg * MI_PER_DEG_LAT, 2)
     radius_label = f"{radius_mi:g}mi"
 
     t = report_i18n.make_translator(report.language)

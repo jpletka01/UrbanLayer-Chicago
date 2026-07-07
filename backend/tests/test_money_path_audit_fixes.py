@@ -218,3 +218,43 @@ def test_year_earlier_handles_leap_day():
     assert _year_earlier(leap) == datetime(2027, 2, 28, tzinfo=timezone.utc)
     normal = datetime(2026, 7, 6, tzinfo=timezone.utc)
     assert _year_earlier(normal) == datetime(2025, 7, 6, tzinfo=timezone.utc)
+
+
+# --- ownership signals: homeowner exemption (Phase 5) ---------------------------
+
+def test_homeowner_signal_reads_tax_exemptions():
+    """The signal must come from tax_exemptions (PTAXSIM exe_* kinds) — the old
+    check scanned tax_breakdown AGENCY names for 'HOMEOWNER', which are taxing
+    districts, so it could never fire."""
+    from backend.main import _derive_ownership_signals
+    from backend.models import TaxExemption
+
+    with_exe = PropertySummary(
+        pin14="1",
+        tax_exemptions=[TaxExemption(kind="Homeowner", eav_reduction=10000)],
+    )
+    names = {s["signal"] for s in _derive_ownership_signals(with_exe)}
+    assert "Owner-Occupied (Homeowner Exemption)" in names
+
+    without = PropertySummary(pin14="2")
+    names = {s["signal"] for s in _derive_ownership_signals(without)}
+    assert "Owner-Occupied (Homeowner Exemption)" not in names
+
+
+# --- tax incentive class interpretation (Phase 5) -------------------------------
+
+def test_interpret_tax_class_matches_numeric_ccao_codes():
+    """CCAO's numeric incentive codes (6xx-9xx) must classify as incentives —
+    they previously fell through to 'standard classification'."""
+    from backend.assembler import _interpret_tax_class
+
+    cls, desc = _interpret_tax_class("663")
+    assert cls == "6" and "Reduced assessment" in desc
+    cls, desc = _interpret_tax_class("913")
+    assert cls == "9" and "affordab" in desc.lower()
+    # Letter forms still work; standard classes still pass through.
+    assert _interpret_tax_class("6b")[0] == "6B"
+    assert _interpret_tax_class("9")[0] == "9"
+    assert _interpret_tax_class("L")[0] == "L"
+    assert _interpret_tax_class("211") == (None, None)
+    assert _interpret_tax_class("517") == (None, None)

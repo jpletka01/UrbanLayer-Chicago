@@ -11,7 +11,7 @@ import httpx
 from backend.config import get_settings
 from backend.retrieval.cache import TTLCache
 from backend.retrieval.socrata import socrata_get
-from backend.retrieval.utils import cutoff_iso
+from backend.retrieval.utils import MI_PER_DEG_LAT, cutoff_iso
 
 log = logging.getLogger(__name__)
 
@@ -73,8 +73,8 @@ def _haversine_mi(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def _deg_to_mi(radius_deg: float) -> float:
-    """Approximate a lat/lon bounding-box radius in degrees to miles (~69 mi/deg)."""
-    return round(radius_deg * 69.0, 2)
+    """Latitude-degree radius → miles (shared MI_PER_DEG_LAT scale)."""
+    return round(radius_deg * MI_PER_DEG_LAT, 2)
 
 
 async def nearby_comparable_sales(
@@ -207,19 +207,18 @@ async def _query_comps(
 
         # The characteristics dataset has multiple rows per PIN (cards/years), and
         # many rows null out char_land_sf/char_bldg_sf. Keep the most *complete*
-        # row per PIN (prefer non-null land, then non-null building) so we recover
-        # every dimension the dataset actually has instead of whichever row sorts first.
+        # row per PIN — (has land, has building) as a lexicographic score — so we
+        # recover every dimension the dataset actually has instead of whichever
+        # row sorts first. (The previous branch logic kept a land-only row over a
+        # later land+building row, silently dropping the building sqft.)
+        def _completeness(c: dict) -> tuple[bool, bool]:
+            return (bool(c.get("char_land_sf")), bool(c.get("char_bldg_sf")))
+
         chars_by_pin: dict[str, dict] = {}
         for c in chars_raw:
             np = _normalize_pin(c.get("pin", ""))
             prev = chars_by_pin.get(np)
-            if prev is None:
-                chars_by_pin[np] = c
-                continue
-            if not prev.get("char_land_sf") and c.get("char_land_sf"):
-                chars_by_pin[np] = c
-            elif (not prev.get("char_land_sf") and not c.get("char_land_sf")
-                  and not prev.get("char_bldg_sf") and c.get("char_bldg_sf")):
+            if prev is None or _completeness(c) > _completeness(prev):
                 chars_by_pin[np] = c
 
         # Merge and build ComparableSale-shaped dicts
@@ -257,7 +256,7 @@ async def _query_comps(
             dist = _haversine_mi(lat, lon, coords[0], coords[1]) if coords[0] else None
             # The comp_basis line discloses "within X mi" — enforce it. Comps
             # with unknown coordinates are kept (distance shows as null).
-            if dist is not None and dist > radius_deg * 69.0:
+            if dist is not None and dist > radius_deg * MI_PER_DEG_LAT:
                 continue
 
             comp: dict[str, Any] = {
@@ -271,7 +270,7 @@ async def _query_comps(
                 "price_per_bldg_sqft": round(price / bldg_sf, 2) if price and bldg_sf else None,
                 "deed_type": s.get("deed_type"),
                 "sale_type": sale_type,
-                "distance_mi": round(dist, 2) if dist else None,
+                "distance_mi": round(dist, 2) if dist is not None else None,
                 "lat": coords[0] if coords[0] else None,
                 "lon": coords[1] if coords[1] else None,
             }

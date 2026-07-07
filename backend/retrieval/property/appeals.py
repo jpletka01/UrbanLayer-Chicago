@@ -6,7 +6,7 @@ Two stages, two datasets (both Cook County Socrata):
 - Board of Review decisions ``7pny-nedm``: pin, tax_year, assessor vs BOR
   values, ``result`` ("Decrease"/"No Change"/"Increase"), plus a queryable
   ``centroid_geom`` — which powers the nearby-appeals aggregate ("N appeals
-  within a block, median reduction X%"), a direct-dollars fact for the
+  within 250 m — about 2-3 blocks — median reduction X%"), a direct-dollars fact for the
   Scorecard and the $25 report.
 """
 

@@ -3,6 +3,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from backend.analytics import _normalize_permit_type
 from backend.config import get_settings
 from backend.models import (
     Address311Summary,
@@ -122,17 +123,38 @@ _TAX_INCENTIVE_CLASSES: dict[str, str] = {
     "7b": "Class 7b — Reduced assessment for large-scale commercial/industrial projects",
     "7c": "Class 7c — Reduced assessment for long-term commercial/industrial investment",
     "8":  "Class 8 — Reduced assessment for industrial property and pollution control",
+    "9":  "Class 9 — Reduced assessment for multifamily rehabilitation meeting affordability requirements",
+    "l":  "Class L — Reduced assessment for rehabilitated landmark buildings",
+}
+
+# CCAO's numeric class codes put every incentive class in the 6xx–9xx range
+# (assessment_level.py assigns the reduced 10% level on the same rule). The
+# letter names above appear in some feeds; the Parcel Universe carries the
+# numeric form (e.g. 663 = a Class 6b industrial building).
+_NUMERIC_INCENTIVE_FAMILIES: dict[str, str] = {
+    "6": "Class 6 (6b/6c) — Reduced assessment for industrial/commercial rehabilitation or brownfield redevelopment",
+    "7": "Class 7 (7a/7b/7c) — Reduced assessment for commercial revitalization projects",
+    "8": _TAX_INCENTIVE_CLASSES["8"],
+    "9": _TAX_INCENTIVE_CLASSES["9"],
 }
 
 
 def _interpret_tax_class(bldg_class: str | None) -> tuple[str | None, str | None]:
-    """Return (normalized_class, description) if the property class is a tax incentive."""
+    """Return (normalized_class, description) if the property class is a tax incentive.
+
+    Matches both letter forms ("6b", "7a-…") and the CCAO numeric codes
+    (6xx–9xx). Before 2026-07-06 the numeric form fell through and a Class-9
+    parcel was described as "standard — no tax incentive applies".
+    """
     if not bldg_class:
         return None, None
     code = bldg_class.strip().lower()
     for prefix, desc in _TAX_INCENTIVE_CLASSES.items():
         if code == prefix or code.startswith(prefix + "-") or code.startswith(prefix + " "):
             return prefix.upper(), desc
+    m = re.match(r"^([6-9])\d{2}$", code)
+    if m:
+        return m.group(1), _NUMERIC_INCENTIVE_FAMILIES[m.group(1)]
     return None, None
 
 
@@ -223,23 +245,10 @@ def _three11_summary(
     )
 
 
-def _normalize_permit_type(raw: str) -> str:
-    upper = (raw or "").upper()
-    for keyword, label in [
-        ("EXPRESS", "EXPRESS PERMIT"),
-        ("RENOVATION", "RENOVATION/ALTERATION"),
-        ("ALTERATION", "RENOVATION/ALTERATION"),
-        ("SIGN", "SIGNS"),
-        ("NEW CONSTRUCTION", "NEW CONSTRUCTION"),
-        ("WRECK", "WRECKING/DEMOLITION"),
-        ("DEMOLITION", "WRECKING/DEMOLITION"),
-        ("ELEVATOR", "ELEVATOR EQUIPMENT"),
-        ("REINSTATE", "REINSTATE REVOKED PMT"),
-        ("EASY PERMIT", "EASY PERMIT PROCESS"),
-    ]:
-        if keyword in upper:
-            return label
-    return re.sub(r"^PERMIT\s*[-–—]\s*", "", upper).strip() or "OTHER"
+# NOTE: permit-type normalization is shared with backend.analytics (imported
+# above) — a drifted keyword list here bucketed the same permit differently in
+# the chat context vs the sidebar summary. frontend/src/lib/mapColors.ts
+# carries the JS port of the same list.
 
 
 def _permit_summary(data: dict[str, Any]) -> PermitSummary | None:

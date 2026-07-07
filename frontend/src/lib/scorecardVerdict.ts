@@ -116,7 +116,10 @@ function compactUsd(n: number): string {
   return `$${Math.round(n)}`;
 }
 
-// --- signal derivation (mirrors verdict_calibration.py exactly) ---------------
+// --- signal derivation --------------------------------------------------------
+// Thresholds were calibrated against 59 real parcels via a one-off
+// verdict_calibration.py harness (since deleted, 2026-07-03 doc cleanup);
+// scorecardVerdict.test.ts pins the calibrated behavior now.
 export function deriveSignals(data: ScorecardResponse): VerdictSignals {
   const ctx = data.context ?? ({} as ScorecardResponse["context"]);
   const prop = ctx.property ?? null;
