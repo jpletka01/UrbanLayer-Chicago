@@ -79,7 +79,23 @@
     "annualTax": "Impuesto anual",
     "effectiveRate": "Tasa impositiva efect.",
     "otherAgencies": "Otras ({{count}})",
-    "fullRecords": "Registros completos"
+    "fullRecords": "Registros completos",
+    "taxBreakdownToggle": "Desglose de impuestos",
+    "agencyNames": {
+      "city_of_chicago": "Ciudad de Chicago",
+      "board_of_education": "Junta de Educación",
+      "chicago_park_district": "Distrito de Parques de Chicago",
+      "metro_water_reclamation": "Saneamiento Metropolitano del Agua",
+      "metropolitan_water_reclamation": "Saneamiento Metropolitano del Agua",
+      "cook_county_forest_preserve": "Bosques del Condado de Cook",
+      "city_colleges": "Colegios Comunitarios de la Ciudad",
+      "city_colleges_of_chicago": "Colegios Comunitarios de la Ciudad",
+      "cook_county": "Condado de Cook",
+      "cook_county_health_facilities": "Salud del Condado de Cook",
+      "chicago_transit_authority": "Autoridad de Tránsito de Chicago",
+      "north_shore_mosquito": "Control de Mosquitos (North Shore)",
+      "mosquito_abatement": "Control de Mosquitos"
+    }
   },
   "regulatory": {
     "title": "Normativo",

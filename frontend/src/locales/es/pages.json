@@ -71,10 +71,10 @@
     "incidents90d": "{{count}} incidentes (90d)",
     "arrestRate": "Tasa de arrestos",
     "yearOverYear": "Interanual",
-    "311atAddress": "Quejas 311 en la dirección",
+    "311atAddress": "Denuncios 311 en la dirección",
     "pastYear": "(último año)",
-    "openComplaints_one": "{{count}} queja abierta",
-    "openComplaints_other": "{{count}} quejas abiertas",
+    "openComplaints_one": "{{count}} denuncio abierto",
+    "openComplaints_other": "{{count}} denuncios abiertos",
     "highRiskFlags": "Alertas de alto riesgo",
     "askAboutProperty": "Pregunta sobre esta propiedad",
     "zoningRules": "Normativas de zonificación {{zone}}",
@@ -88,7 +88,7 @@
       "neighborhoodOverview": "Panorama del vecindario",
       "violationDetails": "Detalles de infracciones",
       "crimeAnalysis": "Análisis de delitos",
-      "complaints311": "Quejas 311",
+      "complaints311": "Denuncios 311",
       "comparableSales": "Ventas comparables"
     },
     "downloadPdf": "Descargar informe en PDF",
@@ -314,7 +314,7 @@
       "economicsTitle": "Qué cuesta",
       "economicsSub": "Tasación, impuestos, ventas comparables y dinero de incentivos",
       "riskTitle": "Qué vigilar",
-      "riskSub": "Infracciones, quejas y señales ambientales en esta dirección"
+      "riskSub": "Infracciones, denuncios y señales ambientales en esta dirección"
     },
     "backToVerdict": "Volver al veredicto",
     "newCategory": "nuevo"
@@ -447,7 +447,7 @@
       "improvement_ratio": "Proporción de mejora",
       "value_percentile": "Subvalorada vs. vecindario",
       "open_violations": "Infracciones de construcción abiertas",
-      "f311_redflags": "Quejas 311 de alerta",
+      "f311_redflags": "Denuncios 311 de alerta",
       "floodplain": "Llanura de inundación",
       "brownfield": "Cerca de sitio contaminado",
       "crime_index": "Índice de criminalidad"

@@ -79,7 +79,8 @@
     "amount": "Amount",
     "reportTeaser": "Tax projections + development potential in report",
     "otherAgencies": "Other ({{count}})",
-    "fullRecords": "Full records"
+    "fullRecords": "Full records",
+    "taxBreakdownToggle": "Tax breakdown"
   },
   "regulatory": {
     "title": "Regulatory",

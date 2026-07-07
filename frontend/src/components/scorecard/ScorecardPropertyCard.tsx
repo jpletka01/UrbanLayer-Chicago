@@ -69,6 +69,12 @@ function AssessmentSparkline({ history }: { history: PropertySummary["assessment
   );
 }
 
+function agencyLabel(agency: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const key = agency.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+  const translated = t(`property.agencyNames.${key}`, { defaultValue: "" });
+  return translated || agency;
+}
+
 /** Tax-breakdown bars: magnitude of parts → one hue; top agencies + Other;
     ≤24px thick, rounded data-end, square baseline, value at the tip. */
 function TaxBars({ breakdown }: { breakdown: PropertySummary["tax_breakdown"] }) {
@@ -77,7 +83,7 @@ function TaxBars({ breakdown }: { breakdown: PropertySummary["tax_breakdown"] })
   const top = sorted.slice(0, 4);
   const rest = sorted.slice(4);
   const rows = [
-    ...top.map((b) => ({ label: b.agency, amount: b.amount })),
+    ...top.map((b) => ({ label: agencyLabel(b.agency, t), amount: b.amount })),
     ...(rest.length > 0
       ? [{ label: t("property.otherAgencies", { count: rest.length }), amount: rest.reduce((s, b) => s + b.amount, 0) }]
       : []),
@@ -131,6 +137,7 @@ function sourceHintFor(source: string | null | undefined, t: (k: string) => stri
 export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
   const { t } = useTranslation("data");
   const [showRecords, setShowRecords] = useState(false);
+  const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
 
   // Two distinct absent-building states, never conflated: vacant land (class
   // 1xx) has NO building — a fact, stated affirmatively; anything else with no
@@ -164,21 +171,36 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
   return (
     <Card title={t("property.title")} icon={BuildingIcon} divider className="flex-1">
       <div className="space-y-5">
-        {/* Headline numbers live at full weight in the verdict band's tiles; here
-            they appear once, at detail weight, with full precision. */}
+        {/* Headline tax numbers — primary decision context, shown at body weight */}
         {(assessed != null || tax != null) && (
-          <p className="text-caption text-text-secondary">
-            {[
-              assessed != null ? `${t("property.assessedValue")} ${fmtDollar(assessed)}` : null,
-              // Implied market value sits between assessed and rate so the
-              // reader sees which base the effective rate applies to.
-              marketValue != null ? `${t("property.impliedMarketValue")} ${fmtDollar(marketValue)}` : null,
-              tax != null
-                ? `${t("property.annualTax")}${data.tax_year ? ` (${data.tax_year})` : ""} ${fmtDollar(tax)}`
-                : null,
-              effectiveRate ? `${t("property.effectiveRate")} ${effectiveRate}` : null,
-            ].filter(Boolean).join(" · ")}
-          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            {assessed != null && (
+              <div>
+                <div className="text-caption text-text-muted">{t("property.assessedValue")}</div>
+                <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(assessed)}</div>
+              </div>
+            )}
+            {marketValue != null && (
+              <div>
+                <div className="text-caption text-text-muted">{t("property.impliedMarketValue")}</div>
+                <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(marketValue)}</div>
+              </div>
+            )}
+            {tax != null && (
+              <div>
+                <div className="text-caption text-text-muted">
+                  {t("property.annualTax")}{data.tax_year ? ` (${data.tax_year})` : ""}
+                </div>
+                <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(tax)}</div>
+              </div>
+            )}
+            {effectiveRate && (
+              <div>
+                <div className="text-caption text-text-muted">{t("property.effectiveRate")}</div>
+                <div className="text-body font-medium text-text-primary tabular-nums">{effectiveRate}</div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Assessment trajectory — drawn, not a hidden table */}
@@ -198,13 +220,24 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
           </div>
         )}
 
-        {/* Where the tax bill goes */}
+        {/* Where the tax bill goes — secondary detail, collapsed by default */}
         {data.tax_breakdown.length > 0 && (
           <div>
-            <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
-              {t("property.taxBreakdown")}
-            </div>
-            <TaxBars breakdown={data.tax_breakdown} />
+            <button
+              onClick={() => setShowTaxBreakdown((s) => !s)}
+              className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <svg className={`w-3 h-3 transition-transform duration-150 ${showTaxBreakdown ? "" : "-rotate-90"}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+              {t("property.taxBreakdownToggle")}
+            </button>
+            {showTaxBreakdown && (
+              <div className="mt-2">
+                <TaxBars breakdown={data.tax_breakdown} />
+              </div>
+            )}
           </div>
         )}
 
