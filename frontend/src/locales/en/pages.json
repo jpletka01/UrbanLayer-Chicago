@@ -1,7 +1,7 @@
 {
   "nav": {
     "askAnalyst": "Ask the analyst",
-    "scorecard": "Scorecard",
+    "scorecard": "Property Profile",
     "discovery": "Discovery",
     "pricing": "Pricing",
     "about": "About",
@@ -9,7 +9,7 @@
   },
   "pricing": {
     "title": "Plans & Pricing",
-    "subtitle": "Free Scorecards for any Chicago parcel. A $25 feasibility report when you need the full picture. Pro for unlimited reports and discovery.",
+    "subtitle": "Free Property Profiles for any Chicago parcel. A $25 feasibility report when you need the full picture. Pro for unlimited reports and discovery.",
     "free": "Free",
     "forExploration": "For exploration",
     "perMonth": "/month",
@@ -19,7 +19,7 @@
     "reportTier": "Development Feasibility Report",
     "perParcelNoSub": "Per parcel — no subscription",
     "getReport": "Get a report",
-    "scorecardHint": "Open any parcel's free Scorecard, then buy its full report.",
+    "scorecardHint": "Open any parcel's free Property Profile, then buy its full report.",
     "pro": "Pro",
     "forProfessionals": "For professionals",
     "proMath": "4 reports ≈ a month of Pro — go unlimited.",
@@ -52,8 +52,8 @@
     ]
   },
   "scorecard": {
-    "title": "Property Scorecard",
-    "subtitle": "Free instant snapshot of any Chicago parcel — zoning, taxes, incentives, comps. Enter an address.",
+    "title": "Property Profile",
+    "subtitle": "The free research dashboard for any Chicago parcel — zoning, taxes, incentives, comps. Enter an address.",
     "search": "Search",
     "loading": "Loading...",
     "addressNotFound": "Could not find that address. Try a different format (e.g., \"1601 N Milwaukee Ave\").",
@@ -102,7 +102,7 @@
         "Approval pathway & recommended next steps"
       ],
       "viewSample": "View a sample report",
-      "boundary": "The free Scorecard shows the public zoning table — the report computes this parcel's buildable envelope, tax projection, and approval pathway.",
+      "boundary": "The free Property Profile shows the public zoning table — the report computes this parcel's buildable envelope, tax projection, and approval pathway.",
       "buyReport": "Download Report — $25",
       "download": "Download Report",
       "generating": "Generating...",
@@ -267,7 +267,7 @@
       }
     },
     "feedback": {
-      "question": "Was this Scorecard accurate?",
+      "question": "Was this profile accurate?",
       "up": "Yes",
       "down": "Something's off",
       "placeholder": "What's missing or wrong? (optional)",
@@ -306,18 +306,34 @@
       "overlays": "Overlays",
       "overlaysNone": "None active",
       "overlaysFriction": "{{count}} add review friction",
-      "overlaysContext": "Context — not blocking"
+      "overlaysContext": "Context — not blocking",
+      "lot": "Lot area",
+      "lotBldg": "bldg {{sqft}} ft²",
+      "assessedDelta": "{{pct}} since {{year}}",
+      "tax": "Est. tax",
+      "taxRate": "{{rate}}% effective"
     },
     "sections": {
       "capacityTitle": "What you can build",
       "capacitySub": "Zoning envelope and the overlay layers that shape it",
       "economicsTitle": "What it costs",
-      "economicsSub": "Assessment, taxes, comparable sales, and incentive money",
+      "economicsSub": "Assessment trajectory, taxes, and incentive money",
       "riskTitle": "What to watch for",
-      "riskSub": "Violations, complaints, and environmental flags at this address"
+      "riskSub": "Violations, complaints, and environmental flags at this address",
+      "marketTitle": "The market",
+      "marketSub": "Recent comparable sales around this parcel"
     },
     "backToVerdict": "Back to the verdict",
-    "newCategory": "new"
+    "newCategory": "new",
+    "showMore": "and {{count}} more",
+    "askModule": "Ask",
+    "sectionsNav": "Profile sections",
+    "moduleNav": {
+      "build": "Build",
+      "economics": "Costs",
+      "market": "Market",
+      "record": "Record"
+    }
   },
   "discovery": {
     "teaserCount": "{{total}} parcels match — you're seeing {{shown}}.",
@@ -565,7 +581,7 @@
     "proBlurb": "Billed monthly via Stripe. Manage or cancel anytime.",
     "purchases": "Report purchases",
     "purchasesEmpty": "No reports purchased yet.",
-    "purchasesEmptyCta": "Open a parcel's Scorecard to buy its $25 feasibility report.",
+    "purchasesEmptyCta": "Open a parcel's Property Profile to buy its $25 feasibility report.",
     "download": "Download PDF",
     "downloading": "Preparing…",
     "downloadFailed": "Download failed — try again.",

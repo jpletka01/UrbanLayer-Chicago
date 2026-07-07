@@ -24,8 +24,8 @@
   },
   "propertyStarters": {
     "heading": "Pregunta sobre esta propiedad",
-    "sublineWithAddress": "Basado en el Scorecard de {{address}} — zonificación, incentivos, comparables y el código que los respalda.",
-    "subline": "Basado en el Scorecard de esta parcela — zonificación, incentivos, comparables y el código que los respalda.",
+    "sublineWithAddress": "Basado en la Ficha de {{address}} — zonificación, incentivos, comparables y el código que los respalda.",
+    "subline": "Basado en la Ficha de esta parcela — zonificación, incentivos, comparables y el código que los respalda.",
     "build": "¿Qué puedo construir en este lote?",
     "zoning": "Explica la zonificación y los distritos superpuestos aquí",
     "comparables": "¿Cómo se ven las ventas comparables recientes?",
@@ -67,5 +67,6 @@
     "violations": "Infracciones de construcción",
     "business": "Licencias comerciales",
     "portal": "Portal de Datos de Chicago"
-  }
+  },
+  "grounded": {}
 }

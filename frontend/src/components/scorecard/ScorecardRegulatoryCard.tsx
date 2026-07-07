@@ -2,13 +2,13 @@
 // page: overlays are severity-sorted into constraints (reviews/restrictions) vs
 // opportunities/context instead of seven identical boxes, and type is body-scale.
 // Classification is presentational only — the same overlays render, grouped.
-import { useState, type ReactElement } from "react";
+import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { humanizeShoutyCase } from "../../lib/format";
 import { getTermInfo } from "../../lib/termDefinitions";
-import { Card } from "../ui/Card";
+import { SubSection, ShowMore } from "./ProfileModule";
 
 const ShieldIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -103,8 +103,6 @@ const CONSTRAINT_BUDGET = 6;
 
 export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
   const { t } = useTranslation("data");
-  const [showAroProjects, setShowAroProjects] = useState(false);
-  const [showAllConstraints, setShowAllConstraints] = useState(false);
 
   // Same dedup as the sidebar card: status flags that restate an overlay are dropped.
   const overlayCores = new Set(data.overlays.map((ov) => flagCore(ov.layer_type)));
@@ -144,12 +142,8 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
   const others = rows.filter((r) => r.severity !== "constraint");
 
   return (
-    <Card title={t("regulatory.title")} icon={ShieldIcon} divider
-      headerRight={rows.length > 0 ? (
-        <span className="text-caption text-text-muted">
-          {t("regulatory.constraintCount", { count: constraints.length })}
-        </span>
-      ) : undefined}
+    <SubSection title={t("regulatory.title")} icon={ShieldIcon}
+      meta={rows.length > 0 ? t("regulatory.constraintCount", { count: constraints.length }) : undefined}
       className="flex-1"
     >
       <div className="space-y-5">
@@ -160,20 +154,17 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
             <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
               {t("regulatory.constraints")}
             </div>
-            <div className="space-y-2">
-              {(showAllConstraints ? constraints : constraints.slice(0, CONSTRAINT_BUDGET)).map((r) => (
-                <OverlayRowView key={r.key} row={r} />
-              ))}
-            </div>
-            {constraints.length > CONSTRAINT_BUDGET && !showAllConstraints && (
-              <button
-                type="button"
-                onClick={() => setShowAllConstraints(true)}
-                className="mt-2 text-caption text-text-muted hover:text-text-secondary transition-colors"
-              >
-                {t("regulatory.moreConstraints", { count: constraints.length - CONSTRAINT_BUDGET })}
-              </button>
-            )}
+            <ShowMore
+              items={constraints}
+              limit={CONSTRAINT_BUDGET}
+              render={(visible) => (
+                <div className="space-y-2">
+                  {visible.map((r) => (
+                    <OverlayRowView key={r.key} row={r} />
+                  ))}
+                </div>
+              )}
+            />
           </div>
         )}
 
@@ -215,31 +206,31 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
                 </div>
               </div>
               {data.aro_housing.projects.length > 0 && (
-                <button
-                  onClick={() => setShowAroProjects((p) => !p)}
-                  className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors pt-2"
-                >
-                  <svg className={`w-3 h-3 transition-transform duration-150 ${showAroProjects ? "" : "-rotate-90"}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                  {t("regulatory.nearbyProjects")} ({Math.min(data.aro_housing.projects.length, 5)})
-                </button>
-              )}
-              {showAroProjects && data.aro_housing.projects.slice(0, 5).map((proj, i) => (
-                <div key={i} className="text-caption leading-snug pl-2 border-l border-dark-border mt-2">
-                  <p className="text-text-primary">{proj.name}</p>
-                  <div className="flex gap-2 text-text-muted">
-                    {proj.units != null && <span>{proj.units} {t("regulatory.units")}</span>}
-                    {proj.property_type && <span>{proj.property_type}</span>}
-                  </div>
+                <div className="pt-2">
+                  <ShowMore
+                    items={data.aro_housing.projects.slice(0, 5)}
+                    limit={2}
+                    render={(visible) => (
+                      <>
+                        {visible.map((proj, i) => (
+                          <div key={i} className="text-caption leading-snug pl-2 border-l border-dark-border mt-2 first:mt-0">
+                            <p className="text-text-primary">{proj.name}</p>
+                            <div className="flex gap-2 text-text-muted">
+                              {proj.units != null && <span>{proj.units} {t("regulatory.units")}</span>}
+                              {proj.property_type && <span>{proj.property_type}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  />
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
 
       </div>
-    </Card>
+    </SubSection>
   );
 }

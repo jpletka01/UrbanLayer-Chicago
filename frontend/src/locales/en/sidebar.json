@@ -20,7 +20,7 @@
   "sourceCount_other": "{{count}} sources",
   "sectionNotFound": "Section not found",
   "bridge": {
-    "viewScorecard": "View Scorecard",
+    "viewScorecard": "View Property Profile",
     "pin": "PIN {{pin}}"
   },
   "semanticMatchScore": "Semantic match score",

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { translateFloodSubtype } from "../../lib/format";
-import { Card } from "../ui/Card";
+import { SubSection } from "./ProfileModule";
 
 const WaterIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -18,7 +18,7 @@ export function ScorecardEnvironmentCard({ data }: { data: RegulatorySummary }) 
   if (!data.flood_zone && data.brownfield_sites.length === 0) return null;
 
   return (
-    <Card title={t("regulatory.environment")} icon={WaterIcon} divider className="flex-1">
+    <SubSection title={t("regulatory.environment")} icon={WaterIcon} className="flex-1">
       <div className="space-y-4">
         {data.flood_zone && (
           <div>
@@ -65,6 +65,6 @@ export function ScorecardEnvironmentCard({ data }: { data: RegulatorySummary }) 
           </div>
         )}
       </div>
-    </Card>
+    </SubSection>
   );
 }

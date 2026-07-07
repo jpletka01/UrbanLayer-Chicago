@@ -20,7 +20,11 @@
   "hero": {
     "addressPlaceholder": "Ingresa una dirección de Chicago…",
     "try": "Prueba:",
-    "addressExamples": ["4520 N Clark St", "1601 N Milwaukee Ave", "1425 N Wells St"],
+    "addressExamples": [
+      "4520 N Clark St",
+      "1601 N Milwaukee Ave",
+      "1425 N Wells St"
+    ],
     "askAnalystLead": "¿Investigando el código o un vecindario?",
     "askAnalystCta": "Pregunte al analista"
   },

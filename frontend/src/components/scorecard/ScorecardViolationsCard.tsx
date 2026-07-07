@@ -1,10 +1,9 @@
-// Page-scale Violations card, Tier-3 compact: counts in the header, top categories
-// as caption rows, descriptions behind a disclosure. Address-exact scope label
-// preserved (2026-06-30 policy).
-import { useState } from "react";
+// Record-module violations block (de-carded): counts in the header meta, top
+// categories as caption rows, descriptions visible top-N + ShowMore. Address-
+// exact scope label preserved (2026-06-30 policy).
 import { useTranslation } from "react-i18next";
 import type { ViolationSummary } from "../../lib/types";
-import { Card } from "../ui/Card";
+import { SubSection, ShowMore } from "./ProfileModule";
 
 const AlertIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -15,25 +14,23 @@ const AlertIcon = (
 
 export function ScorecardViolationsCard({ data, scopeLabel }: { data: ViolationSummary; scopeLabel?: string }) {
   const { t } = useTranslation("data");
-  const [showDescriptions, setShowDescriptions] = useState(false);
 
   const categories = Object.entries(data.by_category ?? {})
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 
   return (
-    <Card
+    <SubSection
       title={t("violations.title")}
       icon={AlertIcon}
-      headerRight={
-        <span className="text-caption text-text-muted">
+      meta={
+        <>
           {data.total.toLocaleString()} {t("violations.total").toLowerCase()}
           {data.open_count > 0 && (
             <span className="text-state-warning"> · {data.open_count} {t("violations.open").toLowerCase()}</span>
           )}
-        </span>
+        </>
       }
-      divider
       className="flex-1"
     >
       <div className="space-y-3">
@@ -51,25 +48,17 @@ export function ScorecardViolationsCard({ data, scopeLabel }: { data: ViolationS
         )}
 
         {data.top_descriptions?.length > 0 && (
-          <div>
-            <button
-              onClick={() => setShowDescriptions((s) => !s)}
-              className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors"
-            >
-              <svg className={`w-3 h-3 transition-transform duration-200 ${showDescriptions ? "" : "-rotate-90"}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-              {t("violations.topDescriptions")}
-            </button>
-            {showDescriptions && (
-              <ul className="mt-1.5 space-y-1">
-                {data.top_descriptions.map((desc, i) => (
-                  <li key={i} className="text-caption text-text-muted leading-snug pl-3">{desc}</li>
+          <ShowMore
+            items={data.top_descriptions}
+            limit={2}
+            render={(visible) => (
+              <ul className="space-y-1">
+                {visible.map((desc, i) => (
+                  <li key={i} className="text-caption text-text-muted leading-snug">{desc}</li>
                 ))}
               </ul>
             )}
-          </div>
+          />
         )}
 
         {data.capped && (
@@ -78,6 +67,6 @@ export function ScorecardViolationsCard({ data, scopeLabel }: { data: ViolationS
           </p>
         )}
       </div>
-    </Card>
+    </SubSection>
   );
 }

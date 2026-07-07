@@ -1,13 +1,14 @@
-// Page-scale Comparables card. Leads with the median, draws the sales as a price
-// strip (dot plot on a price axis — single series, one hue, ring-marked dots per
-// the dataviz method), and keeps the full table behind one disclosure. The subject's
-// assessed value is deliberately NOT plotted: assessed ≠ market price, and putting
-// them on one axis would misstate the comparison.
+// Market module content (de-carded). Leads with the median, draws the sales as a
+// price strip (dot plot on a price axis — single series, one hue, ring-marked
+// dots) with a real hover layer (nearest-dot tooltip, ≥24px hit areas), and keeps
+// the full table visible top-N + ShowMore. The subject's assessed value is
+// deliberately NOT plotted: assessed ≠ market price, and putting them on one
+// axis would misstate the comparison.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ComparablesSummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
-import { Card } from "../ui/Card";
+import { SubSection, ShowMore } from "./ProfileModule";
 
 const ChartIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -26,30 +27,73 @@ function fmtCompact(n: number): string {
   return `$${Math.round(n)}`;
 }
 
-/** Dot plot of sale prices on a price axis; median marked with a hairline. */
+interface StripSale {
+  price: number;
+  date: string | null;
+  classCode: string | null;
+}
+
+/** Dot plot of sale prices on a price axis; median marked with a hairline.
+    Hover: nearest-dot tooltip (the whole strip is the hit area — pointer only
+    has to be closest, never dead-center on a 10px dot). */
 function PriceStrip({ data }: { data: ComparablesSummary }) {
   const { t } = useTranslation("data");
-  const prices = data.sales.map((s) => s.sale_price).filter((p): p is number => p != null && p > 0);
-  if (prices.length < 3) return null;
+  const [hover, setHover] = useState<number | null>(null);
+  const sales: StripSale[] = data.sales
+    .filter((s): s is typeof s & { sale_price: number } => s.sale_price != null && s.sale_price > 0)
+    .map((s) => ({ price: s.sale_price, date: s.sale_date, classCode: s.class_code ?? null }));
+  if (sales.length < 3) return null;
+  const prices = sales.map((s) => s.price);
   const min = Math.min(...prices), max = Math.max(...prices);
   if (max === min) return null;
   const W = 560, H = 36, PX = 10;
   const x = (p: number) => PX + ((p - min) / (max - min)) * (W - 2 * PX);
   const median = data.median_sale_price;
+
+  const hovered = hover != null ? sales[hover] : null;
+  const tipLeftPct = hovered ? (x(hovered.price) / W) * 100 : 0;
+  const tipTranslate = tipLeftPct < 18 ? "0%" : tipLeftPct > 82 ? "-100%" : "-50%";
+
   return (
-    <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-9" aria-hidden>
+    <div className="relative">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full h-9"
+        role="img"
+        aria-label={t("comparables.stripAriaLabel", { count: sales.length })}
+        onPointerMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const vx = ((e.clientX - rect.left) / rect.width) * W;
+          let best = 0, bestD = Infinity;
+          sales.forEach((s, i) => {
+            const d = Math.abs(x(s.price) - vx);
+            if (d < bestD) { bestD = d; best = i; }
+          });
+          setHover(best);
+        }}
+        onPointerLeave={() => setHover(null)}
+      >
         <line x1={PX} y1={H / 2} x2={W - PX} y2={H / 2} stroke="rgb(var(--border))" strokeWidth="1" />
         {median != null && (
           <line x1={x(median)} y1={4} x2={x(median)} y2={H - 4} stroke="rgb(var(--text-muted))" strokeWidth="1" strokeDasharray="3 3" />
         )}
-        {prices.map((p, i) => (
-          <circle key={i} cx={x(p)} cy={H / 2} r="5"
-            fill="rgb(var(--accent))" stroke="rgb(var(--surface))" strokeWidth="2">
-            <title>{fmtFull(p)}</title>
-          </circle>
+        {sales.map((s, i) => (
+          <circle key={i} cx={x(s.price)} cy={H / 2} r={hover === i ? 6 : 5}
+            fill="rgb(var(--accent))" stroke="rgb(var(--surface))" strokeWidth="2"
+            style={hover === i ? { filter: "brightness(1.15)" } : undefined} />
         ))}
       </svg>
+      {hovered && (
+        <div
+          className="pointer-events-none absolute -top-9 z-10 rounded-lg border border-dark-border bg-dark-elevated shadow-card px-2.5 py-1.5 text-caption whitespace-nowrap"
+          style={{ left: `${tipLeftPct}%`, transform: `translateX(${tipTranslate})` }}
+          role="status"
+        >
+          <span className="text-text-primary font-medium">{fmtFull(hovered.price)}</span>
+          {hovered.date && <span className="text-text-muted"> · {formatDate(hovered.date)}</span>}
+          {hovered.classCode && <span className="text-text-muted"> · {hovered.classCode}</span>}
+        </div>
+      )}
       <div className="flex justify-between text-caption text-text-muted mt-0.5">
         <span>{fmtCompact(min)}</span>
         {median != null && <span className="text-text-secondary">{t("comparables.medianPrice")} {fmtCompact(median)}</span>}
@@ -61,22 +105,20 @@ function PriceStrip({ data }: { data: ComparablesSummary }) {
 
 export function ScorecardComparablesCard({ data }: { data: ComparablesSummary }) {
   const { t } = useTranslation("data");
-  const [showSales, setShowSales] = useState(false);
 
   if (!data.sales || data.sales.length === 0) {
     return (
-      <Card title={t("comparables.title")} icon={ChartIcon} divider className="flex-1">
+      <SubSection title={t("comparables.title")} icon={ChartIcon} className="flex-1">
         <p className="text-body text-text-muted">{t("comparables.noData")}</p>
-      </Card>
+      </SubSection>
     );
   }
 
   return (
-    <Card
+    <SubSection
       title={t("comparables.title")}
       icon={ChartIcon}
-      headerRight={<span className="text-caption text-text-muted">{t("comparables.radius")}</span>}
-      divider
+      meta={t("comparables.radius")}
       className="flex-1"
     >
       <div className="space-y-4">
@@ -106,19 +148,11 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
           )}
         </dl>
 
-        <div>
-          <button
-            onClick={() => setShowSales((s) => !s)}
-            className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors"
-          >
-            <svg className={`w-3 h-3 transition-transform duration-150 ${showSales ? "" : "-rotate-90"}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-            {t("comparables.recentSales")} ({data.sales.length})
-          </button>
-          {showSales && (
-            <div className="mt-2 overflow-x-auto">
+        <ShowMore
+          items={data.sales}
+          limit={5}
+          render={(rows) => (
+            <div className="overflow-x-auto">
               <table className="w-full text-caption">
                 <thead>
                   <tr className="text-text-muted border-b border-dark-border">
@@ -129,7 +163,7 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
                   </tr>
                 </thead>
                 <tbody>
-                  {data.sales.map((sale, i) => (
+                  {rows.map((sale, i) => (
                     <tr key={i} className="border-t border-dark-border/50">
                       <td className="py-1.5 pr-2 text-text-primary">{sale.sale_date ? formatDate(sale.sale_date) : "—"}</td>
                       <td className="py-1.5 pr-2 text-text-primary tabular-nums">{fmtFull(sale.sale_price)}</td>
@@ -143,8 +177,8 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
               </table>
             </div>
           )}
-        </div>
+        />
       </div>
-    </Card>
+    </SubSection>
   );
 }

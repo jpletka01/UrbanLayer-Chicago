@@ -20,7 +20,7 @@
   "sourceCount_other": "{{count}} fuentes",
   "sectionNotFound": "Sección no encontrada",
   "bridge": {
-    "viewScorecard": "Ver Scorecard",
+    "viewScorecard": "Ver Ficha",
     "pin": "PIN {{pin}}"
   },
   "semanticMatchScore": "Puntuación de coincidencia semántica",

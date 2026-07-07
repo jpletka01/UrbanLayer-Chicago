@@ -80,7 +80,35 @@
     "reportTeaser": "Tax projections + development potential in report",
     "otherAgencies": "Other ({{count}})",
     "fullRecords": "Full records",
-    "taxBreakdownToggle": "Tax breakdown"
+    "taxBreakdownToggle": "Tax breakdown",
+    "taxDetail": "Tax & assessment",
+    "buildingAndLot": "Building & lot",
+    "timeline": {
+      "ariaLabel": "Assessment history {{from}}–{{to}} with sales and appeals",
+      "land": "Land",
+      "building": "Building",
+      "vsPrior": "vs prior year",
+      "totalAssessed": "total assessed",
+      "sold": "sale",
+      "appealWon": "Appeal won −{{pct}}%",
+      "sale": "Sale",
+      "appeal": "Appeal won"
+    },
+    "agencyNames": {
+      "city_of_chicago": "City of Chicago",
+      "board_of_education": "Board of Education",
+      "chicago_park_district": "Chicago Park District",
+      "metro_water_reclamation": "Metropolitan Water Reclamation",
+      "metropolitan_water_reclamation": "Metropolitan Water Reclamation",
+      "cook_county_forest_preserve": "Cook County Forest Preserve",
+      "city_colleges": "City Colleges of Chicago",
+      "city_colleges_of_chicago": "City Colleges of Chicago",
+      "cook_county": "Cook County",
+      "cook_county_health_facilities": "Cook County Health Facilities",
+      "chicago_transit_authority": "Chicago Transit Authority",
+      "north_shore_mosquito": "Mosquito Abatement (North Shore)",
+      "mosquito_abatement": "Mosquito Abatement"
+    }
   },
   "regulatory": {
     "title": "Regulatory",
@@ -296,7 +324,8 @@
     "priceSqft": "$/Sqft",
     "noData": "No comparable sales found nearby.",
     "radius": "Within 0.25 mi, last 3 yrs",
-    "reportTeaser": "Sales trend chart + full analysis in report"
+    "reportTeaser": "Sales trend chart + full analysis in report",
+    "stripAriaLabel": "{{count}} comparable sale prices"
   },
   "violations": {
     "title": "Violations",

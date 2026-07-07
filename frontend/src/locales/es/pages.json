@@ -53,7 +53,7 @@
   },
   "scorecard": {
     "title": "Ficha de la propiedad",
-    "subtitle": "Resumen instantáneo y gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y ventas comparables. Ingresa una dirección.",
+    "subtitle": "El panel de investigación gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y comparables. Ingresa una dirección.",
     "search": "Buscar",
     "loading": "Cargando...",
     "addressNotFound": "No se pudo encontrar esa dirección. Intente con un formato diferente (ej. \"1601 N Milwaukee Ave\").",
@@ -267,7 +267,7 @@
       }
     },
     "feedback": {
-      "question": "¿Fue preciso este Scorecard?",
+      "question": "¿Fue precisa esta Ficha?",
       "up": "Sí",
       "down": "Algo está mal",
       "placeholder": "¿Qué falta o está mal? (opcional)",
@@ -306,18 +306,34 @@
       "overlays": "Superposiciones",
       "overlaysNone": "Ninguna activa",
       "overlaysFriction": "{{count}} añaden revisión",
-      "overlaysContext": "Contexto — no bloquea"
+      "overlaysContext": "Contexto — no bloquea",
+      "lot": "Área del lote",
+      "lotBldg": "edif. {{sqft}} ft²",
+      "assessedDelta": "{{pct}} desde {{year}}",
+      "tax": "Impuesto est.",
+      "taxRate": "{{rate}}% efectivo"
     },
     "sections": {
       "capacityTitle": "Qué puede construir",
       "capacitySub": "Envolvente de zonificación y las capas superpuestas que la definen",
       "economicsTitle": "Qué cuesta",
-      "economicsSub": "Tasación, impuestos, ventas comparables y dinero de incentivos",
+      "economicsSub": "Trayectoria de tasación, impuestos y dinero de incentivos",
       "riskTitle": "Qué vigilar",
-      "riskSub": "Infracciones, denuncios y señales ambientales en esta dirección"
+      "riskSub": "Infracciones, denuncios y señales ambientales en esta dirección",
+      "marketTitle": "El mercado",
+      "marketSub": "Ventas comparables recientes alrededor de esta parcela"
     },
     "backToVerdict": "Volver al veredicto",
-    "newCategory": "nuevo"
+    "newCategory": "nuevo",
+    "showMore": "y {{count}} más",
+    "askModule": "Preguntar",
+    "sectionsNav": "Secciones de la ficha",
+    "moduleNav": {
+      "build": "Construir",
+      "economics": "Costos",
+      "market": "Mercado",
+      "record": "Historial"
+    }
   },
   "discovery": {
     "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",
@@ -565,7 +581,7 @@
     "proBlurb": "Facturado mensualmente a través de Stripe. Gestiona o cancela cuando quieras.",
     "purchases": "Informes comprados",
     "purchasesEmpty": "Aún no has comprado informes.",
-    "purchasesEmptyCta": "Abre el Scorecard de una parcela para comprar su informe de viabilidad de $25.",
+    "purchasesEmptyCta": "Abre la Ficha de una parcela para comprar su informe de viabilidad de $25.",
     "download": "Descargar PDF",
     "downloading": "Preparando…",
     "downloadFailed": "Error al descargar — inténtalo de nuevo.",

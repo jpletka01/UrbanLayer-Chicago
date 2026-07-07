@@ -16,9 +16,11 @@ import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
 import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
 import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
 import { ScorecardEnvironmentCard } from "./scorecard/ScorecardEnvironmentCard";
+import { ProfileModule, SubSection } from "./scorecard/ProfileModule";
+import { KpiStrip, type KpiTile } from "./scorecard/KpiStrip";
 import { NeighborhoodCard } from "./sidebar/NeighborhoodCard";
 import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExport";
-import { VerdictBand, verdictDotClass, type VerdictTile } from "./VerdictBand";
+import { VerdictBand, verdictDotClass } from "./VerdictBand";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
@@ -26,7 +28,6 @@ import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { useThemeContext } from "../contexts/ThemeContext";
-import { Card } from "./ui/Card";
 import { Chip } from "./ui/Chip";
 import { Modal } from "./ui/Modal";
 
@@ -55,8 +56,8 @@ function formatPin(pin: string): string {
 // parcel polygon geometry isn't reliably available (county GIS), so the
 // default state must not depend on it. Hidden entirely if the image fails.
 // Its ONLY job is identity confirmation ("is that my corner?" — the
-// nearest-parcel seam), so it's a small click-to-verify square in the decision
-// card's header, not a context map; the expanded view carries the legible look.
+// nearest-parcel seam), so it's a small click-to-verify square in the identity
+// bar, not a context map; the expanded view carries the legible look.
 function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: string }) {
   const { t } = useTranslation("pages");
   const { resolvedTheme } = useThemeContext();
@@ -95,17 +96,6 @@ function MapThumb({ lat, lon, address }: { lat: number; lon: number; address: st
   );
 }
 
-// Question-oriented section header — the page's reading order is explicit:
-// what you can build → what it costs → what to watch for.
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <div className="mt-10 mb-4">
-      <h3 className="text-title text-text-primary">{title}</h3>
-      <p className="text-caption text-text-muted mt-0.5">{subtitle}</p>
-    </div>
-  );
-}
-
 const crimeIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
@@ -118,20 +108,19 @@ const cleanIcon = (
   </svg>
 );
 
-function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
+function CrimeYoYBlock({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
   const crime = data.context.crime_last_90d;
   if (!crime) return null;
   const yoy = crime.yoy;
   return (
-    <Card
-      padding="sm"
+    <SubSection
       icon={crimeIcon}
       title={t("scorecard.crimeArea")}
-      headerRight={<span className="text-micro text-text-muted">{t("scorecard.incidents90d", { count: crime.total })}</span>}
+      meta={t("scorecard.incidents90d", { count: crime.total })}
     >
       <div className="space-y-2">
-        {/* Self-disclose the area scope on the card itself — so even read in
+        {/* Self-disclose the area scope on the block itself — so even read in
             isolation (collapsed section, screenshot) the count can't be mistaken
             for parcel-level. */}
         <p className="text-micro text-text-muted">
@@ -165,7 +154,7 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
           </div>
         )}
       </div>
-    </Card>
+    </SubSection>
   );
 }
 
@@ -175,17 +164,16 @@ const address311Icon = (
   </svg>
 );
 
-function Address311Card({ data }: { data: ScorecardResponse }) {
+function Address311Block({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
   const addr311 = data.context.address_311;
   if (!addr311) return null;
   return (
-    <Card
-      padding="sm"
+    <SubSection
       icon={address311Icon}
       className="flex-1"
       title={t("scorecard.311atAddress")}
-      headerRight={<span className="text-micro text-text-muted">{addr311.total} {t("scorecard.pastYear")}</span>}
+      meta={`${addr311.total} ${t("scorecard.pastYear")}`}
     >
       <div className="space-y-2">
         {addr311.open_count > 0 && (
@@ -213,20 +201,23 @@ function Address311Card({ data }: { data: ScorecardResponse }) {
           </div>
         )}
       </div>
-    </Card>
+    </SubSection>
   );
 }
-
 
 function ScorecardSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-dark-surface border border-dark-border rounded-xl h-48" />
-      ))}
+    <div className="animate-pulse space-y-6">
+      <div className="bg-dark-surface border border-dark-border rounded-xl h-32" />
+      <div className="bg-dark-surface border border-dark-border rounded-xl h-24" />
+      <div className="bg-dark-surface border border-dark-border rounded-xl h-64" />
     </div>
   );
 }
+
+// Dashboard section registry — nav labels + presence drive the sticky rail.
+const MODULE_IDS = ["module-build", "module-economics", "module-market", "module-record"] as const;
+type ModuleId = (typeof MODULE_IDS)[number];
 
 export default function ScorecardPage() {
   const { t } = useTranslation("pages");
@@ -345,7 +336,7 @@ export default function ScorecardPage() {
     }
   }, []);
 
-  // Fetch report access when scorecard data loads (for non-pro users)
+  // Fetch report access when profile data loads (for non-pro users)
   useEffect(() => {
     if (!data || !parcel || isPro) return;
     checkReportAccess(parcel).then(setReportAccess);
@@ -379,20 +370,18 @@ export default function ScorecardPage() {
 
   const zdef = data?.zone_definition;
 
-  // Verdict Band: leads the Scorecard with a deterministic scored conclusion +
-  // card-linked evidence + ONE next step (replaces the old facts-only flag line,
-  // which restated cards without concluding). Thresholds calibrated & signed off
-  // 2026-06-29 — see lib/scorecardVerdict.ts.
+  // Verdict: leads the profile with a deterministic scored conclusion +
+  // module-linked evidence + ONE next step. Thresholds calibrated & signed off
+  // 2026-06-29 — see lib/scorecardVerdict.ts (visual redesign only, logic untouched).
   const verdict = data && ctx ? computeVerdict(data, t) : null;
 
-  // Evidence rail for the verdict band: the 3–4 numbers that justify the verdict,
-  // each deep-linking to its card. Tiles with missing data are simply omitted
-  // (the band renders the rail only when ≥2 survive).
+  // KPI strip: the level-1 numbers, each deep-linking to its evidence module.
+  // Tiles with missing data are simply omitted (the strip renders at ≥2).
   const fmtMoneyCompact = (n: number): string =>
     n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
     : n >= 1_000 ? `$${Math.round(n / 1_000)}K`
     : `$${Math.round(n)}`;
-  const tiles: VerdictTile[] = [];
+  const tiles: KpiTile[] = [];
   if (verdict && ctx) {
     if (zoning) {
       tiles.push({
@@ -404,14 +393,45 @@ export default function ScorecardPage() {
           : t("scorecard.verdict.signal.entitlementDefined"),
       });
     }
+    const land = ctx.property?.land_sqft;
+    if (land != null && land > 0) {
+      const bldg = ctx.property?.bldg_sqft;
+      tiles.push({
+        anchor: "property",
+        label: t("scorecard.tiles.lot"),
+        value: `${land.toLocaleString()} ft²`,
+        sub: bldg != null && bldg > 0
+          ? t("scorecard.tiles.lotBldg", { sqft: bldg.toLocaleString() })
+          : undefined,
+      });
+    }
     const av = ctx.property?.total_assessed_value;
     const estTax = ctx.property?.estimated_annual_tax;
     if (av != null) {
+      // Δ since the earliest assessment year — the trajectory in one number.
+      const hist = (ctx.property?.assessment_history ?? [])
+        .filter((a) => a.year != null && a.total != null && a.total > 0)
+        .sort((a, b) => a.year! - b.year!);
+      const first = hist[0];
+      const deltaPct = first?.total && first.total > 0
+        ? Math.round(((av - first.total) / first.total) * 100)
+        : null;
       tiles.push({
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
         value: fmtMoneyCompact(av),
-        sub: estTax != null ? t("scorecard.tiles.assessedTax", { tax: fmtMoneyCompact(estTax) }) : undefined,
+        sub: deltaPct != null && deltaPct !== 0 && first.year != null
+          ? t("scorecard.tiles.assessedDelta", { pct: `${deltaPct > 0 ? "+" : ""}${deltaPct}%`, year: first.year })
+          : undefined,
+      });
+    }
+    if (estTax != null) {
+      const rate = ctx.property?.effective_tax_rate;
+      tiles.push({
+        anchor: "property",
+        label: t("scorecard.tiles.tax"),
+        value: `${fmtMoneyCompact(estTax)}/yr`,
+        sub: rate != null ? t("scorecard.tiles.taxRate", { rate: (rate * 100).toFixed(2) }) : undefined,
       });
     }
     if (data?.comparables?.median_sale_price != null) {
@@ -438,7 +458,7 @@ export default function ScorecardPage() {
     }
   }
 
-  // Sticky condensed verdict: once the band scrolls out of view, a compact strip
+  // Sticky condensed verdict: once the lead scrolls out of view, a compact strip
   // (tone dot + headline + tile values) keeps the conclusion and a way back in
   // reach on a long page.
   const bandRef = useRef<HTMLDivElement | null>(null);
@@ -451,11 +471,47 @@ export default function ScorecardPage() {
     return () => io.disconnect();
   }, [data]);
 
-  const scrollToCard = (anchor: CardId) => {
+  const scrollToCard = (anchor: CardId | string) => {
     document.getElementById(`scorecard-card-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Quick-chat dock: every on-page ask (investigate chips, verdict next-step,
+  // Module presence — drives both rendering and the sticky section rail.
+  const hasBuild = !!(zdef || ctx?.regulatory);
+  const hasEconomics = !!(ctx?.property || ctx?.incentives);
+  const hasMarket = !!(data?.comparables && data.comparables.sales.length > 0);
+  const hasRecord = !!(ctx && (ctx.violations || data?.violations_checked || ctx.regulatory?.flood_zone
+    || (ctx.regulatory?.brownfield_sites.length ?? 0) > 0 || ctx.address_311));
+  const modulePresence: Record<ModuleId, boolean> = {
+    "module-build": hasBuild,
+    "module-economics": hasEconomics,
+    "module-market": hasMarket,
+    "module-record": hasRecord,
+  };
+  const navSections = MODULE_IDS.filter((id) => modulePresence[id]);
+
+  // Scrollspy for the section rail — topmost intersecting module wins.
+  const [activeSection, setActiveSection] = useState<ModuleId | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActiveSection(visible[0].target.id as ModuleId);
+    }, { rootMargin: "-15% 0px -65% 0px" });
+    navSections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, navSections.join(",")]);
+
+  const jumpToModule = (id: ModuleId) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Quick-chat dock: every on-page ask (module ask chips, verdict next-step,
   // the header ask button) opens/sends in the dock instead of navigating away.
   // The full workspace stays reachable through the dock's escalation link.
   const [dockSignal, setDockSignal] = useState<DockSignal | null>(null);
@@ -467,11 +523,24 @@ export default function ScorecardPage() {
     askDock(question);
   };
 
+  // ONE ask affordance per module (replaces the per-card chip sprawl) — the
+  // module's most useful grounded question, opened in the dock.
+  const moduleAsk = (cardName: string, question: string) => (
+    <InvestigateButton
+      variant="chip"
+      question={question}
+      label={t("scorecard.askModule")}
+      cardName={cardName}
+      pin={parcel?.pin}
+      onAsk={askDock}
+    />
+  );
+
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary">
       <PageHeader />
 
-      {/* pb-24 clears the sticky report bar so the last card is never hidden behind it */}
+      {/* pb-24 clears the sticky report bar so the last module is never hidden behind it */}
       <main className={`max-w-7xl mx-auto px-4 py-8 ${data && !loading ? "pb-24" : ""}`}>
         {/* Search shell — prominent (empty / address-typo) vs compact (loading /
             success / code-question redirect). One boolean, two shells. */}
@@ -512,7 +581,7 @@ export default function ScorecardPage() {
         ) : (
           <div className="max-w-2xl mx-auto mb-6">
             {/* Compact re-search: same shared component, smaller step. Empty by
-                design — the loaded address lives in the decision card below. */}
+                design — the loaded address lives in the identity bar below. */}
             <AddressInput
               variant="page"
               size="sm"
@@ -553,126 +622,129 @@ export default function ScorecardPage() {
 
         {data && ctx && !loading && (
           <div>
-            {/* Decision card — ONE surface for identity + verdict + evidence
-                tiles. Leads with the conclusion; reasons and tiles deep-link to
-                the evidence cards below; one next step. The nearest-parcel /
-                unconfirmed-identity caveat is folded into the band's caveats. */}
+            {/* ── Level 1: identity → verdict → KPI strip ─────────────────── */}
+
+            {/* Identity bar — one quiet line owning "which parcel is this":
+                address, area, ward, PIN, confidence, freshness, page actions.
+                The locator thumb is identity confirmation only (nearest-parcel
+                seam), never an exploration map. */}
+            <div className="flex gap-4 items-start mb-6">
+              <MapThumb lat={data.lat} lon={data.lon} address={addr} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <h2 className="text-subtitle">
+                    {data.address || ctx.property?.address ||
+                      (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
+                  </h2>
+                  {data.community_area_name && (
+                    <span className="text-body text-text-muted">{data.community_area_name}</span>
+                  )}
+                  {ctx.neighborhood?.ward && (
+                    <span className="text-body text-text-muted" title={ctx.neighborhood.ward.alderman
+                      ? t("scorecard.wardTooltip", { alderman: ctx.neighborhood.ward.alderman })
+                      : undefined}>
+                      {t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward })}
+                      {ctx.neighborhood.ward.alderman && (
+                        <span> · {ctx.neighborhood.ward.alderman}</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+                {/* Parcel identity strip */}
+                {parcel && (
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    {parcel.pin && (
+                      <a
+                        href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-caption font-mono text-text-secondary hover:text-accent transition-colors"
+                      >
+                        PIN {formatPin(parcel.pin)}
+                      </a>
+                    )}
+                    {parcel.pin === null ? (
+                      <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
+                        {t("scorecard.badges.unconfirmed")}
+                      </Chip>
+                    ) : parcel.confidence === "authoritative" ? (
+                      <Chip tone="positive" size="sm" title={t("scorecard.badges.exactTitle")} className="cursor-help">
+                        ✓ {t("scorecard.badges.exact")}
+                      </Chip>
+                    ) : (
+                      <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
+                        {t("scorecard.badges.approximate")}
+                      </Chip>
+                    )}
+                    {data.context.data_as_of && (
+                      <span className="text-micro text-text-muted">
+                        {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {data.partial_failures.length > 0 && (
+                  <div className="mt-2 text-micro text-state-warning">
+                    {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
+                  </div>
+                )}
+                {/* Page actions — ONE idiom (the chip language), grouped. Solid
+                    orange stays reserved for the verdict's next step. */}
+                <div className="flex flex-wrap gap-2 mt-3 items-center">
+                  {/* Open-ended ask: opens the quick-chat dock (empty, starters
+                      showing) — answers arrive in place. The full workspace is
+                      the dock's escalation link. */}
+                  {parcel?.pin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        track("investigate_click", { card_name: "ask_about_property" });
+                        askDock(null);
+                      }}
+                      className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                      </svg>
+                      {t("scorecard.askAboutProperty")}
+                      <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    title={t("scorecard.downloadCsv")}
+                    onClick={() => {
+                      const slug = buildFilenameSlug(data.address || "property");
+                      const date = new Date().toISOString().slice(0, 10);
+                      downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
+                    }}
+                    className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    {t("scorecard.downloadCsvShort")}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Verdict lead — the conclusion, de-carded */}
             {verdict && (
               <div ref={bandRef}>
                 <VerdictBand
                   verdict={verdict}
-                  tiles={tiles}
                   onChat={verdictChat}
                   onScrollTo={scrollToCard}
                   footer={<ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />}
-                  header={
-                    <div className="flex gap-4 items-start">
-                      <MapThumb lat={data.lat} lon={data.lon} address={data.address || ctx.property?.address || ""} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-3 flex-wrap">
-                          <h2 className="text-subtitle">
-                            {data.address || ctx.property?.address ||
-                              (parcel?.pin ? `PIN ${formatPin(parcel.pin)}` : t("scorecard.addressUnavailable"))}
-                          </h2>
-                          {data.community_area_name && (
-                            <span className="text-body text-text-muted">{data.community_area_name}</span>
-                          )}
-                          {ctx.neighborhood?.ward && (
-                            <span className="text-body text-text-muted" title={ctx.neighborhood.ward.alderman
-                              ? t("scorecard.wardTooltip", { alderman: ctx.neighborhood.ward.alderman })
-                              : undefined}>
-                              {t("scorecard.wardLabel", { ward: ctx.neighborhood.ward.ward })}
-                              {ctx.neighborhood.ward.alderman && (
-                                <span> · {ctx.neighborhood.ward.alderman}</span>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        {/* Parcel identity strip */}
-                        {parcel && (
-                          <div className="flex items-center gap-3 mt-2 flex-wrap">
-                            {parcel.pin && (
-                              <a
-                                href={`https://www.cookcountyassessor.com/pin/${parcel.pin}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-caption font-mono text-text-secondary hover:text-accent transition-colors"
-                              >
-                                PIN {formatPin(parcel.pin)}
-                              </a>
-                            )}
-                            {parcel.pin === null ? (
-                              <Chip tone="warning" size="sm" title={t("scorecard.badges.unconfirmedTitle")} className="cursor-help">
-                                {t("scorecard.badges.unconfirmed")}
-                              </Chip>
-                            ) : parcel.confidence === "authoritative" ? (
-                              <Chip tone="positive" size="sm" title={t("scorecard.badges.exactTitle")} className="cursor-help">
-                                ✓ {t("scorecard.badges.exact")}
-                              </Chip>
-                            ) : (
-                              <Chip tone="warning" size="sm" title={t("scorecard.badges.approximateTitle")} className="cursor-help">
-                                {t("scorecard.badges.approximate")}
-                              </Chip>
-                            )}
-                          </div>
-                        )}
-                        {data.context.data_as_of && (
-                          <div className="mt-2 text-micro text-text-muted">
-                            {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
-                          </div>
-                        )}
-                        {data.partial_failures.length > 0 && (
-                          <div className="mt-2 text-micro text-state-warning">
-                            {t("scorecard.someDataUnavailable", { sources: data.partial_failures.join(", ") })}
-                          </div>
-                        )}
-                        {/* Page actions — ONE idiom (the investigate-chip
-                            language), grouped so neither floats alone. Solid
-                            orange stays reserved for the verdict's next step. */}
-                        <div className="flex flex-wrap gap-2 mt-3 items-center">
-                          {/* Open-ended ask: opens the quick-chat dock (empty,
-                              starters showing) — answers arrive in place. The
-                              full workspace is the dock's escalation link. */}
-                          {parcel?.pin && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                track("investigate_click", { card_name: "ask_about_property" });
-                                askDock(null);
-                              }}
-                              className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                              </svg>
-                              {t("scorecard.askAboutProperty")}
-                              <span aria-hidden className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            title={t("scorecard.downloadCsv")}
-                            onClick={() => {
-                              const slug = buildFilenameSlug(data.address || "property");
-                              const date = new Date().toISOString().slice(0, 10);
-                              downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
-                            }}
-                            className="group inline-flex items-center gap-1.5 text-caption text-text-secondary bg-dark-surface border border-dark-border rounded-lg px-2.5 py-1.5 hover:text-accent hover:border-accent/50 transition-colors"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                            </svg>
-                            {t("scorecard.downloadCsvShort")}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  }
                 />
               </div>
             )}
 
-            {/* Condensed verdict strip — appears when the band scrolls away */}
+            {/* KPI strip — the level-1 numbers row */}
+            <KpiStrip tiles={tiles} onScrollTo={scrollToCard} />
+
+            {/* Condensed verdict strip — appears when the lead scrolls away */}
             {verdict && bandAway && (
               <div className="fixed top-[4.25rem] left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-7xl">
                 <button
@@ -705,227 +777,157 @@ export default function ScorecardPage() {
               />
             </div>
 
-            {/* Question-oriented sections replace the data-source masonry: the
-                reading order is explicit (build → cost → risk), and each card
-                keeps its verdict deep-link anchor. */}
+            {/* ── Level 2: the evidence modules + sticky section rail ─────── */}
+            <div className="lg:grid lg:grid-cols-[8.5rem_minmax(0,1fr)] lg:gap-10">
+              {/* Section rail — wayfinding for the dashboard (desktop only;
+                  the condensed verdict strip covers mobile). */}
+              <nav aria-label={t("scorecard.sectionsNav")} className="hidden lg:block">
+                <div className="sticky top-24 space-y-1">
+                  {navSections.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => jumpToModule(id)}
+                      className={`block w-full text-left text-caption rounded-md px-2.5 py-1.5 transition-colors ${
+                        activeSection === id
+                          ? "text-text-primary bg-dark-elevated"
+                          : "text-text-muted hover:text-text-secondary"
+                      }`}
+                    >
+                      {t(`scorecard.moduleNav.${id.replace("module-", "")}`)}
+                    </button>
+                  ))}
+                </div>
+              </nav>
 
-            {/* §1 — What you can build */}
-            <SectionHeader title={t("scorecard.sections.capacityTitle")} subtitle={t("scorecard.sections.capacitySub")} />
-            <div className="grid md:grid-cols-2 gap-4 md:items-start">
-              {zdef && (
-                <div id="scorecard-card-zoning" className="scroll-mt-24 flex flex-col">
-                  <ScorecardZoningCard
-                    def={zdef}
-                    mapUrl={zoning?.zoning_map_url}
-                    existingFar={verdict?.signals.existingFar}
-                    allowedFar={verdict?.signals.allowedFar}
-                    ordinanceNum={zoning?.ordinance_num}
-                  />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <InvestigateButton
-                      variant="chip"
-                      question={`What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`}
-                      label={t("scorecard.zoningRules", { zone: zdef.zone_class })}
-                      cardName="zoning"
-                      pin={parcel?.pin}
-                      onAsk={askDock}
-                    />
-                  </div>
-                </div>
-              )}
-              {ctx.regulatory && (
-                <div id="scorecard-card-regulatory" className="scroll-mt-24 flex flex-col">
-                  <ScorecardRegulatoryCard data={ctx.regulatory} />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <InvestigateButton
-                      variant="chip"
-                      question={`What are the development restrictions from regulatory overlays at ${addr}?`}
-                      label={t("scorecard.investigate.overlayRestrictions")}
-                      cardName="regulatory"
-                      pin={parcel?.pin}
-                      onAsk={askDock}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* §2 — What it costs */}
-            <SectionHeader title={t("scorecard.sections.economicsTitle")} subtitle={t("scorecard.sections.economicsSub")} />
-            <div className="grid md:grid-cols-2 gap-4 md:items-start">
-              {ctx.property && (
-                <div id="scorecard-card-property" className="scroll-mt-24 flex flex-col">
-                  <ScorecardPropertyCard data={ctx.property} />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <InvestigateButton
-                      variant="chip"
-                      question={`Tell me about the building and property characteristics at ${addr}`}
-                      label={t("scorecard.investigate.buildingDetails")}
-                      cardName="property"
-                      pin={parcel?.pin}
-                      onAsk={askDock}
-                    />
-                  </div>
-                </div>
-              )}
-              <div className="flex flex-col gap-4">
-                {data.comparables && data.comparables.sales.length > 0 && (
-                  <div id="scorecard-card-comparables" className="scroll-mt-24 flex flex-col flex-1">
-                    <ScorecardComparablesCard data={data.comparables} />
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <InvestigateButton
-                        variant="chip"
-                        question={`What are the recent comparable sales near ${addr} and what do they suggest about property values?`}
-                        label={t("scorecard.investigate.comparableSales")}
-                        cardName="comparables"
-                        pin={parcel?.pin}
-                        onAsk={askDock}
-                      />
+              <div className="min-w-0">
+                {/* §1 — What you can build */}
+                {hasBuild && (
+                  <ProfileModule
+                    id="module-build"
+                    title={t("scorecard.sections.capacityTitle")}
+                    subtitle={t("scorecard.sections.capacitySub")}
+                    action={moduleAsk("build", zdef
+                      ? `What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`
+                      : `What are the development restrictions from regulatory overlays at ${addr}?`)}
+                  >
+                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-start">
+                      {zdef && (
+                        <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col">
+                          <ScorecardZoningCard
+                            def={zdef}
+                            mapUrl={zoning?.zoning_map_url}
+                            existingFar={verdict?.signals.existingFar}
+                            allowedFar={verdict?.signals.allowedFar}
+                            ordinanceNum={zoning?.ordinance_num}
+                          />
+                        </div>
+                      )}
+                      {ctx.regulatory && (
+                        <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">
+                          <ScorecardRegulatoryCard data={ctx.regulatory} />
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  </ProfileModule>
                 )}
-                {ctx.incentives && (
-                  <div id="scorecard-card-incentives" className="scroll-mt-24 flex flex-col flex-1">
-                    <ScorecardIncentivesCard data={ctx.incentives} />
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {/* one ask per card: TIF question when the parcel is in a TIF, else the generic one */}
-                      <InvestigateButton
-                        variant="chip"
-                        question={ctx.incentives.in_tif_district && ctx.incentives.tif_name
-                          ? `How much TIF funding is available in ${ctx.incentives.tif_name} and what projects qualify?`
-                          : `What tax incentives and grant programs are available near ${addr}?`}
-                        label={ctx.incentives.in_tif_district && ctx.incentives.tif_name
-                          ? t("scorecard.investigate.tifFunding")
-                          : t("scorecard.investigate.incentivePrograms")}
-                        cardName="incentives"
-                        pin={parcel?.pin}
-                        onAsk={askDock}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* §3 — What to watch for */}
-            <SectionHeader title={t("scorecard.sections.riskTitle")} subtitle={t("scorecard.sections.riskSub")} />
-            <div className="grid md:grid-cols-2 gap-4 md:items-start">
-              <div className="flex flex-col gap-4">
-                {/* Violations tri-state: a record at this address, a confirmed
-                    "none on record" (clean — lookup ran, zero rows), or nothing
-                    (lookup couldn't run → omitted). The middle state is shown, not
-                    silent, so "no card" can't be read as "clean." */}
-                {ctx.violations ? (
-                  <div id="scorecard-card-violations" className="scroll-mt-24 flex flex-col flex-1">
-                    <ScorecardViolationsCard data={ctx.violations} scopeLabel={t("scorecard.violationsScope")} />
-                    {ctx.violations.total > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <InvestigateButton
-                          variant="chip"
-                          question={`Explain the building violations at ${addr} and typical remediation steps`}
-                          label={t("scorecard.investigate.violationDetails")}
-                          cardName="violations"
-                          pin={parcel?.pin}
-                          onAsk={askDock}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : data.violations_checked ? (
-                  <div id="scorecard-card-violations" className="scroll-mt-24 flex flex-col flex-1">
-                    <Card padding="sm" icon={cleanIcon} title={t("scorecard.violations.title")} className="flex-1">
-                      <p className="text-body text-state-positive">{t("scorecard.violations.noneOnRecord")}</p>
-                      <p className="text-caption text-text-muted mt-0.5">{t("scorecard.violationsScope")}</p>
-                    </Card>
-                  </div>
-                ) : null}
-                {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.brownfield_sites.length > 0) && (
-                  <div className="flex flex-col flex-1">
-                    <ScorecardEnvironmentCard data={ctx.regulatory} />
-                    {ctx.regulatory.flood_zone && ctx.regulatory.flood_zone !== "X" && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <InvestigateButton
-                          variant="chip"
-                          question={`What are the development restrictions from regulatory overlays and FEMA flood zone ${ctx.regulatory.flood_zone} at ${addr}?`}
-                          label={t("scorecard.investigate.overlaysAndFlood")}
-                          cardName="environment"
-                          pin={parcel?.pin}
-                          onAsk={askDock}
-                        />
-                      </div>
-                    )}
-                  </div>
+                {/* §2 — What it costs */}
+                {hasEconomics && (
+                  <ProfileModule
+                    id="module-economics"
+                    title={t("scorecard.sections.economicsTitle")}
+                    subtitle={t("scorecard.sections.economicsSub")}
+                    action={moduleAsk("economics", `Tell me about the building, taxes, and assessment history at ${addr}`)}
+                  >
+                    <div className="space-y-10">
+                      {ctx.property && (
+                        <div id="scorecard-card-property" className="scroll-mt-28">
+                          <ScorecardPropertyCard data={ctx.property} />
+                        </div>
+                      )}
+                      {ctx.incentives && (
+                        <div id="scorecard-card-incentives" className="scroll-mt-28 max-w-3xl">
+                          <ScorecardIncentivesCard data={ctx.incentives} />
+                        </div>
+                      )}
+                    </div>
+                  </ProfileModule>
+                )}
+
+                {/* §3 — The market */}
+                {hasMarket && data.comparables && (
+                  <ProfileModule
+                    id="module-market"
+                    title={t("scorecard.sections.marketTitle")}
+                    subtitle={t("scorecard.sections.marketSub")}
+                    action={moduleAsk("market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
+                  >
+                    <div id="scorecard-card-comparables" className="scroll-mt-28 max-w-3xl">
+                      <ScorecardComparablesCard data={data.comparables} />
+                    </div>
+                  </ProfileModule>
+                )}
+
+                {/* §4 — What to watch for */}
+                {hasRecord && (
+                  <ProfileModule
+                    id="module-record"
+                    title={t("scorecard.sections.riskTitle")}
+                    subtitle={t("scorecard.sections.riskSub")}
+                    action={moduleAsk("record", ctx.violations && ctx.violations.total > 0
+                      ? `Explain the building violations at ${addr} and typical remediation steps`
+                      : `What are the 311 complaint patterns at ${addr} and what do they indicate?`)}
+                  >
+                    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-8 md:items-start">
+                      {/* Violations tri-state: a record at this address, a confirmed
+                          "none on record" (clean — lookup ran, zero rows), or nothing
+                          (lookup couldn't run → omitted). The middle state is shown,
+                          not silent, so "no block" can't be read as "clean." */}
+                      {ctx.violations ? (
+                        <div id="scorecard-card-violations" className="scroll-mt-28 flex flex-col">
+                          <ScorecardViolationsCard data={ctx.violations} scopeLabel={t("scorecard.violationsScope")} />
+                        </div>
+                      ) : data.violations_checked ? (
+                        <div id="scorecard-card-violations" className="scroll-mt-28 flex flex-col">
+                          <SubSection icon={cleanIcon} title={t("scorecard.violations.title")} className="flex-1">
+                            <p className="text-body text-state-positive">{t("scorecard.violations.noneOnRecord")}</p>
+                            <p className="text-caption text-text-muted mt-0.5">{t("scorecard.violationsScope")}</p>
+                          </SubSection>
+                        </div>
+                      ) : null}
+                      {/* 311 is address-point scoped, like the address-scoped violations. */}
+                      {data.context.address_311 && <Address311Block data={data} />}
+                      {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.brownfield_sites.length > 0) && (
+                        <ScorecardEnvironmentCard data={ctx.regulatory} />
+                      )}
+                    </div>
+                  </ProfileModule>
+                )}
+
+                {/* ── Level 3: appendix — AREA-level context (the whole community
+                    area), NOT this parcel. Collapsed by default: background, not
+                    parcel-decision data; keeping area counts out of the parcel
+                    modules stops them reading as parcel facts. */}
+                {(data.context.crime_last_90d || ctx.neighborhood) && (
+                  <details className="border-t border-dark-border pt-8 mt-10 group">
+                    <summary className="flex cursor-pointer list-none items-center gap-2 text-body text-text-secondary transition-colors hover:text-text-primary">
+                      <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
+                      {t("scorecard.neighborhoodContext.title")}
+                      {data.community_area_name && (
+                        <span className="text-caption text-text-muted">
+                          {t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })}
+                        </span>
+                      )}
+                    </summary>
+                    <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 mt-6">
+                      {data.context.crime_last_90d && <CrimeYoYBlock data={data} />}
+                      {ctx.neighborhood && <NeighborhoodCard data={ctx.neighborhood} />}
+                    </div>
+                  </details>
                 )}
               </div>
-              {/* 311 is address-point scoped, like the address-scoped violations. */}
-              {data.context.address_311 && (
-                <div className="flex flex-col">
-                  <Address311Card data={data} />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <InvestigateButton
-                      variant="chip"
-                      question={`What are the 311 complaint patterns at ${addr} and what do they indicate?`}
-                      label={t("scorecard.investigate.complaints311")}
-                      cardName="311"
-                      pin={parcel?.pin}
-                      onAsk={askDock}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* Neighborhood context — AREA-level (the whole community area), NOT
-                this parcel. Pulled out of the parcel grid and collapsed by
-                default: it's background, not parcel-decision data, and keeping
-                area counts (crime, demographics) out of the parcel cards stops
-                them reading as parcel facts. This is the #2 scope fix + the #3
-                density fix in one move — a thin parcel's page is now short. */}
-            {(data.context.crime_last_90d || ctx.neighborhood) && (
-              <details className="mt-6 group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 text-caption text-text-secondary transition-colors hover:text-text-primary">
-                  <span className="transition-transform group-open:rotate-90" aria-hidden>›</span>
-                  {t("scorecard.neighborhoodContext.title")}
-                  {data.community_area_name && (
-                    <span className="text-micro text-text-muted">
-                      {t("scorecard.neighborhoodContext.scope", { area: data.community_area_name })}
-                    </span>
-                  )}
-                </summary>
-                <div className="grid md:grid-cols-2 gap-4 mt-4">
-                  {data.context.crime_last_90d && (
-                    <div>
-                      <CrimeYoYCard data={data} />
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <InvestigateButton
-                          variant="chip"
-                          question={`What are the crime trends and safety concerns near ${addr}?`}
-                          label={t("scorecard.investigate.crimeAnalysis")}
-                          cardName="crime"
-                          pin={parcel?.pin}
-                          onAsk={askDock}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {ctx.neighborhood && (
-                    <div>
-                      <NeighborhoodCard data={ctx.neighborhood} />
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <InvestigateButton
-                          variant="chip"
-                          question={`What's the neighborhood like around ${addr}?`}
-                          label={t("scorecard.investigate.neighborhoodOverview")}
-                          cardName="neighborhood"
-                          pin={parcel?.pin}
-                          onAsk={askDock}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </details>
-            )}
 
           </div>
         )}

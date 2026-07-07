@@ -5,7 +5,7 @@
 import { useTranslation } from "react-i18next";
 import type { ZoneDefinition } from "../../lib/api";
 import { localizeZoningValue } from "../../lib/format";
-import { Card } from "../ui/Card";
+import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
 
 const ZoningIcon = (
@@ -61,11 +61,10 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   if (isPd && ordinanceNum) standards.push({ label: t("scorecard.zoningCard.pdOrdinance"), value: ordinanceNum });
 
   return (
-    <Card
+    <SubSection
       icon={ZoningIcon}
       title={t("scorecard.zoningCard.title")}
-      headerRight={<Chip tone="accent" mono size="sm">{def.zone_class}</Chip>}
-      divider
+      meta={<Chip tone="accent" mono size="sm">{def.zone_class}</Chip>}
       className="flex-1"
     >
       <div className="space-y-4">
@@ -99,6 +98,6 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
           )}
         </div>
       </div>
-    </Card>
+    </SubSection>
   );
 }

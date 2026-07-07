@@ -2,7 +2,7 @@
   "heroBadge": "25+ live data sources · Chicago",
   "heroPreview": {
     "verdict": "Buildable",
-    "cta": "View the full Scorecard"
+    "cta": "View the full Property Profile"
   },
   "chaos": {
     "heading": "Every rule in Chicago, resolved to one verdict.",
@@ -10,7 +10,7 @@
     "verified": "Every rule verified. 0 active overlays."
   },
   "heroSubtitle": "Site feasibility for any Chicago address. In seconds.",
-  "heroSubline": "Zoning, incentives, tax projections, comparable sales, and municipal code analysis — all in one free Scorecard.",
+  "heroSubline": "Zoning, incentives, tax projections, comparable sales, and municipal code analysis — all in one free Property Profile.",
   "stats": {
     "dataSources": "Data sources",
     "codeSections": "Code sections",
@@ -20,7 +20,11 @@
   "hero": {
     "addressPlaceholder": "Enter a Chicago address…",
     "try": "Try:",
-    "addressExamples": ["4520 N Clark St", "1601 N Milwaukee Ave", "1425 N Wells St"],
+    "addressExamples": [
+      "4520 N Clark St",
+      "1601 N Milwaukee Ave",
+      "1425 N Wells St"
+    ],
     "askAnalystLead": "Researching the code or a neighborhood?",
     "askAnalystCta": "Ask the analyst"
   },
@@ -41,12 +45,19 @@
     "subheading": "Whether you're evaluating a development site, checking code compliance, or researching incentive eligibility.",
     "returns": "UrbanLayer returns",
     "actionChat": "Ask the analyst →",
-    "actionScorecard": "See the Scorecard →",
+    "actionScorecard": "See the Property Profile →",
     "items": [
       {
         "title": "The Developer",
         "question": "Can I build a 6-unit residential building at 4520 N Clark St?",
-        "domains": ["Zoning Analysis", "Bulk Standards", "Overlay Compliance", "Incentive Eligibility", "Tax Projection", "Comparable Sales"],
+        "domains": [
+          "Zoning Analysis",
+          "Bulk Standards",
+          "Overlay Compliance",
+          "Incentive Eligibility",
+          "Tax Projection",
+          "Comparable Sales"
+        ],
         "framing": "Complete site feasibility in seconds, not days.",
         "action": "scorecard",
         "address": "4520 N Clark St"
@@ -54,14 +65,28 @@
       {
         "title": "The Architect",
         "question": "What are the setback requirements for a mixed-use building in B3-2 adjacent to an RS-3 district?",
-        "domains": ["Cited Municipal Code", "Transition Zone Rules", "Parking Requirements", "Height & Bulk Standards", "FAR Calculation", "Overlay Districts"],
+        "domains": [
+          "Cited Municipal Code",
+          "Transition Zone Rules",
+          "Parking Requirements",
+          "Height & Bulk Standards",
+          "FAR Calculation",
+          "Overlay Districts"
+        ],
         "framing": "Every answer cites the specific code section.",
         "action": "chat"
       },
       {
         "title": "The Attorney",
         "question": "Is the property at 1601 N Milwaukee Ave eligible for a Class 6b tax incentive?",
-        "domains": ["Property Classification", "Incentive Eligibility", "TIF District Status", "Applicable Programs", "Assessment History", "Municipal Code"],
+        "domains": [
+          "Property Classification",
+          "Incentive Eligibility",
+          "TIF District Status",
+          "Applicable Programs",
+          "Assessment History",
+          "Municipal Code"
+        ],
         "framing": "Due diligence research in one query, not ten FOIA requests.",
         "action": "scorecard",
         "address": "1601 N Milwaukee Ave"
@@ -73,19 +98,28 @@
     "steps": [
       {
         "title": "Enter an address",
-        "description": "Start with the property — type any Chicago address and the parcel's Scorecard opens instantly. No account, no forms.",
+        "description": "Start with the property — type any Chicago address and the parcel's Property Profile opens instantly. No account, no forms.",
         "query": "2100 N Damen Ave"
       },
       {
-        "title": "We assemble the Scorecard",
+        "title": "We assemble the Property Profile",
         "description": "City, county, federal, and legal sources are queried in parallel — zoning, overlays, incentives, taxes, and comparable sales."
       },
       {
-        "title": "You get the Scorecard",
-        "description": "A free Scorecard assessment in seconds, an AI analyst for cited follow-up questions — and the full Development Feasibility Report ($25) when you need the deliverable."
+        "title": "You get the Property Profile",
+        "description": "A free Property Profile in seconds, an AI analyst for cited follow-up questions — and the full Development Feasibility Report ($25) when you need the deliverable."
       }
     ],
-    "sourceTags": ["Zoning", "Overlays", "Property", "Permits", "TIF", "Code", "Incentives", "Tax Est."],
+    "sourceTags": [
+      "Zoning",
+      "Overlays",
+      "Property",
+      "Permits",
+      "TIF",
+      "Code",
+      "Incentives",
+      "Tax Est."
+    ],
     "sampleResponse": "The parcel at 2100 N Damen Ave is zoned",
     "sampleResponseTail": ", which permits multi-unit residential..."
   },

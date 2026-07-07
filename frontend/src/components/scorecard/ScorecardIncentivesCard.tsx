@@ -1,11 +1,10 @@
 // Page-scale Incentives card, positives-first: active designations render as real
 // rows with their detail; the inactive set collapses to ONE muted line ("Not in:
 // TIF · OZ · …") instead of five gray lead badges. Same data, inverted emphasis.
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { IncentivesSummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
-import { Card } from "../ui/Card";
+import { SubSection, ShowMore } from "./ProfileModule";
 
 const DollarIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -57,8 +56,6 @@ function DetailKV({ label, value }: { label: string; value: string | null | unde
 
 export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
   const { t } = useTranslation("data");
-  const [showFinancials, setShowFinancials] = useState(false);
-  const [showProjects, setShowProjects] = useState(false);
 
   const inactive: string[] = [];
   if (!data.in_tif_district) inactive.push(t("incentives.short.tif"));
@@ -69,11 +66,10 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
   const activeCount = 5 - inactive.length;
 
   return (
-    <Card
+    <SubSection
       title={t("incentives.title")}
       icon={DollarIcon}
-      headerRight={<span className="text-caption text-text-muted">{t("incentives.activeCount", { count: activeCount })}</span>}
-      divider
+      meta={t("incentives.activeCount", { count: activeCount })}
       className="flex-1"
     >
       <div className="space-y-3">
@@ -86,37 +82,33 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
             <DetailKV label={t("incentives.propertyTaxRevenue")} value={fmtCompact(data.tif_property_tax_revenue)} />
             <DetailKV label={t("incentives.fundBalance")} value={fmtCompact(data.tif_fund_balance)} />
             {data.tif_fund_history.length > 0 && (
-              <button onClick={() => setShowFinancials((f) => !f)}
-                className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors">
-                <svg className={`w-3 h-3 transition-transform duration-150 ${showFinancials ? "" : "-rotate-90"}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-                {t("incentives.annualFinancials")} ({t("incentives.yrsCount", { count: data.tif_fund_history.length })})
-              </button>
-            )}
-            {showFinancials && data.tif_fund_history.length > 0 && (
-              <table className="w-full text-caption">
-                <thead>
-                  <tr className="text-text-muted border-b border-dark-border">
-                    <th className="text-left pb-1 pr-2 font-medium">{t("analytics.year")}</th>
-                    <th className="text-left pb-1 pr-2 font-medium">{t("incentives.revenue")}</th>
-                    <th className="text-left pb-1 font-medium">{t("incentives.expenditure")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.tif_fund_history.map((row, i) => {
-                    const r = row as Record<string, unknown>;
-                    return (
-                      <tr key={i} className="border-t border-dark-border/50">
-                        <td className="py-1 pr-2 text-text-primary">{String(r.year ?? "—")}</td>
-                        <td className="py-1 pr-2 text-text-primary tabular-nums">{fmtCompact(r.revenue as number | null)}</td>
-                        <td className="py-1 text-text-primary tabular-nums">{fmtCompact(r.expenditure as number | null)}</td>
+              <ShowMore
+                items={data.tif_fund_history}
+                limit={3}
+                render={(rows) => (
+                  <table className="w-full text-caption">
+                    <thead>
+                      <tr className="text-text-muted border-b border-dark-border">
+                        <th className="text-left pb-1 pr-2 font-medium">{t("analytics.year")}</th>
+                        <th className="text-left pb-1 pr-2 font-medium">{t("incentives.revenue")}</th>
+                        <th className="text-left pb-1 font-medium">{t("incentives.expenditure")}</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => {
+                        const r = row as Record<string, unknown>;
+                        return (
+                          <tr key={i} className="border-t border-dark-border/50">
+                            <td className="py-1 pr-2 text-text-primary">{String(r.year ?? "—")}</td>
+                            <td className="py-1 pr-2 text-text-primary tabular-nums">{fmtCompact(r.revenue as number | null)}</td>
+                            <td className="py-1 text-text-primary tabular-nums">{fmtCompact(r.expenditure as number | null)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              />
             )}
           </ActiveRow>
         )}
@@ -171,26 +163,26 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
                 </div>
               </div>
               {data.grant_programs.recent_projects.length > 0 && (
-                <>
-                  <button onClick={() => setShowProjects((p) => !p)}
-                    className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors pt-2">
-                    <svg className={`w-3 h-3 transition-transform duration-150 ${showProjects ? "" : "-rotate-90"}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                    {t("incentives.recentProjects")} ({Math.min(data.grant_programs.recent_projects.length, 5)})
-                  </button>
-                  {showProjects && data.grant_programs.recent_projects.slice(0, 5).map((proj, i) => (
-                    <div key={i} className="text-caption leading-snug pl-2 border-l border-dark-border mt-2">
-                      <p className="text-text-primary">{proj.name}</p>
-                      <div className="flex gap-2 text-text-muted">
-                        {proj.date && <span>{proj.date}</span>}
-                        <span className="text-state-positive">{proj.program}</span>
-                        {proj.incentive_amount != null && <span>{fmtCompact(proj.incentive_amount)}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </>
+                <div className="pt-2">
+                  <ShowMore
+                    items={data.grant_programs.recent_projects.slice(0, 5)}
+                    limit={2}
+                    render={(visible) => (
+                      <>
+                        {visible.map((proj, i) => (
+                          <div key={i} className="text-caption leading-snug pl-2 border-l border-dark-border mt-2 first:mt-0">
+                            <p className="text-text-primary">{proj.name}</p>
+                            <div className="flex gap-2 text-text-muted">
+                              {proj.date && <span>{proj.date}</span>}
+                              <span className="text-state-positive">{proj.program}</span>
+                              {proj.incentive_amount != null && <span>{fmtCompact(proj.incentive_amount)}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -214,6 +206,6 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
           <p className="text-caption text-text-muted">{t("incentives.standardClassDescription")}</p>
         )}
       </div>
-    </Card>
+    </SubSection>
   );
 }

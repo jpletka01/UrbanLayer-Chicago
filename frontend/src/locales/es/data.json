@@ -95,6 +95,19 @@
       "chicago_transit_authority": "Autoridad de Tránsito de Chicago",
       "north_shore_mosquito": "Control de Mosquitos (North Shore)",
       "mosquito_abatement": "Control de Mosquitos"
+    },
+    "taxDetail": "Impuestos y tasación",
+    "buildingAndLot": "Edificio y lote",
+    "timeline": {
+      "ariaLabel": "Historial de tasación {{from}}–{{to}} con ventas y apelaciones",
+      "land": "Terreno",
+      "building": "Edificio",
+      "vsPrior": "vs año anterior",
+      "totalAssessed": "tasación total",
+      "sold": "venta",
+      "appealWon": "Apelación ganada −{{pct}}%",
+      "sale": "Venta",
+      "appeal": "Apelación ganada"
     }
   },
   "regulatory": {
@@ -616,7 +629,8 @@
     "priceSqft": "$/pie²",
     "noData": "No se encontraron ventas comparables cercanas.",
     "radius": "En 0.25 mi, últimos 3 años",
-    "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe"
+    "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe",
+    "stripAriaLabel": "{{count}} precios de ventas comparables"
   },
   "trends": {
     "new": "nuevo"
