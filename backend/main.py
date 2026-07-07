@@ -998,24 +998,31 @@ def _simplify_geojson(fc: dict | None, tolerance: float = 0.0001) -> dict | None
     return {**fc, "features": simplified_features}
 
 
+def _map_capped_flags(map_rows: dict[str, Any]) -> dict[str, bool]:
+    """Per-layer row-cap flags for fetched map rows — shared by the map
+    response (badging) and compute_analytics (trend truncation guard)."""
+    settings = get_settings()
+    capped: dict[str, bool] = {}
+    if "crimes" in map_rows:
+        capped["crimes"] = len(map_rows.get("crimes", [])) >= settings.limit_map_crime
+    if "requests_311" in map_rows:
+        capped["requests_311"] = len(map_rows.get("requests_311", [])) >= settings.limit_map_311
+    if "building_permits" in map_rows:
+        capped["building_permits"] = len(map_rows.get("building_permits", [])) >= settings.limit_map_permits
+    return capped
+
+
 def _build_map_response(
     map_rows: dict[str, Any], plan: RetrievalPlan,
 ) -> MapDataResponse | None:
     """Build a MapDataResponse from fetched map rows."""
     if not map_rows:
         return None
-    settings = get_settings()
     crimes = map_rows.get("crimes", [])
     requests_311 = map_rows.get("requests_311", [])
     building_permits = map_rows.get("building_permits", [])
 
-    capped: dict[str, bool] = {}
-    if "crimes" in map_rows:
-        capped["crimes"] = len(crimes) >= settings.limit_map_crime
-    if "requests_311" in map_rows:
-        capped["requests_311"] = len(requests_311) >= settings.limit_map_311
-    if "building_permits" in map_rows:
-        capped["building_permits"] = len(building_permits) >= settings.limit_map_permits
+    capped = _map_capped_flags(map_rows)
 
     queried_address = None
     loc = plan.location
@@ -1222,6 +1229,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             crime_rows=map_rows.get("crimes"),
             three11_rows=map_rows.get("requests_311"),
             permit_rows=map_rows.get("building_permits"),
+            capped=_map_capped_flags(map_rows),
         )
         context.analytics = analytics
     except Exception:
@@ -2512,6 +2520,7 @@ async def _fetch_report_data(
         nearby_dev = NearbyDevelopment(
             new_construction_count=nc_data.get("new_construction_count", 0),
             demolition_count=nc_data.get("demolition_count", 0),
+            new_construction_cost=nc_data.get("new_construction_cost", 0.0),
             recent_projects=projects,
         )
 
@@ -4245,13 +4254,9 @@ def _compute_development_trend(report: "ReportData") -> dict | None:
             "intensity": "quiet",
         }
 
-    total_investment = 0
-    for p in projects:
-        try:
-            cost = float(p.get("reported_cost", 0) or 0)
-            total_investment += cost
-        except (ValueError, TypeError):
-            pass
+    # True area/window aggregate (new-construction permits only) — not a sum
+    # over the capped recent_projects sample with demolition costs mixed in.
+    total_investment = nd.new_construction_cost or 0
 
     if nc > 0 and total_investment > 0:
         avg_cost = total_investment / max(nc, 1)

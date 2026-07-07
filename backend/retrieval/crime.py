@@ -12,6 +12,16 @@ from backend.retrieval.utils import cutoff_iso
 _cache = TTLCache(ttl_seconds=900, maxsize=256, name="crime")
 
 
+def _year_earlier(dt: datetime) -> datetime:
+    """Same calendar date one year earlier; Feb 29 clamps to Feb 28 (a bare
+    .replace(year=...) raises ValueError on leap days and took the whole
+    YoY card down for the day)."""
+    try:
+        return dt.replace(year=dt.year - 1)
+    except ValueError:
+        return dt.replace(year=dt.year - 1, day=28)
+
+
 async def crime_by_community_area(
     community_area: int,
     *,
@@ -68,8 +78,8 @@ async def crime_yoy_by_community_area(
     now = datetime.now(timezone.utc)
     end = now - timedelta(days=lag)
     start = end - timedelta(days=days)
-    prior_end = end.replace(year=end.year - 1)
-    prior_start = start.replace(year=start.year - 1)
+    prior_end = _year_earlier(end)
+    prior_start = _year_earlier(start)
 
     fmt = "%Y-%m-%dT00:00:00.000"
 

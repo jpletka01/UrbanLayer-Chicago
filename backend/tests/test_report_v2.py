@@ -156,18 +156,28 @@ class TestAddressSpecificViolations:
 
 class TestNearbyNewConstruction:
     @pytest.mark.asyncio
-    async def test_counts_types(self):
-        rows = [
+    async def test_counts_come_from_aggregate_not_sample(self):
+        """Counts + investment are TRUE area totals from the grouped aggregate,
+        not tallies over the capped 20-row sample (which undercounted active
+        corridors and mixed demolition costs into 'investment')."""
+        totals = [
+            {"permit_type": "PERMIT - NEW CONSTRUCTION", "count": "37", "total_cost": "12500000"},
+            {"permit_type": "PERMIT - WRECKING/DEMOLITION", "count": "9", "total_cost": "400000"},
+        ]
+        sample = [
             {"permit_type": "PERMIT - NEW CONSTRUCTION", "issue_date": "2024-06-01"},
-            {"permit_type": "PERMIT - NEW CONSTRUCTION", "issue_date": "2024-05-01"},
             {"permit_type": "PERMIT - WRECKING/DEMOLITION", "issue_date": "2024-04-01"},
         ]
-        with patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as mock:
-            mock.return_value = rows
+        with patch("backend.retrieval.buildings.socrata_aggregate", new_callable=AsyncMock) as agg, \
+             patch("backend.retrieval.buildings.socrata_get", new_callable=AsyncMock) as get:
+            agg.return_value = totals
+            get.return_value = sample
             result = await nearby_new_construction(41.9, -87.7)
-            assert result["new_construction_count"] == 2
-            assert result["demolition_count"] == 1
-            assert len(result["recent_projects"]) == 3
+            assert result["new_construction_count"] == 37   # not len(sample)
+            assert result["demolition_count"] == 9
+            # Demolition cost excluded from the investment figure.
+            assert result["new_construction_cost"] == 12_500_000.0
+            assert len(result["recent_projects"]) == 2
 
 
 class TestCalculateDevelopmentPotential:

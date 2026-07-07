@@ -174,3 +174,47 @@ def test_high_tax_constraint_is_class_relative():
     assert _has_high_tax_constraint(_report_with_rate(0.05, 0.10))
     # Genuinely high commercial (>2.5 × 3.5% = 8.75%) still fires.
     assert _has_high_tax_constraint(_report_with_rate(0.10, 0.25))
+
+
+# --- comps radius honesty (Phase 4) --------------------------------------------
+
+@pytest.mark.asyncio
+async def test_comps_outside_disclosed_radius_are_filtered():
+    """comp_basis discloses 'within X mi' — a bbox-corner comp beyond that
+    distance must not ride along."""
+    # Base radius 0.004° ≈ 0.28 mi. Put one parcel ~0.1 mi north (kept) and
+    # one at the bbox corner ~0.39 mi out (filtered).
+    parcels = [
+        {"pin": "1111111111", "class": "211", "lat": "41.9014", "lon": "-87.7"},
+        {"pin": "2222222222", "class": "211", "lat": "41.9040", "lon": "-87.70538"},
+    ]
+    sales = [
+        {"pin": "1111111111", "sale_date": "2025-01-15", "sale_price": "300000", "class": "211"},
+        {"pin": "2222222222", "sale_date": "2024-06-01", "sale_price": "250000", "class": "211"},
+    ]
+
+    call_count = [0]
+
+    async def mock_socrata(*args, **kwargs):
+        call_count[0] += 1
+        return [parcels, sales, []][call_count[0] - 1]
+
+    with patch("backend.retrieval.property.sales.socrata_get", side_effect=mock_socrata):
+        result = await nearby_comparable_sales(41.9, -87.7, "2")
+
+    pins = {c["pin"] for c in result["sales"]}
+    assert "1111111111" in pins
+    assert "2222222222" not in pins
+
+
+# --- crime YoY leap-day safety (Phase 4) ----------------------------------------
+
+def test_year_earlier_handles_leap_day():
+    from datetime import datetime, timezone
+
+    from backend.retrieval.crime import _year_earlier
+
+    leap = datetime(2028, 2, 29, tzinfo=timezone.utc)
+    assert _year_earlier(leap) == datetime(2027, 2, 28, tzinfo=timezone.utc)
+    normal = datetime(2026, 7, 6, tzinfo=timezone.utc)
+    assert _year_earlier(normal) == datetime(2025, 7, 6, tzinfo=timezone.utc)

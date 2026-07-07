@@ -316,7 +316,8 @@
       "riskTitle": "What to watch for",
       "riskSub": "Violations, complaints, and environmental flags at this address"
     },
-    "backToVerdict": "Back to the verdict"
+    "backToVerdict": "Back to the verdict",
+    "newCategory": "new"
   },
   "discovery": {
     "teaserCount": "{{total}} parcels match — you're seeing {{shown}}.",

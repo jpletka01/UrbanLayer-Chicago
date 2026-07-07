@@ -25,13 +25,26 @@ _NAME_TO_CA: dict[str, int] = {
     name.upper(): num for num, name in COMMUNITY_AREAS.items()
 }
 
+# The top ACS bracket is open-ended ("$125,000 and over"); linear interpolation
+# needs an upper bound, so we assume $200k. In CAs where most households sit in
+# the top bracket the estimated median saturates toward this cap — i.e. the
+# estimate is biased LOW for the wealthiest areas. Known limitation (see
+# known-issues: demographics medians are estimates, not published values).
+_TOP_BRACKET_ASSUMED_CEILING = 200_000
+
 _INCOME_BRACKETS: list[tuple[str, float, float]] = [
     ("under_25_000", 0, 25_000),
     ("_25_000_to_49_999", 25_000, 50_000),
     ("_50_000_to_74_999", 50_000, 75_000),
     ("_75_000_to_125_000", 75_000, 125_000),
-    ("_125_000", 125_000, 200_000),
+    ("_125_000", 125_000, _TOP_BRACKET_ASSUMED_CEILING),
 ]
+
+# Median household income ≈ 1.8 × per-capita income is a rough citywide ratio
+# (avg Chicago household ≈ 2.4 people, incomes not evenly distributed). Last-
+# resort fallback only — used when both the published median and the bracket
+# distribution are missing.
+_PER_CAPITA_TO_MEDIAN_HH = 1.8
 
 _AGE_FIELDS: list[tuple[str, float]] = [
     ("male_0_to_17", 8.5), ("female_0_to_17", 8.5),
@@ -163,13 +176,16 @@ def _build_demographics(row: dict, community_area: int) -> DemographicsSummary:
     )
     per_capita = _safe_int(socio.get("per_capita_income_"))
     if median_income is None and per_capita is not None:
-        median_income = int(per_capita * 1.8)
+        median_income = int(per_capita * _PER_CAPITA_TO_MEDIAN_HH)
 
     poverty_rate = _safe_float(socio.get("percent_households_below_poverty"))
     unemployment_rate = _safe_float(socio.get("percent_aged_16_unemployed"))
 
     below_poverty = _safe_int(row.get("below_poverty_level"))
     if poverty_rate is None and below_poverty is not None and population:
+        # NOTE definition drift: the primary figure is HOUSEHOLDS below poverty
+        # (kn9c socio dataset); this fallback is PERSONS below poverty ÷ total
+        # population. Close in practice but not the same statistic.
         poverty_rate = _pct(below_poverty, population)
 
     unemployed = _safe_int(row.get("unemployed"))

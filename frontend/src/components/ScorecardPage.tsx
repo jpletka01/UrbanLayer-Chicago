@@ -154,9 +154,10 @@ function CrimeYoYCard({ data }: { data: ScorecardResponse }) {
                     {t("scorecard.vsPrior", { count: item.prior_year_count })}
                   </span>
                   <span className={`font-mono w-14 text-right ${
-                    item.change_pct > 0 ? "text-state-negative" : item.change_pct < 0 ? "text-state-positive" : "text-text-muted"
+                    (item.change_pct ?? 0) > 0 ? "text-state-negative" : (item.change_pct ?? 0) < 0 ? "text-state-positive" : "text-text-muted"
                   }`}>
-                    {item.change_pct > 0 ? "+" : ""}{item.change_pct}%
+                    {/* null = prior year was 0 — a % here would be fabricated */}
+                    {item.change_pct == null ? t("scorecard.newCategory") : `${item.change_pct > 0 ? "+" : ""}${item.change_pct}%`}
                   </span>
                 </div>
               ))}

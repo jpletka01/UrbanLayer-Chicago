@@ -69,7 +69,9 @@ class TestComputeTrends:
         )
         assert len(trends) == 5
 
-    def test_new_category_shows_100_pct(self):
+    def test_new_category_has_undefined_pct(self):
+        """Prior-month 0 → the percentage is undefined (None, renders "new"),
+        not a fabricated "+100%" (2026-07-06 audit)."""
         records = [
             {"date": "2026-03-10T00:00:00", "type": "OLD"},
             {"date": "2026-04-10T00:00:00", "type": "OLD"},
@@ -81,8 +83,31 @@ class TestComputeTrends:
             get_category=lambda r: r["type"],
         )
         new = next(t for t in trends if t.category == "NEW")
-        assert new.change_pct == 100
+        assert new.change_pct is None
         assert new.prior_count == 0
+
+    def test_capped_fetch_drops_truncated_oldest_month(self):
+        """A row-capped, date-DESC fetch truncates the oldest month mid-month;
+        that month must not seed a fake month-over-month increase."""
+        records = [
+            # March looks tiny only because the cap cut it off.
+            {"date": "2026-03-30T00:00:00", "type": "A"},
+            {"date": "2026-04-05T00:00:00", "type": "A"},
+            {"date": "2026-04-10T00:00:00", "type": "A"},
+            {"date": "2026-05-01T00:00:00", "type": "A"},
+            {"date": "2026-05-02T00:00:00", "type": "A"},
+            {"date": "2026-05-03T00:00:00", "type": "A"},
+        ]
+        kwargs = dict(get_date=lambda r: r["date"], get_category=lambda r: r["type"])
+        capped_trends, capped_period = compute_trends(records, capped=True, **kwargs)
+        # March dropped → May vs April (3 vs 2), not April vs truncated March.
+        a = next(t for t in capped_trends if t.category == "A")
+        assert (a.current_count, a.prior_count) == (3, 2)
+        assert "Mar" not in (capped_period or "")
+        # And with only two months present, a capped fetch yields no trend at all.
+        two_months = [r for r in records if not r["date"].startswith("2026-03")]
+        trends, period = compute_trends(two_months, capped=True, **kwargs)
+        assert trends == [] and period is None
 
     def test_sorted_by_current_count(self):
         records = [

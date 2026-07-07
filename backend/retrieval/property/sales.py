@@ -135,10 +135,14 @@ async def _query_comps(
     """Single-pass 3-hop comparable sales query (Parcel Universe → Sales → Characteristics)."""
     settings = get_settings()
     try:
-        # Hop 1: Nearby PINs from Parcel Universe
+        # Hop 1: Nearby PINs from Parcel Universe. Longitude degrees shrink by
+        # cos(lat) (~0.74 at Chicago), so the east-west delta is scaled to keep
+        # the box square in ground miles; comps are then haversine-filtered to
+        # the disclosed radius below (a bbox corner is √2 × the radius out).
+        dlon = radius_deg / math.cos(math.radians(lat))
         parcel_where = (
             f"lat between '{lat - radius_deg}' and '{lat + radius_deg}' "
-            f"AND lon between '{lon - radius_deg}' and '{lon + radius_deg}' "
+            f"AND lon between '{lon - dlon}' and '{lon + dlon}' "
             f"AND class LIKE '{class_prefix}%'"
         )
         parcels = await socrata_get(
@@ -251,6 +255,10 @@ async def _query_comps(
 
             coords = pin_coords.get(norm_pin, (0, 0))
             dist = _haversine_mi(lat, lon, coords[0], coords[1]) if coords[0] else None
+            # The comp_basis line discloses "within X mi" — enforce it. Comps
+            # with unknown coordinates are kept (distance shows as null).
+            if dist is not None and dist > radius_deg * 69.0:
+                continue
 
             comp: dict[str, Any] = {
                 "pin": pin,

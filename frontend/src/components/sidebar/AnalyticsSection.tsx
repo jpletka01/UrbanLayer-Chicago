@@ -46,12 +46,13 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
 
   const crimeAnalytics = useMemo(() => {
     if (!mapData?.crimes?.length) return null;
+    const capped = !!mapData.capped?.crimes;
     return {
-      trends: computeTrends(mapData.crimes, c => c.date, c => c.primary_type, crimeColorCSS),
+      trends: computeTrends(mapData.crimes, c => c.date, c => c.primary_type, crimeColorCSS, capped),
       pie: computePieSlices(mapData.crimes, c => c.primary_type, crimeColorCSS),
-      monthLabels: getTrendMonthLabels(mapData.crimes, c => c.date),
+      monthLabels: getTrendMonthLabels(mapData.crimes, c => c.date, capped),
     };
-  }, [mapData?.crimes]);
+  }, [mapData?.crimes, mapData?.capped?.crimes]);
 
   const threeOneOneAnalytics = useMemo(() => {
     if (!mapData?.requests_311?.length) return null;
@@ -59,22 +60,24 @@ export function AnalyticsSection({ mapData, filterMode, context }: Props) {
       ? (r: (typeof mapData.requests_311)[0]) => r.sr_type
       : (r: (typeof mapData.requests_311)[0]) => normalizeDept(r.owner_department);
     const colorFn = threeOneOneGrouping === "sr_type" ? srTypeMapColorCSS : deptColorCSS;
+    const capped = !!mapData.capped?.requests_311;
     return {
-      trends: computeTrends(mapData.requests_311, r => r.created_date, getCategory, colorFn),
+      trends: computeTrends(mapData.requests_311, r => r.created_date, getCategory, colorFn, capped),
       pie: computePieSlices(mapData.requests_311, getCategory, colorFn),
-      monthLabels: getTrendMonthLabels(mapData.requests_311, r => r.created_date),
+      monthLabels: getTrendMonthLabels(mapData.requests_311, r => r.created_date, capped),
     };
-  }, [mapData?.requests_311, threeOneOneGrouping]);
+  }, [mapData?.requests_311, threeOneOneGrouping, mapData?.capped?.requests_311]);
 
   const permitAnalytics = useMemo(() => {
     if (!mapData?.building_permits?.length) return null;
     const getType = (p: (typeof mapData.building_permits)[0]) => normalizePermitType(p.permit_type);
+    const capped = !!mapData.capped?.building_permits;
     return {
-      trends: computeTrends(mapData.building_permits, p => p.issue_date, getType, permitColorCSS),
+      trends: computeTrends(mapData.building_permits, p => p.issue_date, getType, permitColorCSS, capped),
       pie: computePieSlices(mapData.building_permits, getType, permitColorCSS),
-      monthLabels: getTrendMonthLabels(mapData.building_permits, p => p.issue_date),
+      monthLabels: getTrendMonthLabels(mapData.building_permits, p => p.issue_date, capped),
     };
-  }, [mapData?.building_permits]);
+  }, [mapData?.building_permits, mapData?.capped?.building_permits]);
 
   const hasAnalytics = crimeAnalytics || threeOneOneAnalytics || permitAnalytics
     || crimeSummary || threeOneOneSummary || permitSummary;

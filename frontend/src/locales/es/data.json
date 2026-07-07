@@ -601,5 +601,8 @@
     "noData": "No se encontraron ventas comparables cercanas.",
     "radius": "En 0.25 mi, últimos 3 años",
     "reportTeaser": "Gráfico de tendencia de ventas + análisis completo en el informe"
+  },
+  "trends": {
+    "new": "nuevo"
   }
 }

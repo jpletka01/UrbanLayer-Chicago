@@ -73,7 +73,8 @@ export interface CrimeYoYItem {
   category: string;
   current_count: number;
   prior_year_count: number;
-  change_pct: number;
+  /** null = prior-year count was 0 (percentage undefined; renders as "new"). */
+  change_pct: number | null;
 }
 
 export interface CrimeSummary {
@@ -168,7 +169,8 @@ export interface TrendItem {
   category: string;
   current_count: number;
   prior_count: number;
-  change_pct: number;
+  /** null = prior-month count was 0 (percentage undefined; renders as "new"). */
+  change_pct: number | null;
 }
 
 export interface AnalyticsSummary {

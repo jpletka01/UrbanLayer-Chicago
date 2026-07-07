@@ -75,7 +75,8 @@ class CrimeYoYItem(BaseModel):
     category: str
     current_count: int
     prior_year_count: int
-    change_pct: int
+    # None = prior-year count was 0 (percentage undefined; renders as "new").
+    change_pct: int | None
 
 
 class CrimeSummary(BaseModel):
@@ -564,7 +565,8 @@ class TrendItem(BaseModel):
     category: str
     current_count: int
     prior_count: int
-    change_pct: int
+    # None = prior-month count was 0 (percentage undefined; renders as "new").
+    change_pct: int | None
 
 
 class AnalyticsSummary(BaseModel):
@@ -843,6 +845,10 @@ class DevelopmentPotential(BaseModel):
 class NearbyDevelopment(BaseModel):
     new_construction_count: int = 0
     demolition_count: int = 0
+    # True area/window total of reported_cost over NEW CONSTRUCTION permits
+    # (server-side aggregate; excludes demolition costs). The old figure summed
+    # the capped recent_projects sample and mixed both permit types.
+    new_construction_cost: float = 0.0
     recent_projects: list[dict] = Field(default_factory=list)
 
 

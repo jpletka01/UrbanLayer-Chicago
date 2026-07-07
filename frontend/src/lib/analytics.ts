@@ -4,7 +4,8 @@ export interface TrendRow {
   category: string;
   currentCount: number;
   priorCount: number;
-  changePercent: number;
+  /** null = prior month was 0 — the percentage is undefined (renders "new"). */
+  changePercent: number | null;
   color: string;
 }
 
@@ -32,6 +33,7 @@ export function computeTrends<T>(
   getDate: (r: T) => string,
   getCategory: (r: T) => string,
   getColor: (category: string) => string,
+  capped = false,
 ): TrendRow[] {
   const byMonthAndCategory = new Map<string, Map<string, number>>();
 
@@ -44,7 +46,13 @@ export function computeTrends<T>(
     catMap.set(cat, (catMap.get(cat) ?? 0) + 1);
   }
 
-  const months = [...byMonthAndCategory.keys()].sort();
+  let months = [...byMonthAndCategory.keys()].sort();
+  // Rows arrive date-DESC; a row-capped fetch truncates the OLDEST month
+  // mid-month, so comparing against it fabricates an increase — drop it.
+  if (capped && months.length) {
+    byMonthAndCategory.delete(months[0]);
+    months = months.slice(1);
+  }
   if (months.length < 2) return [];
 
   const currentCalendar = getCurrentYearMonth();
@@ -68,12 +76,13 @@ export function computeTrends<T>(
   for (const cat of allCategories) {
     const curr = currentData.get(cat) ?? 0;
     const prev = priorData.get(cat) ?? 0;
-    const change = prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev) * 100;
+    // prior 0 → percentage undefined, not "+100%"; null renders as "new".
+    const change = prev === 0 ? null : ((curr - prev) / prev) * 100;
     rows.push({
       category: cat,
       currentCount: curr,
       priorCount: prev,
-      changePercent: Math.round(change),
+      changePercent: change === null ? null : Math.round(change),
       color: getColor(cat),
     });
   }
@@ -105,13 +114,15 @@ export function computePieSlices<T>(
 export function getTrendMonthLabels<T>(
   records: T[],
   getDate: (r: T) => string,
+  capped = false,
 ): { current: string; prior: string } | null {
   const months = new Set<string>();
   for (const r of records) {
     const ym = toYearMonth(getDate(r));
     if (ym) months.add(ym);
   }
-  const sorted = [...months].sort();
+  let sorted = [...months].sort();
+  if (capped && sorted.length) sorted = sorted.slice(1); // mirror computeTrends
   if (sorted.length < 2) return null;
 
   const currentCalendar = getCurrentYearMonth();

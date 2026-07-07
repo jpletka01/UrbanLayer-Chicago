@@ -35,7 +35,9 @@ export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
       case "category": cmp = a.category.localeCompare(b.category); break;
       case "current": cmp = a.currentCount - b.currentCount; break;
       case "prior": cmp = a.priorCount - b.priorCount; break;
-      case "change": cmp = a.changePercent - b.changePercent; break;
+      // null = "new" (prior 0) — sort as the largest possible increase.
+      case "change": cmp = (a.changePercent ?? Infinity) - (b.changePercent ?? Infinity);
+        if (Number.isNaN(cmp)) cmp = 0; break;
     }
     return sortDir === "asc" ? cmp : -cmp;
   });
@@ -107,7 +109,13 @@ export function TrendTable({ rows, currentLabel, priorLabel }: Props) {
   );
 }
 
-function TrendBadge({ percent }: { percent: number }) {
+function TrendBadge({ percent }: { percent: number | null }) {
+  const { t } = useTranslation("data");
+  if (percent === null) {
+    // Prior month was 0 — a percentage would be fabricated (+100% before the
+    // 2026-07-06 audit); say what it is: a new category.
+    return <span className="text-text-muted font-mono">{t("trends.new")}</span>;
+  }
   if (percent === 0) {
     return <span className="text-text-muted font-mono">--</span>;
   }

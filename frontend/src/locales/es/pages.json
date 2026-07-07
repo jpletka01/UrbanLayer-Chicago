@@ -316,7 +316,8 @@
       "riskTitle": "Qué vigilar",
       "riskSub": "Infracciones, quejas y señales ambientales en esta dirección"
     },
-    "backToVerdict": "Volver al veredicto"
+    "backToVerdict": "Volver al veredicto",
+    "newCategory": "nuevo"
   },
   "discovery": {
     "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",

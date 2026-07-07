@@ -254,26 +254,48 @@ async def nearby_new_construction(
     limit: int | None = None,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, Any]:
-    """Find NEW CONSTRUCTION and WRECKING/DEMOLITION permits within a radius."""
+    """NEW CONSTRUCTION and WRECKING/DEMOLITION permits within a radius.
+
+    Counts and per-type reported-cost totals come from a grouped aggregate —
+    TRUE totals for the area/window, not tallies over the ``limit``-row sample
+    (which undercounted active corridors and mixed demolition costs into the
+    "investment" figure). ``recent_projects`` stays a most-recent sample for
+    the map/list.
+    """
+    import math
+
     settings = get_settings()
-    radius_deg = radius_deg or settings.comparable_sales_radius_deg
+    radius_deg = radius_deg or settings.nearby_construction_radius_deg
     months = months or settings.nearby_construction_months
     limit = limit or settings.limit_nearby_construction
 
-    key = f"construction:{round(lat, 4)}:{round(lon, 4)}:{months}"
+    # Radius is keyed too — callers with different radii must not share entries.
+    key = f"construction:{round(lat, 4)}:{round(lon, 4)}:{months}:{radius_deg}"
     cached = _construction_cache.get(key)
     if cached is not None:
         return cached
 
+    # Longitude degrees shrink by cos(lat) (~0.74 at Chicago): an uncorrected
+    # box reaches the labeled miles north-south but only ~3/4 of them east-west.
+    dlon = radius_deg / math.cos(math.radians(lat))
     where = (
         f"latitude between '{lat - radius_deg}' and '{lat + radius_deg}' "
-        f"AND longitude between '{lon - radius_deg}' and '{lon + radius_deg}' "
+        f"AND longitude between '{lon - dlon}' and '{lon + dlon}' "
         f"AND issue_date > '{cutoff_iso(months * 30)}' "
         f"AND (permit_type='PERMIT - NEW CONSTRUCTION' "
         f"OR permit_type='PERMIT - WRECKING/DEMOLITION')"
     )
     try:
-        rows = await socrata_get(
+        totals_task = socrata_aggregate(
+            settings.dataset_permits,
+            where=where,
+            group="permit_type",
+            select="permit_type,count(*) as count,sum(reported_cost) as total_cost",
+            order="count DESC",
+            limit=5,
+            client=client,
+        )
+        sample_task = socrata_get(
             settings.dataset_permits,
             {
                 "$where": where,
@@ -286,15 +308,34 @@ async def nearby_new_construction(
             },
             client=client,
         )
-        new_count = sum(1 for r in rows if "NEW CONSTRUCTION" in (r.get("permit_type") or ""))
-        demo_count = sum(1 for r in rows if "WRECKING" in (r.get("permit_type") or ""))
+        totals, rows = await asyncio.gather(totals_task, sample_task)
+
+        new_count = 0
+        demo_count = 0
+        new_construction_cost = 0.0
+        for t in totals:
+            ptype = t.get("permit_type") or ""
+            count = int(t.get("count", 0) or 0)
+            if "NEW CONSTRUCTION" in ptype:
+                new_count = count
+                try:
+                    new_construction_cost = float(t.get("total_cost") or 0)
+                except (TypeError, ValueError):
+                    new_construction_cost = 0.0
+            elif "WRECKING" in ptype:
+                demo_count = count
+
         result: dict[str, Any] = {
             "new_construction_count": new_count,
             "demolition_count": demo_count,
+            # Sum of reported_cost over ALL new-construction permits in the
+            # area/window (demolition costs excluded — they aren't investment).
+            "new_construction_cost": new_construction_cost,
             "recent_projects": rows,
         }
         _construction_cache.set(key, result)
         return result
     except Exception as exc:
         log.warning("Nearby construction failed for (%s, %s): %s", lat, lon, exc)
-        return {"new_construction_count": 0, "demolition_count": 0, "recent_projects": []}
+        return {"new_construction_count": 0, "demolition_count": 0,
+                "new_construction_cost": 0.0, "recent_projects": []}

@@ -163,10 +163,8 @@ def _crime_summary(
         for cat in all_types:
             curr = current_map.get(cat, 0)
             prev = prior_map.get(cat, 0)
-            if prev == 0:
-                pct = 100 if curr > 0 else 0
-            else:
-                pct = round(((curr - prev) / prev) * 100)
+            # prior 0 → percentage undefined, not "+100%"; None renders as "new".
+            pct = None if prev == 0 else round(((curr - prev) / prev) * 100)
             items.append(CrimeYoYItem(
                 category=cat, current_count=curr,
                 prior_year_count=prev, change_pct=pct,

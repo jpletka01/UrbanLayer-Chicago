@@ -66,8 +66,16 @@ def compute_trends(
     get_date: Callable[[dict], str],
     get_category: Callable[[dict], str],
     max_categories: int = 8,
+    capped: bool = False,
 ) -> tuple[list[TrendItem], str | None]:
-    """Compute month-over-month trends. Returns (trends, period_label)."""
+    """Compute month-over-month trends. Returns (trends, period_label).
+
+    ``capped``: the source query hit its row limit. Rows arrive date-DESC, so
+    the cap truncates the OLDEST month mid-month — comparing against it
+    fabricates an increase. Dropping that month keeps every remaining month
+    complete (in a busy area 2,500 crime rows can span under two months, so
+    this is not a theoretical case).
+    """
     by_month: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
     for r in records:
@@ -78,6 +86,9 @@ def compute_trends(
         by_month[ym][cat] += 1
 
     months = sorted(by_month.keys())
+    if capped and months:
+        del by_month[months[0]]
+        months = months[1:]
     if len(months) < 2:
         return [], None
 
@@ -97,10 +108,9 @@ def compute_trends(
     for cat in all_cats:
         curr = current_data.get(cat, 0)
         prev = prior_data.get(cat, 0)
-        if prev == 0:
-            pct = 100 if curr > 0 else 0
-        else:
-            pct = round(((curr - prev) / prev) * 100)
+        # prior 0 → the percentage is undefined, not "+100%". None renders as
+        # "new" downstream; the counts themselves carry the magnitude.
+        pct = None if prev == 0 else round(((curr - prev) / prev) * 100)
         items.append(TrendItem(
             category=cat,
             current_count=curr,
@@ -117,8 +127,15 @@ def compute_analytics(
     crime_rows: list[dict[str, Any]] | None = None,
     three11_rows: list[dict[str, Any]] | None = None,
     permit_rows: list[dict[str, Any]] | None = None,
+    capped: dict[str, bool] | None = None,
 ) -> AnalyticsSummary:
-    """Compute an AnalyticsSummary from raw map data rows."""
+    """Compute an AnalyticsSummary from raw map data rows.
+
+    ``capped`` mirrors MapDataResponse.capped ("crimes"/"requests_311"/
+    "building_permits") so a row-limited fetch doesn't fabricate trends from
+    its truncated oldest month.
+    """
+    capped = capped or {}
     crime_trends = None
     three11_trends = None
     permit_trends = None
@@ -129,6 +146,7 @@ def compute_analytics(
             crime_rows,
             get_date=lambda r: r.get("date", ""),
             get_category=lambda r: r.get("primary_type", "UNKNOWN"),
+            capped=capped.get("crimes", False),
         )
 
     if three11_rows:
@@ -136,6 +154,7 @@ def compute_analytics(
             three11_rows,
             get_date=lambda r: r.get("created_date", ""),
             get_category=lambda r: r.get("sr_type", "UNKNOWN"),
+            capped=capped.get("requests_311", False),
         )
         period = period or p
 
@@ -144,6 +163,7 @@ def compute_analytics(
             permit_rows,
             get_date=lambda r: r.get("issue_date", ""),
             get_category=lambda r: _normalize_permit_type(r.get("permit_type", "")),
+            capped=capped.get("building_permits", False),
         )
         period = period or p
 
