@@ -133,6 +133,18 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
   const vacantClass =
     bldgClass.startsWith("1-00") || bldgClass === "100" || bldgClass.startsWith("100 ") || bldgClass === "VACANT";
 
+  // FAR math needs a number that means "this parcel's total floor area".
+  // Two fallback sources fail that test (2026-07-06 audit):
+  // - condo_unit: ONE unit's sqft against the whole building's lot — an
+  //   existing FAR of ~0.02 on a fully built tower, which read as
+  //   "vacant_or_teardown" and could headline a condo as a strong dev play.
+  // - footprint: ground-floor area, not GFA — understates existing FAR on
+  //   any multi-story building, overstating capacity.
+  // (assessor / condo→assessor / commercial_valuation / energy_benchmark GFA
+  // are genuine floor-area figures and stay usable.)
+  const bldgSource = prop?.bldg_sqft_source ?? null;
+  const bldgAreaNotGfa = bldgSource === "condo_unit" || bldgSource === "footprint";
+
   // Pushback #1: bldg_sqft is frequently stale/missing/area-derived. Degrade to
   // "unknown" rather than confidently misclassify a parcel's capacity.
   const bldgAreaLowConfidence =
@@ -140,6 +152,7 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
     !bldg ||
     !land ||
     (vacantClass && !!bldg && bldg > 0) ||
+    bldgAreaNotGfa ||
     !!data.nearest_parcel_unverified;
 
   const existingFar = !bldgAreaLowConfidence && bldg && land ? bldg / land : null;
@@ -154,7 +167,10 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
   else if (allowedFar == null) capacityBand = "n/a";
   else capacityBand = "unknown";
 
-  const tifBalance = (inc && (num(inc.tif_fund_balance) ?? num(inc.tif_cumulative_revenue))) || 0;
+  // Fund balance ONLY — cumulative revenue is lifetime increment collected,
+  // which a district may have fully spent; substituting it made a spent-down
+  // TIF read as "well-funded, balance $NM" (2026-07-06 audit).
+  const tifBalance = (inc && num(inc.tif_fund_balance)) || 0;
   const incBits = inc
     ? [inc.in_opportunity_zone, inc.in_enterprise_zone, inc.in_qct, inc.in_nmtc, inc.in_tif_district].map(Boolean)
     : [];

@@ -12,12 +12,14 @@ type Mk = {
   bldg?: number | null;
   land?: number | null;
   bldgClass?: string | null;
+  bldgSource?: string | null;
   noProperty?: boolean;
   noZone?: boolean;
   oz?: boolean;
   tif?: boolean;
   tifName?: string;
   tifBalance?: number | null;
+  tifCumulative?: number | null;
   ez?: boolean;
   qct?: boolean;
   nmtc?: boolean;
@@ -47,6 +49,7 @@ function mk(o: Mk): ScorecardResponse {
     : {
         bldg_sqft: o.bldg ?? null,
         land_sqft: o.land ?? null,
+        bldg_sqft_source: o.bldgSource ?? null,
         bldg_class: o.bldgClass ?? "2-11",
         address: "1 Test St",
         flags:
@@ -84,7 +87,7 @@ function mk(o: Mk): ScorecardResponse {
       in_tif_district: !!o.tif,
       tif_name: o.tifName ?? null,
       tif_fund_balance: o.tifBalance ?? null,
-      tif_cumulative_revenue: null,
+      tif_cumulative_revenue: o.tifCumulative ?? null,
       in_enterprise_zone: !!o.ez,
       in_qct: !!o.qct,
       in_nmtc: !!o.nmtc,
@@ -260,5 +263,47 @@ describe("scorecardVerdict — parcel flags + appeal signals (2026-07-02 arc)", 
     );
     expect(v.reasons.length).toBeLessThanOrEqual(4);
     expect(v.reasons.some((r) => r.polarity === "negative")).toBe(true);
+  });
+});
+
+describe("scorecardVerdict — 2026-07-06 audit fixes", () => {
+  it("condo unit sqft never drives capacity: one unit vs the whole lot is not a teardown", () => {
+    // 900 sqft unit on a 10,000 sqft lot in a high-FAR zone: existingFar
+    // would read 0.09 → vacant_or_teardown → "strong". Source gate must
+    // degrade capacity to unknown instead.
+    const data = mk({ zone: "RM-6", far: 4.4, bldg: 900, land: 10000, bldgSource: "condo_unit" });
+    const s = deriveSignals(data);
+    expect(s.bldgAreaLowConfidence).toBe(true);
+    expect(s.capacityBand).toBe("unknown");
+    expect(s.existingFar).toBeNull();
+    expect(selectCategory(s, data)).not.toBe("strong");
+  });
+
+  it("footprint sqft never drives capacity (ground area, not GFA)", () => {
+    const data = mk({ zone: "B3-3", far: 3.0, bldg: 2000, land: 5000, bldgSource: "footprint" });
+    const s = deriveSignals(data);
+    expect(s.capacityBand).toBe("unknown");
+  });
+
+  it("assessor-sourced sqft still computes capacity", () => {
+    const data = mk({ zone: "DS-5", far: 5.0, bldg: 1000, land: 970, bldgSource: "assessor" });
+    const s = deriveSignals(data);
+    expect(s.capacityBand).not.toBe("unknown");
+    expect(selectCategory(s, data)).toBe("strong");
+  });
+
+  it("cumulative TIF revenue is NOT a fund balance: no well-funded gate, no balance reason", () => {
+    // Lifetime increment $8M but no balance — the district may have spent it all.
+    const data = mk({ zone: "RS-3", far: 0.9, bldg: 900, land: 1000, tif: true, tifCumulative: 8_000_000 });
+    const s = deriveSignals(data);
+    expect(s.tifBalance).toBe(0);
+    expect(s.incentiveStrength).toBe("some"); // single incentive, not "strong"
+  });
+
+  it("a real fund balance still gates well-funded strength", () => {
+    const data = mk({ zone: "RS-3", far: 0.9, bldg: 900, land: 1000, tif: true, tifBalance: 8_000_000 });
+    const s = deriveSignals(data);
+    expect(s.tifBalance).toBe(8_000_000);
+    expect(s.incentiveStrength).toBe("strong");
   });
 });

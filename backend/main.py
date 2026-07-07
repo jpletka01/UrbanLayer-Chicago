@@ -1599,10 +1599,16 @@ async def _fetch_scorecard_data(
         partial_failures=partial_failures,
     )
 
-    # Phase 2: comparable sales (needs property class from phase 1)
+    # Phase 2: comparable sales (needs property class from phase 1). Class
+    # derivation is shared with the report (_comp_class_prefix): exempt /
+    # non-numeric classes resolve through zoning instead of querying a raw
+    # first character (an "EX" subject used to search class LIKE 'E%').
     prop = results.get("property")
-    if prop and getattr(prop, "bldg_class", None) and len(prop.bldg_class) > 0:
-        class_prefix = prop.bldg_class[0]
+    if prop and getattr(prop, "bldg_class", None):
+        zone_class_for_comps = (
+            ctx.parcel_zoning.zone_class if ctx.parcel_zoning else None
+        )
+        class_prefix = _comp_class_prefix(prop.bldg_class, zone_class_for_comps)
         try:
             from backend.retrieval.property.sales import nearby_comparable_sales
             from backend.models import ComparableSale, ComparablesSummary
