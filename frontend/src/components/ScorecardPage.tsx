@@ -684,9 +684,11 @@ export default function ScorecardPage() {
         ) : undefined}
       />
 
-      {/* Full-bleed width (the dashboard breathes past the nav pill, like
-          Discovery); pb-24 clears the dock so the footer is never hidden. */}
-      <main className={`w-full max-w-[110rem] mx-auto px-4 md:px-8 xl:px-12 py-8 ${data && !loading ? "pb-24" : ""}`}>
+      {/* Contained column (~74% of a 1440 viewport, dashboard-standard): the
+          full-bleed 110rem canvas stretched line lengths and left half-empty
+          bands — containment IS the hierarchy. pb-24 clears the dock so the
+          footer is never hidden. */}
+      <main className={`w-full max-w-7xl mx-auto px-4 md:px-8 py-8 ${data && !loading ? "pb-24" : ""}`}>
         {/* Search shell — prominent (empty / address-typo) vs compact (loading /
             success / code-question redirect). One boolean, two shells. */}
         {searchProminent ? (
@@ -1010,7 +1012,7 @@ export default function ScorecardPage() {
                     takeaway={takeaways.market}
                     action={moduleAsk("market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
                   >
-                    <div id="scorecard-card-comparables" className="scroll-mt-28 max-w-3xl">
+                    <div id="scorecard-card-comparables" className="scroll-mt-28">
                       <ScorecardComparablesCard data={data.comparables} />
                     </div>
                   </ProfileModule>

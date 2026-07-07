@@ -1,8 +1,7 @@
-// KPI strip — the Property Profile's level-1 numbers row. Six stat tiles, each
+// KPI strip — the Property Profile's level-1 numbers row: stat tiles, each
 // value + context line, deep-linking to the module that holds its evidence.
-// De-carded: no boxes; the tiles read as one row of figures over the canvas.
-// (Benchmark deltas — "vs area median" — arrive with the CA-aggregate endpoint;
-// the sub line is the context slot they will occupy.)
+// One contained card with hairline-divided cells (the classic dashboard
+// stat-row widget) — the band needs figure-ground, not free-floating figures.
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { InfoTooltip } from "../InfoTooltip";
@@ -24,15 +23,18 @@ export function KpiStrip({ tiles, onScrollTo }: {
   if (tiles.length < 2) return null;
   // Columns track the tile count so the band fills its row evenly — a fixed
   // 6-col grid left dead columns when only 4 tiles had data (looked off-center).
-  const cols = tiles.length <= 4
-    ? "grid-cols-2 md:grid-cols-4"
-    : "grid-cols-2 md:grid-cols-3 xl:grid-cols-5";
+  // Hairline cell dividers only when md+ guarantees a single row (≤4 tiles);
+  // a wrapped grid would put stray borders at row starts.
+  const single = tiles.length <= 4;
+  const cols = single
+    ? "grid-cols-2 gap-y-6 gap-x-6 md:gap-0 md:grid-cols-4 md:divide-x md:divide-dark-border"
+    : "grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-x-8 gap-y-6";
   return (
     // Tiles center within their columns — left-aligned content in stretched
     // cells piled all the whitespace on the right (read as off-center).
-    <div className={`grid ${cols} gap-x-8 gap-y-5 py-5 border-y border-dark-border mb-6 text-center`}>
+    <div className={`grid ${cols} rounded-bento border border-dark-border bg-dark-surface shadow-card px-5 md:px-2 py-6 mb-6 text-center`}>
       {tiles.map((tile) => (
-        <div key={tile.anchor + tile.label} className="min-w-0">
+        <div key={tile.anchor + tile.label} className={`min-w-0 ${single ? "md:px-6" : ""}`}>
           <div className="text-overline uppercase tracking-wider text-text-muted">
             {tile.tip ? (
               <InfoTooltip content={{ label: tile.label, description: tile.tip, bullets: [] }}>

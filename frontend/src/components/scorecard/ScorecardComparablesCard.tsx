@@ -122,43 +122,49 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
       meta={t("comparables.radius")}
       className="flex-1"
     >
-      <div className="space-y-4">
-        {data.median_sale_price != null && (
-          <div>
-            <div className="text-subtitle text-text-primary">{fmtFull(data.median_sale_price)}</div>
-            <div className="text-caption text-text-muted mt-0.5">
-              <InfoTooltip content={{ label: t("comparables.medianPrice"), description: t("comparables.tips.median"), bullets: [] }}>
-                {t("comparables.medianPrice")}
-              </InfoTooltip>
-              {" · "}{t("comparables.salesVolume")}: {data.sales_volume}
-            </div>
-          </div>
-        )}
-
-        <PriceStrip data={data} />
-
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-          {data.median_price_per_land_sqft != null && (
-            <div>
-              <dt className="text-caption text-text-muted">
-                <InfoTooltip content={{ label: t("comparables.priceLandSqft"), description: t("comparables.tips.psfLand"), bullets: [] }}>
-                  {t("comparables.priceLandSqft")}
-                </InfoTooltip>
-              </dt>
-              <dd className="text-body text-text-primary mt-0.5">${data.median_price_per_land_sqft.toFixed(0)}</dd>
-            </div>
-          )}
-          {data.median_price_per_bldg_sqft != null && (
-            <div>
-              <dt className="text-caption text-text-muted">
-                <InfoTooltip content={{ label: t("comparables.priceBldgSqft"), description: t("comparables.tips.psfBldg"), bullets: [] }}>
-                  {t("comparables.priceBldgSqft")}
-                </InfoTooltip>
-              </dt>
-              <dd className="text-body text-text-primary mt-0.5">${data.median_price_per_bldg_sqft.toFixed(0)}</dd>
-            </div>
-          )}
-        </dl>
+      <div className="space-y-5">
+        {/* Stat row — the headline figures read across one line (median leads),
+            with the price strip beside them; the table gets the full band. */}
+        <div className="grid md:grid-cols-2 gap-x-10 gap-y-4 md:items-center">
+          <dl className="grid grid-cols-3 gap-x-6">
+            {data.median_sale_price != null && (
+              <div className="min-w-0">
+                <dt className="text-caption text-text-muted">
+                  <InfoTooltip content={{ label: t("comparables.medianPrice"), description: t("comparables.tips.median"), bullets: [] }}>
+                    {t("comparables.medianPrice")}
+                  </InfoTooltip>
+                </dt>
+                <dd className="text-subtitle text-text-primary mt-0.5">{fmtFull(data.median_sale_price)}</dd>
+              </div>
+            )}
+            {data.median_price_per_land_sqft != null && (
+              <div className="min-w-0">
+                <dt className="text-caption text-text-muted">
+                  <InfoTooltip content={{ label: t("comparables.priceLandSqft"), description: t("comparables.tips.psfLand"), bullets: [] }}>
+                    {t("comparables.priceLandSqft")}
+                  </InfoTooltip>
+                </dt>
+                <dd className="text-subtitle text-text-primary mt-0.5">${data.median_price_per_land_sqft.toFixed(0)}</dd>
+              </div>
+            )}
+            {data.median_price_per_bldg_sqft != null ? (
+              <div className="min-w-0">
+                <dt className="text-caption text-text-muted">
+                  <InfoTooltip content={{ label: t("comparables.priceBldgSqft"), description: t("comparables.tips.psfBldg"), bullets: [] }}>
+                    {t("comparables.priceBldgSqft")}
+                  </InfoTooltip>
+                </dt>
+                <dd className="text-subtitle text-text-primary mt-0.5">${data.median_price_per_bldg_sqft.toFixed(0)}</dd>
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <dt className="text-caption text-text-muted">{t("comparables.salesVolume")}</dt>
+                <dd className="text-subtitle text-text-primary mt-0.5">{data.sales_volume}</dd>
+              </div>
+            )}
+          </dl>
+          <PriceStrip data={data} />
+        </div>
 
         <ShowMore
           items={data.sales}

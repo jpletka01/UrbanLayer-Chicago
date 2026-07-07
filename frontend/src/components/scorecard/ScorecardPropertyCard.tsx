@@ -92,23 +92,24 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
 
   return (
     <div className="space-y-8">
-      {/* The timeline — assessment trajectory (land/building split), sales and
-          won appeals on one axis. Falls back to nothing on <2 years of data;
-          the record tables below still carry everything. */}
-      {data.assessment_history.length >= 2 && (
-        <div>
-          <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
-            {t("property.assessmentHistory")}
+      {/* Lead row — the dashboard's chart-plus-side-panel composition: the
+          timeline (assessment trajectory, land/building split, sales + won
+          appeals on one axis) takes ⅔, the tax stat panel reads beside it.
+          The chart falls back to nothing on <2 years of data; the record
+          tables below still carry everything. */}
+      <div className="grid lg:grid-cols-3 gap-x-10 gap-y-8 lg:items-start">
+        {data.assessment_history.length >= 2 && (
+          <div className="lg:col-span-2 min-w-0">
+            <div className="text-overline uppercase tracking-wider text-text-muted mb-2">
+              {t("property.assessmentHistory")}
+            </div>
+            <PropertyTimeline
+              history={data.assessment_history}
+              sales={data.sales_history}
+              appeals={data.appeals?.records}
+            />
           </div>
-          <PropertyTimeline
-            history={data.assessment_history}
-            sales={data.sales_history}
-            appeals={data.appeals?.records}
-          />
-        </div>
-      )}
-
-      <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-start">
+        )}
         {/* Tax detail */}
         <SubSection icon={TaxIcon} title={t("property.taxDetail")}>
           <div className="space-y-4">
@@ -216,7 +217,11 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             ) : null}
           </div>
         </SubSection>
+      </div>
 
+      {/* Facts + records row — building facts and the verifier's tables share
+          one balanced band instead of two half-filled ones. */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-8 md:items-start">
         {/* Building & lot facts */}
         <SubSection icon={BuildingIcon} title={t("property.buildingAndLot")}>
           <div className="space-y-4">
@@ -319,12 +324,10 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             ) : null}
           </div>
         </SubSection>
-      </div>
 
-      {/* Full records for the verifier persona — visible, top-N + ShowMore */}
-      {(data.sales_history.length > 0 || data.assessment_history.length > 0) && (
-        <div className="grid sm:grid-cols-2 gap-x-10 gap-y-6">
-          {data.sales_history.length > 0 && (
+        {/* Full records for the verifier persona — visible, top-N + ShowMore */}
+        {data.sales_history.length > 0 && (
+          <div className="min-w-0">
             <ShowMore
               items={data.sales_history}
               limit={5}
@@ -340,8 +343,10 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 />
               )}
             />
-          )}
-          {data.assessment_history.length > 0 && (
+          </div>
+        )}
+        {data.assessment_history.length > 0 && (
+          <div className="min-w-0">
             <ShowMore
               items={[...data.assessment_history].sort((a, b) => (b.year ?? 0) - (a.year ?? 0))}
               limit={5}
@@ -358,9 +363,9 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 />
               )}
             />
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

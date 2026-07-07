@@ -21,7 +21,19 @@
 > thereby answered. Still open: the fixed-height 12-col module layout, KPI strip w/ benchmarks,
 > identity rail, and the Phase A/B insight layer.
 
-> **STATUS: v2 spec IMPLEMENTED through v2.2 on `feat/property-profile`**
+> **2026-07-07 v2.3 — containment pass (Jack: "still cluttered, bad hierarchy";
+> reference = Figma "Modern Analytics Dashboard" community file).** The de-carding
+> overshot: an unbounded 110rem canvas with hairline rules gave the eye no grouping
+> cues and left half-empty bands. Lessons applied: (1) contained column —
+> `max-w-[110rem]` → `max-w-7xl` (~74% of a 1440 viewport, dashboard-standard);
+> (2) **module = card** (rounded-bento surface per ProfileModule; interiors stay
+> de-carded — "card = data source" stays dead, a card is a QUESTION); (3) KPI band
+> = one divided stat-card row; (4) composed rows that fill their band — Costs is
+> chart ⅔ + tax panel ⅓ then a 3-col facts/sales/assessment row, Market is a stat
+> row + full-width comps table (the max-w-3xl half-band died). Gates run: build,
+> vitest 171, 5-device mobile audit.
+>
+> **STATUS: v2 spec IMPLEMENTED through v2.3 on `feat/property-profile`**
 > (`f52da69` v2 → `f144904` v2.1 Jack's 11-point polish → `9526fb9` v2.2). Post-spec
 > additions from review: KPI columns track tile count + tiles centered; page full-bleed
 > `max-w-[110rem]`; map keys top-right on every map with **bottom-left always empty**

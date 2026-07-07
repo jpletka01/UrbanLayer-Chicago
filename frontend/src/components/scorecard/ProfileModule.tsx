@@ -1,7 +1,7 @@
-// De-carded dashboard bands for the Property Profile page (2026-07-07 redesign).
-// The page is ONE canvas: modules are full-width sections separated by hairline
-// rules, not boxed cards — "card = data source" is retired. Borders and radius
-// are reserved for genuinely interactive elements (buttons, inputs, chips).
+// Dashboard bands for the Property Profile page. "Card = data source" stays
+// retired — a card here is a MODULE (one question, fixed composition), so the
+// page reads as a handful of contained widgets on the canvas instead of an
+// unbounded texture of rules. Interiors stay de-carded (quiet SubSections).
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -17,7 +17,7 @@ export function ProfileModule({ id, title, takeaway, action, children }: {
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-dark-border pt-8 mt-10 first:border-t-0 first:mt-0 first:pt-0">
+    <section id={id} className="scroll-mt-28 rounded-bento border border-dark-border bg-dark-surface shadow-card p-5 md:p-7 mt-6 first:mt-0">
       <div className="flex items-start justify-between gap-4 mb-5">
         <div className="min-w-0">
           <h3 className="text-subtitle text-text-primary">{title}</h3>
