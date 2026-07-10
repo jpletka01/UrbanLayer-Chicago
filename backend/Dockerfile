@@ -14,11 +14,14 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 COPY requirements.prod.txt .
 RUN pip install --no-cache-dir -r requirements.prod.txt
 
-# Pre-download HuggingFace models so they're baked into the layer
+# Pre-download the embedding model so it's baked into the layer. The
+# bge-reranker-v2-m3 CrossEncoder is deliberately NOT baked: the reranker is
+# disabled (too slow on the prod vCPUs — see zoning_cache.py) and it added
+# >1 GB to every image build. If the flag is ever re-enabled,
+# sentence-transformers downloads it lazily on first use.
 RUN python -c "\
-from sentence_transformers import SentenceTransformer, CrossEncoder; \
-SentenceTransformer('BAAI/bge-base-en-v1.5'); \
-CrossEncoder('BAAI/bge-reranker-v2-m3')"
+from sentence_transformers import SentenceTransformer; \
+SentenceTransformer('BAAI/bge-base-en-v1.5')"
 
 # Stage 2: Runtime — copy only what's needed
 FROM python:3.11-slim

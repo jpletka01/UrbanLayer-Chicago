@@ -1,18 +1,16 @@
 """Precomputed zoning-extraction cache (report path).
 
-The report's zoning extraction (`extract_zoning_standards`) fires 5 reranked
-vector searches per parcel. On the prod vCPUs a reranked search is ~40s, so the
-report path can't run the reranker live without 504ing. But the 5 queries are
-fully templated on `zone_class` (`ZONING_QUERY_TEMPLATES`), so the result is a
-pure function of (zone_class, code content, retrieval+extraction config) — i.e.
-precomputable.
+Live zoning extraction couldn't run on the prod vCPUs (the reranked-search path
+was ~40s/query → /api/report 504s, 2026-06-16). But extraction is a pure
+function of (zone_class, code content, extraction config) — the builder feeds
+Haiku the COMPLETE Title-17 bulk/parking sections deterministically — so the
+result is precomputable offline.
 
 This module is the READ side: it loads a small committed JSON artifact
-(`ingestion/data/zoning_cache.json`, built off-box by `backend.zoning_cache_build`
-with the reranker on) and serves `ZoningStandards` by zone class. A miss or a
-config-version mismatch returns ``None`` so the caller falls back to the existing
-deterministic Title-17 table — the cache is a pure quality uplift that can never
-hang the report.
+(`ingestion/data/zoning_cache.json`, built off-box by `backend.zoning_cache_build`)
+and serves `ZoningStandards` by zone class. A miss or a config-version mismatch
+returns ``None`` so the caller falls back to the existing deterministic Title-17
+table — the cache is a pure quality uplift that can never hang the report.
 """
 
 from __future__ import annotations

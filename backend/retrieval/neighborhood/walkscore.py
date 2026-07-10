@@ -1,7 +1,6 @@
 """Walk Score, Transit Score, and Bike Score from the Walk Score API."""
 
 import logging
-from urllib.parse import quote
 
 import httpx
 

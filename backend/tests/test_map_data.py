@@ -14,7 +14,6 @@ def mock_map_settings(mock_settings):
     mock_settings.limit_map_311 = 150
     mock_settings.limit_map_permits = 100
     mock_settings.enable_zoning_layer = False
-    mock_settings.dataset_zoning = "p8va-airx"
     return mock_settings
 
 

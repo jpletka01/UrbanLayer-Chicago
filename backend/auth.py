@@ -219,16 +219,19 @@ def require_tier(minimum: str):
     return _check
 
 
-def verify_csrf(request: Request) -> None:
+def csrf_check(request: Request) -> bool:
+    """Double-submit CSRF check: True when the request may proceed.
+
+    The single source of truth for CSRF validation — CSRFMiddleware in main.py
+    consumes this. Skipped (True) in dev mode and for safe methods.
+    """
     if not _auth_enabled():
-        return
+        return True
     if request.method in ("GET", "HEAD", "OPTIONS"):
-        return
+        return True
     cookie_token = request.cookies.get("csrf_token", "")
     header_token = request.headers.get("x-csrf-token", "")
-    if not cookie_token or cookie_token != header_token:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="CSRF token mismatch")
+    return bool(cookie_token) and cookie_token == header_token
 
 
 # ---------------------------------------------------------------------------

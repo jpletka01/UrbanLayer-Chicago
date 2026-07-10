@@ -1,7 +1,6 @@
 import type { Conversation, Message } from "./types";
 import {
   clearAllConversations,
-  createConversation,
   deleteConversationAPI,
   importConversations,
   listConversations,
@@ -16,40 +15,8 @@ function generateId(): string {
   return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function generateTitle(messages: Message[]): string {
-  const firstUser = messages.find((m) => m.role === "user");
-  if (!firstUser) return "New conversation";
-  const content = firstUser.content.trim();
-  return content.length > 50 ? content.slice(0, 47) + "..." : content;
-}
-
 export async function loadConversations(): Promise<Conversation[]> {
   return listConversations();
-}
-
-export async function saveConversation(
-  messages: Message[],
-  existingId?: string,
-): Promise<string> {
-  const id = existingId || generateId();
-
-  if (!existingId) {
-    const title = generateTitle(messages);
-    await createConversation(id, title);
-  }
-
-  const stored = messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-    ...(m.context ? { context: m.context } : {}),
-    ...(m.plan ? { plan: m.plan } : {}),
-    ...(m.mapData ? { map_data: m.mapData } : {}),
-    ...(m.mapFetchedAt ? { map_fetched_at: m.mapFetchedAt } : {}),
-    ...(m.turnSummary ? { summary: m.turnSummary } : {}),
-  }));
-
-  await apiSaveMessages(id, stored);
-  return id;
 }
 
 export async function appendMessages(
@@ -76,7 +43,7 @@ export async function clearAllHistory(): Promise<void> {
   return clearAllConversations();
 }
 
-export { generateId, generateTitle };
+export { generateId };
 
 // ---------------------------------------------------------------------------
 // One-time migration from localStorage to SQLite

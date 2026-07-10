@@ -162,16 +162,6 @@ class TestRefreshTokenDB:
         await db.save_refresh_token("u1", h, expired_at)
         assert await db.get_refresh_token(h) is None
 
-    @pytest.mark.asyncio
-    async def test_revoke_all(self, test_db):
-        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
-        expires = int(time.time() * 1000) + 999999999
-        await db.save_refresh_token("u1", auth.hash_token("t1"), expires)
-        await db.save_refresh_token("u1", auth.hash_token("t2"), expires)
-        await db.revoke_all_user_refresh_tokens("u1")
-        assert await db.get_refresh_token(auth.hash_token("t1")) is None
-        assert await db.get_refresh_token(auth.hash_token("t2")) is None
-
 
 # ---------------------------------------------------------------------------
 # Dependencies (dev mode)
@@ -203,7 +193,7 @@ class TestDevMode:
         request.method = "POST"
         request.cookies = {}
         request.headers = {}
-        auth.verify_csrf(request)  # should not raise
+        assert auth.csrf_check(request) is True
 
     @pytest.mark.asyncio
     async def test_me_returns_not_required(self, _auth_disabled):
@@ -264,33 +254,28 @@ class TestCSRF:
     def test_csrf_passes_on_get(self, _auth_settings):
         request = MagicMock()
         request.method = "GET"
-        auth.verify_csrf(request)  # should not raise
+        assert auth.csrf_check(request) is True
 
     def test_csrf_blocks_missing_header(self, _auth_settings):
         request = MagicMock()
         request.method = "POST"
         request.cookies = {"csrf_token": "abc"}
         request.headers = {}
-        from fastapi import HTTPException
-        with pytest.raises(HTTPException) as exc_info:
-            auth.verify_csrf(request)
-        assert exc_info.value.status_code == 403
+        assert auth.csrf_check(request) is False
 
     def test_csrf_passes_matching(self, _auth_settings):
         request = MagicMock()
         request.method = "POST"
         request.cookies = {"csrf_token": "abc123"}
         request.headers = {"x-csrf-token": "abc123"}
-        auth.verify_csrf(request)  # should not raise
+        assert auth.csrf_check(request) is True
 
     def test_csrf_blocks_mismatch(self, _auth_settings):
         request = MagicMock()
         request.method = "POST"
         request.cookies = {"csrf_token": "abc"}
         request.headers = {"x-csrf-token": "xyz"}
-        from fastapi import HTTPException
-        with pytest.raises(HTTPException):
-            auth.verify_csrf(request)
+        assert auth.csrf_check(request) is False
 
 
 # ---------------------------------------------------------------------------

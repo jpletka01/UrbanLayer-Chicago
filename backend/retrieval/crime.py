@@ -112,20 +112,3 @@ async def crime_yoy_by_community_area(
     }
     _cache.set(key, result)
     return result
-
-
-async def crime_recent_by_block(
-    block: str,
-    *,
-    days: int = 30,
-    limit: int = 20,
-    client: httpx.AsyncClient | None = None,
-) -> list[dict[str, Any]]:
-    settings = get_settings()
-    cutoff = cutoff_iso(days, lag_days=settings.crime_lag_days)
-    params = {
-        "$where": f"block='{block}' AND date > '{cutoff}'",
-        "$order": "date DESC",
-        "$limit": limit,
-    }
-    return await socrata_get(settings.dataset_crime, params, client=client)

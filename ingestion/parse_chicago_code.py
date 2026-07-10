@@ -46,20 +46,6 @@ EFFECTIVE_DATE_RE = re.compile(r"Coun\.\s*J\.\s*(\d{1,2}-\d{1,2}-\d{2,4})")
 
 
 @dataclass
-class StructuredTable:
-    """A table with multi-row headers resolved into per-column composite labels.
-
-    `headers` is a list of composite header labels — one per logical column,
-    e.g. ["USE GROUP - Use Category", "RS-1", "RS-2", ..., "Use Standard"].
-    `data_rows` is the list of data rows, each aligned to the column count.
-    `caption` is any pre-table title text the parser was able to associate.
-    """
-    headers: list[str]
-    data_rows: list[list[str]]
-    caption: str = ""
-
-
-@dataclass
 class Section:
     section: str                          # canonical anchor, e.g. "17-2-0100"
     section_title: str                    # human title

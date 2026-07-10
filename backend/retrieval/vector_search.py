@@ -2,7 +2,7 @@
 
 Provides two retrieval modes:
 1. semantic_search(query) — top-k similarity over chunk embeddings
-2. get_by_section_id(section) — exact-match payload filter for cross-reference lookup
+2. get_full_section(section) — exact-match payload filter for cross-reference lookup
 
 Uses raw HTTP API instead of qdrant-client to avoid version compatibility issues
 between the Python client (1.18.x) and Qdrant server (1.9.x).
@@ -345,29 +345,6 @@ async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = Fal
         for score, payload in ranked[:top_k]
     ]
     return chunks
-
-
-async def get_by_section_id(section_id: str) -> CodeChunk | None:
-    settings = get_settings()
-    client = _get_qdrant_client()
-    try:
-        resp = await client.post(
-            f"{_qdrant_url()}/collections/{settings.qdrant_code_collection}/points/scroll",
-            json={
-                "filter": {"must": [{"key": "section", "match": {"value": section_id}}]},
-                "limit": 1,
-                "with_payload": True,
-            },
-        )
-        resp.raise_for_status()
-        points = resp.json().get("result", {}).get("points", [])
-    except Exception as exc:
-        log.warning("Qdrant scroll failed for %s: %s", section_id, exc)
-        return None
-    if not points:
-        return None
-    known = await _get_known_sections()
-    return _payload_to_chunk(points[0].get("payload", {}), score=1.0, known_sections=known)
 
 
 _PART_LABEL_RE = re.compile(r"\(part \d+ of \d+\)\n?")

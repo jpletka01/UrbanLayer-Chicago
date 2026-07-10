@@ -2,11 +2,10 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from backend.retrieval.crime import crime_by_community_area, crime_recent_by_block
+from backend.retrieval.crime import crime_by_community_area
 from backend.retrieval.three11 import (
     open_311_by_community_area,
     open_311_oldest,
-    response_times_by_community_area,
 )
 from backend.retrieval.buildings import permits_by_community_area, violations_by_community_area
 from backend.retrieval.business import businesses_by_community_area
@@ -54,20 +53,6 @@ class TestCrimeRetrieval:
         assert result[0]["arrests"] == "5"
         assert result[1]["arrests"] == "10"
 
-    @pytest.mark.asyncio
-    async def test_crime_recent_by_block_query_structure(self, mock_settings):
-        with patch("backend.retrieval.crime.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.crime.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
-                await crime_recent_by_block("016XX W DIVISION ST", days=30, limit=20)
-
-        mock_get.assert_called_once()
-        call_args = mock_get.call_args
-        params = call_args[0][1]
-        assert "block='016XX W DIVISION ST'" in params["$where"]
-        assert params["$limit"] == 20
-        assert "date DESC" in params["$order"]
-
 
 class TestThree11Retrieval:
     @pytest.mark.asyncio
@@ -94,19 +79,6 @@ class TestThree11Retrieval:
         params = call_args[0][1]
         assert params["$limit"] == 1
         assert "created_date ASC" in params["$order"]
-
-    @pytest.mark.asyncio
-    async def test_response_times_groups_by_sr_type(self, mock_settings):
-        with patch("backend.retrieval.three11.get_settings", return_value=mock_settings):
-            with patch("backend.retrieval.three11.socrata_get", new_callable=AsyncMock) as mock_get:
-                mock_get.return_value = []
-                await response_times_by_community_area(24, days=90)
-
-        call_args = mock_get.call_args
-        params = call_args[0][1]
-        assert params["$group"] == "sr_type"
-        assert "avg_days" in params["$select"]
-        assert "status='Closed'" in params["$where"]
 
 
 class TestBuildingsRetrieval:

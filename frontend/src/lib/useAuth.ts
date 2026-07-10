@@ -49,19 +49,14 @@ export function useAuth(): UseAuth {
 
   const checkAuth = useCallback(async () => {
     try {
-      console.log("[auth] checking auth status");
       const status = await getAuthStatus();
-      console.log("[auth] status:", status.authenticated, status.auth_required, status.user?.email);
       if (status.authenticated) {
         applyStatus(status);
       } else {
-        console.log("[auth] not authenticated, attempting token refresh");
         const refreshed = await refreshAuthToken();
         if (refreshed) {
-          console.log("[auth] refresh succeeded:", refreshed.user?.email);
           applyStatus(refreshed);
         } else {
-          console.log("[auth] refresh failed, user is unauthenticated");
           setUser(null);
           setIsAuthenticated(false);
           setAuthRequired(status.auth_required);

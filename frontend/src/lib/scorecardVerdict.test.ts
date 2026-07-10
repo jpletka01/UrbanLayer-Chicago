@@ -184,8 +184,8 @@ describe("scorecardVerdict — output contract", () => {
   it("strong leads with a non-commercial chat step and no money action in the band (#4)", () => {
     const v = computeVerdict(mk({ zone: "DS-5", far: 5.0, bldg: 1000, land: 970 }), t);
     expect(v.nextStep.kind).toBe("chat");
-    // The band carries one azure next-step only; the paid report is the separate
-    // ReportCTACard, never a verdict secondary.
+    // The verdict carries one work next-step only; the paid report is the
+    // separate violet button in the hero action row, never a verdict secondary.
     expect("secondary" in v.nextStep).toBe(false);
   });
 

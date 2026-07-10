@@ -13,7 +13,10 @@ from backend.retrieval.buildings import (
 )
 from backend.retrieval.property.sales import nearby_comparable_sales, _haversine_mi
 from backend.retrieval.zoning import adjacent_parcel_zoning
-from backend.zoning_extract import calculate_development_potential, extract_zoning_standards
+from backend.zoning_extract import (
+    calculate_development_potential,
+    extract_zoning_standards_from_sections,
+)
 from backend.models import DevelopmentPotential, ZoningStandards
 
 
@@ -200,40 +203,47 @@ class TestCalculateDevelopmentPotential:
         assert result.max_buildable_sqft is None
 
 
-class TestExtractZoningStandards:
+class TestExtractZoningStandardsFromSections:
+    """Haiku extraction over deterministic full-section fetches (the builder path)."""
+
     @pytest.mark.asyncio
     async def test_successful_extraction(self):
-        mock_chunks = [MagicMock(section_title="17-3-0400", text="FAR is 2.2 in B3-2")]
+        mock_chunk = MagicMock(
+            section="17-3-0400", section_title="Bulk and density standards",
+            text="FAR is 2.2 in B3-2",
+        )
 
         mock_resp = MagicMock()
         mock_resp.content = [MagicMock(type="text", text='{"far": 2.2, "max_height_ft": 50, "extraction_confidence": "high", "permitted_uses": ["Retail"], "special_uses": [], "notes": []}')]
 
-        with patch("backend.zoning_extract.semantic_search", new_callable=AsyncMock) as mock_search, \
+        with patch("backend.zoning_extract.get_full_section", new_callable=AsyncMock) as mock_fetch, \
              patch("backend.zoning_extract.tracked_create", new_callable=AsyncMock) as mock_create:
-            mock_search.return_value = mock_chunks
+            mock_fetch.return_value = mock_chunk
             mock_create.return_value = mock_resp
-            result = await extract_zoning_standards("B3-2")
+            result, used = await extract_zoning_standards_from_sections("B3-2")
             assert result is not None
             assert result.far == 2.2
             assert result.max_height_ft == 50
             assert result.extraction_confidence == "high"
+            assert "17-3-0400" in used
 
     @pytest.mark.asyncio
-    async def test_returns_none_on_search_failure(self):
-        with patch("backend.zoning_extract.semantic_search", new_callable=AsyncMock) as mock:
-            mock.side_effect = Exception("Qdrant down")
-            result = await extract_zoning_standards("B3-2")
+    async def test_returns_none_when_sections_unavailable(self):
+        with patch("backend.zoning_extract.get_full_section", new_callable=AsyncMock) as mock_fetch:
+            mock_fetch.return_value = None
+            result, used = await extract_zoning_standards_from_sections("B3-2")
             assert result is None
+            assert used == []
 
     @pytest.mark.asyncio
     async def test_returns_none_on_bad_json(self):
-        mock_chunks = [MagicMock(section_title="test", text="test")]
+        mock_chunk = MagicMock(section="17-3-0400", section_title="test", text="test")
         mock_resp = MagicMock()
         mock_resp.content = [MagicMock(type="text", text="not json")]
 
-        with patch("backend.zoning_extract.semantic_search", new_callable=AsyncMock) as mock_search, \
+        with patch("backend.zoning_extract.get_full_section", new_callable=AsyncMock) as mock_fetch, \
              patch("backend.zoning_extract.tracked_create", new_callable=AsyncMock) as mock_create:
-            mock_search.return_value = mock_chunks
+            mock_fetch.return_value = mock_chunk
             mock_create.return_value = mock_resp
-            result = await extract_zoning_standards("B3-2")
+            result, _used = await extract_zoning_standards_from_sections("B3-2")
             assert result is None

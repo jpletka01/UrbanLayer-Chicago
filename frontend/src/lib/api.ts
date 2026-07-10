@@ -539,12 +539,6 @@ export function getUploadUrl(uploadId: string): string {
   return `${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}/file`;
 }
 
-export async function deleteUpload(uploadId: string): Promise<void> {
-  await authFetch(`${API_BASE}/api/uploads/${encodeURIComponent(uploadId)}`, {
-    method: "DELETE",
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Admin API
 // ---------------------------------------------------------------------------

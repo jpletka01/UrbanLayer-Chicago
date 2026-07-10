@@ -767,7 +767,6 @@ async def save_upload(
     mime_type: str | None,
     size_bytes: int,
     storage_path: str,
-    message_position: int | None = None,
 ) -> dict:
     db = _get_db()
     now = _now_ms()
@@ -1318,14 +1317,6 @@ async def revoke_refresh_token(token_hash: str) -> None:
     db = _get_db()
     await db.execute(
         "UPDATE refresh_tokens SET revoked = 1 WHERE token_hash = ?", (token_hash,),
-    )
-    await db.commit()
-
-
-async def revoke_all_user_refresh_tokens(user_id: str) -> None:
-    db = _get_db()
-    await db.execute(
-        "UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?", (user_id,),
     )
     await db.commit()
 

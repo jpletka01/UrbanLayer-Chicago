@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     embedding_query_prefix: str = "Represent this sentence for searching relevant passages: "
 
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
-    reranker_enabled: bool = True
+    # OFF by default: the cross-encoder is ~40s/predict on the prod vCPUs (the
+    # 2026-06-16 /api/report 504 incident) and the report path now reads the
+    # precomputed zoning cache instead. Default matches prod so a fresh
+    # environment can't resurrect the hang; enable explicitly for local work.
+    reranker_enabled: bool = False
     reranker_candidate_count: int = 20
     reranker_weight: float = 0.2
     # Intra-op torch threads for the cross-encoder rerank. Paired with the
@@ -57,8 +61,6 @@ class Settings(BaseSettings):
     dataset_vacant_buildings: str = "kc9i-wq85"
     dataset_food_inspections: str = "4ijn-s7e5"
     dataset_community_areas: str = "igwz-8jzy"
-    dataset_iucr: str = "c7ck-438e"
-    dataset_zoning: str = "p8va-airx"
 
     # Cook County Socrata (datacatalog.cookcountyil.gov)
     cook_county_socrata_base: str = "https://datacatalog.cookcountyil.gov/resource"
@@ -133,9 +135,7 @@ class Settings(BaseSettings):
     # Per-source Socrata row caps (every query must carry a $limit guard).
     limit_crime: int = 35
     limit_311: int = 200
-    limit_permits: int = 500
     limit_violations: int = 200
-    limit_business: int = 500
     limit_permits_detail: int = 20
     limit_business_detail: int = 20
     limit_vacant_buildings_detail: int = 20
@@ -185,8 +185,6 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
-
-    enable_request_logging: bool = True
 
     # Auth (disabled when google_client_id is empty — local dev works without OAuth)
     google_client_id: str = ""
@@ -254,7 +252,6 @@ class Settings(BaseSettings):
 
     # Stripe
     stripe_secret_key: str = ""
-    stripe_public_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_id_pro_monthly: str = ""
     stripe_price_id_report: str = ""

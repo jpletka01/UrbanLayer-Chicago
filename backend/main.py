@@ -137,16 +137,13 @@ class CSRFMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.method not in ("GET", "HEAD", "OPTIONS"):
             if request.url.path not in _CSRF_EXEMPT_PATHS:
-                from backend.auth import _auth_enabled
-                if _auth_enabled():
-                    cookie_token = request.cookies.get("csrf_token", "")
-                    header_token = request.headers.get("x-csrf-token", "")
-                    if not cookie_token or cookie_token != header_token:
-                        from starlette.responses import JSONResponse
-                        return JSONResponse(
-                            status_code=403,
-                            content={"detail": "CSRF token mismatch"},
-                        )
+                from backend.auth import csrf_check
+                if not csrf_check(request):
+                    from starlette.responses import JSONResponse
+                    return JSONResponse(
+                        status_code=403,
+                        content={"detail": "CSRF token mismatch"},
+                    )
         return await call_next(request)
 
 
@@ -3069,7 +3066,7 @@ def _generate_parcel_map(
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        from matplotlib.patches import FancyArrowPatch, Polygon as MplPolygon
+        from matplotlib.patches import Polygon as MplPolygon
         from PIL import Image
     except ImportError:
         return None

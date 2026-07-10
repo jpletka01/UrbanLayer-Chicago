@@ -1,20 +1,22 @@
 """Extract structured zoning standards from Municipal Code via Haiku.
 
-Runs 5 targeted vector searches for a given zone class, then uses Claude Haiku
-to extract structured parameters (FAR, height, setbacks, uses, parking) into
-a ZoningStandards model.
+Feeds the COMPLETE Title-17 bulk-and-density (+ parking) sections for a zone's
+district chapter to Claude Haiku, which extracts structured parameters (FAR,
+height, setbacks, uses, parking) into a ZoningStandards model. Used by the
+offline zoning-cache builder (`zoning_cache_build.py`); the live report reads
+the precomputed cache. The deterministic Title-17 table stays authoritative
+for the bulk numbers via `apply_table_authority`.
 """
 
 import asyncio
 import json
 import logging
 import re
-from typing import Any
 
 from backend.config import get_settings
 from backend.llm import tracked_create
 from backend.models import DevelopmentPotential, ZoningStandards
-from backend.retrieval.vector_search import get_full_section, semantic_search
+from backend.retrieval.vector_search import get_full_section
 
 log = logging.getLogger(__name__)
 
@@ -166,63 +168,6 @@ def _json_from_model_text(text: str) -> str:
     return t
 
 
-# Templated zoning queries — `zone_class` is the only variable. Module-level so the
-# precompute builder and the cache's config_version hash both reference the exact
-# same query shapes (a change here must invalidate the precomputed cache).
-ZONING_QUERY_TEMPLATES = [
-    "{zone_class} floor area ratio maximum building height lot coverage minimum lot area",
-    "{zone_class} required setbacks front yard side yard rear yard transition setback",
-    "{zone_class} permitted uses use group special use",
-    "off-street parking spaces required {zone_class} dwelling unit commercial retail",
-    "{zone_class} landscaping screening loading dock building entrance development standards",
-]
-ZONING_QUERY_LABELS = ["BULK STANDARDS", "SETBACKS", "USES", "PARKING", "DEVELOPMENT STANDARDS"]
-
-
-async def extract_zoning_standards_with_provenance(
-    zone_class: str,
-    *,
-    request_group: str = "report",
-) -> tuple[ZoningStandards | None, list[str]]:
-    """Run the 5 targeted vector searches + Haiku extraction for a zone class.
-
-    Returns ``(standards, section_ids)`` where ``section_ids`` are the Municipal
-    Code sections whose chunks fed the extraction — provenance for the precomputed
-    zoning cache's staleness tracking. ``standards`` is ``None`` on any failure.
-
-    Legacy semantic-search path; superseded by ``extract_zoning_standards_from_sections``
-    for the builder. Kept for reference/tests. The live report reads the cache.
-    """
-    queries = [t.format(zone_class=zone_class) for t in ZONING_QUERY_TEMPLATES]
-
-    try:
-        chunk_groups = await asyncio.gather(
-            *[semantic_search(q, top_k=3) for q in queries],
-            return_exceptions=True,
-        )
-    except Exception as exc:
-        log.warning("Vector search failed for zone %s: %s", zone_class, exc)
-        return None, []
-
-    # Build extraction text + collect contributing section IDs (provenance).
-    sections: list[str] = []
-    section_ids: list[str] = []
-    for label, result in zip(ZONING_QUERY_LABELS, chunk_groups):
-        if isinstance(result, Exception):
-            continue
-        for chunk in result:
-            sections.append(f"[{label} — {chunk.section_title}]\n{chunk.text}")
-            if chunk.section:
-                section_ids.append(chunk.section)
-
-    if not sections:
-        log.warning("No vector search results for zone %s", zone_class)
-        return None, []
-
-    standards = await _haiku_extract(zone_class, "\n\n---\n\n".join(sections), request_group)
-    return standards, sorted(set(section_ids))
-
-
 # --- Deterministic full-section extraction (used by the offline cache builder) ---
 
 # Title-17 "Bulk and density standards" section per district chapter (FAR, height,
@@ -304,18 +249,6 @@ async def _haiku_extract(
     except (json.JSONDecodeError, Exception) as exc:
         log.warning("Failed to parse extraction JSON for zone %s: %s", zone_class, exc)
         return None
-
-
-async def extract_zoning_standards(
-    zone_class: str,
-    *,
-    request_group: str = "report",
-) -> ZoningStandards | None:
-    """Run 5 targeted vector searches and extract structured standards via Haiku."""
-    standards, _ = await extract_zoning_standards_with_provenance(
-        zone_class, request_group=request_group
-    )
-    return standards
 
 
 def calculate_development_potential(

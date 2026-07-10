@@ -34,3 +34,10 @@ chicago-il-codes.html
 
 # stray local artifact
 vibecoded-design-tells-main.zip
+
+# Eval run outputs (regenerable; benchmark_results.json stays tracked — the
+# admin dashboard endpoint serves it)
+eval/coverage_results.json
+eval/coverage_report.md
+eval/lot_coverage_results*.json
+eval/lot_coverage_report.md

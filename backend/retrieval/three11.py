@@ -141,24 +141,3 @@ async def address_311_complaints(
     }
     _address_cache.set(key, result)
     return result
-
-
-async def response_times_by_community_area(
-    community_area: int,
-    *,
-    days: int = 90,
-    client: httpx.AsyncClient | None = None,
-) -> list[dict[str, Any]]:
-    settings = get_settings()
-    params = {
-        "$where": (
-            f"community_area='{community_area}' "
-            "AND status='Closed' "
-            f"AND created_date > '{cutoff_iso(days)}'"
-        ),
-        "$select": "sr_type,avg(date_diff_d(closed_date,created_date)) as avg_days",
-        "$group": "sr_type",
-        "$order": "avg_days DESC",
-        "$limit": 10,
-    }
-    return await socrata_get(settings.dataset_311, params, client=client)

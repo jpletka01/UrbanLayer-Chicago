@@ -22,9 +22,7 @@ def mock_settings():
     settings.crime_lag_days = 7
     settings.limit_crime = 35
     settings.limit_311 = 200
-    settings.limit_permits = 500
     settings.limit_violations = 200
-    settings.limit_business = 500
     settings.limit_permits_detail = 20
     settings.limit_business_detail = 20
     # Cook County / CCAO

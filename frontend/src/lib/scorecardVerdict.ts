@@ -63,9 +63,9 @@ export interface VerdictReason {
 }
 
 export interface VerdictNextStep {
-  // The band commits to ONE azure next-step (work, not money). The paid report is
-  // a separate terracotta money action — the dedicated ReportCTACard below the
-  // band — so the verdict earns trust before the page asks for the sale (#4).
+  // The verdict commits to ONE next-step (work, not money) — rendered as a chip
+  // in the hero action row, apart from the violet paid-report button — so the
+  // verdict earns trust before the page asks for the sale (#4).
   kind: "chat" | "scroll";
   label: string;
   question?: string; // kind==="chat" — carries the address (grounding requires it)

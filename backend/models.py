@@ -746,14 +746,6 @@ class ChatChunk(BaseModel):
     timings: dict[str, int] | None = None
 
 
-class ConversationSummary(BaseModel):
-    id: str
-    title: str
-    created_at: int
-    updated_at: int
-    message_count: int
-
-
 class StoredMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str
@@ -764,25 +756,8 @@ class StoredMessage(BaseModel):
     summary: TurnSummary | None = None
 
 
-class ConversationDetail(BaseModel):
-    id: str
-    title: str
-    messages: list[StoredMessage]
-    created_at: int
-    updated_at: int
-
-
 class SaveMessagesRequest(BaseModel):
     messages: list[StoredMessage]
-
-
-class UploadMeta(BaseModel):
-    id: str
-    conversation_id: str
-    filename: str
-    mime_type: str | None = None
-    size_bytes: int | None = None
-    created_at: int
 
 
 class ImportConversation(BaseModel):
@@ -795,20 +770,6 @@ class ImportConversation(BaseModel):
 
 class ImportRequest(BaseModel):
     conversations: list[ImportConversation]
-
-
-class UserResponse(BaseModel):
-    id: str
-    email: str
-    name: str
-    picture_url: str | None = None
-    tier: str = "free"
-
-
-class AuthStatusResponse(BaseModel):
-    authenticated: bool
-    auth_required: bool = True
-    user: UserResponse | None = None
 
 
 # --- PDF Report v2 models ---
