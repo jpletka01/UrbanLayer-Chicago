@@ -26,7 +26,7 @@ from backend.models import (
     PropertySummary,
     ReportData,
 )
-from backend.main import _compute_comp_valuation, _resolve_market_value_and_tax
+from backend.report_builder import _compute_comp_valuation, _resolve_market_value_and_tax
 from backend.retrieval.zoning_definitions import get_zone_name
 
 

@@ -47,7 +47,7 @@ def test_r1_definitions_fallback_unknown_returns_none(zone):
 # --- R3: comparable-sales class derivation ---------------------------------
 
 def test_r3_comp_class_prefix():
-    from backend.main import _comp_class_prefix
+    from backend.report_builder import _comp_class_prefix
 
     # Marketable subject uses its own class family.
     assert _comp_class_prefix("205", "RM-5") == "2"
@@ -62,7 +62,7 @@ def test_r3_comp_class_prefix():
 # --- R4: nearby-development currency formatting -----------------------------
 
 def test_r4_fmt_money():
-    from backend.main import _fmt_money
+    from backend.report_builder import _fmt_money
 
     assert _fmt_money(3_987_000) == "$4.0M"   # was the "$3987K" bug
     assert _fmt_money(35_900_000) == "$35.9M"

@@ -17,7 +17,7 @@ from backend.models import (
     ZoningSummary,
 )
 from backend.retrieval.zoning_definitions import min_lot_area_per_unit
-from backend.main import (
+from backend.report_builder import (
     _build_decision_box,
     _compute_comp_valuation,
     _compute_far_utilization,
@@ -300,7 +300,7 @@ def test_ownership_interpretation_empty_none():
 # --- Exec/credibility: ARO only binds when 10+ units are feasible -----------
 
 def _aro_constraints(land_sqft: int, zone: str, max_buildable: int):
-    from backend.main import _synthesize_opportunities_constraints
+    from backend.report_builder import _synthesize_opportunities_constraints
     from backend.models import RegulatorySummary
     r = _report(
         property=PropertySummary(pin="1", land_sqft=land_sqft, bldg_sqft=0),

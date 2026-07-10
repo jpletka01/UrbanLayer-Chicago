@@ -8,7 +8,7 @@ overstated market 2.5× and understated the rate 2.5× (shown 2.06%, true
 
 import pytest
 
-from backend.main import _resolve_market_value_and_tax
+from backend.report_builder import _resolve_market_value_and_tax
 from backend.models import PropertySummary
 from backend.retrieval.property.assessment_level import assessment_level_for_class
 

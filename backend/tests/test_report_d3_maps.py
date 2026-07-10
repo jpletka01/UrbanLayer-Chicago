@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import pytest
 from PIL import Image
 
-from backend.main import (
+from backend.report_builder import (
     _draw_scale_and_ring,
     _generate_comps_map,
     _generate_construction_map,

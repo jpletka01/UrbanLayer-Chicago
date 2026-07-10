@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from backend.main import (
+from backend.report_builder import (
     _resolve_market_value_and_tax,
     _synthesize_opportunities_constraints,
 )
@@ -226,7 +226,7 @@ def test_homeowner_signal_reads_tax_exemptions():
     """The signal must come from tax_exemptions (PTAXSIM exe_* kinds) — the old
     check scanned tax_breakdown AGENCY names for 'HOMEOWNER', which are taxing
     districts, so it could never fire."""
-    from backend.main import _derive_ownership_signals
+    from backend.report_builder import _derive_ownership_signals
     from backend.models import TaxExemption
 
     with_exe = PropertySummary(
