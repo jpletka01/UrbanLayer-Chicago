@@ -400,7 +400,7 @@ for 25 community areas. What's left is expansion + polish.
 - Saved searches.
 
 **Ops:**
-- Monthly rebuild timer is live (next **2026-07-01**); confirm the first automated run succeeds.
+- ✅ **Monthly rebuild timer CONFIRMED WORKING (2026-09-07)** — prod `/api/discovery/registry` reports `coverage.asOf = 2026-09-01` (the timer's 1st-of-month slot) with `mode: all` / 77 live areas, so the automated `--refresh` is running and holding full citywide coverage. Verified from the live API, not the box.
 - ✅ **Scorecard/report assessment path VERIFIED SAFE (2026-06-14)** — it does NOT hit the CCAO
   valueless-latest-year trap. Unlike the index builder (which grabbed the raw first `year DESC` row),
   `_build_summary` (`retrieval/property/__init__.py`) iterates and takes the first row with a non-null
