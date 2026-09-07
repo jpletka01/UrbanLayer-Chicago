@@ -43,6 +43,13 @@
       "taxSale": "Appeared in the {{years}} annual tax sale (historic)",
       "scavengerSale": "Appeared in the {{years}} scavenger sale (historic)"
     },
+    "assessorPermits": {
+      "title": "Assessor permit record",
+      "assessablePending": "An assessable permit is still open — the assessor may raise the assessment when it closes.",
+      "summary_one": "{{count}} permit in the last {{years}} years",
+      "summary_other": "{{count}} permits in the last {{years}} years",
+      "declared": "{{amount}} declared"
+    },
     "appeals": {
       "title": "Assessment appeals",
       "stageBor": "Board of Review",
@@ -117,6 +124,7 @@
       "annualTax": "The most recent bill computable from Cook County PTAXSIM data (typically lags 1–2 years).",
       "effRate": "Annual tax ÷ implied market value — what the property actually pays per dollar of value; comparable across parcels.",
       "class": "Cook County property class code — it sets the assessment level and signals the property's use (1xx vacant, 2xx residential, 5xx commercial).",
+      "assessorPermits": "Permits the Cook County Assessor has on file for this PIN. Separate from the city permit feed: it is parcel-keyed and records a declared cost plus whether the assessor considers the work assessable — able to change the assessment, and so the tax bill.",
       "appeals": "Assessment appeals filed for this parcel (Assessor and Board of Review stages) plus how appeals fare on this block — a signal of whether appealing here works."
     }
   },

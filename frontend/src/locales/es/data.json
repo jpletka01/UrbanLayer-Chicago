@@ -43,6 +43,13 @@
       "taxSale": "Apareció en la venta fiscal anual de {{years}} (histórico)",
       "scavengerSale": "Apareció en la venta scavenger de {{years}} (histórico)"
     },
+    "assessorPermits": {
+      "title": "Registro de permisos del tasador",
+      "assessablePending": "Hay un permiso evaluable aún abierto — el tasador puede aumentar la tasación cuando se cierre.",
+      "summary_one": "{{count}} permiso en los últimos {{years}} años",
+      "summary_other": "{{count}} permisos en los últimos {{years}} años",
+      "declared": "{{amount}} declarado"
+    },
     "appeals": {
       "title": "Apelaciones de avalúo",
       "stageBor": "Junta de Revisión",
@@ -117,6 +124,7 @@
       "annualTax": "La factura más reciente calculable con datos PTAXSIM del Condado de Cook (suele atrasarse 1–2 años).",
       "effRate": "Impuesto anual ÷ valor de mercado implícito — lo que la propiedad realmente paga por dólar de valor; comparable entre parcelas.",
       "class": "Código de clase del Condado de Cook — fija el nivel de tasación e indica el uso (1xx baldío, 2xx residencial, 5xx comercial).",
+      "assessorPermits": "Permisos que el Tasador del Condado de Cook tiene registrados para este PIN. Distinto del feed de permisos de la ciudad: está vinculado a la parcela y registra un costo declarado y si el tasador considera que el trabajo es evaluable, es decir, capaz de cambiar la tasación y por tanto el impuesto.",
       "appeals": "Apelaciones de tasación de esta parcela (etapas del Tasador y la Junta de Revisión) y cómo les va a las apelaciones en esta cuadra — señal de si apelar aquí funciona."
     }
   },

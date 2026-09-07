@@ -307,6 +307,26 @@ export interface AppealsSummary {
   nearby_capped?: boolean;
 }
 
+export interface AssessorPermit {
+  date_issued: string | null;
+  status: string | null;
+  amount: number | null;
+  /** null = the source left it blank, which is NOT the same as false. */
+  assessable: boolean | null;
+  job_code: string | null;
+  work_description: string | null;
+}
+
+export interface AssessorPermitSummary {
+  permits: AssessorPermit[];
+  count: number;
+  truncated: boolean;
+  window_years: number;
+  total_declared_amount: number | null;
+  assessable_pending: boolean;
+  latest_date: string | null;
+}
+
 export interface PropertySummary {
   pin14: string | null;
   address: string | null;
@@ -350,6 +370,7 @@ export interface PropertySummary {
   assessment_history: AssessmentRecord[];
   sales_history: SaleRecord[];
   parcel_geometry?: Record<string, unknown> | null;
+  assessor_permits: AssessorPermitSummary | null;
 }
 
 export interface IncentivesSummary {

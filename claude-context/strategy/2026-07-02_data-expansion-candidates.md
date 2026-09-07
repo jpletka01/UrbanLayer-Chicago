@@ -19,7 +19,7 @@
 > | 13 CHRS | **DONE** via committed artifact (`property/chrs.py`); the API asset still 403s |
 > | 14 Divvy (`bbyy-e7gq`) | **DONE 2026-09-07** (`neighborhood/divvy.py`) |
 > | 15 liquor moratorium | still open (currency unverified) |
-> | 16 assessor permits (`6yjf-dfxs`) | **STILL OPEN** — live, PIN-keyed (undashed 14-digit), current to 2026-07 |
+> | 16 assessor permits (`6yjf-dfxs`) | **DONE 2026-09-07** (`property/assessor_permits.py`) |
 >
 > **⚠️ The tax-sale datasets behind item 6 are frozen.** `55ju-2fs9` ends at **tax year 2014** and
 > `ydgz-vkrp` at **2015** (verified 2026-09-07 by grouped count). `parcel_flags.py` already handles
@@ -27,7 +27,14 @@
 > NOT build any new "is this parcel distressed today?" feature on them, and do not add them as a
 > Discovery filter. A decade-old delinquency says nothing about current status.
 >
-> **Genuinely remaining: 3, 12, 15, 16.**
+> **Genuinely remaining: 3, 12 (CPS — needs a boundary join), 15 (currency unverified).**
+>
+> On item 16: the value is the `assessable` flag, not the permit list — the assessor's own call on
+> whether work changes the assessment. Chicago's eight townships carry **46,169 assessable permits,
+> 2,330 of them not yet closed out**, so "a tax increase is already attached to this parcel" is a
+> real, current signal here and not a suburb-only artifact. Note `assessable` is blank on ~84k rows
+> county-wide (76 of 92 on 300 S Wacker), so it is modeled as `bool | None` — unknown must never
+> render as "not assessable".
 
 Survey of available-but-unintegrated data, ranked by customer value. All probed live
 2026-07-02 (sample rows + join keys verified unless noted). Companion to

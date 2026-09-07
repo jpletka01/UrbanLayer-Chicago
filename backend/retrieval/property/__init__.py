@@ -87,6 +87,13 @@ async def property_domain(
         from backend.retrieval.property.parcel_flags import get_parcel_flags
         coros.append(get_parcel_flags(pin14, lat, lon, client=client))
 
+        # Assessor-side permit record (PIN-keyed, carries declared cost and the
+        # assessor's "assessable" call). Skipped on the report path with the rest
+        # of the history block.
+        if not skip_history:
+            from backend.retrieval.property.assessor_permits import get_assessor_permits
+            coros.append(get_assessor_permits(pin14, client=client))
+
         results = await asyncio.gather(*coros, return_exceptions=True)
 
         data_gaps: list[str] = []
@@ -138,6 +145,14 @@ async def property_domain(
         parcel_flags = results[idx] if not isinstance(results[idx], Exception) else None
         if isinstance(results[idx], Exception):
             log.warning("Parcel flags failed: %s", results[idx])
+        idx += 1
+
+        assessor_permits = None
+        if not skip_history:
+            assessor_permits = results[idx] if not isinstance(results[idx], Exception) else None
+            if isinstance(results[idx], Exception):
+                log.warning("Assessor permits failed: %s", results[idx])
+            idx += 1
 
         if _chars_describe_prior_structure(parcel, assessments, chars):
             log.info(
@@ -157,6 +172,7 @@ async def property_domain(
                               building_fallbacks=building_fallbacks,
                               appeals_summary=appeals_summary,
                               parcel_flags=parcel_flags,
+                              assessor_permits=assessor_permits,
                               data_gaps=data_gaps)
     finally:
         if owns:
@@ -316,6 +332,7 @@ def _build_summary(
     building_fallbacks: dict | None = None,
     appeals_summary=None,
     parcel_flags=None,
+    assessor_permits=None,
     data_gaps: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
@@ -579,6 +596,7 @@ def _build_summary(
         tax_exemptions=tax_exemptions,
         appeals=appeals_summary,
         flags=parcel_flags,
+        assessor_permits=assessor_permits,
         energy=energy_summary,
         assessment_history=assessment_history,
         sales_history=sales_history,
