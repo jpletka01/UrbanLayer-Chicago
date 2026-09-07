@@ -485,6 +485,8 @@
     "maxPlaceholder": "max",
     "minAria": "minimum {{name}}",
     "maxAria": "maximum {{name}}",
+    "minSliderAria": "minimum {{name}} slider",
+    "maxSliderAria": "maximum {{name}} slider",
     "removeFilterAria": "Remove {{name}} filter",
     "sumParcelsWhere": "Parcels where {{parts}}",
     "sumAllParcels": "All parcels",

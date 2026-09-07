@@ -12,6 +12,8 @@ import {
   SORTED_CAS,
 } from "./communityAreas";
 import { isPopulated } from "./coverage";
+import { RangeSlider } from "./RangeSlider";
+import { formatRangeValue } from "./rangeFormat";
 import type { FilterCategory, FilterDef, PanelState, Predicate, Registry } from "./types";
 
 const CATEGORY_ORDER: FilterCategory[] = [
@@ -204,8 +206,8 @@ function Control({
     const r = value?.kind === "range" ? value : undefined;
 
     // Preset-backed ranges (transit/recency/percentile/upside) → a radiogroup of chips
-    // (PR2 metadata). A continuous slider control for the remaining ranges is not built —
-    // those keep labeled min/max inputs (see below); slider a11y is deferred with it.
+    // (PR2 metadata). Every other range gets the continuous dual-thumb slider below,
+    // paired with the min/max inputs for exact entry.
     if (def.range?.presets?.length) {
       const anyChecked = !r || (r.min == null && r.max == null);
       const isChecked = (p: { min?: number | null; max?: number | null }) =>
@@ -252,13 +254,43 @@ function Control({
     const dom = def.range?.domain;
     const inputCls =
       "w-full rounded-lg border border-dark-border bg-dark-elevated px-2 py-1 text-caption text-text-primary focus:border-accent focus:outline-none";
+    const minAria = t("discovery.minAria", { name });
+    const maxAria = t("discovery.maxAria", { name });
     return (
       <div>
         {labelNode}
+        {/* Slider for coarse adjustment; the number boxes below stay for exact entry
+            (typing "1954" beats dragging to it). Both write the same predicate. */}
+        {dom && (
+          <div className="mb-2 px-0.5">
+            <RangeSlider
+              domain={dom}
+              step={def.range?.step ?? 1}
+              display={def.range?.display}
+              unit={def.unit}
+              boundMode={def.range?.boundMode}
+              min={r?.min}
+              max={r?.max}
+              onChange={set}
+              name={def.id}
+              labels={{
+                minAria: t("discovery.minSliderAria", { name }),
+                maxAria: t("discovery.maxSliderAria", { name }),
+              }}
+            />
+            {/* No unit here — the group label already carries it ("Lot size (sqft)"),
+                so repeating it on both bounds says "sqft" three times. The thumbs'
+                aria-valuetext DOES keep the unit: a screen reader reads a value alone. */}
+            <div className="flex justify-between pt-0.5 text-micro text-text-muted">
+              <span>{formatRangeValue(r?.min ?? dom[0], def.range?.display)}</span>
+              <span>{formatRangeValue(r?.max ?? dom[1], def.range?.display)}</span>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <input
             type="number"
-            aria-label={t("discovery.minAria", { name })}
+            aria-label={minAria}
             placeholder={t("discovery.minPlaceholder")}
             min={dom?.[0]}
             max={dom?.[1]}
@@ -270,7 +302,7 @@ function Control({
           <span aria-hidden className="text-text-muted">–</span>
           <input
             type="number"
-            aria-label={t("discovery.maxAria", { name })}
+            aria-label={maxAria}
             placeholder={t("discovery.maxPlaceholder")}
             min={dom?.[0]}
             max={dom?.[1]}

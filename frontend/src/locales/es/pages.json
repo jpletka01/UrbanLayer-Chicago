@@ -485,6 +485,8 @@
     "maxPlaceholder": "máx",
     "minAria": "mínimo {{name}}",
     "maxAria": "máximo {{name}}",
+    "minSliderAria": "control deslizante de mínimo {{name}}",
+    "maxSliderAria": "control deslizante de máximo {{name}}",
     "removeFilterAria": "Quitar filtro {{name}}",
     "sumParcelsWhere": "Parcelas donde {{parts}}",
     "sumAllParcels": "Todas las parcelas",
