@@ -472,6 +472,14 @@ export interface WardInfo {
   website: string | null;
 }
 
+export interface DivvyAccess {
+  nearest_station: string | null;
+  distance_mi: number | null;
+  docks: number | null;
+  stations_within_radius: number;
+  radius_mi: number;
+}
+
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
   census_tract: CensusTractDemographics | null;
@@ -479,6 +487,7 @@ export interface NeighborhoodSummary {
   walkscore: WalkScoreSummary | null;
   ward?: WardInfo | null;
   traffic?: TrafficSummary | null;
+  divvy: DivvyAccess | null;
 }
 
 /** Daily traffic on the nearest counted street (both directions summed,

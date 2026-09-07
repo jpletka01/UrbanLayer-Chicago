@@ -1,5 +1,34 @@
 # Data Expansion Candidates (2026-07-02)
 
+> **STATUS AUDIT 2026-09-07** — this file had gone stale as a "live backlog". Re-checked every
+> item against the tree and against the live portals:
+>
+> | Item | State |
+> |---|---|
+> | 1–2 Tier 0 (exemptions, pin_geometry) | **DONE** (lot-info arc) |
+> | 3 wrecking permits / basement-flood 311 | still open |
+> | 4 appeals (`y282-6ig3` + `7pny-nedm`) | **DONE** |
+> | 5 ward + alderman (`p293-wvbd`, `htai-wnw4`) | **DONE** (`neighborhood/wards.py`) |
+> | 6 tax delinquency / tax sales | **DONE** (`property/parcel_flags.py`) — but see the warning below |
+> | 7 city-owned land (`aksk-kvfp`) | **DONE** (`parcel_flags.py`); 12,072 city-owned rows, 1,550 with a live application URL |
+> | 8 scofflaw (`crg5-4zyp`) | **DONE** (`parcel_flags.py`, 20 m proximity) |
+> | 9 energy benchmarking (`xq83-jr8c`) | **DONE** (`property/energy.py`) |
+> | 10 short-term-rental (`7bzs-jsyj`) | **DONE**; the companion zone dataset `8eww-pamb` is a deliberate exclusion (precinct numbers, no geometry) |
+> | 11 traffic (`gc7y-n4xa`) | **DONE** (`neighborhood/traffic.py`) |
+> | 12 CPS school quality (`twrw-chuq`) | **STILL OPEN** — needs the boundary join |
+> | 13 CHRS | **DONE** via committed artifact (`property/chrs.py`); the API asset still 403s |
+> | 14 Divvy (`bbyy-e7gq`) | **DONE 2026-09-07** (`neighborhood/divvy.py`) |
+> | 15 liquor moratorium | still open (currency unverified) |
+> | 16 assessor permits (`6yjf-dfxs`) | **STILL OPEN** — live, PIN-keyed (undashed 14-digit), current to 2026-07 |
+>
+> **⚠️ The tax-sale datasets behind item 6 are frozen.** `55ju-2fs9` ends at **tax year 2014** and
+> `ydgz-vkrp` at **2015** (verified 2026-09-07 by grouped count). `parcel_flags.py` already handles
+> this correctly — it always reports the years so the flag cannot read as current distress — but do
+> NOT build any new "is this parcel distressed today?" feature on them, and do not add them as a
+> Discovery filter. A decade-old delinquency says nothing about current status.
+>
+> **Genuinely remaining: 3, 12, 15, 16.**
+
 Survey of available-but-unintegrated data, ranked by customer value. All probed live
 2026-07-02 (sample rows + join keys verified unless noted). Companion to
 `2026-07-02_lot-info-robustness-plan.md` — items 1–2 directly feed that arc.
