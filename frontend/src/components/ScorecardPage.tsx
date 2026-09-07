@@ -165,6 +165,20 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
       sub: `${tr.cta_rail_distance_mi.toFixed(1)} mi${tr.cta_lines.length ? ` · ${tr.cta_lines.join(", ")}` : ""}`,
     });
   }
+  // Bike share sits with the other access stats — same "how do you get around
+  // from here" question the walk/transit/rail numbers answer.
+  const dv = data.divvy;
+  if (dv?.nearest_station && dv.distance_mi != null) {
+    stats.push({
+      label: t("scorecard.area.nearestDivvy"),
+      value: dv.nearest_station,
+      sub: [
+        `${dv.distance_mi < 0.1 ? dv.distance_mi.toFixed(2) : dv.distance_mi.toFixed(1)} mi`,
+        dv.docks != null ? t("scorecard.area.divvyDocks", { count: dv.docks }) : null,
+      ].filter(Boolean).join(" · "),
+      tip: t("scorecard.tips.divvy", { count: dv.stations_within_radius, radius: dv.radius_mi }),
+    });
+  }
   if (demo?.median_household_income != null) {
     stats.push({ label: t("scorecard.area.income"), value: `$${Math.round(demo.median_household_income / 1000)}K` });
   }
@@ -191,7 +205,9 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
                   s.label
                 )}
               </div>
-              <div className="text-subtitle text-text-primary mt-0.5 truncate">{s.value}</div>
+              {/* truncate + title: long values (Divvy station names especially) clip
+                  in a 6-up grid, and without this the full text is unrecoverable. */}
+              <div className="text-subtitle text-text-primary mt-0.5 truncate" title={s.value}>{s.value}</div>
               {s.sub && <div className="text-caption text-text-muted mt-0.5 leading-snug">{s.sub}</div>}
             </div>
           ))}

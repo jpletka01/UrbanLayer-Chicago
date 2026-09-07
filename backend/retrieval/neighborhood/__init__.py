@@ -12,6 +12,7 @@ import httpx
 from backend.config import get_settings
 from backend.models import (
     CensusTractDemographics,
+    DivvyAccess,
     NeighborhoodSummary,
     WalkScoreSummary,
     WardInfo,
@@ -67,6 +68,10 @@ async def neighborhood_domain(
             tasks["traffic"] = asyncio.create_task(
                 get_traffic_context(lat, lon, client=client)
             )
+            from backend.retrieval.neighborhood.divvy import find_nearest_divvy
+            tasks["divvy"] = asyncio.create_task(
+                find_nearest_divvy(lat, lon, client=client)
+            )
 
         if has_coords and address:
             settings = get_settings()
@@ -97,6 +102,7 @@ async def neighborhood_domain(
             results.get("walkscore"),
             ward_info,
             results.get("traffic"),
+            results.get("divvy"),
         )
     finally:
         if owns:
@@ -123,6 +129,7 @@ def _build_summary(
     walkscore_result: WalkScoreSummary | None = None,
     ward_info: dict | None = None,
     traffic_result: dict | None = None,
+    divvy_result: DivvyAccess | None = None,
 ) -> NeighborhoodSummary:
     from backend.models import TrafficSummary
 
@@ -136,4 +143,5 @@ def _build_summary(
         walkscore=walkscore_result,
         ward=ward,
         traffic=traffic,
+        divvy=divvy_result,
     )

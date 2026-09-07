@@ -499,6 +499,16 @@ class TransitAccess(BaseModel):
     tod_type: str | None = None
 
 
+class DivvyAccess(BaseModel):
+    """Nearest in-service Divvy bike-share station. None on the summary = none in range."""
+
+    nearest_station: str | None = None
+    distance_mi: float | None = None
+    docks: int | None = None
+    stations_within_radius: int = 0
+    radius_mi: float = 0.5
+
+
 class WalkScoreSummary(BaseModel):
     walk_score: int | None = None
     walk_description: str | None = None
@@ -538,6 +548,7 @@ class NeighborhoodSummary(BaseModel):
     walkscore: WalkScoreSummary | None = None
     ward: WardInfo | None = None
     traffic: TrafficSummary | None = None
+    divvy: DivvyAccess | None = None
 
 
 class TurnSummary(BaseModel):
