@@ -71,6 +71,26 @@ describe("DiscoveryFilterPanel a11y", () => {
     expect(max.max).toBe("2025");
   });
 
+  it("pairs a non-preset range with a dual-thumb slider, distinctly labeled", () => {
+    open(["year_built"]);
+    // The slider thumbs must NOT share an accessible name with the number inputs —
+    // two controls answering to "minimum Year built" is a screen-reader ambiguity.
+    const thumbs = screen.getAllByRole("slider");
+    expect(thumbs).toHaveLength(2);
+    expect(screen.getByLabelText("minimum Year built slider")).toBeTruthy();
+    expect(screen.getByLabelText("maximum Year built slider")).toBeTruthy();
+    // Year is announced unformatted — "1850", never "1,850".
+    expect(
+      screen.getByLabelText("minimum Year built slider").getAttribute("aria-valuetext"),
+    ).toBe("1850");
+  });
+
+  it("gives preset-backed ranges chips, not a slider", () => {
+    open(["transit_proximity"]);
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
+    expect(screen.getByRole("radiogroup", { name: "Near transit" })).toBeTruthy();
+  });
+
   it("unpopulated filters read 'coming', never a live control", () => {
     open([]); // nothing populated
     expect(screen.getAllByText(/Coming with the next data update/).length).toBeGreaterThan(0);

@@ -395,7 +395,7 @@ for 25 community areas. What's left is expansion + polish.
   is empty).
 
 **FE polish (from Wave 2, still open):**
-- Continuous **slider** control + `aria-valuetext` (non-preset ranges keep min/max boxes).
+- ✅ **Continuous slider + `aria-valuetext` DONE (2026-09-07)** — `RangeSlider.tsx`, two overlaid native `<input type="range">` so each thumb is a real slider to the a11y tree and keyboard (arrows/Home/End) with no reimplementation. Paired with the existing min/max boxes (slider = coarse, boxes = exact); preset-backed ranges keep their chips. `rangeFormat.ts` finally consumes the `RangeDisplay` metadata that had been on the registry since PR2 and unread — money/percent/FAR/year formatting, and years deliberately ungrouped (1954, not 1,954). Thumbs carry their own `discovery.{min,max}SliderAria` labels (en+es) so they don't collide with the number inputs' accessible names. Verified: 190 vitest, mobile audit 40/40, light+dark screenshots.
 - **Whole-page i18n** (only the PR9 teaser/export strings are keyed).
 - Saved searches.
 
