@@ -33,7 +33,21 @@ log = logging.getLogger(__name__)
 SOURCE_FILE = Path(__file__).resolve().parent.parent / "chicago-il-codes.html"
 OUT_DIR = Path(__file__).resolve().parent / "data" / "sections"
 
-SECTION_RE = re.compile(r"^(\d+[A-Za-z]?-\d+-\d+(?:\.\d+)?)\s+(.+)", re.DOTALL)
+# The shape of a municipal-code section id, defined ONCE so the heading parser and the
+# write-gate below cannot drift apart -- they did, and it cost the whole building code.
+#
+# Title 14 ships as eleven lettered volumes (14A, 14B, 14E, 14N ...), so the title segment
+# takes an optional letter. 14N (the Energy Transformation Code) additionally letters its
+# chapter and section segments -- `14N-C1-C001` commercial, `14N-R4-R402` residential --
+# hence the letter prefixes on those two. Plain municipal-code ids (`2-120-740`, `17-3-0104`)
+# are the no-letter case.
+_SECTION_ID = r"\d+[A-Za-z]?-[A-Za-z]{0,2}\d+-[A-Za-z]{0,2}\d+(?:\.\d+)?"
+
+# Splits "<id>  <heading>" out of a section's first line.
+SECTION_RE = re.compile(rf"^({_SECTION_ID})\s+(.+)", re.DOTALL)
+# Gate for which parsed sections get written to disk (and so reach the index). It was
+# `\d+-\d+-\d+`, which dropped all 872 Title-14 sections as "non-section".
+SECTION_ID_RE = re.compile(_SECTION_ID)
 TITLE_RE = re.compile(r"^TITLE\s+(\d+[A-Za-z]?)\s*(.*)$", re.IGNORECASE | re.DOTALL)
 CHAPTER_RE = re.compile(r"^CHAPTER\s+(\d+[A-Za-z]?-\d+)\s*(.*)$", re.IGNORECASE | re.DOTALL)
 ARTICLE_RE = re.compile(r"^ARTICLE\s+([IVXLCDM]+|\d+)\s*\.?\s*(.*)$", re.IGNORECASE | re.DOTALL)
@@ -560,7 +574,7 @@ def main() -> None:
 
     count = 0
     for section in parse(args.source, only_title=args.title, stats=stats):
-        if not section.section or not re.fullmatch(r"\d+-\d+-\d+(?:\.\d+)?", section.section):
+        if not section.section or not SECTION_ID_RE.fullmatch(section.section):
             stats["skipped_non_section"] += 1
             continue
 

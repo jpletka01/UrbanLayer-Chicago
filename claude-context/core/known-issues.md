@@ -52,6 +52,8 @@
 
 ## Fragile Heuristics
 
+**The manifest content-hash omits `section_title`** (`ingestion/manifest.py` `_content_hash` hashes `body_paragraphs` + `tables` only). `section_title` *does* reach the index (it's on the Qdrant payload), so a heading-only correction is a **silent no-op** — the diff reports "0 modified" and the stale title stays indexed. Hit for real on 2026-09-07: fixing the Title-14 heading parse changed 50 Energy-Code titles and the incremental run saw nothing to do. Adding the field to the hash was tried and **reverted**: it invalidates every existing hash, forcing a full 9,487-section re-embed *and* tripping the zoning-cache staleness check for 147 Title-17 sections that never actually changed — and rebuilding that cache needs `RERANKER_ENABLED=true`, which is off by design since the OOM incident. Workaround for a heading-only fix: rebuild with `--full` (a targeted re-embed does **not** work — `diff.added` upserts *without* deleting the old points, so faking the sections as "added" duplicates them). Pinned by `test_section_id_gate.py::TestManifestContentHash`.
+
 - **Sub-header detection inside tables** — length cap (<80 chars) and min-chars threshold (400 chars before splitting)
 - **Multi-row header count** — inferred from consecutive row patterns
 - **Cross-references** — filtered to section IDs only
@@ -111,7 +113,8 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`, then `python -m ev
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS acceleration available but not configured for production (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
-- **Title 14A re-ingestion** — Parser regex fixed to handle Title 14A (building code) sections, but re-ingestion not yet run. Will add ~500+ building code sections to the index. Requires downloading fresh `chicago-il-codes.html` and running `python -m ingestion.update`.
+- ~~**Title 14A re-ingestion**~~ — **DONE 2026-09-07.** The note was wrong on both counts: no fresh download was needed (the committed HTML already carried Title 14), and the blocker was not the parse regex. `SECTION_RE` had been widened, but a *second*, narrower write-gate in `parse_chicago_code.main()` (`\d+-\d+-\d+`) silently dropped every parsed Title-14 section as "non-section" — so the entire building code was missing. Both now derive from one shared `_SECTION_ID` pattern so they cannot drift again. Title 14 is **eleven lettered volumes** (14A/14B/14C/14E/14F/14G/14M/14N/14P/14R/14X), not just 14A; 14N (Energy Transformation Code) additionally letters its chapter/section segments (`14N-C4-C402`), which the shared pattern admits. Corpus **8,615 → 9,487 sections / 14,535 → 16,576 chunks** (+872 sections, +2,041 chunks, all Title 14; diff was purely additive — 0 modified, 0 deleted). Retrieval verified: fire-rating, energy-envelope, and scaffolding queries now return 14B/14N/14A at 0.72–0.86, with no regression on zoning/ADU/landmark queries.
+  **⚠️ NOT ON PROD.** Qdrant lives in the `qdrant_storage` named volume, which a code deploy does not touch — pushing the parser fix changes nothing until ingestion is re-run against prod (an incremental embed of the 872 added sections).
 
 ## Operational Status
 
