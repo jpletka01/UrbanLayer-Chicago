@@ -23,6 +23,7 @@ from .manifest import (
     save_manifest,
     set_chunk_counts,
 )
+from .source_check import save_hash
 
 
 log = logging.getLogger(__name__)
@@ -60,6 +61,10 @@ def main() -> None:
         if CHUNKS_FILE.exists():
             set_chunk_counts(manifest, CHUNKS_FILE)
         save_manifest(manifest)
+        # Record the source-HTML baseline too, so `python -m ingestion.source_check`
+        # can report unchanged/updated instead of "unknown" (its own message points
+        # users at `--manifest` for exactly this).
+        save_hash()
         log.info("Saved manifest with %d sections to %s", len(manifest), MANIFEST_FILE)
         return
 
@@ -116,6 +121,7 @@ def main() -> None:
         if diff.total_changes == 0:
             log.info("No changes -- saving manifest and exiting")
             save_manifest(new_manifest)
+            save_hash()
             return
 
         _run_step(
@@ -132,6 +138,11 @@ def main() -> None:
         if args.full or not old_manifest:
             embed_args.append("--recreate")
         _run_step("Full embed", embed_args)
+
+    # The index now reflects this exact source HTML -- record it so source_check
+    # can tell a fresh download from an already-ingested one. Only reached on the
+    # success paths; --dry-run returns above without touching the baseline.
+    save_hash()
 
     log.info("Update complete")
 

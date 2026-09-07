@@ -35,12 +35,54 @@ jobs:
       - name: TypeScript type check
         run: cd frontend && npx tsc --noEmit
 
+      - name: Run frontend tests
+        run: cd frontend && npm run test
+
       - name: Frontend build
         run: cd frontend && npm run build
 
-  deploy:
-    needs: test
+  # Docs-only pushes must not deploy: `docker compose up -d --build` recreates the
+  # frontend/backend containers, so the origin is briefly unreachable and Cloudflare
+  # serves 521 for those seconds -- previously on EVERY main push, including one that
+  # changed nothing but a .md file. Tests still run; only the restart is skipped.
+  changes:
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect non-docs changes
+        id: filter
+        run: |
+          set -euo pipefail
+          before='${{ github.event.before }}'
+          # A new branch, a force-push, or a pruned base commit means we cannot tell
+          # what changed -- deploy rather than silently skip a real code push.
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$before^{commit}" 2>/dev/null; then
+            echo "Base commit unavailable -- deploying."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "$before" "${{ github.sha }}")
+          echo "Changed files:"; echo "$changed"
+          if [ -z "$changed" ]; then
+            echo "Nothing changed -- skipping deploy."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          elif echo "$changed" | grep -qvE '\.md$|^claude-context/'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Docs-only push -- skipping deploy."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: [test, changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to server
