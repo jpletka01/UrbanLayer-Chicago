@@ -327,6 +327,31 @@ class TaxExemption(BaseModel):
     eav_reduction: float
 
 
+class AssessorPermit(BaseModel):
+    """One row of the Cook County Assessor's permit record for a parcel."""
+
+    date_issued: str | None = None
+    status: str | None = None
+    amount: float | None = None
+    # The assessor's own call on whether the work changes the assessment.
+    # None = the source left it blank, which is NOT the same as False.
+    assessable: bool | None = None
+    job_code: str | None = None
+    work_description: str | None = None
+
+
+class AssessorPermitSummary(BaseModel):
+    permits: list[AssessorPermit] = Field(default_factory=list)
+    count: int = 0
+    truncated: bool = False
+    window_years: int = 5
+    total_declared_amount: float | None = None
+    # True when an ASSESSABLE permit has not closed out — a future assessment
+    # (and so tax) change already attached to the parcel.
+    assessable_pending: bool = False
+    latest_date: str | None = None
+
+
 class PropertySummary(BaseModel):
     pin14: str | None = None
     address: str | None = None
@@ -392,6 +417,7 @@ class PropertySummary(BaseModel):
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None
     data_gaps: list[str] = Field(default_factory=list)
+    assessor_permits: AssessorPermitSummary | None = None
 
 
 class GrantProject(BaseModel):

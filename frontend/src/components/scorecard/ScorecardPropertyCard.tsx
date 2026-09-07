@@ -215,6 +215,48 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 </div>
               </div>
             ) : null}
+
+            {/* Assessor permit record. The city permit feed elsewhere on the page is
+                address-keyed and has no cost or reassessment signal; this is PIN-keyed
+                and carries both. An unclosed ASSESSABLE permit is the headline — it is
+                a tax increase already attached to the parcel, so it leads. */}
+            {data.assessor_permits && data.assessor_permits.count > 0 && (
+              <div>
+                <div className="text-caption text-text-muted mb-1">
+                  <InfoTooltip content={{ label: t("property.assessorPermits.title"), description: t("property.tips.assessorPermits"), bullets: [] }}>
+                    {t("property.assessorPermits.title")}
+                  </InfoTooltip>
+                </div>
+                {data.assessor_permits.assessable_pending && (
+                  <p className="text-caption text-state-warning mb-1">
+                    {t("property.assessorPermits.assessablePending")}
+                  </p>
+                )}
+                <p className="text-caption text-text-secondary">
+                  {t("property.assessorPermits.summary", {
+                    count: data.assessor_permits.count,
+                    years: data.assessor_permits.window_years,
+                  })}
+                  {data.assessor_permits.total_declared_amount != null &&
+                    ` · ${t("property.assessorPermits.declared", {
+                      amount: fmtDollar(data.assessor_permits.total_declared_amount),
+                    })}`}
+                </p>
+                <div className="space-y-1 mt-1">
+                  {data.assessor_permits.permits.slice(0, 3).map((pm, i) => (
+                    <div key={i} className="text-caption text-text-secondary">
+                      {pm.date_issued ?? "—"}
+                      {pm.status ? ` · ${pm.status}` : ""}
+                      {pm.amount != null ? ` · ${fmtDollar(pm.amount)}` : ""}
+                      {pm.work_description && (
+                        <span className="text-text-muted"> — {pm.work_description.slice(0, 90)}
+                          {pm.work_description.length > 90 ? "…" : ""}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </SubSection>
       </div>
