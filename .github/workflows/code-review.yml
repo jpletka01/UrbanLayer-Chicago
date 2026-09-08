@@ -7,6 +7,13 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+    # Skip cleanly when the API key isn't configured instead of failing the check.
+    # ANTHROPIC_API_KEY has never been set as a repo secret, so this job died at env
+    # validation on EVERY pull request from 2026-06-05 to 2026-09-08 — three months of
+    # a permanently-red check that reviewed nothing. A red X that always means "not
+    # configured" trains people to ignore red X's, including real ones. Add the secret
+    # in Settings → Secrets and variables → Actions to turn the review back on.
+    if: vars.DISABLE_CLAUDE_REVIEW != 'true'
     permissions:
       contents: read
       pull-requests: write
@@ -16,7 +23,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check for API key
+        id: key
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Claude review skipped::ANTHROPIC_API_KEY is not configured for this repository, so the automated review did not run. Add it in Settings -> Secrets and variables -> Actions."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: anthropics/claude-code-action@v1
+        if: steps.key.outputs.present == 'true'
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |

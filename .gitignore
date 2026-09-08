@@ -41,3 +41,27 @@ eval/coverage_results.json
 eval/coverage_report.md
 eval/lot_coverage_results*.json
 eval/lot_coverage_report.md
+# --- Gauntlet (added by `gauntlet init`, FR-4.5) ---
+# Run manifests and transcripts are committable by design (FR-4): they are the
+# audit trail a reviewer reconstructs a run from. Only live bookkeeping and the
+# P2 judge contract-test artifact are ignored.
+#
+# Engine live-run pointers are bookkeeping, never commit payload.
+.gauntlet/runs/*/active-run.txt
+.gauntlet/test-judge-audit.jsonl
+#
+# OPTIONAL: raw event streams are lossless but heavy. Teams that find them too
+# heavy for git can uncomment the next line — `transcript.md` remains the
+# committable, human-readable record (FR-4.2/4.5).
+# **/events.jsonl
+# --- end Gauntlet ---
+
+# --- Private strategy research (NOT for this repo — it is PUBLIC) ---
+# research/ holds the 2026-08-17 market analysis, the pre-registered decision
+# criteria, and the buyer interview kit. The kit is a compiled targeting list of
+# real, named individuals (firm, role, contact route, and a note on why each is a
+# target); the other two carry competitive positioning and our own kill criteria.
+# Publicly-sourced facts about people are still not the same thing as publishing a
+# curated sales-target dossier under our name. Keep these OUT of the public repo and
+# back them up somewhere private instead.
+research/
