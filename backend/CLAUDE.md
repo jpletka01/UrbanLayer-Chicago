@@ -52,10 +52,20 @@ retrieval/
 │   ├── building_facts.py   # Non-residential building facts: condo unit chars (3r7i-mrz4), Commercial Valuation get_commercial_facts (csik-bsws; SUM bldgsf over latest-year rows — one row PER BUILDING per keypin; + yearbuilt from the principal/largest building and tot_units ONLY for single-PIN economic units — a member of a multi-PIN complex would otherwise claim the whole complex's 2,346 units, 2026-07-07), Building Footprints stories/year_built (syp8-uezg; col is bldg_statu, bldg_sq_fo mostly 0) matched POINT-IN-PARCEL via the ptaxsim polygon when available (the old 25m centroid circle missed large parcels; wider circles grab neighbors on 7.6m lots) — no polygon ⇒ legacy 25m circle. Fill-only merge, assessor wins; per-field provenance in PropertySummary.*_source (incl. units_source)
 │   ├── energy.py           # Chicago Energy Benchmarking (xq83-jr8c, ≥50k-sqft buildings): 0–4 rating + ENERGY STAR + owner-reported GFA (fills bldg_sqft, source "energy_benchmark"). Spatial match on `location` (no PIN). Status is "Submitted" OR "Submitted Data". year_built deliberately NOT merged (owner-typed — live probe returned 2000 for the 1894 Old Colony); rides PropertySummary.energy
 │   ├── assessment_level.py # Cook County ordinance assessment level by class prefix (1/2/3→10%, 4→20%, 5→25%, 6-9 incentive→10%, EX/RR→None). _build_summary derives PropertySummary.assessment_level / implied_market_value / effective_tax_rate / tax_year from it — the FE and the report NEVER recompute (a hardcoded 10% showed 2.06% eff-rate on a class-517 commercial parcel whose true rate is ~5.15%; caught on 4520 N Clark 2026-07-06). main._resolve_market_value_and_tax uses the same level for the $25 report's market value
+│   ├── assessor_permits.py # Cook County Assessor permits `6yjf-dfxs` (UNDASHED pin). The payload is the
+│   │                       # `assessable` flag: unclosed + assessable = a future assessment/tax change.
+│   │                       # Blank on ~84k rows ⇒ bool|None (unknown ≠ "not assessable"); `year` is junk
+│   │                       # (2032/2027 values) so recency filters on date_issued. Skipped on the report path
+│   ├── comps_far.py        # FAR-normalized comps: price / (land_sqft × FAR). Zone per comp = local PIP against
+│   │                       # the `zoning_polygons_near` quilt (no per-comp network); FAR from zoning_definitions.
+│   │                       # Backfills null land_sqft from ptaxsim polygons, BASE PINs only (a unit-PIN would claim
+│   │                       # the whole lot). Median prefers land-only comps, discloses `buildable_median_basis`.
+│   │                       # ⚠️ annotates COPIES — nearby_comparable_sales returns a CACHED dict. /api/scorecard only;
+│   │                       # the $25 report path is deliberately unchanged
 │   └── chrs.py             # CHRS orange/red (1996, frozen; API asset 403s but /download/ works) from committed artifact ingestion/data/chrs_orange_red.json.gz (build: ingestion.build_chrs_artifact; COLOR_ID 1=orange 2=red, verified vs known red landmarks). Lazy shapely STRtree PIP → ParcelFlags.chrs_rating ("90-day demolition hold"). A committed data artifact needs THREE allowlist lines: .gitignore, .dockerignore, AND a per-file COPY in backend/Dockerfile (all three bit on this artifact)
 ├── regulatory/             # Orchestrator: [overlays (layers 2-24), flood, environmental] all parallel + aro_housing.py (ARO affordable housing projects by CA, triggered by any domain not just regulatory)
 ├── incentives/             # Orchestrator: point-based [TIF, EZ, grants] parallel → conditional [financials, OZ]; OR community-area-based TIF + grants. grant_programs.py queries SBIF + NOF
-└── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore, traffic] parallel + ward_by_point (wards.py: 50 ward polygons + alderman contacts preloaded at startup; NOTE Socrata URL columns are {"url":...} objects — normalize before pydantic). traffic.py = live daily counts gc7y-n4xa → NeighborhoodSummary.traffic (nearest road, directions summed, 7-day avg); ⚠️ that dataset's point columns are [lat, lon] (swapped) so within_circle matches NOTHING — query numeric bbox on midpointlat/midpointlon
+└── neighborhood/           # Orchestrator: [demographics, census_tract, transit, walkscore, traffic, divvy] parallel + ward_by_point (wards.py: 50 ward polygons + alderman contacts preloaded at startup; NOTE Socrata URL columns are {"url":...} objects — normalize before pydantic). traffic.py = live daily counts gc7y-n4xa → NeighborhoodSummary.traffic (nearest road, directions summed, 7-day avg); ⚠️ that dataset's point columns are [lat, lon] (swapped) so within_circle matches NOTHING — query numeric bbox on midpointlat/midpointlon
 ```
 
 ## Patterns
@@ -142,10 +152,14 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
 
 ```
 ingestion/
-├── parse_chicago_code.py   # HTML → section JSON files (8615+ sections). Handles Title 14A (alphanumeric IDs)
+├── parse_chicago_code.py   # HTML → section JSON files (9,487). `_SECTION_ID` defines the id shape ONCE for both
+│                           # SECTION_RE (heading split) and SECTION_ID_RE (write gate) — they had drifted, and the
+│                           # narrower gate silently dropped ALL 872 Title-14 sections. Title 14 = eleven lettered
+│                           # volumes (14A…14X); 14N letters its chapter/section segments too (`14N-C4-C402`)
 ├── chunk.py                # Section JSON → chunks.jsonl (MAX_CHARS=1800, table flattening, no overlap)
 ├── embed_and_store.py      # chunks.jsonl → Qdrant (bge-base-en-v1.5, two collections). Supports --recreate and --incremental
-├── manifest.py             # Section content hash tracking for incremental updates (SHA-256 of body + tables)
+├── manifest.py             # Section content hash for incremental updates (SHA-256 of body + tables). ⚠️ does NOT
+│                           # hash section_title, so heading-only fixes are silent no-ops — see known-issues
 ├── update.py               # Unified CLI: parse → chunk → diff → embed. Supports --dry-run, --full, --manifest
 ├── source_check.py         # Detect whether source HTML changed since last ingestion
 ├── build_transit_stations.py

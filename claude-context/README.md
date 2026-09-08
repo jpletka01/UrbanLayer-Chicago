@@ -55,7 +55,10 @@ reusable lesson, not the full narrative.
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
   chat-usability, lot-info-robustness, growth-instrumentation [attribution/funnel/SEO/privacy/capture +
   email/DNS setup], `2026-07-06_scorecard-usability` [class-aware tax fix (commercial eff-rate was 2.5×
-  understated, incl. in the $25 report) + MiniChatDock + feedback/segment re-home + card-height fix]).
+  understated, incl. in the $25 report) + MiniChatDock + feedback/segment re-home + card-height fix],
+  **`2026-09-08_backlog-sweep`** [publicly-exposed unauthenticated prod Qdrant CLOSED; Title 14 — the whole
+  building code — finally indexed and pushed to prod; vitest wired into CI; deploy gated on non-docs
+  changes; Discovery range slider, Divvy, assessor permits, FAR-normalized comps]).
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,

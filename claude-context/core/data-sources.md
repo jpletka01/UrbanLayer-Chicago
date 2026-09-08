@@ -26,6 +26,7 @@ Base: `https://data.cityofchicago.org/resource/{id}.json` with SoQL + `X-App-Tok
 | Boundaries - Wards (2023-) | `p293-wvbd` | ward, the_geom (multipolygon) | Preloaded at startup (`neighborhood/wards.py`), point-in-polygon → `NeighborhoodSummary.ward` |
 | Ward Offices | `htai-wnw4` | ward, alderman, ward_phone, email, **website (a `{"url":...}` OBJECT, not a string — normalize)** | Alderman contact joined onto ward lookup at preload |
 | Building Footprints | `syp8-uezg` | stories, year_built, bldg_sq_fo (mostly 0), **bldg_statu** (truncated col name) | Last-resort building facts via `within_circle` (25m), `building_facts.py`. City-maintained, uneven freshness → provenance "footprint" |
+| Divvy Bicycle Stations | `bbyy-e7gq` | station_name, total_docks, docks_in_service, status, location (Point) | Nearest IN-SERVICE station + count within 0.5 mi (`neighborhood/divvy.py`), server-side `distance_in_meters` ordering. Queried live, not a committed artifact — the station list churns. `stations_within_radius` SATURATES at the query limit (50; densest measured half-mile is 28) |
 | Census Tracts 2020 | `4hp8-2i8z` | geometry, tractce20, geoid20 | Tract resolution for OZ lookup |
 
 ## Cook County Open Data (Socrata)
@@ -43,7 +44,9 @@ Base: `https://datacatalog.cookcountyil.gov/resource/{id}.json`. Same SODA 2.1 A
 | Single/Multi-Family Characteristics | `x54s-btds` | pin, char_bldg_sf, char_land_sf, char_rooms, char_age | PIN |
 | Condo Characteristics | `3r7i-mrz4` | pin, char_unit_sf, char_yrblt, char_bedrooms, char_building_sf | PIN — condo UNIT facts fallback (`building_facts.py`); unit_sf (not building_sf) surfaces as the parcel's bldg_sqft |
 | Commercial Valuation | `csik-bsws` | keypin, pins, bldgsf, year | Dashed-PIN match on keypin OR `pins` membership; one row PER BUILDING per economic unit → SUM the latest year (`building_facts.py`). ~92% of Chicago 2024 rows carry bldgsf |
-| Assessor Appeals / BOR Appeal Decisions | `y282-6ig3` / `7pny-nedm` | pin, year, before/after values, result | **Not yet integrated** — planned (strategy/2026-07-02_data-expansion-candidates.md) |
+| Assessor Appeals / BOR Appeal Decisions | `y282-6ig3` / `7pny-nedm` | pin, year, before/after values, result | PIN — appeal history + nearby appeal rates (`property/appeals.py`) |
+| Assessor Permits | `6yjf-dfxs` | **pin (UNDASHED 14-digit)**, date_issued, status, amount, **assessable**, work_description | PIN — `property/assessor_permits.py`. The value is `assessable` (assessor's call on whether work changes the assessment); unclosed + assessable = a future tax change. Blank on ~84k rows ⇒ `bool \| None`, never render unknown as "not assessable". `year` is junk (2032/2027 values, ~84k nulls) — filter on `date_issued` |
+| Treasurer Annual Tax Sale / Scavenger Sale | `55ju-2fs9` / `ydgz-vkrp` | pin, tax_sale_year, sold_at_sale | **FROZEN — ends tax year 2014 / 2015** (verified 2026-09-07). Used by `property/parcel_flags.py`, which always reports the years so it cannot read as current distress. Do NOT build a "distressed today" feature or a Discovery filter on these |
 
 ## Chicago Zoning MapServer (ArcGIS)
 
