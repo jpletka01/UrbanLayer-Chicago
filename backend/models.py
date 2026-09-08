@@ -631,12 +631,28 @@ class ComparableSale(BaseModel):
     distance_mi: float | None = None
     lat: float | None = None
     lon: float | None = None
+    # FAR-normalized land basis: sale_price / (land_sqft * FAR). Zone comes from a
+    # point-in-polygon against the zoning quilt; None when the comp has no
+    # coordinates, falls outside the quilt, or sits in a district with no
+    # published FAR (PDs).
+    zone_class: str | None = None
+    far: float | None = None
+    price_per_buildable_sqft: float | None = None
+    # "geometry" when land_sqft was backfilled from the ptaxsim parcel polygon
+    # because CCAO characteristics (residential-only) had none. None = as-sourced.
+    land_sqft_source: str | None = None
 
 
 class ComparablesSummary(BaseModel):
     median_sale_price: float | None = None
     median_price_per_land_sqft: float | None = None
     median_price_per_bldg_sqft: float | None = None
+    median_price_per_buildable_sqft: float | None = None
+    # "land_only" (clean land basis) or "mixed" (no vacant-land comps available, so
+    # the median includes sales whose price carries a building). Never omit this
+    # alongside the median — it is what makes the number readable.
+    buildable_median_basis: str | None = None
+    buildable_median_n: int | None = None
     price_range_min: float | None = None
     price_range_max: float | None = None
     sales_volume: int = 0

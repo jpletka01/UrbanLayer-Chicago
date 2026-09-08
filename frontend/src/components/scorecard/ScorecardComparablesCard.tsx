@@ -166,6 +166,29 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
           <PriceStrip data={data} />
         </div>
 
+        {/* Price per BUILDABLE foot — the density-normalized land basis. Given its
+            own line rather than a fourth stat cell because it carries a basis
+            qualifier: a median over vacant-land sales means something different
+            from one that had to include improved sales, and the reader must be
+            able to tell which they are looking at. */}
+        {data.median_price_per_buildable_sqft != null && (
+          <p className="text-caption text-text-secondary">
+            <InfoTooltip content={{ label: t("comparables.priceBuildableSqft"), description: t("comparables.tips.psfBuildable"), bullets: [] }}>
+              {t("comparables.priceBuildableSqft")}
+            </InfoTooltip>
+            {": "}
+            <span className="text-text-primary">
+              ${data.median_price_per_buildable_sqft.toFixed(0)}
+            </span>
+            <span className="text-text-muted">
+              {" · "}
+              {data.buildable_median_basis === "land_only"
+                ? t("comparables.buildableBasisLand", { count: data.buildable_median_n ?? 0 })
+                : t("comparables.buildableBasisMixed", { count: data.buildable_median_n ?? 0 })}
+            </span>
+          </p>
+        )}
+
         <ShowMore
           items={data.sales}
           limit={5}
