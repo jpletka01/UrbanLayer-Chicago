@@ -2,6 +2,14 @@
 # Active by default (docker compose reads this automatically).
 # For production, use: docker compose -f docker-compose.yml up
 services:
+  # Dev-only: expose Qdrant for host tooling (ingestion, curl) on LOOPBACK ONLY.
+  # This file is auto-loaded for local `docker compose` but NOT in production,
+  # which passes explicit -f flags.
+  qdrant:
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+
   backend:
     build:
       context: .

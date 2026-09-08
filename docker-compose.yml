@@ -1,9 +1,13 @@
 services:
   qdrant:
     image: qdrant/qdrant:v1.9.0
-    ports:
-      - "6333:6333"
-      - "6334:6334"
+    # NO host port publishing. Qdrant ships with NO authentication, and "6333:6333"
+    # binds 0.0.0.0 — which left the production vector store readable AND writable
+    # from the public internet (found 2026-09-08). The backend reaches it over the
+    # compose network at http://qdrant:6333, so nothing needs a host port in prod.
+    # Local dev republishes it on LOOPBACK ONLY via docker-compose.override.yml.
+    # Do NOT "fix" this by adding a loopback mapping to docker-compose.prod.yml:
+    # Compose APPENDS list entries, so the public binding would survive alongside it.
     volumes:
       - qdrant_storage:/qdrant/storage
     healthcheck:
