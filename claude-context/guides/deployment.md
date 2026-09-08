@@ -33,6 +33,39 @@ Multi-stage `backend/Dockerfile`: builder installs CPU-only PyTorch + deps + pre
 
 `docker-compose.override.yml` (dev): mounts local `./backend` + `./ingestion/data` for hot-reload, exposes 8001.
 
+## Seeding / updating the production code corpus (Qdrant)
+
+There was no runbook for this until 2026-09-08; it is not obvious, because **the prod
+image cannot run the ingestion pipeline at all**. `backend/Dockerfile` copies `backend/`
+plus four `ingestion/data` artifacts — it does NOT copy `ingestion/*.py`, `chunks.jsonl`,
+`sections/`, or the 101 MB source HTML. So `python -m ingestion.update` inside the prod
+container is impossible. Qdrant is also a **persisted named volume** (`qdrant_storage`),
+so a code deploy never touches the corpus: a parser fix ships without changing what prod
+serves.
+
+The corpus is updated by embedding LOCALLY and writing to prod over an SSH tunnel — this
+keeps all model work off the 8 GB box:
+
+```bash
+# Qdrant publishes NO host port in prod (see the security note in docker-compose.yml),
+# so tunnel to the CONTAINER on the docker bridge, not to 127.0.0.1.
+IP=$(ssh root@178.105.184.66 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(docker ps -qf name=qdrant)')
+ssh -f -N -L 6335:$IP:6333 root@178.105.184.66
+curl -s localhost:6335/collections/chicago_municipal_code | jq .result.points_count
+```
+
+Then embed locally and upsert to `localhost:6335`. **Delete the target sections' points
+first** — `embed_and_store` assigns `uuid.uuid4()` per point, so a re-run without a delete
+DUPLICATES rows rather than replacing them. Verify by comparing per-section point counts
+against local, not just the total.
+
+Only `title_number == 17` chunks belong in the `chicago_zoning` collection; everything else
+is code-collection only. Prod currently has just `chicago_municipal_code` — the precomputed
+zoning cache made the second collection unnecessary there.
+
+**Done 2026-09-08:** Title 14 (the building code) pushed this way — prod 14,535 → 16,576
+points, matching local exactly, per-section counts verified, `/section/14A-1-101` now 200.
+
 `docker-compose.prod.yml`: builds frontend with `nginx.prod.conf` (HTTPS, security headers, gzip), exposes 80+443, mounts Cloudflare Origin Certificate. Sets `RERANKER_ENABLED=true`.
 
 ```bash
