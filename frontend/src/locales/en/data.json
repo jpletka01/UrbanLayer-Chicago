@@ -334,6 +334,9 @@
     "priceLandSqft": "$/Land Sqft",
     "salesVolume": "Sales",
     "priceRange": "Price Range",
+    "priceBuildableSqft": "Median per buildable ft²",
+    "buildableBasisLand": "{{count}} vacant-land sales",
+    "buildableBasisMixed": "{{count}} sales, includes improved — no vacant-land comps nearby",
     "priceBldgSqft": "$/Bldg Sqft",
     "recentSales": "Recent Sales",
     "date": "Date",
@@ -348,6 +351,7 @@
     "tips": {
       "median": "Median of arm's-length sales of similar-class parcels within ¼ mile over the last 3 years. Small samples are labeled — treat them as indicative.",
       "psfLand": "Median sale price divided by lot square footage — the cleanest yardstick for land value.",
+      "psfBuildable": "Sale price divided by land area × the lot's allowed floor area ratio (FAR) — what a developer pays per square foot they may actually build. Two lots at the same price per land foot are not equal value if one allows 2.2 FAR and the other 0.9. Each comp's district comes from the zoning map; lots in districts with no published FAR (planned developments) are excluded.",
       "psfBldg": "Median sale price divided by building floor area — the standard per-square-foot comparison."
     }
   },

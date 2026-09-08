@@ -532,6 +532,10 @@ export interface ComparableSale {
   bldg_sqft: number | null;
   price_per_land_sqft: number | null;
   price_per_bldg_sqft: number | null;
+  zone_class: string | null;
+  far: number | null;
+  price_per_buildable_sqft: number | null;
+  land_sqft_source: string | null;
   deed_type: string | null;
   sale_type: string | null;
   distance_mi: number | null;
@@ -543,6 +547,10 @@ export interface ComparablesSummary {
   median_sale_price: number | null;
   median_price_per_land_sqft: number | null;
   median_price_per_bldg_sqft: number | null;
+  median_price_per_buildable_sqft: number | null;
+  /** "land_only" = clean land basis; "mixed" = includes improved sales. */
+  buildable_median_basis: string | null;
+  buildable_median_n: number | null;
   price_range_min: number | null;
   price_range_max: number | null;
   sales_volume: number;

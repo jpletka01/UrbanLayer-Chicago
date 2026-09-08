@@ -1625,11 +1625,21 @@ async def _fetch_scorecard_data(
                 nearby_comparable_sales(resolved_lat, resolved_lon, class_prefix)
             )
             if comps_data.get("sales"):
+                # Price per BUILDABLE foot — the density-normalized land basis a
+                # developer actually compares on. Degrades quietly to the raw
+                # per-land-foot figures if the zoning quilt is unavailable.
+                from backend.retrieval.property.comps_far import annotate_far_normalized
+                comps_data = await _limited(
+                    annotate_far_normalized(comps_data, resolved_lat, resolved_lon)
+                )
                 s = comps_data["summary"]
                 comparables_summary = ComparablesSummary(
                     median_sale_price=s.get("median_sale_price"),
                     median_price_per_land_sqft=s.get("median_price_per_land_sqft"),
                     median_price_per_bldg_sqft=s.get("median_price_per_bldg_sqft"),
+                    median_price_per_buildable_sqft=s.get("median_price_per_buildable_sqft"),
+                    buildable_median_basis=s.get("buildable_median_basis"),
+                    buildable_median_n=s.get("buildable_median_n"),
                     price_range_min=s.get("price_range_min"),
                     price_range_max=s.get("price_range_max"),
                     sales_volume=s.get("sales_volume", 0),

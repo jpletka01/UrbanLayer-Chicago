@@ -639,6 +639,9 @@
     "priceLandSqft": "$/pie² de terreno",
     "salesVolume": "Ventas",
     "priceRange": "Rango de precios",
+    "priceBuildableSqft": "Mediana por pie² edificable",
+    "buildableBasisLand": "{{count}} ventas de terreno vacante",
+    "buildableBasisMixed": "{{count}} ventas, incluye construidas — no hay comparables de terreno vacante cerca",
     "priceBldgSqft": "$/pie² construido",
     "recentSales": "Ventas recientes",
     "date": "Fecha",
@@ -653,6 +656,7 @@
     "tips": {
       "median": "Mediana de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años. Las muestras pequeñas se señalan — tómelas como indicativas.",
       "psfLand": "Precio de venta mediano dividido por los pies cuadrados del lote — la vara más limpia para el valor del terreno.",
+      "psfBuildable": "Precio de venta dividido entre la superficie del terreno × el índice de superficie construible (FAR) permitido — lo que un desarrollador paga por cada pie cuadrado que realmente puede construir. Dos terrenos con el mismo precio por pie de terreno no valen lo mismo si uno permite 2.2 de FAR y el otro 0.9. El distrito de cada comparable proviene del mapa de zonificación; se excluyen los terrenos en distritos sin FAR publicado (desarrollos planificados).",
       "psfBldg": "Precio de venta mediano dividido por la superficie construida — la comparación estándar por pie cuadrado."
     }
   },
