@@ -1,0 +1,58 @@
+name: CodeQL
+
+# GitHub's own static analysis. Free for public repositories, which this repo is.
+#
+# Replaces the Claude-based PR review (removed 2026-09-09). Note the scope change:
+# that action reviewed correctness, quality and adherence to project patterns;
+# CodeQL finds SECURITY vulnerabilities (injection, path traversal, unsafe
+# deserialization, hardcoded credentials, XSS...). It is not a general code
+# reviewer, and nothing here replaces one — see the note in the PR checklist.
+#
+# Runs on PRs into main, on push to main, and weekly so newly-published queries
+# reach existing code without waiting for someone to touch it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Mondays 07:41 UTC — off the hour, when nobody is waiting on CI.
+    - cron: "41 7 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload results to the Security tab
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # `python` covers backend/ + ingestion/ + eval/; `javascript-typescript`
+        # covers frontend/. Both are interpreted, so no build step is needed.
+        language: [python, javascript-typescript]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          language: ${{ matrix.language }}
+          # security-extended adds lower-severity security queries beyond the
+          # default set. Deliberately NOT security-and-quality: the quality
+          # queries are noisy on this codebase and would reproduce the
+          # always-red-check problem the Claude workflow had.
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

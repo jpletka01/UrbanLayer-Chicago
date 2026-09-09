@@ -1,0 +1,49 @@
+# Dependabot version updates — free on any repo, no plan required.
+#
+# Grouped and monthly on purpose. This is a solo project: a stream of individual
+# PRs would be ignored, and an ignored bot is worse than none. One batched PR per
+# ecosystem per month is reviewable in a sitting.
+#
+# Security alerts are separate from this file and are enabled in
+# Settings -> Code security (free for public repos) — turn those on too; they fire
+# immediately rather than waiting for the monthly window.
+
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      python-deps:
+        patterns: ["*"]
+        # Majors stay separate — they need reading, not rubber-stamping.
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      frontend-deps:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    labels: [dependencies]
+
+  - package-ecosystem: docker
+    directory: "/backend"
+    schedule:
+      interval: monthly
+    labels: [dependencies]
