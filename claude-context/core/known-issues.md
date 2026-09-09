@@ -114,6 +114,8 @@ Run with: `RATE_LIMIT_ANON_DAY=200 RATE_LIMIT_ANON_HOUR=200`, then `python -m ev
 
 ## Not Yet Built
 
+- **Node 23.9 locally blocks the last 2 npm advisories.** `npm audit` is at 2 moderate (path traversal / arbitrary file read in `@vitest/mocker`, range `>=2.1.0 <4.1.11`); clearing them needs vitest **4.1.11**, whose engines are `^20 || ^22 || >=24`. CI (Node 20) and the `node:20-alpine` frontend image both satisfy that — **this dev machine's Node 23.9 does not** (odd-numbered, EOL, falls in the gap), and npm refuses the install rather than warning. We sit on vitest 3.2.7, the newest release every environment can run. Moving the dev box to Node 22 LTS or 24 LTS unblocks 4.1.11 everywhere. Dev-only either way: vitest/vite/esbuild never reach the production bundle. Do NOT take vitest 5 — it needs `^22.12 || ^24 || >=26` and would break CI outright.
+
 - **GPU acceleration** — Embedding and reranker models run on CPU. MPS acceleration available but not configured for production (x86, no GPU).
 - **Plan Commission PDFs** — Planned development applications are PDF-only; no structured dataset.
 - **Advanced context management** — Beyond existing TurnSummary + sliding window. Designed but not implemented.
