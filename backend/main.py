@@ -171,6 +171,12 @@ app.include_router(discovery_router)
 @app.on_event("startup")
 async def _startup() -> None:
     settings = get_settings()
+    # Escape CR/LF in every log record before anything else runs. User-controlled
+    # strings (addresses, chat messages, Stripe ids) reach log calls all over the
+    # retrieval layer; without this an embedded newline can forge a log line.
+    # Installed on the root HANDLERS, so it also covers library loggers.
+    from backend.log_safety import install as _install_log_safety
+    _install_log_safety()
     await db.init_db()
     from backend.discovery import parcel_source
     parcel_source.ensure_loaded()

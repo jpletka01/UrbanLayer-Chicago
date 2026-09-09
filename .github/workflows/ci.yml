@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege GITHUB_TOKEN. Without an explicit block a job inherits the
+# repository default, which can be read/write on every scope; none of these jobs
+# needs to write anything through the token.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +55,8 @@ jobs:
   # changed nothing but a .md file. Tests still run; only the restart is skipped.
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     outputs:
       code: ${{ steps.filter.outputs.code }}
@@ -84,9 +94,16 @@ jobs:
     needs: [test, changes]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    # This job holds SERVER_SSH_KEY. It reads nothing from the token and writes
+    # nothing to the repo.
+    permissions:
+      contents: read
     steps:
       - name: Deploy to server
-        uses: appleboy/ssh-action@v1
+        # PINNED to a commit SHA, not the mutable v1 tag. This step is handed
+        # SERVER_SSH_KEY; if the tag were repointed at malicious code, that key
+        # would go with it. Bump deliberately, checking the diff.
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2  # v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: root
