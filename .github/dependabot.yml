@@ -46,4 +46,11 @@ updates:
     directory: "/backend"
     schedule:
       interval: monthly
+    # Majors ignored. Without this the first run proposed python:3.11-slim ->
+    # 3.14-slim (PR #5) — a whole-runtime change dressed as a dependency bump.
+    # The stack is pinned to 3.11 deliberately; moving it is a decision, not a
+    # dependency update.
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major]
     labels: [dependencies]
