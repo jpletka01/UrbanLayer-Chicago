@@ -112,7 +112,7 @@ STRIPE_PRICE_ID=price_...
 
 `.github/workflows/ci.yml`: pytest + tsc on PRs, SSH deploy on merge to main. Secrets: `SERVER_SSH_KEY`, `SERVER_HOST`, `ANTHROPIC_API_KEY`.
 
-`.github/workflows/code-review.yml`: `anthropics/claude-code-action@v1` reviews PRs on open/synchronize.
+`.github/workflows/codeql.yml`: GitHub CodeQL (python + javascript-typescript) on PRs/pushes to main + weekly. Replaced the Claude review action 2026-09-09 — that one never ran (no API key configured). CodeQL is security analysis only; there is no general automated code reviewer now. `.github/dependabot.yml` batches monthly minor/patch updates.
 
 ## Monitoring
 
