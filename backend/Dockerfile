@@ -1,5 +1,5 @@
 # Stage 1: Build — install deps and pre-download models
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ from sentence_transformers import SentenceTransformer; \
 SentenceTransformer('BAAI/bge-base-en-v1.5')"
 
 # Stage 2: Runtime — copy only what's needed
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
