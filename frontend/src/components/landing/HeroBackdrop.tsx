@@ -3,8 +3,9 @@
 // mode with no per-theme code.
 //
 // Variants (dev exploration, switch via ?bg=):
-//   skyline — LED dot-matrix halftone of the night skyline (DEFAULT — Jack's pick;
-//             DotMatrix + dotGrid.ts, see claude-context/guides/dot-matrix.md)
+//   skyline — LED dot-matrix halftone of Cloud Gate (DEFAULT; DotMatrix + dotGrid.ts,
+//             see claude-context/guides/dot-matrix.md)
+//   nightcity — the previous default: dot-matrix halftone of the night skyline
 //   bloom   — warm orange bloom + faint grid (previously shipped design)
 //   plat    — abstract plat map: street grid, lot subdivisions, diagonal avenue
 //   contour — topographic contour rings + survey crosses
@@ -14,15 +15,15 @@
 import type { ReactElement } from "react";
 import { CurtainWall } from "./CurtainWall";
 import { DotMatrix } from "./DotMatrix";
-import skylineUrl from "../../assets/skyline-night.jpg";
-import skylineDayUrl from "../../assets/cloudgate-day.jpg";
+import nightCityUrl from "../../assets/skyline-night.jpg";
+import cloudGateUrl from "../../assets/cloudgate.jpg";
 import { useThemeContext } from "../../contexts/ThemeContext";
 
-type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain" | "skyline";
+type Variant = "bloom" | "plat" | "contour" | "geo" | "curtain" | "skyline" | "nightcity";
 
 function activeVariant(): Variant {
   const v = new URLSearchParams(window.location.search).get("bg");
-  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" || v === "plat"
+  return v === "bloom" || v === "contour" || v === "geo" || v === "curtain" || v === "plat" || v === "nightcity"
     ? v
     : "skyline";
 }
@@ -275,14 +276,15 @@ function CurtainVariant() {
 }
 
 // ---------------------------------------------------------------------------
-// skyline — LED dot-matrix halftone of the night skyline
+// skyline — LED dot-matrix halftone of Cloud Gate (both themes)
+// nightcity — the previous default: the night skyline, dark mode only
 // ---------------------------------------------------------------------------
 
-// Unlike the line-work variants, the skyline is a *figure* — voiding or
+// Unlike the line-work variants, a photo halftone is a *figure* — voiding or
 // heavily dimming the content zone amputates it. The mask dims ONLY the left
 // text/input column (the preview card is opaque enough to occlude on its
-// own); the Hancock corridor at viewport center runs at full strength, so
-// the tower reads as a dark silhouette cut out of the bright sky lattice.
+// own); the corridor at viewport center runs at full strength, so the subject
+// reads as a dark silhouette cut out of the bright lattice.
 const SKYLINE_MASK = {
   maskImage:
     "radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%)",
@@ -290,10 +292,10 @@ const SKYLINE_MASK = {
     "radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%)",
 } as const;
 
-// silhouette mode builds the figure structurally (sky lattice above each
-// column's roofline, black tower voids with lit windows below) — measured
-// luminance alone can't separate sky from tower bodies (both ~0.04).
-const SKYLINE_PARAMS = {
+// nightcity silhouette mode builds the figure structurally (sky lattice above
+// each column's roofline, black tower voids with lit windows below) —
+// measured luminance alone can't separate sky from tower bodies (both ~0.04).
+const NIGHTCITY_PARAMS = {
   gamma: 0.95,
   maxAlpha: 0.85,
   floorRadius: 0.2,
@@ -301,14 +303,22 @@ const SKYLINE_PARAMS = {
   silhouette: { threshold: 0.4, lightCut: 0.08 },
 };
 
-// Light surfaces use a PURPOSE-BUILT daytime asset (cloudgate-day.png): a
-// grayscale Cloud Gate photo pre-processed to a NEGATIVE (dark steel → bright,
-// bright sky → dark) so it runs through the plain halftone ramp as an ink
-// print — bright(=originally dark) cells → big dots, dark(=originally sky)
-// cells → faint lattice. Under the light theme wrapper the dots resolve to dark
-// ink on warm paper. The night photo stays the dark-mode figure (its window
-// glow needs a black field); an inversion of it never read on white.
-const SKYLINE_PARAMS_LIGHT = {
+// ONE asset for both themes (cloudgate.jpg): a grayscale Cloud Gate photo
+// pre-processed to a NEGATIVE (dark steel and dark sky → bright; bright sky
+// and facades → dark) so it feeds the plain halftone ramp with the polarity
+// the renderer wants. The luminance relationships are identical in both
+// themes — only the ink color changes, because DotMatrix draws in the
+// wrapper's `currentColor`:
+//   light — dark ink on warm paper: the Michigan Ave facades print as heavy
+//           dots, the Bean sits as a paper-white mass under its inked rim.
+//   dark  — white on near-black: the same facades glow as a lit lattice and
+//           the Bean is a black void cut out of it, chrome highlights
+//           catching the light. Same negative-silhouette mechanism the night
+//           skyline used, so it reads as night without a second photo.
+// Params differ only in duty: on a black ground the dots read hotter, so dark
+// runs a higher gamma (darker mids), a smaller max radius and a lower alpha
+// ceiling to stay under the headline's contrast.
+const CLOUDGATE_PARAMS_LIGHT = {
   gamma: 1.5,
   maxRadius: 0.5,
   floorRadius: 0.08,
@@ -318,14 +328,36 @@ const SKYLINE_PARAMS_LIGHT = {
   maxAlpha: 0.95,
 };
 
+const CLOUDGATE_PARAMS_DARK = {
+  gamma: 2.1,
+  maxRadius: 0.4,
+  floorRadius: 0.07,
+  cut: 0,
+  skyLevel: 0.16,
+  skyAlpha: 0.18,
+  maxAlpha: 0.7,
+};
+
 function SkylineVariant() {
   const light = useThemeContext().resolvedTheme === "light";
   return (
     <DotMatrix
-      src={light ? skylineDayUrl : skylineUrl}
+      src={cloudGateUrl}
       cols={150}
       accent={false}
-      params={light ? SKYLINE_PARAMS_LIGHT : SKYLINE_PARAMS}
+      params={light ? CLOUDGATE_PARAMS_LIGHT : CLOUDGATE_PARAMS_DARK}
+      style={SKYLINE_MASK}
+    />
+  );
+}
+
+function NightCityVariant() {
+  return (
+    <DotMatrix
+      src={nightCityUrl}
+      cols={150}
+      accent={false}
+      params={NIGHTCITY_PARAMS}
       style={SKYLINE_MASK}
     />
   );
@@ -341,6 +373,7 @@ export function HeroBackdrop() {
       {variant === "geo" && <GeoVariant />}
       {variant === "curtain" && <CurtainVariant />}
       {variant === "skyline" && <SkylineVariant />}
+      {variant === "nightcity" && <NightCityVariant />}
     </div>
   );
 }

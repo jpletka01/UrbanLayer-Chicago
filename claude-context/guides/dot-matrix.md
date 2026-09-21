@@ -7,6 +7,12 @@ HeroBackdrop DEFAULT** (flipped 2026-07-02 at Jack's request); the old variants 
 before touching the hero backdrop, or when reusing DotMatrix on any other surface — Jack
 expects this component to travel.
 
+**⚠️ 2026-09-21 — the `skyline` variant is now Cloud Gate in BOTH themes**, not the night
+skyline. Everything below about the *renderer* still holds; the subject-specific sections
+(silhouette mode, the Hancock spire rule, the two-asset light-mode story) now describe the
+**`?bg=nightcity`** variant, which is where the night skyline moved. See "Cloud Gate in both
+themes" at the bottom for what actually ships.
+
 ## What it is
 
 A two-layer system that turns **any image** into an LED-billboard dot halftone, drawn on a
@@ -19,10 +25,13 @@ uniform grid where dot size + alpha encode sampled luminance:
   to **one source pixel per grid cell** via `drawImage` (area-averaging melts source detail
   into local luminance), draws dots in the element's resolved `currentColor` (theme-aware),
   DPR-capped at 2, redraws via ResizeObserver.
-- Source asset: `frontend/src/assets/skyline-night.jpg` (512×333, ~90 KB) — cropped/downscaled
-  with `sips` from Jack's AI-generated reference (CRT frame + caption trimmed).
+- Source assets: `frontend/src/assets/cloudgate.jpg` (700×385) — the shipping hero subject, both
+  themes; and `frontend/src/assets/skyline-night.jpg` (512×333, ~90 KB) — cropped/downscaled with
+  `sips` from Jack's AI-generated reference (CRT frame + caption trimmed), now the `?bg=nightcity`
+  variant.
 
-Hero wiring: `HeroBackdrop.tsx` → `SkylineVariant` (`SKYLINE_PARAMS` + `SKYLINE_MASK`).
+Hero wiring: `HeroBackdrop.tsx` → `SkylineVariant` (`CLOUDGATE_PARAMS_LIGHT` /
+`CLOUDGATE_PARAMS_DARK` + `SKYLINE_MASK`); `NightCityVariant` (`NIGHTCITY_PARAMS`).
 
 ## Why this shape (decision record)
 
@@ -60,7 +69,7 @@ figure is built structurally per column (`silhouette` param):
   at equal dot size; dark body cells render **nothing** (true black voids). The tower reads
   as a negative silhouette cut out of the lattice — same mechanism as Jack's reference image.
 
-Hero calibration (`SKYLINE_PARAMS`): `gamma 0.95` (γ>1.5 crushed midtone buildings to the
+Night-skyline calibration (`NIGHTCITY_PARAMS`): `gamma 0.95` (γ>1.5 crushed midtone buildings to the
 sub-pixel floor — the "invisible skyline" failure), `maxAlpha 0.85`, `floorRadius 0.2`,
 `skyAlpha 0.38`, `silhouette {threshold 0.4, lightCut 0.08}`.
 
@@ -141,7 +150,8 @@ light failed (recorded so we don't retry):
    cartoon — same lesson as the curtain-wall predecessor ("figure beats texture," and a
    *drawing* isn't enough).
 
-**What shipped:** a purpose-built **daytime photo** asset, `frontend/src/assets/cloudgate-day.jpg`
+**What shipped:** a purpose-built **daytime photo** asset, `cloudgate.jpg` (then named
+`cloudgate-day.jpg`)
 — a grayscale Unsplash **Cloud Gate** photo, pre-processed to a **NEGATIVE** (PIL:
 `ImageOps.autocontrast` → `ImageOps.invert`) so it feeds the *existing* halftone ramp as an ink
 print: originally-dark steel → bright → big ink dots; originally-bright sky → dark → faint
@@ -177,3 +187,38 @@ the pulse. Both `--shadow-card` and `--glow-accent` are 2-layer theme-aware shad
   `@keyframes`), which looks exactly like "the animation is broken." Verify via
   `getComputedStyle(el).animationName` + checking the built CSS; the production `npm run build`
   picks it up correctly (the issue is dev-only).
+
+## Cloud Gate in both themes (2026-09-21) — one asset, two duties
+
+Jack's testers reported the **light** hero reads as an obvious, recognizable Chicago object and
+the dark night-skyline hero does not. So `skyline` now renders **Cloud Gate in both themes** and
+the night skyline moved to `?bg=nightcity` (kept, not deleted — it's the A/B reference and it
+keeps `skyline-night.jpg` imported, which `tsc -b`'s `noUnusedLocals` requires).
+
+**One asset, not two.** `cloudgate-day.jpg` → renamed `cloudgate.jpg`, bit-identical. The halftone
+maps *source luminance* → dot size and takes its **ink color from the wrapper's `currentColor`**,
+so a single negative serves both themes — the luminance relationships never change, only the ink
+and the ground:
+
+- **light** — dark ink on warm paper: Michigan Ave facades print as heavy dots, the Bean is a
+  paper-white mass under its inked rim. (Unchanged; same params, same pixels.)
+- **dark** — white on near-black: those same facades glow as a lit lattice and the Bean is a
+  **black void cut out of it**, chrome highlights catching the light. This is the *same*
+  negative-silhouette mechanism the night skyline used — which is why it reads as night without a
+  second photograph, and why the "inverting the night photo fails" lesson above does **not** apply
+  in this direction. The failure mode there was a void landing on the *lightest* value; here the
+  void is the darkest value, which is exactly the condition that makes the trick work.
+
+**Params differ only in duty, not in structure.** No silhouette mode in either (the photo has real
+subject/sky luminance separation). On a black ground the same dot coverage reads far hotter — the
+first dark pass at `gamma 1.7 / maxRadius 0.44 / maxAlpha 0.82` was a wall of light that competed
+with the headline. Shipped `CLOUDGATE_PARAMS_DARK`: `gamma 2.1, maxRadius 0.4, floorRadius 0.07,
+cut 0, skyLevel 0.16, skyAlpha 0.18, maxAlpha 0.7`.
+
+- **`cut` is the wrong lever for calming a dark field.** Raising it to 0.05 quieted the desktop but
+  emptied the *phone*: at 393px `coverCrop` shows a narrow vertical slice that is mostly the Bean's
+  dark body, so every cell fell under the cut and the backdrop vanished. `cut 0` + a lower
+  `skyAlpha` keeps the uniform LED lattice alive in flat dark regions while still pulling the
+  mid-tones down. **Always re-shoot the phone width after touching `cut`/`skyLevel`.**
+- The mobile hard-crop (only a slab of building, no Bean) is **pre-existing and unchanged** — light
+  mode has always framed that way at 393px. Verified against a light shot before shipping.
