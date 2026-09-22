@@ -194,6 +194,32 @@ export function coverCrop(
 }
 
 /**
+ * Width-fit ("letterbox") placement: the destination rows the image occupies when
+ * it is scaled to the FULL grid width instead of cover-cropped.
+ *
+ * Cover always sacrifices one axis. For a landscape asset in a tall container that
+ * sacrifice is horizontal, and a horizontal crop destroys a subject whose identity
+ * IS its silhouette (Cloud Gate at phone width keeps 16% of the source — a 112px
+ * slice of 700px, which reads as nothing). Width-fit trades size for completeness:
+ * the whole subject survives as a band, and the rows it doesn't cover stay
+ * transparent, which `computeDots` renders as the uniform sky lattice (luminance 0
+ * falls under `skyLevel`) — the same field the rest of the backdrop already uses,
+ * so the band sits IN the texture rather than floating on an empty canvas.
+ *
+ * `anchor` places the band: 0 = top, 0.5 = centred, 1 = bottom.
+ */
+export function widthFitBand(
+  imgAspect: number,
+  cols: number,
+  rows: number,
+  anchor = 0.5,
+): { rowOffset: number; bandRows: number } {
+  const bandRows = Math.min(rows, Math.max(1, Math.round(cols / imgAspect)));
+  const clamped = Math.min(1, Math.max(0, anchor));
+  return { rowOffset: Math.round((rows - bandRows) * clamped), bandRows };
+}
+
+/**
  * The one orange "found parcel" dot: the brightest cell inside a zone
  * (fractions of the grid), so it always lands on a lit window.
  */

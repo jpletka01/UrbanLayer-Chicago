@@ -222,3 +222,64 @@ cut 0, skyLevel 0.16, skyAlpha 0.18, maxAlpha 0.7`.
   mid-tones down. **Always re-shoot the phone width after touching `cut`/`skyLevel`.**
 - The mobile hard-crop (only a slab of building, no Bean) is **pre-existing and unchanged** — light
   mode has always framed that way at 393px. Verified against a light shot before shipping.
+
+## Width-fit / letterbox (2026-09-21) — cover is wrong for tall containers
+
+**The bug.** `coverCrop` fills the container and crops the excess. The asset is
+landscape (700×385, aspect 1.82) and the hero container is **tall** on phones — its
+height is driven by stacked content (headline + input + chips + preview card ≈
+1350px), **not by the viewport**, so a taller phone doesn't help; only width does.
+Narrow screens therefore crop *horizontally*, and hard. Cloud Gate's identity is its
+silhouette, so a horizontal crop annihilates it: a 393px phone kept source pixels
+x∈[294,406] — **a 112px slice of a 700px photo**, showing two building fragments and
+a featureless gray band.
+
+Nothing caught this. The mobile overflow audit sees no overflow (nothing overflows);
+desktop screenshots look perfect. It needed its own metric.
+
+**The metric:** `frontend/e2e/hero-crop-audit.mjs`, `npm run test:hero-crop [url]`
+(defaults to prod). Per shape, against the **real rendered canvas rect** — hero
+height is content-driven, never assume it from the viewport:
+
+| metric | meaning |
+|---|---|
+| `keep` | fraction of source **width** surviving coverCrop (its own formula) |
+| `beanCoverage` | fraction of the subject's bbox still in frame — **the number that matters** |
+| `archCoverage` | fraction of the legs+opening, the feature that makes it read as Cloud Gate |
+| `bandShare` | letterbox only: band height / hero height (a complete-but-invisible band is its own failure) |
+
+Graded on `beanCoverage`: ≥0.90 ok, ≥0.70 clipped, <0.70 BROKEN; exits 1 on any
+BROKEN. Subject extents (bean x∈[0.100, 0.925], arch [0.330, 0.720]) were read off a
+20-division grid overlaid on the asset. Crop is theme-independent — one dark pass
+covers both. **Before the fix: 9 of 16 standard shapes BROKEN** (every phone, phone
+landscape, both tablet portraits; bean coverage 18–21% on phones).
+
+**The fix:** `DotMatrix` gained `fit: "cover" | "width" | "auto"` + `minCoverAspect`
++ `bandAnchor`, and the pure `widthFitBand()` in dotGrid.ts (unit-tested). Width-fit
+scales the image to full grid width and letterboxes it; the rows outside the band
+stay transparent, and **luminance 0 falls under `skyLevel`, so `computeDots` renders
+them as the uniform sky lattice** — the band sits *in* the existing field instead of
+floating on an empty canvas. The hero runs `fit="auto"`.
+
+- **`minCoverAspect = 1.49`, derived.** The Bean spans [0.100, 0.925] and coverCrop
+  centres on 0.500, so the **right edge binds first** (the subject sits 1.25% right of
+  centre). Whole subject needs keep ≥ 0.85 → aspect 1.55; we allow a **2% tolerance**
+  on subject width (keep ≥ 0.817 → 1.49) because an exact threshold split
+  near-identical laptops — 1440×900 (1.60) stayed full-bleed while a MacBook Pro 16
+  (1.54) letterboxed, over 0.2% of the Bean.
+- **`bandAnchor = 0`**, swept 0/0.15/0.30/0.42/0.60 at 393×852. The band is only ~16%
+  of a phone hero's height, so the choice is really *which content it sits behind*.
+  Top wins: it crowns the page and everything below stays on clean ground. Every lower
+  anchor put the sculpture under the headline or behind the opaque search field.
+- **The mask moved to CSS and is now fit-aware** (`.hero-dots[data-fit=…]` in
+  index.css). The principle is "protect the text zone"; the text zone *moves* — left
+  column when the layout is two-up (cover/desktop), centred near the top when it stacks
+  (width/phone+tablet). The first pass dropped the mask entirely for width-fit and the
+  tablet band ran straight through the headline. Keying off `data-fit` is exact;
+  **a viewport media query would be wrong, because hero aspect ≠ viewport aspect** on
+  phones (393×1351 hero inside a 393×852 viewport).
+- `DotMatrix` publishes `data-fit` / `data-band` so the audit **measures what is
+  painted rather than re-deriving a model of it**. Running the audit against prod
+  before deploying shows `fit: ?` — that's the old build, working as intended.
+
+**After: 0 of 16 BROKEN**, desktop pixel-identical to before.
