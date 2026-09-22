@@ -14,8 +14,20 @@ import type { DotGridParams } from "./dotGrid";
 
 interface DotMatrixProps {
   src: string;
-  /** Grid resolution across the container width. */
+  /** Grid resolution across the container width (an upper bound — see `targetCellPx`). */
   cols?: number;
+  /**
+   * Preferred cell size in CSS px. The grid is `min(cols, width / targetCellPx)`,
+   * so `cols` behaves as a ceiling and narrow containers get FEWER, BIGGER cells
+   * instead of a microscopic one.
+   *
+   * Why this exists: `cols` alone is a resolution, not a scale. A constant 150
+   * cols is ~9.6px per cell at 1440 wide but 2.6px at 393 — where the lattice
+   * dot radius (floorRadius 0.07) works out at 0.18px, i.e. sub-pixel and
+   * invisible. The field then simply doesn't render on phones, which reads as a
+   * broken image rather than as a sparse one.
+   */
+  targetCellPx?: number;
   /** Overall intensity multiplier applied to dot alpha (backdrop duty = keep < 1). */
   intensity?: number;
   /**
@@ -44,6 +56,16 @@ interface DotMatrixProps {
   className?: string;
   style?: CSSProperties;
   params?: Partial<DotGridParams>;
+  /**
+   * Params used INSTEAD of `params` when width-fit is chosen. The two modes need
+   * different duty: in cover the whole grid is image, so the field is varied and
+   * carries itself. In width-fit most of the grid is the uniform sky lattice, and
+   * at cover's settings that lattice is far too faint to register — the hero then
+   * reads as a broken image below the band rather than as a dot field containing
+   * one. Raise `skyAlpha`/`floorRadius` here, not in `params`, so desktop is
+   * untouched.
+   */
+  paramsWidthFit?: Partial<DotGridParams>;
 }
 
 const ACCENT_ZONE = { x0: 0.05, x1: 0.3, y0: 0.55, y1: 0.85 };
@@ -52,6 +74,7 @@ const ACCENT_COLOR = "rgb(249 164 116";
 export function DotMatrix({
   src,
   cols = 150,
+  targetCellPx,
   intensity = 1,
   shiftDown = 0,
   accent = true,
@@ -61,6 +84,7 @@ export function DotMatrix({
   className = "absolute inset-0 h-full w-full",
   style,
   params,
+  paramsWidthFit,
 }: DotMatrixProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -80,14 +104,19 @@ export function DotMatrix({
       canvas.width = Math.round(rect.width * dpr);
       canvas.height = Math.round(rect.height * dpr);
 
-      const cell = rect.width / cols;
+      // `cols` is a ceiling; targetCellPx keeps the DOT SCALE consistent across
+      // container widths so the halftone reads as a halftone at every size.
+      const gridCols = targetCellPx
+        ? Math.max(16, Math.min(cols, Math.round(rect.width / targetCellPx)))
+        : cols;
+      const cell = rect.width / gridCols;
       // ceil: the grid must cover the full height — a rounded-down row count
       // leaves an unpainted strip at the bottom edge
       const rows = Math.max(1, Math.ceil(rect.height / cell));
 
       // downsample: one source pixel per grid cell, cover-cropped
       const off = document.createElement("canvas");
-      off.width = cols;
+      off.width = gridCols;
       off.height = rows;
       const octx = off.getContext("2d", { willReadFrequently: true });
       const ctx = canvas.getContext("2d");
@@ -101,8 +130,8 @@ export function DotMatrix({
         // outside the band stay transparent (luminance 0), which computeDots
         // renders as the uniform sky lattice — so the band sits in the field
         // rather than floating on an empty canvas.
-        const { rowOffset, bandRows } = widthFitBand(imgAspect, cols, rows, bandAnchor);
-        octx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, rowOffset, cols, bandRows);
+        const { rowOffset, bandRows } = widthFitBand(imgAspect, gridCols, rows, bandAnchor);
+        octx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, rowOffset, gridCols, bandRows);
         canvas.dataset.fit = "width";
         canvas.dataset.band = `${rowOffset}/${bandRows}/${rows}`;
       } else {
@@ -110,13 +139,21 @@ export function DotMatrix({
         const shift = Math.max(0, Math.min(Math.round(shiftDown), rows - 1));
         // translate down: drop the source's bottom `shift` cells, leave the top
         // `shift` destination rows transparent (scale unchanged)
-        octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, cols, rows - shift);
+        octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, gridCols, rows - shift);
         canvas.dataset.fit = "cover";
         delete canvas.dataset.band;
       }
-      const px = octx.getImageData(0, 0, cols, rows);
+      const px = octx.getImageData(0, 0, gridCols, rows);
 
-      const grid = computeDots(px, { ...DOT_DEFAULTS, ...params, cols });
+      const active = widthFit && paramsWidthFit ? paramsWidthFit : params;
+      const grid = computeDots(px, { ...DOT_DEFAULTS, ...active, cols: gridCols });
+      // Published for the crop audit: the background lattice dot's radius in CSS
+      // px. Below ~0.5 (a sub-1px dot) the field stops rendering and the hero
+      // reads as a broken image — the exact regression this attribute guards.
+      canvas.dataset.latticePx = (
+        (active?.floorRadius ?? DOT_DEFAULTS.floorRadius) * cell
+      ).toFixed(2);
+      canvas.dataset.cols = String(gridCols);
       const accentCell = accent ? pickAccentDot(px, ACCENT_ZONE) : null;
 
       const dotColor = getComputedStyle(canvas).color;
@@ -158,7 +195,7 @@ export function DotMatrix({
       cancelled = true;
       ro.disconnect();
     };
-  }, [src, cols, intensity, shiftDown, accent, fit, minCoverAspect, bandAnchor, params]);
+  }, [src, cols, targetCellPx, intensity, shiftDown, accent, fit, minCoverAspect, bandAnchor, params, paramsWidthFit]);
 
   return <canvas ref={canvasRef} className={className} style={style} aria-hidden="true" />;
 }

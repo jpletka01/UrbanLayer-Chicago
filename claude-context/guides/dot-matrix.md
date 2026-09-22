@@ -283,3 +283,46 @@ floating on an empty canvas. The hero runs `fit="auto"`.
   before deploying shows `fit: ?` — that's the old build, working as intended.
 
 **After: 0 of 16 BROKEN**, desktop pixel-identical to before.
+
+## Dot scale — `cols` is a resolution, not a scale (2026-09-21, same day)
+
+Jack's verdict on the first letterbox: *"it honestly looks like a visual bug… the
+fact that it doesn't stretch down to the bottom makes it look bad."* He was right,
+and the crop audit had said `0 of 16 BROKEN` — **subject coverage was a perfect 100%
+and the hero still looked broken.** Worth sitting with: a metric that passes while
+the thing looks wrong is measuring the wrong property, not vindicating the design.
+
+**Root cause, and it predates the letterbox.** `cols={150}` was calibrated at
+desktop. It is a *resolution*, so the cell size falls out of the container width:
+
+| width | cell @150 cols | lattice dot radius (floorRadius 0.07) |
+|---|---|---|
+| 1440 | 9.6px | 0.67px |
+| 768 | 5.1px | 0.36px |
+| 393 | **2.6px** | **0.18px — sub-pixel** |
+
+So on a phone the background lattice never rendered. In cover mode that was masked
+(the whole grid is image, and image cells are big), but the letterbox made most of
+the grid *be* lattice, and the hero became a textured strip over a black void — an
+image that failed to load.
+
+**Fixes, all three needed:**
+
+1. **`targetCellPx` on DotMatrix** — the grid is now `min(cols, width / targetCellPx)`,
+   so `cols` is a **ceiling** and narrow containers get fewer, bigger cells.
+   The hero passes `1280 / 150 = 8.53px`: the narrowest width that runs *cover* at
+   the calibrated 150, so **every cover shape still resolves to exactly 150 and no
+   approved desktop/laptop rendering moves a pixel**, while a phone drops to ~46
+   cells. Picking a round 9.6px instead silently re-gridded 1280 and 1366 to 133/142
+   — check the whole cover range before choosing this number.
+2. **`paramsWidthFit`** — separate duty for the two modes. Cover's grid is all
+   image and carries itself; width-fit's is mostly lattice, which needs
+   `floorRadius 0.13 / skyAlpha 0.34` to read as a deliberate LED field rather than
+   a speckle. Kept out of `params` so cover is untouched.
+3. **`data-lattice-px` + a `MIN_LATTICE_PX` (0.5) gate in the audit** — the metric
+   that would have caught this. The audit now fails on a sub-0.5px lattice dot as
+   well as on subject coverage, because *"the subject is all there"* and *"you can
+   see anything at all"* are independent properties.
+
+**Result:** the field fills the hero at every width, the sculpture sits in it, and
+desktop is byte-for-byte the approved rendering.

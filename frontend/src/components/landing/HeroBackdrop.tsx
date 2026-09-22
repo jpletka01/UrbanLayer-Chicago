@@ -340,6 +340,21 @@ const CLOUDGATE_MIN_COVER_ASPECT = 1.49;
 // the arch behind opaque chrome.
 const CLOUDGATE_BAND_ANCHOR = 0;
 
+// Dot SCALE, held roughly constant across container widths.
+//
+// `cols` is a RESOLUTION, not a scale: a constant 150 is ~9.6px per cell at 1440
+// wide but 2.6px at 393, where the lattice dot (floorRadius) computes to a
+// 0.18px radius — sub-pixel. The field around the letterboxed band then did not
+// render at all, and the hero read as a broken image below the band even though
+// subject coverage was a perfect 100%.
+//
+// 8.53px = 1280/150: the NARROWEST width that runs cover mode at the calibrated
+// 150 cols. Every cover shape therefore still resolves to exactly 150 (the
+// `cols` ceiling clamps anything wider), so no approved desktop or laptop
+// rendering changes by a pixel, while a phone drops to ~46 chunky cells and its
+// lattice becomes visible again.
+const CLOUDGATE_CELL_PX = 1280 / 150;
+
 const CLOUDGATE_PARAMS_LIGHT = {
   gamma: 1.5,
   maxRadius: 0.5,
@@ -360,17 +375,27 @@ const CLOUDGATE_PARAMS_DARK = {
   maxAlpha: 0.7,
 };
 
+// Width-fit duty. Most of a phone grid is the uniform sky lattice rather than
+// image, so the lattice has to actually READ — at the cover settings it is a
+// sub-visible speckle and the hero looks like an image that failed to load below
+// the band. Raising skyAlpha/floorRadius turns the surround into a deliberate LED
+// field with the sculpture sitting in it. Cover is untouched.
+const CLOUDGATE_BAND_DARK = { ...CLOUDGATE_PARAMS_DARK, floorRadius: 0.13, skyAlpha: 0.34 };
+const CLOUDGATE_BAND_LIGHT = { ...CLOUDGATE_PARAMS_LIGHT, floorRadius: 0.13, skyAlpha: 0.3 };
+
 function SkylineVariant() {
   const light = useThemeContext().resolvedTheme === "light";
   return (
     <DotMatrix
       src={cloudGateUrl}
       cols={150}
+      targetCellPx={CLOUDGATE_CELL_PX}
       accent={false}
       fit="auto"
       minCoverAspect={CLOUDGATE_MIN_COVER_ASPECT}
       bandAnchor={CLOUDGATE_BAND_ANCHOR}
       params={light ? CLOUDGATE_PARAMS_LIGHT : CLOUDGATE_PARAMS_DARK}
+      paramsWidthFit={light ? CLOUDGATE_BAND_LIGHT : CLOUDGATE_BAND_DARK}
       className="hero-dots absolute inset-0 h-full w-full"
     />
   );

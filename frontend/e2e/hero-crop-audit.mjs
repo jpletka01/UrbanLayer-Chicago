@@ -63,6 +63,15 @@ const ARCH = { x0: 0.330, x1: 0.720 };
 
 /** Below this the band is complete but too short to register as anything. */
 const MIN_BAND_SHARE = 0.1;
+/**
+ * Minimum background-lattice dot radius, CSS px. Under ~0.5 the dot is sub-1px
+ * and the field simply does not render, so the hero reads as an image that
+ * failed to load rather than as a sparse one. This is a SCALE bug, not a crop
+ * bug: a fixed `cols` is a resolution, and at 150 cols a 393px phone gets 2.6px
+ * cells where floorRadius 0.07 lands at a 0.18px radius. Subject coverage was
+ * 100% and it still looked broken — which is why this metric exists alongside it.
+ */
+const MIN_LATTICE_PX = 0.5;
 
 const GRADES = [
   { min: 0.9, name: "ok" },
@@ -112,7 +121,10 @@ for (const [cls, name, w, h] of PANEL) {
     const c = document.querySelector("canvas");
     if (!c) return null;
     const r = c.getBoundingClientRect();
-    return { w: r.width, h: r.height, fit: c.dataset.fit, band: c.dataset.band };
+    return {
+      w: r.width, h: r.height, fit: c.dataset.fit, band: c.dataset.band,
+      latticePx: Number(c.dataset.latticePx), cols: Number(c.dataset.cols),
+    };
   });
   await ctx.close();
 
@@ -145,6 +157,8 @@ for (const [cls, name, w, h] of PANEL) {
     beanCoverage: +bean.toFixed(3),
     archCoverage: +arch.toFixed(3),
     bandShare: bandShare === null ? null : +bandShare.toFixed(3),
+    cols: rect.cols || null,
+    latticePx: Number.isFinite(rect.latticePx) ? rect.latticePx : null,
     grade: gradeOf(bean),
   });
 }
@@ -156,7 +170,7 @@ if (AS_JSON) {
   console.log(`\nHero crop audit — ${BASE}\n`);
   console.log(
     ["class".padEnd(8), "device".padEnd(20), "viewport".padEnd(10), "hero".padEnd(10),
-     "aspect", "fit  ", " keep", " bean", " arch", " band", "grade"].join("  "),
+     "aspect", "fit  ", "cols", " keep", " bean", " arch", " band", "dotpx", "grade"].join("  "),
   );
   console.log("-".repeat(88));
   for (const r of rows) {
@@ -165,10 +179,12 @@ if (AS_JSON) {
       [r.cls.padEnd(8), r.name.padEnd(20), r.viewport.padEnd(10), r.hero.padEnd(10),
        r.heroAspect.toFixed(2).padStart(6),
        r.fit.padEnd(5),
+       String(r.cols ?? "-").padStart(4),
        `${Math.round(r.keep * 100)}%`.padStart(5),
        `${Math.round(r.beanCoverage * 100)}%`.padStart(5),
        `${Math.round(r.archCoverage * 100)}%`.padStart(5),
        (r.bandShare === null ? "  -" : `${Math.round(r.bandShare * 100)}%`).padStart(5),
+       (r.latticePx === null ? "-" : r.latticePx.toFixed(2)).padStart(5),
        r.grade].join("  "),
     );
   }
@@ -177,10 +193,19 @@ if (AS_JSON) {
     console.log(`\n${faint.length} letterboxed shape(s) under ${MIN_BAND_SHARE * 100}% band height: ` +
       faint.map((r) => r.name).join(", "));
   }
+  const dim = rows.filter((r) => r.latticePx !== null && r.latticePx < MIN_LATTICE_PX);
+  if (dim.length) {
+    console.log(`\n${dim.length} shape(s) with a sub-${MIN_LATTICE_PX}px lattice dot (field will not render): ` +
+      dim.map((r) => `${r.name} ${r.latticePx}px`).join(", "));
+  }
   const broken = rows.filter((r) => r.grade === "BROKEN");
   console.log(
     `\n${broken.length} of ${rows.length} shapes BROKEN (subject coverage < 70%)` +
     (broken.length ? `: ${[...new Set(broken.map((r) => r.cls))].join(", ")}` : ""),
   );
 }
-process.exit(rows.some((r) => r.grade === "BROKEN") ? 1 : 0);
+process.exit(
+  rows.some((r) => r.grade === "BROKEN" || (r.latticePx !== null && r.latticePx < MIN_LATTICE_PX))
+    ? 1
+    : 0,
+);
