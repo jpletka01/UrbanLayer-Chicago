@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:mobile": "playwright test",
-    "test:mobile:report": "node e2e/mobile-audit-report.mjs"
+    "test:mobile:report": "node e2e/mobile-audit-report.mjs",
+    "test:hero-crop": "node e2e/hero-crop-audit.mjs"
   },
   "dependencies": {
     "@deck.gl/core": "^9.3.2",
