@@ -21,8 +21,10 @@
  *
  * THE METRICS
  * -----------
- * Measured per device, against the REAL rendered canvas rect (hero height is
- * content-driven, so it must be measured, never assumed from the viewport):
+ * Measured per device against the REAL rendered canvas rect — which is the point:
+ * below xl the canvas is a BAND sized to the asset's own aspect, not the hero, so
+ * the plain coverCrop model measures what is painted with no special-casing. Hero
+ * height is content-driven and must never be assumed from the viewport.
  *
  *   heroAspect   = canvas.width / canvas.height
  *   keep         = min(1, heroAspect / imgAspect)
@@ -61,8 +63,15 @@ const IMG = { w: 700, h: 385 };
 const BEAN = { x0: 0.100, x1: 0.925 };
 const ARCH = { x0: 0.330, x1: 0.720 };
 
-/** Below this the band is complete but too short to register as anything. */
-const MIN_BAND_SHARE = 0.1;
+/**
+ * Minimum background-lattice dot radius, CSS px. Under ~0.5 the dot is sub-1px
+ * and the field simply does not render, so the hero reads as an image that
+ * failed to load rather than as a sparse one. This is a SCALE bug, not a crop
+ * bug: a fixed `cols` is a resolution, and at 150 cols a 393px phone gets 2.6px
+ * cells where floorRadius 0.07 lands at a 0.18px radius. Subject coverage was
+ * 100% and it still looked broken — which is why this metric exists alongside it.
+ */
+const MIN_LATTICE_PX = 0.5;
 
 const GRADES = [
   { min: 0.9, name: "ok" },
@@ -112,7 +121,10 @@ for (const [cls, name, w, h] of PANEL) {
     const c = document.querySelector("canvas");
     if (!c) return null;
     const r = c.getBoundingClientRect();
-    return { w: r.width, h: r.height, fit: c.dataset.fit, band: c.dataset.band };
+    return {
+      w: r.width, h: r.height,
+      latticePx: Number(c.dataset.latticePx), cols: Number(c.dataset.cols),
+    };
   });
   await ctx.close();
 
@@ -121,30 +133,20 @@ for (const [cls, name, w, h] of PANEL) {
     continue;
   }
   const heroAspect = rect.w / rect.h;
-  let keep, bean, arch, bandShare = null;
-  if (rect.fit === "width") {
-    // Letterbox: nothing is cropped horizontally, so the subject is whole by
-    // construction. What's worth measuring instead is how much vertical room the
-    // band gets — a complete-but-invisible band is its own failure mode.
-    keep = bean = arch = 1;
-    const [, bandRows, totalRows] = (rect.band ?? "0/0/1").split("/").map(Number);
-    bandShare = bandRows / totalRows;
-  } else {
-    keep = Math.min(1, heroAspect / (IMG.w / IMG.h));
-    const win0 = 0.5 - keep / 2;
-    const win1 = 0.5 + keep / 2;
-    bean = overlap(win0, win1, BEAN.x0, BEAN.x1) / (BEAN.x1 - BEAN.x0);
-    arch = overlap(win0, win1, ARCH.x0, ARCH.x1) / (ARCH.x1 - ARCH.x0);
-  }
+  const keep = Math.min(1, heroAspect / (IMG.w / IMG.h));
+  const win0 = 0.5 - keep / 2;
+  const win1 = 0.5 + keep / 2;
+  const bean = overlap(win0, win1, BEAN.x0, BEAN.x1) / (BEAN.x1 - BEAN.x0);
+  const arch = overlap(win0, win1, ARCH.x0, ARCH.x1) / (ARCH.x1 - ARCH.x0);
   rows.push({
     cls, name, viewport: `${w}x${h}`,
     hero: `${Math.round(rect.w)}x${Math.round(rect.h)}`,
     heroAspect: +heroAspect.toFixed(3),
-    fit: rect.fit ?? "?",
     keep: +keep.toFixed(3),
     beanCoverage: +bean.toFixed(3),
     archCoverage: +arch.toFixed(3),
-    bandShare: bandShare === null ? null : +bandShare.toFixed(3),
+    cols: rect.cols || null,
+    latticePx: Number.isFinite(rect.latticePx) ? rect.latticePx : null,
     grade: gradeOf(bean),
   });
 }
@@ -156,7 +158,7 @@ if (AS_JSON) {
   console.log(`\nHero crop audit — ${BASE}\n`);
   console.log(
     ["class".padEnd(8), "device".padEnd(20), "viewport".padEnd(10), "hero".padEnd(10),
-     "aspect", "fit  ", " keep", " bean", " arch", " band", "grade"].join("  "),
+     "aspect", "cols", " keep", " bean", " arch", "dotpx", "grade"].join("  "),
   );
   console.log("-".repeat(88));
   for (const r of rows) {
@@ -164,18 +166,18 @@ if (AS_JSON) {
     console.log(
       [r.cls.padEnd(8), r.name.padEnd(20), r.viewport.padEnd(10), r.hero.padEnd(10),
        r.heroAspect.toFixed(2).padStart(6),
-       r.fit.padEnd(5),
+       String(r.cols ?? "-").padStart(4),
        `${Math.round(r.keep * 100)}%`.padStart(5),
        `${Math.round(r.beanCoverage * 100)}%`.padStart(5),
        `${Math.round(r.archCoverage * 100)}%`.padStart(5),
-       (r.bandShare === null ? "  -" : `${Math.round(r.bandShare * 100)}%`).padStart(5),
+       (r.latticePx === null ? "-" : r.latticePx.toFixed(2)).padStart(5),
        r.grade].join("  "),
     );
   }
-  const faint = rows.filter((r) => r.bandShare !== null && r.bandShare < MIN_BAND_SHARE);
-  if (faint.length) {
-    console.log(`\n${faint.length} letterboxed shape(s) under ${MIN_BAND_SHARE * 100}% band height: ` +
-      faint.map((r) => r.name).join(", "));
+  const dim = rows.filter((r) => r.latticePx !== null && r.latticePx < MIN_LATTICE_PX);
+  if (dim.length) {
+    console.log(`\n${dim.length} shape(s) with a sub-${MIN_LATTICE_PX}px lattice dot (field will not render): ` +
+      dim.map((r) => `${r.name} ${r.latticePx}px`).join(", "));
   }
   const broken = rows.filter((r) => r.grade === "BROKEN");
   console.log(
@@ -183,4 +185,8 @@ if (AS_JSON) {
     (broken.length ? `: ${[...new Set(broken.map((r) => r.cls))].join(", ")}` : ""),
   );
 }
-process.exit(rows.some((r) => r.grade === "BROKEN") ? 1 : 0);
+process.exit(
+  rows.some((r) => r.grade === "BROKEN" || (r.latticePx !== null && r.latticePx < MIN_LATTICE_PX))
+    ? 1
+    : 0,
+);

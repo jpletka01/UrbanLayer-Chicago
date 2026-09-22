@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DOT_DEFAULTS,
-  computeDots,
-  coverCrop,
-  luminanceAt,
-  pickAccentDot,
-  widthFitBand,
-} from "./dotGrid";
+import { DOT_DEFAULTS, computeDots, coverCrop, luminanceAt, pickAccentDot } from "./dotGrid";
 import type { PixelSource } from "./dotGrid";
 
 /** Build a PixelSource from a row-major array of 0..1 luminance values. */
@@ -175,40 +168,3 @@ describe("pickAccentDot", () => {
   });
 });
 
-describe("widthFitBand", () => {
-  const IMG_ASPECT = 700 / 385; // the Cloud Gate asset
-
-  it("sizes the band from the image aspect, not the container", () => {
-    // 150 cols of a 1.818:1 image needs 150/1.818 = 82.5 -> 83 rows, whatever
-    // the container height is. This is the whole point: the subject keeps its
-    // proportions instead of being cropped to fit.
-    expect(widthFitBand(IMG_ASPECT, 150, 516).bandRows).toBe(83);
-    expect(widthFitBand(IMG_ASPECT, 150, 226).bandRows).toBe(83);
-  });
-
-  it("anchors the band: 0 top, 0.5 centred, 1 bottom", () => {
-    expect(widthFitBand(IMG_ASPECT, 150, 516, 0).rowOffset).toBe(0);
-    expect(widthFitBand(IMG_ASPECT, 150, 516, 0.5).rowOffset).toBe(217); // (516-83)/2
-    expect(widthFitBand(IMG_ASPECT, 150, 516, 1).rowOffset).toBe(433); // 516-83
-  });
-
-  it("clamps the anchor rather than letting the band leave the grid", () => {
-    expect(widthFitBand(IMG_ASPECT, 150, 516, -2).rowOffset).toBe(0);
-    expect(widthFitBand(IMG_ASPECT, 150, 516, 9).rowOffset).toBe(433);
-  });
-
-  it("never exceeds the grid, so a short container still gets a band", () => {
-    const { rowOffset, bandRows } = widthFitBand(IMG_ASPECT, 150, 40, 0.5);
-    expect(bandRows).toBe(40);
-    expect(rowOffset).toBe(0);
-  });
-
-  it("keeps the whole subject where coverCrop would amputate it", () => {
-    // A 393x1351 phone hero: coverCrop keeps aspect/imgAspect = 16% of the
-    // source width, which cuts the Bean (x 0.100-0.925) down to a slice.
-    const keep = (393 / 1351) / IMG_ASPECT;
-    expect(keep).toBeLessThan(0.2);
-    // width-fit keeps all of it, by construction — full source width is drawn.
-    expect(widthFitBand(IMG_ASPECT, 150, 516, 0).bandRows).toBeGreaterThan(0);
-  });
-});

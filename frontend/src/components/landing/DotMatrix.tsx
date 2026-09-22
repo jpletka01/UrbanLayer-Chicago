@@ -9,13 +9,25 @@
 
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import { DOT_DEFAULTS, computeDots, coverCrop, pickAccentDot, widthFitBand } from "./dotGrid";
+import { DOT_DEFAULTS, computeDots, coverCrop, pickAccentDot } from "./dotGrid";
 import type { DotGridParams } from "./dotGrid";
 
 interface DotMatrixProps {
   src: string;
-  /** Grid resolution across the container width. */
+  /** Grid resolution across the container width (an upper bound — see `targetCellPx`). */
   cols?: number;
+  /**
+   * Preferred cell size in CSS px. The grid is `min(cols, width / targetCellPx)`,
+   * so `cols` behaves as a ceiling and narrow containers get FEWER, BIGGER cells
+   * instead of a microscopic one.
+   *
+   * Why this exists: `cols` alone is a resolution, not a scale. A constant 150
+   * cols is ~9.6px per cell at 1440 wide but 2.6px at 393 — where the lattice
+   * dot radius (floorRadius 0.07) works out at 0.18px, i.e. sub-pixel and
+   * invisible. The field then simply doesn't render on phones, which reads as a
+   * broken image rather than as a sparse one.
+   */
+  targetCellPx?: number;
   /** Overall intensity multiplier applied to dot alpha (backdrop duty = keep < 1). */
   intensity?: number;
   /**
@@ -26,21 +38,6 @@ interface DotMatrixProps {
    */
   shiftDown?: number;
   accent?: boolean;
-  /**
-   * How the image is placed in the container.
-   *   "cover" — fill it, cropping the excess (the original behavior)
-   *   "width" — scale to full width and letterbox; the whole subject survives,
-   *             vacated rows render as the uniform sky lattice
-   *   "auto"  — cover while the container is wide enough to keep the subject,
-   *             width-fit below `minCoverAspect`
-   * Cover sacrifices one axis; for a landscape asset in a tall container that
-   * sacrifice is horizontal, which destroys a subject defined by its silhouette.
-   */
-  fit?: "cover" | "width" | "auto";
-  /** `fit="auto"` switches to width-fit below this container aspect (w/h). */
-  minCoverAspect?: number;
-  /** Width-fit band placement: 0 = top, 0.5 = centred, 1 = bottom. */
-  bandAnchor?: number;
   className?: string;
   style?: CSSProperties;
   params?: Partial<DotGridParams>;
@@ -52,12 +49,10 @@ const ACCENT_COLOR = "rgb(249 164 116";
 export function DotMatrix({
   src,
   cols = 150,
+  targetCellPx,
   intensity = 1,
   shiftDown = 0,
   accent = true,
-  fit = "cover",
-  minCoverAspect = 1.55,
-  bandAnchor = 0.5,
   className = "absolute inset-0 h-full w-full",
   style,
   params,
@@ -80,43 +75,43 @@ export function DotMatrix({
       canvas.width = Math.round(rect.width * dpr);
       canvas.height = Math.round(rect.height * dpr);
 
-      const cell = rect.width / cols;
+      // `cols` is a ceiling; targetCellPx keeps the DOT SCALE consistent across
+      // container widths so the halftone reads as a halftone at every size.
+      const gridCols = targetCellPx
+        ? Math.max(16, Math.min(cols, Math.round(rect.width / targetCellPx)))
+        : cols;
+      const cell = rect.width / gridCols;
       // ceil: the grid must cover the full height — a rounded-down row count
       // leaves an unpainted strip at the bottom edge
       const rows = Math.max(1, Math.ceil(rect.height / cell));
 
       // downsample: one source pixel per grid cell, cover-cropped
       const off = document.createElement("canvas");
-      off.width = cols;
+      off.width = gridCols;
       off.height = rows;
       const octx = off.getContext("2d", { willReadFrequently: true });
       const ctx = canvas.getContext("2d");
       if (!octx || !ctx) return;
-      const containerAspect = rect.width / rect.height;
-      const imgAspect = img.naturalWidth / img.naturalHeight;
-      const widthFit = fit === "width" || (fit === "auto" && containerAspect < minCoverAspect);
+      const { sx, sy, sw, sh } = coverCrop(
+        img.naturalWidth,
+        img.naturalHeight,
+        rect.width / rect.height,
+      );
+      const shift = Math.max(0, Math.min(Math.round(shiftDown), rows - 1));
+      // translate down: drop the source's bottom `shift` cells, leave the top
+      // `shift` destination rows transparent (scale unchanged)
+      octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, gridCols, rows - shift);
 
-      if (widthFit) {
-        // Letterbox: full source width, band placed by `bandAnchor`. The rows
-        // outside the band stay transparent (luminance 0), which computeDots
-        // renders as the uniform sky lattice — so the band sits in the field
-        // rather than floating on an empty canvas.
-        const { rowOffset, bandRows } = widthFitBand(imgAspect, cols, rows, bandAnchor);
-        octx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, rowOffset, cols, bandRows);
-        canvas.dataset.fit = "width";
-        canvas.dataset.band = `${rowOffset}/${bandRows}/${rows}`;
-      } else {
-        const { sx, sy, sw, sh } = coverCrop(img.naturalWidth, img.naturalHeight, containerAspect);
-        const shift = Math.max(0, Math.min(Math.round(shiftDown), rows - 1));
-        // translate down: drop the source's bottom `shift` cells, leave the top
-        // `shift` destination rows transparent (scale unchanged)
-        octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, cols, rows - shift);
-        canvas.dataset.fit = "cover";
-        delete canvas.dataset.band;
-      }
-      const px = octx.getImageData(0, 0, cols, rows);
+      const px = octx.getImageData(0, 0, gridCols, rows);
 
-      const grid = computeDots(px, { ...DOT_DEFAULTS, ...params, cols });
+      const grid = computeDots(px, { ...DOT_DEFAULTS, ...params, cols: gridCols });
+      // Published for the crop audit: the background lattice dot's radius in CSS
+      // px. Below ~0.5 (a sub-1px dot) the field stops rendering and the hero
+      // reads as a broken image — the exact regression this attribute guards.
+      canvas.dataset.latticePx = (
+        (params?.floorRadius ?? DOT_DEFAULTS.floorRadius) * cell
+      ).toFixed(2);
+      canvas.dataset.cols = String(gridCols);
       const accentCell = accent ? pickAccentDot(px, ACCENT_ZONE) : null;
 
       const dotColor = getComputedStyle(canvas).color;
@@ -158,7 +153,7 @@ export function DotMatrix({
       cancelled = true;
       ro.disconnect();
     };
-  }, [src, cols, intensity, shiftDown, accent, fit, minCoverAspect, bandAnchor, params]);
+  }, [src, cols, targetCellPx, intensity, shiftDown, accent, params]);
 
   return <canvas ref={canvasRef} className={className} style={style} aria-hidden="true" />;
 }
