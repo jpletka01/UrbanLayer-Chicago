@@ -61,6 +61,9 @@ const IMG = { w: 700, h: 385 };
 const BEAN = { x0: 0.100, x1: 0.925 };
 const ARCH = { x0: 0.330, x1: 0.720 };
 
+/** Below this the band is complete but too short to register as anything. */
+const MIN_BAND_SHARE = 0.1;
+
 const GRADES = [
   { min: 0.9, name: "ok" },
   { min: 0.7, name: "clipped" },
@@ -102,11 +105,14 @@ for (const [cls, name, w, h] of PANEL) {
   const page = await ctx.newPage();
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.waitForTimeout(1800);
+  // Read the fit DotMatrix actually chose rather than re-deriving it: the audit
+  // must measure what is painted, not a model of it. `data-band` is
+  // "rowOffset/bandRows/totalRows".
   const rect = await page.evaluate(() => {
     const c = document.querySelector("canvas");
     if (!c) return null;
     const r = c.getBoundingClientRect();
-    return { w: r.width, h: r.height };
+    return { w: r.width, h: r.height, fit: c.dataset.fit, band: c.dataset.band };
   });
   await ctx.close();
 
@@ -115,18 +121,30 @@ for (const [cls, name, w, h] of PANEL) {
     continue;
   }
   const heroAspect = rect.w / rect.h;
-  const keep = Math.min(1, heroAspect / (IMG.w / IMG.h));
-  const win0 = 0.5 - keep / 2;
-  const win1 = 0.5 + keep / 2;
-  const bean = overlap(win0, win1, BEAN.x0, BEAN.x1) / (BEAN.x1 - BEAN.x0);
-  const arch = overlap(win0, win1, ARCH.x0, ARCH.x1) / (ARCH.x1 - ARCH.x0);
+  let keep, bean, arch, bandShare = null;
+  if (rect.fit === "width") {
+    // Letterbox: nothing is cropped horizontally, so the subject is whole by
+    // construction. What's worth measuring instead is how much vertical room the
+    // band gets — a complete-but-invisible band is its own failure mode.
+    keep = bean = arch = 1;
+    const [, bandRows, totalRows] = (rect.band ?? "0/0/1").split("/").map(Number);
+    bandShare = bandRows / totalRows;
+  } else {
+    keep = Math.min(1, heroAspect / (IMG.w / IMG.h));
+    const win0 = 0.5 - keep / 2;
+    const win1 = 0.5 + keep / 2;
+    bean = overlap(win0, win1, BEAN.x0, BEAN.x1) / (BEAN.x1 - BEAN.x0);
+    arch = overlap(win0, win1, ARCH.x0, ARCH.x1) / (ARCH.x1 - ARCH.x0);
+  }
   rows.push({
     cls, name, viewport: `${w}x${h}`,
     hero: `${Math.round(rect.w)}x${Math.round(rect.h)}`,
     heroAspect: +heroAspect.toFixed(3),
+    fit: rect.fit ?? "?",
     keep: +keep.toFixed(3),
     beanCoverage: +bean.toFixed(3),
     archCoverage: +arch.toFixed(3),
+    bandShare: bandShare === null ? null : +bandShare.toFixed(3),
     grade: gradeOf(bean),
   });
 }
@@ -137,8 +155,8 @@ if (AS_JSON) {
 } else {
   console.log(`\nHero crop audit — ${BASE}\n`);
   console.log(
-    ["class", "device".padEnd(20), "viewport".padEnd(10), "hero".padEnd(10),
-     "aspect", " keep", " bean", " arch", "grade"].join("  "),
+    ["class".padEnd(8), "device".padEnd(20), "viewport".padEnd(10), "hero".padEnd(10),
+     "aspect", "fit  ", " keep", " bean", " arch", " band", "grade"].join("  "),
   );
   console.log("-".repeat(88));
   for (const r of rows) {
@@ -146,11 +164,18 @@ if (AS_JSON) {
     console.log(
       [r.cls.padEnd(8), r.name.padEnd(20), r.viewport.padEnd(10), r.hero.padEnd(10),
        r.heroAspect.toFixed(2).padStart(6),
+       r.fit.padEnd(5),
        `${Math.round(r.keep * 100)}%`.padStart(5),
        `${Math.round(r.beanCoverage * 100)}%`.padStart(5),
        `${Math.round(r.archCoverage * 100)}%`.padStart(5),
+       (r.bandShare === null ? "  -" : `${Math.round(r.bandShare * 100)}%`).padStart(5),
        r.grade].join("  "),
     );
+  }
+  const faint = rows.filter((r) => r.bandShare !== null && r.bandShare < MIN_BAND_SHARE);
+  if (faint.length) {
+    console.log(`\n${faint.length} letterboxed shape(s) under ${MIN_BAND_SHARE * 100}% band height: ` +
+      faint.map((r) => r.name).join(", "));
   }
   const broken = rows.filter((r) => r.grade === "BROKEN");
   console.log(

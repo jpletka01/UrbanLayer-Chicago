@@ -318,6 +318,28 @@ const NIGHTCITY_PARAMS = {
 // Params differ only in duty: on a black ground the dots read hotter, so dark
 // runs a higher gamma (darker mids), a smaller max radius and a lower alpha
 // ceiling to stay under the headline's contrast.
+// Below this container aspect, cover-cropping starts eating the sculpture, so
+// DotMatrix letterboxes instead (see its `fit` prop). Derived, not guessed.
+//
+// The Bean spans x [0.100, 0.925] of the source and coverCrop centres its window
+// on 0.500, so the RIGHT edge binds first (the subject sits 1.25% right of
+// centre). Keeping the subject perfectly whole needs keep >= 0.85 -> aspect
+// 1.55. We allow a 2% tolerance on subject width instead (keep >= 0.817 ->
+// 1.49), because the last 2% is the extreme edge of the sculpture, invisible at
+// dot resolution, and an exact-1.55 threshold splits near-identical laptops:
+// 1440x900 (1.60) stayed full-bleed while a MacBook Pro 16 (1.54) letterboxed,
+// for 0.2% of the Bean. `npm run test:hero-crop` is the check.
+const CLOUDGATE_MIN_COVER_ASPECT = 1.49;
+
+// Where the letterboxed band sits (0 = top, 1 = bottom). Swept 0.0/0.15/0.30/
+// 0.42/0.60 at 393x852: the band is only ~16% of a phone hero's height, so the
+// choice is really "which content does it sit behind". Top wins — it crowns the
+// page above the headline, and everything below (subhead, input, chips, preview
+// card) stays on clean ground. Every lower anchor puts the sculpture under the
+// headline or under the search field, which is both harder to read and hides
+// the arch behind opaque chrome.
+const CLOUDGATE_BAND_ANCHOR = 0;
+
 const CLOUDGATE_PARAMS_LIGHT = {
   gamma: 1.5,
   maxRadius: 0.5,
@@ -345,8 +367,11 @@ function SkylineVariant() {
       src={cloudGateUrl}
       cols={150}
       accent={false}
+      fit="auto"
+      minCoverAspect={CLOUDGATE_MIN_COVER_ASPECT}
+      bandAnchor={CLOUDGATE_BAND_ANCHOR}
       params={light ? CLOUDGATE_PARAMS_LIGHT : CLOUDGATE_PARAMS_DARK}
-      style={SKYLINE_MASK}
+      className="hero-dots absolute inset-0 h-full w-full"
     />
   );
 }
