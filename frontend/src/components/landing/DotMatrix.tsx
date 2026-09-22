@@ -9,7 +9,7 @@
 
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import { DOT_DEFAULTS, computeDots, coverCrop, pickAccentDot, widthFitBand } from "./dotGrid";
+import { DOT_DEFAULTS, computeDots, coverCrop, pickAccentDot } from "./dotGrid";
 import type { DotGridParams } from "./dotGrid";
 
 interface DotMatrixProps {
@@ -38,34 +38,9 @@ interface DotMatrixProps {
    */
   shiftDown?: number;
   accent?: boolean;
-  /**
-   * How the image is placed in the container.
-   *   "cover" — fill it, cropping the excess (the original behavior)
-   *   "width" — scale to full width and letterbox; the whole subject survives,
-   *             vacated rows render as the uniform sky lattice
-   *   "auto"  — cover while the container is wide enough to keep the subject,
-   *             width-fit below `minCoverAspect`
-   * Cover sacrifices one axis; for a landscape asset in a tall container that
-   * sacrifice is horizontal, which destroys a subject defined by its silhouette.
-   */
-  fit?: "cover" | "width" | "auto";
-  /** `fit="auto"` switches to width-fit below this container aspect (w/h). */
-  minCoverAspect?: number;
-  /** Width-fit band placement: 0 = top, 0.5 = centred, 1 = bottom. */
-  bandAnchor?: number;
   className?: string;
   style?: CSSProperties;
   params?: Partial<DotGridParams>;
-  /**
-   * Params used INSTEAD of `params` when width-fit is chosen. The two modes need
-   * different duty: in cover the whole grid is image, so the field is varied and
-   * carries itself. In width-fit most of the grid is the uniform sky lattice, and
-   * at cover's settings that lattice is far too faint to register — the hero then
-   * reads as a broken image below the band rather than as a dot field containing
-   * one. Raise `skyAlpha`/`floorRadius` here, not in `params`, so desktop is
-   * untouched.
-   */
-  paramsWidthFit?: Partial<DotGridParams>;
 }
 
 const ACCENT_ZONE = { x0: 0.05, x1: 0.3, y0: 0.55, y1: 0.85 };
@@ -78,13 +53,9 @@ export function DotMatrix({
   intensity = 1,
   shiftDown = 0,
   accent = true,
-  fit = "cover",
-  minCoverAspect = 1.55,
-  bandAnchor = 0.5,
   className = "absolute inset-0 h-full w-full",
   style,
   params,
-  paramsWidthFit,
 }: DotMatrixProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -121,37 +92,24 @@ export function DotMatrix({
       const octx = off.getContext("2d", { willReadFrequently: true });
       const ctx = canvas.getContext("2d");
       if (!octx || !ctx) return;
-      const containerAspect = rect.width / rect.height;
-      const imgAspect = img.naturalWidth / img.naturalHeight;
-      const widthFit = fit === "width" || (fit === "auto" && containerAspect < minCoverAspect);
+      const { sx, sy, sw, sh } = coverCrop(
+        img.naturalWidth,
+        img.naturalHeight,
+        rect.width / rect.height,
+      );
+      const shift = Math.max(0, Math.min(Math.round(shiftDown), rows - 1));
+      // translate down: drop the source's bottom `shift` cells, leave the top
+      // `shift` destination rows transparent (scale unchanged)
+      octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, gridCols, rows - shift);
 
-      if (widthFit) {
-        // Letterbox: full source width, band placed by `bandAnchor`. The rows
-        // outside the band stay transparent (luminance 0), which computeDots
-        // renders as the uniform sky lattice — so the band sits in the field
-        // rather than floating on an empty canvas.
-        const { rowOffset, bandRows } = widthFitBand(imgAspect, gridCols, rows, bandAnchor);
-        octx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, rowOffset, gridCols, bandRows);
-        canvas.dataset.fit = "width";
-        canvas.dataset.band = `${rowOffset}/${bandRows}/${rows}`;
-      } else {
-        const { sx, sy, sw, sh } = coverCrop(img.naturalWidth, img.naturalHeight, containerAspect);
-        const shift = Math.max(0, Math.min(Math.round(shiftDown), rows - 1));
-        // translate down: drop the source's bottom `shift` cells, leave the top
-        // `shift` destination rows transparent (scale unchanged)
-        octx.drawImage(img, sx, sy, sw, sh * ((rows - shift) / rows), 0, shift, gridCols, rows - shift);
-        canvas.dataset.fit = "cover";
-        delete canvas.dataset.band;
-      }
       const px = octx.getImageData(0, 0, gridCols, rows);
 
-      const active = widthFit && paramsWidthFit ? paramsWidthFit : params;
-      const grid = computeDots(px, { ...DOT_DEFAULTS, ...active, cols: gridCols });
+      const grid = computeDots(px, { ...DOT_DEFAULTS, ...params, cols: gridCols });
       // Published for the crop audit: the background lattice dot's radius in CSS
       // px. Below ~0.5 (a sub-1px dot) the field stops rendering and the hero
       // reads as a broken image — the exact regression this attribute guards.
       canvas.dataset.latticePx = (
-        (active?.floorRadius ?? DOT_DEFAULTS.floorRadius) * cell
+        (params?.floorRadius ?? DOT_DEFAULTS.floorRadius) * cell
       ).toFixed(2);
       canvas.dataset.cols = String(gridCols);
       const accentCell = accent ? pickAccentDot(px, ACCENT_ZONE) : null;
@@ -195,7 +153,7 @@ export function DotMatrix({
       cancelled = true;
       ro.disconnect();
     };
-  }, [src, cols, targetCellPx, intensity, shiftDown, accent, fit, minCoverAspect, bandAnchor, params, paramsWidthFit]);
+  }, [src, cols, targetCellPx, intensity, shiftDown, accent, params]);
 
   return <canvas ref={canvasRef} className={className} style={style} aria-hidden="true" />;
 }

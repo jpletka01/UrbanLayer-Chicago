@@ -280,11 +280,8 @@ function CurtainVariant() {
 // nightcity — the previous default: the night skyline, dark mode only
 // ---------------------------------------------------------------------------
 
-// Unlike the line-work variants, a photo halftone is a *figure* — voiding or
-// heavily dimming the content zone amputates it. The mask dims ONLY the left
-// text/input column (the preview card is opaque enough to occlude on its
-// own); the corridor at viewport center runs at full strength, so the subject
-// reads as a dark silhouette cut out of the bright lattice.
+// nightcity is full-bleed and needs the old left-column mask: its field is dense
+// everywhere, so the headline would otherwise sit on live texture.
 const SKYLINE_MASK = {
   maskImage:
     "radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%)",
@@ -304,57 +301,13 @@ const NIGHTCITY_PARAMS = {
 };
 
 // ONE asset for both themes (cloudgate.jpg): a grayscale Cloud Gate photo
-// pre-processed to a NEGATIVE (dark steel and dark sky → bright; bright sky
-// and facades → dark) so it feeds the plain halftone ramp with the polarity
-// the renderer wants. The luminance relationships are identical in both
-// themes — only the ink color changes, because DotMatrix draws in the
-// wrapper's `currentColor`:
-//   light — dark ink on warm paper: the Michigan Ave facades print as heavy
-//           dots, the Bean sits as a paper-white mass under its inked rim.
-//   dark  — white on near-black: the same facades glow as a lit lattice and
-//           the Bean is a black void cut out of it, chrome highlights
-//           catching the light. Same negative-silhouette mechanism the night
-//           skyline used, so it reads as night without a second photo.
-// Params differ only in duty: on a black ground the dots read hotter, so dark
-// runs a higher gamma (darker mids), a smaller max radius and a lower alpha
-// ceiling to stay under the headline's contrast.
-// Below this container aspect, cover-cropping starts eating the sculpture, so
-// DotMatrix letterboxes instead (see its `fit` prop). Derived, not guessed.
-//
-// The Bean spans x [0.100, 0.925] of the source and coverCrop centres its window
-// on 0.500, so the RIGHT edge binds first (the subject sits 1.25% right of
-// centre). Keeping the subject perfectly whole needs keep >= 0.85 -> aspect
-// 1.55. We allow a 2% tolerance on subject width instead (keep >= 0.817 ->
-// 1.49), because the last 2% is the extreme edge of the sculpture, invisible at
-// dot resolution, and an exact-1.55 threshold splits near-identical laptops:
-// 1440x900 (1.60) stayed full-bleed while a MacBook Pro 16 (1.54) letterboxed,
-// for 0.2% of the Bean. `npm run test:hero-crop` is the check.
-const CLOUDGATE_MIN_COVER_ASPECT = 1.49;
-
-// Where the letterboxed band sits (0 = top, 1 = bottom). Swept 0.0/0.15/0.30/
-// 0.42/0.60 at 393x852: the band is only ~16% of a phone hero's height, so the
-// choice is really "which content does it sit behind". Top wins — it crowns the
-// page above the headline, and everything below (subhead, input, chips, preview
-// card) stays on clean ground. Every lower anchor puts the sculpture under the
-// headline or under the search field, which is both harder to read and hides
-// the arch behind opaque chrome.
-const CLOUDGATE_BAND_ANCHOR = 0;
-
-// Dot SCALE, held roughly constant across container widths.
-//
-// `cols` is a RESOLUTION, not a scale: a constant 150 is ~9.6px per cell at 1440
-// wide but 2.6px at 393, where the lattice dot (floorRadius) computes to a
-// 0.18px radius — sub-pixel. The field around the letterboxed band then did not
-// render at all, and the hero read as a broken image below the band even though
-// subject coverage was a perfect 100%.
-//
-// 8.53px = 1280/150: the NARROWEST width that runs cover mode at the calibrated
-// 150 cols. Every cover shape therefore still resolves to exactly 150 (the
-// `cols` ceiling clamps anything wider), so no approved desktop or laptop
-// rendering changes by a pixel, while a phone drops to ~46 chunky cells and its
-// lattice becomes visible again.
-const CLOUDGATE_CELL_PX = 1280 / 150;
-
+// pre-processed to a NEGATIVE, so it feeds the plain halftone ramp with the
+// polarity the renderer wants. Luminance relationships are identical in both
+// themes — only the ink changes, because DotMatrix draws in `currentColor`:
+//   light — dark ink on warm paper, the Bean a paper-white mass under its rim
+//   dark  — white on near-black, the Bean a void cut out of a lit lattice
+// Dark runs a higher gamma / smaller radius / lower alpha ceiling because the
+// same dot coverage reads far hotter on a black ground.
 const CLOUDGATE_PARAMS_LIGHT = {
   gamma: 1.5,
   maxRadius: 0.5,
@@ -375,29 +328,58 @@ const CLOUDGATE_PARAMS_DARK = {
   maxAlpha: 0.7,
 };
 
-// Width-fit duty. Most of a phone grid is the uniform sky lattice rather than
-// image, so the lattice has to actually READ — at the cover settings it is a
-// sub-visible speckle and the hero looks like an image that failed to load below
-// the band. Raising skyAlpha/floorRadius turns the surround into a deliberate LED
-// field with the sculpture sitting in it. Cover is untouched.
-const CLOUDGATE_BAND_DARK = { ...CLOUDGATE_PARAMS_DARK, floorRadius: 0.13, skyAlpha: 0.34 };
-const CLOUDGATE_BAND_LIGHT = { ...CLOUDGATE_PARAMS_LIGHT, floorRadius: 0.13, skyAlpha: 0.3 };
+// Dot SCALE, held roughly constant across container widths.
+//
+// `cols` is a RESOLUTION, not a scale: a constant 150 is ~9.6px per cell at 1440
+// wide but 2.6px at 393, where a floor-radius dot computes to 0.18px — sub-pixel,
+// so the halftone stops reading as a halftone at phone widths.
+//
+// 8.53px = 1280/150: the narrowest width that renders FULL-BLEED at the
+// calibrated 150 cols. Every full-bleed shape therefore still resolves to exactly
+// 150 (the `cols` ceiling clamps anything wider), so no approved desktop or
+// laptop rendering changes, while a phone drops to ~46 chunky cells.
+const CLOUDGATE_CELL_PX = 1280 / 150;
+
+// THE SHAPE PROBLEM, and why the backdrop is a band on narrow screens.
+//
+// The asset is landscape (700x385, aspect 1.82) and the hero container is TALL
+// on phones — its height comes from stacked content (~1350px), not the viewport.
+// Filling that with `cover` crops horizontally and hard: a 393px phone kept a
+// 112px slice of a 700px photo, which reads as nothing. Cloud Gate's identity is
+// its silhouette, so a horizontal crop destroys it.
+//
+// Letterboxing the full image into the tall container fixes the crop but leaves
+// ~84% of the hero as uniform lattice, which reads as an image that failed to
+// load. Both failures share one cause: a landscape image CANNOT fill a 0.29
+// aspect box, and pretending otherwise produces either a ruined subject or a
+// dead field.
+//
+// So below `xl` the backdrop simply IS the image: a top band whose height is
+// 55vw — width / 1.82, the asset's own aspect — dissolving into the page. Cover
+// crops nothing there (container aspect == image aspect), the whole sculpture
+// shows, and there is no empty canvas that can look unrendered.
+//
+// The `xl` (1280px) breakpoint is where the measured data says full-bleed stops
+// costing anything: at 1280 the hero runs aspect 1.60 and keeps 100% of the
+// subject, while 1024 keeps only 82%. `npm run test:hero-crop` is the check.
+const BAND_HEIGHT = "55vw";
 
 function SkylineVariant() {
   const light = useThemeContext().resolvedTheme === "light";
   return (
-    <DotMatrix
-      src={cloudGateUrl}
-      cols={150}
-      targetCellPx={CLOUDGATE_CELL_PX}
-      accent={false}
-      fit="auto"
-      minCoverAspect={CLOUDGATE_MIN_COVER_ASPECT}
-      bandAnchor={CLOUDGATE_BAND_ANCHOR}
-      params={light ? CLOUDGATE_PARAMS_LIGHT : CLOUDGATE_PARAMS_DARK}
-      paramsWidthFit={light ? CLOUDGATE_BAND_LIGHT : CLOUDGATE_BAND_DARK}
-      className="hero-dots absolute inset-0 h-full w-full"
-    />
+    <div
+      className="hero-dots absolute inset-x-0 top-0 h-[55vw] xl:inset-0 xl:h-full"
+      style={{ ["--band-h" as string]: BAND_HEIGHT }}
+    >
+      <DotMatrix
+        src={cloudGateUrl}
+        cols={150}
+        targetCellPx={CLOUDGATE_CELL_PX}
+        accent={false}
+        params={light ? CLOUDGATE_PARAMS_LIGHT : CLOUDGATE_PARAMS_DARK}
+        className="absolute inset-0 h-full w-full"
+      />
+    </div>
   );
 }
 

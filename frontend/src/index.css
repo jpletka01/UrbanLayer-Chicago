@@ -152,25 +152,26 @@ body::before {
 }
 
 /* Hero dot-matrix backdrop.
-   The radial mask dims the left text column so a FULL-BLEED halftone field
-   doesn't sit under the headline. A letterboxed band (narrow screens, see
-   DotMatrix `fit`) is small and sparse and needs no such protection — masking
-   it just erases the subject we letterboxed in order to save. DotMatrix
-   publishes the fit it chose as `data-fit`, so the mask keys off that exactly
-   rather than guessing from a viewport media query (the hero is much taller
-   than the viewport on phones, so viewport aspect is not hero aspect). */
-.hero-dots[data-fit="cover"] {
-  -webkit-mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
-  mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
+
+   Two jobs, split by breakpoint:
+
+   - Below xl the backdrop is a BAND whose height is the asset's own aspect
+     (55vw), so it fills itself exactly and nothing is cropped. Its only mask is
+     a soft bottom edge, so the image dissolves into the page instead of ending
+     at a rule — and because there is no canvas below it, there is no field that
+     can read as unrendered. That was the whole defect in the letterboxed
+     version: the subject was 100% intact and the hero still looked broken.
+
+   - At xl+ the backdrop is full-bleed, and the radial mask dims the left text
+     column so the headline is not sitting on live texture. */
+.hero-dots {
+  -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 58%, transparent 100%);
 }
 
-/* Width-fit keeps a mask too — the principle is "protect the text zone", and the
-   text zone just moves: left column when the layout is two-up (cover/desktop),
-   centred near the top when it stacks (width/phone+tablet). Without this the
-   tablet band runs straight through the headline, which is how the first pass
-   read. Gentler than the cover mask (0.45 vs 0.3 floor): the band is sparse
-   already and over-masking erases the subject we letterboxed in order to save. */
-.hero-dots[data-fit="width"] {
-  -webkit-mask-image: radial-gradient(ellipse 72% 34% at 50% 24%, rgb(0 0 0 / 0.45) 45%, black 88%);
-  mask-image: radial-gradient(ellipse 72% 34% at 50% 24%, rgb(0 0 0 / 0.45) 45%, black 88%);
+@media (min-width: 1280px) {
+  .hero-dots {
+    -webkit-mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
+    mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
+  }
 }
