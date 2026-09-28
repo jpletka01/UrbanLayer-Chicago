@@ -36,6 +36,10 @@ function getCsrfToken(): string {
 }
 
 let _refreshPromise: Promise<boolean> | null = null;
+// False once we know there's no session to refresh (anonymous visitor, or a
+// refresh already failed), so a 401 doesn't trigger a refresh that can only
+// 401 too. Anonymous page loads used to log two or three of those errors.
+let _sessionMayRefresh = true;
 
 async function _tryRefresh(): Promise<boolean> {
   if (_refreshPromise) return _refreshPromise;
@@ -87,8 +91,9 @@ async function authFetch(url: string, options: RequestInit = {}): Promise<Respon
     headers: buildHeaders(),
   });
 
-  if (resp.status === 401) {
+  if (resp.status === 401 && _sessionMayRefresh) {
     const refreshed = await _tryRefresh();
+    if (!refreshed) _sessionMayRefresh = false;
     if (refreshed) {
       return fetch(url, {
         ...options,
@@ -117,17 +122,30 @@ export interface AuthStatus {
   authenticated: boolean;
   auth_required: boolean;
   user: AuthUser | null;
+  /** Unauthenticated only: whether a refresh cookie exists (it's httponly). */
+  can_refresh?: boolean;
 }
 
 export async function getAuthStatus(): Promise<AuthStatus> {
   const resp = await authFetch(`${API_BASE}/api/auth/me`);
   if (!resp.ok) return { authenticated: false, auth_required: true, user: null };
-  return await resp.json();
+  const status: AuthStatus = await resp.json();
+  _sessionMayRefresh = status.authenticated || !!status.can_refresh;
+  return status;
 }
 
 export async function refreshAuthToken(): Promise<AuthStatus | null> {
-  const resp = await authFetch(`${API_BASE}/api/auth/refresh`, { method: "POST" });
-  if (!resp.ok) return null;
+  // Plain fetch: going through authFetch would retry a failed refresh via the
+  // 401 handler, i.e. call this same endpoint twice.
+  const resp = await fetch(`${API_BASE}/api/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "X-CSRF-Token": getCsrfToken() },
+  });
+  if (!resp.ok) {
+    _sessionMayRefresh = false;
+    return null;
+  }
   const data = await resp.json();
   return {
     authenticated: true,

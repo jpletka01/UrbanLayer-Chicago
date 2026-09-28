@@ -386,7 +386,14 @@ async def handle_me(request: Request) -> dict:
                 "tier": user["tier"],
             },
         }
-    return {"authenticated": False, "auth_required": True, "user": None}
+    # The refresh cookie is httponly, so the client can't see it. Saying whether
+    # one exists lets an anonymous visitor skip a refresh call that can only 401.
+    return {
+        "authenticated": False,
+        "auth_required": True,
+        "user": None,
+        "can_refresh": bool(request.cookies.get("refresh_token")),
+    }
 
 
 async def handle_logout(request: Request) -> dict:
