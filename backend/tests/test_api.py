@@ -6,8 +6,6 @@ from fastapi.testclient import TestClient
 
 from backend.main import app
 from backend.models import (
-    ChatChunk,
-    CodeChunk,
     ContextObject,
     CrimeSummary,
     Location,
@@ -245,7 +243,7 @@ class TestChatEndpoint:
 
         with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
              patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
-             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map:
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock):
                 mock_route.return_value = clarification_plan
 
                 response = client.post(

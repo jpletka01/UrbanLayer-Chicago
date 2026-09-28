@@ -1,6 +1,5 @@
 """Tests for PDF Report v2 retrieval functions and extraction module."""
 
-import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
@@ -17,7 +16,7 @@ from backend.zoning_extract import (
     calculate_development_potential,
     extract_zoning_standards_from_sections,
 )
-from backend.models import DevelopmentPotential, ZoningStandards
+from backend.models import ZoningStandards
 
 
 class TestParseChicagoAddress:

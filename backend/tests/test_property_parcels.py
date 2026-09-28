@@ -278,9 +278,6 @@ async def test_socrata_fallback_zero_pads_pin():
 @pytest.mark.asyncio
 async def test_gis_down_falls_back_to_socrata():
     """GIS returns None → Socrata fallback fires and returns PIN."""
-    socrata_rows = [
-        {"pin": "14241020170000", "class": "2-05", "lat": "41.9307", "lon": "-87.6411"},
-    ]
     with patch("backend.retrieval.property.parcels._lookup_parcel_gis", return_value=None), \
          patch("backend.retrieval.property.parcels._lookup_parcel_socrata") as mock_socrata:
         mock_socrata.return_value = {

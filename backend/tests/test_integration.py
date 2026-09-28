@@ -7,7 +7,6 @@ Run with: pytest backend/tests/test_integration.py -v
 Skip expensive tests: pytest backend/tests/test_integration.py -v -m "not expensive"
 """
 
-import os
 import pytest
 
 pytestmark = pytest.mark.integration

@@ -1,9 +1,7 @@
 """Tests for server-side analytics computation."""
 
-import pytest
 
 from backend.analytics import compute_analytics, compute_trends
-from backend.models import TrendItem
 
 
 class TestComputeTrends:

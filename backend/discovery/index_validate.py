@@ -44,7 +44,9 @@ def _distribution(vals: list[float]) -> dict:
     xs = sorted(vals)
     if not xs:
         return {"n": 0, "min": None, "p25": None, "p50": None, "p75": None, "max": None}
-    q = lambda p: xs[min(len(xs) - 1, int(p * len(xs)))]
+    def q(p: float):
+        return xs[min(len(xs) - 1, int(p * len(xs)))]
+
     return {"n": len(xs), "min": xs[0], "p25": q(0.25), "p50": q(0.50), "p75": q(0.75), "max": xs[-1]}
 
 

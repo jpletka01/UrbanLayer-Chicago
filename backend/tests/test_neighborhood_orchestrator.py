@@ -6,7 +6,6 @@ from backend.models import (
     CensusTractDemographics,
     DemographicsSummary,
     DistributionBucket,
-    TransitAccess,
     WalkScoreSummary,
 )
 from backend.retrieval.neighborhood import neighborhood_domain
@@ -235,7 +234,7 @@ async def test_general_workflow_fetches_demographics(mock_demo, mock_stations, m
     mock_stations.return_value = {"nearest_cta_rail": None, "nearest_metra": None}
     mock_tod.return_value = {"tod_eligible": False, "tod_type": None}
 
-    result = await neighborhood_domain(
+    await neighborhood_domain(
         41.92, -87.65, community_area=7, workflow="general", client=AsyncMock(),
     )
 

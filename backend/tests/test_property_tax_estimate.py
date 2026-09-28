@@ -1,6 +1,5 @@
 """Tests for PTAXSIM-based property tax estimation."""
 
-import asyncio
 
 import aiosqlite
 import pytest

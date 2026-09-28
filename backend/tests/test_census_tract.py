@@ -1,11 +1,9 @@
 """Tests for Census Reporter tract-level demographics."""
 
-import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from backend.models import CensusTractDemographics
 from backend.retrieval.neighborhood.census_tract import (
     _parse_age,
     _parse_education,

@@ -79,7 +79,6 @@ def test_scan_index_aggregates(tmp_path):
 
 @pytest.mark.asyncio
 async def test_get_area_stats_missing_index(monkeypatch, tmp_path):
-    from backend import config
     from backend.retrieval import area_stats
 
     class _S:

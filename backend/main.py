@@ -280,7 +280,7 @@ async def health() -> dict:
 # Auth endpoints
 # ---------------------------------------------------------------------------
 
-from backend.auth import (
+from backend.auth import (  # noqa: E402 — grouped with the auth endpoints below
     get_current_user,
     handle_google_callback,
     handle_google_login,
@@ -1140,7 +1140,9 @@ _CHAT_ERROR = "Something went wrong while answering. Please try again."
 
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
-    elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
+    def elapsed_ms() -> int:
+        return int((time.monotonic() - start) * 1000)
+
     request_group = str(uuid.uuid4())
     settings = get_settings()
     plan: RetrievalPlan | None = None

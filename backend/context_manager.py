@@ -126,7 +126,7 @@ def format_summaries_for_prompt(
             and s.location_community_area is not None
             and s.location_community_area != current_community_area
         )
-        loc_tag = f" [DIFFERENT LOCATION]" if is_different else ""
+        loc_tag = " [DIFFERENT LOCATION]" if is_different else ""
 
         lines.append(f"\nTurn {s.turn_index + 1} — {location}{loc_tag}:")
         lines.append(f"  Q: {s.user_question}")
