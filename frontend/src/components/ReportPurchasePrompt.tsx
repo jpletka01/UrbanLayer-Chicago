@@ -4,6 +4,7 @@ import { createReportCheckoutSession, createCheckoutSession, redeemVoucher } fro
 import type { SelectedParcel } from "../lib/types";
 import { track } from "../lib/tracking";
 import { Modal } from "./ui/Modal";
+import { usePayments } from "../lib/usePayments";
 
 interface ReportPurchasePromptProps {
   parcel: SelectedParcel;
@@ -24,6 +25,11 @@ export default function ReportPurchasePrompt({
   const [code, setCode] = useState("");
   const [codeBusy, setCodeBusy] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const payments = usePayments();
+  // Access codes still work when Stripe isn't configured; only the paid
+  // options switch to "coming soon".
+  const reportsOff = payments?.reports === false;
+  const proOff = payments?.subscriptions === false;
 
   async function handleApplyCode() {
     const trimmed = code.trim();
@@ -82,13 +88,19 @@ export default function ReportPurchasePrompt({
           <span className="text-text-primary font-medium">{parcel.address}</span>.
         </p>
 
-        <button
-          onClick={handleBuyReport}
-          disabled={loading !== null}
-          className="w-full py-2.5 bg-highlight-fill hover:opacity-90 text-highlight-fg rounded-lg text-title transition-colors disabled:opacity-50"
-        >
-          {loading === "report" ? t("common:reportPrompt.redirecting") : t("common:reportPrompt.buy")}
-        </button>
+        {reportsOff ? (
+          <p className="rounded-lg border border-dark-border px-4 py-3 text-center text-body text-text-secondary">
+            {t("common:payments.reportsSoon")}
+          </p>
+        ) : (
+          <button
+            onClick={handleBuyReport}
+            disabled={loading !== null}
+            className="w-full py-2.5 bg-highlight-fill hover:opacity-90 text-highlight-fg rounded-lg text-title transition-colors disabled:opacity-50"
+          >
+            {loading === "report" ? t("common:reportPrompt.redirecting") : t("common:reportPrompt.buy")}
+          </button>
+        )}
 
         <a
           href="/sample-report.pdf"
@@ -100,6 +112,7 @@ export default function ReportPurchasePrompt({
           {t("scorecard.reportCTA.viewSample")} →
         </a>
 
+        {!proOff && (
         <div className="mt-4 text-center">
           <p className="text-micro text-text-muted mb-1.5">
             {t("common:reportPrompt.orPro")}
@@ -112,6 +125,7 @@ export default function ReportPurchasePrompt({
             {loading === "pro" ? t("common:reportPrompt.redirectingShort") : t("common:reportPrompt.upgrade")}
           </button>
         </div>
+        )}
 
         <div className="mt-3 text-center">
           {showCode ? (

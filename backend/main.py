@@ -2129,6 +2129,18 @@ async def stripe_webhook(request: Request) -> dict:
     return await handle_webhook(request)
 
 
+@app.get("/api/payments/status")
+async def payments_status() -> dict:
+    """Which purchases can start right now. Checkout 503s when Stripe isn't
+    configured, and the purchase buttons used to fail silently on that; the
+    frontend reads this to show "purchases coming soon" instead."""
+    s = get_settings()
+    return {
+        "reports": bool(s.stripe_secret_key and s.stripe_price_id_report),
+        "subscriptions": bool(s.stripe_secret_key and s.stripe_price_id_pro_monthly),
+    }
+
+
 @app.get("/api/subscription")
 async def subscription_status(
     request: Request, user: dict = Depends(require_auth),

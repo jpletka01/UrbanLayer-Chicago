@@ -82,5 +82,10 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "payments": {
+    "comingSoon": "Purchases coming soon",
+    "reportsSoon": "Online report purchases are coming soon. The free Property Profile has the same underlying data, and you can view a sample report now.",
+    "proSoon": "Pro subscriptions are coming soon."
   }
 }

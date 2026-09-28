@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createCheckoutSession } from "../lib/api";
 import { Modal } from "./ui/Modal";
+import { usePayments } from "../lib/usePayments";
 
 interface UpgradePromptProps {
   feature?: string;
@@ -11,6 +12,7 @@ interface UpgradePromptProps {
 export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) {
   const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
+  const proOff = usePayments()?.subscriptions === false;
 
   async function handleUpgrade() {
     setLoading(true);
@@ -40,13 +42,19 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
             : t("upgradePrompt.genericBody")}
         </p>
 
-        <button
-          onClick={handleUpgrade}
-          disabled={loading}
-          className="w-full py-2.5 bg-highlight-fill hover:opacity-90 text-highlight-fg rounded-lg text-title transition-colors disabled:opacity-50"
-        >
-          {loading ? t("upgradePrompt.redirecting") : t("upgradePrompt.cta")}
-        </button>
+        {proOff ? (
+          <p className="rounded-lg border border-dark-border px-4 py-3 text-center text-body text-text-secondary">
+            {t("payments.proSoon")}
+          </p>
+        ) : (
+          <button
+            onClick={handleUpgrade}
+            disabled={loading}
+            className="w-full py-2.5 bg-highlight-fill hover:opacity-90 text-highlight-fg rounded-lg text-title transition-colors disabled:opacity-50"
+          >
+            {loading ? t("upgradePrompt.redirecting") : t("upgradePrompt.cta")}
+          </button>
+        )}
 
         <button
           onClick={onClose}

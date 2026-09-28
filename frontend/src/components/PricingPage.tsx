@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
 import PageHeader from "./PageHeader";
 import { createCheckoutSession } from "../lib/api";
+import { usePayments } from "../lib/usePayments";
 
 export default function PricingPage() {
   const { t } = useTranslation("pages");
   const { user, isAuthenticated } = useAuthContext();
   const [loading, setLoading] = useState(false);
+  const payments = usePayments();
 
   const isPro = user?.tier === "premium" || user?.tier === "admin";
 
@@ -93,7 +95,11 @@ export default function PricingPage() {
             >
               {t("pricing.getReport")}
             </Link>
-            <p className="text-center text-caption text-text-muted mt-3">{t("pricing.scorecardHint")}</p>
+            <p className="text-center text-caption text-text-muted mt-3">
+              {payments?.reports === false
+                ? t("payments.comingSoon", { ns: "common" })
+                : t("pricing.scorecardHint")}
+            </p>
           </div>
 
           {/* Pro tier */}
@@ -116,6 +122,10 @@ export default function PricingPage() {
             </ul>
             {isPro ? (
               <div className="text-center text-caption text-accent font-medium">{t("pricing.active")}</div>
+            ) : payments?.subscriptions === false ? (
+              <div className="w-full py-2.5 border border-dark-border text-text-muted rounded-lg text-title text-center">
+                {t("payments.comingSoon", { ns: "common" })}
+              </div>
             ) : (
               <>
                 <button

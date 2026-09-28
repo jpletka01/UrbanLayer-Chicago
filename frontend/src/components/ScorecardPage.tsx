@@ -6,6 +6,7 @@ import type { ParcelQuery } from "../lib/types";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSelectedParcel } from "../contexts/SelectedParcelContext";
 import ReportPurchasePrompt from "./ReportPurchasePrompt";
+import { usePayments } from "../lib/usePayments";
 import { InvestigateButton } from "./InvestigateButton";
 import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
@@ -344,6 +345,10 @@ export default function ScorecardPage() {
   // Same test as the hero's exact-match badge.
   const parcelConfirmed = parcel?.pin != null && parcel.confidence === "authoritative" && !data?.nearest_parcel_unverified;
   const reportDemoted = !hasReportAccess && !!data && !parcelConfirmed;
+  // Stripe isn't configured: show "coming soon" rather than a buy button whose
+  // checkout would fail. Users who already have access still get the download.
+  const payments = usePayments();
+  const purchasesOff = !hasReportAccess && payments?.reports === false;
 
   const triggerDownload = useCallback(async () => {
     if (!parcel || (!parcel.pin && !parcel.address)) return;
@@ -919,6 +924,11 @@ export default function ScorecardPage() {
                     page-action idiom), the sample stays a quiet link. Two
                     filled buttons never stack in the hero. */}
                 <div className="flex flex-wrap items-center gap-3 mt-5">
+                  {purchasesOff ? (
+                    <span className="px-4 py-2 rounded-lg border border-dark-border text-text-muted text-title cursor-default">
+                      {t("scorecard.reportCTA.title")} · {t("payments.comingSoon", { ns: "common" })}
+                    </span>
+                  ) : (
                   <button
                     type="button"
                     onClick={handleDownloadPdf}
@@ -935,6 +945,7 @@ export default function ScorecardPage() {
                         ? t("scorecard.reportCTA.download")
                         : `${t("scorecard.reportCTA.title")} · $25`}
                   </button>
+                  )}
                   {/* Sample rides DIRECTLY beside the report button, always —
                       they are one offer; the ask chip is a separate action. */}
                   <a
@@ -946,7 +957,7 @@ export default function ScorecardPage() {
                   >
                     {t("scorecard.reportCTA.viewSample")} ↗
                   </a>
-                  {reportDemoted && (
+                  {reportDemoted && !purchasesOff && (
                     <p className="basis-full text-caption text-text-muted">{t("scorecard.reportCTA.unverifiedNote")}</p>
                   )}
                   {verdict && (

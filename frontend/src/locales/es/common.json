@@ -82,5 +82,10 @@
     "light": "Claro",
     "dark": "Oscuro",
     "system": "Sistema"
+  },
+  "payments": {
+    "comingSoon": "Compras próximamente",
+    "reportsSoon": "La compra de informes en línea estará disponible próximamente. La Ficha gratuita tiene los mismos datos de base, y ya puede ver un informe de muestra.",
+    "proSoon": "Las suscripciones Pro estarán disponibles próximamente."
   }
 }
