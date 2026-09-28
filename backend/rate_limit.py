@@ -6,6 +6,7 @@ window counters keyed by user_id (or IP for anonymous users).
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import os
 import time
@@ -51,12 +52,54 @@ def clear_rate_limits() -> None:
     _windows.clear()
 
 
+# Peers allowed to tell us the client's address via X-Real-IP: loopback and the
+# private ranges Docker assigns to the compose network. In production the backend
+# port is not published, so the only peer that can reach it is the nginx
+# container, which overwrites X-Real-IP with the address it derived from
+# Cloudflare's CF-Connecting-IP (trusted only from Cloudflare's ranges — see
+# frontend/nginx.prod.conf).
+_TRUSTED_PROXY_NETS = tuple(
+    ipaddress.ip_network(net)
+    for net in ("127.0.0.0/8", "::1/128", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7")
+)
+
+
+def _parse_ip(value: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    try:
+        return ipaddress.ip_address(value.strip())
+    except ValueError:
+        return None
+
+
+def client_ip(request: Request) -> str:
+    """The caller's IP address.
+
+    X-Forwarded-For is never read: its leftmost entry is whatever the client sent,
+    so keying on it let anyone mint a fresh anonymous identity per request.
+    X-Real-IP is honoured only when the direct peer is our own reverse proxy.
+    """
+    peer = request.client.host if request.client else ""
+    peer_addr = _parse_ip(peer)
+    if peer_addr is not None and any(peer_addr in net for net in _TRUSTED_PROXY_NETS):
+        real = _parse_ip(request.headers.get("x-real-ip", ""))
+        if real is not None:
+            return str(real)
+    return peer or "unknown"
+
+
+def _ip_bucket(ip: str) -> str:
+    """Rate-limit bucket for an IP. IPv6 is keyed by /64 — a single subscriber
+    typically controls a whole /64, so per-address keys would be trivially rotated."""
+    addr = _parse_ip(ip)
+    if addr is not None and addr.version == 6:
+        return str(ipaddress.ip_network(f"{addr}/64", strict=False))
+    return ip
+
+
 def _get_client_key(request: Request, user: dict | None) -> str:
     if user and user.get("id") != "dev":
         return f"user:{user['id']}"
-    forwarded = request.headers.get("x-forwarded-for", "")
-    ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
-    return f"ip:{ip}"
+    return f"ip:{_ip_bucket(client_ip(request))}"
 
 
 def _get_tier(user: dict | None) -> str:
