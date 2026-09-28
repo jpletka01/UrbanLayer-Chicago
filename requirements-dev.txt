@@ -1,0 +1,4 @@
+# Everything needed to run, test, and lint the backend locally and in CI.
+-r requirements.prod.txt
+-r requirements.test.txt
+ruff>=0.15.0
