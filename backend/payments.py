@@ -131,6 +131,11 @@ async def handle_webhook(request: Request) -> dict:
     sig = request.headers.get("stripe-signature", "")
 
     if not s.stripe_webhook_secret:
+        if s.environment == "production":
+            # Never trust an unsigned event in production: it could grant premium
+            # or a report purchase to any user id the sender chooses.
+            log.error("Stripe webhook secret not configured; rejecting webhook")
+            raise HTTPException(status_code=503, detail="Webhook not configured")
         log.warning("Stripe webhook secret not configured, skipping verification")
         import json
         event = stripe.Event.construct_from(json.loads(body), stripe.api_key)

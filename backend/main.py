@@ -28,7 +28,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from backend.analytics import compute_analytics
 from backend.retrieval.cache import TTLCache
 from backend.assembler import assemble_context
-from backend.config import get_settings
+from backend.config import get_settings, validate_production
 from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
 from backend.llm import tracked_create
@@ -171,6 +171,7 @@ app.include_router(discovery_router)
 @app.on_event("startup")
 async def _startup() -> None:
     settings = get_settings()
+    validate_production(settings)
     # Escape CR/LF in every log record before anything else runs. User-controlled
     # strings (addresses, chat messages, Stripe ids) reach log calls all over the
     # retrieval layer; without this an embedded newline can forge a log line.

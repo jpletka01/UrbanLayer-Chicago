@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,6 +14,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    # "production" turns on fail-closed startup checks (validate_production).
+    # Development and test keep the permissive defaults below.
+    environment: Literal["development", "test", "production"] = "development"
 
     anthropic_api_key: str = ""
     socrata_app_token: str = ""
@@ -255,6 +260,39 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_id_pro_monthly: str = ""
     stripe_price_id_report: str = ""
+
+
+_DEV_JWT_SECRET = "dev-insecure-key-do-not-use-in-production"
+
+
+def production_config_errors(s: Settings) -> list[str]:
+    """Settings that would make production fail open.
+
+    Each of these has a convenient development default: no Google client id
+    disables auth (every request becomes an admin), no JWT secret falls back to
+    a key published in this repo, and no webhook secret skips Stripe signature
+    checks. In production any of them is a vulnerability, so startup refuses.
+    """
+    errors = []
+    if not s.google_client_id or not s.google_client_secret:
+        errors.append("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set (otherwise auth is disabled)")
+    if len(s.jwt_secret) < 32 or s.jwt_secret == _DEV_JWT_SECRET:
+        errors.append("JWT_SECRET must be a random value of at least 32 characters")
+    if not s.auth_cookie_secure:
+        errors.append("AUTH_COOKIE_SECURE must be true")
+    if not s.frontend_url.startswith("https://"):
+        errors.append("FRONTEND_URL must be an https:// URL")
+    if s.stripe_secret_key and not s.stripe_webhook_secret:
+        errors.append("STRIPE_WEBHOOK_SECRET must be set when STRIPE_SECRET_KEY is")
+    return errors
+
+
+def validate_production(s: Settings) -> None:
+    if s.environment != "production":
+        return
+    errors = production_config_errors(s)
+    if errors:
+        raise RuntimeError("Refusing to start in production:\n  - " + "\n  - ".join(errors))
 
 
 @lru_cache
