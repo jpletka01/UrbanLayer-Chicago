@@ -347,6 +347,8 @@ def _extract_metadata_flags(ctx: dict) -> dict[str, Any]:
         ("permits", "permits"),
         ("violations", "violations"),
         ("businesses", "business"),
+        ("vacant_buildings", "vacant_buildings"),
+        ("food_inspections", "food_inspections"),
     ]:
         summary = ctx.get(key)
         if summary:
@@ -363,6 +365,15 @@ def _extract_metadata_flags(ctx: dict) -> dict[str, Any]:
         "has_analytics": ctx.get("analytics") is not None,
         "has_crime_data": ctx.get("crime_last_90d") is not None,
     }
+
+
+def _strip_code_fence(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.split("\n", 1)[1] if "\n" in stripped else ""
+        if stripped.rstrip().endswith("```"):
+            stripped = stripped.rstrip()[:-3]
+    return stripped.strip()
 
 
 def _extract_citations(answer: str) -> dict[str, list[str]]:
@@ -447,7 +458,9 @@ async def _run_judge(result: Result, model: str) -> JudgeResult:
     )
 
     try:
-        data = json.loads(text)
+        # Models sometimes fence JSON despite the instruction; without stripping
+        # the fence, a well-formed verdict scored as all-F "unparseable".
+        data = json.loads(_strip_code_fence(text))
     except json.JSONDecodeError:
         return JudgeResult(
             query_id=result.id,
@@ -474,16 +487,22 @@ async def _run_judge(result: Result, model: str) -> JudgeResult:
         if d not in found:
             dimensions.append(DimensionScore(d, "F", "Dimension missing from judge response"))
 
-    overall = data.get("overall_grade", _compute_overall_grade(dimensions))
-    if overall not in GRADE_TO_NUM:
-        overall = _compute_overall_grade(dimensions)
+    # The overall grade is the documented DIMENSION_WEIGHTS blend of the
+    # per-dimension grades, not the judge's own holistic "overall_grade" (which
+    # used to win, making the weights decorative). The judge's opinion is kept
+    # in the reasoning for reference.
+    overall = _compute_overall_grade(dimensions)
+    judge_overall = data.get("overall_grade")
+    reasoning = data.get("overall_reasoning", "")
+    if judge_overall and judge_overall != overall:
+        reasoning = f"{reasoning} (judge's holistic grade: {judge_overall})".strip()
 
     return JudgeResult(
         query_id=result.id,
         question=result.question,
         dimensions=dimensions,
         overall_grade=overall,
-        overall_reasoning=data.get("overall_reasoning", ""),
+        overall_reasoning=reasoning,
     )
 
 

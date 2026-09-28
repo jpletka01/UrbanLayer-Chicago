@@ -338,3 +338,54 @@ class TestRunJudge:
         call_args = create_mock.call_args
         user_content = call_args.kwargs["messages"][0]["content"]
         assert "[truncated]" in user_content
+
+
+class TestJudgeParsingAndWeighting:
+    """Regressions: a fenced judge reply scored all-F, and the judge's own
+    holistic grade overrode the documented dimension weights."""
+
+    def _response(self, text: str) -> MagicMock:
+        block = MagicMock()
+        block.type = "text"
+        block.text = text
+        response = MagicMock()
+        response.content = [block]
+        return response
+
+    def _payload(self, overall: str) -> dict:
+        return {
+            "dimensions": [
+                {"dimension": "citation_accuracy", "grade": "D", "reasoning": ""},
+                {"dimension": "factuality", "grade": "D", "reasoning": ""},
+                {"dimension": "completeness", "grade": "A", "reasoning": ""},
+                {"dimension": "rule_compliance", "grade": "A", "reasoning": ""},
+            ],
+            "overall_grade": overall,
+            "overall_reasoning": "ok",
+        }
+
+    @pytest.mark.asyncio
+    async def test_fenced_json_is_parsed(self):
+        result = Result(id="q", category="c", question="?", passed=True, full_answer="x", context_dict={})
+        fenced = "```json\n" + json.dumps(self._payload("C")) + "\n```"
+        with patch("anthropic.AsyncAnthropic") as MockClient:
+            MockClient.return_value.messages.create = AsyncMock(return_value=self._response(fenced))
+            jr = await _run_judge(result, "claude-sonnet-4-6")
+        assert "unparseable" not in jr.overall_reasoning.lower()
+        assert jr.dimensions[0].grade == "D"
+
+    @pytest.mark.asyncio
+    async def test_overall_grade_follows_the_weights(self):
+        # D,D,A,A with weights .3/.3/.2/.2 = 1*.6 + 4*.4 = 2.2 -> C, whatever the judge says.
+        result = Result(id="q", category="c", question="?", passed=True, full_answer="x", context_dict={})
+        with patch("anthropic.AsyncAnthropic") as MockClient:
+            MockClient.return_value.messages.create = AsyncMock(
+                return_value=self._response(json.dumps(self._payload("A")))
+            )
+            jr = await _run_judge(result, "claude-sonnet-4-6")
+        assert jr.overall_grade == "C"
+        assert "holistic grade: A" in jr.overall_reasoning
+
+    def test_vacant_and_food_data_are_known_sources(self):
+        flags = _extract_metadata_flags({"vacant_buildings": {"total": 3}, "food_inspections": {"total": 9}})
+        assert flags["data_sources_present"] == ["vacant_buildings", "food_inspections"]
