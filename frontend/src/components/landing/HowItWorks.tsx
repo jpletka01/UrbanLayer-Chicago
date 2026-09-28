@@ -48,7 +48,7 @@ function StepVisual({ index, query, t }: { index: number; query?: string; t: (ke
         <svg className="w-3.5 h-3.5 text-state-positive shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
-        <span className="text-overline uppercase text-text-secondary">Scorecard ready</span>
+        <span className="text-overline uppercase text-text-secondary">Property Profile ready</span>
         <span className="ml-auto text-micro font-mono font-semibold text-accent bg-accent-muted px-1.5 py-0.5 rounded">RM-5</span>
       </div>
       <div className="px-3.5 py-3 space-y-2.5">

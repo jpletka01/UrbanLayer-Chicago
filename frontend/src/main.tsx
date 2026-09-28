@@ -43,6 +43,7 @@ import PricingPage from './components/PricingPage.tsx'
 import SettingsPage from './components/SettingsPage.tsx'
 import ScorecardPage from './components/ScorecardPage.tsx'
 import { PrivacyPage } from './components/PrivacyPage.tsx'
+import { NotFoundPage } from './components/NotFoundPage.tsx'
 import DiscoveryPage from './discovery/DiscoveryPage.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
@@ -87,6 +88,7 @@ createRoot(document.getElementById('root')!).render(
                 <AdminDashboard />
               </ProtectedRoute>
             } />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
           </SelectedParcelProvider>
         </AuthProvider>

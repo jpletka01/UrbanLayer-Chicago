@@ -18,3 +18,5 @@ git merge --ff-only origin/main
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 sleep 10
 curl -sf https://urbanlayerchicago.com/health
+# Re-warm the homepage demo addresses (the restart emptied the caches).
+nohup /opt/urbanlayer/deploy/warm-demo-cache.sh >/dev/null 2>&1 &

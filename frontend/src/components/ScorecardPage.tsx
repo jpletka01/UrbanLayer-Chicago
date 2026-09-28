@@ -276,12 +276,38 @@ function Address311Block({ data }: { data: ScorecardResponse }) {
   );
 }
 
-function ScorecardSkeleton() {
+// A cold lookup fans out to 25+ public data sources and takes ~15–40 s; a warm
+// one is ~1 s. The bare pulse boxes that used to fill that wait read as a hung
+// page, so the loading state names the address, says what's being checked,
+// counts elapsed time, and sets the expectation. (No fake per-step progress:
+// the sources resolve in parallel and the backend doesn't stream them.)
+function ScorecardSkeleton({ address }: { address: string }) {
+  const { t } = useTranslation("pages");
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const id = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
-    <div className="animate-pulse space-y-6">
+    <div className="space-y-6">
+      <div role="status" aria-live="polite" className="max-w-2xl mx-auto text-center space-y-2">
+        <div className="flex items-center justify-center gap-2 text-subtitle text-text-primary">
+          <span className="h-2 w-2 rounded-full bg-accent animate-pulse" aria-hidden="true" />
+          {address ? t("scorecard.loading.title", { address }) : t("scorecard.loading.titleNoAddress")}
+          <span className="font-mono text-caption text-text-muted tabular-nums">
+            {t("scorecard.loading.elapsed", { seconds })}
+          </span>
+        </div>
+        <p className="text-body text-text-secondary">{t("scorecard.loading.sources")}</p>
+        <p className="text-caption text-text-muted">{t("scorecard.loading.note")}</p>
+      </div>
+      <div className="animate-pulse space-y-6" aria-hidden="true">
       <div className="bg-dark-surface border border-dark-border rounded-xl h-32" />
       <div className="bg-dark-surface border border-dark-border rounded-xl h-24" />
       <div className="bg-dark-surface border border-dark-border rounded-xl h-64" />
+      </div>
     </div>
   );
 }
@@ -313,6 +339,11 @@ export default function ScorecardPage() {
 
   const isPro = user?.tier === "premium" || user?.tier === "admin";
   const hasReportAccess = isPro || reportAccess?.has_access === true;
+  // When the parcel behind this address couldn't be confirmed, the report would
+  // be about a best-guess parcel. Keep it purchasable but not the lead action.
+  // Same test as the hero's exact-match badge.
+  const parcelConfirmed = parcel?.pin != null && parcel.confidence === "authoritative" && !data?.nearest_parcel_unverified;
+  const reportDemoted = !hasReportAccess && !!data && !parcelConfirmed;
 
   const triggerDownload = useCallback(async () => {
     if (!parcel || (!parcel.pin && !parcel.address)) return;
@@ -784,7 +815,7 @@ export default function ScorecardPage() {
           </div>
         )}
 
-        {loading && <ScorecardSkeleton />}
+        {loading && <ScorecardSkeleton address={address} />}
 
         {/* Code-question redirect (state 5): neutral surface, NOT an error color —
             reframes "wrong box" as "right tool" and hands the exact text to the
@@ -891,7 +922,11 @@ export default function ScorecardPage() {
                     type="button"
                     onClick={handleDownloadPdf}
                     disabled={downloading}
-                    className="px-4 py-2 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-title disabled:opacity-60"
+                    className={
+                      reportDemoted
+                        ? "px-4 py-2 rounded-lg border border-highlight/40 text-highlight hover:border-highlight transition-colors text-title disabled:opacity-60"
+                        : "px-4 py-2 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-title disabled:opacity-60"
+                    }
                   >
                     {downloading
                       ? t("scorecard.reportCTA.generating")
@@ -910,6 +945,9 @@ export default function ScorecardPage() {
                   >
                     {t("scorecard.reportCTA.viewSample")} ↗
                   </a>
+                  {reportDemoted && (
+                    <p className="basis-full text-caption text-text-muted">{t("scorecard.reportCTA.unverifiedNote")}</p>
+                  )}
                   {verdict && (
                     <button
                       type="button"

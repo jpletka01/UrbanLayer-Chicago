@@ -132,9 +132,7 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
   const allowedFar = zdef ? num(zdef.far) : null;
   const bldg = prop ? num(prop.bldg_sqft) : null;
   const land = prop ? num(prop.land_sqft) : null;
-  const bldgClass = (prop?.bldg_class ?? "").trim().toUpperCase();
-  const vacantClass =
-    bldgClass.startsWith("1-00") || bldgClass === "100" || bldgClass.startsWith("100 ") || bldgClass === "VACANT";
+  const vacantClass = isVacantClass(prop?.bldg_class);
 
   // FAR math needs a number that means "this parcel's total floor area".
   // Two fallback sources fail that test (2026-07-06 audit):
@@ -275,10 +273,18 @@ export function selectCategory(s: VerdictSignals, data: ScorecardResponse): Verd
   return "limited";
 }
 
+function isVacantClass(rawClass: string | null | undefined): boolean {
+  const bldgClass = (rawClass ?? "").trim().toUpperCase();
+  return bldgClass.startsWith("1-00") || bldgClass === "100" || bldgClass.startsWith("100 ") || bldgClass === "VACANT";
+}
+
 function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc): { confidence: "high" | "caveated"; caveats: string[] } {
   const caveats: string[] = [];
   if (data.nearest_parcel_unverified) caveats.push(t("scorecard.verdict.caveat.unverified"));
-  if (s.bldgAreaLowConfidence && s.capacityBand === "unknown" && data.zone_definition?.far != null)
+  // A vacant lot with no recorded building has no building area to be missing,
+  // so the caveat would contradict the lot facts shown beside it.
+  const emptyVacantLot = isVacantClass(data.context?.property?.bldg_class) && !data.context?.property?.bldg_sqft;
+  if (s.bldgAreaLowConfidence && s.capacityBand === "unknown" && data.zone_definition?.far != null && !emptyVacantLot)
     caveats.push(t("scorecard.verdict.caveat.noBldgArea"));
   if (data.zone_definition?.is_fallback) caveats.push(t("scorecard.verdict.caveat.fallbackZone"));
   if ((data.partial_failures?.length ?? 0) > 0)
@@ -406,7 +412,14 @@ function buildReasons(category: VerdictCategory, s: VerdictSignals, data: Scorec
     }
     case "limited":
       out.push(zoneReason(s, data, t));
-      if (s.capacityRatio != null) out.push({ text: t("scorecard.verdict.reason.nearCapacity"), polarity: "neutral", cardAnchor: "zoning" });
+      // "Limited" also covers under-built parcels in low-density zones (allowed
+      // FAR below STRONG_MIN_ALLOWED_FAR). Saying "built at the limit" there
+      // contradicted the zoning card's "66% of the envelope unused".
+      if (s.capacityBand === "at_cap" || s.capacityBand === "modest") {
+        out.push({ text: t("scorecard.verdict.reason.nearCapacity"), polarity: "neutral", cardAnchor: "zoning" });
+      } else if (s.capacityBand === "high" || s.capacityBand === "vacant_or_teardown") {
+        out.push({ text: t("scorecard.verdict.reason.lowDensityHeadroom"), polarity: "neutral", cardAnchor: "zoning" });
+      }
       if (bonus) out.push(bonus);
       out.push({ text: t("scorecard.verdict.reason.compsPointer"), polarity: "neutral", cardAnchor: "comparables" });
       break;

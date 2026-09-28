@@ -61,6 +61,7 @@ from backend.retrieval.geo import (
     community_area_name,
     geocode_address,
     geocode_address_suggestions,
+    is_within_chicago,
 )
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.incentives import incentives_domain
@@ -1131,10 +1132,17 @@ async def _apply_parcel_hint(plan, pin: str):
     return plan
 
 
+# What the user sees when a chat stage fails. The exception detail stays in the
+# server log and request_logs; it used to be streamed to the browser verbatim
+# (e.g. "Synthesizer failed: '>' not supported between ...").
+_CHAT_ERROR = "Something went wrong while answering. Please try again."
+
+
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
     elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
     request_group = str(uuid.uuid4())
+    settings = get_settings()
     plan: RetrievalPlan | None = None
     error_msg: str | None = None
     timings: dict[str, int] = {}
@@ -1152,7 +1160,6 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     # Message limit enforcement + query synthesis
     try:
         if req.conversation_id:
-            settings = get_settings()
             count = await db.count_user_messages(req.conversation_id)
             if count >= settings.message_limit:
                 yield _sse(ChatChunk(
@@ -1174,7 +1181,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Pre-routing failed")
         error_msg = f"Failed to process query: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1194,7 +1201,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Router failed")
         error_msg = f"Router failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1242,7 +1249,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Retrieval failed")
         error_msg = f"Retrieval failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1293,7 +1300,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
 
     if t_first_token is not None:
         timings["first_token"] = t_first_token
@@ -1367,6 +1374,17 @@ class ResolvedLocation(NamedTuple):
 
 
 _MAX_ADDRESS_CHARS = 200
+
+
+def _require_chicago(rl: ResolvedLocation) -> None:
+    """The geocoder is national, so an address elsewhere (e.g. in DC) used to
+    produce a full Property Profile built from Chicago data sources, $25 report
+    offer included. Only Chicago points get a profile or report."""
+    if not is_within_chicago(rl.lat, rl.lon):
+        raise HTTPException(
+            status_code=422,
+            detail="That address is outside Chicago. UrbanLayer covers Chicago properties only.",
+        )
 
 
 async def _resolve_location(
@@ -1781,6 +1799,7 @@ async def scorecard(
 ) -> dict:
     """Non-AI instant-load property dashboard. Zero LLM cost."""
     rl = await _resolve_location(address, lat, lon, pin)
+    _require_chicago(rl)
     data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
 
     # Reconcile identity. When the authoritative address→PIN path degraded
@@ -1859,8 +1878,15 @@ async def report(
     from backend.auth import _TIER_ORDER
     from jinja2 import Environment, FileSystemLoader
 
+    # mock=true fills every section with fixture data for visual QA of the PDF
+    # template. A customer must never receive a report built from made-up
+    # numbers, so it's admin-only (the dev-mode user is an admin).
+    if mock and user["tier"] != "admin":
+        raise HTTPException(status_code=403, detail="Mock reports are admin-only.")
+
     settings = get_settings()
     rl = await _resolve_location(address, lat, lon, pin)
+    _require_chicago(rl)
     resolved_lat, resolved_lon, resolved_address = rl.lat, rl.lon, rl.address
 
     if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER["premium"]:

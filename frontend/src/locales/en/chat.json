@@ -66,6 +66,8 @@
     "permits": "Building Permits",
     "violations": "Building Violations",
     "business": "Business Licenses",
-    "portal": "Chicago Data Portal"
+    "portal": "Chicago Data Portal",
+    "vacant_buildings": "Vacant buildings",
+    "food_inspections": "Food inspections"
   }
 }

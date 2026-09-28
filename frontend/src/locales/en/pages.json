@@ -28,11 +28,11 @@
     "upgradeToPro": "Upgrade to Pro",
     "billingNote": "Reports are one-time purchases. Pro subscriptions are billed monthly via Stripe. Cancel anytime.",
     "freeFeatures": [
-      "25 AI queries per day",
-      "Property scorecard lookups",
+      "25 AI questions per day with a free account (3 without signing in)",
+      "Unlimited Property Profile lookups",
       "Interactive map with data layers",
       "Crime, 311, permits, violations data",
-      "Municipal code search (RAG)",
+      "Cited answers from the municipal code",
       "Conversation history",
       "Shareable conversation links"
     ],
@@ -44,9 +44,9 @@
       "A deliverable you can hand to a lender or client"
     ],
     "proFeatures": [
-      "Unlimited AI queries",
+      "Up to 100 AI questions per day",
       "Unlimited Development Feasibility Reports",
-      "Site Explorer (coming soon)",
+      "Full Property Discovery results, map, and CSV export",
       "Priority support",
       "All Free features included"
     ]
@@ -55,8 +55,14 @@
     "title": "Property Profile",
     "subtitle": "The free research dashboard for any Chicago parcel — zoning, taxes, incentives, comps. Enter an address.",
     "search": "Search",
-    "loading": "Loading...",
-    "addressNotFound": "Could not find that address. Try a different format (e.g., \"1601 N Milwaukee Ave\").",
+    "loading": {
+      "title": "Building the Property Profile for {{address}}",
+      "titleNoAddress": "Building the Property Profile",
+      "sources": "Checking parcel records, zoning, overlays, assessments, taxes, recent sales, and neighborhood data.",
+      "note": "The first lookup of an address queries 25+ public data sources and usually takes 15–40 seconds. After that it loads in about a second.",
+      "elapsed": "{{seconds}}s"
+    },
+    "addressNotFound": "Could not find that address in Chicago. UrbanLayer covers City of Chicago properties; try a format like \"1601 N Milwaukee Ave\".",
     "locationNotFound": "Could not load property data for this location.",
     "noResults": "No results found.",
     "searchAnother": "Search another address",
@@ -107,7 +113,8 @@
       "download": "Download Report",
       "generating": "Generating...",
       "orUpgrade": "or upgrade to Pro — $99/mo",
-      "ready": "Your report is ready"
+      "ready": "Your report is ready",
+      "unverifiedNote": "We couldn't confirm the exact parcel for this address, so the figures above may describe a neighboring lot. Check the PIN before buying a report."
     },
     "downloadPdf": "Download PDF Report",
     "downloadCsv": "Download CSV",
@@ -165,6 +172,7 @@
         "asOfRight": "Zoned {{zone}} — FAR {{allowed}} as-of-right",
         "zoned": "Zoned {{zone}}",
         "nearCapacity": "Built at or near the as-of-right limit — little added capacity",
+        "lowDensityHeadroom": "Room to add floor area, but the zone only allows low density",
         "compsPointer": "See recent comparable sales for the value range",
         "entitlement": "{{name}} — entitlements set by the Planned Development ordinance, not as-of-right rules",
         "insufficient": "Parcel identity couldn't be confirmed from the address",
@@ -173,7 +181,7 @@
       },
       "caveat": {
         "unverified": "Parcel identity unconfirmed — property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
-        "noBldgArea": "Building area unavailable — development capacity wasn't computed for this parcel.",
+        "noBldgArea": "Existing building size is uncertain, so we didn't estimate how much of the allowed floor area is already used.",
         "fallbackZone": "Zoning shown is a category default, not a parcel-specific lookup.",
         "partial": "Some data sources were unavailable: {{sources}}.",
         "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",
@@ -686,5 +694,11 @@
     "accessCodeExhausted": "This code has reached its redemption limit.",
     "accessCodeError": "Something went wrong — please try again.",
     "compBlurb": "Early access — complimentary Pro features until {{date}}."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "There's nothing at this address. Look up a Chicago property or explore parcels instead.",
+    "lookup": "Look up an address",
+    "discover": "Explore parcels"
   }
 }

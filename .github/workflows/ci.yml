@@ -129,3 +129,4 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
             sleep 10
             curl -sf https://urbanlayerchicago.com/health
+            nohup deploy/warm-demo-cache.sh >/dev/null 2>&1 &

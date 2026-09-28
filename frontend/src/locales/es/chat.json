@@ -66,7 +66,9 @@
     "permits": "Permisos de construcción",
     "violations": "Infracciones de construcción",
     "business": "Licencias comerciales",
-    "portal": "Portal de Datos de Chicago"
+    "portal": "Portal de Datos de Chicago",
+    "vacant_buildings": "Edificios vacantes",
+    "food_inspections": "Inspecciones de alimentos"
   },
   "grounded": {}
 }

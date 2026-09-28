@@ -177,6 +177,12 @@ async def _handle_subscription_checkout_completed(session: dict) -> None:
     customer_id = session.get("customer")
     subscription_id = session.get("subscription")
 
+    user = await db.get_user_by_id(user_id)
+    if subscription_id and user and user.get("stripe_subscription_id") == subscription_id:
+        # Stripe retries webhooks; this subscription is already recorded.
+        log.info("Duplicate subscription webhook for %s ignored", subscription_id)
+        return
+
     await db.update_user_stripe(user_id, customer_id, subscription_id)
     await db.update_user_tier(user_id, "premium")
     log.info("User %s upgraded to premium (customer=%s)", user_id, customer_id)
@@ -195,6 +201,13 @@ async def _handle_report_purchase_completed(session: dict) -> None:
     customer_id = session.get("customer")
 
     purchase = await db.complete_report_purchase(session_id, payment_intent)
+    if purchase is None:
+        log.error("Report purchase webhook for unknown session %s", session_id)
+        return
+    if not purchase["newly_completed"]:
+        # Stripe retries webhooks; the purchase is already recorded and counted.
+        log.info("Duplicate report purchase webhook for session %s ignored", session_id)
+        return
 
     if customer_id and user_id:
         user = await db.get_user_by_id(user_id)

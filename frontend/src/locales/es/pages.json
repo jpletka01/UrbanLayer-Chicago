@@ -28,11 +28,11 @@
     "upgradeToPro": "Actualizar a Pro",
     "billingNote": "Los informes son compras únicas. Las suscripciones Pro se facturan mensualmente a través de Stripe. Cancele en cualquier momento.",
     "freeFeatures": [
-      "25 consultas de IA por día",
-      "Búsquedas de fichas de propiedades",
+      "25 consultas de IA por día con una cuenta gratuita (3 sin iniciar sesión)",
+      "Búsquedas ilimitadas de Fichas de propiedades",
       "Mapa interactivo con capas de datos",
       "Datos de delitos, 311, permisos e infracciones",
-      "Búsqueda en el código municipal (RAG)",
+      "Respuestas citadas del código municipal",
       "Historial de consultas",
       "Enlaces de conversaciones para compartir"
     ],
@@ -44,9 +44,9 @@
       "Un entregable para presentar a un prestamista o cliente"
     ],
     "proFeatures": [
-      "Consultas de IA ilimitadas",
+      "Hasta 100 consultas de IA por día",
       "Informes de Viabilidad de Desarrollo ilimitados",
-      "Explorador de sitios (próximamente)",
+      "Resultados completos de Descubrir, con mapa y exportación CSV",
       "Soporte prioritario",
       "Todas las funciones gratuitas incluidas"
     ]
@@ -55,8 +55,14 @@
     "title": "Ficha de la propiedad",
     "subtitle": "El panel de investigación gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y comparables. Ingresa una dirección.",
     "search": "Buscar",
-    "loading": "Cargando...",
-    "addressNotFound": "No se pudo encontrar esa dirección. Intente con un formato diferente (ej. \"1601 N Milwaukee Ave\").",
+    "loading": {
+      "title": "Preparando la Ficha de {{address}}",
+      "titleNoAddress": "Preparando la Ficha",
+      "sources": "Consultando registros de la parcela, zonificación, normativas superpuestas, avalúos, impuestos, ventas recientes y datos del vecindario.",
+      "note": "La primera consulta de una dirección revisa más de 25 fuentes de datos públicos y suele tardar entre 15 y 40 segundos. Después carga en aproximadamente un segundo.",
+      "elapsed": "{{seconds}} s"
+    },
+    "addressNotFound": "No encontramos esa dirección en Chicago. UrbanLayer cubre propiedades de la ciudad de Chicago; intente con un formato como \"1601 N Milwaukee Ave\".",
     "locationNotFound": "No se pudieron cargar los datos de la propiedad para esta ubicación.",
     "noResults": "No se encontraron resultados.",
     "searchAnother": "Buscar otra dirección",
@@ -114,7 +120,8 @@
       "download": "Descargar informe",
       "generating": "Generando...",
       "orUpgrade": "o actualice a Pro — $99/mes",
-      "ready": "Su informe está listo"
+      "ready": "Su informe está listo",
+      "unverifiedNote": "No pudimos confirmar la parcela exacta de esta dirección, así que las cifras anteriores podrían corresponder a un lote vecino. Verifique el PIN antes de comprar un informe."
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
@@ -165,6 +172,7 @@
         "asOfRight": "Zonificación {{zone}} — FAR {{allowed}} por derecho",
         "zoned": "Zonificación {{zone}}",
         "nearCapacity": "Construido en o cerca del límite por derecho — poca capacidad adicional",
+        "lowDensityHeadroom": "Hay margen para ampliar la superficie, pero la zona solo permite baja densidad",
         "compsPointer": "Vea ventas comparables recientes para el rango de valor",
         "entitlement": "{{name}} — los derechos los define la ordenanza de Desarrollo Planificado, no las reglas por derecho",
         "insufficient": "No se pudo confirmar la identidad de la parcela desde la dirección",
@@ -173,7 +181,7 @@
       },
       "caveat": {
         "unverified": "Identidad de parcela sin confirmar — las cifras de propiedad y comparables podrían ser de una parcela vecina. Verifique el PIN antes de confiar en ellas.",
-        "noBldgArea": "Superficie del edificio no disponible — no se calculó la capacidad de desarrollo para esta parcela.",
+        "noBldgArea": "El tamaño del edificio existente es incierto, así que no estimamos cuánta de la superficie permitida ya está en uso.",
         "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
@@ -686,5 +694,11 @@
     "accessCodeExhausted": "Este código alcanzó su límite de canjes.",
     "accessCodeError": "Algo salió mal — inténtalo de nuevo.",
     "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "No hay nada en esta dirección. Busca una propiedad de Chicago o explora parcelas.",
+    "lookup": "Buscar una dirección",
+    "discover": "Explorar parcelas"
   }
 }

@@ -56,8 +56,23 @@ async function _tryRefresh(): Promise<boolean> {
   return _refreshPromise;
 }
 
+// The double-submit CSRF cookie is issued by GET /api/auth/me. A page whose first
+// request is a POST (Discovery auto-runs a search on load) could fire before that
+// call returned, send an empty token, and get a 403 — an empty results page on a
+// first visit. Unsafe requests wait for the cookie instead (one shared request).
+let _csrfPromise: Promise<void> | null = null;
+
+function ensureCsrfCookie(): Promise<void> {
+  if (getCsrfToken()) return Promise.resolve();
+  _csrfPromise ??= fetch(`${API_BASE}/api/auth/me`, { credentials: "include" })
+    .then(() => undefined, () => undefined)
+    .finally(() => { _csrfPromise = null; });
+  return _csrfPromise;
+}
+
 async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const method = (options.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") await ensureCsrfCookie();
   const buildHeaders = () => {
     const csrfHeaders: Record<string, string> =
       method !== "GET" && method !== "HEAD"

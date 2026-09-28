@@ -8,7 +8,7 @@ from typing import AsyncIterator
 from backend.config import get_settings
 from backend.context_manager import detect_location_switch, format_summaries_for_prompt
 from backend.llm import tracked_stream
-from backend.models import AnalyticsSummary, ContextObject, Message, RetrievalPlan, TurnSummary
+from backend.models import AnalyticsSummary, ContextObject, Message, RetrievalPlan, TrendItem, TurnSummary
 from backend.prompts import LANGUAGE_INSTRUCTION, SYNTHESIZER_SYSTEM
 from backend.vision import prepare_upload_content_blocks
 
@@ -25,6 +25,15 @@ LANGUAGE_NAMES: dict[str, str] = {
 SLIDING_WINDOW_PAIRS = 2
 
 
+def _trend_line(t: TrendItem) -> str:
+    # change_pct is None when the prior month had zero (analytics.py): the
+    # percentage is undefined, so the category is simply new this month.
+    if t.change_pct is None:
+        return f"  - {t.category}: {t.current_count} (new this month; none the month before)"
+    direction = "up" if t.change_pct > 0 else "down" if t.change_pct < 0 else "flat"
+    return f"  - {t.category}: {t.current_count} ({direction} {abs(t.change_pct)}%)"
+
+
 def _format_analytics(analytics: AnalyticsSummary) -> str:
     """Format analytics as readable text for Claude (not JSON — saves tokens)."""
     lines: list[str] = []
@@ -36,20 +45,17 @@ def _format_analytics(analytics: AnalyticsSummary) -> str:
     if analytics.crime_trends:
         lines.append("Crime:")
         for t in analytics.crime_trends:
-            direction = "up" if t.change_pct > 0 else "down" if t.change_pct < 0 else "flat"
-            lines.append(f"  - {t.category}: {t.current_count} ({direction} {abs(t.change_pct)}%)")
+            lines.append(_trend_line(t))
 
     if analytics.three11_trends:
         lines.append("311 Requests:")
         for t in analytics.three11_trends:
-            direction = "up" if t.change_pct > 0 else "down" if t.change_pct < 0 else "flat"
-            lines.append(f"  - {t.category}: {t.current_count} ({direction} {abs(t.change_pct)}%)")
+            lines.append(_trend_line(t))
 
     if analytics.permit_trends:
         lines.append("Permits:")
         for t in analytics.permit_trends:
-            direction = "up" if t.change_pct > 0 else "down" if t.change_pct < 0 else "flat"
-            lines.append(f"  - {t.category}: {t.current_count} ({direction} {abs(t.change_pct)}%)")
+            lines.append(_trend_line(t))
 
     return "\n".join(lines) + "\n\n"
 
