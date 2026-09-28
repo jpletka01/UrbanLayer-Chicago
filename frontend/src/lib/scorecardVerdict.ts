@@ -388,7 +388,7 @@ function buildReasons(category: VerdictCategory, s: VerdictSignals, data: Scorec
   const inc = incentiveReasons(s, data, t);
   const bonus = bonusReason(s, t);
   const friction = frictionReasons(s, data, t);
-  let out: VerdictReason[] = [];
+  const out: VerdictReason[] = [];
 
   switch (category) {
     case "strong":

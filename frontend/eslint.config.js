@@ -18,5 +18,19 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // React Compiler advisories (eslint-plugin-react-hooks v6+). They flag
+      // patterns that are valid React today but block automatic memoization,
+      // e.g. syncing derived state in an effect. Existing code predates the
+      // compiler, so they're warnings: CI caps the warning count
+      // (`npm run lint`) so it can only go down, and new code should follow
+      // them. rules-of-hooks stays an error.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/immutability': 'warn',
+      // Fast-refresh hint for files that export both components and helpers.
+      'react-refresh/only-export-components': 'warn',
+    },
   },
 ])

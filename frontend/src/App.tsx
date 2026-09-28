@@ -436,7 +436,7 @@ export function App() {
   useEffect(() => {
     if (dockHandoffConsumedRef.current) return;
     if (conversationIdFromUrl || shareTokenFromUrl) return;
-    let seeded: { role: "user" | "assistant"; content: string }[] | null = null;
+    let seeded: { role: "user" | "assistant"; content: string }[] | null;
     try {
       const raw = sessionStorage.getItem("ul_dock_handoff");
       if (!raw) return;
