@@ -251,6 +251,23 @@ export async function createReportCheckoutSession(
   return resp.json();
 }
 
+export interface PaymentsStatus {
+  reports: boolean;
+  subscriptions: boolean;
+}
+
+let _paymentsStatus: Promise<PaymentsStatus> | null = null;
+
+/** Which purchases can start (Stripe configured). Fetched once per page load.
+ *  If the check itself fails, purchases are treated as unavailable: a
+ *  "coming soon" note beats a buy button that silently does nothing. */
+export function fetchPaymentsStatus(): Promise<PaymentsStatus> {
+  _paymentsStatus ??= fetch(`${API_BASE}/api/payments/status`)
+    .then((r) => (r.ok ? r.json() : { reports: false, subscriptions: false }))
+    .catch(() => ({ reports: false, subscriptions: false }));
+  return _paymentsStatus;
+}
+
 export async function checkReportAccess(
   parcel: SelectedParcel,
 ): Promise<{ has_access: boolean; reason: string }> {
