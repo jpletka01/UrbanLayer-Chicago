@@ -19,7 +19,8 @@ setup:  ## Create .venv, install backend + frontend deps, copy env examples
 test: test-backend test-frontend  ## Run all unit tests (no network, keys, or Qdrant needed)
 
 test-backend:
-	$(PY) -m pytest backend/tests eval/test_judge.py -q -m "not integration"
+	$(PY) -m pytest backend/tests -q -m "not integration"
+	$(PY) -m pytest eval/test_judge.py eval/tests -q
 
 test-frontend:
 	cd frontend && npm test
