@@ -52,10 +52,10 @@ docker compose build backend                      # rebuild after dep changes
 
 # Production server (ssh alias urbanlayer-prod) — live at https://urbanlayerchicago.com
 ssh-add ~/.ssh/id_ed25519                         # load key (has passphrase)
-ssh urbanlayer-prod                           # SSH into server
-# On server: cd /opt/urbanlayer
-git fetch origin && git merge origin/main         # pull latest code
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+ssh urbanlayer-prod                               # SSH in as jack (root login is disabled)
+# Normally CI deploys on merge. Manual fallback, on the server:
+sudo /usr/local/bin/urbanlayer-deploy             # ff-merge origin/main, compose up --build, health check
+cd frontend && npm run sweep:live                 # after a deploy: console errors / failed requests / overflow, desktop + phone
 ```
 
 ## Key Conventions
@@ -79,7 +79,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ## Workflow Rules
 
 - **⚠️ Pushing to `main` IS deploying.** The production server (`urbanlayer-prod` / `/opt/urbanlayer`) **auto-pulls and rebuilds on every push to `main`** — a push goes live within minutes with no manual `docker compose up`. (Verified 2026-06-11: R7 commit `a9b7e6b` auto-shipped ~12 min after push.)
-- **Deploy requires confirmation → so `git push` to `main` requires confirmation.** Because push = deploy, always ask before pushing production code to `main`, the same way you'd ask before a manual deploy. Commit freely on a branch; **get approval before pushing to `main`.** Docs-only/non-code changes can be pushed freely. The manual deploy command (below) is now a fallback; normally the push does it.
+- **Deploy requires confirmation → so merging to `main` requires confirmation.** Because merge = deploy, always ask before merging production code, the same way you'd ask before a manual deploy. Commit freely on a branch.
+- **`main` is protected (2026-09-28): every change goes through a PR** with required checks `test` + `lint` (enforced for admins; repo auto-merge is off). Follow the `ship-and-verify` skill; finish user-facing changes with the `live-site-sweep` skill; measure retrieval/prompt/data changes with the `eval-refresh` skill.
+- **Production server:** hardened per `deploy/hardening-runbook.md` (origin only reachable via Cloudflare, root login off, CI deploys as a command-locked `deploy` user). `ssh urbanlayer-prod` logs in as `jack`; server commands need `sudo`.
 - **Commit freely; use clear, conventional commit messages.** Branch for code work that isn't ready to ship.
 - **Verify a deploy via the live API**, not just the server's git HEAD — confirm the running image actually serves the change (e.g. `curl https://urbanlayerchicago.com/api/scorecard?address=...` and check the response). The server's git tree can advance ahead of (or independently of) what the running container serves.
 - **Archive completed work** — when a feature ships, follow the archivation rules in `claude-context/README.md`. Strip completed items from active docs, create archive entry, keep active files lean.
