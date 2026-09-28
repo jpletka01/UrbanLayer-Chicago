@@ -237,8 +237,14 @@ QUERIES = [
         "id": "demolition_permit",
         "question": "What are the requirements for a demolition permit in Chicago?",
         "category": "non_zoning",
-        "why": "Demo permit rules — Title 14A not in index (parser regex), but 13-12 and 15-4 have relevant content",
-        "gold_sections": ["13-12", "15-4", "13-32"],
+        # Gold revised 2026-09-28: when this query was written, Title 14A (the building
+        # code's administrative provisions) wasn't indexed, so the gold named adjacent
+        # chapters. Since Title 14 was indexed (2026-09-08) retrieval ranks 14A-4-407
+        # ("DEMOLITION", the permit requirements) and 11-4-2170 ("Demolitions and
+        # renovations: permit and notification requirements") first; the grader
+        # scored that as a D against the stale gold.
+        "why": "Demo permit rules live in 14A-4-407 and 11-4-2170; 13-12, 15-4, 13-32 are related",
+        "gold_sections": ["14A-4-407", "11-4-2170", "13-12", "15-4", "13-32"],
         "answer_must_contain": ["demolition"],
     },
     {
