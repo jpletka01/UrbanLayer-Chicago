@@ -171,6 +171,18 @@ echo 'Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "04:30";' > /etc/apt/apt.conf.d/52urbanlayer-reboot
 ```
 
+## 8b. Keep the demo addresses warm (2 min)
+
+A first lookup of an address takes 15–40 s; the homepage's "Try" addresses should load
+in about a second for a first-time visitor.
+
+```bash
+cp /opt/urbanlayer/deploy/warm-demo-cache.{service,timer} /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now warm-demo-cache.timer
+```
+
+The deploy script also warms them after each restart.
+
 ## 9. Check the vector store wasn't tampered with (5 min)
 
 Qdrant was reachable without auth from the internet until 2026-09-08, so the municipal-code

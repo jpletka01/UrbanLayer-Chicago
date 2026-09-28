@@ -1,0 +1,7 @@
+[Unit]
+Description=Warm the UrbanLayer demo-address caches
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/urbanlayer/deploy/warm-demo-cache.sh
