@@ -686,5 +686,11 @@
     "accessCodeExhausted": "This code has reached its redemption limit.",
     "accessCodeError": "Something went wrong — please try again.",
     "compBlurb": "Early access — complimentary Pro features until {{date}}."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "There's nothing at this address. Look up a Chicago property or explore parcels instead.",
+    "lookup": "Look up an address",
+    "discover": "Explore parcels"
   }
 }

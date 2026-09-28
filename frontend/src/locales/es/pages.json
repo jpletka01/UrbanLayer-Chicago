@@ -686,5 +686,11 @@
     "accessCodeExhausted": "Este código alcanzó su límite de canjes.",
     "accessCodeError": "Algo salió mal — inténtalo de nuevo.",
     "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "No hay nada en esta dirección. Busca una propiedad de Chicago o explora parcelas.",
+    "lookup": "Buscar una dirección",
+    "discover": "Explorar parcelas"
   }
 }
