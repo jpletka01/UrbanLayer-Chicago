@@ -28,11 +28,11 @@
     "upgradeToPro": "Upgrade to Pro",
     "billingNote": "Reports are one-time purchases. Pro subscriptions are billed monthly via Stripe. Cancel anytime.",
     "freeFeatures": [
-      "25 AI queries per day",
-      "Property scorecard lookups",
+      "25 AI questions per day with a free account (3 without signing in)",
+      "Unlimited Property Profile lookups",
       "Interactive map with data layers",
       "Crime, 311, permits, violations data",
-      "Municipal code search (RAG)",
+      "Cited answers from the municipal code",
       "Conversation history",
       "Shareable conversation links"
     ],
@@ -44,9 +44,9 @@
       "A deliverable you can hand to a lender or client"
     ],
     "proFeatures": [
-      "Unlimited AI queries",
+      "Up to 100 AI questions per day",
       "Unlimited Development Feasibility Reports",
-      "Site Explorer (coming soon)",
+      "Full Property Discovery results, map, and CSV export",
       "Priority support",
       "All Free features included"
     ]

@@ -10,7 +10,7 @@ const SECTIONS = [
   { id: "router", title: "LLM Router" },
   { id: "domain-orchestrators", title: "Domain Orchestrators" },
   { id: "synthesis", title: "Streaming Synthesis" },
-  { id: "scorecard", title: "The Scorecard" },
+  { id: "scorecard", title: "The Property Profile" },
   { id: "parcel-identity", title: "Parcel Identity" },
   { id: "lot-facts", title: "Lot Facts & Provenance" },
   { id: "report", title: "Feasibility Report (PDF)" },
@@ -240,12 +240,12 @@ export function AboutPage() {
           <Table
             headers={["Workflow", "Question", "Surfaces"]}
             rows={[
-              ["Evaluate (today's wedge)", "\"I found a parcel. Should I develop it?\"", "Scorecard (free hook) → Chat (cited analysis) → $25 Report (the deliverable)"],
+              ["Evaluate (today's wedge)", "\"I found a parcel. Should I develop it?\"", "Property Profile (free hook) → Chat (cited analysis) → $25 Report (the deliverable)"],
               ["Discover (second wedge)", "\"Find me parcels worth evaluating.\"", "Property Discovery workbench (filters over ~949k parcels) → each result flows into Evaluate"],
             ]}
           />
           <P>
-            The <Accent>Scorecard</Accent> is the hook: instant, free, anonymous, and <em>zero LLM cost</em> — it
+            The <Accent>Property Profile</Accent> is the hook: fast, free, anonymous, and <em>zero LLM cost</em> — it
             renders structured facts straight from the data layer. The <Accent>chat copilot</Accent> is the engine
             and the differentiator: an LLM router geocodes the address, resolves the parcel, and dispatches parallel
             retrieval across crime, 311, permits, violations, business licenses, zoning, regulatory overlays,
@@ -553,7 +553,7 @@ export function AboutPage() {
           </P>
           <P>
             <Accent>The symptom.</Accent> One day <Mono>/api/report</Mono> started returning 504s — every report timed
-            out. Scorecard and chat stayed up, so the outage was report-only. <Accent>The first wrong guess:</Accent>{" "}
+            out. Property Profile and chat stayed up, so the outage was report-only. <Accent>The first wrong guess:</Accent>{" "}
             an out-of-memory kill. The box runs ML models in 8GB, the timing felt like memory pressure, so the first
             response hardened against OOM — swap was grown 2GB → 8GB and the PDF render was moved into an isolated
             child process. Sensible defense-in-depth, but it didn't fix the 504s, because memory was never the cause.
@@ -849,10 +849,10 @@ NEIGHBORHOOD-WIDE (community area name):
             enough information to weave trends into the narrative.
           </P>
 
-          {/* ── The Scorecard ── */}
-          <SectionHeading id="scorecard">The Scorecard</SectionHeading>
+          {/* ── The Property Profile ── */}
+          <SectionHeading id="scorecard">The Property Profile</SectionHeading>
           <P>
-            The Scorecard is the product's hook: type an address, get the parcel's complete structured assessment:
+            The Property Profile is the product's hook: type an address, get the parcel's complete structured assessment:
             about a second once an address is cached, 15–40 seconds for a first lookup while 25+ sources respond. It is <Accent>free, anonymous, and zero LLM cost</Accent> — <Mono>GET /api/scorecard</Mono> reads
             straight from the data layer and domain orchestrators, no synthesis pass. It earns the user's trust ("this
             is right") before asking for anything, then bridges into the chat (Investigate buttons) and the paid report
@@ -892,7 +892,7 @@ Holder    → SelectedParcel, held in SelectedParcelContext (frontend)
               select(ParcelQuery) is the ONLY write site — it calls
               /api/scorecard and commits the backend's resolved pin /
               confidence / lat / lon / address atomically
-Consumers → Scorecard (renders pin + confidence badge)
+Consumers → Property Profile (renders pin + confidence badge)
               Report   (request / entitlement / purchase keyed on pin)
               Chat     (reads per-message pins as history — read-only)
               Discovery(emits ?pin= navigation intent only)`}</Code>
@@ -960,7 +960,7 @@ Consumers → Scorecard (renders pin + confidence badge)
             Building facts fill through a provenance-labeled fallback chain: CCAO characteristics → condo unit
             characteristics → the Commercial Valuation dataset (one row <em>per building</em> per economic unit — you
             sum the latest year) → city building footprints. Fallbacks never override assessor data, and every derived
-            number carries its source (<Mono>land_sqft_source: "geometry"</Mono>), which the Scorecard renders as a
+            number carries its source (<Mono>land_sqft_source: "geometry"</Mono>), which the Property Profile renders as a
             muted suffix. Honest beats complete: planned developments show "Set by PD ordinance" instead of a blank
             FAR, and a failed zoning lookup now raises into a visible partial-failure instead of rendering as
             "no zoning".
@@ -982,7 +982,7 @@ Consumers → Scorecard (renders pin + confidence badge)
             The $25 PDF report is the revenue wedge — the moment a professional needs a deliverable for a client,
             lender, or partner. It's priced per-unit (no subscription threshold), it demonstrates every underlying
             system in one artifact, and it markets itself ("Generated by UrbanLayer" travels to whoever receives it).
-            <Mono>GET /api/report</Mono> assembles the same retrieval the Scorecard uses, then renders HTML/CSS to PDF
+            <Mono>GET /api/report</Mono> assembles the same retrieval the Property Profile uses, then renders HTML/CSS to PDF
             via <Accent>WeasyPrint</Accent> over a Jinja template (<Mono>zoning_report.html</Mono>) with matplotlib map
             overlays.
           </P>
@@ -1088,7 +1088,7 @@ Consumers → Scorecard (renders pin + confidence badge)
             (<Mono>fetchReport</Mono>, <Mono>createReportCheckoutSession</Mono>, <Mono>checkReportAccess</Mono>) all
             take a whole <Mono>SelectedParcel</Mono> and derive the wire params internally — hand-constructing report
             identity is a compile error. Legacy pin-less purchase rows stay entitled permanently via a 4-decimal
-            coordinate match. Stripe's success URL is <Mono>?pin=…&amp;report_purchased=1</Mono>, which the Scorecard
+            coordinate match. Stripe's success URL is <Mono>?pin=…&amp;report_purchased=1</Mono>, which the Property Profile
             reads to auto-download the report right after payment.
           </P>
 
@@ -1097,7 +1097,7 @@ Consumers → Scorecard (renders pin + confidence badge)
           <P>
             Discovery is the second workflow: "find me parcels worth evaluating." It's a filter/search workbench
             covering the <Accent>full city — all 77 community areas / ~949k parcels</Accent> — where each result flows
-            straight into the Evaluate pipeline (click a row → Scorecard → Report). Free users see a top-10 teaser;
+            straight into the Evaluate pipeline (click a row → Property Profile → Report). Free users see a top-10 teaser;
             premium users get the full list, an interactive map, and CSV export.
           </P>
           <Sub>Compile, don't evaluate</Sub>
@@ -1665,7 +1665,7 @@ Consumers → Scorecard (renders pin + confidence badge)
           <P>
             <Mono>react-router-dom</Mono> routes: <Mono>/</Mono> (address-first splash),{" "}
             <Mono>/c/:id</Mono> (conversation), <Mono>/s/:shareToken</Mono> (shared read-only view),{" "}
-            <Mono>/scorecard</Mono> (parcel Scorecard, non-AI), <Mono>/discovery</Mono> (Property Discovery
+            <Mono>/scorecard</Mono> (parcel Property Profile, non-AI), <Mono>/discovery</Mono> (Property Discovery
             workbench), <Mono>/pricing</Mono> (Free vs Pro), <Mono>/admin</Mono> (dashboard, admin-only
             via <Mono>ProtectedRoute</Mono>), and <Mono>/about</Mono> (this page). <Mono>/explore</Mono> was retired —
             it now redirects to <Mono>/discovery</Mono>. Conversations and parcels are bookmarkable and work with
@@ -1722,7 +1722,7 @@ Consumers → Scorecard (renders pin + confidence badge)
           {/* ── Design System ── */}
           <SectionHeading id="design-system">Design System</SectionHeading>
           <P>
-            As the surface area grew (Scorecard, Report, Discovery, chat, landing), arbitrary <Mono>text-[Npx]</Mono>{" "}
+            As the surface area grew (Property Profile, Report, Discovery, chat, landing), arbitrary <Mono>text-[Npx]</Mono>{" "}
             sizes, ad-hoc <Mono>white/opacity</Mono> chrome, and off-palette hues had crept in. A unification pass
             replaced them with a small, role-based token system — the same tokens this page is built on. The goal:
             decisions are made by <em>picking a token</em>, not inventing a value.
@@ -1826,7 +1826,7 @@ Consumers → Scorecard (renders pin + confidence badge)
               ["ML preload at startup", "Lazy-load on first request", "First user doesn't wait 8s for model download; OOM caught at deploy time, not at runtime", "Slower container startup (~30s); startup fails if model missing"],
               ["CPU-only PyTorch", "Full PyTorch with CUDA", "Production server is x86 CPU; avoids shipping ~2GB of unused CUDA libraries", "No GPU acceleration; inference is slower (acceptable for query volume)"],
               ["Conversation sharing via token", "Snapshot duplication, public URLs", "No data duplication; CASCADE delete auto-revokes; owner retains control", "Share breaks if conversation is deleted; no offline/archived shares"],
-              ["Scorecard as free zero-LLM hook", "Gate everything behind chat/auth", "Instant zero-cost facts earn trust before asking for an account or payment; pushes users to Scorecard first, chat second", "Some users never reach the paid report"],
+              ["Property Profile as free zero-LLM hook", "Gate everything behind chat/auth", "Fast, zero-cost facts earn trust before asking for an account or payment; pushes users to Property Profile first, chat second", "Some users never reach the paid report"],
               ["$25 per-unit report wedge", "Subscription-only", "A $25 per-parcel decision is a far lower bar than $99/mo; a tangible PDF that markets itself", "Lower ARPU than pure subscription; per-report compute cost"],
               ["Precomputed zoning cache", "On-demand reranked AI extraction", "Reranker too slow on prod vCPUs; deterministic full-section fetch + hybrid merge is faster AND more accurate (57/59 high-confidence)", "Cache must be rebuilt when Title 17 changes; setbacks uncross-validated"],
               ["SelectedParcel single write site", "Resolve the parcel ad hoc per surface", "Guarantees the pin shown is the pin queried, purchased, and reported on", "More plumbing; every handoff must thread identity"],
@@ -1866,7 +1866,7 @@ Consumers → Scorecard (renders pin + confidence badge)
           <div className="mt-16 pt-8 border-t border-dark-border/50">
             <p className="text-text-muted text-body">
               ~655 backend tests. 14,535 code chunks indexed. ~949k parcels in the discovery index.
-              25+ live datasets. 4 domain orchestrators. Scorecard + cited chat + $25 PDF report + discovery.
+              25+ live datasets. 4 domain orchestrators. Property Profile + cited chat + $25 PDF report + discovery.
               Built with FastAPI, Claude, Qdrant, React, Mapbox, deck.gl, WeasyPrint, and Stripe.
               Live at urbanlayerchicago.com.
             </p>

@@ -67,7 +67,7 @@ export function buildScorecardCSV(ctx: ContextObject, address: string, comparabl
   const date = new Date().toISOString().slice(0, 10);
 
   // Header
-  parts.push(`Property Scorecard — ${address}`);
+  parts.push(`Property Profile — ${address}`);
   parts.push(`Generated,${date}`);
   parts.push("");
 

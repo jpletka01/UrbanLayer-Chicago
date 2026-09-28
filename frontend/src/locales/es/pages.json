@@ -28,11 +28,11 @@
     "upgradeToPro": "Actualizar a Pro",
     "billingNote": "Los informes son compras únicas. Las suscripciones Pro se facturan mensualmente a través de Stripe. Cancele en cualquier momento.",
     "freeFeatures": [
-      "25 consultas de IA por día",
-      "Búsquedas de fichas de propiedades",
+      "25 consultas de IA por día con una cuenta gratuita (3 sin iniciar sesión)",
+      "Búsquedas ilimitadas de Fichas de propiedades",
       "Mapa interactivo con capas de datos",
       "Datos de delitos, 311, permisos e infracciones",
-      "Búsqueda en el código municipal (RAG)",
+      "Respuestas citadas del código municipal",
       "Historial de consultas",
       "Enlaces de conversaciones para compartir"
     ],
@@ -44,9 +44,9 @@
       "Un entregable para presentar a un prestamista o cliente"
     ],
     "proFeatures": [
-      "Consultas de IA ilimitadas",
+      "Hasta 100 consultas de IA por día",
       "Informes de Viabilidad de Desarrollo ilimitados",
-      "Explorador de sitios (próximamente)",
+      "Resultados completos de Descubrir, con mapa y exportación CSV",
       "Soporte prioritario",
       "Todas las funciones gratuitas incluidas"
     ]
