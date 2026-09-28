@@ -55,7 +55,13 @@
     "title": "Ficha de la propiedad",
     "subtitle": "El panel de investigación gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y comparables. Ingresa una dirección.",
     "search": "Buscar",
-    "loading": "Cargando...",
+    "loading": {
+      "title": "Preparando la Ficha de {{address}}",
+      "titleNoAddress": "Preparando la Ficha",
+      "sources": "Consultando registros de la parcela, zonificación, normativas superpuestas, avalúos, impuestos, ventas recientes y datos del vecindario.",
+      "note": "La primera consulta de una dirección revisa más de 25 fuentes de datos públicos y suele tardar entre 15 y 40 segundos. Después carga en aproximadamente un segundo.",
+      "elapsed": "{{seconds}} s"
+    },
     "addressNotFound": "No encontramos esa dirección en Chicago. UrbanLayer cubre propiedades de la ciudad de Chicago; intente con un formato como \"1601 N Milwaukee Ave\".",
     "locationNotFound": "No se pudieron cargar los datos de la propiedad para esta ubicación.",
     "noResults": "No se encontraron resultados.",

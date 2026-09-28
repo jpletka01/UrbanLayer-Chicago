@@ -98,7 +98,7 @@
     "steps": [
       {
         "title": "Enter an address",
-        "description": "Start with the property — type any Chicago address and the parcel's Property Profile opens instantly. No account, no forms.",
+        "description": "Start with the property: type any Chicago address and the parcel's Property Profile opens in seconds. No account, no forms.",
         "query": "2100 N Damen Ave"
       },
       {

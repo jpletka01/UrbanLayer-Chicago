@@ -55,7 +55,13 @@
     "title": "Property Profile",
     "subtitle": "The free research dashboard for any Chicago parcel — zoning, taxes, incentives, comps. Enter an address.",
     "search": "Search",
-    "loading": "Loading...",
+    "loading": {
+      "title": "Building the Property Profile for {{address}}",
+      "titleNoAddress": "Building the Property Profile",
+      "sources": "Checking parcel records, zoning, overlays, assessments, taxes, recent sales, and neighborhood data.",
+      "note": "The first lookup of an address queries 25+ public data sources and usually takes 15–40 seconds. After that it loads in about a second.",
+      "elapsed": "{{seconds}}s"
+    },
     "addressNotFound": "Could not find that address in Chicago. UrbanLayer covers City of Chicago properties; try a format like \"1601 N Milwaukee Ave\".",
     "locationNotFound": "Could not load property data for this location.",
     "noResults": "No results found.",

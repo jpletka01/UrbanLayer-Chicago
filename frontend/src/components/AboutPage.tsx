@@ -219,8 +219,9 @@ export function AboutPage() {
           <P>
             UrbanLayer is a <Accent>parcel feasibility engine</Accent> for Chicago real-estate professionals — it
             answers the question every developer, architect, and attorney asks before committing capital:{" "}
-            <em>"What can I build here, and should I?"</em> Type an address and in ~2 seconds you get the parcel's
-            full <Accent>Scorecard</Accent> (zoning, overlays, incentives, tax projection, comparable sales);
+            <em>"What can I build here, and should I?"</em> Type an address and you get the parcel's
+            full <Accent>Property Profile</Accent> (about a second when cached; 15–40 seconds on a first lookup, which
+            queries 25+ public sources) (zoning, overlays, incentives, tax projection, comparable sales);
             interrogate it via chat with cited municipal code; and buy a $25
             PDF <Accent>Development Feasibility Report</Accent>. Live at <Mono>urbanlayerchicago.com</Mono>.
           </P>
@@ -851,8 +852,8 @@ NEIGHBORHOOD-WIDE (community area name):
           {/* ── The Scorecard ── */}
           <SectionHeading id="scorecard">The Scorecard</SectionHeading>
           <P>
-            The Scorecard is the product's hook: type an address, get the parcel's complete structured assessment in
-            ~2 seconds. It is <Accent>free, anonymous, and zero LLM cost</Accent> — <Mono>GET /api/scorecard</Mono> reads
+            The Scorecard is the product's hook: type an address, get the parcel's complete structured assessment:
+            about a second once an address is cached, 15–40 seconds for a first lookup while 25+ sources respond. It is <Accent>free, anonymous, and zero LLM cost</Accent> — <Mono>GET /api/scorecard</Mono> reads
             straight from the data layer and domain orchestrators, no synthesis pass. It earns the user's trust ("this
             is right") before asking for anything, then bridges into the chat (Investigate buttons) and the paid report
             (Download CTA).

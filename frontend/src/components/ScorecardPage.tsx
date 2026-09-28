@@ -276,12 +276,38 @@ function Address311Block({ data }: { data: ScorecardResponse }) {
   );
 }
 
-function ScorecardSkeleton() {
+// A cold lookup fans out to 25+ public data sources and takes ~15–40 s; a warm
+// one is ~1 s. The bare pulse boxes that used to fill that wait read as a hung
+// page, so the loading state names the address, says what's being checked,
+// counts elapsed time, and sets the expectation. (No fake per-step progress:
+// the sources resolve in parallel and the backend doesn't stream them.)
+function ScorecardSkeleton({ address }: { address: string }) {
+  const { t } = useTranslation("pages");
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const id = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
-    <div className="animate-pulse space-y-6">
+    <div className="space-y-6">
+      <div role="status" aria-live="polite" className="max-w-2xl mx-auto text-center space-y-2">
+        <div className="flex items-center justify-center gap-2 text-subtitle text-text-primary">
+          <span className="h-2 w-2 rounded-full bg-accent animate-pulse" aria-hidden="true" />
+          {address ? t("scorecard.loading.title", { address }) : t("scorecard.loading.titleNoAddress")}
+          <span className="font-mono text-caption text-text-muted tabular-nums">
+            {t("scorecard.loading.elapsed", { seconds })}
+          </span>
+        </div>
+        <p className="text-body text-text-secondary">{t("scorecard.loading.sources")}</p>
+        <p className="text-caption text-text-muted">{t("scorecard.loading.note")}</p>
+      </div>
+      <div className="animate-pulse space-y-6" aria-hidden="true">
       <div className="bg-dark-surface border border-dark-border rounded-xl h-32" />
       <div className="bg-dark-surface border border-dark-border rounded-xl h-24" />
       <div className="bg-dark-surface border border-dark-border rounded-xl h-64" />
+      </div>
     </div>
   );
 }
@@ -784,7 +810,7 @@ export default function ScorecardPage() {
           </div>
         )}
 
-        {loading && <ScorecardSkeleton />}
+        {loading && <ScorecardSkeleton address={address} />}
 
         {/* Code-question redirect (state 5): neutral surface, NOT an error color —
             reframes "wrong box" as "right tool" and hands the exact text to the
