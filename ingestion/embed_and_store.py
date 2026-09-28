@@ -14,6 +14,7 @@ Modes:
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import logging
 import uuid
@@ -167,6 +168,7 @@ def _run_full(
     model: SentenceTransformer,
     *,
     save_new_manifest: bool = False,
+    chunks_path: Path = CHUNKS_FILE,
 ) -> None:
     settings = get_settings()
     code_buffer: list[PointStruct] = []
@@ -182,7 +184,8 @@ def _run_full(
             client.upsert(settings.qdrant_zoning_collection, points=zoning_buffer)
             zoning_buffer = []
 
-    with CHUNKS_FILE.open() as fh:
+    opener = gzip.open if chunks_path.suffix == ".gz" else open
+    with opener(chunks_path, "rt") as fh:
         batch: list[dict] = []
         for line in fh:
             batch.append(json.loads(line))
@@ -211,13 +214,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--recreate", action="store_true", help="Drop and recreate collections")
     parser.add_argument("--incremental", action="store_true", help="Only re-embed changed sections")
+    parser.add_argument(
+        "--chunks", type=Path, default=None,
+        help="Embed this chunks file (.jsonl or .jsonl.gz) instead of the full corpus, e.g. "
+             "ingestion/sample/chunks_t16_17.jsonl.gz for a local demo. Skips the manifest.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     settings = get_settings()
 
-    if not CHUNKS_FILE.exists():
-        raise SystemExit(f"No chunks at {CHUNKS_FILE} -- run ingestion.chunk first")
+    chunks_path = args.chunks or CHUNKS_FILE
+    if not chunks_path.exists():
+        raise SystemExit(f"No chunks at {chunks_path} -- run ingestion.chunk first")
 
     log.info("Loading embedding model %s", settings.embedding_model)
     model = SentenceTransformer(settings.embedding_model)
@@ -232,11 +241,20 @@ def main() -> None:
                 pass
     _ensure_collection(client, settings.qdrant_code_collection, settings.embedding_dim)
     _ensure_collection(client, settings.qdrant_zoning_collection, settings.embedding_dim)
+    if args.chunks and not args.recreate:
+        # Point ids are random, so embedding a sample into a populated collection
+        # would duplicate every chunk it shares with the corpus.
+        existing = client.count(settings.qdrant_code_collection).count
+        if existing:
+            raise SystemExit(
+                f"{settings.qdrant_code_collection} already has {existing} points; "
+                "--chunks is for seeding an empty Qdrant (add --recreate to replace it)."
+            )
 
     if args.incremental:
         _run_incremental(client, model)
     else:
-        _run_full(client, model, save_new_manifest=True)
+        _run_full(client, model, save_new_manifest=args.chunks is None, chunks_path=chunks_path)
 
 
 if __name__ == "__main__":

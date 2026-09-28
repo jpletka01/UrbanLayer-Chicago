@@ -3,7 +3,7 @@ PYTHON ?= python3.11
 VENV := .venv
 PY := $(VENV)/bin/python
 
-.PHONY: help setup test test-backend test-frontend lint check dev up down
+.PHONY: help setup test test-backend test-frontend lint check dev up down seed-demo
 
 help:  ## Show this help
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -37,6 +37,10 @@ dev:  ## Qdrant in Docker, backend on :8001, frontend on :5173 (Ctrl-C stops bot
 	$(VENV)/bin/uvicorn backend.main:app --reload --port 8001 & \
 	(cd frontend && npm run dev) & \
 	wait
+
+seed-demo:  ## Embed the committed zoning-code sample (Titles 16-17) into an empty local Qdrant
+	docker compose up -d qdrant
+	$(PY) -m ingestion.embed_and_store --chunks ingestion/sample/chunks_t16_17.jsonl.gz
 
 up:  ## Full stack in Docker (nginx frontend on :80; set FRONTEND_PORT to change)
 	docker compose -f docker-compose.yml up --build
