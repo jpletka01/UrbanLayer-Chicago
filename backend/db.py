@@ -647,21 +647,21 @@ async def delete_conversation(
 
 async def clear_all_conversations(user_id: str | None = None) -> None:
     conn = _get_db()
-    try:
-        import shutil
-        settings = get_settings()
-        if settings.upload_dir.is_dir():
-            shutil.rmtree(settings.upload_dir)
-            settings.upload_dir.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        pass
-    if user_id:
-        await conn.execute(
-            "DELETE FROM conversations WHERE user_id = ? OR user_id IS NULL",
-            (user_id,),
-        )
-    else:
-        await conn.execute("DELETE FROM conversations")
+    owner_filter = "user_id = ? OR user_id IS NULL" if user_id else "1 = 1"
+    params = (user_id,) if user_id else ()
+    # Remove only this user's upload files. (This used to rmtree the whole
+    # upload dir, so one user's "clear all" deleted every user's files.)
+    cur = await conn.execute(
+        "SELECT storage_path FROM uploads WHERE conversation_id IN "
+        f"(SELECT id FROM conversations WHERE {owner_filter})",
+        params,
+    )
+    for row in await cur.fetchall():
+        try:
+            Path(row["storage_path"]).unlink(missing_ok=True)
+        except OSError:
+            log.warning("could not remove upload file %s", row["storage_path"])
+    await conn.execute(f"DELETE FROM conversations WHERE {owner_filter}", params)
     await conn.commit()
 
 
@@ -733,6 +733,16 @@ async def get_conversation_share(conv_id: str) -> dict | None:
     )
     row = await cur.fetchone()
     return dict(row) if row else None
+
+
+async def user_owns_conversation(conv_id: str, user_id: str) -> bool:
+    """Same ownership rule as get_conversation's user-scoped branch."""
+    db = _get_db()
+    cur = await db.execute(
+        "SELECT 1 FROM conversations WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+        (conv_id, user_id),
+    )
+    return await cur.fetchone() is not None
 
 
 async def revoke_share(conv_id: str, user_id: str) -> bool:
