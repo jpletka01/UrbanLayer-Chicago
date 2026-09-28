@@ -29,6 +29,7 @@ from backend.analytics import compute_analytics
 from backend.retrieval.cache import TTLCache
 from backend.assembler import assemble_context
 from backend.config import get_settings, validate_production
+from backend.citations import citation_problems, data_sources_present
 from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
 from backend.llm import tracked_create
@@ -1282,6 +1283,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
 
     first_token = True
     t_first_token: int | None = None
+    answer_parts: list[str] = []
     try:
         async for token in stream_answer(
             context=context,
@@ -1297,6 +1299,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             chunk_t = elapsed_ms() if first_token else None
             if first_token:
                 t_first_token = chunk_t
+            answer_parts.append(token)
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
             first_token = False
     except Exception as exc:
@@ -1306,6 +1309,14 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
 
     if t_first_token is not None:
         timings["first_token"] = t_first_token
+
+    citation_warnings: list[str] | None = None
+    if answer_parts and not error_msg:
+        citation_warnings = citation_problems(
+            "".join(answer_parts), len(context.code_chunks), data_sources_present(context),
+        ) or None
+        if citation_warnings:
+            log.warning("Answer has unsupported citations (%s): %s", request_group, citation_warnings)
 
     # Generate turn summary for context management (fire-and-forget)
     if plan and not error_msg:
@@ -1321,7 +1332,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             log.warning("Failed to generate turn summary", exc_info=True)
 
     timings["total"] = elapsed_ms()
-    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
+    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings, citation_warnings=citation_warnings))
 
     asyncio.create_task(_save_request_log(
         request_group, req, plan, elapsed_ms(),

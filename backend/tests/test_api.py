@@ -335,6 +335,37 @@ class TestChatEndpoint:
         assert isinstance(plan_event["t_ms"], int)
 
 
+    def _done_for_answer(self, client, mock_plan, mock_context, answer: str) -> dict:
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map, \
+             patch("backend.main.stream_answer") as mock_stream:
+            mock_route.return_value = mock_plan
+            mock_retrieve.return_value = mock_context
+            mock_map.return_value = {}
+
+            async def fake_stream(**kwargs):
+                yield answer
+
+            mock_stream.return_value = fake_stream()
+            response = client.post("/chat", json={"message": "Crime in Wicker Park?", "history": []})
+        return next(e for e in _parse_sse_events(response.text) if e.get("type") == "done")
+
+    def test_done_reports_unbacked_citations(self, client, mock_plan, mock_context):
+        # The context has crime data and no code chunks.
+        done = self._done_for_answer(
+            client, mock_plan, mock_context, "Theft leads [data:crime]; see [2] and [data:permits].",
+        )
+        assert done["citation_warnings"] == [
+            "[2] cites a code chunk that wasn't retrieved (0 available)",
+            "[data:permits] cited but that data wasn't in the context",
+        ]
+
+    def test_done_has_no_warnings_for_backed_citations(self, client, mock_plan, mock_context):
+        done = self._done_for_answer(client, mock_plan, mock_context, "100 incidents [data:crime].")
+        assert done.get("citation_warnings") is None
+
+
 class TestAdminJudgeEndpoint:
     def test_returns_empty_when_no_file(self, client):
         with patch("backend.main.Path") as MockPath:
