@@ -259,6 +259,31 @@ class TestChatEndpoint:
         assert len(token_events) == 1
         assert "neighborhood" in token_events[0]["text"].lower()
 
+    def test_clarification_is_translated_without_a_conversation(self, client):
+        """Regression: `settings` was only bound inside `if req.conversation_id`,
+        so a non-English clarification on a fresh chat raised UnboundLocalError,
+        was swallowed, and the user got the English text."""
+        clarification_plan = RetrievalPlan(
+            sources=[],
+            location=Location(raw="", type="none"),
+            intent="clarification_needed",
+            clarification="Which neighborhood are you asking about?",
+        )
+        translated = MagicMock()
+        translated.content = [MagicMock(type="text", text="¿Sobre qué barrio pregunta?")]
+
+        with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
+             patch("backend.main.tracked_create", new_callable=AsyncMock) as mock_create:
+            mock_route.return_value = clarification_plan
+            mock_create.return_value = translated
+            response = client.post(
+                "/chat",
+                json={"message": "¿Cómo está el crimen?", "history": [], "language": "es"},
+            )
+
+        token_events = [e for e in _parse_sse_events(response.text) if e.get("type") == "token"]
+        assert token_events[0]["text"] == "¿Sobre qué barrio pregunta?"
+
     def test_chat_router_error_returns_error_event(self, client):
         with patch("backend.main.route", new_callable=AsyncMock) as mock_route:
             mock_route.side_effect = Exception("Router exploded")
@@ -271,7 +296,9 @@ class TestChatEndpoint:
         events = _parse_sse_events(response.text)
         error_events = [e for e in events if e.get("type") == "error"]
         assert len(error_events) == 1
-        assert "Router failed" in error_events[0]["error"]
+        # Internals stay server-side; the user gets a generic retry message.
+        assert "Router exploded" not in error_events[0]["error"]
+        assert "try again" in error_events[0]["error"]
 
     def test_chat_includes_timing(self, client, mock_plan, mock_context):
         with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \

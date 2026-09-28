@@ -121,3 +121,33 @@ class TestContextSerialization:
         assert "Pothole" in prompt
         assert "17-2-0100" in prompt
         assert "requires_disclaimer" in prompt
+
+
+class TestFormatAnalytics:
+    """Regression: a category with no prior-month rows has change_pct=None, and
+    formatting it crashed the whole answer ("'>' not supported between
+    'NoneType' and 'int'") for any parcel with a new trend category."""
+
+    def test_new_category_formats_instead_of_crashing(self):
+        from backend.models import AnalyticsSummary, TrendItem
+        from backend.synthesizer import _format_analytics
+
+        item = TrendItem(category="Graffiti Removal", current_count=4, prior_count=0, change_pct=None)
+        text = _format_analytics(AnalyticsSummary(
+            crime_trends=[item], three11_trends=[item], permit_trends=[item],
+        ))
+        assert text.count("Graffiti Removal: 4 (new this month") == 3
+
+    def test_percentages_still_render(self):
+        from backend.models import AnalyticsSummary, TrendItem
+        from backend.synthesizer import _format_analytics
+
+        items = [
+            TrendItem(category="Theft", current_count=12, prior_count=10, change_pct=20),
+            TrendItem(category="Battery", current_count=8, prior_count=10, change_pct=-20),
+            TrendItem(category="Assault", current_count=5, prior_count=5, change_pct=0),
+        ]
+        text = _format_analytics(AnalyticsSummary(crime_trends=items))
+        assert "Theft: 12 (up 20%)" in text
+        assert "Battery: 8 (down 20%)" in text
+        assert "Assault: 5 (flat 0%)" in text

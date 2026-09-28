@@ -1131,10 +1131,17 @@ async def _apply_parcel_hint(plan, pin: str):
     return plan
 
 
+# What the user sees when a chat stage fails. The exception detail stays in the
+# server log and request_logs; it used to be streamed to the browser verbatim
+# (e.g. "Synthesizer failed: '>' not supported between ...").
+_CHAT_ERROR = "Something went wrong while answering. Please try again."
+
+
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
     elapsed_ms = lambda: int((time.monotonic() - start) * 1000)
     request_group = str(uuid.uuid4())
+    settings = get_settings()
     plan: RetrievalPlan | None = None
     error_msg: str | None = None
     timings: dict[str, int] = {}
@@ -1152,7 +1159,6 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     # Message limit enforcement + query synthesis
     try:
         if req.conversation_id:
-            settings = get_settings()
             count = await db.count_user_messages(req.conversation_id)
             if count >= settings.message_limit:
                 yield _sse(ChatChunk(
@@ -1174,7 +1180,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Pre-routing failed")
         error_msg = f"Failed to process query: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1194,7 +1200,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Router failed")
         error_msg = f"Router failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms()))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1242,7 +1248,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Retrieval failed")
         error_msg = f"Retrieval failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
         yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings))
         asyncio.create_task(_save_request_log(
             request_group, req, plan, elapsed_ms(), "error", error_msg,
@@ -1293,7 +1299,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception as exc:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
-        yield _sse(ChatChunk(type="error", error=error_msg, t_ms=elapsed_ms()))
+        yield _sse(ChatChunk(type="error", error=_CHAT_ERROR, t_ms=elapsed_ms()))
 
     if t_first_token is not None:
         timings["first_token"] = t_first_token
