@@ -1,181 +1,181 @@
 {
-  "timestamp": "2026-09-28T12:06:29.385179+00:00",
+  "timestamp": "2026-09-28T12:07:41.580215+00:00",
   "total_queries": 28,
   "grade_distribution": {
-    "A": 24,
-    "B": 4,
+    "A": 25,
+    "B": 3,
     "C": 0,
     "D": 0,
     "F": 0
   },
-  "avg_score": 0.6652,
+  "avg_score": 0.6108,
   "per_query": [
     {
       "id": "setback_single_family",
       "grade": "A",
-      "score": 0.6701,
+      "score": 0.6446,
       "issues": []
     },
     {
       "id": "home_occupation",
       "grade": "A",
-      "score": 0.4974,
+      "score": 0.7186,
       "issues": []
     },
     {
       "id": "minimum_lot_size",
       "grade": "A",
-      "score": 0.6873,
+      "score": 0.426,
       "issues": []
     },
     {
       "id": "adu_allowed",
       "grade": "A",
-      "score": 0.7466,
+      "score": 0.5679,
       "issues": []
     },
     {
       "id": "noise_ordinance",
       "grade": "A",
-      "score": 0.7288,
+      "score": 0.6469,
       "issues": []
     },
     {
       "id": "fence_height",
       "grade": "A",
-      "score": 0.6523,
+      "score": 0.6816,
       "issues": []
     },
     {
       "id": "garage_conversion",
       "grade": "A",
-      "score": 0.5325,
+      "score": 0.7304,
       "issues": []
     },
     {
       "id": "short_term_rental",
       "grade": "A",
-      "score": 0.6884,
+      "score": 0.7148,
       "issues": []
     },
     {
       "id": "deck_setback",
       "grade": "A",
-      "score": 0.6408,
+      "score": 0.6159,
       "issues": []
     },
     {
       "id": "food_trucks",
       "grade": "A",
-      "score": 0.7421,
+      "score": 0.7234,
       "issues": []
     },
     {
       "id": "tree_removal",
       "grade": "A",
-      "score": 0.5695,
+      "score": 0.6299,
       "issues": []
     },
     {
       "id": "lot_coverage_rm5",
       "grade": "B",
-      "score": 0.5936,
+      "score": 0.4681,
       "issues": []
     },
     {
       "id": "landscaping_requirements",
       "grade": "A",
-      "score": 0.7223,
+      "score": 0.6516,
       "issues": []
     },
     {
       "id": "rooftop_deck",
       "grade": "A",
-      "score": 0.726,
+      "score": 0.7251,
       "issues": []
     },
     {
       "id": "liquor_school_distance",
       "grade": "A",
-      "score": 0.5944,
+      "score": 0.4988,
       "issues": []
     },
     {
       "id": "restaurant_parking",
       "grade": "B",
-      "score": 0.5945,
+      "score": 0.4769,
       "issues": []
     },
     {
       "id": "affordable_housing",
       "grade": "A",
-      "score": 0.8268,
+      "score": 0.6901,
       "issues": []
     },
     {
       "id": "buildable_lot_definition",
       "grade": "A",
-      "score": 0.733,
+      "score": 0.4737,
       "issues": []
     },
     {
       "id": "b3_far",
-      "grade": "B",
-      "score": 0.5732,
+      "grade": "A",
+      "score": 0.4888,
       "issues": []
     },
     {
       "id": "m1_setbacks",
       "grade": "A",
-      "score": 0.6309,
+      "score": 0.4256,
       "issues": []
     },
     {
       "id": "loading_requirements",
       "grade": "A",
-      "score": 0.6325,
+      "score": 0.6171,
       "issues": []
     },
     {
       "id": "transition_zone",
       "grade": "A",
-      "score": 0.6248,
+      "score": 0.7316,
       "issues": []
     },
     {
       "id": "cannabis_dispensary",
       "grade": "A",
-      "score": 0.7484,
+      "score": 0.6774,
       "issues": []
     },
     {
       "id": "pd_process",
       "grade": "A",
-      "score": 0.7214,
+      "score": 0.6314,
       "issues": []
     },
     {
       "id": "b1_height",
       "grade": "B",
-      "score": 0.6132,
+      "score": 0.7103,
       "issues": []
     },
     {
       "id": "parking_residential_multifamily",
       "grade": "A",
-      "score": 0.6526,
+      "score": 0.5572,
       "issues": []
     },
     {
       "id": "demolition_permit",
       "grade": "A",
-      "score": 0.8071,
+      "score": 0.6217,
       "issues": []
     },
     {
       "id": "coach_house_adu",
       "grade": "A",
-      "score": 0.6764,
+      "score": 0.5557,
       "issues": []
     }
   ]

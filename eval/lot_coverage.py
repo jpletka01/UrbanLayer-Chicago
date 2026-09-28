@@ -505,6 +505,14 @@ def _by_group_matrix(results: list[AddressResult]) -> dict[str, dict[str, dict[s
     return matrix
 
 
+def _latency_ms(results: list[AddressResult]) -> dict[str, int] | None:
+    """p50/p90/max of successful /api/scorecard calls (first attempt per address)."""
+    lat = sorted(r.elapsed_ms for r in results if not r.error)
+    if not lat:
+        return None
+    return {"p50": lat[len(lat) // 2], "p90": lat[int(len(lat) * 0.9)], "max": lat[-1]}
+
+
 def _print_summary(results: list[AddressResult]) -> None:
     ok = [r for r in results if not r.error]
     stats = _field_stats(results)
@@ -514,8 +522,8 @@ def _print_summary(results: list[AddressResult]) -> None:
     print(f"{'=' * 84}")
     print(f"Addresses tested: {len(results)}   fetch errors: {len(results) - len(ok)}")
     if ok:
-        lat = sorted(r.elapsed_ms for r in ok)
-        print(f"Latency ms: p50={lat[len(lat) // 2]}  p90={lat[int(len(lat) * 0.9)]}  max={lat[-1]}")
+        lat = _latency_ms(results)
+        print(f"Latency ms: p50={lat['p50']}  p90={lat['p90']}  max={lat['max']}")
         auth = sum(1 for r in ok if r.resolved_confidence == "authoritative")
         unv = sum(1 for r in ok if r.nearest_parcel_unverified)
         print(f"Resolution: authoritative {auth}/{len(ok)}, nearest-unverified {unv}/{len(ok)}")
@@ -560,6 +568,7 @@ def _write_json(results: list[AddressResult], panel_meta: dict, path: Path) -> N
         "panel": panel_meta,
         "addresses_tested": len(results),
         "fetch_errors": sum(1 for r in results if r.error),
+        "latency_ms": _latency_ms(results),
         "per_field": {
             name: {
                 **s,
@@ -612,6 +621,10 @@ def _write_markdown(results: list[AddressResult], path: Path) -> None:
         "where the field is legitimately absent (vacant land → no building sqft,",
         "exempt → no tax) are excluded from both bases.",
         "",
+        *(
+            [f"**Latency** (`/api/scorecard`, ms): p50 {lat['p50']} · p90 {lat['p90']} · max {lat['max']}", ""]
+            if (lat := _latency_ms(results)) else []
+        ),
         "## Field Coverage",
         "",
         "| Field | Tier | Present | Missing (persistent) | Missing (transient) | Expected absent | First-hit | Persistent |",
