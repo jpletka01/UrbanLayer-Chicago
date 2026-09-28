@@ -180,7 +180,7 @@
       },
       "caveat": {
         "unverified": "Parcel identity unconfirmed — property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
-        "noBldgArea": "Building area unavailable — development capacity wasn't computed for this parcel.",
+        "noBldgArea": "Existing building size is uncertain, so we didn't estimate how much of the allowed floor area is already used.",
         "fallbackZone": "Zoning shown is a category default, not a parcel-specific lookup.",
         "partial": "Some data sources were unavailable: {{sources}}.",
         "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",

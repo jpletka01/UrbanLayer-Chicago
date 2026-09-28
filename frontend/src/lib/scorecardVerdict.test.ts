@@ -315,3 +315,18 @@ describe("scorecardVerdict — 2026-07-06 audit fixes", () => {
     expect(s.incentiveStrength).toBe("strong");
   });
 });
+
+describe("building-area caveat", () => {
+  const caveatKey = "scorecard.verdict.caveat.noBldgArea";
+
+  it("appears when an existing building's size is unknown", () => {
+    const v = computeVerdict(mk({ zone: "B3-2", far: 2.2, bldg: undefined, land: 3000, bldgClass: "5-17" }), t);
+    expect(v.caveats).toContain(caveatKey);
+  });
+
+  it("does not appear on an empty vacant lot (nothing built, nothing missing)", () => {
+    const v = computeVerdict(mk({ zone: "B3-2", far: 2.2, bldg: undefined, land: 3000, bldgClass: "1-00" }), t);
+    expect(v.caveats).not.toContain(caveatKey);
+  });
+});
+
