@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
-# SQLite backup script for UrbanLayer production server.
-# Copies the WAL-mode database safely using sqlite3 .backup command.
-# Keeps the most recent N backups (default 7).
+# SQLite backup for the UrbanLayer production server.
+# Copies the WAL-mode database safely with sqlite3's .backup command and keeps
+# the most recent N copies (default 7).
 #
-# Usage: ./scripts/backup_db.sh [backup_dir] [keep_count]
-# Cron:  0 3 * * * /opt/urbanlayer/scripts/backup_db.sh /opt/urbanlayer/backups 7
+# Usage: ./scripts/backup_db.sh [db_path] [backup_dir] [keep_count]
+# Cron:  0 3 * * * /opt/urbanlayer/scripts/backup_db.sh
+#
+# The app database is chicago.db in the backend_data Docker volume. (The old
+# default, backend/data/urbanlayer.db, never existed, so earlier cron runs
+# exited without making a backup.) These copies stay on the same host; see
+# deploy/hardening-runbook.md for shipping them off-box.
 
 set -euo pipefail
 
-DB_PATH="${1:-/opt/urbanlayer/backend/data/urbanlayer.db}"
+DB_PATH="${1:-/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db}"
 BACKUP_DIR="${2:-/opt/urbanlayer/backups}"
 KEEP="${3:-7}"
+
+command -v sqlite3 >/dev/null || { echo "sqlite3 is not installed (apt install sqlite3)" >&2; exit 1; }
 
 mkdir -p "$BACKUP_DIR"
 
