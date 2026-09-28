@@ -176,14 +176,18 @@ async def check_daily_budget() -> None:
     cutoff_ms = int(midnight.timestamp() * 1000)
 
     cur = await conn.execute(
-        "SELECT model, SUM(input_tokens) as inp, SUM(output_tokens) as out "
+        "SELECT model, SUM(input_tokens) as inp, SUM(output_tokens) as out, "
+        "SUM(cache_read_tokens) as cache_read, SUM(cache_create_tokens) as cache_write "
         "FROM llm_calls WHERE created_at >= ? GROUP BY model",
         (cutoff_ms,),
     )
     rows = await cur.fetchall()
 
     total_cost = sum(
-        estimate_cost(row["model"], row["inp"] or 0, row["out"] or 0)
+        estimate_cost(
+            row["model"], row["inp"] or 0, row["out"] or 0,
+            row["cache_read"] or 0, row["cache_write"] or 0,
+        )
         for row in rows
     )
 

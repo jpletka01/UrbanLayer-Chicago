@@ -20,15 +20,37 @@ from backend.config import get_settings
 
 log = logging.getLogger(__name__)
 
+# USD per million tokens (Anthropic first-party list prices). Feeds the admin
+# dashboard and the daily budget cap in rate_limit.py, so an out-of-date rate
+# makes the cap trip late.
 COST_PER_MTOK: dict[str, dict[str, float]] = {
     "claude-sonnet-4-6": {"input": 3.0, "output": 15.0},
-    "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.0},
+    "claude-haiku-4-5-20251001": {"input": 1.0, "output": 5.0},
 }
+# Prompt-cache pricing relative to the base input rate (5-minute TTL writes).
+CACHE_WRITE_MULTIPLIER = 1.25
+CACHE_READ_MULTIPLIER = 0.1
 
 
-def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-    rates = COST_PER_MTOK.get(model, {"input": 3.0, "output": 15.0})
-    return (input_tokens * rates["input"] + output_tokens * rates["output"]) / 1_000_000
+def estimate_cost(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int = 0,
+    cache_write_tokens: int = 0,
+) -> float:
+    """Estimated USD for one or more calls. `input_tokens` is the uncached input,
+    as the API reports it; cached reads and writes are priced separately."""
+    rates = COST_PER_MTOK.get(model)
+    if rates is None:
+        log.warning("No price for model %s; estimating at Sonnet rates", model)
+        rates = COST_PER_MTOK["claude-sonnet-4-6"]
+    input_equivalent = (
+        input_tokens
+        + cache_read_tokens * CACHE_READ_MULTIPLIER
+        + cache_write_tokens * CACHE_WRITE_MULTIPLIER
+    )
+    return (input_equivalent * rates["input"] + output_tokens * rates["output"]) / 1_000_000
 
 
 @lru_cache

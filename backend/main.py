@@ -2293,7 +2293,10 @@ async def admin_overview(request: Request, period: str = "30d", _admin: dict = D
     # Compute estimated costs
     for model, usage in overview["by_model"].items():
         usage["estimated_cost_usd"] = round(
-            estimate_cost(model, usage["input_tokens"], usage["output_tokens"]), 4,
+            estimate_cost(
+                model, usage["input_tokens"], usage["output_tokens"],
+                usage.get("cache_read_tokens", 0), usage.get("cache_create_tokens", 0),
+            ), 4,
         )
     for phase_data in overview["by_phase"].values():
         phase_data["estimated_cost_usd"] = 0.0
