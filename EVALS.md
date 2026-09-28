@@ -1,0 +1,180 @@
+# How UrbanLayer's quality is measured
+
+UrbanLayer answers questions that people act on: what can be built on a parcel,
+what it pays in tax, what the zoning code says. Every change to retrieval,
+prompts, or data sources is checked against fixed question sets before and
+after, and the results are kept in the repo. This page describes each suite,
+the latest results, their history, and where the evals are still weak.
+
+## The loop
+
+1. **A fixed, representative set** of questions or addresses, with expected
+   outcomes written down before the run.
+2. **Run the real system**: the same router, retrieval, and APIs production
+   uses, never a mock.
+3. **Score expected against actual**, deterministically wherever possible, and
+   with an LLM judge only for what can't be checked mechanically.
+4. **Keep the report.** Results go in [`eval/results/`](eval/results/), dated,
+   and each run is a row in [`history.csv`](eval/results/history.csv).
+5. **Investigate failures before changing labels.** A failing case is either a
+   system bug (fix the system) or a wrong expectation (fix the label, and
+   record why; see the demolition example below).
+
+## Suites
+
+| Suite | What it measures | n | Scoring | LLM cost / run | Runtime |
+|---|---|---:|---|---:|---:|
+| Retrieval benchmark ([`retrieval_benchmark.py`](eval/retrieval_benchmark.py)) | Does vector search put the right municipal-code sections in the top results? | 28 questions | Deterministic A–F: gold sections in top 3, duplicates, table fragments, required terms | $0 | ~6 s |
+| Lot coverage ([`lot_coverage.py`](eval/lot_coverage.py)) | For real parcels, which Property Profile facts are present, and is each absence legitimate? | 100 addresses | Deterministic field classification: present / missing (persistent vs transient) / expected-absent | $0 | ~20 min |
+| Router ([`run_eval.py --router-only`](eval/run_eval.py)) | Does the router pick the right data sources, intent, location and disclaimer? | 44 questions | Deterministic checks against a hand-labeled expected plan | ~$0.50 | ~4 min |
+| Full pipeline ([`run_eval.py --full`](eval/run_eval.py)) | End-to-end over SSE: plan, retrieved sections, citation validity, per-phase latency | 44 questions | Deterministic, plus optional LLM judge (`--judge`) | ~$3–5 (+~$1.50 judge) | ~25 min |
+| Source coverage ([`source_coverage.py`](eval/source_coverage.py)) | Does each data source reach the context, and does the answer use it? | 29 questions | Per source: COVERED / SYNTHESIS_GAP / RETRIEVAL_GAP / HALLUCINATION | ~$2–3 | ~12 min |
+
+Checks that run in CI on every push, with no API keys:
+
+- [`test_zoning_ordinance_parity.py`](backend/tests/test_zoning_ordinance_parity.py)
+  diffs every hand-typed zoning standard (FAR, height, lot area per unit)
+  against the ordinance tables parsed from the municipal code.
+- [`eval/tests/`](eval/tests/) and [`eval/test_judge.py`](eval/test_judge.py)
+  test the scorers themselves: plan checks, the retrieval A–F rules, coverage
+  statuses, lot-field classification against a recorded response, and judge
+  parsing and weighting. A scorer bug would silently change every number on
+  this page.
+- [`backend/citations.py`](backend/citations.py) runs on every production chat
+  answer. It flags any `[N]` citing a code chunk that wasn't retrieved, and any
+  `[data:x]` citing data that wasn't in the context. Findings are logged and
+  reported on the stream's `done` event, and `run_eval --full` fails the query.
+
+### How the gold data was built
+
+- **Retrieval.** Each question names the code sections a correct answer must
+  come from (`gold_sections`) and why, taken from reading the ordinance. Grade
+  A needs at least two gold hits, including in the top three.
+- **Lot coverage.** The panel is sampled once from Cook County Address Points,
+  stratified across the seven Chicago townships with a fixed seed, then frozen
+  in [`lot_panel.json`](eval/lot_panel.json), so every run measures the same
+  parcels. The county's PIN for each address is the identity truth. Fields
+  that are legitimately absent (vacant land has no building area, exempt
+  parcels have no tax bill) are excluded, not counted as misses.
+- **Router and full pipeline.** Each question has a hand-written expected plan
+  (sources, intent, community area, disclaimer), and for code questions the
+  section prefixes retrieval must hit.
+
+## Latest results (2026-09-28)
+
+Only the $0 suites were re-run for this snapshot; the LLM-dependent suites
+cost about $7–10 per full pass. Full reports are in
+[`eval/results/2026-09-28/`](eval/results/2026-09-28/).
+
+**Retrieval**, 28 questions:
+
+| Configuration | A | B | C | D | F | Wall time |
+|---|---:|---:|---:|---:|---:|---:|
+| Reranker off (production) | 24 | 4 | 0 | 0 | 0 | 5.8 s |
+| Reranker on (bge-reranker-v2-m3, 20% blend) | 25 | 3 | 0 | 0 | 0 | ~75 s |
+
+The cross-encoder improves one question by one grade at roughly 13× the time
+on a laptop. On the production CPUs it measured ~40 s per search and caused
+the June report timeouts, so it stays off. The evidence for that decision is
+this table, not intuition.
+
+**Lot coverage**, 100 fixed addresses, 0 fetch errors:
+
+| Field | Coverage | Note |
+|---|---:|---|
+| PIN resolved and matches the county's | 97% | The 3 misses are adjacent W 19th St addresses the county data doesn't match confidently; the profile marks them unconfirmed instead of guessing |
+| Land area, class, zoning, assessment history, tax bill and rate | 100% | |
+| Zoning FAR | 98.9% | |
+| Building area, year built | 88% | Misses are almost all tax-exempt parcels, which the assessor doesn't characterize |
+| Stories | 69% | Secondary field |
+| Units | 31% | Secondary field; no reliable non-residential source |
+
+`/api/scorecard` latency from a laptop: p50 3.1 s, p90 7.3 s. First lookups on
+the production server take 15–40 s, so most of the production wait is the
+server's own network path to the city and county APIs, not the application.
+
+## History (recovered from git)
+
+The earlier reports were removed in a July documentation cleanup; they are
+recovered from git history into [`history.csv`](eval/results/history.csv).
+
+| When | Suite | Result | What changed |
+|---|---|---|---|
+| May 28 | Full pipeline | 22/26 → 26/26 pass; p95 latency 59 s → 24 s | Router generates better search queries for zoning retrieval |
+| May 30 – Jun 1 | Retrieval (18 q) | A: 6 → 11 → 13 → 15 | Embedding upgrade, keyword boost, table consolidation; then reranking and batched cross-references |
+| Jun 4 – 6 | Source coverage | 73% → 89% → 93% | Missing sources wired in; 3 hallucinations fixed |
+| Jun 9 | Retrieval (28 q) | 75% → 100% A/B | Synonym expansion, keyword-aware dedup |
+| Jul 3 | Lot coverage | land 21% → 100%, building 20% → 88%, FAR 83% → 98.9%, **tax 0% → 100%** | Four root causes (below) |
+| Sep 28 | Retrieval (28 q) | 24 A / 4 B | Stale gold label corrected (below) |
+
+## Failures the evals turned into fixes
+
+- **Production served no tax data for weeks.** The lot-coverage panel showed
+  `tax_bill` missing for every parcel: the 9.4 GB property-tax database had
+  never been seeded on the server, and the code degraded silently. It is now
+  seeded, and `/health` reports whether it's present.
+  ([write-up](claude-context/archive/2026-07-03_lot-info-robustness.md))
+- **Hand-typed zoning numbers were fiction.** A calculation audit diffed
+  `zoning_definitions.py` against the ordinance text already in the repo and
+  found invented heights and a lot-coverage standard that doesn't exist in
+  Title 17. The parity test now blocks that class of error in CI.
+  ([write-up](claude-context/archive/2026-07-06_calc-audit.md))
+- **The report timed out, and it wasn't memory.** The first suspect was OOM.
+  Measurement showed the reranker hanging each search for 40–60 s, so the
+  report now reads a precomputed zoning cache and the reranker is off.
+  ([write-up](claude-context/archive/2026-06-16_report-oom-reranker.md))
+- **A neighbor's parcel shown as "exact".** Two address resolvers disagreed.
+  The fix only trusts a fallback PIN when its own address round-trips to the
+  input; otherwise the profile says the parcel is unconfirmed.
+  ([write-up](claude-context/archive/2026-06-21_pin-resolution-seam.md))
+- **A stale label, not a regression** (Sep 28). `demolition_permit` graded D:
+  the top result was §14A-4-407, "DEMOLITION". When the question was written,
+  the building code (Title 14) wasn't indexed, so its gold named adjacent
+  chapters. Since Title 14 was indexed, retrieval found the better section.
+  The gold now includes 14A-4-407 and 11-4-2170, and the reason is recorded on
+  the question. Labels are changed only with that kind of evidence.
+
+## Known gaps
+
+Stated plainly, since these limit what the numbers above can claim:
+
+- **The LLM judge is reference-free and Sonnet grades Sonnet.** It scores
+  faithfulness to the retrieved context, not correctness against a known
+  answer, and it has not been calibrated against human grades. Next step:
+  about 15 zoning questions with gold answers drawn from the parity-tested
+  tables, a separate correctness dimension, and a hand-graded sample to
+  measure judge agreement.
+- **Small n per category.** 44 router questions across ~30 categories means
+  one question moves a category's rate a lot. Totals are meaningful;
+  per-category rates mostly aren't.
+- **Single-turn, English, hand-written.** No multi-turn, Profile→chat
+  hand-off, Spanish, or adversarial (prompt-injection) cases yet, and none are
+  sampled from real traffic, although `request_logs` records it.
+- **Nondeterminism isn't measured.** The router runs at the default
+  temperature and each question is run once. Temperature 0 plus pass@3 would
+  separate flakiness from real regressions; that change should land together
+  with a router eval run showing it doesn't cost accuracy.
+- **Coverage "hallucination" is regex-based.** `source_coverage` flags a
+  hallucination when an answer matches a data pattern for a source that isn't
+  in the context. Loose patterns can produce false positives, so these are
+  leads to read, not verdicts.
+
+## Running the evals
+
+```bash
+make setup                        # once
+# $0 suites (need a populated Qdrant; lot coverage needs a running backend)
+PYTHONPATH=. python -m eval.retrieval_benchmark --out eval/results/$(date +%F)/retrieval.md --json-out eval/results/$(date +%F)/retrieval.json
+PYTHONPATH=. python -m eval.lot_coverage --full http://localhost:8001 --out eval/results/$(date +%F)/lot_coverage.md --json-out eval/results/$(date +%F)/lot_coverage.json
+
+# LLM suites (spend API credit; lift the anonymous rate limit and budget for the run)
+RATE_LIMIT_ANON_DAY=0 RATE_LIMIT_ANON_HOUR=0 DAILY_API_BUDGET_USD=25 uvicorn backend.main:app --port 8001
+PYTHONPATH=. python -m eval.run_eval --router-only --json-out eval/results/$(date +%F)/router.json
+PYTHONPATH=. python -m eval.run_eval --full http://localhost:8001 --judge --json-out eval/results/$(date +%F)/full.json
+PYTHONPATH=. python -m eval.source_coverage --full http://localhost:8001 --json-out eval/results/$(date +%F)/coverage.json
+```
+
+`run_eval --json-out` records the git SHA, the router and synthesizer models,
+and a hash of `backend/prompts.py` with every run, so results are only
+compared when they measured the same system. Append a row to
+[`history.csv`](eval/results/history.csv) for each run you keep.

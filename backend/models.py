@@ -822,6 +822,9 @@ class ChatChunk(BaseModel):
     # their own timer, and lets the eval harness compute p50/p95 offline.
     t_ms: int | None = None
     timings: dict[str, int] | None = None
+    # On `done`: citation markers in the answer that aren't backed by this
+    # turn's context (see backend/citations.py). Empty/None when all check out.
+    citation_warnings: list[str] | None = None
 
 
 class StoredMessage(BaseModel):
