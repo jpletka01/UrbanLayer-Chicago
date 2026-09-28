@@ -178,7 +178,9 @@ async def geocode_address(
             result = float(coords["y"]), float(coords["x"])
             _geocode_cache.set(normalized, result)
             return result
-        except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+        # ValueError: the Census WAF answers some requests (e.g. very long
+        # inputs) with a 200 HTML page, which fails JSON decoding.
+        except (httpx.HTTPError, ValueError) as exc:
             if attempt == 0:
                 log.warning("Geocoder attempt 1 failed for %s: %s, retrying", address, exc)
                 continue

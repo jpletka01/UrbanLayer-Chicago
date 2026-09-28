@@ -1,0 +1,12 @@
+# Keep local state out of the image build context: a local .env would bake
+# VITE_* values into the bundle, and a host node_modules would overwrite the
+# one `npm ci` just installed.
+node_modules
+dist
+.env
+.env.*
+!.env.example
+test-results
+playwright-report
+e2e
+.git

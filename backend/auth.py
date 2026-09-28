@@ -19,7 +19,7 @@ from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
 from backend import db
-from backend.config import get_settings
+from backend.config import _DEV_JWT_SECRET, get_settings
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,9 @@ def _jwt_secret() -> str:
     s = get_settings()
     if s.jwt_secret:
         return s.jwt_secret
-    return "dev-insecure-key-do-not-use-in-production"
+    # Development only: production refuses to start without a real secret
+    # (config.validate_production).
+    return _DEV_JWT_SECRET
 
 
 # ---------------------------------------------------------------------------

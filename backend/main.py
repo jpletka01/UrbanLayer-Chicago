@@ -28,7 +28,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from backend.analytics import compute_analytics
 from backend.retrieval.cache import TTLCache
 from backend.assembler import assemble_context
-from backend.config import get_settings
+from backend.config import get_settings, validate_production
 from backend.context_manager import summarize_turn
 from backend.conversation import synthesize_query
 from backend.llm import tracked_create
@@ -171,6 +171,7 @@ app.include_router(discovery_router)
 @app.on_event("startup")
 async def _startup() -> None:
     settings = get_settings()
+    validate_production(settings)
     # Escape CR/LF in every log record before anything else runs. User-controlled
     # strings (addresses, chat messages, Stripe ids) reach log calls all over the
     # retrieval layer; without this an embedded newline can forge a log line.
@@ -341,7 +342,7 @@ async def logout(request: Request):
 @app.get("/autocomplete")
 async def autocomplete(q: str = "") -> list[dict]:
     """Return address suggestions for autocomplete."""
-    if len(q.strip()) < 3:
+    if len(q.strip()) < 3 or len(q) > _MAX_ADDRESS_CHARS:
         return []
     return await geocode_address_suggestions(q)
 
@@ -447,7 +448,7 @@ async def list_conversations_endpoint(
 async def create_conversation(
     body: dict, user: dict = Depends(require_auth),
 ) -> dict:
-    conv_id = body.get("id", f"conv_{int(time.time() * 1000)}")
+    conv_id = body.get("id", f"conv_{uuid.uuid4()}")
     title = body.get("title", "New conversation")
     language = body.get("language", "en")
     return await db.create_conversation(conv_id, title, _user_id(user), language=language)
@@ -539,6 +540,8 @@ async def create_share(
 async def get_share_status(
     conv_id: str, user: dict = Depends(require_auth),
 ) -> dict:
+    if not await db.user_owns_conversation(conv_id, user["id"]):
+        raise HTTPException(status_code=404, detail="Conversation not found")
     share = await db.get_conversation_share(conv_id)
     if not share:
         return {"shared": False}
@@ -620,11 +623,27 @@ async def upload_files(
     return {"uploads": results}
 
 
-@app.get("/api/uploads/{upload_id}/file")
-async def download_file(upload_id: str) -> FileResponse:
+async def _authorized_upload(
+    upload_id: str, user: dict | None, *, allow_shared: bool,
+) -> dict:
+    """The upload row, if the caller owns its conversation (or, for reads, the
+    conversation is currently shared). Anything else is a 404 so upload ids
+    can't be probed."""
     upload = await db.get_upload(upload_id)
-    if not upload:
-        raise HTTPException(404, "Upload not found")
+    if upload:
+        conv_id = upload["conversation_id"]
+        if user and await db.user_owns_conversation(conv_id, user["id"]):
+            return upload
+        if allow_shared and await db.get_conversation_share(conv_id):
+            return upload
+    raise HTTPException(404, "Upload not found")
+
+
+@app.get("/api/uploads/{upload_id}/file")
+async def download_file(
+    upload_id: str, user: dict | None = Depends(get_current_user),
+) -> FileResponse:
+    upload = await _authorized_upload(upload_id, user, allow_shared=True)
     return FileResponse(
         upload["storage_path"],
         media_type=upload["mime_type"],
@@ -633,10 +652,10 @@ async def download_file(upload_id: str) -> FileResponse:
 
 
 @app.delete("/api/uploads/{upload_id}")
-async def delete_upload_endpoint(upload_id: str) -> dict:
-    upload = await db.get_upload(upload_id)
-    if not upload:
-        raise HTTPException(404, "Upload not found")
+async def delete_upload_endpoint(
+    upload_id: str, user: dict = Depends(require_auth),
+) -> dict:
+    upload = await _authorized_upload(upload_id, user, allow_shared=False)
     path = Path(upload["storage_path"])
     if path.exists():
         path.unlink()
@@ -646,7 +665,7 @@ async def delete_upload_endpoint(upload_id: str) -> dict:
 
 @app.get("/api/conversations/{conv_id}/uploads")
 async def list_uploads(
-    conv_id: str, user: dict | None = Depends(get_current_user),
+    conv_id: str, user: dict = Depends(require_auth),
 ) -> list[dict]:
     conv = await db.get_conversation(conv_id, _user_id(user))
     if not conv:
@@ -1347,6 +1366,9 @@ class ResolvedLocation(NamedTuple):
     confidence: str
 
 
+_MAX_ADDRESS_CHARS = 200
+
+
 async def _resolve_location(
     address: str | None = None,
     lat: float | None = None,
@@ -1366,6 +1388,14 @@ async def _resolve_location(
       5. nothing resolvable → 422.
     """
     settings = get_settings()
+    if address is not None and len(address) > _MAX_ADDRESS_CHARS:
+        raise HTTPException(status_code=422, detail="Address is too long.")
+    if pin is not None:
+        # The PIN is interpolated into Socrata SoQL filters below, so only
+        # digits get through (dashes/spaces from pasted PINs are dropped).
+        pin = re.sub(r"[\s-]", "", pin)
+        if not re.fullmatch(r"\d{10,14}", pin):
+            raise HTTPException(status_code=422, detail="PIN must be 10 to 14 digits.")
     resolved_address: str | None = address
 
     # 1. Explicit coordinates are a deliberate point override — highest precedence.
@@ -1960,11 +1990,34 @@ async def report(
     )
 
 
+async def _scope_to_caller(req: ChatRequest, user: dict | None) -> ChatRequest:
+    """Drop conversation state the caller doesn't own.
+
+    The stream loads turn summaries and message counts by conversation_id and
+    sends upload_ids to the model, so an unowned id would pull another user's
+    questions or files into this caller's prompt. Anonymous chat is never
+    persisted, so it has no conversation state to read.
+    """
+    conv_id = req.conversation_id
+    if conv_id and not (user and await db.user_owns_conversation(conv_id, user["id"])):
+        conv_id = None
+    upload_ids: list[str] = []
+    if conv_id:
+        for upload_id in req.upload_ids:
+            upload = await db.get_upload(upload_id)
+            if upload and upload["conversation_id"] == conv_id:
+                upload_ids.append(upload_id)
+    if conv_id == req.conversation_id and upload_ids == req.upload_ids:
+        return req
+    return req.model_copy(update={"conversation_id": conv_id, "upload_ids": upload_ids})
+
+
 @app.post("/chat")
 async def chat(request: Request, req: ChatRequest) -> StreamingResponse:
     from backend.rate_limit import check_rate_limit, check_daily_budget
-    await check_rate_limit(request)
+    user = await check_rate_limit(request)
     await check_daily_budget()
+    req = await _scope_to_caller(req, user)
     return StreamingResponse(
         _event_stream(req),
         media_type="text/event-stream",

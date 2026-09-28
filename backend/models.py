@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 SourceTag = Literal[
@@ -726,7 +726,14 @@ class MapDataResponse(BaseModel):
 
 class Message(BaseModel):
     role: Literal["user", "assistant"]
-    content: str
+    # An assistant answer is bounded by synthesizer_max_tokens (~8k chars); the
+    # cap leaves headroom for that while bounding what a forged history can cost.
+    content: str = Field(max_length=12_000)
+
+
+# Chat languages the synthesizer can answer in (keys of synthesizer.LANGUAGE_NAMES + "en").
+SUPPORTED_CHAT_LANGUAGES = ("en", "es", "pl", "zh-CN", "zh-TW")
+MAX_HISTORY_CHARS = 60_000
 
 
 class ScorecardContext(BaseModel):
@@ -770,10 +777,10 @@ class ScorecardContext(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(max_length=2000)
     history: list[Message] = Field(default_factory=list, max_length=20)
-    conversation_id: str | None = None
-    upload_ids: list[str] = Field(default_factory=list)
+    conversation_id: str | None = Field(default=None, max_length=100)
+    upload_ids: list[str] = Field(default_factory=list, max_length=3)
     cached_community_area: int | None = None
-    language: str = "en"
+    language: str = Field(default="en", max_length=16)
     # 14-digit parcel hint from a Scorecard handoff — resolves the turn's
     # location authoritatively instead of re-geocoding the question text.
     parcel_pin: str | None = Field(default=None, max_length=20)
@@ -781,6 +788,24 @@ class ChatRequest(BaseModel):
     # property/regulatory/incentives re-fetch, see _retrieve). Never persisted
     # into stored history — same stripping rule as the context/plan/map blobs.
     scorecard_context: ScorecardContext | None = None
+
+    @field_validator("language")
+    @classmethod
+    def _normalize_language(cls, v: str) -> str:
+        # The value is interpolated into the system prompt, so only known codes
+        # get through. Browser locales like "es-ES" map to their base language;
+        # anything else falls back to English rather than failing the request.
+        if v in SUPPORTED_CHAT_LANGUAGES:
+            return v
+        base = v.split("-")[0].lower()
+        return base if base in SUPPORTED_CHAT_LANGUAGES else "en"
+
+    @model_validator(mode="after")
+    def _cap_history_size(self) -> "ChatRequest":
+        total = sum(len(m.content) for m in self.history)
+        if total > MAX_HISTORY_CHARS:
+            raise ValueError(f"history too large ({total} chars; max {MAX_HISTORY_CHARS})")
+        return self
 
 
 class ChatChunk(BaseModel):

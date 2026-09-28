@@ -12,7 +12,7 @@ const OLD_CURRENT_KEY = "chicago.current_conversation.v1";
 const MIGRATION_KEY = "chicago.migrated_to_sqlite";
 
 function generateId(): string {
-  return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  return `conv_${crypto.randomUUID()}`;
 }
 
 export async function loadConversations(): Promise<Conversation[]> {
