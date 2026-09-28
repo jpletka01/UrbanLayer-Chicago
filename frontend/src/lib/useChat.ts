@@ -238,7 +238,7 @@ export function useChat({
           pendingTurnSummaryRef.current = chunk.turn_summary;
         } else if (chunk.type === "done") {
           receivedDone = true;
-          if (chunk.timings) {
+          if (chunk.timings && import.meta.env.DEV) {
             console.log("[perf] pipeline timings (ms):", chunk.timings);
           }
           const md = pendingMapDataRef.current;
