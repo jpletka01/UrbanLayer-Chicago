@@ -22,12 +22,6 @@ function formatShort(epoch: number): string {
 export function DateRangeSlider({ minDate, maxDate, startDate, endDate, onChange }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const range = maxDate - minDate;
-  if (range <= 0) return null;
-
-  const leftPercent = ((startDate - minDate) / range) * 100;
-  const rightPercent = ((endDate - minDate) / range) * 100;
-
   const debouncedOnChange = useCallback(
     (s: number, e: number) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -35,6 +29,14 @@ export function DateRangeSlider({ minDate, maxDate, startDate, endDate, onChange
     },
     [onChange],
   );
+
+  // After the hooks: returning before useCallback made the hook count depend
+  // on the data, which React rejects once the range becomes non-empty.
+  const range = maxDate - minDate;
+  if (range <= 0) return null;
+
+  const leftPercent = ((startDate - minDate) / range) * 100;
+  const rightPercent = ((endDate - minDate) / range) * 100;
 
   const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);

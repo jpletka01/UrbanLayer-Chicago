@@ -62,6 +62,29 @@ export function PieChart({
 
   useEffect(() => () => { clearTimeout(graceRef.current); }, []);
 
+  // Hooks stay above the empty-data returns below: a chart that mounts empty
+  // and then receives data would otherwise call more hooks than on its first
+  // render, which React rejects ("Rendered more hooks than during the previous render").
+  // --- Ring visibility with grace period ---
+
+  const cancelGrace = useCallback(() => {
+    clearTimeout(graceRef.current);
+    graceRef.current = 0;
+  }, []);
+
+  const showRingNow = useCallback(() => {
+    cancelGrace();
+    setRingVisible(true);
+  }, [cancelGrace]);
+
+  const hideRingLater = useCallback(() => {
+    cancelGrace();
+    graceRef.current = window.setTimeout(() => {
+      setRingVisible(false);
+      setHoveredRing(null);
+    }, RING_GRACE_MS);
+  }, [cancelGrace]);
+
   if (!slices.length) return null;
   const sliceTotal = slices.reduce((a, s) => a + s.value, 0);
   if (!sliceTotal) return null;
@@ -101,26 +124,6 @@ export function PieChart({
       ra += sw;
     }
   }
-
-  // --- Ring visibility with grace period ---
-
-  const cancelGrace = useCallback(() => {
-    clearTimeout(graceRef.current);
-    graceRef.current = 0;
-  }, []);
-
-  const showRingNow = useCallback(() => {
-    cancelGrace();
-    setRingVisible(true);
-  }, [cancelGrace]);
-
-  const hideRingLater = useCallback(() => {
-    cancelGrace();
-    graceRef.current = window.setTimeout(() => {
-      setRingVisible(false);
-      setHoveredRing(null);
-    }, RING_GRACE_MS);
-  }, [cancelGrace]);
 
   // --- Active hover resolution ---
 
