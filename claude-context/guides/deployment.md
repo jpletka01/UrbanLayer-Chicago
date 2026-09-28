@@ -67,9 +67,8 @@ first** — `embed_and_store` assigns `uuid.uuid4()` per point, so a re-run with
 DUPLICATES rows rather than replacing them. Verify by comparing per-section point counts
 against local, not just the total.
 
-Only `title_number == 17` chunks belong in the `chicago_zoning` collection; everything else
-is code-collection only. Prod currently has just `chicago_municipal_code` — the precomputed
-zoning cache made the second collection unnecessary there.
+There is one collection, `chicago_municipal_code`. A Title-17-only `chicago_zoning`
+collection used to be written locally but was never searched, and was removed 2026-09-28.
 
 **Done 2026-09-08:** Title 14 (the building code) pushed this way — prod 14,535 → 16,576
 points, matching local exactly, per-section counts verified, `/section/14A-1-101` now 200.

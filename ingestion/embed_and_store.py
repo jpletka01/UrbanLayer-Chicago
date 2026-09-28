@@ -2,9 +2,8 @@
 
 Loads chunks.jsonl produced by ingestion.chunk, computes embeddings with the
 configured model (default: BAAI/bge-base-en-v1.5, 768-dim), and writes them
-to two Qdrant collections:
-- chicago_municipal_code (all chunks)
-- chicago_zoning (only Title 17 chunks -- enables filter-free zoning queries)
+to the chicago_municipal_code Qdrant collection. (A second, Title-17-only
+collection used to be written too; nothing ever searched it, and it was removed.)
 
 Modes:
   --recreate     Drop and rebuild collections (required after model changes)
@@ -73,19 +72,12 @@ def _delete_section_points(
 
 
 def _embed_and_buffer(
-    model, batch: list[dict], code_buffer: list[PointStruct], zoning_buffer: list[PointStruct]
+    model, batch: list[dict], buffer: list[PointStruct]
 ) -> None:
     texts = [c["text"] for c in batch]
     vectors = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
     for chunk, vec in zip(batch, vectors):
-        point = PointStruct(
-            id=str(uuid.uuid4()),
-            vector=vec.tolist(),
-            payload=chunk,
-        )
-        code_buffer.append(point)
-        if chunk.get("title_number") == 17:
-            zoning_buffer.append(point)
+        buffer.append(PointStruct(id=str(uuid.uuid4()), vector=vec.tolist(), payload=chunk))
 
 
 def _run_incremental(client: QdrantClient, model: SentenceTransformer) -> None:
@@ -111,16 +103,14 @@ def _run_incremental(client: QdrantClient, model: SentenceTransformer) -> None:
     )
 
     affected_sections = set(diff.added) | set(diff.modified)
-    collections = [settings.qdrant_code_collection, settings.qdrant_zoning_collection]
+    collection = settings.qdrant_code_collection
 
     for section_id in diff.deleted:
-        for coll in collections:
-            _delete_section_points(client, coll, section_id)
+        _delete_section_points(client, collection, section_id)
         log.info("Deleted points for section %s", section_id)
 
     for section_id in diff.modified:
-        for coll in collections:
-            _delete_section_points(client, coll, section_id)
+        _delete_section_points(client, collection, section_id)
 
     if not affected_sections:
         set_chunk_counts(new_manifest, CHUNKS_FILE)
@@ -128,18 +118,14 @@ def _run_incremental(client: QdrantClient, model: SentenceTransformer) -> None:
         log.info("Done -- only deletions")
         return
 
-    code_buffer: list[PointStruct] = []
-    zoning_buffer: list[PointStruct] = []
+    buffer: list[PointStruct] = []
     total = 0
 
     def flush() -> None:
-        nonlocal code_buffer, zoning_buffer
-        if code_buffer:
-            client.upsert(settings.qdrant_code_collection, points=code_buffer)
-            code_buffer = []
-        if zoning_buffer:
-            client.upsert(settings.qdrant_zoning_collection, points=zoning_buffer)
-            zoning_buffer = []
+        nonlocal buffer
+        if buffer:
+            client.upsert(settings.qdrant_code_collection, points=buffer)
+            buffer = []
 
     with CHUNKS_FILE.open() as fh:
         batch: list[dict] = []
@@ -149,12 +135,12 @@ def _run_incremental(client: QdrantClient, model: SentenceTransformer) -> None:
                 continue
             batch.append(chunk)
             if len(batch) >= BATCH_SIZE:
-                _embed_and_buffer(model, batch, code_buffer, zoning_buffer)
+                _embed_and_buffer(model, batch, buffer)
                 total += len(batch)
                 batch = []
                 flush()
         if batch:
-            _embed_and_buffer(model, batch, code_buffer, zoning_buffer)
+            _embed_and_buffer(model, batch, buffer)
             total += len(batch)
 
     flush()
@@ -171,18 +157,14 @@ def _run_full(
     chunks_path: Path = CHUNKS_FILE,
 ) -> None:
     settings = get_settings()
-    code_buffer: list[PointStruct] = []
-    zoning_buffer: list[PointStruct] = []
+    buffer: list[PointStruct] = []
     total = 0
 
     def flush() -> None:
-        nonlocal code_buffer, zoning_buffer
-        if code_buffer:
-            client.upsert(settings.qdrant_code_collection, points=code_buffer)
-            code_buffer = []
-        if zoning_buffer:
-            client.upsert(settings.qdrant_zoning_collection, points=zoning_buffer)
-            zoning_buffer = []
+        nonlocal buffer
+        if buffer:
+            client.upsert(settings.qdrant_code_collection, points=buffer)
+            buffer = []
 
     opener = gzip.open if chunks_path.suffix == ".gz" else open
     with opener(chunks_path, "rt") as fh:
@@ -190,14 +172,14 @@ def _run_full(
         for line in fh:
             batch.append(json.loads(line))
             if len(batch) >= BATCH_SIZE:
-                _embed_and_buffer(model, batch, code_buffer, zoning_buffer)
+                _embed_and_buffer(model, batch, buffer)
                 total += len(batch)
                 batch = []
                 if total % (BATCH_SIZE * 4) == 0:
                     log.info("Embedded %d chunks", total)
                     flush()
         if batch:
-            _embed_and_buffer(model, batch, code_buffer, zoning_buffer)
+            _embed_and_buffer(model, batch, buffer)
             total += len(batch)
 
     flush()
@@ -233,14 +215,12 @@ def main() -> None:
 
     client = QdrantClient(url=settings.qdrant_url)
     if args.recreate:
-        for name in [settings.qdrant_code_collection, settings.qdrant_zoning_collection]:
-            try:
-                client.delete_collection(name)
-                log.info("Deleted collection %s", name)
-            except Exception:
-                pass
+        try:
+            client.delete_collection(settings.qdrant_code_collection)
+            log.info("Deleted collection %s", settings.qdrant_code_collection)
+        except Exception:
+            pass
     _ensure_collection(client, settings.qdrant_code_collection, settings.embedding_dim)
-    _ensure_collection(client, settings.qdrant_zoning_collection, settings.embedding_dim)
     if args.chunks and not args.recreate:
         # Point ids are random, so embedding a sample into a populated collection
         # would duplicate every chunk it shares with the corpus.

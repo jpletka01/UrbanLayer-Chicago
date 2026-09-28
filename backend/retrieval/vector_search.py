@@ -268,9 +268,9 @@ def _payload_to_chunk(
     )
 
 
-async def semantic_search(query: str, *, top_k: int = 5, zoning_only: bool = False) -> list[CodeChunk]:
+async def semantic_search(query: str, *, top_k: int = 5) -> list[CodeChunk]:
     settings = get_settings()
-    collection = settings.qdrant_zoning_collection if zoning_only else settings.qdrant_code_collection
+    collection = settings.qdrant_code_collection
 
     loop = asyncio.get_running_loop()
     expanded = _expand_query(query)
