@@ -110,3 +110,24 @@ class TestGeocodeAddressSuggestions:
 
         results = await geocode_address_suggestions("xyznonexistent12345")
         assert results == []
+
+
+class TestIsWithinChicago:
+    """Profiles and reports are only built for Chicago points."""
+
+    def test_chicago_points(self):
+        from backend.retrieval.geo import is_within_chicago
+        assert is_within_chicago(41.9105, -87.6776)   # 1601 N Milwaukee Ave
+        assert is_within_chicago(41.9786, -87.9048)   # O'Hare
+
+    def test_points_outside_the_city(self):
+        from backend.retrieval.geo import is_within_chicago
+        assert not is_within_chicago(38.8977, -77.0365)  # 1600 Pennsylvania Ave, DC
+        assert not is_within_chicago(42.0451, -87.6877)  # Evanston
+        assert not is_within_chicago(41.9, -87.55)       # well out in the lake
+
+    def test_city_limit_tolerance(self):
+        from backend.retrieval.geo import is_within_chicago
+        # Just north of Howard St (the city limit): geocoder noise must not
+        # reject border addresses.
+        assert is_within_chicago(42.0196, -87.6750)

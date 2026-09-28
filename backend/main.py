@@ -61,6 +61,7 @@ from backend.retrieval.geo import (
     community_area_name,
     geocode_address,
     geocode_address_suggestions,
+    is_within_chicago,
 )
 from backend.retrieval.map_data import crimes_for_map, permits_for_map, requests_311_for_map, zoning_for_map
 from backend.retrieval.incentives import incentives_domain
@@ -1375,6 +1376,17 @@ class ResolvedLocation(NamedTuple):
 _MAX_ADDRESS_CHARS = 200
 
 
+def _require_chicago(rl: ResolvedLocation) -> None:
+    """The geocoder is national, so an address elsewhere (e.g. in DC) used to
+    produce a full Property Profile built from Chicago data sources, $25 report
+    offer included. Only Chicago points get a profile or report."""
+    if not is_within_chicago(rl.lat, rl.lon):
+        raise HTTPException(
+            status_code=422,
+            detail="That address is outside Chicago. UrbanLayer covers Chicago properties only.",
+        )
+
+
 async def _resolve_location(
     address: str | None = None,
     lat: float | None = None,
@@ -1787,6 +1799,7 @@ async def scorecard(
 ) -> dict:
     """Non-AI instant-load property dashboard. Zero LLM cost."""
     rl = await _resolve_location(address, lat, lon, pin)
+    _require_chicago(rl)
     data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
 
     # Reconcile identity. When the authoritative address→PIN path degraded
@@ -1867,6 +1880,7 @@ async def report(
 
     settings = get_settings()
     rl = await _resolve_location(address, lat, lon, pin)
+    _require_chicago(rl)
     resolved_lat, resolved_lon, resolved_address = rl.lat, rl.lon, rl.address
 
     if _TIER_ORDER.get(user["tier"], 0) < _TIER_ORDER["premium"]:

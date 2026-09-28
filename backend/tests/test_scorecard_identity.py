@@ -72,7 +72,7 @@ async def test_authoritative_top_level_skips_the_gate():
 
 async def test_approximate_without_property_pin_is_not_flagged():
     """No property-domain PIN to reconcile → approximate, but nothing to caveat."""
-    rl = main.ResolvedLocation(41.9, -87.6, "123 Nowhere Ave", None, "approximate")
+    rl = main.ResolvedLocation(41.9, -87.65, "123 Nowhere Ave", None, "approximate")
     p_resolve, p_fetch, p_match = _patch(rl, _scorecard_data(None), matches=False)
     with p_resolve, p_fetch, p_match as match_mock:
         out = await main.scorecard(address="123 Nowhere Ave")

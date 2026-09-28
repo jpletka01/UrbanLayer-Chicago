@@ -56,7 +56,7 @@
     "subtitle": "El panel de investigación gratuito de cualquier parcela de Chicago: zonificación, impuestos, incentivos y comparables. Ingresa una dirección.",
     "search": "Buscar",
     "loading": "Cargando...",
-    "addressNotFound": "No se pudo encontrar esa dirección. Intente con un formato diferente (ej. \"1601 N Milwaukee Ave\").",
+    "addressNotFound": "No encontramos esa dirección en Chicago. UrbanLayer cubre propiedades de la ciudad de Chicago; intente con un formato como \"1601 N Milwaukee Ave\".",
     "locationNotFound": "No se pudieron cargar los datos de la propiedad para esta ubicación.",
     "noResults": "No se encontraron resultados.",
     "searchAnother": "Buscar otra dirección",

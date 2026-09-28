@@ -129,6 +129,22 @@ def community_area_by_point(lat: float, lon: float) -> int | None:
     return None
 
 
+# ~200 m. Geocoded points for addresses on the city limit (Howard St, parts of
+# Western and Cicero) can land just outside the community-area polygons.
+_CITY_LIMIT_TOLERANCE_DEG = 0.002
+
+
+def is_within_chicago(lat: float, lon: float) -> bool:
+    """True when the point is in (or within ~200 m of) a Chicago community area."""
+    index = _polygon_index()
+    if not index:
+        return True  # polygons missing (logged above); don't block lookups on it
+    if community_area_by_point(lat, lon) is not None:
+        return True
+    point = Point(lon, lat)
+    return any(poly.distance(point) <= _CITY_LIMIT_TOLERANCE_DEG for _ca, _name, poly in index)
+
+
 def community_area_name(ca: int) -> str | None:
     """Return the community area name for a given integer id."""
     for ca_id, name, _poly in _polygon_index():
