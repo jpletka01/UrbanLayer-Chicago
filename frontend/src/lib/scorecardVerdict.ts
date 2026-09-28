@@ -406,7 +406,14 @@ function buildReasons(category: VerdictCategory, s: VerdictSignals, data: Scorec
     }
     case "limited":
       out.push(zoneReason(s, data, t));
-      if (s.capacityRatio != null) out.push({ text: t("scorecard.verdict.reason.nearCapacity"), polarity: "neutral", cardAnchor: "zoning" });
+      // "Limited" also covers under-built parcels in low-density zones (allowed
+      // FAR below STRONG_MIN_ALLOWED_FAR). Saying "built at the limit" there
+      // contradicted the zoning card's "66% of the envelope unused".
+      if (s.capacityBand === "at_cap" || s.capacityBand === "modest") {
+        out.push({ text: t("scorecard.verdict.reason.nearCapacity"), polarity: "neutral", cardAnchor: "zoning" });
+      } else if (s.capacityBand === "high" || s.capacityBand === "vacant_or_teardown") {
+        out.push({ text: t("scorecard.verdict.reason.lowDensityHeadroom"), polarity: "neutral", cardAnchor: "zoning" });
+      }
       if (bonus) out.push(bonus);
       out.push({ text: t("scorecard.verdict.reason.compsPointer"), polarity: "neutral", cardAnchor: "comparables" });
       break;

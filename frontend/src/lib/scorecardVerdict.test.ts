@@ -130,6 +130,9 @@ describe("scorecardVerdict — category selection", () => {
 
   it("limited: ordinary built-out parcel, no incentives, no friction (the honest modal verdict)", () => {
     expect(cat({ zone: "RS-3", far: 0.9, bldg: 900, land: 1000 })).toBe("limited");
+    expect(
+      computeVerdict(mk({ zone: "RS-3", far: 0.9, bldg: 900, land: 1000 }), t).reasons.map((r) => r.text),
+    ).toContain("scorecard.verdict.reason.nearCapacity");
   });
 
   it("entitlement_defined: PD zone with null FAR", () => {
@@ -163,6 +166,11 @@ describe("scorecardVerdict — calibration decisions (signed off 2026-06-29)", (
   it("decision B: single-family FAR headroom is NOT strong (allowed_far < 1.5 floor)", () => {
     // RT-4 under-built: ratio is 'high' but allowed FAR 1.2 < 1.5 → limited, not strong
     expect(cat({ zone: "RT-4", far: 1.2, bldg: 360, land: 1000 })).toBe("limited");
+    // …and its reasons must not claim it's built out (the zoning card shows
+    // the unused envelope right below).
+    const texts = computeVerdict(mk({ zone: "RT-4", far: 1.2, bldg: 360, land: 1000 }), t).reasons.map((r) => r.text);
+    expect(texts).not.toContain("scorecard.verdict.reason.nearCapacity");
+    expect(texts).toContain("scorecard.verdict.reason.lowDensityHeadroom");
     // contrast: same headroom on an RM-6 (far 4.4) IS strong
     expect(cat({ zone: "RM-6", far: 4.4, bldg: 1300, land: 1000 })).toBe("strong");
   });

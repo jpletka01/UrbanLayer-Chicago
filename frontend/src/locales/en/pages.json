@@ -165,6 +165,7 @@
         "asOfRight": "Zoned {{zone}} — FAR {{allowed}} as-of-right",
         "zoned": "Zoned {{zone}}",
         "nearCapacity": "Built at or near the as-of-right limit — little added capacity",
+        "lowDensityHeadroom": "Room to add floor area, but the zone only allows low density",
         "compsPointer": "See recent comparable sales for the value range",
         "entitlement": "{{name}} — entitlements set by the Planned Development ordinance, not as-of-right rules",
         "insufficient": "Parcel identity couldn't be confirmed from the address",

@@ -165,6 +165,7 @@
         "asOfRight": "Zonificación {{zone}} — FAR {{allowed}} por derecho",
         "zoned": "Zonificación {{zone}}",
         "nearCapacity": "Construido en o cerca del límite por derecho — poca capacidad adicional",
+        "lowDensityHeadroom": "Hay margen para ampliar la superficie, pero la zona solo permite baja densidad",
         "compsPointer": "Vea ventas comparables recientes para el rango de valor",
         "entitlement": "{{name}} — los derechos los define la ordenanza de Desarrollo Planificado, no las reglas por derecho",
         "insufficient": "No se pudo confirmar la identidad de la parcela desde la dirección",
