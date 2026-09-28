@@ -1878,6 +1878,12 @@ async def report(
     from backend.auth import _TIER_ORDER
     from jinja2 import Environment, FileSystemLoader
 
+    # mock=true fills every section with fixture data for visual QA of the PDF
+    # template. A customer must never receive a report built from made-up
+    # numbers, so it's admin-only (the dev-mode user is an admin).
+    if mock and user["tier"] != "admin":
+        raise HTTPException(status_code=403, detail="Mock reports are admin-only.")
+
     settings = get_settings()
     rl = await _resolve_location(address, lat, lon, pin)
     _require_chicago(rl)
