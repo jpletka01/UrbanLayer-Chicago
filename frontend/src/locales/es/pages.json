@@ -120,7 +120,8 @@
       "download": "Descargar informe",
       "generating": "Generando...",
       "orUpgrade": "o actualice a Pro — $99/mes",
-      "ready": "Su informe está listo"
+      "ready": "Su informe está listo",
+      "unverifiedNote": "No pudimos confirmar la parcela exacta de esta dirección, así que las cifras anteriores podrían corresponder a un lote vecino. Verifique el PIN antes de comprar un informe."
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",

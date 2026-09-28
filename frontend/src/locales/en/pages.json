@@ -113,7 +113,8 @@
       "download": "Download Report",
       "generating": "Generating...",
       "orUpgrade": "or upgrade to Pro — $99/mo",
-      "ready": "Your report is ready"
+      "ready": "Your report is ready",
+      "unverifiedNote": "We couldn't confirm the exact parcel for this address, so the figures above may describe a neighboring lot. Check the PIN before buying a report."
     },
     "downloadPdf": "Download PDF Report",
     "downloadCsv": "Download CSV",

@@ -339,6 +339,11 @@ export default function ScorecardPage() {
 
   const isPro = user?.tier === "premium" || user?.tier === "admin";
   const hasReportAccess = isPro || reportAccess?.has_access === true;
+  // When the parcel behind this address couldn't be confirmed, the report would
+  // be about a best-guess parcel. Keep it purchasable but not the lead action.
+  // Same test as the hero's exact-match badge.
+  const parcelConfirmed = parcel?.pin != null && parcel.confidence === "authoritative" && !data?.nearest_parcel_unverified;
+  const reportDemoted = !hasReportAccess && !!data && !parcelConfirmed;
 
   const triggerDownload = useCallback(async () => {
     if (!parcel || (!parcel.pin && !parcel.address)) return;
@@ -917,7 +922,11 @@ export default function ScorecardPage() {
                     type="button"
                     onClick={handleDownloadPdf}
                     disabled={downloading}
-                    className="px-4 py-2 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-title disabled:opacity-60"
+                    className={
+                      reportDemoted
+                        ? "px-4 py-2 rounded-lg border border-highlight/40 text-highlight hover:border-highlight transition-colors text-title disabled:opacity-60"
+                        : "px-4 py-2 rounded-lg bg-highlight-fill text-highlight-fg hover:opacity-90 transition-opacity text-title disabled:opacity-60"
+                    }
                   >
                     {downloading
                       ? t("scorecard.reportCTA.generating")
@@ -936,6 +945,9 @@ export default function ScorecardPage() {
                   >
                     {t("scorecard.reportCTA.viewSample")} ↗
                   </a>
+                  {reportDemoted && (
+                    <p className="basis-full text-caption text-text-muted">{t("scorecard.reportCTA.unverifiedNote")}</p>
+                  )}
                   {verdict && (
                     <button
                       type="button"
