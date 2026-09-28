@@ -36,6 +36,8 @@ from typing import Any
 
 import httpx
 
+from backend.citations import DATA_SOURCE_FIELDS
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 QUERIES_FILE = Path(__file__).resolve().parent / "queries.json"
@@ -168,6 +170,7 @@ async def _run_full(query: dict, base_url: str, http: httpx.AsyncClient) -> Resu
     retrieved_sections: list[str] = []
     timings: dict[str, int] = {}
     answer_parts: list[str] = []
+    citation_warnings: list[str] = []
 
     async with http.stream(
         "POST",
@@ -208,6 +211,9 @@ async def _run_full(query: dict, base_url: str, http: httpx.AsyncClient) -> Resu
             elif evt["type"] == "done":
                 if t is not None:
                     timings["total_ms"] = t
+                # Server-side check that every [N] / [data:x] in the answer is
+                # backed by this turn's context (backend/citations.py).
+                citation_warnings = evt.get("citation_warnings") or []
 
     full_answer = "".join(answer_parts)
     failures: list[str] = []
@@ -216,6 +222,7 @@ async def _run_full(query: dict, base_url: str, http: httpx.AsyncClient) -> Resu
     else:
         failures.extend(_check_plan(plan_dict, query["expect"]))
         failures.extend(_check_retrieval(retrieved_sections, query["expect"]))
+    failures.extend(f"citation: {w}" for w in citation_warnings)
 
     return Result(
         id=query["id"],
@@ -341,15 +348,7 @@ def _extract_metadata_flags(ctx: dict) -> dict[str, Any]:
     code_chunks = ctx.get("code_chunks") or []
     data_sources = []
     capped_sources: dict[str, bool] = {}
-    for key, label in [
-        ("crime_last_90d", "crime"),
-        ("open_311_requests", "311"),
-        ("permits", "permits"),
-        ("violations", "violations"),
-        ("businesses", "business"),
-        ("vacant_buildings", "vacant_buildings"),
-        ("food_inspections", "food_inspections"),
-    ]:
+    for key, label in DATA_SOURCE_FIELDS.items():
         summary = ctx.get(key)
         if summary:
             data_sources.append(label)
@@ -635,6 +634,8 @@ async def main_async(args: argparse.Namespace) -> int:
     _print_summary(results, mode)
     if args.out:
         _write_markdown(results, args.out, mode)
+    if args.json_out:
+        _write_results_json(results, args.json_out, mode)
 
     eval_exit = 0 if all(r.passed for r in results) else 1
 
@@ -665,6 +666,58 @@ async def main_async(args: argparse.Namespace) -> int:
     return eval_exit
 
 
+def run_envelope() -> dict[str, Any]:
+    """What produced a result: code version, models, and a hash of the prompts,
+    so two runs are only compared when they measured the same thing."""
+    import hashlib
+    import subprocess
+
+    from backend.config import get_settings
+
+    settings = get_settings()
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT,
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        sha = None
+    prompts = (PROJECT_ROOT / "backend" / "prompts.py").read_bytes()
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "git_sha": sha,
+        "router_model": settings.router_model,
+        "synthesizer_model": settings.synthesizer_model,
+        "prompts_sha256": hashlib.sha256(prompts).hexdigest()[:16],
+    }
+
+
+def _write_results_json(results: list[Result], path: Path, mode: str) -> None:
+    out = {
+        **run_envelope(),
+        "mode": mode,
+        "passed": sum(1 for r in results if r.passed),
+        "total": len(results),
+        "results": [
+            {
+                "id": r.id,
+                "category": r.category,
+                "passed": r.passed,
+                "failures": r.failures,
+                "intent": (r.plan or {}).get("intent"),
+                "sources": (r.plan or {}).get("sources"),
+                "retrieved_sections": r.retrieved_sections,
+                "timings": r.timings,
+                "answer": r.full_answer or None,
+            }
+            for r in results
+        ],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=2))
+    print(f"JSON results written to {path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group()
@@ -672,6 +725,7 @@ def main() -> None:
     group.add_argument("--full", metavar="URL", default=None, help="Hit a running backend at this base URL (e.g. http://localhost:8000)")
     parser.add_argument("--filter", help="Only run queries whose id or category contains this string")
     parser.add_argument("--out", type=Path, help="Write a markdown report to this path")
+    parser.add_argument("--json-out", type=Path, help="Write per-query results plus the run envelope (git SHA, models, prompt hash)")
     parser.add_argument("--judge", action="store_true", help="Grade synthesis quality with LLM-as-judge (requires --full)")
     parser.add_argument("--judge-model", default="claude-sonnet-4-6", help="Model for the judge (default: claude-sonnet-4-6)")
     parser.add_argument("--judge-out", type=Path, default=None, help="Path for judge JSON output (default: eval/judge_results.json)")
