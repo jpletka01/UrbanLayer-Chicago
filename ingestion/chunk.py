@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 SECTIONS_DIR = Path(__file__).resolve().parent / "data" / "sections"
 OUT_FILE = Path(__file__).resolve().parent / "data" / "chunks.jsonl"
 
-# BAAI/bge-small-en-v1.5 has max_seq_length=512 tokens. Use ~1800 chars (~450
+# BAAI/bge-base-en-v1.5 has max_seq_length=512 tokens. Use ~1800 chars (~450
 # tokens, leaving headroom for the header block) as the soft max per chunk.
 MAX_CHARS = 1800
 HARD_MAX_CHARS = 2400  # tolerate slightly over to avoid splitting mid-paragraph

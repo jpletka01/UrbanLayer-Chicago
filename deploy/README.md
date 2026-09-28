@@ -7,7 +7,7 @@ assessments/sales/characteristics update. These systemd units rebuild it monthly
 (which rebuilds exactly the community areas already in the index — so expanding coverage with a
 one-off `--community-areas …`/`--all` run automatically carries forward).
 
-### Install on the prod host (`178.105.184.66`)
+### Install on the prod host (`ssh urbanlayer-prod`)
 
 ```bash
 cd /opt/urbanlayer && git pull               # get the unit files (this deploy/ dir)

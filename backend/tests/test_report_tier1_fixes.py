@@ -10,7 +10,7 @@ Covers:
     labeled value (collapsing the old 3× / D4); an assessment-history fallback
     fills estimated annual tax when the ptaxsim bill is missing.
 
-See claude-context/guides/report-v6-execution-plan.md ("Tier 1").
+See claude-context/guides/report.md (the v6 plan it condenses is in git history) ("Tier 1").
 """
 
 from pathlib import Path

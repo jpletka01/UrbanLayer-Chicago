@@ -446,7 +446,7 @@ curl -s https://urbanlayerchicago.com/api/discovery/registry \
 # Validate a built index (non-blocking; run locally or on prod)
 python -m backend.discovery.index_validate                    # upside/value_pctile dist + redev cross-check
 
-# REBUILD / EXPAND COVERAGE ON PROD (ssh root@178.105.184.66)
+# REBUILD / EXPAND COVERAGE ON PROD (ssh urbanlayer-prod)
 cd /opt/urbanlayer
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -d backend \
   python -m backend.discovery.index_build --community-areas <set>   # or --refresh (current CAs)

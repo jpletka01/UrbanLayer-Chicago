@@ -13,7 +13,7 @@ Covers:
   * End-to-end smoke — each map generator still returns a PNG (non-None base64)
     with the overlays drawn, on a synthetic basemap (GIS-independent).
 
-See claude-context/guides/report-v6-execution-plan.md ("Phase 4 — RE-PRIORITIZED", D3).
+See claude-context/guides/report.md (the v6 plan it condenses is in git history) ("Phase 4 — RE-PRIORITIZED", D3).
 """
 
 import base64

@@ -6,7 +6,7 @@ than the features.
 **🔒 Production Qdrant was publicly exposed with no authentication** (`77939a0`). Found while
 planning the Title-14 push: `docker-compose.yml` published `"6333:6333"`, which binds 0.0.0.0,
 and Qdrant ships with no auth — the vector store was readable **and writable** from the internet
-(`curl http://178.105.184.66:6333/collections` answered from a laptop, no credentials). Fixed by
+(`curl http://<origin-ip>:6333/collections` answered from a laptop, no credentials). Fixed by
 removing host publishing from the base file (the backend uses the compose network) and
 republishing on `127.0.0.1` only in the dev override, which prod never loads. **The obvious fix
 is wrong**: adding a loopback mapping to `docker-compose.prod.yml` would have *appended* under

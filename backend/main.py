@@ -86,7 +86,7 @@ _RETRIEVAL_SEM = asyncio.Semaphore(8)
 # Bounds concurrent PDF report renders (report_concurrency=1). The heavy WeasyPrint
 # render now runs in an isolated child (~118 MB, backend/report_render.py); serializing
 # keeps the parent's per-request matplotlib/HTML allocations predictable. See the
-# Tier-0 investigation in claude-context/guides/report-v6-execution-plan.md.
+# Tier-0 investigation in claude-context/guides/report.md (the v6 plan it condenses is in git history).
 _REPORT_SEM = asyncio.Semaphore(get_settings().report_concurrency)
 
 # Best-effort: return top-of-heap free space to the OS after each report via
@@ -1902,7 +1902,7 @@ async def report(
     # memory-heavy span (map rasters + WeasyPrint buffers). Holding _REPORT_SEM here
     # — not around the cheap auth/_resolve_location work above — caps peak render
     # memory so concurrent reports can't OOM the single worker. See the Tier-0
-    # investigation in report-v6-execution-plan.md.
+    # investigation summarized in claude-context/guides/report.md.
     async with _REPORT_SEM:
         report_data, basemap_bytes, basemap_wide_bytes = await _fetch_report_data(
             resolved_lat, resolved_lon, resolved_address, pin=rl.pin, confidence=rl.confidence,

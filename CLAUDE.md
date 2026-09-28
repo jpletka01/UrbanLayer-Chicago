@@ -1,6 +1,6 @@
 # UrbanLayer — Chicago
 
-Parcel feasibility engine for Chicago real-estate professionals, built on RAG over the municipal code plus 25+ city/county/federal data sources. Killer query: type "1601 N Milwaukee Ave" → the parcel's full **Property Profile** (renamed from "Scorecard" 2026-07-07 on `feat/property-profile`, unmerged; es "Ficha"; route stays `/scorecard`, i18n keys stay `scorecard.*`) — zoning, overlays, incentives, taxes, comps, three scoped parcel maps — in ~2 seconds, free and anonymous — then interrogate it via chat with cited municipal code, and buy the $25 Development Feasibility Report. Chat also answers parcel-less code-research and neighborhood questions (crime, 311, permits, demographics, transit) with interactive maps and clickable source citations.
+Parcel feasibility engine for Chicago real-estate professionals, built on RAG over the municipal code plus 25+ city/county/federal data sources. Killer query: type "1601 N Milwaukee Ave" → the parcel's full **Property Profile** (renamed from "Scorecard" 2026-07-07; es "Ficha"; route stays `/scorecard`, i18n keys stay `scorecard.*`) — zoning, overlays, incentives, taxes, comps, three scoped parcel maps — free and anonymous (~1 s cached, 15–40 s on a first lookup) — then interrogate it via chat with cited municipal code, and buy the $25 Development Feasibility Report. Chat also answers parcel-less code-research and neighborhood questions (crime, 311, permits, demographics, transit) with interactive maps and clickable source citations.
 
 ## Tech Stack
 
@@ -49,9 +49,9 @@ docker compose up -d                              # dev (backend + qdrant, hot-r
 docker compose -f docker-compose.yml up           # production (all 3 services)
 docker compose build backend                      # rebuild after dep changes
 
-# Production server (178.105.184.66) — live at https://urbanlayerchicago.com
+# Production server (ssh alias urbanlayer-prod) — live at https://urbanlayerchicago.com
 ssh-add ~/.ssh/id_ed25519                         # load key (has passphrase)
-ssh root@178.105.184.66                           # SSH into server
+ssh urbanlayer-prod                           # SSH into server
 # On server: cd /opt/urbanlayer
 git fetch origin && git merge origin/main         # pull latest code
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
@@ -77,7 +77,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ## Workflow Rules
 
-- **⚠️ Pushing to `main` IS deploying.** The production server (`178.105.184.66` / `/opt/urbanlayer`) **auto-pulls and rebuilds on every push to `main`** — a push goes live within minutes with no manual `docker compose up`. (Verified 2026-06-11: R7 commit `a9b7e6b` auto-shipped ~12 min after push.)
+- **⚠️ Pushing to `main` IS deploying.** The production server (`urbanlayer-prod` / `/opt/urbanlayer`) **auto-pulls and rebuilds on every push to `main`** — a push goes live within minutes with no manual `docker compose up`. (Verified 2026-06-11: R7 commit `a9b7e6b` auto-shipped ~12 min after push.)
 - **Deploy requires confirmation → so `git push` to `main` requires confirmation.** Because push = deploy, always ask before pushing production code to `main`, the same way you'd ask before a manual deploy. Commit freely on a branch; **get approval before pushing to `main`.** Docs-only/non-code changes can be pushed freely. The manual deploy command (below) is now a fallback; normally the push does it.
 - **Commit freely; use clear, conventional commit messages.** Branch for code work that isn't ready to ship.
 - **Verify a deploy via the live API**, not just the server's git HEAD — confirm the running image actually serves the change (e.g. `curl https://urbanlayerchicago.com/api/scorecard?address=...` and check the response). The server's git tree can advance ahead of (or independently of) what the running container serves.

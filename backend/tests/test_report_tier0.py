@@ -1,7 +1,7 @@
 """Tier-0 reliability regression tests.
 
 Locks in the two render-reliability fixes from the Tier-0 investigation
-(`claude-context/guides/report-v6-execution-plan.md` → "Tier-0"):
+(`claude-context/guides/report.md (the v6 plan it condenses is in git history)` → "Tier-0"):
 
 1. `_REPORT_SEM` bounds the number of concurrent report renders so concurrent
    reports can't OOM the single prod worker (the validated root cause).
