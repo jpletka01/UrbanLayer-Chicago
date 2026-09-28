@@ -1,0 +1,65 @@
+{
+  "section": "17-5-0400",
+  "section_title": "Bulk and density standards",
+  "title_number": 17,
+  "title_name": "CHICAGO ZONING ORDINANCE",
+  "chapter": "17-5",
+  "chapter_name": "MANUFACTURING DISTRICTS",
+  "article": null,
+  "article_name": "",
+  "subarticle": null,
+  "subarticle_name": "",
+  "part": null,
+  "part_name": "",
+  "body_paragraphs": [
+    "17-5-0401 General. Bulk and density standards in the M districts vary according to the type of district or applicable bulk designation. Bulk designations are indicated by the numeral following the dash (\u2013) in the district name, as in \"M1-2\" (M1 dash 2).",
+    "17-5-0402 Lot Area. There are no minimum lot area standards in the M districts.",
+    "17-5-0403 Lot Frontage. There are no minimum lot frontage standards in the M districts.",
+    "17-5-0404 Floor Area Ratio. All development in M districts is subject to the following maximum floor area ratio standards:",
+    "(*See Sec. 17-17-0305 for rules governing the measurement of floor area ratio .)",
+    "17-5-0405 Setbacks.",
+    "17-5-0405-A Front and Side Setbacks. No front setback or side setback is required in M districts, except in the following cases:",
+    "1. All industrial parks and business parks within the M1 district must provide a landscaped setback along all property lines that abut public streets . This setback must be at least 10 feet in width.",
+    "2. M-zoned lots that are across the street from an R district must provide a setback along the street property line opposite the R district at least equal to the minimum front setback required on the R- zoned lot on the opposite side of the street .",
+    "Figure 17-5-0405-A2",
+    "3. M-zoned lots abutting R-zoned lots with street frontage along the same street must provide a front setback or street side setback at least equal to the minimum front setback required on the abutting R- zoned lot .",
+    "Figure 17-5-0405-A3",
+    "17-5-0405-B Rear Setbacks. No rear setback is required in M districts, except when the rear property line of an M-zoned site abuts the side property line or rear property line of a lot in an R district or is separated from an R district rear property line by an alley , the minimum rear setback on the M-zoned property is 30 feet. (See Sec. 17-17-0307 for rules governing the measurement of rear setbacks .)",
+    "Figure 17-5-0405-B"
+  ],
+  "tables": [
+    {
+      "headers": [
+        "District",
+        "Maximum Floor Area Ratio*"
+      ],
+      "data_rows": [
+        [
+          "Dash 1",
+          "1.2"
+        ],
+        [
+          "Dash 2",
+          "2.2"
+        ],
+        [
+          "Dash 3",
+          "3.0"
+        ]
+      ],
+      "caption": ""
+    }
+  ],
+  "cross_references": [
+    "17-17-0305",
+    "17-17-0307"
+  ],
+  "legislative_history": "(Added Coun. J. 5-26-04, p. 25275)",
+  "effective_dates": [
+    "5-26-04"
+  ],
+  "definitions": [],
+  "has_table": true,
+  "prev_section": "17-5-0300",
+  "next_section": "17-5-0500"
+}

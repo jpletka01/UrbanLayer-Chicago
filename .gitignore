@@ -16,6 +16,14 @@ ingestion/data/*
 !ingestion/data/community_areas.geojson
 !ingestion/data/zoning_cache.json
 !ingestion/data/chrs_orange_red.json.gz
+# The four Title 17 bulk-standards sections test_zoning_ordinance_parity.py
+# checks zoning_definitions.py against (otherwise the test skips in CI).
+!ingestion/data/sections/
+ingestion/data/sections/*
+!ingestion/data/sections/17-2-0300.json
+!ingestion/data/sections/17-3-0400.json
+!ingestion/data/sections/17-4-0400.json
+!ingestion/data/sections/17-5-0400.json
 
 backend/data/
 
