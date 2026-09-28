@@ -3,8 +3,8 @@
 Parcel feasibility for Chicago real estate. Type an address and get the parcel's
 **Property Profile**: zoning and what can be built, overlays and landmark status,
 incentives, taxes, comparable sales, and maps. Free, no account. Then ask
-follow-up questions in chat and get answers that cite the municipal code, or buy
-a $25 Development Feasibility Report as a PDF.
+follow-up questions in chat and get answers that cite the municipal code. A $25
+Development Feasibility Report (PDF) is built; online purchase is coming soon.
 
 **Live:** [urbanlayerchicago.com](https://urbanlayerchicago.com) ·
 **Try:** [1601 N Milwaukee Ave](https://urbanlayerchicago.com/scorecard?address=1601%20N%20Milwaukee%20Ave)
@@ -23,7 +23,9 @@ a $25 Development Feasibility Report as a PDF.
   neighborhoods in general. Answers cite municipal-code sections (click through
   to the full text) and the datasets they used, with maps where relevant.
 - **Development Feasibility Report** ($25). A PDF dossier for one parcel.
-  [Sample](https://urbanlayerchicago.com/sample-report.pdf).
+  [Sample](https://urbanlayerchicago.com/sample-report.pdf). Checkout runs on
+  Stripe; until keys are configured the site shows "purchases coming soon"
+  (driven by `/api/payments/status`).
 - **Property Discovery** (`/discovery`). Filter and rank all ~949k Chicago
   parcels (vacant land near transit, teardown candidates, underused commercial
   in a TIF) with a map and CSV export.
