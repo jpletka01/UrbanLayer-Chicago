@@ -8,7 +8,6 @@ import logging
 from pathlib import Path
 
 from backend import db
-from backend.config import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +39,6 @@ def _maybe_resize_image(data: bytes, mime_type: str) -> tuple[bytes, str]:
 
 async def prepare_upload_content_blocks(upload_ids: list[str]) -> list[dict]:
     """Build Anthropic content blocks from upload IDs. Skips files that can't be read."""
-    settings = get_settings()
     blocks: list[dict] = []
 
     for uid in upload_ids:

@@ -1,7 +1,7 @@
 """Regression tests for Phase 2 report-credibility fixes.
 
 Guards the credibility findings from the V6 real-data audit so they cannot
-silently regress. See claude-context/guides/report-v6-execution-plan.md (Phase 2).
+silently regress. See claude-context/guides/report.md (the v6 plan it condenses is in git history) (Phase 2).
 
 Covers:
 - P4    — 311 severity taxonomy (rodent baiting is routine service, not site risk)

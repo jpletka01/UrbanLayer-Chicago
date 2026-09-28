@@ -7,7 +7,6 @@ Run with: pytest backend/tests/test_integration.py -v
 Skip expensive tests: pytest backend/tests/test_integration.py -v -m "not expensive"
 """
 
-import os
 import pytest
 
 pytestmark = pytest.mark.integration
@@ -32,6 +31,15 @@ def qdrant_available():
         return True
     except Exception:
         return False
+
+
+@pytest.fixture
+def requires_qdrant():
+    # Probed when the test runs, not at import: a module-level skipif opened a
+    # Qdrant connection while collecting every test run, even with integration
+    # tests deselected.
+    if not qdrant_available():
+        pytest.skip("Qdrant not available")
 
 
 class TestSocrataIntegration:
@@ -179,7 +187,7 @@ class TestRouterIntegration:
 class TestQdrantIntegration:
     """Tests vector search against real Qdrant instance."""
 
-    @pytest.mark.skipif(not qdrant_available(), reason="Qdrant not available")
+    @pytest.mark.usefixtures("requires_qdrant")
     def test_qdrant_connection(self):
         from qdrant_client import QdrantClient
         from backend.config import get_settings
@@ -190,7 +198,7 @@ class TestQdrantIntegration:
 
         assert collections is not None
 
-    @pytest.mark.skipif(not qdrant_available(), reason="Qdrant not available")
+    @pytest.mark.usefixtures("requires_qdrant")
     @pytest.mark.asyncio
     async def test_semantic_search_returns_chunks(self):
         from backend.retrieval.vector_search import semantic_search

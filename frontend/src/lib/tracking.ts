@@ -85,7 +85,7 @@ interface TrackEvent {
   timestamp: number;
 }
 
-let _queue: TrackEvent[] = [];
+const _queue: TrackEvent[] = [];
 let _flushTimer: ReturnType<typeof setTimeout> | null = null;
 let _address: string | null = null;
 

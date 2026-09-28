@@ -139,7 +139,6 @@ def _parse_race(data: dict) -> list[DistributionBucket]:
 
     # Scale race values to non-Hispanic proportions to avoid double-counting Hispanic
     if total > 0 and non_hispanic_total > 0:
-        scale = non_hispanic_total / total
         race_total = white + black + asian + two_plus + other
         if race_total > 0:
             factor = non_hispanic_total / race_total

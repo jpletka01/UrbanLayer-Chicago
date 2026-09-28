@@ -183,6 +183,21 @@ systemctl daemon-reload && systemctl enable --now warm-demo-cache.timer
 
 The deploy script also warms them after each restart.
 
+## 8c. Backups that actually run, off the box (20 min)
+
+`scripts/backup_db.sh` now points at the real database, the `chicago.db` file in
+the `backend_data` volume. Before this fix it targeted a file that never existed.
+
+```bash
+apt install -y sqlite3
+/opt/urbanlayer/scripts/backup_db.sh          # run once by hand and check the output
+( crontab -l 2>/dev/null; echo '0 3 * * * /opt/urbanlayer/scripts/backup_db.sh' ) | crontab -
+```
+
+Those copies live on the same disk as the database. Ship them off the box with an
+encrypted tool such as `restic` to a Hetzner Storage Box or Backblaze B2, then
+**test a restore**.
+
 ## 9. Check the vector store wasn't tampered with (5 min)
 
 Qdrant was reachable without auth from the internet until 2026-09-08, so the municipal-code

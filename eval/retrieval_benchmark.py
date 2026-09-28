@@ -16,7 +16,7 @@ import json
 import re
 import sys
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -350,7 +350,6 @@ def _grade_query(analyses: list[ChunkAnalysis], answer_must_contain: list[str]) 
 
     section_counts = Counter(a.section for a in analyses)
     dup_sections = sum(v - 1 for v in section_counts.values() if v > 1)
-    unique_sections = len(section_counts)
 
     table_frags = sum(1 for a in analyses if a.is_table_fragment)
     low_content = sum(1 for a in analyses if a.is_header_only or a.is_legend_only or a.is_transitional)
@@ -362,7 +361,7 @@ def _grade_query(analyses: list[ChunkAnalysis], answer_must_contain: list[str]) 
     if gold_hits == 0:
         issues.append(f"MISS: none of the {total} chunks match expected sections")
     if top3_gold == 0 and gold_hits > 0:
-        issues.append(f"gold section(s) found but not in top-3")
+        issues.append("gold section(s) found but not in top-3")
     if dup_sections > 0:
         dup_secs = [s for s, c in section_counts.items() if c > 1]
         issues.append(f"{dup_sections} duplicate chunk(s) from same section: {', '.join(dup_secs)}")
@@ -453,7 +452,6 @@ def print_report(results: list[QueryResult]) -> None:
     print()
 
     for r in results:
-        icon = {"A": "+", "B": "~", "C": "!", "D": "!!", "F": "X"}.get(r.grade, "?")
         print(f"[{r.grade}] {r.id}")
         print(f"    Q: {r.question}")
         print(f"    gold={r.gold_hit_count}/{r.chunk_count}  unique_sections={r.unique_sections}  "
@@ -512,8 +510,8 @@ def write_markdown(results: list[QueryResult], path: Path) -> None:
         "",
         "### Aggregate Metrics",
         "",
-        f"| Metric | Count | % |",
-        f"|---|---:|---:|",
+        "| Metric | Count | % |",
+        "|---|---:|---:|",
         f"| Gold section hits | {total_gold}/{all_chunks} | {100*total_gold/all_chunks:.0f}% |",
         f"| Duplicate section slots | {total_dups}/{all_chunks} | {100*total_dups/all_chunks:.0f}% |",
         f"| Table fragments (<=3 rows) | {total_frags}/{all_chunks} | {100*total_frags/all_chunks:.0f}% |",

@@ -3,7 +3,6 @@
 import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
 
 from eval.run_eval import (
     DimensionScore,

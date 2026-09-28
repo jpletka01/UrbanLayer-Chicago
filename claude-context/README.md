@@ -38,6 +38,7 @@ reusable lesson, not the full narrative.
   (Spec drift to know: `03` says 29 filters — live is 32; wire is `{rows,total,nextOffset,gated}` + `/search/pins` + `/search/export`.)
 
 ## Strategy (load only for product/business planning)
+_Private: `strategy/` is gitignored and exists only in the maintainer's local checkout (this repo is public)._
 - `strategy/north-star.md` — **governing** product plan: manifesto, wedge, feature audit, phases, validation.
 - `strategy/2026-07-05_growth-strategy.md` — **active** go-to-market operating guide: product-dev rules + acquisition-infrastructure P0s (attribution, funnel events, SEO surface, email capture, privacy policy), channel plan (interviews → community → launch moments → programmatic SEO → paid), visitor-intelligence data model, feedback engine (feature-ask ledger, 3+ rule), weekly cadence + 30/60/90 + decision gate.
 - `strategy/product-coherence-audit.md` — the "parcel dossier machine" first-principles review (steps 1–4 all shipped); funnel map + per-surface scorecard.

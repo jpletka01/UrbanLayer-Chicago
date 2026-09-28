@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from backend.prompts import SYNTHESIZER_SYSTEM as SYSTEM_PROMPT
 from backend.synthesizer import _build_user_text
@@ -7,7 +5,6 @@ from backend.models import (
     CodeChunk,
     ContextObject,
     CrimeSummary,
-    Message,
     ThreeOneOneSummary,
 )
 

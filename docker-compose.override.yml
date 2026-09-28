@@ -20,7 +20,8 @@ services:
       - backend_data:/app/backend/data
     command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
     ports:
-      - "8001:8001"
+      # Loopback only: dev auth is off (every request is an admin).
+      - "127.0.0.1:8001:8001"
 
   frontend:
     profiles:

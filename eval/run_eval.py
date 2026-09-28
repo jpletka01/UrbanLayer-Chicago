@@ -29,7 +29,6 @@ import json
 import re
 import statistics
 import sys
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -164,7 +163,6 @@ async def _run_router_only(query: dict) -> Result:
 
 
 async def _run_full(query: dict, base_url: str, http: httpx.AsyncClient) -> Result:
-    started = time.monotonic()
     plan_dict: dict | None = None
     context_dict: dict | None = None
     retrieved_sections: list[str] = []

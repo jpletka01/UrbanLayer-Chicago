@@ -1,12 +1,11 @@
 import asyncio
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
 from backend.retrieval.vector_search import (
     _payload_to_chunk,
     expand_cross_references,
-    get_by_section_ids_batch,
     MAX_CROSS_REF_PER_CHUNK,
     _SECTION_REF_RE,
 )

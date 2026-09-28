@@ -1,7 +1,7 @@
 """Regression tests for Phase 1 report-viability fixes (R1–R4).
 
 These guard the pipeline bugs surfaced by the V6 real-data audit so they cannot
-silently return. See claude-context/guides/report-v6-execution-plan.md.
+silently return. See claude-context/guides/report.md (the v6 plan it condenses is in git history).
 """
 
 import pytest

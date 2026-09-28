@@ -1,6 +1,6 @@
 # Deployment bring-up (2026-06-05) — SHIPPED
 
-Phase-by-phase first deploy to the Hetzner box (`178.105.184.66` / `/opt/urbanlayer`). All phases complete.
+Phase-by-phase first deploy to the Hetzner box (`urbanlayer-prod` / `/opt/urbanlayer`). All phases complete.
 Live ops, `.env` template, deploy commands, monitoring, and backups are the **living** doc `guides/deployment.md`;
 full infra narrative is on the About page → **Infrastructure & Deployment**. This file is a historical marker.
 

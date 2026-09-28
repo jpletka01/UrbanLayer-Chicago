@@ -31,7 +31,8 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).resolve().parent / "data"
 SECTIONS_DIR = DATA_DIR / "sections"
 CHUNKS_FILE = DATA_DIR / "chunks.jsonl"
-SOURCE_HTML = DATA_DIR / "chicago-il-codes.html"
+# Same location parse_chicago_code.py reads (and the README documents): the repo root.
+SOURCE_HTML = DATA_DIR.parent.parent / "chicago-il-codes.html"
 
 
 def _run_step(description: str, cmd: list[str]) -> None:

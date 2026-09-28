@@ -21,7 +21,7 @@ def main():
 
     DEST.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Downloading PTAXSIM database (~1 GB compressed)...")
+    print("Downloading PTAXSIM database (~1 GB compressed)...")
     print(f"  From: {URL}")
     print(f"  To:   {BZ2_PATH}")
 

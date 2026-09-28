@@ -9,7 +9,7 @@ returns a full bill). Findings: `claude-context/audits/2026-07-02_lot-coverage-b
 `"ptaxsim": true|false` (non-gating) and startup logs a WARNING when the DB is absent —
 run the deploy first or this stays silent.
 
-## Steps (run as root on 178.105.184.66)
+## Steps (run as root on the prod host, `ssh urbanlayer-prod`)
 
 ```bash
 # 1. Disk headroom — need ~11 GB free during the operation (1 GB .bz2 + 9.4 GB db)

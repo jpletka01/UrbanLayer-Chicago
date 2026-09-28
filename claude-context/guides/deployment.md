@@ -2,9 +2,17 @@
 
 ## Production Server
 
-Hetzner CX32 at `178.105.184.66` (Nuremberg datacenter). Ubuntu 22.04, 2 vCPU, 8GB RAM, 80GB SSD. Live at `https://urbanlayerchicago.com`.
+Hetzner CX32 (Nuremberg datacenter; ssh alias `urbanlayer-prod`). Ubuntu 22.04, 2 vCPU, 8GB RAM, 80GB SSD. Live at `https://urbanlayerchicago.com`.
 
-**SSH access**: `ssh -i ~/.ssh/id_ed25519 root@178.105.184.66` (key has passphrase — run `ssh-add ~/.ssh/id_ed25519` first).
+**SSH access**: `ssh urbanlayer-prod` (key has passphrase — run `ssh-add ~/.ssh/id_ed25519` first).
+The address isn't written in this public repo; define the alias in `~/.ssh/config`:
+
+```
+Host urbanlayer-prod
+  HostName <server IP from the Hetzner console>
+  User jack            # root login is disabled after deploy/hardening-runbook.md step 4
+  IdentityFile ~/.ssh/id_ed25519
+```
 
 **Deploy** (from server `/opt/urbanlayer`):
 ```bash
@@ -49,8 +57,8 @@ keeps all model work off the 8 GB box:
 ```bash
 # Qdrant publishes NO host port in prod (see the security note in docker-compose.yml),
 # so tunnel to the CONTAINER on the docker bridge, not to 127.0.0.1.
-IP=$(ssh root@178.105.184.66 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(docker ps -qf name=qdrant)')
-ssh -f -N -L 6335:$IP:6333 root@178.105.184.66
+IP=$(ssh urbanlayer-prod 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(docker ps -qf name=qdrant)')
+ssh -f -N -L 6335:$IP:6333 urbanlayer-prod
 curl -s localhost:6335/collections/chicago_municipal_code | jq .result.points_count
 ```
 
@@ -123,7 +131,7 @@ STRIPE_PRICE_ID=price_...
 
 SQLite backup script at `scripts/backup_db.sh` — `sqlite3 .backup` for WAL-safe copies, retains 7 days. DB path on server: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
 
-Cron (server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh /opt/urbanlayer/backend/data/urbanlayer.db /opt/urbanlayer/backups 7`
+Cron (server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh` (defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). Until 2026-09-28 the script defaulted to a nonexistent `urbanlayer.db`, and the documented cron line passed the backup dir as the DB path, so no backups were being made. Copies are on the same host; off-box shipping is in `deploy/hardening-runbook.md`.
 
 ## Memory Budget (8GB CX32)
 

@@ -6,8 +6,6 @@ from fastapi.testclient import TestClient
 
 from backend.main import app
 from backend.models import (
-    ChatChunk,
-    CodeChunk,
     ContextObject,
     CrimeSummary,
     Location,
@@ -33,6 +31,18 @@ def client():
         yield TestClient(app)
 
 
+@pytest.fixture
+def _qdrant_healthy():
+    """Answer /health's Qdrant probe without a network call."""
+    probe = MagicMock()
+    probe.__aenter__ = AsyncMock(return_value=probe)
+    probe.__aexit__ = AsyncMock(return_value=False)
+    probe.get = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch("backend.main.httpx.AsyncClient", return_value=probe):
+        yield
+
+
+@pytest.mark.usefixtures("_qdrant_healthy")
 class TestHealthEndpoint:
     def test_health_returns_ok(self, client):
         response = client.get("/health")
@@ -245,7 +255,7 @@ class TestChatEndpoint:
 
         with patch("backend.main.route", new_callable=AsyncMock) as mock_route, \
              patch("backend.main._retrieve", new_callable=AsyncMock) as mock_retrieve, \
-             patch("backend.main._fetch_map_rows", new_callable=AsyncMock) as mock_map:
+             patch("backend.main._fetch_map_rows", new_callable=AsyncMock):
                 mock_route.return_value = clarification_plan
 
                 response = client.post(

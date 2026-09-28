@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from backend.discovery import diagnostics as diag
 from backend.discovery import parcel as parcel_mod
 from backend.discovery.cqs import (
     CQS,

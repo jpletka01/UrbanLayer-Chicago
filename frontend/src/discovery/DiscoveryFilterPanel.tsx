@@ -56,7 +56,8 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
   const toggle = (cat: FilterCategory) =>
     setOpenCats((prev) => {
       const next = new Set(prev);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
       return next;
     });
 

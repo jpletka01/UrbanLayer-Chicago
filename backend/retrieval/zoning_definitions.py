@@ -279,7 +279,7 @@ def get_zone_definition(zone_class: str) -> ZoneDefinition:
                 name=ZONE_NAMES[candidate_prefix],
                 code_section="Title 17",
                 uses=f"See Title 17 for uses permitted in {candidate_prefix} districts.",
-                notes=f"Non-standard designation. Verify standards with the City of Chicago Zoning Division.",
+                notes="Non-standard designation. Verify standards with the City of Chicago Zoning Division.",
                 is_fallback=True,
             )
 

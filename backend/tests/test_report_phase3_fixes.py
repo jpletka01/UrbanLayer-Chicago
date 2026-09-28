@@ -3,7 +3,7 @@
 Covers the decision box (Miss#1), land-value/comp valuation (V5-1b/P2),
 FAR utilization (P1), as-of-right unit yield (P8), the deal-shaping
 constraint surfaced on page 1 (Exec), and the ownership "so what" (P5).
-See claude-context/guides/report-v6-execution-plan.md (Phase 3).
+See claude-context/guides/report.md (the v6 plan it condenses is in git history) (Phase 3).
 """
 
 from backend.models import (

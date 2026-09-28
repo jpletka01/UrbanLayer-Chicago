@@ -1,6 +1,5 @@
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 
 from backend.retrieval.crime import crime_by_community_area
 from backend.retrieval.three11 import (

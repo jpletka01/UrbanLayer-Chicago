@@ -15,7 +15,8 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-SOURCE_HTML = DATA_DIR / "chicago-il-codes.html"
+# Same location parse_chicago_code.py reads (and the README documents): the repo root.
+SOURCE_HTML = DATA_DIR.parent.parent / "chicago-il-codes.html"
 SOURCE_HASH_FILE = DATA_DIR / "source_hash.json"
 
 
