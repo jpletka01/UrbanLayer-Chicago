@@ -116,6 +116,16 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
     doSubmit(value);
   }
 
+  // Enter with nothing highlighted used to submit the raw text even when the
+  // dropdown showed the corrected address: "2130 N Hoyn Ave" resolved (slowly)
+  // to an unverified neighboring parcel. When the top suggestion has the same
+  // house number, it's the same address spelled right, so take it.
+  function sameHouseNumber(typed: string, suggestion: string): boolean {
+    const n = (s: string) => /^\s*(\d+)/.exec(s)?.[1];
+    const typedNumber = n(typed);
+    return typedNumber != null && typedNumber === n(suggestion);
+  }
+
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === "ArrowDown") {
@@ -129,6 +139,10 @@ export function AddressInput({ onSubmit, placeholder, variant = "hero", size = "
       } else if (e.key === "Enter" && selectedIndex >= 0) {
         e.preventDefault();
         doSubmit(suggestions[selectedIndex].address);
+        return;
+      } else if (e.key === "Enter" && sameHouseNumber(value, suggestions[0].address)) {
+        e.preventDefault();
+        doSubmit(suggestions[0].address);
         return;
       } else if (e.key === "Escape") {
         setShowSuggestions(false);
