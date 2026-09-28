@@ -1,3 +1,5 @@
+import socket
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -39,6 +41,50 @@ def mock_settings():
     settings.dataset_socioeconomic = "kn9c-c2s2"
     settings.transit_search_radius_mi = 2.0
     return settings
+
+
+@pytest.fixture(autouse=True)
+def _no_network(request, monkeypatch):
+    """Fail any unit test that tries to open a network connection.
+
+    Retrieval code degrades gracefully by design (a failed source becomes a
+    partial result), so a test that forgot to mock a data source used to pass
+    anyway while making real Socrata calls with retries, or connecting to
+    whatever Qdrant happened to be running locally. Blocking connects and DNS
+    here, and failing on any attempt, keeps the unit suite hermetic and fast.
+    Tests marked `integration` are exempt.
+    """
+    if request.node.get_closest_marker("integration"):
+        yield
+        return
+    attempts: list[str] = []
+    real_connect = socket.socket.connect
+    real_connect_ex = socket.socket.connect_ex
+
+    def _blocked(sock, address):
+        if sock.family in (socket.AF_INET, socket.AF_INET6):
+            attempts.append(f"connect {address}")
+            raise OSError(f"network access blocked in unit tests: {address}")
+        return None
+
+    def connect(sock, address):
+        _blocked(sock, address)
+        return real_connect(sock, address)
+
+    def connect_ex(sock, address):
+        _blocked(sock, address)
+        return real_connect_ex(sock, address)
+
+    def getaddrinfo(host, *args, **kwargs):
+        attempts.append(f"resolve {host}")
+        raise socket.gaierror(f"network access blocked in unit tests: {host}")
+
+    monkeypatch.setattr(socket.socket, "connect", connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", connect_ex)
+    monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+    yield
+    if attempts:
+        pytest.fail(f"unit test attempted network access (mock it): {sorted(set(attempts))}")
 
 
 @pytest.fixture(autouse=True)

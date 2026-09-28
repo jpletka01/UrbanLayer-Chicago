@@ -182,7 +182,8 @@ async def test_retrieve_no_verdict_grafted_on_pin_mismatch():
     plan = _plan(["property_domain"])
 
     with patch.object(main_mod, "property_domain", new=AsyncMock(return_value=None)), \
-            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)):
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()):
         ctx = await _retrieve(plan, scorecard_context=sc)
 
     assert ctx.verdict is None
@@ -264,7 +265,8 @@ async def test_retrieve_no_address_violations_on_pin_mismatch():
     sc = _sc(pin="99999999999999", address_violations=AddressViolations(status="confirmed_zero"))
     plan = _plan(["property_domain"])
     with patch.object(main_mod, "property_domain", new=AsyncMock(return_value=None)), \
-            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)):
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()):
         ctx = await _retrieve(plan, scorecard_context=sc)
     assert ctx.address_violations is None
 
@@ -275,7 +277,8 @@ async def test_retrieve_runs_normally_on_pin_mismatch():
     plan = _plan(["property_domain"])
 
     with patch.object(main_mod, "property_domain", new=AsyncMock(return_value=None)) as prop, \
-            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)):
+            patch.object(main_mod, "lookup_zoning", new=AsyncMock(return_value=None)), \
+            patch.object(main_mod, "aro_housing_by_community_area", new=AsyncMock()):
         ctx = await _retrieve(plan, scorecard_context=sc)
 
     # Augment: the live fetch ran, grounding was not grafted.
