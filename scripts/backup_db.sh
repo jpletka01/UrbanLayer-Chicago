@@ -6,10 +6,11 @@
 # Usage: ./scripts/backup_db.sh [db_path] [backup_dir] [keep_count]
 # Cron:  0 3 * * * /opt/urbanlayer/scripts/backup_db.sh
 #
-# The app database is chicago.db in the backend_data Docker volume. (The old
-# default, backend/data/urbanlayer.db, never existed, so earlier cron runs
-# exited without making a backup.) These copies stay on the same host; see
-# deploy/hardening-runbook.md for shipping them off-box.
+# The app database is chicago.db in the backend_data Docker volume, which is
+# now the default. (The old default, backend/data/urbanlayer.db, doesn't exist;
+# production's cron entry passed the right path, so backups did run.) These
+# copies stay on the same host; see deploy/hardening-runbook.md for shipping
+# them off-box.
 
 set -euo pipefail
 

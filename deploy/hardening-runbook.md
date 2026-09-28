@@ -6,6 +6,10 @@ verify-before-you-lock-out rule in step 3.
 
 `<PROD_HOST>` is the server address. It is intentionally not written in this public repo.
 
+**Status: completed on the production server 2026-09-28.** The steps are kept for rebuilding
+the box or setting up another one. Commands below run as root; on the current server, log in
+as the admin user and prefix them with `sudo`.
+
 ## Why these steps
 
 - **The origin answers directly on its IP**, bypassing Cloudflare. The app no longer trusts
@@ -72,7 +76,9 @@ On the server:
 
 ```bash
 install -o root -g root -m 755 /opt/urbanlayer/deploy/urbanlayer-deploy.sh /usr/local/bin/urbanlayer-deploy
-adduser --system --group --shell /bin/sh deploy
+# --home matters: a --system user otherwise gets /nonexistent as its home, sshd never
+# finds the key, and the login is refused.
+adduser --system --group --home /home/deploy --shell /bin/sh deploy
 echo 'deploy ALL=(root) NOPASSWD: /usr/local/bin/urbanlayer-deploy' > /etc/sudoers.d/urbanlayer-deploy
 chmod 440 /etc/sudoers.d/urbanlayer-deploy && visudo -c
 mkdir -p /home/deploy/.ssh
@@ -97,7 +103,7 @@ Then, in **GitHub → Settings → Secrets → Actions**:
 |---|---|
 | `SERVER_USER` | `deploy` |
 | `SERVER_SSH_KEY` | contents of `~/.ssh/urbanlayer_deploy` (the private key) |
-| `SERVER_HOST_FINGERPRINT` | output of `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256 \| awk '{print $2}'` run on the server |
+| `SERVER_HOST_FINGERPRINT` | output of `ssh-keygen -lf /etc/ssh/ssh_host_ecdsa_key.pub -E sha256 \| awk '{print $2}'` run on the server. Use the **ECDSA** key: the deploy action's Go SSH client negotiates ECDSA before ed25519, and pinning the ed25519 fingerprint fails with "host key fingerprint mismatch". |
 
 Also set **GitHub → Settings → Environments → `production`** to allow deploys only from
 `main`. Push a docs-free change and confirm the deploy job goes green. Once it does,
@@ -146,6 +152,16 @@ apply it to the server:
 | 80/tcp | same Cloudflare ranges |
 | 22/tcp | `0.0.0.0/0, ::/0` (key-only, no root, and the deploy key is command-locked) |
 
+Hetzner's form, in practice:
+- Put the Cloudflare ranges in the rule's **source** box, and remove its pre-filled
+  "Any IPv4" / "Any IPv6" chips from the 443 and 80 rules. Keep them on the 22 rule.
+- Put a single port in **Port** and leave **Port range** empty. A blank Port means all
+  ports, and `443-443` is rejected.
+- Leave **Outbound** empty (allow all). The app calls city, county and Anthropic APIs.
+
+Check from a laptop: a direct request to the origin must time out, while the site still
+answers through Cloudflare (step 10).
+
 Port 22 stays open because GitHub-hosted runners deploy from unpredictable IPs. The tighter
 option is to join the box and the deploy job to a Tailscale tailnet
 (`tailscale/github-action`), then limit 22 to your IP and the tailnet.
@@ -183,10 +199,11 @@ systemctl daemon-reload && systemctl enable --now warm-demo-cache.timer
 
 The deploy script also warms them after each restart.
 
-## 8c. Backups that actually run, off the box (20 min)
+## 8c. Backups, and getting them off the box (20 min)
 
-`scripts/backup_db.sh` now points at the real database, the `chicago.db` file in
-the `backend_data` volume. Before this fix it targeted a file that never existed.
+`scripts/backup_db.sh` defaults to the real database, the `chicago.db` file in the
+`backend_data` volume. (Its old default named a file that doesn't exist; the server's cron
+entry passed the right path explicitly, so nightly backups were in fact running.)
 
 ```bash
 apt install -y sqlite3
@@ -203,17 +220,16 @@ encrypted tool such as `restic` to a Hetzner Storage Box or Backblaze B2, then
 Qdrant was reachable without auth from the internet until 2026-09-08, so the municipal-code
 corpus could in principle have been edited. That would be a prompt-injection path.
 
-Compare point counts with a trusted local build (as of 2026-09-28 the local build has
-`chicago_municipal_code` = 16,576 and `chicago_zoning` = 934):
+Compare the point count with a trusted local build (as of 2026-09-28 both have
+`chicago_municipal_code` = 16,576; checked on prod that day):
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend python -c "
 import httpx
-for c in ('chicago_municipal_code', 'chicago_zoning'):
-    print(c, httpx.get(f'http://qdrant:6333/collections/{c}').json()['result']['points_count'])"
+print(httpx.get('http://qdrant:6333/collections/chicago_municipal_code').json()['result']['points_count'])"
 ```
 
-If the counts differ, or to be certain, rebuild the collections from source
+If the count differs, or to be certain, rebuild the collection from source
 (`python -m ingestion.update --full` against the prod Qdrant) or restore them from a local
 snapshot.
 
