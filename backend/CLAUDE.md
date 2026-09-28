@@ -158,7 +158,7 @@ ingestion/
 │                           # narrower gate silently dropped ALL 872 Title-14 sections. Title 14 = eleven lettered
 │                           # volumes (14A…14X); 14N letters its chapter/section segments too (`14N-C4-C402`)
 ├── chunk.py                # Section JSON → chunks.jsonl (MAX_CHARS=1800, table flattening, no overlap)
-├── embed_and_store.py      # chunks.jsonl → Qdrant (bge-base-en-v1.5, two collections). Supports --recreate and --incremental
+├── embed_and_store.py      # chunks.jsonl → Qdrant (bge-base-en-v1.5, one collection: chicago_municipal_code). --recreate, --incremental, --chunks (demo sample)
 ├── manifest.py             # Section content hash for incremental updates (SHA-256 of body + tables). ⚠️ does NOT
 │                           # hash section_title, so heading-only fixes are silent no-ops — see known-issues
 ├── update.py               # Unified CLI: parse → chunk → diff → embed. Supports --dry-run, --full, --manifest

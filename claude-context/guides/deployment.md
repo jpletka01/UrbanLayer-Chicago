@@ -67,9 +67,8 @@ first** — `embed_and_store` assigns `uuid.uuid4()` per point, so a re-run with
 DUPLICATES rows rather than replacing them. Verify by comparing per-section point counts
 against local, not just the total.
 
-Only `title_number == 17` chunks belong in the `chicago_zoning` collection; everything else
-is code-collection only. Prod currently has just `chicago_municipal_code` — the precomputed
-zoning cache made the second collection unnecessary there.
+There is one collection, `chicago_municipal_code`. A Title-17-only `chicago_zoning`
+collection used to be written locally but was never searched, and was removed 2026-09-28.
 
 **Done 2026-09-08:** Title 14 (the building code) pushed this way — prod 14,535 → 16,576
 points, matching local exactly, per-section counts verified, `/section/14A-1-101` now 200.
@@ -131,7 +130,7 @@ STRIPE_PRICE_ID=price_...
 
 SQLite backup script at `scripts/backup_db.sh` — `sqlite3 .backup` for WAL-safe copies, retains 7 days. DB path on server: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
 
-Cron (server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh` (defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). Until 2026-09-28 the script defaulted to a nonexistent `urbanlayer.db`, and the documented cron line passed the backup dir as the DB path, so no backups were being made. Copies are on the same host; off-box shipping is in `deploy/hardening-runbook.md`.
+Cron (server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh` (defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). Until 2026-09-28 the script defaulted to a nonexistent `urbanlayer.db` and this doc's cron line was wrong, but the server's actual cron entry passed the right path, so nightly backups were running. Since then root's crontab uses the default; backups log to `/var/log/urbanlayer-backup.log`. Copies are on the same host; off-box shipping is in `deploy/hardening-runbook.md`.
 
 ## Memory Budget (8GB CX32)
 
