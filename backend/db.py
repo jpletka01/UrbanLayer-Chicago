@@ -1404,7 +1404,11 @@ async def save_report_purchase(
 async def complete_report_purchase(
     stripe_session_id: str, payment_intent: str | None = None,
 ) -> dict | None:
-    """Mark a purchase as completed. Idempotent — no-op if already completed."""
+    """Mark a purchase as completed. Idempotent — no-op if already completed.
+
+    The returned row carries `newly_completed`: False on a repeat call (Stripe
+    retries webhooks), so callers can avoid double-counting the purchase.
+    """
     conn = _get_db()
     cur = await conn.execute(
         "SELECT * FROM report_purchases WHERE stripe_session_id = ?",
@@ -1414,7 +1418,7 @@ async def complete_report_purchase(
     if not row:
         return None
     if row["status"] == "completed":
-        return dict(row)
+        return {**dict(row), "newly_completed": False}
     await conn.execute(
         """
         UPDATE report_purchases
@@ -1429,7 +1433,7 @@ async def complete_report_purchase(
         (stripe_session_id,),
     )
     row = await cur.fetchone()
-    return dict(row) if row else None
+    return {**dict(row), "newly_completed": True} if row else None
 
 
 async def has_purchased_report(

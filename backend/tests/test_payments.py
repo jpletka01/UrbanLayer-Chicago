@@ -543,6 +543,46 @@ class TestFunnelEvents:
         assert events[0]["visitor_id"] == "vis-sub"
         assert events[0]["user_id"] == "u1"
 
+    @pytest.mark.asyncio
+    async def test_retried_report_webhook_counts_once(self, test_db, _payment_settings):
+        """Stripe retries webhooks; a retry must not record a second purchase event."""
+        from backend import payments
+        from backend.payments import create_report_checkout_session
+
+        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
+        user = await db.get_user_by_id("u1")
+        session = MagicMock(id="cs_dup", url="https://checkout.stripe.com/c/d")
+        with patch("stripe.checkout.Session.create", return_value=session):
+            await create_report_checkout_session(user, "642 W Belden Ave", 41.9236, -87.6439, pin="14331030110000")
+        payload = {
+            "id": "cs_dup", "payment_intent": "pi_d", "customer": "cus_d", "amount_total": 2500,
+            "metadata": {"user_id": "u1", "purchase_type": "report", "pin": "14331030110000"},
+        }
+        await payments._handle_report_purchase_completed(payload)
+        await payments._handle_report_purchase_completed(payload)
+        assert len(await self._events_named("purchase_completed")) == 1
+
+    @pytest.mark.asyncio
+    async def test_webhook_for_unknown_session_records_nothing(self, test_db, _payment_settings):
+        from backend import payments
+
+        await payments._handle_report_purchase_completed({
+            "id": "cs_missing", "metadata": {"user_id": "u1", "purchase_type": "report"},
+        })
+        assert await self._events_named("purchase_completed") == []
+
+    @pytest.mark.asyncio
+    async def test_retried_subscription_webhook_counts_once(self, test_db, _payment_settings):
+        from backend import payments
+
+        await db.upsert_user("u1", "a@b.com", "Alice", None, "g1")
+        payload = {
+            "metadata": {"user_id": "u1"}, "customer": "cus_sub", "subscription": "sub_dup", "amount_total": 9900,
+        }
+        await payments._handle_checkout_completed(payload)
+        await payments._handle_checkout_completed(payload)
+        assert len(await self._events_named("subscription_started")) == 1
+
     def test_money_events_not_client_ingestable(self):
         """The browser allowlist must never accept money events — the Stripe
         webhook is their only writer, so the funnel's purchase step can't be
