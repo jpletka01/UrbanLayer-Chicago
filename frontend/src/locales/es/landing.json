@@ -1,13 +1,14 @@
 {
   "heroBadge": "Más de 25 fuentes de datos en vivo · Chicago",
   "heroPreview": {
-    "verdict": "Edificable",
-    "cta": "Ver la Ficha completa"
+    "verdict": "Potencial con restricciones",
+    "cta": "Ver la Ficha completa",
+    "label": "Ficha"
   },
   "chaos": {
     "heading": "Cada regla de Chicago, resuelta en un solo veredicto.",
     "subheading": "Código de zonificación, normativas, incentivos y avalúos — leídos, contrastados y respondidos en segundos.",
-    "verified": "Cada regla verificada. 0 normativas activas."
+    "verified": "Monumento histórico en un distrito histórico: aplica revisión de diseño."
   },
   "heroSubtitle": "Estudio de viabilidad para cualquier dirección de Chicago. En segundos.",
   "heroSubline": "Zonificación, incentivos, proyecciones de impuestos, propiedades comparables y análisis del código municipal — todo en una sola Ficha gratuita.",
@@ -37,8 +38,7 @@
   "depth": {
     "estAnnualTax": "Impuesto anual estimado",
     "walkScore": "Walk Score",
-    "transitScore": "Transit Score",
-    "sampleZoneDesc": "Distrito comercial comunitario"
+    "transitScore": "Transit Score"
   },
   "personas": {
     "heading": "Diseñado para tomar decisiones reales",

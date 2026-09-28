@@ -2,12 +2,14 @@ import { useTranslation } from "react-i18next";
 import { Chip } from "../ui/Chip";
 import { useThemeContext } from "../../contexts/ThemeContext";
 
-// A compact, realistic mock Scorecard shown beside the hero headline — the product, on the
-// first screen. Conclusion-first: leads with the verdict, then a few high-signal metrics
-// (zoning, tax, walk/transit). Static preview; values mirror a real B3-2 corridor parcel.
+// A compact Property Profile shown beside the hero headline — the product, on the first
+// screen. Conclusion-first: leads with the verdict, then a few high-signal metrics.
+// Static, but every value is the live profile for 1601 N Milwaukee Ave (the "Try" chip
+// right below it), as of 2026-09-28 — a visitor who clicks through sees the same facts.
+// Refresh from /api/scorecard?address=1601 N Milwaukee Ave if they drift.
 const SCORES = [
-  { key: "depth.walkScore", value: 94 },
-  { key: "depth.transitScore", value: 88 },
+  { key: "depth.walkScore", value: 99 },
+  { key: "depth.transitScore", value: 77 },
 ];
 
 export function HeroScorecardPreview() {
@@ -30,28 +32,28 @@ export function HeroScorecardPreview() {
         <div>
           <div className="flex items-center gap-1.5 text-overline uppercase text-accent">
             <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            Property Scorecard
+            {t("heroPreview.label")}
           </div>
           <div className="text-subtitle text-white mt-1.5">1601 N Milwaukee Ave</div>
-          <div className="font-mono text-caption text-white/60">14-33-423-048-0000</div>
+          <div className="font-mono text-caption text-white/60">14-31-332-018-0000</div>
         </div>
 
         {/* Verdict band — the answer, first */}
-        <div className="flex items-center gap-3 rounded-xl border border-state-positive/30 bg-state-positive/10 px-4 py-3">
-          <svg className="w-6 h-6 shrink-0 text-state-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="flex items-center gap-3 rounded-xl border border-state-warning/30 bg-state-warning/10 px-4 py-3">
+          <svg className="w-6 h-6 shrink-0 text-state-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
           <div className="min-w-0">
-            <div className="text-title text-state-positive font-semibold">{t("heroPreview.verdict")}</div>
-            <div className="text-caption text-white/60 truncate">{t("depth.sampleZoneDesc")}</div>
+            <div className="text-title text-state-warning font-semibold">{t("heroPreview.verdict")}</div>
+            <div className="text-caption text-white/60 truncate">{t("chaos.verified")}</div>
           </div>
-          <Chip tone="accent" mono size="md" className="ml-auto font-semibold">B3-2</Chip>
+          <Chip tone="accent" mono size="md" className="ml-auto shrink-0 whitespace-nowrap font-semibold">B3-2</Chip>
         </div>
 
         {/* One headline metric */}
         <div className="flex items-baseline justify-between border-t border-white/10 pt-4">
           <span className="text-caption uppercase tracking-wide text-white/50">{t("depth.estAnnualTax")}</span>
-          <span className="text-stat text-accent">$8,420</span>
+          <span className="text-stat text-accent">$82,586</span>
         </div>
 
         {/* Walk / transit scores — larger numbers */}

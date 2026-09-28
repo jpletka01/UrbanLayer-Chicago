@@ -1,13 +1,14 @@
 {
   "heroBadge": "25+ live data sources · Chicago",
   "heroPreview": {
-    "verdict": "Buildable",
-    "cta": "View the full Property Profile"
+    "verdict": "Constrained upside",
+    "cta": "View the full Property Profile",
+    "label": "Property Profile"
   },
   "chaos": {
     "heading": "Every rule in Chicago, resolved to one verdict.",
     "subheading": "Zoning code, overlays, incentives, and assessments — read, cross-checked, and answered in seconds.",
-    "verified": "Every rule verified. 0 active overlays."
+    "verified": "Landmark building in a historic district: design review applies."
   },
   "heroSubtitle": "Site feasibility for any Chicago address. In seconds.",
   "heroSubline": "Zoning, incentives, tax projections, comparable sales, and municipal code analysis — all in one free Property Profile.",
@@ -37,8 +38,7 @@
   "depth": {
     "estAnnualTax": "Est. annual tax",
     "walkScore": "Walk Score",
-    "transitScore": "Transit Score",
-    "sampleZoneDesc": "Community Shopping District"
+    "transitScore": "Transit Score"
   },
   "personas": {
     "heading": "Built for real decisions",

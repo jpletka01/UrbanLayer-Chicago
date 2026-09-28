@@ -2,6 +2,10 @@ import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
+// Every fact on this page is the real record for 1601 N Milwaukee Ave (the homepage's
+// demo address) and the real Title 17 text, as of 2026-09-28. The section used to show
+// invented numbers (a fake PIN, FAR 1.2 for B3-2) that contradicted the live profile.
+
 const flowDots = [0, 1, 2, 3, 4];
 
 function BureaucraticStack() {
@@ -10,9 +14,9 @@ function BureaucraticStack() {
       <div className="absolute left-2 top-2 w-[86%] -rotate-3 rounded-xl border border-dark-border bg-dark-elevated/60 p-4 backdrop-blur-sm blur-[0.4px] opacity-80 transition-all duration-500 group-hover:-translate-y-1 group-hover:-rotate-6">
         <div className="text-micro font-mono text-text-muted leading-relaxed">
           COOK COUNTY ASSESSOR<br />
-          PIN 14-33-423-048-0000<br />
-          Class 2-11 · Land $38,240<br />
-          2024 AV 34,100 · 2023 31,890 · 2022 30,110
+          PIN 14-31-332-018-0000<br />
+          Class 5-92 · Land AV 147,838<br />
+          2024 AV 398,120 · 2023 870,128 · 2022 870,128
         </div>
       </div>
 
@@ -20,16 +24,17 @@ function BureaucraticStack() {
         <div className="text-micro font-mono text-text-muted leading-relaxed">
           DISTRICT&nbsp;&nbsp;FAR&nbsp;&nbsp;HEIGHT&nbsp;&nbsp;MIN&nbsp;LOT<br />
           RS-3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.9&nbsp;&nbsp;30 ft&nbsp;&nbsp;&nbsp;2,500<br />
-          B3-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2&nbsp;&nbsp;38 ft&nbsp;&nbsp;&nbsp;—<br />
-          C1-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2&nbsp;&nbsp;47 ft&nbsp;&nbsp;&nbsp;—
+          B3-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2&nbsp;&nbsp;45–50 ft&nbsp;—<br />
+          C1-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2&nbsp;&nbsp;45–50 ft&nbsp;—
         </div>
       </div>
 
       <div className="absolute left-3 top-32 w-[92%] -rotate-1 rounded-xl border border-dark-border bg-dark-elevated/80 p-4 backdrop-blur-sm transition-all duration-500 group-hover:translate-x-1">
         <div className="text-caption font-mono text-text-muted leading-relaxed">
-          <span className="text-text-secondary">§ 17-2-0300</span> Bulk and Density Standards.
-          Maximum floor area ratio shall not exceed 1.2 in the B3 district. Setbacks: front 0 ft,
-          rear 30 ft; transitional yards apply where a lot abuts an R district…
+          <span className="text-text-secondary">§ 17-3-0403</span> Floor Area Ratio. All development in
+          B and C districts is subject to the following maximum floor area ratio standards: Dash 2 … 2.2.{" "}
+          <span className="text-text-secondary">§ 17-3-0404</span> No front setback is required in B or
+          C districts, except on B- or C-zoned lots abutting R-zoned lots…
         </div>
       </div>
     </div>
@@ -69,9 +74,9 @@ function Verdict() {
   return (
     <div className="relative mx-auto w-full max-w-sm rounded-bento border border-dark-border bg-dark-surface p-6 shadow-glow">
       <div className="flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-state-positive/15 px-3 py-1 text-title font-semibold text-state-positive">
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-state-warning/15 px-3 py-1 text-title font-semibold text-state-warning">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008z" />
           </svg>
           {t("heroPreview.verdict")}
         </span>
