@@ -722,7 +722,7 @@ export interface MapData {
   capped?: Record<string, boolean>;
 }
 
-export type DataSource = "crime" | "311" | "permits" | "violations" | "business";
+export type DataSource = "crime" | "311" | "permits" | "violations" | "business" | "vacant_buildings" | "food_inspections";
 
 export interface ActivityItem {
   id: string;

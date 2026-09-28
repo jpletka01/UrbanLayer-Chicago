@@ -35,7 +35,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
   const displayedContent = useTypewriter(message.content, !!streaming);
 
   const processTextWithCitations = useCallback((text: string): ReactNode[] => {
-    const parts = text.split(/(\[\d+\]|\[data:(?:crime|311|permits|violations|business)\])/g);
+    const parts = text.split(/(\[\d+\]|\[data:(?:crime|311|permits|violations|business|vacant_buildings|food_inspections)\])/g);
     return parts.map((part, i) => {
       const numMatch = part.match(/^\[(\d+)\]$/);
       if (numMatch) {
@@ -53,7 +53,7 @@ export function MessageBubble({ message, streaming, showDisclaimer, onCitationCl
         // No matching chunk - suppress the citation marker entirely
         return null;
       }
-      const dataMatch = part.match(/^\[data:(crime|311|permits|violations|business)\]$/);
+      const dataMatch = part.match(/^\[data:(crime|311|permits|violations|business|vacant_buildings|food_inspections)\]$/);
       if (dataMatch) {
         const source = dataMatch[1] as DataSource;
         return <DataPill key={`data-${source}-${i}`} source={source} onClick={onDataClick} />;
