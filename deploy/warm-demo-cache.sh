@@ -5,7 +5,8 @@
 # one comes from the backend's TTL caches in about a second. The "Try" chips on
 # the homepage are what a first-time visitor clicks, so this requests them after
 # each deploy (the caches are in-memory and reset on restart) and on a timer
-# (deploy/warm-demo-cache.timer). GET /api/scorecard makes no LLM calls.
+# (deploy/warm-demo-cache.timer, every 10 minutes; the shortest source cache is 15).
+# GET /api/scorecard makes no LLM calls.
 set -u
 BASE="${1:-https://urbanlayerchicago.com}"
 for address in "1601 N Milwaukee Ave" "4520 N Clark St" "1550 N Wells St"; do

@@ -1,205 +1,231 @@
-# UrbanLayer — Chicago
+# UrbanLayer: Chicago
 
-Parcel feasibility engine for Chicago real-estate professionals. Type an address, get the
-parcel's full **Property Profile** in ~2 seconds — free and anonymous — then interrogate it in
-chat with cited municipal code.
+Parcel feasibility for Chicago real estate. Type an address and get the parcel's
+**Property Profile**: zoning and what can be built, overlays and landmark status,
+incentives, taxes, comparable sales, and maps. Free, no account. Then ask
+follow-up questions in chat and get answers that cite the municipal code, or buy
+a $25 Development Feasibility Report as a PDF.
 
-**Live:** [urbanlayerchicago.com](https://urbanlayerchicago.com)
+**Live:** [urbanlayerchicago.com](https://urbanlayerchicago.com) ·
+**Try:** [1601 N Milwaukee Ave](https://urbanlayerchicago.com/scorecard?address=1601%20N%20Milwaukee%20Ave)
 
-```
-1601 N Milwaukee Ave  →  zoning (B3-2, FAR 2.2, 45–50 ft) · 7 overlays · TIF/Opportunity-Zone
-                         status · tax history + class-aware effective rate · comparable sales ·
-                         violations · environment · three scoped parcel maps
-```
+![Typing an address and opening its Property Profile](docs/images/demo.gif)
 
 ## What it does
 
-- **Property Profile** (`/scorecard`) — the parcel dossier: zoning and bulk standards, overlays,
-  incentives, taxes, comps, and a verdict band with one recommended next step. Free, no account.
-- **Chat** — grounded follow-up questions about the parcel, plus parcel-less code research and
-  neighborhood questions (crime, 311, permits, demographics, transit) with interactive maps and
-  clickable source citations.
-- **Development Feasibility Report** ($25) — a rendered PDF dossier for a single parcel.
-- **Property Discovery** (`/discovery`) — a filter/search workbench over all 77 community areas
-  (~949k parcels), with recipes, ranked results, map, and CSV export.
+- **Property Profile** (`/scorecard`). A deterministic parcel dossier assembled
+  from 25+ city, county and federal data sources, with no LLM in the path. It
+  leads with a verdict ("Constrained upside: landmark building in a historic
+  district") and the reasons behind it, then zoning and bulk standards, taxes,
+  assessment history, comps, violations and neighborhood data. Derived figures
+  show where they came from.
+- **Chat.** Questions about the parcel you're looking at, or about the code and
+  neighborhoods in general. Answers cite municipal-code sections (click through
+  to the full text) and the datasets they used, with maps where relevant.
+- **Development Feasibility Report** ($25). A PDF dossier for one parcel.
+  [Sample](https://urbanlayerchicago.com/sample-report.pdf).
+- **Property Discovery** (`/discovery`). Filter and rank all ~949k Chicago
+  parcels (vacant land near transit, teardown candidates, underused commercial
+  in a TIF) with a map and CSV export.
+- English and Spanish throughout.
 
-Answers are assembled from 25+ city/county/federal data sources plus RAG over the Chicago
-Municipal Code. See [`claude-context/core/data-sources.md`](claude-context/core/data-sources.md)
-for the full dataset reference.
+| Property Profile | Cited answers | Mobile |
+|---|---|---|
+| ![Property Profile](docs/images/property-profile.png) | ![Chat answer with a code citation open](docs/images/chat-citations.png) | ![Property Profile on a phone](docs/images/property-profile-mobile.png) |
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[Address] --> R["Resolve to a parcel PIN<br/>Address Points → Assessor → nearest parcel<br/>(nearest only if its address round-trips)"]
+    R --> F{{"Fan out in parallel<br/>property · regulatory · incentives · neighborhood"}}
+    F --> S[(Socrata / ArcGIS /<br/>Census / ptaxsim)]
+    F --> P["Property Profile JSON<br/>(no LLM)"]
+    P --> V["Verdict computed client-side<br/>with its reasons and caveats"]
+
+    Q[Chat question] --> RT["Router (Claude)<br/>→ retrieval plan"]
+    RT --> RET{{"Parallel retrieval"}}
+    RET --> VS[(Qdrant: municipal code<br/>dense + keyword)]
+    RET --> S
+    RET --> C["Context<br/>(+ the Profile's facts on a handoff)"]
+    C --> SY["Synthesizer (Claude, streamed)<br/>with [N] and [data:x] citations"]
+    SY --> CK["Citation check<br/>every marker must be in the context"]
+```
+
+**Property Profile:** `GET /api/scorecard`
+1. **Address → PIN**, in layers: Cook County Address Points, then Assessor
+   addresses, then a distance-ordered nearest-parcel fallback. A fallback PIN
+   is shown as the parcel's identity only if its own address round-trips to
+   the input. Otherwise the profile says "unconfirmed" and caveats the parcel
+   data, instead of silently describing a neighbor.
+2. **Domain orchestrators** fan out with `asyncio.gather`, and a failed source
+   becomes a caveat, not a failed page. Zoning standards come from a table
+   regression-tested against the ordinance text in CI.
+3. **Latency:** about a second when cached; 15–40 s for a first lookup, which
+   waits on 25+ public APIs. The page says so while it loads.
+
+**Chat:** `POST /chat` (server-sent events)
+1. The **router** turns the question into a `RetrievalPlan` (sources,
+   location, intent, time range, disclaimer). It's streamed first so the UI
+   can show what's being fetched.
+2. **Retrieval** runs Socrata/ArcGIS queries and vector search in parallel,
+   then assembles a capped, deduplicated context.
+3. The **synthesizer** streams the answer with citations. A server-side check
+   flags any `[N]` or `[data:x]` that isn't backed by the retrieved context.
+
+### Design decisions worth knowing
+
+- **The Profile uses no LLM.** Facts people act on (zoning, tax, PIN) come from
+  deterministic code with visible provenance. That makes it fast when cached,
+  free to serve, and auditable. The LLM is for questions, not facts.
+- **Chunking legal text.** One chunk per code section where it fits (~1,800
+  characters), with the Title → Chapter → Section path repeated at the top of
+  every chunk. Tables are flattened so each use × district cell is
+  retrievable. 9,487 sections become 16,576 chunks.
+- **Retrieval is dense plus a keyword boost; the reranker is off.** A
+  cross-encoder improved the benchmark by one grade at ~13× the latency and
+  hung the production CPUs, so it's off. [EVALS.md](EVALS.md) has the numbers.
+- **Precomputed zoning standards.** The PDF report reads zoning standards
+  extracted offline from full ordinance sections, with the parity-tested table
+  winning on conflict. That keeps slow LLM work out of the paid request path.
+- **Fail closed in production.** Missing auth, JWT or webhook secrets stop
+  startup instead of silently degrading to dev behavior.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Backend | Python 3.11 + FastAPI, async-first |
-| LLM | Claude Sonnet 4.6 (router + synthesizer), Haiku 4.5 (conversation synthesis, zoning extraction) |
-| Vector DB | Qdrant v1.9.0 (Docker) |
-| Embeddings | `BAAI/bge-base-en-v1.5` — 768-dim, local, no API key |
-| Reranker | `BAAI/bge-reranker-v2-m3`, **off by default** (see Known Issues) |
-| Frontend | React + TypeScript + Vite + Tailwind v3 |
-| Map | Mapbox GL JS (dark-v11) + deck.gl |
-| Persistence | SQLite via aiosqlite (WAL mode) |
-| Streaming | SSE (`text/event-stream`) |
-| Geocoding | Census Geocoder (free) + shapely point-in-polygon |
+| Backend | Python 3.11, FastAPI (async), SSE streaming |
+| LLM | Claude Sonnet 4.6 (router, synthesizer), Claude Haiku 4.5 (conversation context, zoning extraction) |
+| Retrieval | Qdrant; `BAAI/bge-base-en-v1.5` embeddings (local); keyword boost; optional `bge-reranker-v2-m3` |
+| Data | Chicago and Cook County Socrata, ArcGIS, Census, FCC, FEMA, CCAO ptaxsim (SQLite) |
+| Persistence | SQLite (aiosqlite, WAL) |
+| Frontend | React, TypeScript, Vite, Tailwind; Mapbox GL + deck.gl; react-i18next |
+| Ops | Docker Compose on a Hetzner VPS behind Cloudflare; GitHub Actions CI/CD; Sentry |
 
-## Setup
+## Run it locally
 
-```bash
-# 1. Python env
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-
-# 2. Frontend deps
-cd frontend && npm install && cd ..
-
-# 3. Env vars
-cp .env.example .env                  # ANTHROPIC_API_KEY required; others optional
-cp frontend/.env.example frontend/.env  # VITE_MAPBOX_TOKEN for maps
-
-# 4. Start Qdrant
-docker compose up -d qdrant
-```
-
-`SOCRATA_APP_TOKEN` is optional but recommended (higher rate limits).
-`WALKSCORE_API_KEY` and the Google OAuth / Stripe keys are only needed for the features that
-use them; the app degrades gracefully without them.
-
-## Ingest the Municipal Code
-
-The code is parsed from a local HTML export — drop `chicago-il-codes.html` (American Legal
-Publishing format) in the project root first. It is not committed.
+Prerequisites: Python 3.11, Node 22.13+ or 24 (`frontend/.nvmrc`), Docker. Pango
+is needed only for PDF reports (`brew install pango`).
 
 ```bash
-# One-time: cache community-area polygons (~5s)
-.venv/bin/python -m ingestion.load_community_areas
-
-# Parse → chunk → diff → embed only what changed
-.venv/bin/python -m ingestion.update
-
-.venv/bin/python -m ingestion.update --dry-run   # show the diff, change nothing
-.venv/bin/python -m ingestion.update --full      # full rebuild (recreates the collection)
-.venv/bin/python -m ingestion.source_check       # has the source HTML changed since last ingest?
+make setup      # .venv + backend/dev deps, npm ci, copies the .env examples
+make test       # all unit tests; no network, API keys, or Qdrant needed
+make lint       # ruff + eslint
+make dev        # Qdrant in Docker, backend on :8001, frontend on :5173
 ```
 
-Current corpus: **9,487 sections → 16,576 chunks**, spanning Titles 1–18 including Title 14
-(the Chicago Construction Codes, eleven lettered volumes: 14A/14B/14C/14E/14F/14G/14M/14N/14P/
-14R/14X).
+Open <http://localhost:5173/scorecard?address=1601%20N%20Milwaukee%20Ave>.
 
-### How the chunker works
+Or run the whole stack in Docker with `make up` (nginx on :80; set
+`FRONTEND_PORT` to change it).
 
-- **One chunk per section** when it fits in ~1,800 chars; longer sections split at paragraph
-  boundaries.
-- **The hierarchical header is duplicated** at the top of every chunk so it stands alone:
-  ```
-  CHICAGO MUNICIPAL CODE
-  Title 17 — Chicago Zoning Ordinance
-  Chapter 17-2 — Residential Districts
-  § 17-2-0200 — Allowed uses
-  ```
-- **Tables get colspan/rowspan-aware extraction with composite headers**, so every
-  use × district intersection is individually retrievable — "Can I put a coach house in RM-4.5?"
-  returns the row directly.
-- **Cross-references, prev/next adjacency, legislative history, effective dates, and
-  definitions** are extracted into payload metadata.
-- **Title 16/17 deduplication** — the source republishes those titles as a separate volume at
-  the tail; the parser dedups by section ID (~250 skipped).
+**What works without the large datasets:**
 
-## Run
+| Feature | Needs |
+|---|---|
+| Property Profile | nothing; it reads public APIs live. Tax figures need ptaxsim (below) |
+| Chat | `ANTHROPIC_API_KEY` in `.env` |
+| Chat citing the zoning code | `make seed-demo`: embeds a committed Title 16–17 sample (~30 s) |
+| Tax estimates | `python scripts/download_ptaxsim.py` (9.4 GB) |
+| Discovery | `python -m backend.discovery.index_build --community-areas 24` |
+| Maps | `VITE_MAPBOX_TOKEN` in `frontend/.env`; pages work without it, minus tiles |
 
-```bash
-.venv/bin/uvicorn backend.main:app --reload --port 8001   # backend
-cd frontend && npm run dev                                # frontend :5173
-```
+Every setting is listed in [`.env.example`](.env.example) with what happens when
+it's empty.
 
-## Tests
+**Full municipal code:** put the American Legal Publishing export
+`chicago-il-codes.html` in the repo root, then run `python -m ingestion.update`
+(parse → chunk → diff → embed only what changed; `--full` rebuilds).
 
-```bash
-.venv/bin/python -m pytest backend/tests/ -q -m "not integration"   # 1,103 tests
-.venv/bin/python -m pytest backend/tests/ -q                        # + 61 integration (hits live APIs)
+## Testing and quality
 
-cd frontend && npm run test         # vitest — 171 tests
-cd frontend && npm run build        # ⚠️ the CI-parity gate: tsc -b + vite build
-cd frontend && npm run test:mobile  # Playwright overflow audit, 8 routes × 5 phone profiles
-```
+| Check | What | Runs |
+|---|---|---|
+| Backend unit tests | 1,229 tests; a guard fails any test that touches the network | CI, `make test` |
+| Integration tests | 61 tests against the live public APIs | on demand (`-m integration`) |
+| Zoning parity | every hand-typed zoning standard diffed against the ordinance text | CI |
+| Eval scorer tests | 37 tests of the grading code behind [EVALS.md](EVALS.md) | CI |
+| Frontend | 207 vitest tests; `npm run build` (strict `tsc -b`) | CI |
+| Lint | ruff; ESLint with 0 errors and a warning cap that can only go down | CI |
+| Mobile layout | Playwright overflow audit, 8 routes × 5 phone sizes | `npm run test:mobile` |
+| Security | CodeQL, Dependabot | CI, weekly |
 
-`npm run build` is the gate CI enforces, not `tsc --noEmit` — `tsc -b` catches errors
-(`noUnusedLocals`, etc.) that `--noEmit` misses.
+Pushing to `main` deploys, and the deploy only runs if tests and lint pass.
 
-## Evals & benchmarks
+**Evals.** Retrieval quality, router accuracy, end-to-end answers (with an LLM
+judge), data-source coverage, and a fixed 100-address panel for Profile field
+completeness. Latest results, their history since May, the failures they
+caught, and their known weaknesses are in **[EVALS.md](EVALS.md)**.
 
-```bash
-# Parser coverage — verifies the HTML → section parse hasn't regressed
-.venv/bin/python -m ingestion.parse_chicago_code --stats
+## How I built this with Claude Code
 
-# Query test set (44 queries with expected router/retrieval behavior)
-PYTHONPATH=. .venv/bin/python -m eval.run_eval --full http://localhost:8001 --judge
+Most commits are co-authored with Claude, and the trailers are kept on purpose.
+My part was product direction, architecture, choosing and vetting data sources,
+and deciding what "correct" means. Claude Code did most of the implementation.
+What kept that honest:
 
-# Data-source coverage, and lot-field completeness across a fixed 100-address panel
-.venv/bin/python -m eval.source_coverage --full http://localhost:8001
-PYTHONPATH=. .venv/bin/python -m eval.lot_coverage --full http://localhost:8001
-```
+- **Measurement before and after changes.** Retrieval changes were judged by
+  the benchmark, Profile data by the 100-parcel panel, zoning numbers by the
+  ordinance parity test. [EVALS.md](EVALS.md) lists what those caught.
+- **CI as the gate.** CI runs the strict `tsc -b` build rather than the
+  laxer `tsc --noEmit`, tests are hermetic, and lint blocks the deploy.
+- **Verify against production, not the git log.** Deploys are checked against
+  the live API and the served bundle.
+- **Mistakes the process caught:**
+  - The zoning reference table carried hand-typed heights and a lot-coverage
+    rule that don't exist in Title 17. Diffing against the ordinance caught
+    it, and the parity test now prevents it.
+  - The first diagnosis of the report timeouts blamed memory; measuring showed
+    the reranker.
+  - A build-time "authoritative merge" quietly laundered bad values into a
+    cached artifact. The fix applies the authority rule at serve time.
 
-Every SSE event carries `t_ms` (ms since the request was received), so per-phase latency
-(router / retrieval / synthesis-TTFT / total) is measurable live and recorded by the eval runner.
+  Write-ups are in [`claude-context/archive/`](claude-context/archive/).
+- **Context engineering.** [`CLAUDE.md`](CLAUDE.md) and
+  [`claude-context/`](claude-context/) are the working memory for these
+  sessions: the operating manual, design guides, and an archive of decisions
+  and incidents.
 
-## How a request flows
+## Known limitations and what I'd do next
 
-**Property Profile** — `GET /api/scorecard?address=…`
-1. Resolve address → PIN. Layered: Address Points, then Assessor Parcel Addresses, then a
-   distance-ordered Parcel Universe fallback. A PIN from the fallback is only promoted to
-   authoritative identity if it survives a reverse address round-trip; otherwise the response is
-   marked `approximate` and the UI caveats the parcel data.
-2. Domain orchestrators (`property/`, `regulatory/`, `incentives/`, `neighborhood/`) fan out via
-   `asyncio.gather` with graceful degradation — one dead source never fails the page.
-3. Zoning standards come from a precomputed cache with serve-time table authority applied.
-
-**Chat** — `POST /chat` (SSE)
-1. **Router** (Claude) parses the message into a `RetrievalPlan` — sources, location, intent,
-   time range, disclaimer flag — streamed first so the client can render skeletons.
-2. **Parallel retrieval** fires Socrata + Qdrant queries via `asyncio.gather`.
-3. **Assembler** merges results into a capped, deduped `ContextObject`, streamed to the client.
-4. **Synthesizer** (Claude, streaming) produces the answer with citations.
+- **First lookups are slow (15–40 s).** The same uncached lookup takes ~3 s
+  from a laptop in Chicago, so most of the time looks like the server's round
+  trips to city and county APIs rather than application code. Next: stream Profile sections as they resolve, cache per source, and track a
+  per-phase latency target.
+- **Evals.** Add gold answers and a correctness dimension, calibrate the judge
+  against human grades, and add multi-turn, Spanish and prompt-injection cases
+  sampled from real traffic. Details in [EVALS.md](EVALS.md).
+- **Router robustness.** Use structured outputs for the retrieval plan (it's
+  free-text JSON today, so a malformed reply fails the turn), set temperature
+  0, and run an ablation to see whether Haiku can route as well as Sonnet.
+- **Code structure.** `backend/main.py` (~2,400 lines) should be split into
+  routers by domain, following the existing `discovery` router, and
+  `report_builder.py` split by stage.
+- **Reproducible builds.** Lock Python dependencies (currently `>=`) and scan
+  the production image, not just the lockfile.
 
 ## Project layout
 
 ```
-backend/
-├── main.py               # FastAPI app + endpoints (chat SSE, scorecard, report, auth, payments)
-├── router.py             # Claude router → retrieval plan
-├── synthesizer.py        # Claude streaming synthesis
-├── assembler.py          # Pure context-merging (pytest-covered)
-├── report_builder.py     # $25 feasibility report pipeline
-├── report_render.py      # PDF render, run in an isolated subprocess
-├── zoning_cache.py       # Precomputed zoning extraction (keeps the reranker out of the report path)
-├── auth.py · payments.py · conversation.py · db.py · analytics.py
-├── discovery/            # Property Discovery index + query engine
-└── retrieval/
-    ├── socrata.py        # Shared async client with retry/backoff
-    ├── vector_search.py  # Qdrant hybrid search
-    ├── property/ · regulatory/ · incentives/ · neighborhood/   # domain orchestrators
-    └── crime.py · three11.py · buildings.py · zoning.py · …
-ingestion/
-├── update.py             # Unified CLI: parse → chunk → diff → incremental embed
-├── parse_chicago_code.py # HTML → per-section JSON
-├── chunk.py · embed_and_store.py · manifest.py · source_check.py
-frontend/src/
-├── App.tsx               # State machine
-├── components/ · discovery/ · contexts/ · lib/ · locales/       # (EN/ES)
-eval/                     # run_eval, source_coverage, lot_coverage, retrieval_benchmark
+backend/            FastAPI app
+  main.py             routes: chat SSE, Profile, report, auth, payments, admin
+  router.py           Claude → RetrievalPlan
+  synthesizer.py      streamed answer with citations
+  citations.py        checks every citation against the context
+  retrieval/          data-source clients + domain orchestrators, vector search
+  discovery/          parcel filter/rank engine
+  tests/
+frontend/src/       React app (components/, discovery/, lib/, locales/en|es)
+ingestion/          municipal code: parse → chunk → embed, incremental updates
+eval/               eval suites, results/, tests of the scorers
+deploy/             deploy script, systemd timers, hardening runbook
+claude-context/     design docs, decision records, incident write-ups
 ```
 
 ## Deployment
 
-Pushing to `main` **is** deploying — CI (`ci.yml`) runs the test job, then SSHes to the
-production box and rebuilds. A failing test job silently skips the deploy, so prod keeps serving
-the old image; verify a deploy against the live API and the served asset hash, not the server's
-git HEAD.
-
-Note that Qdrant lives in a persisted named volume: a code deploy does **not** re-ingest the
-municipal code.
-
-## Docs
-
-Deep context lives in [`claude-context/`](claude-context/) — start with its `README.md`, which is
-a file-by-file manifest. [`core/known-issues.md`](claude-context/core/known-issues.md) is the
-first thing to read before debugging anything.
+A push to `main` runs CI (tests, lint, build), then deploys over SSH to a
+single VPS behind Cloudflare with `docker compose up --build`. Server hardening
+(origin firewall, least-privilege deploy user, fail-closed config, backups) is
+in [`deploy/hardening-runbook.md`](deploy/hardening-runbook.md).

@@ -53,7 +53,7 @@ export function useAuth(): UseAuth {
       if (status.authenticated) {
         applyStatus(status);
       } else {
-        const refreshed = await refreshAuthToken();
+        const refreshed = status.can_refresh ? await refreshAuthToken() : null;
         if (refreshed) {
           applyStatus(refreshed);
         } else {

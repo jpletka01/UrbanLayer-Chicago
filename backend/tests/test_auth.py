@@ -301,3 +301,13 @@ class TestHandleMe:
         result = await auth.handle_me(request)
         assert result["authenticated"] is False
         assert result["user"] is None
+        # No refresh cookie: the client should skip the refresh call entirely.
+        assert result["can_refresh"] is False
+
+    @pytest.mark.asyncio
+    async def test_unauthenticated_with_refresh_cookie(self, _auth_settings):
+        request = MagicMock()
+        request.cookies = {"refresh_token": "opaque"}
+        result = await auth.handle_me(request)
+        assert result["authenticated"] is False
+        assert result["can_refresh"] is True

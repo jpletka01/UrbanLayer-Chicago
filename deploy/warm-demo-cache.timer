@@ -1,9 +1,11 @@
 [Unit]
-Description=Warm the UrbanLayer demo-address caches every 30 minutes
+Description=Warm the UrbanLayer demo-address caches every 10 minutes
 
+# Crime and 311 results are cached for 15 minutes, so a longer interval leaves
+# the demo addresses cold (~15 s instead of ~1 s) for part of every cycle.
 [Timer]
 OnBootSec=5min
-OnUnitActiveSec=30min
+OnUnitActiveSec=10min
 
 [Install]
 WantedBy=timers.target

@@ -440,11 +440,12 @@ export default function ScorecardPage() {
     }
   }, []);
 
-  // Fetch report access when profile data loads (for non-pro users)
+  // Fetch report access when profile data loads (signed-in, non-pro users;
+  // anonymous visitors can't have purchased, and the endpoint requires auth)
   useEffect(() => {
-    if (!data || !parcel || isPro) return;
+    if (!data || !parcel || isPro || !user) return;
     checkReportAccess(parcel).then(setReportAccess);
-  }, [data, isPro, parcel]);
+  }, [data, isPro, parcel, user]);
 
   useEffect(() => {
     if (data?.address) setTrackingAddress(data.address);
