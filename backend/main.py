@@ -342,7 +342,7 @@ async def logout(request: Request):
 @app.get("/autocomplete")
 async def autocomplete(q: str = "") -> list[dict]:
     """Return address suggestions for autocomplete."""
-    if len(q.strip()) < 3:
+    if len(q.strip()) < 3 or len(q) > _MAX_ADDRESS_CHARS:
         return []
     return await geocode_address_suggestions(q)
 
@@ -1366,6 +1366,9 @@ class ResolvedLocation(NamedTuple):
     confidence: str
 
 
+_MAX_ADDRESS_CHARS = 200
+
+
 async def _resolve_location(
     address: str | None = None,
     lat: float | None = None,
@@ -1385,6 +1388,14 @@ async def _resolve_location(
       5. nothing resolvable → 422.
     """
     settings = get_settings()
+    if address is not None and len(address) > _MAX_ADDRESS_CHARS:
+        raise HTTPException(status_code=422, detail="Address is too long.")
+    if pin is not None:
+        # The PIN is interpolated into Socrata SoQL filters below, so only
+        # digits get through (dashes/spaces from pasted PINs are dropped).
+        pin = re.sub(r"[\s-]", "", pin)
+        if not re.fullmatch(r"\d{10,14}", pin):
+            raise HTTPException(status_code=422, detail="PIN must be 10 to 14 digits.")
     resolved_address: str | None = address
 
     # 1. Explicit coordinates are a deliberate point override — highest precedence.
