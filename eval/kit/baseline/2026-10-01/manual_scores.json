@@ -1,0 +1,118 @@
+{
+ "label": "hand scores, 2026-10-01 (research/13-urbanlayer-score.md section 3)",
+ "format": "score is 2/1/0/NP; a CW suffix marks a confident-wrong field (counted in addition to the score)",
+ "note": "Recorded by a person reading the saved runs in this directory. The scorer applies these to fields B, E and F by default (--manual-fields) and reports how often its own automatic score agrees on every field.",
+ "surfaces": {
+  "profile": {
+   "P1": {
+    "A": "2",
+    "B": "2",
+    "C": "2",
+    "D": "2",
+    "F": "NP"
+   },
+   "P2": {
+    "A": "2",
+    "B": "2",
+    "C": "1",
+    "D": "2",
+    "F": "NP"
+   },
+   "P3": {
+    "A": "2",
+    "B": "1",
+    "C": "1",
+    "D": "2",
+    "E": "1CW",
+    "F": "1CW"
+   },
+   "P4": {
+    "A": "2",
+    "B": "2",
+    "C": "NP",
+    "D": "2",
+    "F": "NP"
+   },
+   "P5": {
+    "A": "2",
+    "B": "2",
+    "C": "1",
+    "D": "2",
+    "E": "1",
+    "F": "1"
+   },
+   "P6": {
+    "A": "2",
+    "B": "0",
+    "C": "1",
+    "D": "2",
+    "F": "1"
+   },
+   "P7": {
+    "A": "2",
+    "B": "2",
+    "C": "1",
+    "D": "2",
+    "F": "NP"
+   }
+  },
+  "chat": {
+   "P1": {
+    "A": "2",
+    "B": "2",
+    "C": "NP",
+    "D": "2",
+    "F": "2"
+   },
+   "P2": {
+    "A": "0CW",
+    "B": "0CW",
+    "C": "0CW",
+    "D": "1",
+    "F": "1CW"
+   },
+   "P3": {
+    "A": "2",
+    "B": "1",
+    "C": "NP",
+    "D": "1CW",
+    "E": "1",
+    "F": "NP"
+   },
+   "P4": {
+    "A": "2",
+    "B": "2",
+    "C": "NP",
+    "D": "2",
+    "F": "NP"
+   },
+   "P5": {
+    "A": "0CW",
+    "B": "2",
+    "C": "NP",
+    "D": "1CW",
+    "E": "1",
+    "F": "NP"
+   },
+   "P6": {
+    "A": "2",
+    "B": "1",
+    "C": "1",
+    "D": "2",
+    "F": "1"
+   },
+   "P7": {
+    "A": "2",
+    "B": "2",
+    "C": "NP",
+    "D": "2",
+    "F": "NP"
+   }
+  }
+ },
+ "force": {
+  "chat": {
+   "P2.D": "hand-scored 1 for a false 'RS ADU area' claim, before the key was revised to not penalise an ADU hit on a non-RS parcel (research/13 scoring note b). Under the revised key the automatic score (2) is right; forced here only so the 2026-10-01 hand totals reproduce."
+  }
+ }
+}

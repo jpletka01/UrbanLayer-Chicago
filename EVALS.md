@@ -26,6 +26,7 @@ the latest results, their history, and where the evals are still weak.
 |---|---|---:|---|---:|---:|
 | Retrieval benchmark ([`retrieval_benchmark.py`](eval/retrieval_benchmark.py)) | Does vector search put the right municipal-code sections in the top results? | 28 questions | Deterministic A–F: gold sections in top 3, duplicates, table fragments, required terms | $0 | ~6 s |
 | Lot coverage ([`lot_coverage.py`](eval/lot_coverage.py)) | For real parcels, which Property Profile facts are present, and is each absence legitimate? | 100 addresses | Deterministic field classification: present / missing (persistent vs transient) / expected-absent | $0 | ~20 min |
+| Parcel kit ([`parcel_kit.py`](eval/parcel_kit.py)) | For 7 hard Chicago parcels with a primary-source answer key, are the zoning district, bulk numbers, overlays and the task answer right, on the Profile and in chat? | 7 parcels × 6 fields × 2 surfaces | Mechanical for district, numbers and overlays; expected-phrase rubric for use and task answers; optional hand-score file | $0 Profile, ~$1 chat | ~8 min |
 | Router ([`run_eval.py --router-only`](eval/run_eval.py)) | Does the router pick the right data sources, intent, location and disclaimer? | 44 questions | Deterministic checks against a hand-labeled expected plan | ~$0.50 | ~4 min |
 | Full pipeline ([`run_eval.py --full`](eval/run_eval.py)) | End-to-end over SSE: plan, retrieved sections, citation validity, per-phase latency | 44 questions | Deterministic, plus optional LLM judge (`--judge`) | ~$3–5 (+~$1.50 judge) | ~25 min |
 | Source coverage ([`source_coverage.py`](eval/source_coverage.py)) | Does each data source reach the context, and does the answer use it? | 29 questions | Per source: COVERED / SYNTHESIS_GAP / RETRIEVAL_GAP / HALLUCINATION | ~$2–3 | ~12 min |
@@ -44,6 +45,47 @@ Checks that run in CI on every push, with no API keys:
   answer. It flags any `[N]` citing a code chunk that wasn't retrieved, and any
   `[data:x]` citing data that wasn't in the context. Findings are logged and
   reported on the stream's `done` event, and `run_eval --full` fails the query.
+
+### The parcel kit
+
+The other suites ask whether the system reproduces its own inputs. The kit asks
+whether it is *right*. [`eval/kit/parcels.json`](eval/kit/parcels.json) holds
+seven parcels chosen because each one breaks a lazy system: a vacant lot whose
+address geocodes into the neighboring district, a parcel inside a landmark
+district, a Planned Development whose numbers aren't in any base-district table,
+and a parcel rezoned three months ago. The answer for each was read from primary
+sources (the City's zoning layer and zoning map service, the Municipal Code text,
+ordinance PDFs, Cook County Assessor data), with the source recorded per field.
+
+Two surfaces are scored on the same six fields, using the same standard prompt
+for chat and the address only (no PIN, as a first-time user would type it):
+
+| Field | What is scored |
+|---|---|
+| A | Zoning district in effect. A wrong answer is a **critical miss** |
+| B | The use question (is a two-flat allowed?) |
+| C | Bulk numbers: FAR, height, minimum lot area per unit |
+| D | Overlays and designations, as a set (missing, false and denied ones counted) |
+| E | Parking / transit rule (two parcels) |
+| F | The parcel's task question (max units, demolition approvals, ADU limits) |
+
+Each field scores 2 / 1 / 0, or NP when the system makes no claim, and a wrong
+answer stated flatly is flagged CW (confident-wrong). A, C and D are scored
+mechanically; B, E and F by expected-phrase rubrics, and a person's scores can
+override any field (`--manual`). The report prints how often the automatic score
+agrees with the hand score, because the rubrics were written with the first run
+in view: that agreement is in-sample, not a held-out accuracy.
+
+**Limits that matter when quoting it.** Seven parcels show *kinds* of failure,
+not a rate. The key has not yet been reviewed by a Chicago architect or zoning
+attorney (P2, P3 and P6 are the most interpretive). Overlay truth comes from the
+same City service the backend queries, so overlay scores are not independent.
+Code text is current through the Council Journal of 2026-03-18.
+
+```bash
+make kit-replay   # re-score the recorded 2026-10-01 runs: no network, no cost
+make kit          # run the live backend, then score it (RATE_LIMIT_ANON_DAY=50 RATE_LIMIT_ANON_HOUR=50 on the backend)
+```
 
 ### How the gold data was built
 
@@ -77,6 +119,24 @@ The cross-encoder improves one question by one grade at roughly 13× the time
 on a laptop. On the production CPUs it measured ~40 s per search and caused
 the June report timeouts, so it stays off. The evidence for that decision is
 this table, not intuition.
+
+**Parcel kit**, 7 parcels (2026-10-01, [report](eval/results/2026-10-01/parcel_kit.md)).
+These are the first numbers on a primary-source key, and they are not flattering:
+
+| Surface | Coverage | Accuracy | Confident-wrong | Wrong district (critical) |
+|---|---:|---:|---:|---|
+| Property Profile | 86% | 80% | 2 | none (7/7 right) |
+| Chat, address typed cold | 76–81% | 68% | 7 | 2 of 7 (P2, P5) |
+
+The Profile resolves the parcel from the address-point record and gets the
+district right on all seven. Chat resolves the same address by geocode and lands
+in the neighboring district on two of them; the wrong districts and the
+neighboring-parcel facts all trace to that. Most chat answers also stop at the token cap (6 of 7 in the
+latest run end mid-sentence or mid-table). The range in the chat row is two runs:
+the recorded hand-scored run (76% / 68% / 7) and an automatically scored re-run
+the same day (81% / 68% / 7). Chat varies run to run, so compare runs by the
+cases that fail, not by the third digit. The key is not yet
+reviewed by a Chicago professional; treat these as a diagnosis, not a benchmark.
 
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 

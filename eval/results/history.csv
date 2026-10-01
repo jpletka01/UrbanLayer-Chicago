@@ -13,3 +13,5 @@ date,suite,git_ref,n,headline,notes
 2026-09-28,retrieval,cd5d248,28,A=24 B=4,reranker off (production); 5.8 s wall; demolition_permit gold updated for Title 14
 2026-09-28,retrieval,cd5d248,28,A=25 B=3,reranker on; ~75 s wall incl. model load
 2026-09-28,lot_coverage,cd5d248,100,PIN 97% / land 100% / bldg 88% / FAR 98.9%,0 fetch errors; local p50 3.1 s p90 7.3 s
+2026-10-01,parcel_kit,dd481c5,7,profile cov 86% acc 80% CW 2 A 7/7 | chat cov 76% acc 68% CW 7 A 5/7,"replay of the recorded 2026-10-01 runs with hand scores for B/E/F (reproduces research/13: Profile 51/64, cold chat 38/56); key unreviewed by a Chicago professional"
+2026-10-01,parcel_kit,dd481c5,7,profile cov 86% acc 80% CW 2 A 7/7 | chat cov 81% acc 68% CW 7 A 5/7,"live run on main (all-automatic scoring, no hand scores); chat varies run to run; 6/7 answers appear cut off (heuristic)"
