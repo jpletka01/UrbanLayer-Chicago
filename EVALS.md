@@ -127,6 +127,7 @@ These are the first numbers on a primary-source key, and they are not flattering
 |---|---:|---:|---:|---|
 | Property Profile | 86% | 80% | 2 | none (7/7 right) |
 | Chat, address typed cold | 76–81% | 68% | 7 | 2 of 7 (P2, P5) |
+| Chat after F1 (typed address resolved to its parcel) | 86% | 81% | 1 | none (7/7 right) |
 
 The Profile resolves the parcel from the address-point record and gets the
 district right on all seven. Chat resolves the same address by geocode and lands
@@ -137,6 +138,13 @@ the recorded hand-scored run (76% / 68% / 7) and an automatically scored re-run
 the same day (81% / 68% / 7). Chat varies run to run, so compare runs by the
 cases that fail, not by the third digit. The key is not yet
 reviewed by a Chicago professional; treat these as a diagnosis, not a benchmark.
+
+The third row is the same kit after fix F1: chat now resolves a typed address
+through Address Points like the Profile does ([report](eval/results/2026-10-01-f1/parcel_kit.md)).
+Wrong districts went from 2 to 0 and the cited PIN matches the Profile's on all
+seven parcels. The one confident-wrong field left is P2's bulk numbers, which the
+model still fills in from memory (FAR 2.2 instead of 1.7); that is the next fix
+(F3). One run, automatic scoring, rubrics written against the earlier run.
 
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 

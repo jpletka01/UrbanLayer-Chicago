@@ -606,6 +606,8 @@ def assemble_context(
         community_area=plan.location.resolved_community_area,
         community_area_name=plan.location.resolved_community_area_name,
         resolved_address=plan.location.resolved_address,
+        parcel_pin=plan.location.pin,
+        parcel_resolution=plan.location.resolution,
         data_as_of=data_as_of,
         data_lag_note=lag_note,
         data_lag_days=lag_days,

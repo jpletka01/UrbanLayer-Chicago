@@ -336,28 +336,19 @@
   "chat": {
    "aggregate": {
     "scored_fields": 37,
-    "answered": 30,
-    "coverage": 0.8108108108108109,
-    "points": 41,
-    "possible": 60,
-    "accuracy": 0.6833333333333333,
-    "cw": 7,
+    "answered": 32,
+    "coverage": 0.8648648648648649,
+    "points": 52,
+    "possible": 64,
+    "accuracy": 0.8125,
+    "cw": 1,
     "cw_fields": [
-     "P2.A",
-     "P2.B",
-     "P2.C",
-     "P2.F",
-     "P3.D",
-     "P5.A",
-     "P5.D"
+     "P2.C"
     ],
-    "critical_misses": [
-     "P2",
-     "P5"
-    ],
-    "a_correct": 5,
+    "critical_misses": [],
+    "a_correct": 7,
     "parcels": 7,
-    "screening_grade": false
+    "screening_grade": true
    },
    "fields": {
     "P1": {
@@ -404,20 +395,20 @@
     },
     "P2": {
      "A": {
-      "score": 0,
-      "cw": true,
-      "label": "0 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "0 CW",
-      "detail": "district RS3, key RM4.5"
+      "auto": "2",
+      "detail": "district RM4.5"
      },
      "B": {
-      "score": 0,
-      "cw": true,
-      "label": "0 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "0 CW",
-      "detail": "matched a wrong-claim pattern"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "C": {
       "score": 0,
@@ -425,7 +416,7 @@
       "label": "0 CW",
       "basis": "auto",
       "auto": "0 CW",
-      "detail": "far absent; height_ft absent; mla wrong (1500 vs 700)"
+      "detail": "far wrong (hedged) (2.2 vs 1.7); height_ft wrong (50 vs 45,47); mla absent"
      },
      "D": {
       "score": 2,
@@ -437,10 +428,10 @@
      },
      "F": {
       "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "cw": false,
+      "label": "1",
       "basis": "auto",
-      "auto": "1 CW",
+      "auto": "1",
       "detail": "groups 0/2"
      }
     },
@@ -454,12 +445,12 @@
       "detail": "district B12"
      },
      "B": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "groups 1/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "C": {
       "score": null,
@@ -470,12 +461,12 @@
       "detail": "far absent; height_ft absent; mla absent"
      },
      "D": {
-      "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "1 CW",
-      "detail": "found 2/3; missing ssa; denied ssa"
+      "auto": "2",
+      "detail": "found 3/3"
      },
      "E": {
       "score": 1,
@@ -486,12 +477,12 @@
       "detail": "groups 1/2"
      },
      "F": {
-      "score": null,
+      "score": 1,
       "cw": false,
-      "label": "NP",
+      "label": "1",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "groups 0/2"
+      "auto": "1",
+      "detail": "groups 1/2"
      }
     },
     "P4": {
@@ -512,12 +503,12 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": null,
+      "score": 0,
       "cw": false,
-      "label": "NP",
+      "label": "0",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "far absent; height_ft absent"
+      "auto": "0",
+      "detail": "far wrong (hedged) (26.6 vs 26); height_ft absent"
      },
      "D": {
       "score": 2,
@@ -538,12 +529,12 @@
     },
     "P5": {
      "A": {
-      "score": 0,
-      "cw": true,
-      "label": "0 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "0 CW",
-      "detail": "district C13, key B32"
+      "auto": "2",
+      "detail": "district B32"
      },
      "B": {
       "score": 2,
@@ -554,36 +545,36 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": 0,
+      "score": null,
       "cw": false,
-      "label": "0",
+      "label": "NP",
       "basis": "auto",
-      "auto": "0",
-      "detail": "far wrong (hedged) (3 vs 2.2); height_ft absent; mla absent"
+      "auto": "NP",
+      "detail": "far absent; height_ft absent; mla absent"
      },
      "D": {
-      "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "1 CW",
-      "detail": "found 5/6; missing landmark_building; false pedestrian_street"
+      "auto": "2",
+      "detail": "found 6/6"
      },
      "E": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "F": {
       "score": 2,
       "cw": false,
       "label": "2",
       "basis": "auto",
       "auto": "2",
       "detail": "groups 2/2"
-     },
-     "F": {
-      "score": null,
-      "cw": false,
-      "label": "NP",
-      "basis": "auto",
-      "auto": "NP",
-      "detail": "groups 0/2"
      }
     },
     "P6": {
@@ -680,18 +671,18 @@
    "profile_pin": "13012120030000",
    "profile_confidence": "authoritative",
    "chat_resolved_address": "6247 N Rockwell St, Chicago, IL",
-   "chat_pin_in_text": "13012120090000",
-   "chat_pin_matches": false,
-   "point_gap_ft": 211,
-   "community_area_matches": false
+   "chat_pin_in_text": "13012120030000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
   },
   "P2": {
    "profile_pin": "16012280180000",
    "profile_confidence": "authoritative",
    "chat_resolved_address": "1256 N Artesian Ave, Chicago, IL",
-   "chat_pin_in_text": "16012280240000",
-   "chat_pin_matches": false,
-   "point_gap_ft": 176,
+   "chat_pin_in_text": "16012280180000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
    "community_area_matches": true
   },
   "P3": {
@@ -700,26 +691,26 @@
    "chat_resolved_address": "1500 W Wilson Ave, Chicago, IL",
    "chat_pin_in_text": "14171060250000",
    "chat_pin_matches": true,
-   "point_gap_ft": 64,
+   "point_gap_ft": 0,
    "community_area_matches": true
   },
   "P4": {
    "profile_pin": "17101350390000",
    "profile_confidence": "authoritative",
    "chat_resolved_address": "401 N Wabash Ave, Chicago, IL",
-   "chat_pin_in_text": "17101350382166",
-   "chat_pin_matches": false,
-   "point_gap_ft": 107,
+   "chat_pin_in_text": "17101350390000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
    "community_area_matches": true
   },
   "P5": {
    "profile_pin": "14313320180000",
    "profile_confidence": "authoritative",
    "chat_resolved_address": "1601 N Milwaukee Ave, Chicago, IL",
-   "chat_pin_in_text": "14314240440000",
-   "chat_pin_matches": false,
-   "point_gap_ft": 139,
-   "community_area_matches": false
+   "chat_pin_in_text": "14313320180000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
   },
   "P6": {
    "profile_pin": "13233160400000",
@@ -727,52 +718,52 @@
    "chat_resolved_address": "3400 N Central Park Ave, Chicago, IL",
    "chat_pin_in_text": "13233160400000",
    "chat_pin_matches": true,
-   "point_gap_ft": 79,
-   "community_area_matches": false
+   "point_gap_ft": 0,
+   "community_area_matches": true
   },
   "P7": {
    "profile_pin": "14291230290000",
    "profile_confidence": "authoritative",
    "chat_resolved_address": "1218 W George St, Chicago, IL",
-   "chat_pin_in_text": "14291230300000",
-   "chat_pin_matches": false,
-   "point_gap_ft": 64,
+   "chat_pin_in_text": "14291230290000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
    "community_area_matches": true
   }
  },
  "truncation": {
   "P1": {
-   "chars": 7095,
+   "chars": 7310,
    "item6_present": true,
    "ends_cleanly": false
   },
   "P2": {
-   "chars": 7483,
+   "chars": 7396,
    "item6_present": true,
    "ends_cleanly": false
   },
   "P3": {
-   "chars": 7343,
+   "chars": 7751,
    "item6_present": true,
-   "ends_cleanly": false
+   "ends_cleanly": true
   },
   "P4": {
-   "chars": 7339,
+   "chars": 7527,
    "item6_present": true,
    "ends_cleanly": false
   },
   "P5": {
-   "chars": 7987,
+   "chars": 7743,
    "item6_present": true,
    "ends_cleanly": false
   },
   "P6": {
-   "chars": 7567,
+   "chars": 7734,
    "item6_present": true,
    "ends_cleanly": false
   },
   "P7": {
-   "chars": 7267,
+   "chars": 7561,
    "item6_present": true,
    "ends_cleanly": true
   }
@@ -783,7 +774,7 @@
  "meta": {
   "date": "2026-10-01",
   "git_sha": "b9bda71",
-  "source": "replay of eval/results/2026-10-01/parcel_kit_raw",
+  "source": "replay of eval/results/2026-10-01-f1/parcel_kit_raw",
   "key_version": "2026-10-01.1"
  }
 }

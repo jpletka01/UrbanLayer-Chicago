@@ -170,7 +170,7 @@ PROFILE_OVERLAY_FLAGS = {
 }
 
 CHAT_OVERLAY_PATTERNS = {
-    "pd": r"planned development|\bPD[ -]?\d+",
+    "pd": r"(?<!amendment, )(?<!amendment or )planned development|\bPD[ -]?\d+",  # not "map amendment, planned development, or ARO"
     "landmark_building": r"individual (?:chicago )?landmark|landmark building|designated (?:chicago )?landmark",
     "historic_district": r"landmark district|historic district|\bHD-\d+",
     "national_register": r"national register",
@@ -179,7 +179,7 @@ CHAT_OVERLAY_PATTERNS = {
     "ssa": r"special service area|\bSSA\b",
     "special_district": r"predominance of the block|\b606\b|special district",
     "adu": r"\bADU\b|additional dwelling|coach house",
-    "pedestrian_street": r"pedestrian[- ]street",
+    "pedestrian_street": r"pedestrian[- ]street(?! design)",
     "lakefront": r"lakefront protection",
     "pmd": r"planned manufacturing|\bPMD\b",
 }
@@ -188,6 +188,8 @@ CHAT_OVERLAY_PATTERNS = {
 NEVER_FALSE = {"adu"}
 
 _NEG_BEFORE = re.compile(r"\b(no|not|none|neither|nor|without|isn't|doesn't|does not|is not|aren't|absent)\b", re.I)
+_SENT_BREAK = re.compile(r"(?<=[.!?])\s+|:\*\*\s*")
+_NEG_SAME_SENTENCE = re.compile(r"\b(?:does not|doesn't|do not|is not|isn't|not)\b", re.I)
 _NEG_AFTER = re.compile(
     r"^[\s*|:—–-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
     r"|^[^\n.]{0,60}?\b(?:does not|doesn't|do not|is not|isn't|not) (?:apply|applicable|qualify|eligible|within|in)\b",
@@ -228,9 +230,12 @@ def chat_overlays(text: str) -> tuple[set[str], set[str]]:
                 else:
                     asserted.add(oid)
                 continue
-            before = text[max(line_start, m.start() - 60) : m.start()]
-            after = text[m.end() : m.end() + 70].split("\n", 1)[0]
-            if _NEG_BEFORE.search(before) or _NEG_AFTER.match(after):
+            # negation anywhere earlier in the same sentence ("No Planned Development,
+            # Landmark, or PMD overlays apply") covers every item in a list
+            sent_start = max([line_start] + [line_start + b.end() for b in _SENT_BREAK.finditer(text[line_start : m.start()])])
+            before = text[max(sent_start, m.start() - 160) : m.start()]
+            after = text[m.end() : m.end() + 120].split("\n", 1)[0]
+            if _NEG_BEFORE.search(before) or _NEG_AFTER.match(after) or _NEG_SAME_SENTENCE.search(after.split(". ")[0]):
                 denied.add(oid)
             else:
                 asserted.add(oid)
@@ -895,7 +900,7 @@ def append_history(report: dict[str, Any], key: dict, notes: str) -> None:
     )
     n = max((b["aggregate"]["parcels"] for b in surf.values()), default=0)
     with HISTORY_CSV.open("a", newline="") as f:
-        csv.writer(f).writerow([date.today().isoformat(), "parcel_kit", git_sha() or "", n, headline, notes])
+        csv.writer(f, lineterminator="\n").writerow([date.today().isoformat(), "parcel_kit", git_sha() or "", n, headline, notes])
 
 
 # --------------------------------------------------------------------------
