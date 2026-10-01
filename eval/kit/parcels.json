@@ -1,0 +1,840 @@
+{
+ "version": "2026-10-01.1",
+ "note": "Answer key for the 7-parcel Chicago kit, built from primary sources (City zoning layer, Zoning MapServer, Municipal Code text current through the Council Journal of 2026-03-18, ordinance PDFs, Cook County Assessor). NOT yet reviewed by a Chicago architect or zoning attorney: P2, P3 and P6 are the most interpretive. Overlay truth comes from the same City service UrbanLayer queries, so overlay scores are not independent.",
+ "fields": {
+  "A": "Zoning district in effect (critical)",
+  "B": "Use question",
+  "C": "Bulk/density numbers",
+  "D": "Overlays / designations",
+  "E": "Parking / transit rule (P3, P5 only)",
+  "F": "Task question"
+ },
+ "prompt_template": "I'm evaluating the property at {address} in Chicago, Illinois for a possible project. Tell me, with sources: (1) the zoning district currently in effect for this parcel; (2) {use}; (3) the key bulk and density standards that apply (FAR, max height, min lot area per dwelling unit, setbacks, as applicable); (4) any overlays or special designations that apply (Planned Development, landmark/historic district, transit-oriented or transit-served location, ADU area, ARO zone, special service area, special districts); (5) the parking requirement and any transit-related reduction; (6) {task} For each item cite the specific Municipal Code section or official source and tell me how I can verify it. Say how confident you are and what you could not determine.",
+ "parcels": [
+  {
+   "id": "P1",
+   "address": "6247 N Rockwell St",
+   "pin": "13012120030000",
+   "use_question": "Could I build a two-flat (two dwelling units) here?",
+   "task_question": "Could I add a coach house / accessory dwelling unit on this lot?",
+   "why": "Plain RS-2 baseline; ADU nuance (not in an ADU-allowed area)",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "F"
+   ],
+   "A": {
+    "district": "RS-2",
+    "wrong": [],
+    "basis": "City zoning layer dj47-wfun at the Assessor centroid; 17-2-0100"
+   },
+   "B": {
+    "answer": "Two-flat NOT allowed (use table 17-2-0207: detached house P; two-flat '-' in RS1/RS2)",
+    "profile": {
+     "groups": [
+      [
+       "detached"
+      ]
+     ],
+     "wrong": [
+      "two-?flats?"
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "two-?flat|two flat|2-flat"
+      ],
+      [
+       "\\bnot\\b|isn't|cannot|prohibited|only detached|\\bno\\b"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       0.65
+      ],
+      "tol": 0.05,
+      "basis": "17-2-0304-A"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       30
+      ],
+      "tol": 2,
+      "basis": "17-2-0311-A"
+     },
+     {
+      "name": "mla",
+      "accept": [
+       5000
+      ],
+      "tol": 10,
+      "profile_fields": [
+       "min_lot_area_per_unit",
+       "min_lot_sqft"
+      ],
+      "basis": "17-2-0301-A, 17-2-0303-A (lot area per unit = min lot area in RS-2)"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "aro"
+    ],
+    "basis": "City Zoning MapServer layers 2-24 at the centroid"
+   },
+   "F": {
+    "answer": "Coach house NOT allowed (no ADU zone, layer 17; 17-7-0574)",
+    "profile": {
+     "groups": [
+      [
+       "\\bADU\\b|coach house|additional dwelling"
+      ]
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "coach house|\\bADU\\b|additional dwelling"
+      ],
+      [
+       "\\bnot\\b|\\bno\\b|isn't|cannot|outside|only in|only if|only within"
+      ]
+     ],
+     "none": "NP"
+    }
+   }
+  },
+  {
+   "id": "P2",
+   "address": "1256 N Artesian Ave",
+   "pin": "16012280180000",
+   "use_question": "Is a multi-unit residential building (3+ units) permitted by right? (This is a vacant lot of roughly 3,150 square feet.)",
+   "task_question": "What is the maximum number of dwelling units I could build by right on this lot, and could I build 6 units?",
+   "why": "Vacant infill lot; geocoder trap (address interpolates into adjacent RS-3); MLA arithmetic (4 not 6)",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "F"
+   ],
+   "A": {
+    "district": "RM-4.5",
+    "wrong": [
+     "RS-3"
+    ],
+    "basis": "Ordinance A7210; the Census-geocoded address point falls in an adjacent RS-3 polygon"
+   },
+   "B": {
+    "answer": "Multi-unit PERMITTED (17-2-0207 row 5, RM4.5)",
+    "profile": {
+     "groups": [
+      [
+       "multi-?unit"
+      ]
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "multi-?unit|3\\+|three or more|more than (two|2)"
+      ],
+      [
+       "permitted|by right|allowed|\\bP\\b"
+      ]
+     ],
+     "wrong": [
+      "(multi-?unit|3\\+|(3|three) or more)[^.\\n]{0,80}(not permitted|not allowed|prohibited|not by right)",
+      "\\bNo\\b[^.\\n]{0,40}multi"
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       1.7
+      ],
+      "tol": 0.05,
+      "basis": "17-2-0304-A"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       45,
+       47
+      ],
+      "tol": 2,
+      "basis": "17-2-0311-A (45 ft <32 ft frontage; 47 ft otherwise)"
+     },
+     {
+      "name": "mla",
+      "accept": [
+       700
+      ],
+      "tol": 10,
+      "profile_fields": [
+       "min_lot_area_per_unit"
+      ],
+      "basis": "17-2-0303-A"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "special_district",
+     "aro"
+    ],
+    "basis": "606 district (layer 9; does NOT change RM-4.5 density per 17-7-0591); ARO CPA (layer 20)"
+   },
+   "F": {
+    "answer": "4 units (3,154 / 700 = 4.5 -> 4); 6 is not achievable by right",
+    "profile": {
+     "groups": [
+      [
+       "\\b(4|four) (dwelling )?units?|max(imum)? units"
+      ]
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "\\b(4|four) (dwelling )?(units?|DU)"
+      ],
+      [
+       "700"
+      ]
+     ],
+     "partial": [
+      [
+       "(not|cannot|can't|no)[^.\\n]{0,80}\\b(6|six)\\b|\\b(6|six)\\b[^.\\n]{0,80}(not|cannot|exceed|beyond)"
+      ]
+     ],
+     "forbid": [
+      "(maximum|max|up to|only|limited to)[^.\\n]{0,40}\\b(1|one|2|two|3|three) (dwelling )?(units?|DU)\\b"
+     ],
+     "none": "NP"
+    }
+   }
+  },
+  {
+   "id": "P3",
+   "address": "1500 W Wilson Ave",
+   "pin": "14171060250000",
+   "use_question": "Can I build apartments above ground-floor retail, and can I put apartments on the ground floor?",
+   "task_question": "What are the maximum height and floor area ratio for a mixed-use building here, and does proximity to transit change what I can build (including any density or parking provisions)?",
+   "why": "B1-2 near rail: TOD parking relief yes, TOD density bonus NO (dash-2); ground-floor dwelling needs special use",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F"
+   ],
+   "A": {
+    "district": "B1-2",
+    "wrong": [],
+    "basis": "dj47-wfun at the Assessor centroid"
+   },
+   "B": {
+    "answer": "Dwelling units above the ground floor: permitted; on the ground floor: special use (17-3-0102-D; 17-3-0103-A)",
+    "profile": {
+     "groups": [
+      [
+       "above (the )?ground"
+      ],
+      [
+       "special use|ground[- ]floor (dwelling|residential|apartment)"
+      ]
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "above"
+      ],
+      [
+       "special use"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       2.2
+      ],
+      "tol": 0.05,
+      "basis": "17-3-0403-A, dash 2"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       45,
+       47,
+       50
+      ],
+      "tol": 2,
+      "basis": "17-3-0408-A"
+     },
+     {
+      "name": "mla",
+      "accept": [
+       1000,
+       700
+      ],
+      "tol": 10,
+      "profile_fields": [
+       "min_lot_area_per_unit"
+      ],
+      "basis": "17-3-0402-A (1,000; 700 for efficiency/SRO)"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "tod",
+     "aro",
+     "ssa"
+    ],
+    "basis": "TOD (CTA) layer; ARO CPA; SSA #31 Greater Ravenswood"
+   },
+   "E": {
+    "answer": "Parking reducible up to 100% (17-10-0102-B.1(a)); density bonuses only in dash-3/D-3 districts -> NOT at B1-2",
+    "profile": {
+     "groups": [
+      [
+       "parking"
+      ],
+      [
+       "parking[^.\\n]{0,60}100|up to 100|no density bonus|parking (relief )?only"
+      ]
+     ],
+     "forbid": [
+      "(?<!no )(?<!not )density bonus"
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "parking[^.\\n]{0,160}(100|reduc|eliminat)"
+      ],
+      [
+       "(not|no|cannot)[^.\\n]{0,80}(density|FAR)[^.\\n]{0,60}(bonus|increase|boost)|(bonus|increase|boost)[^.\\n]{0,100}(not|only)[^.\\n]{0,60}(B-?3|C-?3|dash)|does not (directly )?apply"
+      ]
+     ],
+     "forbid": [
+      "(?<!no )(?<!not )(density|FAR) bonus[^.\\n]{0,60}(available|applies|eligible)"
+     ],
+     "none": "NP"
+    }
+   },
+   "F": {
+    "answer": "Height/FAR as in C; transit changes parking only, not density",
+    "profile": {
+     "groups": [
+      [
+       "parking"
+      ],
+      [
+       "no density bonus|parking (relief )?only"
+      ]
+     ],
+     "forbid": [
+      "(?<!no )(?<!not )density bonus"
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "parking"
+      ],
+      [
+       "(not|no)[^.\\n]{0,60}(density|FAR)[^.\\n]{0,40}(bonus|increase)"
+      ]
+     ],
+     "none": "NP"
+    }
+   }
+  },
+  {
+   "id": "P4",
+   "address": "401 N Wabash Ave",
+   "pin": null,
+   "use_question": "Is this parcel governed by an ordinary base zoning district, or by something else?",
+   "task_question": "What is the maximum floor area ratio and building height allowed?",
+   "why": "Planned Development: base-district numbers do not apply; standards live in the PD ordinance",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "F"
+   ],
+   "A": {
+    "district": "PD 835",
+    "wrong": [],
+    "basis": "Ordinance 13559 (07/31/2002); PD835.pdf"
+   },
+   "B": {
+    "answer": "Governed by a PD, not a base district",
+    "profile": {
+     "groups": [
+      [
+       "planned development|\\bPD\\b"
+      ]
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "planned development|\\bPD\\b"
+      ],
+      [
+       "controlling|governs|controls|ordinance|not (a |the )?(ordinary |standard )?base"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       26.0
+      ],
+      "tol": 0.05,
+      "basis": "PD835.pdf pp. 35-37 (bulk table)"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       1125
+      ],
+      "tol": 2,
+      "basis": "PD835.pdf; 2010 minor-change letter"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "pd",
+     "aro",
+     "tod"
+    ],
+    "basis": "PD 835 (layer 2); ARO Downtown; TOD (CTA)"
+   },
+   "F": {
+    "answer": "FAR 26.0; height 1,125 ft per PD 835",
+    "profile": {
+     "groups": [
+      [
+       "(?<![\\d.])26(\\.0)?(?![\\d.])"
+      ],
+      [
+       "1,?125"
+      ]
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "(?<![\\d.])26(\\.0)?(?![\\d.])"
+      ],
+      [
+       "1,?125"
+      ]
+     ],
+     "none": "NP"
+    }
+   }
+  },
+  {
+   "id": "P5",
+   "address": "1601 N Milwaukee Ave",
+   "pin": "14313320180000",
+   "use_question": "Is ground-floor retail with apartments above allowed?",
+   "task_question": "Could I demolish the existing building and build a new mixed-use building here? What approvals or restrictions apply?",
+   "why": "Overlay stack incl. an individual Chicago Landmark; geocoder trap (address interpolates into a C1-3 polygon)",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F"
+   ],
+   "A": {
+    "district": "B3-2",
+    "wrong": [
+     "C1-3"
+    ],
+    "basis": "Ordinance 17230; the Census-geocoded address point falls in a C1-3 polygon (O2021-4070). Address spans 3 PINs, all B3-2"
+   },
+   "B": {
+    "answer": "Yes: B3 permits dwelling units above the ground floor (17-3-0104-C)",
+    "profile": {
+     "groups": [
+      [
+       "above (the )?ground"
+      ]
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "above"
+      ],
+      [
+       "permitted|allowed|by right|\\byes\\b|\\bP\\b"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       2.2
+      ],
+      "tol": 0.05,
+      "basis": "17-3-0403-A"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       45,
+       47,
+       50
+      ],
+      "tol": 2,
+      "basis": "17-3-0408-A"
+     },
+     {
+      "name": "mla",
+      "accept": [
+       1000,
+       700
+      ],
+      "tol": 10,
+      "profile_fields": [
+       "min_lot_area_per_unit"
+      ],
+      "basis": "17-3-0402-A"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "landmark_building",
+     "historic_district",
+     "national_register",
+     "tod",
+     "aro",
+     "ssa"
+    ],
+    "basis": "Individual landmark (Noel State Bank, layer 7); Milwaukee Avenue landmark district HD-56 (layer 6); National Register (layer 8); TOD (CTA); ARO Inclusionary; SSA #33 Wicker Park"
+   },
+   "E": {
+    "answer": "Transit-served: parking reducible up to 100% (17-10-0102-B.1(a)); no added parking for reuse of a contributing building in a landmark district (17-10-0102-A.2)",
+    "profile": {
+     "groups": [
+      [
+       "transit|\\bTOD\\b"
+      ],
+      [
+       "parking[^.\\n]{0,60}100|up to 100|eliminat"
+      ]
+     ],
+     "forbid": [
+      "(?<!no )(?<!not )density bonus"
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "parking[^.\\n]{0,160}(100|reduc|eliminat)"
+      ],
+      [
+       "17-10-0102"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "F": {
+    "answer": "Not by right: written approval of the Commission on Chicago Landmarks is required (Municipal Code 2-120-740)",
+    "profile": {
+     "groups": [
+      [
+       "landmark"
+      ],
+      [
+       "Commission on Chicago Landmarks|written approval|2-120-740"
+      ]
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "landmark"
+      ],
+      [
+       "Commission on Chicago Landmarks|written approval|2-120-740|Landmarks Commission"
+      ]
+     ],
+     "none": "NP"
+    }
+   }
+  },
+  {
+   "id": "P6",
+   "address": "3400 N Central Park Ave",
+   "pin": "13233160400000",
+   "use_question": "Could I build a two-flat here?",
+   "task_question": "Could I add a coach house or other additional dwelling unit here, and under what conditions or limits?",
+   "why": "RS-3 with the 606 Predominance-of-the-Block district (MLA 1,500) and a conditional ADU zone",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "F"
+   ],
+   "A": {
+    "district": "RS-3",
+    "wrong": [],
+    "basis": "dj47-wfun (polygon edited 2026-08-27)"
+   },
+   "B": {
+    "answer": "Two-flat PERMITTED in RS-3 (use table row 3); 606 district lowers MLA to 1,500 (17-2-0303-B.1)",
+    "profile": {
+     "groups": [
+      [
+       "two-?flats?"
+      ]
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "two-?flat|two flat|two-unit|two unit"
+      ],
+      [
+       "(?<!not )as-of-right|by right|is permitted|are permitted"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       0.9
+      ],
+      "tol": 0.05,
+      "basis": "17-2-0304-A"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       30
+      ],
+      "tol": 2,
+      "basis": "17-2-0311-A"
+     },
+     {
+      "name": "mla",
+      "accept": [
+       1500,
+       2500
+      ],
+      "tol": 10,
+      "profile_fields": [
+       "min_lot_area_per_unit"
+      ],
+      "basis": "17-2-0303-B.1 (2,500 reduced to 1,500 in a 606 district)"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "special_district",
+     "adu",
+     "aro",
+     "tod"
+    ],
+    "basis": "606 district (layer 9); ADU Zone 10 (layer 17); ARO CPA; TOD (CTA)"
+   },
+   "F": {
+    "answer": "Allowed with limits: ADU Zone 10 -> (1) annual limit, (2) owner occupancy (17-7-0573/-0574)",
+    "profile": {
+     "groups": [
+      [
+       "\\bADU\\b|coach house|additional dwelling"
+      ],
+      [
+       "annual|owner[- ]occup|zone 10|per block"
+      ]
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "\\bADU\\b|coach house|additional dwelling"
+      ],
+      [
+       "annual|owner[- ]occup|zone 10|per block"
+      ]
+     ],
+     "partial": [
+      [
+       "\\bADU\\b|coach house|additional dwelling"
+      ]
+     ],
+     "none": "NP"
+    }
+   }
+  },
+  {
+   "id": "P7",
+   "address": "1218 W George St",
+   "pin": "14291230290000",
+   "use_question": "Is residential use allowed on this parcel?",
+   "task_question": "What is the zoning here, and has it changed recently?",
+   "why": "Freshness: rezoned M1-2 -> RT-4 by an ordinance passed 2026-06-17 (open-data layer updated 2026-08-21)",
+   "scored": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "F"
+   ],
+   "A": {
+    "district": "RT-4",
+    "wrong": [
+     "M1-2"
+    ],
+    "basis": "Ordinance O2026-0025358 (App. 23082T1), passed 2026-06-17; the address point lands in an adjacent RT-4 polygon (O2018-3982)"
+   },
+   "B": {
+    "answer": "Yes: RT-4 permits two-flat, townhouse and multi-unit residential (17-2-0207)",
+    "profile": {
+     "groups": [
+      [
+       "two-?flat|townhouse|multi"
+      ]
+     ],
+     "none": "0"
+    },
+    "chat": {
+     "groups": [
+      [
+       "residential|dwelling"
+      ],
+      [
+       "permitted|allowed|by right|\\byes\\b"
+      ]
+     ],
+     "none": "NP"
+    }
+   },
+   "C": {
+    "numbers": [
+     {
+      "name": "far",
+      "accept": [
+       1.2
+      ],
+      "tol": 0.05,
+      "basis": "17-2-0304-A"
+     },
+     {
+      "name": "height_ft",
+      "accept": [
+       38,
+       42
+      ],
+      "tol": 2,
+      "basis": "17-2-0311-A/B"
+     },
+     {
+      "name": "mla",
+      "accept": [
+       1000
+      ],
+      "tol": 10,
+      "profile_fields": [
+       "min_lot_area_per_unit"
+      ],
+      "basis": "17-2-0303-A"
+     }
+    ]
+   },
+   "D": {
+    "expected": [
+     "tod",
+     "aro"
+    ],
+    "basis": "TOD (CTA); ARO Inclusionary"
+   },
+   "F": {
+    "answer": "Yes: rezoned M1-2 -> RT-4 in June 2026",
+    "profile": {
+     "groups": [
+      [
+       "rezon|M1-2|recently (changed|rezoned)|map amendment|ordinance date"
+      ]
+     ],
+     "none": "NP"
+    },
+    "chat": {
+     "groups": [
+      [
+       "rezon|amend|changed|recent"
+      ],
+      [
+       "2026|M1-2|O2026"
+      ]
+     ],
+     "none": "NP"
+    }
+   }
+  }
+ ]
+}

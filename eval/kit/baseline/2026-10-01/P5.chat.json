@@ -1,0 +1,44 @@
+{
+ "pid": "P5",
+ "address": "1601 N Milwaukee Ave",
+ "seconds": 62.0,
+ "error": null,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "1601 N Milwaukee Ave in Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 22,
+  "resolved_community_area_name": "Logan Square",
+  "resolved_address": "1601 N Milwaukee Ave, Chicago, IL",
+  "resolved_lat": 41.910550533616,
+  "resolved_lon": -87.677475193137
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "incentives_domain",
+  "neighborhood_domain",
+  "crime_api",
+  "311_api",
+  "violations_api",
+  "business_api",
+  "vacant_buildings_api"
+ ],
+ "context_has_zoning": true,
+ "context_zone": {
+  "zone_class": "C1-3",
+  "zone_type": 2,
+  "ordinance_num": "20837T1",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+ },
+ "code_chunk_ids": [
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "text": "# Zoning Analysis: 1601 N Milwaukee Ave, Chicago, IL\n**PIN: 14314240440000 | Community Area: Logan Square (22)**\n\n---\n\n## 1. Zoning District\n\nThis parcel is zoned **C1-3** (Neighborhood Commercial District, density tier 3), per the City's official GIS zoning layer (Ordinance No. 20837T1). You can verify this on the [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\nThe C1 district is a neighborhood commercial designation intended to serve surrounding residential areas with retail and personal service uses. The \"-3\" suffix denotes the density tier, which governs maximum FAR and related bulk standards [1].\n\n---\n\n## 2. Ground-Floor Retail with Apartments Above\n\n**Yes, this is permitted by-right.** In C1 districts, dwelling units located above the ground floor are allowed as a permitted (\"P\") use [2]. Ground-floor retail and service uses are the primary purpose of C1 zoning. This is a classic mixed-use configuration and is expressly contemplated by the ordinance.\n\n> **Note:** Dwelling units *on or below* the ground floor in C districts face additional restrictions \u2014 in particular, [3] and [4] restrict newly established detached houses and two-flats within 2,640 feet of a CTA rail station in transit-served locations (see Section 4 below for transit context). Since this parcel is less than 0.1 miles from Damen Blue Line, that proximity is directly relevant if you consider any ground-floor residential component.\n\n---\n\n## 3. Bulk and Density Standards\n\nThe C1-3 designation controls bulk via the FAR table in [3]. **I was not provided the full C1-3 bulk table from the zone_definition field** (it returned null in the data), so I can confirm the zoning class but cannot quote the precise FAR cap, maximum height, minimum lot area per dwelling unit, or setback dimensions from the Municipal Code text provided. Here is what I can confirm and what remains unverified:\n\n| Standard | What the data shows | Confidence |\n|---|---|---|\n| **FAR** | C1-3 base FAR governed by \u00a7 17-3-0403 [3]; exact number not in provided code excerpts | **Cannot quote \u2014 verify directly** |\n| **Height** | Set by C1-3 bulk table (\u00a7 17-3-0401) [3]; not returned in context | **Cannot quote \u2014 verify directly** |\n| **Min. lot area/DU** | Set by C1-3 bulk table; not returned | **Cannot quote \u2014 verify directly** |\n| **Setbacks** | C1 districts generally have no required front setback along pedestrian streets (see overlay below); rear/side governed by bulk table | **Partial** |\n| **FAR bonus (transit)** | Available in B-3 and C-3 districts via \u00a7 17-3-0403-B [3] \u2014 note this applies to **C-3**, not C-1; C1-3 transit FAR bonus eligibility requires separate verification | **Uncertain** |\n\n**How to verify:** Search \"C1\" in the [Chicago Zoning Ordinance](https://www.chicago.gov/city/en/depts/dcd/supp_info/chicago_zoning_ordinanceandlanduseordinances.html), navigate to \u00a7 17-3-0401 (Bulk and Density Standards table), and locate the C1-3 row. Alternatively, contact DPD at (312) 744-5777.\n\n---\n\n## 4. Overlays and Special Designations\n\nThis parcel carries a significant stack of overlays \u2014 each with real practical consequences:\n\n### \ud83c\udfdb\ufe0f Historic Districts (Two Layers)\n- **Milwaukee Avenue District** \u2014 a City-designated historic district. While `in_landmark_district` is false and `is_landmark_building` is false, the parcel is confirmed `in_historic_district: true`. Exterior alterations may require review; confirm with the Commission on Chicago Landmarks whether this district carries design review obligations.\n- **Wicker Park Historic District** \u2014 listed on the **National Register of Historic Places** (`on_national_register: true`). National Register listing does not by itself restrict private demolition or alteration, but it does affect eligibility for federal Historic Tax Credits (20% credit on qualified rehabilitation costs) \u2014 highly relevant if you rehabilitate rather than demolish.\n\n### \ud83d\udeb6 Pedestrian Street \u2014 Six Corners\n- This parcel is on a **designated Pedestrian Street** (PEDESTRIAN STREET SIX-CORNER overlay). Under [4], new construction on pedestrian streets must comply with \u00a7 17-3-0504 standards even if not located on a pedestrian retail street. This typically means: active ground-floor uses required, parking may not be placed between the building and the street, and building setbacks must maintain the street wall. **This is a binding design constraint.**\n\n### \ud83d\ude87 Transit-Oriented Development (CTA)\n- The parcel is in a **TOD overlay (CTA)** and is just **0.05 miles** from the Damen Blue Line station \u2014 well within the 2,640-foot threshold that triggers transit-served location standards under [4]. This has two effects:\n  1. New construction must meet the specific criteria of \u00a7 17-3-0308 [4], including pedestrian-street design standards.\n  2. Detached houses and two-flats are **prohibited** if a multi-unit building can be built under applicable bulk standards [4].\n- The Connected Communities Ordinance (TOD) may provide **density and parking bonuses** near CTA rail \u2014 verify with DPD whether C1-3 qualifies for the TOD reduced parking provisions.\n\n### \ud83c\udfe0 ADU Eligible Area\n- The parcel is in an **ADU-eligible area**, meaning Accessory Dwelling Units (coach houses, conversion units) may be added subject to ADU ordinance requirements. This is relevant if you retain or build a mixed-use structure with a residential component.\n\n### \ud83d\udccb Affordable Requirements Ordinance (ARO) Zone\n- The parcel is in an **ARO zone**. Any residential development requiring a zoning entitlement (map amendment, planned development, or certain special uses) must comply with the Affordable Requirements Ordinance (\u00a7 2-44-085 [3]). In the broader Logan Square/Wicker Park community area, ARO has produced 20 affordable housing projects totaling **435 units** across the neighborhood.\n\n### \ud83c\udfe2 Special Service Area \u2014 Wicker Park (SSA)\n- The parcel is within the **Wicker Park Special Service Area**. Properties in SSAs pay a supplemental property tax levy that funds enhanced neighborhood services (cleaning, marketing, events). This is already reflected in the tax breakdown: **City of Chicago Special Service Area 33** levies approximately **$651/year** on this parcel at the current assessed value.\n\n### \u2705 No Planned Development; No Lakefront Protection; No PMD\n- `in_planned_development: false` \u2014 no PD approval required at baseline (though a large project may trigger mandatory PD thresholds under \u00a7 17-8-0500 [2]).\n- Not in a Lakefront Protection Zone or Planned Manufacturing District.\n\n### \ud83c\udf0a Flood Zone\n- FEMA Zone **X** \u2014 Area of Minimal Flood Hazard. Flood insurance is **not** required. No SFHA constraints apply.\n\n### \u2623\ufe0f Nearby Brownfield\n- **Park 512 Avenue Park** (EPA ID: 110005863100) is a registered brownfield site in the vicinity. Environmental due diligence (Phase I/II ESA) is advisable before any ground disturbance.\n\n---\n\n## 5. Parking Requirements and Transit Reduction\n\nThe C1-3 zoning and the TOD overlay are directly relevant here. Under the Chicago Zoning Ordinance, parking requirements for residential uses in B and C districts are set by \u00a7 17-10-0207-C [2]. The TOD overlay (CTA) and the parcel's location within 660 feet of a CTA rail station typically entitle projects to **reduced or waived off-street parking** under the Connected Communities Ordinance.\n\n**However**, the precise parking ratio for C1-3 and the exact TOD reduction percentage were not returned in the code excerpts provided. I cannot quote a specific number without risk of error.\n\n**How to verify:** See \u00a7 17"
+}

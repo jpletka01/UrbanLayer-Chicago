@@ -1,0 +1,821 @@
+{
+ "address": "1256 N Artesian Ave",
+ "lat": 41.9047031359,
+ "lon": -87.6886596331,
+ "community_area": 24,
+ "community_area_name": "West Town",
+ "context": {
+  "community_area": 24,
+  "community_area_name": "West Town",
+  "resolved_address": "1256 N Artesian Ave",
+  "data_as_of": "2026-10-01",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-24).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-24",
+  "crime_last_90d": {
+   "total": 1792,
+   "arrest_rate": 0.087,
+   "by_type": {
+    "THEFT": 499,
+    "CRIMINAL DAMAGE": 265,
+    "MOTOR VEHICLE THEFT": 247,
+    "BATTERY": 187,
+    "BURGLARY": 168
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 499,
+     "prior_year_count": 586,
+     "change_pct": -15
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 265,
+     "prior_year_count": 270,
+     "change_pct": -2
+    },
+    {
+     "category": "MOTOR VEHICLE THEFT",
+     "current_count": 247,
+     "prior_year_count": 170,
+     "change_pct": 45
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 187,
+     "prior_year_count": 232,
+     "change_pct": -19
+    },
+    {
+     "category": "BURGLARY",
+     "current_count": 167,
+     "prior_year_count": 147,
+     "change_pct": 14
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 29,
+   "open_count": 0,
+   "by_type": {
+    "Graffiti Removal Request": 4,
+    "Tree Debris Clean-Up Request": 4,
+    "No Building Permit and Construction Violation": 3,
+    "Building Violation": 3,
+    "Abandoned Vehicle Complaint": 2,
+    "Weed Removal Request": 2,
+    "Clean Vacant Lot Request": 2,
+    "Sign Repair Request - One Way Sign": 2,
+    "Rodent Baiting/Rat Complaint": 1,
+    "Sanitation Code Violation": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": [
+    "Rodent Baiting/Rat Complaint"
+   ]
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "RM-4.5",
+   "zone_type": 4,
+   "ordinance_num": "A7210",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "special_district",
+     "name": "Special Districts",
+     "description": "Special Districts"
+    },
+    {
+     "layer_type": "adu_area",
+     "name": "ADU Eligible Areas",
+     "description": "ADU Eligible Areas"
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": true,
+   "in_pmd": false,
+   "in_tod_area": false,
+   "in_adu_area": true,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [],
+   "aro_housing": {
+    "total_projects": 20,
+    "total_units": 291,
+    "projects": [
+     {
+      "name": "1038 N. Ashland",
+      "address": "1038-40 N. Ashland Ave.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1237 N. Milwaukee Ave.Owner LLC",
+      "address": "1241 N. Milwaukee Ave.",
+      "units": 6,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1447 N. Superior Holding",
+      "address": "1447 W. Superior St.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1447 N. Washtenaw",
+      "address": "1447 N. Washtenaw Ave.",
+      "units": 3,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1611 West Division",
+      "address": "1611 W. Division St.",
+      "units": 10,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1645 W. LeMoyne",
+      "address": "1645 W. LeMoyne St.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1801westgrand",
+      "address": "1801 W. Grand Ave.",
+      "units": 3,
+      "property_type": "ARO"
+     },
+     {
+      "name": "1938 W. North Ave.",
+      "address": "1938 W. North Ave.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "65th Infantry Boringueneers Apts.",
+      "address": "1045 N. Sacramento Blvd.",
+      "units": 48,
+      "property_type": "Supportive/Veterans"
+     },
+     {
+      "name": "713 Milwaukee",
+      "address": "713 N. Milwaukee Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "945 Western",
+      "address": "945 N. Western Ave.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Avenir",
+      "address": "730 N. Milwuakee Ave.",
+      "units": 39,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Borinquen Bella Apts.",
+      "address": "1414,1451 N. Washtenaw Ave.",
+      "units": 23,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Borinquen Bella Apts.",
+      "address": "1318,1456 N. Rockwell Ave.",
+      "units": 24,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Boulevard Court Family Housing",
+      "address": "1723-33 N. Humboldt Blvd.",
+      "units": 52,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Bucktown Gateway",
+      "address": "1667 N. Western Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Centrum Wicker Park",
+      "address": "1664 W. Division St.",
+      "units": 6,
+      "property_type": "ARO"
+     },
+     {
+      "name": "East Village Lofts",
+      "address": "1100 N. Ashland Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Homer Townhomes",
+      "address": "1623 N. Talman Ave.",
+      "units": 5,
+      "property_type": "ARO"
+     },
+     {
+      "name": "La Estancia",
+      "address": "2753 W. Division St.",
+      "units": 59,
+      "property_type": "Multifamily"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "16012280180000",
+   "bldg_class": "EX",
+   "land_sqft": 3191,
+   "land_sqft_source": "geometry",
+   "tax_exempt": true,
+   "total_assessed_value": 0.0,
+   "estimated_annual_tax": 3559.0,
+   "tax_estimate_is_fallback": false,
+   "tax_year": 2024,
+   "tax_code": "77162",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 1946.68
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 865.79
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 209.34
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 182.52
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 157.74
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 80.14
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 69.47
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 36.77
+    },
+    {
+     "agency": "WEST TOWN & HUMBOLDT EXPANDED MENTAL HEALTH SERVICE DISTRICTERV",
+     "rate": 0.019673,
+     "amount": 10.55
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [],
+    "nearby_window_years": [
+     2023,
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 330,
+    "nearby_reduced_count": 162,
+    "nearby_median_reduction_pct": 7.8,
+    "nearby_capped": false
+   },
+   "flags": {
+    "tax_sale_years": [],
+    "scavenger_sale_years": [],
+    "city_owned": true,
+    "city_owned_status": "Owned by City",
+    "city_owned_sales_status": "Interest",
+    "scofflaw": false,
+    "str_prohibited": false
+   },
+   "assessment_history": [
+    {
+     "year": 2026,
+     "land": 0.0,
+     "building": 0.0,
+     "total": 0.0
+    },
+    {
+     "year": 2025,
+     "land": 17662.0,
+     "building": 0.0,
+     "total": 17662.0
+    },
+    {
+     "year": 2024,
+     "land": 17662.0,
+     "building": 0.0,
+     "total": 17662.0
+    },
+    {
+     "year": 2023,
+     "land": 14193.0,
+     "building": 0.0,
+     "total": 14193.0
+    },
+    {
+     "year": 2022,
+     "land": 14193.0,
+     "building": 0.0,
+     "total": 14193.0
+    }
+   ],
+   "sales_history": [
+    {
+     "date": "2025-01-27T00:00:00.000",
+     "price": 100.0,
+     "deed_type": "Other"
+    }
+   ],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.68843,
+       41.90467
+      ],
+      [
+       -87.68843,
+       41.90474
+      ],
+      [
+       -87.68889,
+       41.90474
+      ],
+      [
+       -87.68889,
+       41.90467
+      ],
+      [
+       -87.68843,
+       41.90467
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": false,
+   "tif_fund_history": [],
+   "tif_financials": [],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_tract": "17031241100",
+   "nmtc_severe_distress": false,
+   "nmtc_poverty_rate": 15.3,
+   "census_tract": "17031241100",
+   "property_tax_class": "exempt",
+   "tax_incentive_description": "Property class EX is tax-exempt \u2014 typically institutional, government, religious, or non-profit ownership. No assessed value or tax-incentive reduction applies in its current use; a change of ownership or use would trigger reassessment at the applicable class.",
+   "grant_programs": {
+    "total_projects": 15,
+    "total_funding": 1035612.6699999999,
+    "by_program": {
+     "SBIF": 15
+    },
+    "recent_projects": [
+     {
+      "name": "Free Body Physical Therapy Professional Corporation",
+      "program": "SBIF",
+      "incentive_amount": 63090.05,
+      "total_cost": 93696.08,
+      "property_type": "Mixed use commercial/residential building",
+      "description": "Interior renovations including removal of old flooring, leveling, install plywood flooring as needed, install vinyl flooring in studio; build new wall in existing kitchen, install 9ft tall studs then install and patch drywall, insulate walls with sound control insulation, install baseboards for new wall, paint new wall and baseboards, install 36\u201d x 80\u201d solid core door, install molding for new door, install baseboards in computer room (11\u2019 x12\u2019), install and paint baseboard and shoe molding in entire salon after vinyl flooring installation; insulate and re-caulk four (4) doors; reset two (2) toilets in bathrooms after and reset two (2) sinks and vanities after vinyl floor installation.",
+      "date": "2025-06-04"
+     },
+     {
+      "name": "Studio 11",
+      "program": "SBIF",
+      "incentive_amount": 75000.0,
+      "total_cost": 96870.0,
+      "property_type": "General Commercial",
+      "description": "Exterior work including replacement of fa\u00e7ade windows. Interior work including installation of new framing, drywall, insulation, drop ceiling tiles, interior sliding doors, install custom glass wall partition, drop ceiling system with soundproofing, painting and polish and seal concrete floors, painting, install new water fountain, new cabinets, countertops and fixtures in kitchen, installation of four (4) new exhaust fans with associated duct work, install supply and return ductwork to accommodate new ceiling grid; rough and finish plumbing work for kitchen sink, drinking fountain, mop sink, and ADA compliant restroom; rough and finish electrical work for kitchen, restroom, utility room, install new emergency lights and detectors, panel upgrades, light fixtures, circuit breakers, duplex data outlets, internet outlet, and new outlets.",
+      "date": "2025-06-04"
+     },
+     {
+      "name": "726 West Grand LLC dba Rebel & Rye",
+      "program": "SBIF",
+      "incentive_amount": 75000.0,
+      "total_cost": 132500.0,
+      "property_type": "Mixed Use: Retail and Residential",
+      "description": "Exterior renovations including replacement of fa\u00e7ade wood, and tuckpointing. replacement of faulty mechanical system in sign; Interior renovations including replacement of subfloor and installation of floating floor system, replacement of drains, installation of mop sink in basement, replacement of drywall in ceiling, insulate, stain, and install new shiplap wood, install 15-ton HVAC unit.",
+      "date": "2025-04-26"
+     },
+     {
+      "name": "CTA Foods, Inc. dba Municipal Foods",
+      "program": "SBIF",
+      "incentive_amount": 35060.82,
+      "total_cost": 38956.47,
+      "property_type": "Multi-tenant commercial property",
+      "description": "Removal of the existing roofing system and copings and replacement with new insulation, modified bitumen membrane, new flashings, reinstall copings, and application of aluminum coating; installation of a new walk in freezer with associated doors, coils, and compressors; and removal of the exterior security shutters and replacement with new interior shutters with electric connections.",
+      "date": "2025-04-25"
+     },
+     {
+      "name": "Dimitre Photography",
+      "program": "SBIF",
+      "incentive_amount": 119295.0,
+      "total_cost": 132550.0,
+      "property_type": "Mixed use commercial/residential building",
+      "description": "Exterior renovations including removal of existing roofing to wooden decking, remove copings, tuckpointing, perform carpentry work for skylight installation, install poly-ISO board insulation to the roof decking, install GAF Liberty SBS base to insulation, install new Bitutak pre-surfaced modified rubber roof, install flashings, caulk extrusions, install air vents, install and seal copings, install waterproof tight sealant to the entire roof, replace gutters and downspout, install gutter hangers, install downspout into drain system, remove existing copings, install flashings; fa\u00e7ade renovations including installation of new wood framing for the new metal cornice, fabricate and install new 24 gauge G90 galvanized paint grip metal cornice, fabricate and install new 24 gauge G90 galvanized paint grip metal coping on top of the new cornice (all seams to be locked and soldered), clean, prime and paint all new metal on the cornice; remove the existing siding material from the bay window, supply and install new wood blocking where needed, supply and install new Grace ice and water shield over the entire bay window, fabricate and install new 24 gauge G90 galvanized paint grip metal soffit flush panels, fabricate and install new 24 gauge G90 galvanized paint grip metal panels with 12 cross broken window pans, fabricate and install new 24 gauge G90 galvanized paint grip metal trim around the windows, clean, prime and paint all new metal on the bay window; Interior renovations including tuckpointing damaged brick; HVAC work including replacement and installation of first floor HVAC unit with a Gibson 126,000 BTU furnace (80% efficient), and basement HVAC unit with a Gibson 90,000 BTU furnace (80% efficient), reconnect supply and return ductwork, gas line, electric, and new flue pipe, reconnect air conditioner system; plumbing work including break up and remove concrete around old backwater valve in basement and continue to front foundation wall, excavate down to proper depth, Install two (2) new 6\" cast iron backwater valves, Install new 6\" x 6\" tee for overflow, Install new pump pit, Install new 2\" ejector pump with discharge pipe, connect new pipe to existing drain line, making all proper connections, backfill hole and haul away all debris, pour concrete where work was performed, install (3) applications of 6\u201d pipe patch liner from front foundation wall going toward curb; break up and remove 22\u2019 of concrete along front foundation wall and wrap around each side, approximately 9\u2019 totaling 40\u2019 in all, excavate down to footing, pour 2\u201d of river rock for bedding in trench, install new 4\u201d seepage pipe with sock/filter, install dimple board on foundation and run down to seepage pipe, install new sump pit and connect seepage pipe to pit, Install 1.5\u201d sump pump in pit and connect discharge pipe to front side of flood control, backfill complete trench with river rock, haul away all debris, pour concrete where all work was performed.",
+      "date": "2025-04-14"
+     },
+     {
+      "name": "Mila Mores Group Inc. dba Barbaro Taqueria",
+      "program": "SBIF",
+      "incentive_amount": 42706.8,
+      "total_cost": 47452.0,
+      "property_type": "Mixed Use: Retail and Residential",
+      "description": "Installation of a new front entrance door with lights along the side, interior door for the restroom, and metal door along the west side entrance; HVAC improvements including the installation of a new air condenser unit with associated coils, and electrical connections; new vinyl flooring and drop ceiling tiles for basement area; and installation of new hand dryer and painting throughout the restroom.",
+      "date": "2025-03-26"
+     },
+     {
+      "name": "West North Annex LLC",
+      "program": "SBIF",
+      "incentive_amount": 150000.0,
+      "total_cost": 316825.0,
+      "property_type": "General Commercial",
+      "description": "Exterior renovations including demo of chimney, CMU patch of existing door opening, compacted standard gravel infill for parking slab, tuckpointing in demo area, masonry work for garage door opening, roof flashing, storefront curtain wall system, exterior door and hardware, garage door, concrete curb at storefront and patch at garage door opening. Interior renovations including demo of storage room, new framing, drywall, fire-rated ceiling, walls; plumbing including gas meter relocation, plumbing fixtures, bathroom grab bars, hand dryer and mirrors, electrical service, electrical distribution/lighting, light fixtures, EM/exit lights, low voltage and fire alarm; HVAC with associated ductwork; drywall patching to existing walls; kitchen cabinets, countertops, tile, doors, skylights, floors, fire proofing, insulation, and painting.",
+      "date": "2025-03-24"
+     },
+     {
+      "name": "Bracey Performance LLC",
+      "program": "SBIF",
+      "incentive_amount": 75000.0,
+      "total_cost": 95100.0,
+      "property_type": "General Commercial",
+      "description": "Exterior renovations including rebuilding the encasement with common brick as needed; tuckpointing the entire fa\u00e7ade as needed, remove and replace 12 new insulated window with black anodized aluminum trim; power-wash entire fa\u00e7ade; remove existing steel freight door and haul away, frame sides in with 2\u201dx6\u201d structural steel tubes, fill in head with steel insulated white panels, new opening to be approximately 6\u20197\u201d wide x 9\u20190\u201d tall, install one Raynor AV300 glass and aluminum sectional door including 3\u201d thickness black anodized with solid 36\u201d panels on bottom. Interior renovations flooring including the installation and finish of 1000 SF with 12 cubic yards of 4400 PSI 28 Day cure and install black epoxy overlay; electrical upgrades including installing (42) LED Eco Bee Recessed lighting; 4000K, (2) 8\u2019 LED light bars; 4000K, (1) 4\u2019 Led light bar; 4000K and (3) 8\u2019 Ceiling Fans; 4000K; architectural services and permits.",
+      "date": "2025-03-04"
+     },
+     {
+      "name": "3D Printer Experience Corporation dba 3DPX Additive Manufact",
+      "program": "SBIF",
+      "incentive_amount": 31950.0,
+      "total_cost": 63900.0,
+      "property_type": "Manufacturing",
+      "description": "HVAC work including the installation of a new air condensing and humidifier unit including the associated hangers, controls, ductwork, refrigerant piping, water supply piping, and proper wiring.",
+      "date": "2024-12-10"
+     },
+     {
+      "name": "2545 W North LLC",
+      "program": "SBIF",
+      "incentive_amount": 47250.0,
+      "total_cost": 52500.0,
+      "property_type": "Retail",
+      "description": "Exterior renovations including masonry work to grind and tuck-point above front windows, apply sealer, and prepare masonry opening for new storefront; installation of a new aluminum storefront window system.",
+      "date": "2024-09-18"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "census_tract": {
+    "tract_fips": "17031241100",
+    "tract_name": "Census Tract 2411, Cook, IL",
+    "census_reporter_url": "https://censusreporter.org/profiles/14000US17031241100/",
+    "population": 3498,
+    "median_household_income": 101016,
+    "per_capita_income": 67014,
+    "median_home_value": 516400,
+    "median_gross_rent": 1926,
+    "owner_occupied_pct": 32.3,
+    "vacancy_rate": 6.2,
+    "poverty_rate": 14.0,
+    "bachelors_or_higher_pct": 66.9,
+    "foreign_born_pct": 11.3,
+    "age_distribution": [
+     {
+      "label": "Under 18",
+      "value": 10.0
+     },
+     {
+      "label": "18-24",
+      "value": 9.1
+     },
+     {
+      "label": "25-34",
+      "value": 40.3
+     },
+     {
+      "label": "35-44",
+      "value": 21.0
+     },
+     {
+      "label": "45-54",
+      "value": 8.8
+     },
+     {
+      "label": "55-64",
+      "value": 5.2
+     },
+     {
+      "label": "65-74",
+      "value": 4.7
+     },
+     {
+      "label": "75+",
+      "value": 0.7
+     }
+    ],
+    "income_distribution": [
+     {
+      "label": "Under $25K",
+      "value": 17.1
+     },
+     {
+      "label": "$25-50K",
+      "value": 9.3
+     },
+     {
+      "label": "$50-75K",
+      "value": 6.8
+     },
+     {
+      "label": "$75-100K",
+      "value": 16.1
+     },
+     {
+      "label": "$100-150K",
+      "value": 19.1
+     },
+     {
+      "label": "$150-200K",
+      "value": 11.0
+     },
+     {
+      "label": "$200K+",
+      "value": 20.7
+     }
+    ],
+    "race_distribution": [
+     {
+      "label": "White",
+      "value": 44.0
+     },
+     {
+      "label": "Black",
+      "value": 4.5
+     },
+     {
+      "label": "Asian",
+      "value": 3.3
+     },
+     {
+      "label": "Two+",
+      "value": 13.0
+     },
+     {
+      "label": "Other",
+      "value": 8.7
+     },
+     {
+      "label": "Hispanic",
+      "value": 26.6
+     }
+    ],
+    "education_distribution": [
+     {
+      "label": "No degree",
+      "value": 3.3
+     },
+     {
+      "label": "High school",
+      "value": 17.5
+     },
+     {
+      "label": "Some college",
+      "value": 12.4
+     },
+     {
+      "label": "Bachelor's",
+      "value": 44.6
+     },
+     {
+      "label": "Graduate+",
+      "value": 22.3
+     }
+    ],
+    "transportation_distribution": [
+     {
+      "label": "Drove alone",
+      "value": 32.1
+     },
+     {
+      "label": "Carpooled",
+      "value": 4.6
+     },
+     {
+      "label": "Public transit",
+      "value": 17.9
+     },
+     {
+      "label": "Walked",
+      "value": 4.2
+     },
+     {
+      "label": "Bicycle",
+      "value": 6.0
+     },
+     {
+      "label": "Work from home",
+      "value": 34.6
+     },
+     {
+      "label": "Other",
+      "value": 0.4
+     }
+    ],
+    "county_median_income": 83498,
+    "city_median_income": 77902
+   },
+   "transit": {
+    "nearest_cta_rail": "Damen (Blue)",
+    "cta_rail_distance_mi": 0.67,
+    "cta_lines": [
+     "Blue Line"
+    ],
+    "nearest_metra": "Western Ave",
+    "metra_distance_mi": 1.07,
+    "metra_line": "Milwaukee North",
+    "tod_eligible": false
+   },
+   "walkscore": {
+    "walk_score": 92,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 71,
+    "transit_description": "Excellent Transit",
+    "ws_link": "https://www.walkscore.com/score/1256-N-Artesian-Ave/lat=41.9047031359/lng=-87.6886596331/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 26,
+    "alderman": "Fuentes, Jessica L.",
+    "phone": "(773) 395-0143",
+    "email": "Ward26@cityofchicago.org"
+   },
+   "traffic": {
+    "road": "WESTERN",
+    "daily_vehicles": 28585,
+    "directions": 2,
+    "from_street": "W HIRSCH ST",
+    "to_street": "W DIVISION ST",
+    "as_of": "2026-10-01"
+   },
+   "divvy": {
+    "nearest_station": "Western Ave & Division St",
+    "distance_mi": 0.14,
+    "docks": 23,
+    "stations_within_radius": 10,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": []
+ },
+ "comparables": {
+  "median_sale_price": 1050000.0,
+  "median_price_per_buildable_sqft": 370.5,
+  "buildable_median_basis": "mixed",
+  "buildable_median_n": 4,
+  "price_range_min": 562405.0,
+  "price_range_max": 1129500.0,
+  "sales_volume": 5,
+  "sales": [
+   {
+    "pin": "16012120380000",
+    "sale_date": "2026-04-23T00:00:00.000",
+    "sale_price": 1129500.0,
+    "class_code": "211",
+    "land_sqft": 3261,
+    "deed_type": "Warranty",
+    "distance_mi": 0.23,
+    "lat": 41.9073687434,
+    "lon": -87.6911933764,
+    "zone_class": "RS-3",
+    "far": 0.9,
+    "price_per_buildable_sqft": 384.85,
+    "land_sqft_source": "geometry"
+   },
+   {
+    "pin": "16012120160000",
+    "sale_date": "2026-03-06T00:00:00.000",
+    "sale_price": 1050000.0,
+    "class_code": "211",
+    "land_sqft": 3191,
+    "deed_type": "Warranty",
+    "distance_mi": 0.24,
+    "lat": 41.907295464,
+    "lon": -87.6917176584,
+    "zone_class": "RS-3",
+    "far": 0.9,
+    "price_per_buildable_sqft": 365.61,
+    "land_sqft_source": "geometry"
+   },
+   {
+    "pin": "16012070410000",
+    "sale_date": "2024-10-16T00:00:00.000",
+    "sale_price": 562405.0,
+    "class_code": "212",
+    "land_sqft": 2611,
+    "deed_type": "Trustee",
+    "distance_mi": 0.28,
+    "lat": 41.9086094838,
+    "lon": -87.6875630326,
+    "zone_class": "C1-2",
+    "far": 2.2,
+    "price_per_buildable_sqft": 97.91,
+    "land_sqft_source": "geometry"
+   },
+   {
+    "pin": "16012060561002",
+    "sale_date": "2024-08-19T00:00:00.000",
+    "sale_price": 595000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.27,
+    "lat": 41.9086634679,
+    "lon": -87.6887652777,
+    "zone_class": "RT-4",
+    "far": 1.2
+   },
+   {
+    "pin": "16012120300000",
+    "sale_date": "2024-05-09T00:00:00.000",
+    "sale_price": 1125000.0,
+    "class_code": "211",
+    "land_sqft": 3330,
+    "deed_type": "Warranty",
+    "distance_mi": 0.26,
+    "lat": 41.9079850775,
+    "lon": -87.6912093149,
+    "zone_class": "RS-3",
+    "far": 0.9,
+    "price_per_buildable_sqft": 375.38,
+    "land_sqft_source": "geometry"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "16012280180000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.9047031359,
+ "resolved_lon": -87.6886596331,
+ "zone_definition": {
+  "zone_class": "RM-4.5",
+  "name": "Residential Multi-Unit",
+  "code_section": "\u00a717-2-0104",
+  "far": 1.7,
+  "max_height": "45\u201347 ft (varies by lot frontage)",
+  "lot_coverage": null,
+  "min_lot_sqft": 1650,
+  "uses": "Detached houses, two-flats, townhouses, multi-unit buildings, parks, schools, community centers",
+  "notes": "Transition district between RT-4 and RM-5.",
+  "is_fallback": false
+ }
+}
