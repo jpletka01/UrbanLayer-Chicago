@@ -588,6 +588,21 @@ def provenance_check(parcel: dict, profile: dict | None) -> dict[str, Any] | Non
     }
 
 
+def coverage_check(parcel: dict, profile: dict | None) -> dict[str, Any] | None:
+    """Does the Profile say where it stops: the notes that apply to this parcel present
+    (and linked where a source exists), the ones that don't absent? None for an older
+    payload without notes."""
+    exp = parcel.get("coverage")
+    notes = ((profile or {}).get("context") or {}).get("coverage_notes")
+    if not exp or notes is None:
+        return None
+    by_id = {n.get("id"): n for n in notes}
+    failed = [f"missing {i}" for i in exp["must"] if i not in by_id]
+    failed += [f"{i} should not apply" for i in exp.get("must_not", []) if i in by_id]
+    failed += [f"{i} has no link" for i in exp.get("link_for", []) if i in by_id and not by_id[i].get("link")]
+    return {"notes": [n.get("id") for n in notes], "failed": failed}
+
+
 def resolution_record_check(parcel: dict, profile: dict | None) -> dict[str, Any] | None:
     """Does the Profile's resolution record say what the county's address records say?
     None when the payload predates the record or the key has no expectation."""
@@ -854,6 +869,7 @@ def score_run_dir(
         "errored_runs": {},
         "provenance": {},
         "resolution_panel": {},
+        "coverage_panel": {},
     }
     for surface in surfaces:
         per_parcel: dict[str, dict[str, FieldResult]] = {}
@@ -900,6 +916,11 @@ def score_run_dir(
             rc = resolution_record_check(p, runs[p["id"]]["profile"])
             if rc is not None:
                 report["resolution_panel"][p["id"]] = rc
+    if "profile" in surfaces:
+        for p in selected:
+            cc = coverage_check(p, runs[p["id"]]["profile"])
+            if cc is not None:
+                report["coverage_panel"][p["id"]] = cc
     report["verdict_text_available"] = all(runs[p["id"]]["verdict"] for p in selected if runs[p["id"]]["profile"])
     return report
 
@@ -1021,6 +1042,18 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
         L.append("|---|---|--:|---|")
         for pid, v in panels.items():
             L.append(f"| {pid} | {v['method']} | {v['candidates']} | {'; '.join(v['failed'])} |")
+        L.append("")
+    cov = report["coverage_panel"]
+    if cov:
+        bad = sum(1 for v in cov.values() if v["failed"])
+        L.append("## Where the page says it stops (Profile: notes that apply to each parcel)")
+        L.append("")
+        L.append(f"**{len(cov) - bad}/{len(cov)}** parcels carry exactly the notes that apply to them.")
+        L.append("")
+        L.append("| Parcel | Notes | Problems |")
+        L.append("|---|---|---|")
+        for pid, v in cov.items():
+            L.append(f"| {pid} | {', '.join(v['notes'])} | {'; '.join(v['failed'])} |")
         L.append("")
     L.append("## Per-cell detail")
     L.append("")

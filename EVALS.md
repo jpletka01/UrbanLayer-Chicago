@@ -250,6 +250,19 @@ The kit checks each record against what those datasets say (7 of 7), which tests
 the Profile reports the county's records faithfully, not that the records are right
 ([report](eval/results/2026-10-02-v3/parcel_kit.md)).
 
+V4 makes the Profile say where it stops. Each parcel now carries the notes that apply
+to it: a Planned Development's numbers aren't the base district's (with the ordinance
+link), a landmark's alterations need the Commission's written approval, a recently
+rezoned district may not be on the City's map yet, an ADU zone's limits apply; and
+the ones true of every parcel: the alderman's notice role, the map's 90-day lag, the
+code's vintage and the City's Zoning Verification Letter as the official
+confirmation. The code statements are pinned to the ingested text; the letter's fee
+and timing are the Office of the Zoning Administrator's published terms as checked on
+2026-09-30. The kit requires exactly the right notes on each parcel (7 of 7). One note,
+the Chicago Historic Resources Survey demolition hold, is unit-tested only because no
+kit parcel is rated orange or red
+([report](eval/results/2026-10-02-v4/parcel_kit.md)).
+
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 
 | Field | Coverage | Note |

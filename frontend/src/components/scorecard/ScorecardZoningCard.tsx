@@ -5,11 +5,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Provenance, ZoneDefinition } from "../../lib/api";
-import type { CodeVintage, UnitYield, ZoningSummary } from "../../lib/types";
+import type { CodeVintage, CoverageNote, UnitYield, ZoningSummary } from "../../lib/types";
 import { localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
 import { CodeSourceModal } from "./CodeSourceModal";
+import { CoverageNotes } from "./CoverageNotes";
 
 const ZoningIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -42,7 +43,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, provenance }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, provenance, coverageNotes }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -54,6 +55,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   codeVintage?: CodeVintage | null;
   /** Dated sources per fact (backend provenance); a standard's code section opens in the viewer. */
   provenance?: Record<string, Provenance> | null;
+  /** Where the analysis stops for this parcel (backend coverage_notes). */
+  coverageNotes?: CoverageNote[] | null;
 }) {
   const { t } = useTranslation("pages");
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -149,6 +152,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
             )}
           </dl>
         )}
+
+        <CoverageNotes notes={coverageNotes} />
 
         <div className="flex items-center justify-between gap-2 text-caption text-text-muted">
           <span className="font-mono">{def.code_section}</span>

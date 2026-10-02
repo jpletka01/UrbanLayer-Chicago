@@ -1073,6 +1073,7 @@ export default function ScorecardPage() {
                             freshness={zoning ?? null}
                             codeVintage={ctx.code_vintage ?? null}
                             provenance={data.provenance ?? null}
+                            coverageNotes={ctx.coverage_notes ?? null}
                           />
                         </div>
                       )}

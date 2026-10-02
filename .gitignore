@@ -33,6 +33,10 @@ ingestion/data/sections/*
 !ingestion/data/sections/17-7-0570.json
 !ingestion/data/sections/17-7-0590.json
 !ingestion/data/sections/2-120-740.json
+!ingestion/data/sections/14A-4-407.json
+!ingestion/data/sections/17-13-0100.json
+!ingestion/data/sections/17-13-0300.json
+!ingestion/data/sections/17-13-0600.json
 
 backend/data/
 
