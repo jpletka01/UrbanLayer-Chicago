@@ -117,7 +117,7 @@ _EN: dict[str, str] = {
     "tl.zoning_special": "Special use permit may be required",
     "tl.zoning_clear": "Base zoning permits development",
     "tl.reg_historic": "Historic/Landmark review required",
-    "tl.reg_ssa_tod": "SSA/TOD (bonus density potential)",
+    "tl.reg_ssa_tod": "SSA/TOD (transit parking relief)",
     "tl.reg_clear": "No restrictive overlays",
     "tl.env_sfha": "SFHA flood zone",
     "tl.env_brownfield": " Adjacent brownfield",
@@ -491,7 +491,7 @@ _EN: dict[str, str] = {
     "glossary.tif.term": "TIF (Tax Increment Financing)",
     "glossary.tif.def": "A public financing tool that captures the increase in property tax revenue within a designated district over a base year to fund improvements within that district. Chicago TIF districts have a 23-year lifespan.",
     "glossary.tod.term": "TOD (Transit-Oriented Development)",
-    "glossary.tod.def": "Development within a specified distance of a transit station (typically 1/4 mile for bus, 1/2 mile for rail). Chicago's TOD ordinance allows reduced parking requirements and density bonuses near transit.",
+    "glossary.tod.def": "Development within a specified distance of a transit station (typically 1/4 mile for bus, 1/2 mile for rail). Chicago's ordinance allows reduced parking requirements near transit; FAR, height and density bonuses apply only in dash-3 B/C districts and D-3 districts, and only with a Type 1 amendment, Planned Development or ARO entitlement.",
 
     # Zone definitions section
     "zonedef.heading": "Zoning District Definitions",
@@ -743,7 +743,7 @@ _ES: dict[str, str] = {
     "tl.zoning_special": "Puede requerirse un permiso de uso especial",
     "tl.zoning_clear": "La zonificación base permite el desarrollo",
     "tl.reg_historic": "Se requiere revisión histórica/de monumento",
-    "tl.reg_ssa_tod": "SSA/TOD (potencial de densidad adicional)",
+    "tl.reg_ssa_tod": "SSA/TOD (reducción de estacionamiento por transporte)",
     "tl.reg_clear": "Sin superposiciones restrictivas",
     "tl.env_sfha": "Zona de inundación SFHA",
     "tl.env_brownfield": " Terreno contaminado adyacente",
@@ -1117,7 +1117,7 @@ _ES: dict[str, str] = {
     "glossary.tif.term": "TIF (Financiamiento por Incremento de Impuestos)",
     "glossary.tif.def": "Una herramienta de financiamiento público que captura el aumento de los ingresos por impuesto predial dentro de un distrito designado sobre un año base para financiar mejoras dentro de ese distrito. Los distritos TIF de Chicago tienen una vida útil de 23 años.",
     "glossary.tod.term": "TOD (Desarrollo Orientado al Tránsito)",
-    "glossary.tod.def": "Desarrollo dentro de una distancia específica de una estación de tránsito (normalmente 1/4 de milla para autobús, 1/2 milla para tren). La ordenanza TOD de Chicago permite requisitos de estacionamiento reducidos y bonificaciones de densidad cerca del transporte.",
+    "glossary.tod.def": "Desarrollo dentro de una distancia específica de una estación de tránsito (normalmente 1/4 de milla para autobús, 1/2 milla para tren). La ordenanza de Chicago permite requisitos de estacionamiento reducidos cerca del transporte; las bonificaciones de FAR, altura y densidad se aplican solo en distritos B/C con sufijo -3 y distritos D-3, y solo con una enmienda Tipo 1, un Desarrollo Planificado o un derecho ARO.",
 
     # Zone definitions section
     "zonedef.heading": "Definiciones de Distritos de Zonificación",

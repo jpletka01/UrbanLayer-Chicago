@@ -143,6 +143,16 @@ def test_chat_overlays_negation_covers_a_list_and_process_mentions_are_not_overl
     assert {"pd", "lakefront", "pmd", "tod"} <= denied
 
 
+def test_chat_overlays_denial_reasons_and_parenthetical_examples():
+    text = (
+        "- **No Transit-Oriented Development (TOD) designation**: not in a TOD area. These distances exceed the TOD threshold.\n"
+        "ARO applies to projects needing an entitlement (map amendment, special use, or planned development).\n"
+    )
+    asserted, denied = k.chat_overlays(text)
+    assert "tod" not in asserted and "tod" in denied
+    assert "pd" not in asserted
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})
@@ -304,7 +314,10 @@ def test_fetch_chat_collects_the_sse_stream():
 # --- verdict helper (needs node >= 22.6; skipped where absent) ---------------------------
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
-def test_verdict_text_matches_the_committed_fixture():
+def test_verdict_helper_runs_the_real_frontend_module_on_a_recorded_payload():
+    """The committed P3.verdict.json is the 2026-10-01 BASELINE text. The live
+    module moves on (F2 rewrote the transit sentence), so compare shape, and pin
+    the F2 behavior on the recorded payload: no density-bonus claim."""
     f = BASELINE / "P3.profile.json"
     try:
         got = k.load_verdicts([f])
@@ -312,5 +325,8 @@ def test_verdict_text_matches_the_committed_fixture():
         got = {}
     if not got:
         pytest.skip("this node cannot strip TypeScript types")
-    # the helper keys results by the path it was given
-    assert next(iter(got.values())) == json.loads((BASELINE / "P3.verdict.json").read_text())
+    live = next(iter(got.values()))
+    recorded = json.loads((BASELINE / "P3.verdict.json").read_text())
+    assert set(live) == set(recorded) and live["category"] == recorded["category"]
+    assert any("density bonus" in r for r in recorded["reasons"])  # the baseline defect, kept on record
+    assert not any("density bonus" in r.lower() and "no density bonus" not in r.lower() for r in live["reasons"])

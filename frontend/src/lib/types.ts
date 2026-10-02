@@ -610,7 +610,20 @@ export interface VerdictGrounding {
   };
 }
 
+// What transit-served status does and does not change for this parcel's
+// district. Computed by the backend (backend/retrieval/zoning_definitions.py
+// tod_benefits) so the page, chat and report never disagree: parking relief
+// applies to every district, density/FAR/height bonuses only to dash-3 ones.
+export interface TodBenefits {
+  parking_relief: boolean | null; // null = Planned Development, ordinance governs
+  parking_max_reduction_pct: number | null;
+  density_bonus_eligible: boolean;
+  entitlement_required: boolean;
+  note: string;
+}
+
 export interface ContextObject {
+  tod_benefits?: TodBenefits | null;
   community_area: number | null;
   community_area_name: string | null;
   resolved_address: string | null;

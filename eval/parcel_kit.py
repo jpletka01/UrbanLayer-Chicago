@@ -187,7 +187,7 @@ CHAT_OVERLAY_PATTERNS = {
 # it is never counted as a false overlay; it only counts when the key expects it.
 NEVER_FALSE = {"adu"}
 
-_NEG_BEFORE = re.compile(r"\b(no|not|none|neither|nor|without|isn't|doesn't|does not|is not|aren't|absent)\b", re.I)
+_NEG_BEFORE = re.compile(r"\b(no|not|none|neither|nor|without|isn't|doesn't|does not|is not|aren't|absent|exceed|exceeds|outside|beyond)\b", re.I)
 _SENT_BREAK = re.compile(r"(?<=[.!?])\s+|:\*\*\s*")
 _NEG_SAME_SENTENCE = re.compile(r"\b(?:does not|doesn't|do not|is not|isn't|not)\b", re.I)
 _NEG_AFTER = re.compile(
@@ -229,6 +229,11 @@ def chat_overlays(text: str) -> tuple[set[str], set[str]]:
                     denied.add(oid)
                 else:
                     asserted.add(oid)
+                continue
+            # a mention inside an open parenthetical list is a process example
+            # ("(map amendment, special use, or planned development)"), not a claim
+            head = text[line_start : m.start()]
+            if head.count("(") > head.count(")"):
                 continue
             # negation anywhere earlier in the same sentence ("No Planned Development,
             # Landmark, or PMD overlays apply") covers every item in a list

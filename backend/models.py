@@ -1,6 +1,7 @@
+import builtins
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 
 SourceTag = Literal[
@@ -712,6 +713,23 @@ class ContextObject(BaseModel):
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
+
+    # `property` is a field name in this class body, so spell the builtin out.
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def tod_benefits(self) -> dict | None:
+        """What transit-served status does and does not change for THIS parcel's
+        district (parking relief vs. dash-3-only density bonuses). Derived, never
+        stored, so it is right on every path: the Profile payload, a cold chat
+        turn, and a Profile->chat handoff that grafts zoning/regulatory in after
+        construction. None when the parcel isn't transit-served."""
+        reg = self.regulatory
+        if reg is None or not reg.in_tod_area:
+            return None
+        from backend.retrieval.zoning_definitions import tod_benefits
+
+        zone = self.parcel_zoning.zone_class if self.parcel_zoning else None
+        return tod_benefits(zone, True, tuple(o.layer_type for o in reg.overlays))
 
 
 class MapDataRequest(BaseModel):

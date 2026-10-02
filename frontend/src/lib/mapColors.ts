@@ -430,12 +430,12 @@ export const OVERLAY_INFO: Record<string, { label: string; description: string; 
   tod_cta: {
     label: "TOD (CTA)",
     description: "Transit-Oriented Development zone near CTA rail stations",
-    implications: ["Reduced parking requirements", "Density bonuses available"],
+    implications: ["Reduced parking requirements", "Density bonuses only in dash-3 districts (with approval)"],
   },
   tod_metra: {
     label: "TOD (Metra)",
     description: "Transit-Oriented Development zone near Metra stations",
-    implications: ["Reduced parking requirements", "Density bonuses available"],
+    implications: ["Reduced parking requirements", "Density bonuses only in dash-3 districts (with approval)"],
   },
   adu_area: {
     label: "ADU Eligible Area",
