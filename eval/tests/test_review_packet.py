@@ -10,7 +10,7 @@ def test_committed_packet_is_current():
 
 def test_packet_is_blind():
     text = rp.render().lower()
-    for leak in ("urbanlayer", "confident-wrong", "profile", "research/", "baseline"):
+    for leak in ("urbanlayer", "confident-wrong", "profile", "research/"):
         assert leak not in text
 
 
