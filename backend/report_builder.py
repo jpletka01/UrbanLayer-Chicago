@@ -268,6 +268,7 @@ def _generate_zoning_map(
 
         # Draw regulatory overlay boundaries (dashed outlines)
         _OVERLAY_COLORS = {
+            "landmark_building": ("#f59e0b", "Landmark"),
             "landmark_district": ("#f59e0b", "Landmark"),
             "historic_district": ("#f59e0b", "Historic"),
             "national_register": ("#fbbf24", "Nat'l Register"),
@@ -897,7 +898,7 @@ async def _fetch_report_data(
 
     # Fetch overlay GeoJSON for zoning map boundaries
     overlay_geojson = None
-    _OVERLAY_MAP_LAYERS = [2, 5, 6, 7, 8, 9, 23]  # PD, landmark, historic, landmark bldg, nat'l register, special, SSA
+    _OVERLAY_MAP_LAYERS = [2, 5, 6, 8, 9, 23]  # PD, landmark, historic districts, nat'l register, special, SSA
     try:
         from backend.retrieval.regulatory.overlays import overlay_geojson_features
         overlay_geojson = await _limited(overlay_geojson_features(resolved_lat, resolved_lon, _OVERLAY_MAP_LAYERS))
@@ -2055,14 +2056,14 @@ def _synthesize_opportunities_constraints(
             "category": "regulatory",
         })
 
-    if reg and reg.in_landmark_district:
+    if reg and (reg.in_landmark_district or reg.is_landmark_building):
         constraints.append({
             "signal": t("oc.landmark_review.signal"),
             "detail": t("oc.landmark_review.detail"),
             "category": "regulatory",
         })
 
-    if reg and reg.on_national_register and not reg.in_landmark_district:
+    if reg and reg.on_national_register and not (reg.in_landmark_district or reg.is_landmark_building):
         constraints.append({
             "signal": t("oc.nr_review.signal"),
             "detail": t("oc.nr_review.detail"),
@@ -2538,7 +2539,7 @@ def _compute_approval_pathway(report: "ReportData") -> dict | None:
         complexity = "COMPLEX"
         detail = t("ap.pd_detail")
         timeline = t("ap.pd_timeline")
-    elif reg.in_landmark_district or reg.in_historic_district:
+    elif reg.in_landmark_district or reg.is_landmark_building or reg.in_historic_district:
         complexity = "COMPLEX"
         detail = t("ap.landmark_detail")
         timeline = t("ap.landmark_timeline")

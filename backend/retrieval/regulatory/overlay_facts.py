@@ -66,9 +66,11 @@ def describe_overlay(layer_type: str, attrs: dict) -> dict[str, str | None]:
         )
 
     elif layer_type == "landmark_building":
-        lm = _text(attrs.get("LANDMARKNAME"))
+        lm = _text(attrs.get("NAME")) or _text(attrs.get("LANDMARKNAME"))
         name = _title(lm) if lm else None
-        detail = f"Individual Chicago Landmark: {_LANDMARK_APPROVAL}."
+        designated = _text(attrs.get("LANDMARK"))
+        since = f" (designated {designated})" if designated else ""
+        detail = f"Individual Chicago Landmark{since}: {_LANDMARK_APPROVAL}."
 
     elif layer_type in ("historic_district", "landmark_district"):
         nm = _text(attrs.get("NAME"))
