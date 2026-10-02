@@ -853,6 +853,10 @@ class ChatChunk(BaseModel):
     # On `done`: citation markers in the answer that aren't backed by this
     # turn's context (see backend/citations.py). Empty/None when all check out.
     citation_warnings: list[str] | None = None
+    # On `done`: True when the answer hit the synthesizer's token cap and was cut
+    # off mid-answer. A visible notice is also appended to the streamed text, so
+    # clients that ignore this flag (and saved/exported conversations) still show it.
+    truncated: bool | None = None
 
 
 class StoredMessage(BaseModel):

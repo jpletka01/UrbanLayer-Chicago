@@ -191,7 +191,7 @@ _NEG_BEFORE = re.compile(r"\b(no|not|none|neither|nor|without|isn't|doesn't|does
 _SENT_BREAK = re.compile(r"(?<=[.!?])\s+|:\*\*\s*")
 _NEG_SAME_SENTENCE = re.compile(r"\b(?:does not|doesn't|do not|is not|isn't|not)\b", re.I)
 _NEG_AFTER = re.compile(
-    r"^[\s*|:—–-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
+    r"^(?:\s*\(\w{2,6}\))?[\s*|:—–)(-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
     r"|^[^\n.]{0,60}?\b(?:does not|doesn't|do not|is not|isn't|not) (?:apply|applicable|qualify|eligible|within|in)\b",
     re.I,
 )
@@ -283,7 +283,7 @@ _DEC = r"(?<![\d.§/-])(\d{1,2}\.\d{1,2})(?![\d%-])"
 # Lines that quote a number about something other than this parcel's district
 # standard: accessory structures, comparisons, the building as built.
 _OFF_TOPIC_LINE = re.compile(
-    r"coach house|accessory|rooftop|garage|\bADU\b|fence|parking|for reference|reference\)|implied|actual|existing|as built",
+    r"coach house|accessory|rooftop|garage|\bADU\b|fence|parking|setback|for reference|reference\)|implied|actual|existing|as built",
     re.I,
 )
 # a lot-area number that describes THIS parcel's size, not the district standard
@@ -532,19 +532,29 @@ def resolution_check(profile: dict | None, chat: dict | None) -> dict[str, Any]:
     return out
 
 
+_CUT_OFF_NOTICE = re.compile(r"answer was cut off before it finished|respuesta se cortó antes de terminar", re.I)
+
+
 def truncation_check(chat: dict | None) -> dict[str, Any]:
-    """Did the answer reach item 6, and does it end on a finished sentence?"""
+    """Did the answer reach item 6, does it end on a finished sentence, and when
+    it was cut off, did the product say so (notice text and/or API flag)?"""
     if not chat:
         return {}
     text = (chat.get("text") or "").rstrip()
-    sections = split_sections(text)
+    notice = bool(_CUT_OFF_NOTICE.search(text))
+    body = _CUT_OFF_NOTICE.split(text, 1)[0] if notice else text
+    body = body.rstrip(" \n-*_")  # the notice is set off by a rule and italics
+    sections = split_sections(body)
     out = {
         "chars": len(text),
         "item6_present": 6 in sections,
-        "ends_cleanly": bool(text) and text[-1] in ".!?)`*\"",
+        "ends_cleanly": bool(body) and body[-1] in '.!?)`*"' and not notice,
+        "notice_shown": notice,
     }
-    if "truncated" in chat:  # set by the SSE done event once the API reports it
+    if "truncated" in chat:  # set by the SSE done event (F4)
         out["truncated_flag"] = chat["truncated"]
+    # A silent cut-off is the defect: the answer stops short and nothing says so.
+    out["silently_cut_off"] = not out["ends_cleanly"] and not notice and not chat.get("truncated")
     return out
 
 
@@ -868,10 +878,13 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
     if report["truncation"]:
         L.append("## Chat answer completeness")
         L.append("")
-        L.append("| Parcel | Chars | Reaches item 6 | Ends cleanly |")
-        L.append("|---|--:|:-:|:-:|")
+        L.append("| Parcel | Chars | Reaches item 6 | Ends cleanly | Cut-off notice | Silently cut off |")
+        L.append("|---|--:|:-:|:-:|:-:|:-:|")
         for pid, t in report["truncation"].items():
-            L.append(f"| {pid} | {t['chars']} | {_tf(t['item6_present'])} | {_tf(t['ends_cleanly'])} |")
+            L.append(
+                f"| {pid} | {t['chars']} | {_tf(t['item6_present'])} | {_tf(t['ends_cleanly'])} "
+                f"| {'yes' if t.get('notice_shown') else ''} | {'YES' if t.get('silently_cut_off') else ''} |"
+            )
         L.append("")
     L.append("## Per-cell detail")
     L.append("")

@@ -1,0 +1,33 @@
+{
+ "text": "## Zoning Analysis: 1218 W George St (PIN 14291230290000)\n\n---\n\n### 1. Zoning District in Effect\n\nThis parcel is zoned **RT-4** (Residential Two-Flat, Townhouse and Multi-Unit), per the City's official GIS parcel record (ordinance reference 23082T1). You can verify this at the [Chicago Zoning Map](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning).\n\n---\n\n### 2. Is Residential Use Allowed?\n\n**Yes.** RT-4 is a residential district whose primary purpose is to accommodate detached houses, two-flats, townhouses, and low-density multi-unit residential buildings [3]. Residential use is the principal permitted use in this district.\n\n---\n\n### 3. Key Bulk & Density Standards (RT-4)\n\nThe retrieved code text covers RT district parameters generally; the RT-4-specific numeric table was not in the retrieved sections, so the figures below reflect the ordinance structure described:\n\n- **Minimum Lot Area per Unit:** RT districts set density through minimum lot-area-per-unit standards [2]. The specific RT-4 figure (typically 1,000 sq ft/unit) is in the \u00a717-2-0303-A table, which was not fully retrieved \u2014 **verify directly in that section or with the Zoning Department**.\n- **FAR / Height:** RT-4 FAR and maximum height limits are set in \u00a717-2-0400 and \u00a717-2-0500 (not retrieved). **Verify via the zoning map or a licensed attorney.**\n- **Off-Street Parking setbacks:** Parking is prohibited in side setbacks and within 20 feet of the front property line in RT districts [4]. Required parking for two-flats and townhouses must be on the same zoning lot [4].\n- **Density note:** The code cautions that lot-area-per-unit standards do not guarantee achievable density \u2014 parking, height limits, unit sizes, and lot configuration can all further constrain it [2].\n\n> **How to verify:** Chicago Zoning Ordinance \u00a717-2-0300 through \u00a717-2-0500; contact the Dept. of Planning & Development at (312) 744-5777.\n\n---\n\n### 4. Overlays & Special Designations\n\n| Overlay | Status | Practical Implication |\n|---|---|---|\n| **Transit-Oriented Development (CTA)** | \u2705 Active | Parking minimums may be reduced (see \u00a75 below) |\n| **ADU Eligible Area** | \u2705 Active | Additional Dwelling Units (coach houses, conversion units) may be permitted [1] |\n| **Affordable Requirements Ordinance (ARO) Zone** | \u2705 Active | Residential projects above threshold size must provide affordable units or pay an in-lieu fee; Lake View has 20 ARO projects totaling 432 affordable units in the community area |\n| Planned Development | \u274c No | \u2014 |\n| Landmark / Historic District | \u274c No | \u2014 |\n| National Register | \u274c No | \u2014 |\n| Lakefront Protection | \u274c No | \u2014 |\n| Special Service Area | \u274c No | \u2014 |\n| Special District / PMD | \u274c No | \u2014 |\n| **Flood Zone** | FEMA Zone X | Area of minimal flood hazard \u2014 flood insurance not required |\n| **TIF District** | \u2705 Active | \"Red and Purple Modernization Phase One Project\" TIF (2016\u20132052); TIF increment financing may be available for eligible projects |\n\nADU eligibility is governed by [1] (\u00a717-7-0570 et seq.) and enforced by the Dept. of Housing at pre-certification.\n\n---\n\n### 5. Parking Requirement & Transit Reduction\n\nThis parcel is transit-served (CTA rail at Wellington station, 0.34 mi). Under \u00a717-10-0102-B, the minimum off-street parking requirement **can be reduced by up to 100%** \u2014 meaning parking may not be required at all for this location. This relief does not require a special entitlement; it applies by right under the Connected Communities Ordinance. No density, FAR, or height bonus applies at RT-4 \u2014 those bonuses apply only in dash-3 districts (e.g., B1-3, B2-3, DX-3) under \u00a7\u00a717-3-0402-B, 17-3-0403-B, 17-3-0408-B and \u00a717-4 [4].\n\nOff-street parking location rules for RT districts remain applicable when parking is provided [4].\n\n---\n\n### 6. Has the Zoning Changed Recently?\n\nThe current RT-4 designation is recorded under ordinance **23082T1**, which indicates a 2023 zoning action. This suggests the zoning was formally affirmed or amended relatively recently, but the specific nature of that action (rezoning vs. map correction) is not in the retrieved data. \n\n> **How to verify:** Search ordinance 23082T1 in the [Chicago City Clerk's Legislative Information Center](https://www.chicago.gov/city/en/depts/city_clerk.html) or contact the Dept. of Planning & Development.\n\n---\n\n### Confidence & Limitations\n\n**High confidence:** Zoning district (RT-4), overlay designations (TOD, ADU, ARO), flood zone (X), TIF district, and parking reduction eligibility \u2014 all from authoritative GIS/parcel records.\n\n**Moderate confidence:** Residential use allowance (clear from district description [3]) and parking location rules [4].\n\n**Could not determine from retrieved text:** Specific RT-4 numeric FAR, maximum height, and minimum lot-area-per-unit figures \u2014 the \u00a717-2-0303-A table and \u00a717-2-0400/0500 sections were not retrieved. Assessment history and prior sale history are also unavailable for this parcel.\n\n---\n\n*This information is based on official city documents but does not constitute legal advice. Please consult a licensed attorney or contact the relevant city department for official guidance.*",
+ "error": null,
+ "seconds": 40.2,
+ "citation_warnings": null,
+ "plan_location": {
+  "raw": "1218 W George St, Chicago, Illinois",
+  "type": "address",
+  "resolved_community_area": 6,
+  "resolved_community_area_name": "Lake View",
+  "resolved_address": "1218 W George St, Chicago, IL",
+  "resolved_lat": 41.93458012,
+  "resolved_lon": -87.65966119,
+  "pin": "14291230290000",
+  "resolution": "authoritative"
+ },
+ "plan_sources": [
+  "regulatory_domain",
+  "property_domain",
+  "vector_search",
+  "permits_api",
+  "incentives_domain",
+  "neighborhood_domain"
+ ],
+ "context_zone": {
+  "zone_class": "RT-4",
+  "zone_type": 4,
+  "ordinance_num": "23082T1",
+  "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+ },
+ "pid": "P7",
+ "address": "1218 W George St"
+}

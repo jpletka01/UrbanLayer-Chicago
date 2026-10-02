@@ -669,7 +669,7 @@ export type ChatChunk =
   | { type: "map_data"; map_data: MapData; t_ms?: number }
   | { type: "token"; text: string; t_ms?: number }
   | { type: "error"; error: string; t_ms?: number }
-  | { type: "done"; t_ms?: number; timings?: PhaseTimings }
+  | { type: "done"; t_ms?: number; timings?: PhaseTimings; truncated?: boolean }
   | { type: "turn_summary"; turn_summary: TurnSummary; t_ms?: number };
 
 export interface PhaseTimings {
