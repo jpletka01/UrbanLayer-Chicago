@@ -125,6 +125,31 @@
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
+    "resolution": {
+      "matchedBy": "Identificada mediante {{method}}",
+      "gap": "punto de dirección a {{ft}} ft del centro de la parcela",
+      "multiple": "Esta dirección corresponde a {{n}} parcelas",
+      "disagree": "— los dos registros de direcciones del condado nombran parcelas distintas",
+      "condo": "Este es un edificio de condominios: {{n}} unidades tienen cada una su propio PIN",
+      "more": "y {{n}} más",
+      "used": "la que se muestra",
+      "method": {
+        "coordinates": "el punto que indicó",
+        "pin": "el PIN que indicó",
+        "address_points": "Cook County Address Points",
+        "assessor_addresses": "las Direcciones de Parcelas del Tasador",
+        "geocode_nearest": "solo el punto geocodificado (parcela más cercana, aproximada)",
+        "geocode_nearest_verified": "la parcela más cercana, confirmada por su propia dirección"
+      },
+      "source": {
+        "address_points": "Address Points",
+        "assessor_addresses": "Tasador"
+      },
+      "unconfirmed": {
+        "property_record_is_another_parcel": "Identidad sin confirmar: el registro de la dirección nombra la parcela {{pin}}, pero los datos de parcelas del condado no tienen registro de ella, por lo que las cifras de propiedad, impuestos y comparables pueden describir una parcela vecina ({{other}}).",
+        "nearest_parcel_address_mismatch": "Identidad sin confirmar: esta dirección no coincidió con un registro de parcela, por lo que se muestra la parcela más cercana al punto geocodificado sin confirmación."
+      }
+    },
     "codeSource": {
       "loading": "Cargando el texto del código…",
       "unavailable": "El texto del código no está disponible por ahora.",

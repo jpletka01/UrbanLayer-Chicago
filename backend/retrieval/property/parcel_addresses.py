@@ -34,6 +34,114 @@ _cache = TTLCache(ttl_seconds=86400, maxsize=2048, name="parcel_addresses")
 _NOT_FOUND = object()
 
 
+def _year_num(y: str) -> float:
+    try:
+        return float(y)
+    except ValueError:
+        return float("-inf")
+
+
+def _year_key(raw) -> str:
+    """Bucket key for a dataset year. The portal renders the year column inconsistently
+    ("2025.0" for some rows, "2025" for others of the SAME year); keying on the raw
+    text split one year into two buckets and silently dropped one bucket's parcels, so
+    a multi-parcel address could look like a single confident match."""
+    text = str(raw or "")
+    try:
+        return str(int(float(text)))
+    except ValueError:
+        return text
+
+
+async def _newest_year_pins(
+    parsed: dict, *, client: httpx.AsyncClient | None = None,
+) -> set[str]:
+    """Distinct PINs the Assessor's Parcel Addresses holds for an address, NEWEST
+    year with an exact match only. Raises on a query error so each caller decides how
+    to degrade. Empty when nothing survives the exact-component re-parse."""
+    number, direction, name = parsed["number"], parsed["direction"], parsed["name"]
+    name_upper = name.upper()
+    settings = get_settings()
+    # `prop_address_full` stores the full string with the abbreviated directional
+    # ("481 W DEMING PL"). Prefix-match on number+dir+name (a coarse server-side
+    # filter), then re-parse each row below to keep only exact-component matches.
+    # The dataset is per-YEAR (one address-of-record row per PIN per year); no
+    # year equality here — a hard `year=<current>` missed addresses whose rows
+    # stop earlier (1425 N Wells St ends at 2001; the parcel was redeveloped).
+    # Rows are ordered newest-first and only the newest matching year is used
+    # (below), so a re-addressed parcel resolves to its CURRENT mapping and a
+    # retired PIN is later rejected by the caller's Parcel Universe centroid
+    # requirement (a PIN with no current PU row never becomes identity).
+    like = f"{number} {direction} {name_upper}%"
+    params = {
+        "$select": "pin,prop_address_full,year",
+        "$where": (
+            f"upper(prop_address_full) like '{like}' "
+            # County-wide dataset: scope to Chicago so a same-named suburban
+            # street can't collide into a false multi-match or, worse, a unique
+            # suburban parcel (same defect class as 78yw-iddh's inc_muni,
+            # fixed 2026-07-07).
+            "AND upper(prop_address_city_name)='CHICAGO'"
+        ),
+        "$order": "year DESC",
+        "$limit": settings.limit_assessor_addresses,
+    }
+    rows = await socrata_get(
+        settings.dataset_assessor_addresses,
+        params,
+        client=client,
+        base_url=settings.cook_county_socrata_base,
+        app_token=settings.cook_county_socrata_token or None,
+    )
+
+    # Keep only rows whose own address re-parses to the SAME number+direction+name.
+    # Numbered streets share a stripped name across suffixes ("87TH ST"/"87TH PL"),
+    # so they can still multi-match here → conservative fall-through (same limit as
+    # Address Points), never a wrong pick. Matches are bucketed by dataset year and
+    # only the NEWEST year with any exact match counts — a parcel re-addressed in
+    # 2019 must resolve to the current mapping, not multi-match against its history.
+    matches_by_year: dict[str, set[str]] = {}
+    for r in rows:
+        rp = parse_chicago_address(r.get("prop_address_full", "") or "")
+        if not rp:
+            continue
+        if (
+            rp["number"] == number
+            and rp["direction"] == direction
+            and rp["name"].upper() == name_upper
+        ):
+            # Exactly 14 digits or it isn't a PIN — never repaired by padding
+            # (same corrupt-PIN hazard as Address Points, fixed 2026-07-07).
+            cleaned = str(r.get("pin", "")).replace("-", "")
+            if len(cleaned) == 14 and cleaned.isdigit():
+                matches_by_year.setdefault(_year_key(r.get("year")), set()).add(cleaned)
+
+    newest_year = max(matches_by_year, key=_year_num, default=None)
+    pins = matches_by_year[newest_year] if newest_year is not None else set()
+    pins.discard("00000000000000")
+    return pins
+
+
+async def assessor_address_pins(address: str, *, client: httpx.AsyncClient | None = None) -> list[str]:
+    """EVERY distinct PIN the Assessor lists at this address in its newest year
+    (sorted), not just a unique one — lets the Profile say "this address maps to N
+    parcels". Empty on no match, an unparseable address or a query error."""
+    parsed = parse_chicago_address(address)
+    if not parsed:
+        return []
+    key = f"assessor_addr_pins:{parsed['number']}:{parsed['direction']}:{parsed['name'].upper()}"
+    cached = _cache.get(key)
+    if cached is not None:
+        return list(cached) if cached is not _NOT_FOUND else []
+    try:
+        pins = sorted(await _newest_year_pins(parsed, client=client))
+    except Exception as exc:
+        log.warning("Assessor address candidate lookup failed for %r: %s", address, exc)
+        return []
+    _cache.set(key, pins or _NOT_FOUND)
+    return pins
+
+
 async def assessor_address_to_pin(
     address: str,
     *,
@@ -61,81 +169,15 @@ async def assessor_address_to_pin(
     if cached is not None:
         return cached
 
-    settings = get_settings()
-    # `prop_address_full` stores the full string with the abbreviated directional
-    # ("481 W DEMING PL"). Prefix-match on number+dir+name (a coarse server-side
-    # filter), then re-parse each row below to keep only exact-component matches.
-    # The dataset is per-YEAR (one address-of-record row per PIN per year); no
-    # year equality here — a hard `year=<current>` missed addresses whose rows
-    # stop earlier (1425 N Wells St ends at 2001; the parcel was redeveloped).
-    # Rows are ordered newest-first and only the newest matching year is used
-    # (below), so a re-addressed parcel resolves to its CURRENT mapping and a
-    # retired PIN is later rejected by the caller's Parcel Universe centroid
-    # requirement (a PIN with no current PU row never becomes identity).
-    like = f"{number} {direction} {name_upper}%"
-    params = {
-        "$select": "pin,prop_address_full,year",
-        "$where": (
-            f"upper(prop_address_full) like '{like}' "
-            # County-wide dataset: scope to Chicago so a same-named suburban
-            # street can't collide into a false multi-match or, worse, a unique
-            # suburban parcel (same defect class as 78yw-iddh's inc_muni,
-            # fixed 2026-07-07).
-            "AND upper(prop_address_city_name)='CHICAGO'"
-        ),
-        "$order": "year DESC",
-        "$limit": settings.limit_assessor_addresses,
-    }
     try:
-        rows = await socrata_get(
-            settings.dataset_assessor_addresses,
-            params,
-            client=client,
-            base_url=settings.cook_county_socrata_base,
-            app_token=settings.cook_county_socrata_token or None,
-        )
+        distinct_pins = await _newest_year_pins(parsed, client=client)
     except Exception as exc:
         log.warning("Assessor address→PIN lookup failed for %r: %s", address, exc)
         return None
 
-    if not rows:
+    if not distinct_pins:
         _cache.set(key, _NOT_FOUND)
         return None
-
-    # Keep only rows whose own address re-parses to the SAME number+direction+name.
-    # Numbered streets share a stripped name across suffixes ("87TH ST"/"87TH PL"),
-    # so they can still multi-match here → conservative fall-through (same limit as
-    # Address Points), never a wrong pick. Matches are bucketed by dataset year and
-    # only the NEWEST year with any exact match counts — a parcel re-addressed in
-    # 2019 must resolve to the current mapping, not multi-match against its history.
-    matches_by_year: dict[str, set[str]] = {}
-    for r in rows:
-        rp = parse_chicago_address(r.get("prop_address_full", "") or "")
-        if not rp:
-            continue
-        if (
-            rp["number"] == number
-            and rp["direction"] == direction
-            and rp["name"].upper() == name_upper
-        ):
-            # Exactly 14 digits or it isn't a PIN — never repaired by padding
-            # (same corrupt-PIN hazard as Address Points, fixed 2026-07-07).
-            cleaned = str(r.get("pin", "")).replace("-", "")
-            if len(cleaned) == 14 and cleaned.isdigit():
-                year = str(r.get("year", "") or "")
-                matches_by_year.setdefault(year, set()).add(cleaned)
-    def _year_num(y: str) -> float:
-        # The portal renders the year column inconsistently ("2026.0" vs "2025").
-        try:
-            return float(y)
-        except ValueError:
-            return float("-inf")
-
-    newest_year = max(matches_by_year, key=_year_num, default=None)
-    distinct_pins = (
-        matches_by_year[newest_year] if newest_year is not None else set()
-    )
-    distinct_pins.discard("00000000000000")
 
     # A confident match is a single distinct PIN. Zero (no exact match survived the
     # re-parse) or multiple (multi-parcel / condo / suffix ambiguity) → not confident.

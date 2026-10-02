@@ -745,6 +745,28 @@ export interface ZoneDefinition {
   is_fallback: boolean;
 }
 
+/** How the address became this parcel (backend/resolution.py). */
+export interface ParcelResolutionRecord {
+  method: "coordinates" | "pin" | "address_points" | "assessor_addresses" | "geocode_nearest" | "geocode_nearest_verified" | null;
+  point_basis: "given" | "parcel_centroid" | "address_point" | "geocode" | null;
+  input_address: string | null;
+  pin: string | null;
+  confidence: "authoritative" | "approximate" | null;
+  point: { lat: number; lon: number };
+  /** Feet from the matched point to the parcel polygon's center, when both are known. */
+  centroid_gap_ft: number | null;
+  /** Every parcel the two address sources list for the input address; the used one is marked. */
+  candidates: { pin: string; sources: Array<"address_points" | "assessor_addresses">; used: boolean }[];
+  multiple_parcels: boolean;
+  /** The two official address sources name different parcels for this address. */
+  sources_disagree: boolean;
+  /** >0 when the matched PIN is a condominium building whose units each have their own PIN. */
+  condo_units?: number;
+  identity_unconfirmed: boolean;
+  unverified_reason: "nearest_parcel_address_mismatch" | "property_record_is_another_parcel" | null;
+  property_record_pin: string | null;
+}
+
 /** A dated source for one Profile fact (backend/provenance.py). */
 export interface Provenance {
   label: string;
@@ -783,6 +805,8 @@ export interface ScorecardResponse {
   /** Where each fact came from and how current it is, keyed by fact id (zoning.district,
       zoning.far, overlay.<layer_type>, parcel.identity, ...). */
   provenance?: Record<string, Provenance>;
+  /** How the address became this parcel: method, every parcel at the address, disagreements. */
+  resolution?: ParcelResolutionRecord;
   // True when the address-scoped violation lookup actually ran (parsed + queried).
   // Lets the UI show "no violations on record" for a confirmed-zero vs. omitting
   // for an unconfirmed lookup — silence must not mean two different things.

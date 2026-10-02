@@ -140,7 +140,9 @@ async def test_scorecard_payload_carries_provenance_for_district_standards_and_o
     rl = main.ResolvedLocation(41.9047, -87.6887, "1256 N Artesian Ave", "16012280180000", "authoritative")
     data = {"context": _ctx(), "comparables": None}
     with patch.object(main, "_resolve_location", new=AsyncMock(return_value=rl)), \
-         patch.object(main, "_fetch_scorecard_data", new=AsyncMock(return_value=data)):
+         patch.object(main, "_fetch_scorecard_data", new=AsyncMock(return_value=data)), \
+         patch("backend.retrieval.property.address_points.address_point_pins", new=AsyncMock(return_value=[])), \
+         patch("backend.retrieval.property.parcel_addresses.assessor_address_pins", new=AsyncMock(return_value=[])):
         out = await main.scorecard(address="1256 N Artesian Ave")
     prov = out["provenance"]
     for key in ("zoning.district", "zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit", "overlay.special_district", "parcel.identity", "code.vintage"):

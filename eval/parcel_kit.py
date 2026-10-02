@@ -588,6 +588,32 @@ def provenance_check(parcel: dict, profile: dict | None) -> dict[str, Any] | Non
     }
 
 
+def resolution_record_check(parcel: dict, profile: dict | None) -> dict[str, Any] | None:
+    """Does the Profile's resolution record say what the county's address records say?
+    None when the payload predates the record or the key has no expectation."""
+    exp = parcel.get("resolution")
+    if not profile or "resolution" not in profile or not exp:
+        return None
+    r = profile["resolution"] or {}
+    failed: list[str] = []
+    if r.get("method") not in exp["methods"]:
+        failed.append(f"method {r.get('method')} not in {exp['methods']}")
+    if exp.get("candidates") and len(r.get("candidates") or []) != exp["candidates"]:
+        failed.append(f"{len(r.get('candidates') or [])} candidates, expected {exp['candidates']}")
+    if exp.get("multiple_parcels") and not r.get("multiple_parcels"):
+        failed.append("multi-parcel address not flagged")
+    if exp.get("sources_disagree") and not r.get("sources_disagree"):
+        failed.append("source disagreement not flagged")
+    if exp.get("unconfirmed") and not r.get("identity_unconfirmed"):
+        failed.append("unconfirmed identity not flagged")
+    if not exp.get("unconfirmed") and r.get("identity_unconfirmed"):
+        failed.append("identity flagged unconfirmed but the key expects a confirmed parcel")
+    used = [c for c in r.get("candidates") or [] if c.get("used")]
+    if r.get("candidates") and len(used) != 1:
+        failed.append("the used parcel isn't marked exactly once")
+    return {"method": r.get("method"), "candidates": len(r.get("candidates") or []), "failed": failed}
+
+
 _CUT_OFF_NOTICE = re.compile(r"answer was cut off before it finished|respuesta se cortó antes de terminar", re.I)
 
 
@@ -827,6 +853,7 @@ def score_run_dir(
         "forced_cells": (manual or {}).get("force", {}),
         "errored_runs": {},
         "provenance": {},
+        "resolution_panel": {},
     }
     for surface in surfaces:
         per_parcel: dict[str, dict[str, FieldResult]] = {}
@@ -868,6 +895,11 @@ def score_run_dir(
             pc = provenance_check(p, runs[p["id"]]["profile"])
             if pc is not None:
                 report["provenance"][p["id"]] = pc
+    if "profile" in surfaces:
+        for p in selected:
+            rc = resolution_record_check(p, runs[p["id"]]["profile"])
+            if rc is not None:
+                report["resolution_panel"][p["id"]] = rc
     report["verdict_text_available"] = all(runs[p["id"]]["verdict"] for p in selected if runs[p["id"]]["profile"])
     return report
 
@@ -976,6 +1008,19 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
         L.append("|---|--:|--:|--:|---|")
         for pid, v in report["provenance"].items():
             L.append(f"| {pid} | {v['required']} | {v['dated']} | {v.get('source_dated', 0)} | {', '.join(v['missing'])} |")
+        L.append("")
+    panels = report["resolution_panel"]
+    if panels:
+        bad = sum(1 for v in panels.values() if v["failed"])
+        L.append("## Resolution record (Profile: how the address became a parcel)")
+        L.append("")
+        L.append(f"**{len(panels) - bad}/{len(panels)}** parcels' records match what the county's address records say "
+                 "(expectations observed from those datasets, not independent truth).")
+        L.append("")
+        L.append("| Parcel | Method | Parcels at the address | Problems |")
+        L.append("|---|---|--:|---|")
+        for pid, v in panels.items():
+            L.append(f"| {pid} | {v['method']} | {v['candidates']} | {'; '.join(v['failed'])} |")
         L.append("")
     L.append("## Per-cell detail")
     L.append("")
