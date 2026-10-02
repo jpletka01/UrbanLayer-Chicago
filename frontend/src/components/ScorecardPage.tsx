@@ -12,6 +12,7 @@ import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
 import { ScorecardComparablesCard } from "./scorecard/ScorecardComparablesCard";
 import { ScorecardRegulatoryCard } from "./scorecard/ScorecardRegulatoryCard";
+import { ParcelResolution } from "./scorecard/ParcelResolution";
 import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
 import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
 import { ScorecardViolationsCard } from "./scorecard/ScorecardViolationsCard";
@@ -911,6 +912,7 @@ export default function ScorecardPage() {
                     </>
                   )}
                 </div>
+                <ParcelResolution resolution={data.resolution} />
 
                 {/* Verdict lead — the conclusion, phrase explained on hover */}
                 {verdict && (

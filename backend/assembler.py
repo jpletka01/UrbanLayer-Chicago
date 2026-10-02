@@ -612,6 +612,7 @@ def assemble_context(
         resolved_address=plan.location.resolved_address,
         parcel_pin=plan.location.pin,
         parcel_resolution=plan.location.resolution,
+        parcel_resolution_method=plan.location.resolution_method,
         data_as_of=data_as_of,
         data_lag_note=lag_note,
         data_lag_days=lag_days,

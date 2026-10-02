@@ -215,6 +215,21 @@ def test_provenance_check_counts_stated_facts_with_a_dated_source():
     assert k.provenance_check(p2, profile)["missing"] == ["zoning.min_lot_area_per_unit"]
 
 
+def test_resolution_record_check_compares_the_profile_record_with_the_keys_expectations():
+    p5 = BY_ID["P5"]
+    ok = {"resolution": {"method": "address_points", "multiple_parcels": True, "identity_unconfirmed": False,
+                         "candidates": [{"pin": "a", "used": False}, {"pin": "b", "used": False}, {"pin": "c", "used": True}]}}
+    assert k.resolution_record_check(p5, ok) == {"method": "address_points", "candidates": 3, "failed": []}
+    assert k.resolution_record_check(p5, {"foo": 1}) is None  # older payload
+    bad = {"resolution": {"method": "geocode_nearest", "multiple_parcels": False, "identity_unconfirmed": False, "candidates": []}}
+    failed = k.resolution_record_check(p5, bad)["failed"]
+    assert any("method" in f for f in failed) and any("0 candidates" in f for f in failed) and any("multi-parcel" in f for f in failed)
+    p4 = BY_ID["P4"]
+    assert k.resolution_record_check(p4, {"resolution": {"method": "address_points", "identity_unconfirmed": False, "candidates": []}})["failed"] == ["unconfirmed identity not flagged"]
+    two_used = {"resolution": {"method": "address_points", "multiple_parcels": True, "candidates": [{"used": True}, {"used": True}, {"used": False}]}}
+    assert "the used parcel isn't marked exactly once" in k.resolution_record_check(p5, two_used)["failed"]
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})

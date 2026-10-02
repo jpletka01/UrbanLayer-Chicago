@@ -8,6 +8,8 @@ When no confident parcel exists the router's geocode is kept but the location
 is marked "approximate" so the answer can say so. Nothing else is touched.
 """
 
+import json
+
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -46,7 +48,7 @@ def _patch_resolve(result=None, *, raises=None):
 
 
 async def test_typed_address_gets_the_parcels_own_point_and_pin():
-    rl = ResolvedLocation(*PARCEL, "1256 N Artesian Ave, Chicago, IL", PIN, "authoritative")
+    rl = ResolvedLocation(*PARCEL, "1256 N Artesian Ave, Chicago, IL", PIN, "authoritative", "assessor_addresses")
     patcher, mock = _patch_resolve(rl)
     with patcher, \
             patch.object(main_mod, "community_area_by_point", return_value=22), \
@@ -55,6 +57,7 @@ async def test_typed_address_gets_the_parcels_own_point_and_pin():
     loc = plan.location
     assert (loc.resolved_lat, loc.resolved_lon) == PARCEL
     assert loc.pin == PIN and loc.resolution == "authoritative"
+    assert loc.resolution_method == "assessor_addresses"  # chat can say HOW the parcel was matched
     assert (loc.resolved_community_area, loc.resolved_community_area_name) == (22, "Logan Square")
     # the router's own geocode is not re-run: only a confident parcel is wanted
     assert mock.await_args.kwargs == {"address": "1256 N Artesian Ave, Chicago, IL", "degraded_fallback": False}
@@ -116,3 +119,15 @@ async def test_resolve_location_can_skip_the_degraded_geocode():
         rl = await main_mod._resolve_location(address="1 N Nowhere St")  # default keeps the fallback
         assert rl.confidence == "approximate" and rl.pin is None
         geocode.assert_awaited_once()
+
+
+async def test_the_resolution_method_reaches_the_model_and_the_prompt_asks_for_it():
+    from backend.assembler import assemble_context
+    from backend.prompts import SYNTHESIZER_SYSTEM
+
+    plan = _plan()
+    plan.location.pin, plan.location.resolution, plan.location.resolution_method = PIN, "authoritative", "address_points"
+    ctx = assemble_context(plan=plan)
+    assert ctx.parcel_resolution_method == "address_points"
+    assert json.loads(ctx.model_dump_json())["parcel_resolution_method"] == "address_points"
+    assert "parcel_resolution_method" in SYNTHESIZER_SYSTEM and "Cook County Address Points" in SYNTHESIZER_SYSTEM

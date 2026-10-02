@@ -114,6 +114,12 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "address_points",
+     "assessor_addresses"
+    ]
    }
   },
   {
@@ -231,6 +237,12 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "assessor_addresses"
+    ],
+    "note": "a vacant lot: no Address Points row"
    }
   },
   {
@@ -378,6 +390,13 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "address_points"
+    ],
+    "sources_disagree": true,
+    "note": "Address Points names ...025, the Assessor names ...044"
    }
   },
   {
@@ -473,6 +492,13 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "address_points"
+    ],
+    "unconfirmed": true,
+    "note": "a building PIN the Parcel Universe has no record for"
    }
   },
   {
@@ -616,6 +642,14 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "address_points"
+    ],
+    "candidates": 3,
+    "multiple_parcels": true,
+    "note": "the Assessor lists three parcels at the address"
    }
   },
   {
@@ -729,6 +763,12 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "address_points",
+     "assessor_addresses"
+    ]
    }
   },
   {
@@ -837,7 +877,14 @@
      ],
      "none": "NP"
     }
+   },
+   "resolution": {
+    "methods": [
+     "address_points",
+     "assessor_addresses"
+    ]
    }
   }
- ]
+ ],
+ "resolution_note": "Resolution expectations were observed from the county's Address Points and Assessor Parcel Addresses datasets on 2026-10-02; they test that the Profile reports what those records say, not independent ground truth."
 }

@@ -125,6 +125,31 @@
     "nearestParcelCaveat": "We couldn't confirm the exact tax parcel for this address, so the property, tax, and comparable-sales figures below describe the nearest parcel — which may be a neighbor. Verify the PIN before relying on parcel-specific numbers.",
     "addressUnavailable": "Address unavailable",
     "vsPrior": "vs {{count}}",
+    "resolution": {
+      "matchedBy": "Matched by {{method}}",
+      "gap": "address point {{ft}} ft from the parcel's center",
+      "multiple": "This address maps to {{n}} parcels",
+      "disagree": "— the county's two address records name different ones",
+      "condo": "This is a condominium building: {{n}} units each have their own PIN",
+      "more": "and {{n}} more",
+      "used": "the one shown",
+      "method": {
+        "coordinates": "the point you gave",
+        "pin": "the PIN you gave",
+        "address_points": "Cook County Address Points",
+        "assessor_addresses": "the Assessor's Parcel Addresses",
+        "geocode_nearest": "the geocoded point only (nearest parcel, approximate)",
+        "geocode_nearest_verified": "the nearest parcel, confirmed by its own address"
+      },
+      "source": {
+        "address_points": "Address Points",
+        "assessor_addresses": "Assessor"
+      },
+      "unconfirmed": {
+        "property_record_is_another_parcel": "Identity unconfirmed: the address record names parcel {{pin}}, but the county's parcel data holds no record for it, so the property, tax and comparable figures below may describe a neighboring parcel ({{other}}).",
+        "nearest_parcel_address_mismatch": "Identity unconfirmed: this address didn't match a parcel record, so the nearest parcel to the geocoded point is shown without confirmation."
+      }
+    },
     "codeSource": {
       "loading": "Loading the code text…",
       "unavailable": "The code text isn't available right now.",

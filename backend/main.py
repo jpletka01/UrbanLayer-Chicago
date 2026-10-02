@@ -1211,6 +1211,7 @@ async def _apply_typed_address(plan):
     loc.resolved_lon = rl.lon
     loc.pin = rl.pin
     loc.resolution = "authoritative"
+    loc.resolution_method = rl.method
     if ca is not None:
         loc.resolved_community_area = ca
         loc.resolved_community_area_name = community_area_name(ca)
@@ -1294,6 +1295,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             plan = await _apply_parcel_hint(plan, req.parcel_pin)
             if plan.location.pin:
                 plan.location.resolution = "authoritative"
+                plan.location.resolution_method = "pin"
         if not plan.location.pin:
             # No hint, or the user pivoted to a different address: pin it down
             # the same way the Profile does instead of trusting the geocode.
@@ -1492,6 +1494,10 @@ class ResolvedLocation(NamedTuple):
     address: str | None
     pin: str | None
     confidence: str
+    # How this location was established (see backend/resolution.py): coordinates | pin |
+    # address_points | assessor_addresses | geocode_nearest. Optional so existing
+    # five-field constructions stay valid.
+    method: str | None = None
 
 
 _MAX_ADDRESS_CHARS = 200
@@ -1543,7 +1549,7 @@ async def _resolve_location(
 
     # 1. Explicit coordinates are a deliberate point override — highest precedence.
     if lat is not None and lon is not None:
-        return ResolvedLocation(lat, lon, resolved_address, pin, "authoritative")
+        return ResolvedLocation(lat, lon, resolved_address, pin, "authoritative", "coordinates")
 
     # 2. A supplied PIN is the authoritative unique parcel key — resolve its
     #    centroid directly, never overridden by a co-supplied address.
@@ -1572,7 +1578,7 @@ async def _resolve_location(
         if rows and rows[0].get("lat") and rows[0].get("lon"):
             return ResolvedLocation(
                 float(rows[0]["lat"]), float(rows[0]["lon"]),
-                display_address, pin, "authoritative",
+                display_address, pin, "authoritative", "pin",
             )
 
     # 3. Address → authoritative PIN via Address Points. Resolving the parcel by
@@ -1584,7 +1590,7 @@ async def _resolve_location(
         hit = await address_to_pin(address)
         if hit:
             return ResolvedLocation(
-                hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative",
+                hit["lat"], hit["lon"], resolved_address, hit["pin14"], "authoritative", "address_points",
             )
 
     # 3.5 Address → authoritative PIN via the Assessor's Parcel Addresses
@@ -1606,7 +1612,7 @@ async def _resolve_location(
             if rows and rows[0].get("lat") and rows[0].get("lon"):
                 return ResolvedLocation(
                     float(rows[0]["lat"]), float(rows[0]["lon"]),
-                    resolved_address, assessor_pin, "authoritative",
+                    resolved_address, assessor_pin, "authoritative", "assessor_addresses",
                 )
 
     # 4. Degraded fallback: geocode → street-interpolated point → downstream
@@ -1618,7 +1624,7 @@ async def _resolve_location(
                 "R7 degraded resolution (approximate parcel) for address=%r", address
             )
             return ResolvedLocation(
-                coords[0], coords[1], resolved_address, None, "approximate",
+                coords[0], coords[1], resolved_address, None, "approximate", "geocode_nearest",
             )
 
     # 5. Nothing resolvable.
@@ -1923,6 +1929,17 @@ async def scorecard(
     pin: str | None = None,
 ) -> dict:
     """Non-AI instant-load property dashboard. Zero LLM cost."""
+    # Every parcel the two address sources list for the typed address, fetched alongside
+    # the resolution so the "how we found this parcel" panel can say when an address
+    # maps to several parcels or the sources disagree (both are cached lookups).
+    cand_task = None
+    if address and lat is None and lon is None and not pin:
+        from backend.retrieval.property.address_points import address_point_pins
+        from backend.retrieval.property.parcel_addresses import assessor_address_pins
+
+        cand_task = asyncio.gather(
+            address_point_pins(address), assessor_address_pins(address), return_exceptions=True,
+        )
     rl = await _resolve_location(address, lat, lon, pin)
     _require_chicago(rl)
     data = await _fetch_scorecard_data(rl.lat, rl.lon, rl.address, pin=rl.pin)
@@ -1937,7 +1954,9 @@ async def scorecard(
     # See claude-context/audits/2026-06-21_resolver-investigation.md.
     resolved_pin = rl.pin
     resolved_confidence = rl.confidence
+    resolution_method = rl.method
     nearest_parcel_unverified = False
+    unverified_reason: str | None = None
     if address and resolved_confidence == "approximate":
         prop = data["context"].property
         candidate_pin = prop.pin14 if prop else None
@@ -1946,8 +1965,10 @@ async def scorecard(
             if await parcel_address_matches(candidate_pin, address):
                 resolved_pin = candidate_pin
                 resolved_confidence = "authoritative"
+                resolution_method = "geocode_nearest_verified"
             else:
                 nearest_parcel_unverified = True
+                unverified_reason = "nearest_parcel_address_mismatch"
     # INV-1 guard: one artifact, one parcel. An authoritative resolved PIN whose
     # property record came back for a DIFFERENT pin14 means the PIN-keyed lookup
     # missed (PIN absent from Parcel Universe) and the orchestrator's coordinate
@@ -1962,6 +1983,7 @@ async def scorecard(
                 resolved_pin, prop.pin14,
             )
             nearest_parcel_unverified = True
+            unverified_reason = "property_record_is_another_parcel"
 
     data["resolved_pin"] = resolved_pin
     data["resolved_confidence"] = resolved_confidence
@@ -1981,6 +2003,29 @@ async def scorecard(
     # district, its standards, the overlays and the parcel identity.
     from backend.provenance import build_provenance
 
+    from backend.resolution import build_resolution
+
+    ap_pins: list[str] = []
+    assessor_pins: list[str] = []
+    if cand_task is not None:
+        got = await cand_task
+        ap_pins = got[0] if isinstance(got[0], list) else []
+        assessor_pins = got[1] if isinstance(got[1], list) else []
+    _prop = data["context"].property
+    data["resolution"] = build_resolution(
+        address=address,
+        method=resolution_method,
+        lat=rl.lat,
+        lon=rl.lon,
+        pin=resolved_pin,
+        confidence=resolved_confidence,
+        ap_pins=ap_pins,
+        assessor_pins=assessor_pins,
+        unverified=nearest_parcel_unverified,
+        unverified_reason=unverified_reason,
+        property_pin=_prop.pin14 if _prop else None,
+        parcel_geometry=_prop.parcel_geometry if _prop else None,
+    )
     data["provenance"] = build_provenance(
         context=data["context"],
         zone_definition=data.get("zone_definition"),

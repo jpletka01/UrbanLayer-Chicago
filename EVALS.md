@@ -238,6 +238,18 @@ parcel identity carry only the date we queried them, because the City's layers p
 no per-feature date. Taxes, comparables and permits are not covered yet
 ([report](eval/results/2026-10-02-v1/parcel_kit.md)).
 
+V3 shows how the address became the parcel instead of only a PIN and a check. The
+record names the matching source, lists every parcel the two county address records
+give for the address, and says when they disagree or the identity could not be
+confirmed. Run on the seven parcels it turned up things a single green check hid:
+P2 (a vacant lot) has no address point and resolves through the Assessor; P5's
+address maps to three parcels; P3's two official sources name *different* parcels;
+and P4 is a condominium building (one building PIN, about fifty unit PINs) whose
+building PIN has no parcel record, so its property figures may describe a neighbor.
+The kit checks each record against what those datasets say (7 of 7), which tests that
+the Profile reports the county's records faithfully, not that the records are right
+([report](eval/results/2026-10-02-v3/parcel_kit.md)).
+
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 
 | Field | Coverage | Note |

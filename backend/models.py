@@ -67,6 +67,9 @@ class Location(BaseModel):
     # district — the answer must say so. None: not an address-typed location,
     # or resolution was not attempted.
     resolution: Literal["authoritative", "approximate"] | None = None
+    # Which record matched (backend/resolution.py): address_points | assessor_addresses |
+    # pin | coordinates | geocode_nearest. Lets the answer say HOW the parcel was found.
+    resolution_method: str | None = None
 
 
 class RetrievalPlan(BaseModel):
@@ -717,6 +720,7 @@ class ContextObject(BaseModel):
     # Parcel identity behind the parcel-scoped fields below (see Location.resolution).
     parcel_pin: str | None = None
     parcel_resolution: Literal["authoritative", "approximate"] | None = None
+    parcel_resolution_method: str | None = None
     data_as_of: str | None = None
     data_lag_note: str | None = None
     data_lag_days: int | None = None

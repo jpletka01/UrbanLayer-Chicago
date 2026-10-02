@@ -33,6 +33,16 @@ def _patch(rl, data, *, matches=False):
     )
 
 
+@pytest.fixture(autouse=True)
+def _no_candidate_lookups():
+    """The resolution panel asks both address sources for every PIN at the address;
+    these tests are about identity reconciliation, not that lookup (which has its own
+    tests), and unit tests may not touch the network."""
+    with patch("backend.retrieval.property.address_points.address_point_pins", new=AsyncMock(return_value=[])), \
+         patch("backend.retrieval.property.parcel_addresses.assessor_address_pins", new=AsyncMock(return_value=[])):
+        yield
+
+
 async def test_approximate_neighbor_pin_is_withheld_and_flagged():
     """Round-trip fails (neighbour) → PIN withheld, confidence stays approximate,
     nearest_parcel_unverified set. Never surface the neighbour as identity."""
