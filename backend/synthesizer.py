@@ -138,7 +138,11 @@ async def stream_answer(
     request_group: str = "",
     conversation_id: str | None = None,
     language: str = "en",
+    outcome: dict | None = None,
 ) -> AsyncIterator[str]:
+    """Stream the answer's text. When ``outcome`` is given it receives
+    ``stop_reason`` once the stream ends, so the caller can tell a finished
+    answer ("end_turn") from one cut off at the token cap ("max_tokens")."""
     settings = get_settings()
 
     upload_blocks: list[dict] | None = None
@@ -173,3 +177,8 @@ async def stream_answer(
         async for chunk in stream.text_stream:
             if chunk:
                 yield chunk
+        if outcome is not None:
+            try:
+                outcome["stop_reason"] = (await stream.get_final_message()).stop_reason
+            except Exception:
+                log.warning("Could not read the synthesizer stop_reason", exc_info=True)

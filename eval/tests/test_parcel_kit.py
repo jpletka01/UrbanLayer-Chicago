@@ -153,6 +153,13 @@ def test_chat_overlays_denial_reasons_and_parenthetical_examples():
     assert "pd" not in asserted
 
 
+def test_chat_overlays_none_after_a_parenthetical_and_setbacks_are_not_heights():
+    asserted, denied = k.chat_overlays("- **Special Service Area (SSA):** None.\n")
+    assert "ssa" not in asserted and "ssa" in denied
+    text = "- Maximum building height: set by the PD ordinance.\n- Rear setbacks of 30 feet apply to floors with dwelling units.\n"
+    assert k.chat_numbers(text)["height_ft"] == []
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})
@@ -276,6 +283,18 @@ def test_baseline_resolution_and_truncation_findings(baseline):
     assert all(r["point_gap_ft"] > 50 for r in res.values())
     trunc = baseline["truncation"]
     assert [pid for pid, t in trunc.items() if not t["item6_present"]] == ["P3", "P5"]  # M5
+
+
+def test_truncation_check_tells_a_silent_cut_off_from_a_flagged_one():
+    head = "".join(f"## {i}. Item\nfull.\n" for i in range(1, 6))
+    done = head + "## 6. F\nThe answer ends here."
+    assert k.truncation_check({"text": done})["silently_cut_off"] is False
+    cut = head + "## 6. F\nThe answer stops mid"
+    assert k.truncation_check({"text": cut})["silently_cut_off"] is True
+    flagged = cut + "\n\n---\n*This answer was cut off before it finished. Reply \"continue\".*"
+    t = k.truncation_check({"text": flagged, "truncated": True})
+    assert t["notice_shown"] and not t["ends_cleanly"] and t["silently_cut_off"] is False
+    assert t["truncated_flag"] is True and t["item6_present"] is True
 
 
 def test_markdown_report_renders(baseline):

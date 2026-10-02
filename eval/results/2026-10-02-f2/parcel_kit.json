@@ -333,11 +333,11 @@
   "chat": {
    "aggregate": {
     "scored_fields": 37,
-    "answered": 31,
-    "coverage": 0.8378378378378378,
+    "answered": 30,
+    "coverage": 0.8108108108108109,
     "points": 52,
-    "possible": 62,
-    "accuracy": 0.8387096774193549,
+    "possible": 60,
+    "accuracy": 0.8666666666666667,
     "cw": 1,
     "cw_fields": [
      "P2.C"
@@ -500,12 +500,12 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": 0,
+      "score": null,
       "cw": false,
-      "label": "0",
+      "label": "NP",
       "basis": "auto",
-      "auto": "0",
-      "detail": "far absent; height_ft wrong (hedged) (30 vs 1125)"
+      "auto": "NP",
+      "detail": "far absent; height_ft absent"
      },
      "D": {
       "score": 2,
@@ -732,37 +732,51 @@
   "P1": {
    "chars": 7200,
    "item6_present": true,
-   "ends_cleanly": false
+   "ends_cleanly": false,
+   "notice_shown": false,
+   "silently_cut_off": true
   },
   "P2": {
    "chars": 7201,
    "item6_present": true,
-   "ends_cleanly": false
+   "ends_cleanly": false,
+   "notice_shown": false,
+   "silently_cut_off": true
   },
   "P3": {
    "chars": 7323,
    "item6_present": true,
-   "ends_cleanly": false
+   "ends_cleanly": false,
+   "notice_shown": false,
+   "silently_cut_off": true
   },
   "P4": {
    "chars": 7521,
    "item6_present": true,
-   "ends_cleanly": true
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
   },
   "P5": {
    "chars": 7993,
    "item6_present": true,
-   "ends_cleanly": false
+   "ends_cleanly": false,
+   "notice_shown": false,
+   "silently_cut_off": true
   },
   "P6": {
    "chars": 7543,
    "item6_present": true,
-   "ends_cleanly": true
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
   },
   "P7": {
    "chars": 7362,
    "item6_present": true,
-   "ends_cleanly": false
+   "ends_cleanly": false,
+   "notice_shown": false,
+   "silently_cut_off": true
   }
  },
  "manual_fields": "",
@@ -770,7 +784,7 @@
  "verdict_text_available": true,
  "meta": {
   "date": "2026-10-02",
-  "git_sha": "74dc344",
+  "git_sha": "33ef302",
   "source": "replay of eval/results/2026-10-02-f2/parcel_kit_raw",
   "key_version": "2026-10-01.1"
  }

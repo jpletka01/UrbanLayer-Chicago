@@ -129,7 +129,8 @@ These are the first numbers on a primary-source key, and they are not flattering
 | Chat, address typed cold | 76–81% | 68% | 7 | 2 of 7 (P2, P5) |
 | Chat after F1 (typed address resolved to its parcel) | 86% | 81% | 1 | none (7/7 right) |
 | Profile after F2 (no false TOD density bonus) | 86% | 83% | 0 | none (7/7 right) |
-| Chat after F2 | 84% | 84% | 1 | none (7/7 right) |
+| Chat after F2 | 81% | 87% | 1 | none (7/7 right) |
+| Chat after F4 (answers no longer cut off silently) | 84% | 89% | 0 | none (7/7 right) |
 
 The Profile resolves the parcel from the address-point record and gets the
 district right on all seven. Chat resolves the same address by geocode and lands
@@ -157,6 +158,20 @@ the report text ([report](eval/results/2026-10-02-f2/parcel_kit.md)). The Profil
 now meets the kit's screening-grade rule (no critical miss, no confident-wrong
 field, accuracy above 80%); read that as "passes this 7-parcel check", not as
 reliance-grade.
+
+Fix F4 attacked a different defect, found by reading the answers rather than
+scoring them: chat answers stopped at the 2,000-token cap, mid-sentence, with
+nothing to say so, and two lost the final question entirely. The prompt now sets
+an 800-word budget and bans a closing recap; if the model still hits the cap the
+stream appends a visible "cut off, reply continue" notice and the `done` event
+carries `truncated: true` ([report](eval/results/2026-10-02-f4b/parcel_kit.md)).
+Silently cut-off answers went from 6 of 7 to 0, and every answer now reaches the
+last question. 2 of 7 (the transit-heavy P3 and P5) still hit the cap and say so;
+raising the cap is the next lever and is a cost decision. The chat confident-wrong
+count falling to 0 in that run is run-to-run variance (the model hedged P2's
+numbers this time), not a fix: F3 is still open. Scorer refinements made along the
+way re-scored the F2 chat row from 84% / 84% to 81% / 87%; compare runs by replaying
+them through the same scorer.
 
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 

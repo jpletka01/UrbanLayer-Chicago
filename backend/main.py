@@ -1176,6 +1176,14 @@ async def _apply_typed_address(plan):
 # (e.g. "Synthesizer failed: '>' not supported between ...").
 _CHAT_ERROR = "Something went wrong while answering. Please try again."
 
+# Appended to the streamed answer when the model hit the token cap. Silent
+# truncation (kit 2026-10-01: 5 of 7 answers cut mid-sentence, two lost the
+# final question entirely) reads as a complete answer, so say it out loud.
+_TRUNCATION_NOTICE = {
+    "en": "\n\n---\n*This answer was cut off before it finished. Reply \"continue\" for the rest, or ask about one item at a time.*",
+    "es": "\n\n---\n*Esta respuesta se cortó antes de terminar. Responde \"continúa\" para ver el resto, o pregunta por un punto a la vez.*",
+}
+
 
 async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     start = time.monotonic()
@@ -1328,6 +1336,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     first_token = True
     t_first_token: int | None = None
     answer_parts: list[str] = []
+    synth_outcome: dict = {}
     try:
         async for token in stream_answer(
             context=context,
@@ -1339,6 +1348,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             request_group=request_group,
             conversation_id=req.conversation_id,
             language=req.language,
+            outcome=synth_outcome,
         ):
             chunk_t = elapsed_ms() if first_token else None
             if first_token:
@@ -1346,6 +1356,11 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             answer_parts.append(token)
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
             first_token = False
+        if synth_outcome.get("stop_reason") == "max_tokens":
+            log.warning("Answer hit the synthesizer token cap (%s)", request_group)
+            notice = _TRUNCATION_NOTICE.get(req.language, _TRUNCATION_NOTICE["en"])
+            answer_parts.append(notice)
+            yield _sse(ChatChunk(type="token", text=notice, t_ms=elapsed_ms()))
     except Exception as exc:
         log.exception("Synthesizer failed")
         error_msg = f"Synthesizer failed: {exc}"
@@ -1376,7 +1391,10 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             log.warning("Failed to generate turn summary", exc_info=True)
 
     timings["total"] = elapsed_ms()
-    yield _sse(ChatChunk(type="done", t_ms=elapsed_ms(), timings=timings, citation_warnings=citation_warnings))
+    yield _sse(ChatChunk(
+        type="done", t_ms=elapsed_ms(), timings=timings, citation_warnings=citation_warnings,
+        truncated=True if synth_outcome.get("stop_reason") == "max_tokens" else None,
+    ))
 
     asyncio.create_task(_save_request_log(
         request_group, req, plan, elapsed_ms(),
