@@ -1133,6 +1133,44 @@ async def _apply_parcel_hint(plan, pin: str):
     return plan
 
 
+async def _apply_typed_address(plan):
+    """Resolve an address typed into chat the way the Property Profile does.
+
+    The router geocodes the address with the Census geocoder, whose
+    street-interpolated point can land 100–200 ft away, in a neighboring parcel
+    or even a different zoning district (kit M1: wrong district on 2 of 7
+    parcels). Without a parcel hint, replace that point with the parcel's own
+    point from Address Points / Assessor Parcel Addresses (``_resolve_location``
+    steps 3–3.5). When neither confidently identifies a parcel, keep the
+    router's geocode but mark the location ``approximate`` so the answer says so.
+    Only address-typed plans are touched; any failure degrades to approximate.
+    """
+    loc = plan.location
+    if loc.type != "address" or loc.pin:
+        return plan
+    candidate = loc.resolved_address or loc.raw
+    if not candidate:
+        return plan
+    try:
+        rl = await _resolve_location(address=candidate, degraded_fallback=False)
+    except Exception:
+        # HTTPException(422) = no confident parcel; anything else = lookup error.
+        loc.resolution = "approximate"
+        return plan
+    if rl.confidence != "authoritative" or not rl.pin:
+        loc.resolution = "approximate"
+        return plan
+    ca = community_area_by_point(rl.lat, rl.lon)
+    loc.resolved_lat = rl.lat
+    loc.resolved_lon = rl.lon
+    loc.pin = rl.pin
+    loc.resolution = "authoritative"
+    if ca is not None:
+        loc.resolved_community_area = ca
+        loc.resolved_community_area_name = community_area_name(ca)
+    return plan
+
+
 # What the user sees when a chat stage fails. The exception detail stays in the
 # server log and request_logs; it used to be streamed to the browser verbatim
 # (e.g. "Synthesizer failed: '>' not supported between ...").
@@ -1200,6 +1238,12 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         )
         if req.parcel_pin:
             plan = await _apply_parcel_hint(plan, req.parcel_pin)
+            if plan.location.pin:
+                plan.location.resolution = "authoritative"
+        if not plan.location.pin:
+            # No hint, or the user pivoted to a different address: pin it down
+            # the same way the Profile does instead of trusting the geocode.
+            plan = await _apply_typed_address(plan)
         timings["router"] = int((time.monotonic() - t0) * 1000)
     except Exception as exc:
         log.exception("Router failed")
@@ -1405,6 +1449,8 @@ async def _resolve_location(
     lat: float | None = None,
     lon: float | None = None,
     pin: str | None = None,
+    *,
+    degraded_fallback: bool = True,
 ) -> ResolvedLocation:
     """Resolve input to a parcel identity + point. Raises HTTPException on failure.
 
@@ -1415,7 +1461,9 @@ async def _resolve_location(
       3. address → authoritative PIN via Cook County Address Points (78yw-iddh).
          GIS-independent; this is the step that closes R7 for typed addresses.
       4. degraded fallback — geocode + downstream nearest-centroid, flagged
-         "approximate" so the artifact discloses it (INV-5).
+         "approximate" so the artifact discloses it (INV-5). Skipped when
+         ``degraded_fallback=False`` (the chat path already holds the router's
+         own geocode and only wants a *confident* parcel).
       5. nothing resolvable → 422.
     """
     settings = get_settings()
@@ -1499,7 +1547,7 @@ async def _resolve_location(
 
     # 4. Degraded fallback: geocode → street-interpolated point → downstream
     #    nearest-centroid. No confident PIN, so flag approximate (INV-5) and log.
-    if address:
+    if address and degraded_fallback:
         coords = await geocode_address(address)
         if coords:
             log.warning(

@@ -131,6 +131,18 @@ def test_chat_overlays_table_rows_and_prose():
     assert {"pd", "tod", "ssa"} <= denied
 
 
+def test_chat_overlays_negation_covers_a_list_and_process_mentions_are_not_overlays():
+    text = (
+        "- **No Planned Development, Landmark, Historic District, Lakefront Protection, or PMD overlays apply.**\n"
+        "A zoning entitlement (map amendment, planned development, or ARO-triggering approval) triggers set-asides.\n"
+        "Transit-served sites must meet pedestrian-street design standards.\n"
+        "- **TOD eligibility** requires proximity within a threshold; this parcel does not meet it.\n"
+    )
+    asserted, denied = k.chat_overlays(text)
+    assert not ({"pd", "landmark_building", "historic_district", "lakefront", "pmd", "pedestrian_street"} & asserted)
+    assert {"pd", "lakefront", "pmd", "tod"} <= denied
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})

@@ -58,6 +58,13 @@ class Location(BaseModel):
     # (Scorecard→chat handoff). Read-only flow: chat never writes the
     # selection back (truth-model §3) — this only replaces text re-geocoding.
     pin: str | None = None
+    # How an address-typed location was pinned down. "authoritative": the PIN
+    # came from Address Points / Assessor Parcel Addresses (same path the
+    # Property Profile uses). "approximate": only the street-interpolated
+    # geocode point is known, which can fall in a neighboring parcel or zoning
+    # district — the answer must say so. None: not an address-typed location,
+    # or resolution was not attempted.
+    resolution: Literal["authoritative", "approximate"] | None = None
 
 
 class RetrievalPlan(BaseModel):
@@ -666,6 +673,9 @@ class ContextObject(BaseModel):
     community_area: int | None = None
     community_area_name: str | None = None
     resolved_address: str | None = None
+    # Parcel identity behind the parcel-scoped fields below (see Location.resolution).
+    parcel_pin: str | None = None
+    parcel_resolution: Literal["authoritative", "approximate"] | None = None
     data_as_of: str | None = None
     data_lag_note: str | None = None
     data_lag_days: int | None = None
