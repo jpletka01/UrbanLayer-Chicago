@@ -1,0 +1,757 @@
+{
+ "surfaces": {
+  "profile": {
+   "aggregate": {
+    "scored_fields": 37,
+    "answered": 35,
+    "coverage": 0.9459459459459459,
+    "points": 68,
+    "possible": 70,
+    "accuracy": 0.9714285714285714,
+    "cw": 0,
+    "cw_fields": [],
+    "critical_misses": [],
+    "a_correct": 7,
+    "parcels": 7,
+    "screening_grade": true
+   },
+   "fields": {
+    "P1": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RS2"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 1/1"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     }
+    },
+    "P2": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RM4.5"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     }
+    },
+    "P3": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district B12"
+     },
+     "B": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 3/3"
+     },
+     "E": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P4": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district PD835"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": null,
+      "cw": false,
+      "label": "NP",
+      "basis": "auto",
+      "auto": "NP",
+      "detail": "far absent; height_ft absent"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 3/3"
+     },
+     "F": {
+      "score": null,
+      "cw": false,
+      "label": "NP",
+      "basis": "auto",
+      "auto": "NP",
+      "detail": "groups 0/2"
+     }
+    },
+    "P5": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district B32"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 6/6"
+     },
+     "E": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P6": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RS3"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 4/4"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P7": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RT4"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     }
+    }
+   },
+   "agreement": {},
+   "manual_cells": 0
+  },
+  "chat": {
+   "aggregate": {
+    "scored_fields": 32,
+    "answered": 30,
+    "coverage": 0.9375,
+    "points": 56,
+    "possible": 60,
+    "accuracy": 0.9333333333333333,
+    "cw": 0,
+    "cw_fields": [],
+    "critical_misses": [],
+    "a_correct": 6,
+    "parcels": 6,
+    "screening_grade": true
+   },
+   "fields": {
+    "P1": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RS2"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 1/1"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P2": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RM4.5"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P3": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district B12"
+     },
+     "B": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 3/3"
+     },
+     "E": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "F": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     }
+    },
+    "P4": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district PD835"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "C": {
+      "score": null,
+      "cw": false,
+      "label": "NP",
+      "basis": "auto",
+      "auto": "NP",
+      "detail": "far absent; height_ft absent"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 3/3"
+     },
+     "F": {
+      "score": null,
+      "cw": false,
+      "label": "NP",
+      "basis": "auto",
+      "auto": "NP",
+      "detail": "groups 0/2"
+     }
+    },
+    "P5": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district B32"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 6/6"
+     },
+     "E": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P6": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RS3"
+     },
+     "B": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 4/4"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    }
+   },
+   "agreement": {},
+   "manual_cells": 0
+  }
+ },
+ "resolution": {
+  "P1": {
+   "profile_pin": "13012120030000",
+   "profile_confidence": "authoritative",
+   "chat_resolved_address": "6247 N Rockwell St, Chicago, IL",
+   "chat_pin_in_text": "13012120030000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
+  },
+  "P2": {
+   "profile_pin": "16012280180000",
+   "profile_confidence": "authoritative",
+   "chat_resolved_address": "1256 N Artesian Ave, Chicago, IL",
+   "chat_pin_in_text": "16012280180000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
+  },
+  "P3": {
+   "profile_pin": "14171060250000",
+   "profile_confidence": "authoritative",
+   "chat_resolved_address": "1500 W Wilson Ave, Chicago, IL 60640",
+   "chat_pin_in_text": "14171060250000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
+  },
+  "P4": {
+   "profile_pin": "17101350390000",
+   "profile_confidence": "authoritative",
+   "chat_resolved_address": "401 N Wabash Ave, Chicago, IL",
+   "chat_pin_in_text": "17101350390000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
+  },
+  "P5": {
+   "profile_pin": "14313320180000",
+   "profile_confidence": "authoritative",
+   "chat_resolved_address": "1601 N Milwaukee Ave, Chicago, IL",
+   "chat_pin_in_text": "14313320180000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
+  },
+  "P6": {
+   "profile_pin": "13233160400000",
+   "profile_confidence": "authoritative",
+   "chat_resolved_address": "3400 N Central Park Ave, Chicago, IL",
+   "chat_pin_in_text": "13233160400000",
+   "chat_pin_matches": true,
+   "point_gap_ft": 0,
+   "community_area_matches": true
+  }
+ },
+ "truncation": {
+  "P1": {
+   "errored": false,
+   "field_name_leaks": [],
+   "chars": 5916,
+   "item6_present": true,
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
+  },
+  "P2": {
+   "errored": false,
+   "field_name_leaks": [],
+   "chars": 6665,
+   "item6_present": true,
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
+  },
+  "P3": {
+   "errored": false,
+   "field_name_leaks": [],
+   "chars": 5420,
+   "item6_present": true,
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
+  },
+  "P4": {
+   "errored": false,
+   "field_name_leaks": [],
+   "chars": 5928,
+   "item6_present": true,
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
+  },
+  "P5": {
+   "errored": false,
+   "field_name_leaks": [],
+   "chars": 6609,
+   "item6_present": true,
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
+  },
+  "P6": {
+   "errored": false,
+   "field_name_leaks": [],
+   "chars": 6145,
+   "item6_present": true,
+   "ends_cleanly": true,
+   "notice_shown": false,
+   "silently_cut_off": false
+  },
+  "P7": {
+   "errored": true,
+   "field_name_leaks": [],
+   "chars": 1516,
+   "item6_present": false,
+   "ends_cleanly": false,
+   "notice_shown": false,
+   "silently_cut_off": false
+  }
+ },
+ "manual_fields": "",
+ "forced_cells": {},
+ "errored_runs": {
+  "chat": {
+   "P7": "Something went wrong while answering. Please try again."
+  }
+ },
+ "verdict_text_available": true,
+ "meta": {
+  "date": "2026-10-02",
+  "git_sha": "341e91a",
+  "source": "replay of eval/results/2026-10-02-f7/parcel_kit_raw",
+  "key_version": "2026-10-01.1"
+ }
+}

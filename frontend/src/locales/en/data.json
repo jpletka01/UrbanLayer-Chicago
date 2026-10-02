@@ -134,6 +134,8 @@
     "overlays": "Overlays",
     "status": "Status",
     "noOverlays": "No regulatory overlays apply to this location.",
+    "source": "Read the source ↗",
+    "adu": {"allowed_by_right": "Coach houses and conversion units permitted by right", "not_allowed": "Coach houses and conversion units not permitted here", "allowed_with_limits": "ADU-Allowed RS Area"},
     "floodZone": "Flood Zone",
     "zone": "Zone {{code}}",
     "specialFloodHazard": "Special Flood Hazard",

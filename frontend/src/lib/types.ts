@@ -209,6 +209,18 @@ export interface OverlayDistrict {
   name: string | null;
   ordinance: string | null;
   description: string | null;
+  /** What this overlay means for the parcel, pinned to the code (null when the code
+      doesn't say), and where to read the source (code section or PD ordinance PDF). */
+  detail?: string | null;
+  link?: string | null;
+}
+
+/** Coach house / conversion-unit status for this parcel's district (backend adu_status). */
+export interface AduStatus {
+  status: "allowed_by_right" | "allowed_with_limits" | "not_allowed";
+  zone: string | null;
+  limits: string | null;
+  note: string;
 }
 
 export interface RegulatorySummary {
@@ -656,6 +668,7 @@ export interface UnitYield {
 }
 
 export interface ContextObject {
+  adu?: AduStatus | null;
   code_vintage?: CodeVintage | null;
   tod_benefits?: TodBenefits | null;
   unit_yield?: UnitYield | null;

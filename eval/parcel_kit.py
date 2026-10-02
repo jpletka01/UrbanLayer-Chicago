@@ -196,7 +196,7 @@ _NEG_SAME_SENTENCE = re.compile(
     re.I,
 )
 _NEG_AFTER = re.compile(
-    r"^(?:\s*\(\w{2,6}\)|\s*/\s*\w+|\s+(?:overlay|district|area|zone|designation))*[\s*|:—–)(-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
+    r"^(?:\s*\(\w{2,6}\)|\s*/\s*[\w-]+(?:\s[\w-]+){0,2}|\s+(?:overlay|district|area|zone|designation))*[\s*|:—–)(-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
     r"|^[^\n.]{0,60}?\b(?:does not|doesn't|do not|is not|isn't|not) (?:apply|applicable|qualify|eligible|within|in)\b",
     re.I,
 )
@@ -437,7 +437,9 @@ def profile_text(resp: dict, verdict: dict | None) -> str:
     reg = (resp.get("context") or {}).get("regulatory") or {}
     uy = (resp.get("context") or {}).get("unit_yield") or {}
     parts = [zd.get("uses") or "", zd.get("notes") or "", zd.get("lot_area_note") or "", uy.get("arithmetic") or ""]
-    parts += [f"{o.get('name', '')} {o.get('description', '')}" for o in reg.get("overlays") or []]
+    parts += [f"{o.get('name', '')} {o.get('description', '')} {o.get('detail') or ''}" for o in reg.get("overlays") or []]
+    adu = (resp.get("context") or {}).get("adu") or {}
+    parts.append(adu.get("note") or "")
     if verdict:
         parts += [verdict.get("headline", ""), *verdict.get("reasons", []), *verdict.get("caveats", []), verdict.get("next_step", "")]
     return "\n".join(p for p in parts if p)
@@ -554,7 +556,9 @@ def truncation_check(chat: dict | None) -> dict[str, Any]:
     body = body.rstrip(" \n-*_")  # the notice is set off by a rule and italics
     sections = split_sections(body)
     leaks = sorted({n for n in _INTERNAL_FIELD_NAMES if n in text})
+    errored = bool(chat.get("error"))
     out = {
+        "errored": errored,
         "field_name_leaks": leaks,
         "chars": len(text),
         "item6_present": 6 in sections,
@@ -564,7 +568,7 @@ def truncation_check(chat: dict | None) -> dict[str, Any]:
     if "truncated" in chat:  # set by the SSE done event (F4)
         out["truncated_flag"] = chat["truncated"]
     # A silent cut-off is the defect: the answer stops short and nothing says so.
-    out["silently_cut_off"] = not out["ends_cleanly"] and not notice and not chat.get("truncated")
+    out["silently_cut_off"] = not errored and not out["ends_cleanly"] and not notice and not chat.get("truncated")
     return out
 
 
@@ -775,6 +779,7 @@ def score_run_dir(
     report: dict[str, Any] = {
         "surfaces": {}, "resolution": {}, "truncation": {}, "manual_fields": manual_fields if manual else "",
         "forced_cells": (manual or {}).get("force", {}),
+        "errored_runs": {},
     }
     for surface in surfaces:
         per_parcel: dict[str, dict[str, FieldResult]] = {}
@@ -782,6 +787,10 @@ def score_run_dir(
         hand = (manual or {}).get("surfaces", {}).get(surface)
         for p in selected:
             run = runs[p["id"]]
+            if surface == "chat" and run[surface] and run[surface].get("error"):
+                # The API call failed (e.g. out of credit): there is no answer to score.
+                report["errored_runs"].setdefault(surface, {})[p["id"]] = str(run[surface]["error"])[:120]
+                continue
             res = score_parcel_surface(p, surface, run[surface], run["verdict"])
             if not res:
                 continue
@@ -805,6 +814,8 @@ def score_run_dir(
     for p in selected:
         if runs[p["id"]]["chat"]:
             report["truncation"][p["id"]] = truncation_check(runs[p["id"]]["chat"])
+            if report["truncation"][p["id"]].get("errored"):
+                report["resolution"].pop(p["id"], None)
     report["verdict_text_available"] = all(runs[p["id"]]["verdict"] for p in selected if runs[p["id"]]["profile"])
     return report
 
@@ -847,6 +858,9 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
     for surf, cells in report["forced_cells"].items():
         for cell, why in cells.items():
             L.append(f"- Hand score forced outside `{report['manual_fields']}` on {surf} {cell}: {why}")
+    for surf, runs_err in report["errored_runs"].items():
+        for pid, msg in runs_err.items():
+            L.append(f"- **{surf} {pid} NOT SCORED: the API call failed** ({msg}). Counts below exclude it; re-run that parcel.")
     if not report["verdict_text_available"]:
         L.append("")
         L.append("**Verdict text was unavailable (node missing?), so Profile B/E/F lack the verdict sentences.**")

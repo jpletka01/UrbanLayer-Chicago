@@ -223,6 +223,11 @@ class OverlayDistrict(BaseModel):
     name: str | None = None
     ordinance: str | None = None
     description: str | None = None
+    # What this overlay means for the parcel, in one pinned-to-the-code sentence
+    # (overlay_facts.describe_overlay), and where to read the source (code section
+    # or the PD ordinance PDF). None when the code doesn't say / no link exists.
+    detail: str | None = None
+    link: str | None = None
 
 
 class AROHousingProject(BaseModel):
@@ -750,6 +755,22 @@ class ContextObject(BaseModel):
     partial_failures: list[str] = Field(default_factory=list)
 
     # `property` is a field name in this class body, so spell the builtin out.
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def adu(self) -> dict | None:
+        """Coach house / conversion unit status for THIS parcel's district: allowed by
+        right (RT, RM, B1-C2), allowed with the ADU zone's limits (RS in an ADU-Allowed
+        Area), or not allowed (RS outside one). Derived from parcel_zoning and the ADU
+        overlay, so the Profile, a cold chat turn and a handoff agree. None when the
+        district's use table doesn't answer it."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.retrieval.zoning_definitions import adu_status
+
+        adu_overlay = next((o for o in (self.regulatory.overlays if self.regulatory else []) if o.layer_type == "adu_area"), None)
+        limits = adu_overlay.detail if adu_overlay else None
+        return adu_status(self.parcel_zoning.zone_class, adu_overlay is not None, adu_overlay.name if adu_overlay else None, limits)
+
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property
     def code_vintage(self) -> dict | None:

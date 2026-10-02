@@ -135,6 +135,8 @@ These are the first numbers on a primary-source key, and they are not flattering
 | Chat after F3 | 95% | 90% | 0 | none (7/7 right) |
 | Profile after F5a (freshness stamps) | 92% | 94% | 0 | none (7/7 right) |
 | Chat after F5a | 95% | 97% | 0 | none (7/7 right) |
+| Profile after F7 (overlays named) | 95% | 97% | 0 | none (7/7 right) |
+| Chat after F7 (6 of 7 parcels scored*) | 94% | 93% | 0 | none (6/6 right) |
 
 The Profile resolves the parcel from the address-point record and gets the
 district right on all seven. Chat resolves the same address by geocode and lands
@@ -209,6 +211,21 @@ Not built: a "passed but not yet on the map" bridge (F5b) — it needs the Clerk
 API spike and depends on how a competitor handles the same parcel. The stamp says
 when *this district's record* was edited; it is not a claim that the whole City map
 was refreshed that day.
+
+Fix F7 named what the overlays were. The Profile called the 606 district "Special
+Districts", said "ADU eligible" for any parcel the ADU layer hit (and never named the
+zone or its limits), linked nothing for a Planned Development, and described a
+landmark's consequence as "expect design review". The layers carry the real names,
+links and limits; they are now shown, each statement pinned to the code text: the 606
+district by name with its code link and its real scope (RS-3 and RT-3.5 only), the ADU
+zone and its limitations (P6: Zone 10, annual limit and owner occupancy), coach houses
+"by right" in RT, RM and B/C with the layer artifact dropped, the PD's number and its
+ordinance PDF, and "the Commission on Chicago Landmarks must approve in writing"
+(§2-120-740) for a landmark or landmark district
+([report](eval/results/2026-10-02-f7/parcel_kit.md)). The Profile's task answers for
+P1 (coach house not allowed), P5 and P6 went from partial to correct.
+*P7's chat call failed mid-run because the Anthropic account ran out of credit, so it
+is reported as not scored rather than counted; the chat row covers six parcels.
 
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 

@@ -12,6 +12,7 @@ import httpx
 from backend.models import OverlayDistrict, RegulatorySummary
 from backend.retrieval.regulatory.environmental import query_brownfield_sites
 from backend.retrieval.regulatory.flood import query_flood_zone
+from backend.retrieval.regulatory.overlay_facts import describe_overlay
 from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS, query_all_overlays
 
 log = logging.getLogger(__name__)
@@ -114,11 +115,16 @@ def _build_summary(
             display_name = feature_name or layer_name
             description = layer_name
 
+        # Layer-specific facts (the special district's real name, the ADU zone and its
+        # limits, the PD number and PDF, the landmark's name and what it requires).
+        facts = describe_overlay(layer_type, attrs)
         overlays.append(OverlayDistrict(
             layer_type=layer_type,
-            name=display_name,
+            name=facts["name"] or display_name,
             ordinance=ordinance,
             description=description,
+            detail=facts["detail"],
+            link=facts["link"],
         ))
 
         flag_field = FLAG_MAP.get(layer_type)

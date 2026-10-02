@@ -549,3 +549,60 @@ def max_units_by_lot_area(zone_class: str | None, lot_sqft: float | int | None) 
         "caveat": caveat,
         "lot_area_note": note,
     }
+
+
+# --- Accessory dwelling units: coach houses and conversion units (F7) -----------------
+#
+# The ADU map layer returns a hit for any point inside an "ADU zone" polygon, but the
+# zones only matter for RS districts (§17-7-0570): coach houses and conversion units are
+# permitted by right in RT, RM and the B/C districts, and in an RS district only inside
+# an ADU-Allowed RS Area, with that zone's limitations. The Profile used to say
+# "ADU-eligible" for anything the layer hit and never named the zone or its limits
+# (kit P6: Zone 10 = annual limit + owner occupancy).
+
+_ADU_BY_RIGHT_PREFIXES = ("RT", "RM", "B1", "B2", "B3", "C1", "C2")
+
+
+def adu_status(
+    zone_class: str | None,
+    in_adu_area: bool,
+    adu_name: str | None = None,
+    adu_limits: str | None = None,
+) -> dict | None:
+    """Can a coach house / conversion unit be added, and under what limits?
+
+    ``allowed_with_limits`` (RS in an ADU-Allowed Area, with the zone and its limits),
+    ``not_allowed`` (RS outside one), ``allowed_by_right`` (RT, RM, B1-C2). None for
+    districts the use tables don't cover this way (C3, M, D, PD, POS, unknown).
+    """
+    if not zone_class:
+        return None
+    prefix, _ = _parse_zone_prefix(zone_class.strip().upper())
+    if prefix == "RS":
+        if in_adu_area:
+            label = f"the {adu_name}" if adu_name else "an ADU-Allowed RS Area"
+            note = (
+                f"Coach houses and conversion units are permitted by right in this RS district because the "
+                f"parcel is in {label} (§17-7-0570)."
+            )
+            if adu_limits:
+                note += f" {adu_limits}"
+            return {"status": "allowed_with_limits", "zone": adu_name, "limits": adu_limits, "note": note}
+        return {
+            "status": "not_allowed",
+            "zone": None,
+            "limits": None,
+            "note": (
+                "Coach houses and conversion units are permitted in an RS district only inside an "
+                "ADU-Allowed RS Area (§17-7-0570); this parcel is not in one."
+            ),
+        }
+    if prefix in _ADU_BY_RIGHT_PREFIXES:
+        section = "§17-2-0207" if prefix in ("RT", "RM") else "§17-3-0207"
+        return {
+            "status": "allowed_by_right",
+            "zone": None,
+            "limits": None,
+            "note": f"Coach houses and conversion units are permitted by right in this district ({section}).",
+        }
+    return None

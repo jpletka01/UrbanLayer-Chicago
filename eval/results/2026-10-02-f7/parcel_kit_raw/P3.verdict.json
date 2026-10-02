@@ -1,0 +1,14 @@
+{
+ "category": "incentive_driven",
+ "headline": "Incentive-driven opportunity",
+ "reasons": [
+  "In the Clark/Montrose TIF \u2014 $14.0M fund balance",
+  "Transit-served \u2014 parking minimums can drop by up to 100%; no density bonus at B1-2"
+ ],
+ "caveats": [
+  "Existing building size is uncertain, so we didn't estimate how much of the allowed floor area is already used.",
+  "Building area is recorded for a 7-parcel complex (43,790 ft\u00b2 in total), not for this lot, so existing floor area is unknown."
+ ],
+ "next_step": "Look into the incentive funding",
+ "confidence": "high"
+}

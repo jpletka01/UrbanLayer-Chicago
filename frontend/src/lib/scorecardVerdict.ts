@@ -12,7 +12,7 @@
 // discipline — friction can't be masked, tradeoffs shown inline).
 
 import type { ScorecardResponse } from "./api";
-import type { TodBenefits } from "./types";
+import type { AduStatus, TodBenefits } from "./types";
 
 // Minimal i18next-compatible signature so the module stays React/i18n-pure and
 // unit-testable (the category/signal logic below needs no strings at all).
@@ -86,6 +86,8 @@ export interface VerdictSignals {
   bonusFlags: string[]; // "tod" | "adu"
   // Backend-computed (parking relief vs. dash-3-only density bonus); null when absent.
   todBenefits: TodBenefits | null;
+  // Backend coach-house/conversion-unit status; null on older payloads.
+  adu: AduStatus | null;
   frictionFlags: string[]; // parcel-specific obstacles only
   frictionLevel: "meaningful" | "low";
   neutralFlags: string[]; // aro, etc. — context, never friction
@@ -194,7 +196,9 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
 
   const bonusFlags: string[] = [];
   if (reg?.in_tod_area) bonusFlags.push("tod");
-  if (reg?.in_adu_area) bonusFlags.push("adu");
+  // "ADU-eligible" is only a real opt-in for an RS district inside an ADU-Allowed Area;
+  // coach houses are permitted by right in RT/RM/B/C, so the layer's hit there is no bonus.
+  if (ctx.adu ? ctx.adu.status === "allowed_with_limits" : reg?.in_adu_area) bonusFlags.push("adu");
 
   // CALIBRATION FIX: in_aro_zone (~citywide) and violations.total (area-level
   // count, identical across neighbors) are all-checkmarks rows — NOT friction.
@@ -242,6 +246,7 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
     tifBalance,
     bonusFlags,
     todBenefits: ctx.tod_benefits ?? null,
+    adu: ctx.adu ?? null,
     frictionFlags,
     frictionLevel,
     neutralFlags,
@@ -373,7 +378,7 @@ function todReason(s: VerdictSignals, t: TFunc): VerdictReason {
 
 function bonusReason(s: VerdictSignals, t: TFunc): VerdictReason | null {
   if (s.bonusFlags.includes("tod")) return todReason(s, t);
-  if (s.bonusFlags.includes("adu")) return { text: t("scorecard.verdict.reason.adu"), polarity: "positive", cardAnchor: "regulatory" };
+  if (s.bonusFlags.includes("adu")) return { text: t("scorecard.verdict.reason.adu", { zone: s.adu?.zone ?? "" }), polarity: "positive", cardAnchor: "regulatory" };
   return null;
 }
 
