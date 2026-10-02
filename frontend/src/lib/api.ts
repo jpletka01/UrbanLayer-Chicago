@@ -736,6 +736,10 @@ export interface ZoneDefinition {
   lot_coverage: string | null;
   // Minimum lot SIZE (Table 17-2-0303) — R districts only.
   min_lot_sqft: number | null;
+  // Minimum lot area PER DWELLING UNIT — the number that caps unit count (null for
+  // districts with no per-unit minimum: PD, C3, M, DS).
+  min_lot_area_per_unit?: number | null;
+  lot_area_note?: string;
   uses: string;
   notes: string;
   is_fallback: boolean;

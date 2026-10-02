@@ -189,9 +189,14 @@ NEVER_FALSE = {"adu"}
 
 _NEG_BEFORE = re.compile(r"\b(no|not|none|neither|nor|without|isn't|doesn't|does not|is not|aren't|absent|exceed|exceeds|outside|beyond)\b", re.I)
 _SENT_BREAK = re.compile(r"(?<=[.!?])\s+|:\*\*\s*")
-_NEG_SAME_SENTENCE = re.compile(r"\b(?:does not|doesn't|do not|is not|isn't|not)\b", re.I)
+_NEG_SAME_SENTENCE = re.compile(
+    r"\b(?:does|do|is)\s+\*{0,2}not\b"
+    r"|\b(?:doesn't|isn't)\b"
+    r"|\bnot\b\*{0,2}\s+(?:apply|applicable|qualify|eligible|within|in an? |located|meet|present|designated)",
+    re.I,
+)
 _NEG_AFTER = re.compile(
-    r"^(?:\s*\(\w{2,6}\))?[\s*|:—–)(-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
+    r"^(?:\s*\(\w{2,6}\)|\s*/\s*\w+|\s+(?:overlay|district|area|zone|designation))*[\s*|:—–)(-]*(?:[❌✗✘🚫]\s*)?\**\s*(?:not\b|no\b|none\b|n/a)"  # "| X | ❌ No |", "X: not ..."
     r"|^[^\n.]{0,60}?\b(?:does not|doesn't|do not|is not|isn't|not) (?:apply|applicable|qualify|eligible|within|in)\b",
     re.I,
 )
@@ -430,7 +435,8 @@ def score_phrases(rubric: dict | None, text: str) -> tuple[int | None, bool, str
 def profile_text(resp: dict, verdict: dict | None) -> str:
     zd = resp.get("zone_definition") or {}
     reg = (resp.get("context") or {}).get("regulatory") or {}
-    parts = [zd.get("uses") or "", zd.get("notes") or ""]
+    uy = (resp.get("context") or {}).get("unit_yield") or {}
+    parts = [zd.get("uses") or "", zd.get("notes") or "", zd.get("lot_area_note") or "", uy.get("arithmetic") or ""]
     parts += [f"{o.get('name', '')} {o.get('description', '')}" for o in reg.get("overlays") or []]
     if verdict:
         parts += [verdict.get("headline", ""), *verdict.get("reasons", []), *verdict.get("caveats", []), verdict.get("next_step", "")]
@@ -532,6 +538,8 @@ def resolution_check(profile: dict | None, chat: dict | None) -> dict[str, Any]:
     return out
 
 
+# Context fields the prompt tells the model never to name to the user.
+_INTERNAL_FIELD_NAMES = ("zone_definition", "unit_yield", "tod_benefits", "density_bonus_eligible", "parcel_resolution", "parcel_pin", "returned null")
 _CUT_OFF_NOTICE = re.compile(r"answer was cut off before it finished|respuesta se cortó antes de terminar", re.I)
 
 
@@ -545,7 +553,9 @@ def truncation_check(chat: dict | None) -> dict[str, Any]:
     body = _CUT_OFF_NOTICE.split(text, 1)[0] if notice else text
     body = body.rstrip(" \n-*_")  # the notice is set off by a rule and italics
     sections = split_sections(body)
+    leaks = sorted({n for n in _INTERNAL_FIELD_NAMES if n in text})
     out = {
+        "field_name_leaks": leaks,
         "chars": len(text),
         "item6_present": 6 in sections,
         "ends_cleanly": bool(body) and body[-1] in '.!?)`*"' and not notice,
@@ -878,12 +888,13 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
     if report["truncation"]:
         L.append("## Chat answer completeness")
         L.append("")
-        L.append("| Parcel | Chars | Reaches item 6 | Ends cleanly | Cut-off notice | Silently cut off |")
-        L.append("|---|--:|:-:|:-:|:-:|:-:|")
+        L.append("| Parcel | Chars | Reaches item 6 | Ends cleanly | Cut-off notice | Silently cut off | Field names leaked |")
+        L.append("|---|--:|:-:|:-:|:-:|:-:|---|")
         for pid, t in report["truncation"].items():
             L.append(
                 f"| {pid} | {t['chars']} | {_tf(t['item6_present'])} | {_tf(t['ends_cleanly'])} "
-                f"| {'yes' if t.get('notice_shown') else ''} | {'YES' if t.get('silently_cut_off') else ''} |"
+                f"| {'yes' if t.get('notice_shown') else ''} | {'YES' if t.get('silently_cut_off') else ''} "
+                f"| {', '.join(t.get('field_name_leaks') or [])} |"
             )
         L.append("")
     L.append("## Per-cell detail")

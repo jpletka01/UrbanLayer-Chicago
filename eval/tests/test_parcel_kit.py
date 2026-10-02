@@ -160,6 +160,23 @@ def test_chat_overlays_none_after_a_parenthetical_and_setbacks_are_not_heights()
     assert k.chat_numbers(text)["height_ft"] == []
 
 
+def test_chat_overlays_label_words_aliases_and_unrelated_nots():
+    text = (
+        "- **Lakefront Protection Overlay:** No.\n"
+        "- **Special District / PMD:** No.\n"
+        "- **Special District:** The parcel is within a Special District; the restrictions were not detailed here.\n"
+    )
+    asserted, denied = k.chat_overlays(text)
+    assert "lakefront" in denied and "lakefront" not in asserted
+    assert "pmd" in denied
+    assert "special_district" in asserted  # a "not detailed" aside isn't a denial
+
+
+def test_truncation_check_reports_internal_field_names():
+    assert k.truncation_check({"text": "Use `tod_benefits` and zone_definition."})["field_name_leaks"] == ["tod_benefits", "zone_definition"]
+    assert k.truncation_check({"text": "clean answer."})["field_name_leaks"] == []
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})

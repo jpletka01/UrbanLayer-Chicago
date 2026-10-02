@@ -705,6 +705,17 @@ def _scorecard_grounding_applies(
     return bool(_PROPERTY_DOMAINS & set(plan.sources)) or plan.workflow_hint == "site_due_diligence"
 
 
+def _ensure_zone_definition(ctx: ContextObject) -> None:
+    """Attach the deterministic Title-17 zone table when the turn resolved a
+    district but nothing (a Profile handoff) supplied it."""
+    if ctx.zone_definition is None and ctx.parcel_zoning is not None:
+        from dataclasses import asdict
+
+        from backend.retrieval.zoning_definitions import get_zone_definition
+
+        ctx.zone_definition = asdict(get_zone_definition(ctx.parcel_zoning.zone_class))
+
+
 async def _retrieve(
     plan: RetrievalPlan, scorecard_context: ScorecardContext | None = None,
 ) -> ContextObject:
@@ -902,6 +913,13 @@ async def _retrieve(
                 ctx.neighborhood = NeighborhoodSummary(traffic=sc.traffic)
             elif ctx.neighborhood.traffic is None:
                 ctx.neighborhood.traffic = sc.traffic
+
+    # The deterministic Title-17 standards (FAR, height, minimum lot area per unit)
+    # belong in front of the model on EVERY parcel-resolved turn, not only on a
+    # Profile handoff — otherwise a cold chat fills them in from memory (kit: RM-4.5
+    # stated as FAR 2.2 / 1,000 sq ft per unit instead of 1.7 / 700). The same table
+    # the Profile and the PDF report use.
+    _ensure_zone_definition(ctx)
 
     return ctx
 

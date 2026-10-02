@@ -3,11 +3,11 @@
   "profile": {
    "aggregate": {
     "scored_fields": 37,
-    "answered": 32,
-    "coverage": 0.8648648648648649,
-    "points": 53,
-    "possible": 64,
-    "accuracy": 0.828125,
+    "answered": 33,
+    "coverage": 0.8918918918918919,
+    "points": 62,
+    "possible": 66,
+    "accuracy": 0.9393939393939394,
     "cw": 0,
     "cw_fields": [],
     "critical_misses": [],
@@ -76,12 +76,12 @@
       "detail": "groups 1/1"
      },
      "C": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "far ok; height_ft ok; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -92,12 +92,12 @@
       "detail": "found 2/2"
      },
      "F": {
-      "score": null,
+      "score": 2,
       "cw": false,
-      "label": "NP",
+      "label": "2",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "groups 0/1"
+      "auto": "2",
+      "detail": "groups 1/1"
      }
     },
     "P3": {
@@ -118,12 +118,12 @@
       "detail": "groups 1/2"
      },
      "C": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "far ok; height_ft ok; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -210,12 +210,12 @@
       "detail": "groups 1/1"
      },
      "C": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "far ok; height_ft ok; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -252,20 +252,20 @@
       "detail": "district RS3"
      },
      "B": {
-      "score": 0,
+      "score": 2,
       "cw": false,
-      "label": "0",
+      "label": "2",
       "basis": "auto",
-      "auto": "0",
-      "detail": "groups 0/1"
+      "auto": "2",
+      "detail": "groups 1/1"
      },
      "C": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "far ok; height_ft ok; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -302,12 +302,12 @@
       "detail": "groups 1/1"
      },
      "C": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "far ok; height_ft ok; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -333,15 +333,13 @@
   "chat": {
    "aggregate": {
     "scored_fields": 37,
-    "answered": 30,
-    "coverage": 0.8108108108108109,
-    "points": 52,
-    "possible": 60,
-    "accuracy": 0.8666666666666667,
-    "cw": 1,
-    "cw_fields": [
-     "P2.C"
-    ],
+    "answered": 35,
+    "coverage": 0.9459459459459459,
+    "points": 63,
+    "possible": 70,
+    "accuracy": 0.9,
+    "cw": 0,
+    "cw_fields": [],
     "critical_misses": [],
     "a_correct": 7,
     "parcels": 7,
@@ -366,12 +364,12 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": null,
+      "score": 1,
       "cw": false,
-      "label": "NP",
+      "label": "1",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "far absent; height_ft absent; mla absent"
+      "auto": "1",
+      "detail": "far ok; height_ft ok; mla absent"
      },
      "D": {
       "score": 2,
@@ -408,12 +406,12 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": 0,
-      "cw": true,
-      "label": "0 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "0 CW",
-      "detail": "far wrong (2.2 vs 1.7); height_ft wrong (38 vs 45,47); mla wrong (400 vs 700)"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -424,12 +422,12 @@
       "detail": "found 2/2"
      },
      "F": {
-      "score": null,
+      "score": 2,
       "cw": false,
-      "label": "NP",
+      "label": "2",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "groups 0/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      }
     },
     "P3": {
@@ -450,12 +448,12 @@
       "detail": "groups 1/2"
      },
      "C": {
-      "score": null,
+      "score": 2,
       "cw": false,
-      "label": "NP",
+      "label": "2",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "far absent; height_ft absent; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -466,20 +464,20 @@
       "detail": "found 3/3"
      },
      "E": {
-      "score": 1,
-      "cw": false,
-      "label": "1",
-      "basis": "auto",
-      "auto": "1",
-      "detail": "groups 1/2"
-     },
-     "F": {
       "score": 2,
       "cw": false,
       "label": "2",
       "basis": "auto",
       "auto": "2",
       "detail": "groups 2/2"
+     },
+     "F": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
      }
     },
     "P4": {
@@ -542,12 +540,12 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": null,
+      "score": 1,
       "cw": false,
-      "label": "NP",
+      "label": "1",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "far absent; height_ft absent; mla absent"
+      "auto": "1",
+      "detail": "far ok; height_ft ok; mla absent"
      },
      "D": {
       "score": 2,
@@ -584,12 +582,12 @@
       "detail": "district RS3"
      },
      "B": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "groups 1/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "C": {
       "score": 1,
@@ -597,7 +595,7 @@
       "label": "1",
       "basis": "auto",
       "auto": "1",
-      "detail": "far absent; height_ft absent; mla ok"
+      "detail": "far ok; height_ft ok; mla absent"
      },
      "D": {
       "score": 2,
@@ -634,12 +632,12 @@
       "detail": "groups 2/2"
      },
      "C": {
-      "score": null,
+      "score": 2,
       "cw": false,
-      "label": "NP",
+      "label": "2",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "far absent; height_ft absent; mla absent"
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
       "score": 2,
@@ -685,7 +683,7 @@
   "P3": {
    "profile_pin": "14171060250000",
    "profile_confidence": "authoritative",
-   "chat_resolved_address": "1500 W Wilson Ave, Chicago, IL",
+   "chat_resolved_address": "1500 W Wilson Ave, Chicago, IL 60640",
    "chat_pin_in_text": "14171060250000",
    "chat_pin_matches": true,
    "point_gap_ft": 0,
@@ -695,15 +693,15 @@
    "profile_pin": "17101350390000",
    "profile_confidence": "authoritative",
    "chat_resolved_address": "401 N Wabash Ave, Chicago, IL",
-   "chat_pin_in_text": "17101350381067",
-   "chat_pin_matches": false,
+   "chat_pin_in_text": "17101350390000",
+   "chat_pin_matches": true,
    "point_gap_ft": 0,
    "community_area_matches": true
   },
   "P5": {
    "profile_pin": "14313320180000",
    "profile_confidence": "authoritative",
-   "chat_resolved_address": "1601 N Milwaukee Ave, Chicago, IL 60647",
+   "chat_resolved_address": "1601 N Milwaukee Ave, Chicago, IL",
    "chat_pin_in_text": "14313320180000",
    "chat_pin_matches": true,
    "point_gap_ft": 0,
@@ -730,72 +728,64 @@
  },
  "truncation": {
   "P1": {
-   "field_name_leaks": [],
-   "chars": 7200,
+   "field_name_leaks": [
+    "tod_benefits"
+   ],
+   "chars": 5351,
    "item6_present": true,
-   "ends_cleanly": false,
+   "ends_cleanly": true,
    "notice_shown": false,
-   "silently_cut_off": true
+   "silently_cut_off": false
   },
   "P2": {
-   "field_name_leaks": [
-    "zone_definition"
-   ],
-   "chars": 7201,
+   "field_name_leaks": [],
+   "chars": 5751,
    "item6_present": true,
-   "ends_cleanly": false,
+   "ends_cleanly": true,
    "notice_shown": false,
-   "silently_cut_off": true
+   "silently_cut_off": false
   },
   "P3": {
-   "field_name_leaks": [
-    "density_bonus_eligible",
-    "zone_definition"
-   ],
-   "chars": 7323,
+   "field_name_leaks": [],
+   "chars": 6149,
    "item6_present": true,
-   "ends_cleanly": false,
+   "ends_cleanly": true,
    "notice_shown": false,
-   "silently_cut_off": true
+   "silently_cut_off": false
   },
   "P4": {
    "field_name_leaks": [],
-   "chars": 7521,
+   "chars": 5233,
    "item6_present": true,
    "ends_cleanly": true,
    "notice_shown": false,
    "silently_cut_off": false
   },
   "P5": {
-   "field_name_leaks": [
-    "tod_benefits",
-    "zone_definition"
-   ],
-   "chars": 7993,
+   "field_name_leaks": [],
+   "chars": 6403,
    "item6_present": true,
-   "ends_cleanly": false,
+   "ends_cleanly": true,
    "notice_shown": false,
-   "silently_cut_off": true
+   "silently_cut_off": false
   },
   "P6": {
    "field_name_leaks": [
-    "zone_definition"
+    "tod_benefits"
    ],
-   "chars": 7543,
+   "chars": 6771,
    "item6_present": true,
    "ends_cleanly": true,
    "notice_shown": false,
    "silently_cut_off": false
   },
   "P7": {
-   "field_name_leaks": [
-    "zone_definition"
-   ],
-   "chars": 7362,
+   "field_name_leaks": [],
+   "chars": 5449,
    "item6_present": true,
-   "ends_cleanly": false,
+   "ends_cleanly": true,
    "notice_shown": false,
-   "silently_cut_off": true
+   "silently_cut_off": false
   }
  },
  "manual_fields": "",
@@ -804,7 +794,7 @@
  "meta": {
   "date": "2026-10-02",
   "git_sha": "dd5360a",
-  "source": "replay of eval/results/2026-10-02-f2/parcel_kit_raw",
+  "source": "replay of eval/results/2026-10-02-f3/parcel_kit_raw",
   "key_version": "2026-10-01.1"
  }
 }
