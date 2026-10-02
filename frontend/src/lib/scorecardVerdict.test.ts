@@ -383,6 +383,9 @@ describe("recently rezoned (F5a)", () => {
     (old.context as unknown as Record<string, unknown>).parcel_zoning = { zone_class: "RT-4", recently_rezoned: false, ordinance_date: "2007-09-05" };
     expect(computeVerdict(old, t).caveats.some((c) => c.includes("recentlyRezoned"))).toBe(false);
     expect(computeVerdict(mk({ zone: "RT-4", far: 1.2, bldg: 1500, land: 3000 }), t).caveats.some((c) => c.includes("recentlyRezoned"))).toBe(false);
+  });
+});
+
 describe("building area that isn't this lot's (F6)", () => {
   it("an existing FAR several times the zone cap is treated as unknown, not as a built-out parcel", () => {
     // kit P3: 43,790 sq ft (a whole strip center) on a 4,347 sq ft lot -> FAR 10.07 vs a 2.2 cap
