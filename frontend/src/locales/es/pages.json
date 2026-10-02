@@ -135,7 +135,10 @@
       "farHeadroom": "{{pct}}% de la envolvente de pleno derecho sin usar",
       "setByPdOrdinance": "Definido por la ordenanza del PD",
       "pdOrdinance": "Ordenanza del PD",
-      "minLotArea": "Área mínima de lote"
+      "minLotArea": "Área mínima de lote",
+      "minLotAreaPerUnit": "Área mín. de lote por unidad",
+      "maxUnitsByLotArea": "Unidades máx. por área de lote",
+      "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más."
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",

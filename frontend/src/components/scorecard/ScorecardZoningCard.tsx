@@ -4,6 +4,7 @@
 // ZoneDefinition from the scorecard API + the verdict's FAR signals.
 import { useTranslation } from "react-i18next";
 import type { ZoneDefinition } from "../../lib/api";
+import type { UnitYield } from "../../lib/types";
 import { localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
@@ -39,12 +40,13 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
   allowedFar?: number | null;
   ordinanceNum?: string | null;
+  unitYield?: UnitYield | null;
 }) {
   const { t } = useTranslation("pages");
   // PD/PMD standards are negotiated per-ordinance, not tabulated in Title 17 —
@@ -58,6 +60,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   else if (isPd) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: t("scorecard.zoningCard.setByPdOrdinance") });
   if (def.lot_coverage) standards.push({ label: t("scorecard.zoningCard.lotCoverage"), value: localizeZoningValue(def.lot_coverage) });
   if (def.min_lot_sqft != null) standards.push({ label: t("scorecard.zoningCard.minLotArea"), value: `${def.min_lot_sqft.toLocaleString()} ft²` });
+  if (def.min_lot_area_per_unit != null)
+    standards.push({ label: t("scorecard.zoningCard.minLotAreaPerUnit"), value: `${def.min_lot_area_per_unit.toLocaleString()} ft²` });
   if (isPd && ordinanceNum) standards.push({ label: t("scorecard.zoningCard.pdOrdinance"), value: ordinanceNum });
 
   return (
@@ -84,6 +88,19 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
         {existingFar != null && allowedFar != null && allowedFar > 0 && (
           <FarMeter existing={existingFar} allowed={allowedFar} />
         )}
+
+        {unitYield && (
+          <div className="rounded-lg border border-border-subtle bg-surface-raised/40 px-3 py-2.5" data-testid="unit-yield">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-caption text-text-muted">{t("scorecard.zoningCard.maxUnitsByLotArea")}</span>
+              <span className="text-body font-medium text-text-primary">{unitYield.units}</span>
+            </div>
+            <p className="text-caption text-text-secondary mt-1">{unitYield.arithmetic}</p>
+            <p className="text-caption text-text-muted mt-1 leading-relaxed">{t("scorecard.zoningCard.unitYieldCaveat")}</p>
+          </div>
+        )}
+
+        {def.lot_area_note && <p className="text-caption text-text-muted leading-relaxed">{def.lot_area_note}</p>}
 
         {def.uses && <p className="text-caption text-text-secondary leading-relaxed">{def.uses}</p>}
         {def.notes && <p className="text-caption text-text-muted leading-relaxed">{def.notes}</p>}

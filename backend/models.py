@@ -723,6 +723,20 @@ class ContextObject(BaseModel):
     # `property` is a field name in this class body, so spell the builtin out.
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property
+    def unit_yield(self) -> dict | None:
+        """Max dwelling units this parcel's LOT AREA allows at its district's
+        minimum lot area per unit, with the arithmetic and the caveat that other
+        standards can bind first. Derived (never stored) from parcel_zoning and
+        property.land_sqft, so the Profile, a cold chat turn and a handoff all
+        agree. None for districts with no per-unit minimum, or an unknown lot."""
+        if self.parcel_zoning is None or self.property is None:
+            return None
+        from backend.retrieval.zoning_definitions import max_units_by_lot_area
+
+        return max_units_by_lot_area(self.parcel_zoning.zone_class, self.property.land_sqft)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
     def tod_benefits(self) -> dict | None:
         """What transit-served status does and does not change for THIS parcel's
         district (parking relief vs. dash-3-only density bonuses). Derived, never

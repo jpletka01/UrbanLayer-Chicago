@@ -334,6 +334,9 @@
  "resolution": {},
  "truncation": {
   "P1": {
+   "field_name_leaks": [
+    "tod_benefits"
+   ],
    "chars": 5277,
    "item6_present": true,
    "ends_cleanly": true,
@@ -341,6 +344,9 @@
    "silently_cut_off": false
   },
   "P2": {
+   "field_name_leaks": [
+    "zone_definition"
+   ],
    "chars": 6411,
    "item6_present": true,
    "ends_cleanly": true,
@@ -348,6 +354,9 @@
    "silently_cut_off": false
   },
   "P3": {
+   "field_name_leaks": [
+    "density_bonus_eligible"
+   ],
    "chars": 7140,
    "item6_present": true,
    "ends_cleanly": false,
@@ -356,6 +365,7 @@
    "silently_cut_off": false
   },
   "P4": {
+   "field_name_leaks": [],
    "chars": 6218,
    "item6_present": true,
    "ends_cleanly": true,
@@ -363,6 +373,7 @@
    "silently_cut_off": false
   },
   "P5": {
+   "field_name_leaks": [],
    "chars": 7498,
    "item6_present": true,
    "ends_cleanly": false,
@@ -371,6 +382,7 @@
    "silently_cut_off": false
   },
   "P6": {
+   "field_name_leaks": [],
    "chars": 6203,
    "item6_present": true,
    "ends_cleanly": true,
@@ -378,6 +390,7 @@
    "silently_cut_off": false
   },
   "P7": {
+   "field_name_leaks": [],
    "chars": 5133,
    "item6_present": true,
    "ends_cleanly": true,
@@ -390,7 +403,7 @@
  "verdict_text_available": true,
  "meta": {
   "date": "2026-10-02",
-  "git_sha": "33ef302",
+  "git_sha": "dd5360a",
   "source": "replay of eval/results/2026-10-02-f4b/parcel_kit_raw",
   "key_version": "2026-10-01.1"
  }

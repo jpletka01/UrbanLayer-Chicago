@@ -626,8 +626,21 @@ export interface TodBenefits {
   note: string;
 }
 
+// Max dwelling units the lot AREA allows (backend max_units_by_lot_area): shows its
+// inputs and says it is one limit among several, never "the" buildable count.
+export interface UnitYield {
+  units: number;
+  lot_sqft: number;
+  min_lot_area_per_unit: number;
+  arithmetic: string;
+  basis: string;
+  caveat: string;
+  lot_area_note: string;
+}
+
 export interface ContextObject {
   tod_benefits?: TodBenefits | null;
+  unit_yield?: UnitYield | null;
   community_area: number | null;
   community_area_name: string | null;
   resolved_address: string | null;

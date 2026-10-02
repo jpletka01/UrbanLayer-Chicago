@@ -1,6 +1,6 @@
 # Parcel kit report
 
-Key `2026-10-01.1` · run 2026-10-02 · code `33ef302` · source: replay of eval/results/2026-10-02-f4/parcel_kit_raw
+Key `2026-10-01.1` · run 2026-10-02 · code `dd5360a` · source: replay of eval/results/2026-10-02-f4/parcel_kit_raw
 
 > Answer key for the 7-parcel Chicago kit, built from primary sources (City zoning layer, Zoning MapServer, Municipal Code text current through the Council Journal of 2026-03-18, ordinance PDFs, Cook County Assessor). NOT yet reviewed by a Chicago architect or zoning attorney: P2, P3 and P6 are the most interpretive. Overlay truth comes from the same City service UrbanLayer queries, so overlay scores are not independent.
 
@@ -28,15 +28,15 @@ All cells are automatic (no hand-scores file).
 
 ## Chat answer completeness
 
-| Parcel | Chars | Reaches item 6 | Ends cleanly | Cut-off notice | Silently cut off |
-|---|--:|:-:|:-:|:-:|:-:|
-| P1 | 6470 | yes | yes |  |  |
-| P2 | 6224 | yes | yes |  |  |
-| P3 | 7438 | yes | NO | yes |  |
-| P4 | 6500 | yes | yes |  |  |
-| P5 | 7604 | yes | NO | yes |  |
-| P6 | 7096 | yes | NO | yes |  |
-| P7 | 6374 | yes | yes |  |  |
+| Parcel | Chars | Reaches item 6 | Ends cleanly | Cut-off notice | Silently cut off | Field names leaked |
+|---|--:|:-:|:-:|:-:|:-:|---|
+| P1 | 6470 | yes | yes |  |  | zone_definition |
+| P2 | 6224 | yes | yes |  |  | zone_definition |
+| P3 | 7438 | yes | NO | yes |  |  |
+| P4 | 6500 | yes | yes |  |  |  |
+| P5 | 7604 | yes | NO | yes |  |  |
+| P6 | 7096 | yes | NO | yes |  |  |
+| P7 | 6374 | yes | yes |  |  |  |
 
 ## Per-cell detail
 
