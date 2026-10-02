@@ -98,14 +98,16 @@ def _ctx() -> ContextObject:
 
 def test_allowed_urls_are_exactly_the_ones_we_supplied():
     allowed = allowed_urls(_ctx())
-    assert "https://gisapps.chicago.gov/gisimages/zoning_pds/PD835.pdf" in allowed
-    assert "https://codelibrary.amlegal.com/codes/chicago/latest/chicagozoning_il/0-0-0-53035" in allowed  # the layer's own 606 link
-    assert "https://chicityclerkelms.chicago.gov/Matter/?matterId=abc" in allowed
-    assert "https://www.cookcountyassessor.com/pin/16012280180000" in allowed
-    assert "https://ward26.org" in allowed
+    assert allowed >= {
+        "https://gisapps.chicago.gov/gisimages/zoning_pds/PD835.pdf",
+        "https://codelibrary.amlegal.com/codes/chicago/latest/chicagozoning_il/0-0-0-53035",  # the layer's own 606 link
+        "https://chicityclerkelms.chicago.gov/Matter/?matterId=abc",
+        "https://www.cookcountyassessor.com/pin/16012280180000",
+        "https://ward26.org",
+    }
     assert any(u.startswith("https://www.chicago.gov/city/en/depts/dcd/supp_info/office_of_the_zoningadministrator") for u in allowed)
     # a model-composed American Legal id is not among them
-    assert "https://codelibrary.amlegal.com/codes/chicago/latest/chicago_il/0-0-0-563405" not in allowed
+    assert not allowed & {"https://codelibrary.amlegal.com/codes/chicago/latest/chicago_il/0-0-0-563405"}
 
 
 # --- the footer -----------------------------------------------------------------------------------------------
