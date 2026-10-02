@@ -1949,6 +1949,16 @@ async def scorecard(
         data["zone_definition"] = asdict(get_zone_definition(zoning_summary.zone_class))
     else:
         data["zone_definition"] = None
+    # Where each fact came from and how current it is (V1): dated sources for the
+    # district, its standards, the overlays and the parcel identity.
+    from backend.provenance import build_provenance
+
+    data["provenance"] = build_provenance(
+        context=data["context"],
+        zone_definition=data.get("zone_definition"),
+        resolved_pin=resolved_pin,
+        resolved_confidence=resolved_confidence,
+    )
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
         data["comparables"] = data["comparables"].model_dump(exclude_none=True)

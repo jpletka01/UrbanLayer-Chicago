@@ -227,6 +227,17 @@ P1 (coach house not allowed), P5 and P6 went from partial to correct.
 *P7's chat call failed mid-run because the Anthropic account ran out of credit, so it
 is reported as not scored rather than counted; the chat row covers six parcels.
 
+The first Phase 2 milestone (V1) makes the Profile's facts checkable: `/api/scorecard`
+now returns a `provenance` map with a dated source for the district (and the
+ordinance behind it), each standard (and the code section it comes from, pinned to the
+code's own headings), each overlay (and the City layer it came from), the parcel
+identity, the area figures and the code's vintage. The kit counts how many stated
+facts carry one: **46 of 46**, but only **25 of 46** carry a date the source itself
+gives (an edit or effective date, or the code's current-through date); overlays and
+parcel identity carry only the date we queried them, because the City's layers publish
+no per-feature date. Taxes, comparables and permits are not covered yet
+([report](eval/results/2026-10-02-v1/parcel_kit.md)).
+
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 
 | Field | Coverage | Note |
