@@ -34,6 +34,7 @@ PROGRESSION = [
     {"id": "2026-10-02-f5a", "label": "When the district last changed, and how current the code is (F5a)", "dir": "2026-10-02-f5a", "surfaces": ["profile", "chat"]},
     {"id": "2026-10-02-f7", "label": "Overlays named, with what they require (F7)", "dir": "2026-10-02-f7", "surfaces": ["profile"]},
     {"id": "2026-10-02-v4", "label": "Where the page says it stops (V4)", "dir": "2026-10-02-v4", "surfaces": ["profile"]},
+    {"id": "2026-10-02-v7a", "label": "Key grows to 12 parcels (downtown, manufacturing, lakefront, transit); P5 key corrected (V7, batch 1)", "dir": "2026-10-02-v7a", "surfaces": ["profile"]},
 ]
 
 FIELD_NAMES = {"A": "District", "B": "Use question", "C": "Bulk numbers", "D": "Overlays", "E": "Parking / transit", "F": "Task answer"}
@@ -45,10 +46,9 @@ def _pct(x: float) -> str:
 
 def load_run(entry: dict) -> dict:
     """The scored report for one published run, as the kit's own JSON."""
-    key = k.load_key()
     if entry.get("replay"):
         manual = json.loads((BASELINE_DIR / "manual_scores.json").read_text())
-        rep = k.score_run_dir(BASELINE_DIR, key, k.SURFACES, None, manual, "BEF")
+        rep = k.score_run_dir(BASELINE_DIR, k.load_key(BASELINE_DIR / "key.json"), k.SURFACES, None, manual, "BEF")
         rep["meta"] = {"date": "2026-10-01", "git_sha": "dd481c5", "source": "recorded run replayed with hand scores"}
         return rep
     return json.loads((RESULTS / entry["dir"] / "parcel_kit.json").read_text())
@@ -74,6 +74,7 @@ def collect() -> dict:
     for e in PROGRESSION:
         rep = load_run(e)
         row = {"id": e["id"], "label": e["label"], "date": rep["meta"].get("date"), "code": rep["meta"].get("git_sha"),
+               "key": rep["meta"].get("key_version") or "2026-10-01.1",
                "report": None if e.get("replay") else f"eval/results/{e['dir']}/parcel_kit.md", "surfaces": {}}
         for s in e["surfaces"]:
             body = rep["surfaces"].get(s)
@@ -88,11 +89,23 @@ def collect() -> dict:
             }
         runs.append((row, rep))
     current: dict[str, dict] = {}
-    for row, rep in runs:
+    for row, rep in runs:  # a surface's current result: the newest run among those that scored the most parcels
         for s, agg in row["surfaces"].items():
-            if agg["parcels_scored"] == len(key["parcels"]):  # a surface counts as current only when all parcels were scored
-                current[s] = {"run": row["id"], "date": row["date"], "code": row["code"], "report": row["report"], "aggregate": agg,
-                              "fields": rep["surfaces"][s]["fields"]}
+            if s not in current or agg["parcels_scored"] >= current[s]["aggregate"]["parcels_scored"]:
+                current[s] = {"run": row["id"], "date": row["date"], "code": row["code"], "key": row["key"], "report": row["report"],
+                              "aggregate": agg, "fields": rep["surfaces"][s]["fields"]}
+    for s_, cur in current.items():  # a result scored under an older key is re-scored under today's, from its raw runs
+        raw = RESULTS / cur["run"].replace("baseline", "") / "parcel_kit_raw"
+        if cur["key"] != key["version"] and cur["run"] != "baseline" and raw.exists():
+            body = k.score_run_dir(raw, key, [s_], None, None, "")["surfaces"].get(s_)
+            if body:
+                a = body["aggregate"]
+                cur["aggregate"] = {**cur["aggregate"], "parcels_scored": a["parcels"], "coverage": round(a["coverage"], 3),
+                                    "accuracy": round(a["accuracy"], 3), "points": a["points"], "possible": a["possible"],
+                                    "confident_wrong": a["cw"], "critical_misses": a["critical_misses"], "district_correct": a["a_correct"]}
+                cur["fields"] = body["fields"]
+                cur["rescored_from"] = cur["key"]
+                cur["key"] = key["version"]
     return {
         "kit_version": key["version"], "parcels": [{"id": p["id"], "address": p["address"], "why": p["why"], "district": p["A"]["district"]} for p in key["parcels"]],
         "current": current, "progression": [r for r, _ in runs],
@@ -113,7 +126,7 @@ def limits(rev: dict) -> list[str]:
 
 
 _LIMITS = [
-    "Seven parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
+    "A dozen parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
     "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
     "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",
     "Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.",
@@ -127,12 +140,13 @@ def render(data: dict) -> str:
     L: list[str] = []
     L.append("# UrbanLayer parcel benchmark")
     L.append("")
-    L.append("Seven hard Chicago parcels, each with an answer key built from primary sources, asked the same six questions of "
+    n = len(key["parcels"])
+    L.append(f"{n} hard Chicago parcels, each with an answer key built from primary sources, asked the same six questions of "
              "the product's **Property Profile** (a deterministic page) and of its **chat** (the same standard prompt, address "
              "only). It was built to find where a zoning tool is wrong, so it includes the failures.")
     L.append("")
     reviewed = data["review"]["status"] == "reviewed"
-    L.append("> **Read the limits before quoting a number** (section 6). Seven parcels; the key "
+    L.append(f"> **Read the limits before quoting a number** (section 6). {n} parcels; the key "
              + ("has been reviewed in part by an outside professional (section 5)." if reviewed else "is not yet reviewed by a Chicago professional."))
     L.append("")
     L.append("## 1. Current results")
@@ -144,18 +158,20 @@ def render(data: dict) -> str:
             continue
         c = cur[s]
         a = c["aggregate"]
-        L.append(f"| {'Property Profile' if s == 'profile' else 'Chat'} | {c['date']} (`{c['code']}`) | {a['parcels_scored']}/7 | {_pct(a['coverage'])} | "
+        note = f", re-scored under key `{c['key']}` from its recorded answers" if c.get("rescored_from") else ""
+        L.append(f"| {'Property Profile' if s == 'profile' else 'Chat'} | {c['date']} (`{c['code']}`{note}) | {a['parcels_scored']}/{n} | {_pct(a['coverage'])} | "
                  f"{_pct(a['accuracy'])} | {a['confident_wrong']} | {', '.join(a['critical_misses']) or 'none'} | {a['scoring']} |")
     L.append("")
-    L.append("*Coverage* is the share of the 37 scored fields the tool made a claim on; *accuracy* is points earned (2 / 1 / 0) over "
+    L.append("*Coverage* is the share of the scored fields the tool made a claim on; *accuracy* is points earned (2 / 1 / 0) over "
              "points possible on the fields it answered; a *confident-wrong* field is wrong and stated without hedging; a *wrong "
              "district* is the critical failure, because everything else derives from it. The two surfaces' current runs come from "
-             "different code versions (the most recent run that scored all seven parcels on each surface).")
+             "different code versions (the newest run that scored the most parcels on each surface; a surface scored on fewer than all parcels says so in its row).")
     L.append("")
     L.append("## 2. Parcel by parcel")
     L.append("")
     L.append("Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **CW** marks a confident-wrong answer. "
-             "Fields: A district, B use question, C bulk numbers, D overlays, E parking/transit (P3 and P5 only), F the parcel's task question.")
+             "Fields: A district, B use question, C bulk numbers, D overlays, E parking/transit (scored only on the parcels near transit), F the parcel's task question. "
+             "A blank cell means that surface was not run on that parcel yet.")
     L.append("")
     for p in key["parcels"]:
         pid = p["id"]
@@ -187,28 +203,27 @@ def render(data: dict) -> str:
     L.append("Each row is a dated run of the real system on one code version (`make kit`), scored the same way. Every change here "
              "shipped because an earlier row showed a failure; the reports linked are the raw evidence.")
     L.append("")
-    L.append("| Run | Date | Code | Profile accuracy / confident-wrong | Chat accuracy / confident-wrong | Chat wrong districts | Report |")
-    L.append("|---|---|---|:-:|:-:|---|---|")
+    L.append("| Run | Date | Code | Key · parcels | Profile accuracy / confident-wrong | Chat accuracy / confident-wrong | Chat wrong districts | Report |")
+    L.append("|---|---|---|---|:-:|:-:|---|---|")
     for r in data["progression"]:
         prof, chat = r["surfaces"].get("profile"), r["surfaces"].get("chat")
         pc = f"{_pct(prof['accuracy'])} / {prof['confident_wrong']}" if prof else ""
         if chat:
             cc = f"{_pct(chat['accuracy'])} / {chat['confident_wrong']}"
-            if chat["parcels_scored"] < 7:
-                cc += f" ({chat['parcels_scored']} parcels)"
             wd = ", ".join(chat["critical_misses"]) or "none"
         else:
             cc, wd = "", ""
         rep = f"[report]({'../../' + r['report']})" if r["report"] else "recorded run in `eval/kit/baseline/`"
-        L.append(f"| {r['label']} | {r['date']} | `{r['code']}` | {pc} | {cc} | {wd} | {rep} |")
+        np_ = max((x["parcels_scored"] for x in r["surfaces"].values()), default=0)
+        L.append(f"| {r['label']} | {r['date']} | `{r['code']}` | `{r['key']}` · {np_} | {pc} | {cc} | {wd} | {rep} |")
     L.append("")
     L.append("## 4. What the first run found")
     L.append("")
     L.append("The starting point is the uncomfortable part, and it is kept on purpose. The Profile resolved the right district on "
-             "all seven parcels but showed a false claim (that every transit-served parcel gets a density bonus; only dash-3 districts "
+             "all seven original parcels but showed a false claim (that every transit-served parcel gets a density bonus; only dash-3 districts "
              "can, and only by entitlement) and never showed the number a unit count turns on (minimum lot area per unit). Chat, given "
              "only an address, located the parcel from a geocoded street point instead of the parcel, which put it in the neighboring "
-             "district on two of seven parcels (a vacant RM-4.5 lot answered as RS-3, a landmark answered as a C1-3 parcel), invented "
+             "district on two of the original seven parcels (a vacant RM-4.5 lot answered as RS-3, a Landmark-district parcel answered as a C1-3 parcel), invented "
              "bulk numbers from memory, and stopped at its token cap mid-answer on most parcels without saying so. A recent rezoning "
              "could not be stated at all, and a multi-parcel strip center's building area had been attributed to a single lot.")
     L.append("")
@@ -220,6 +235,9 @@ def render(data: dict) -> str:
              "data. Where the key and the product agree because they read the same City service, that is noted (overlays). The key "
              "fixed three errors in an earlier version that had used the product's own output as ground truth.")
     L.append("")
+    for c in key.get("corrections", []):
+        L.append(f"**Correction, {c['date']}, {c['parcel']}.{c['field']}.** Was: {c['was']}. Now: {c['now']}. {c['why']} {c['effect']}")
+        L.append("")
     rv = data["review"]
     if rv["status"] == "reviewed":
         r = rv["reviewer"]
@@ -243,7 +261,7 @@ def render(data: dict) -> str:
     L.append("")
     L.append("```bash")
     L.append("make kit-replay    # re-score the recorded runs: no network, no cost; reproduces the starting-point row")
-    L.append("make kit           # run the live system on the 7 parcels, then score it (Profile is free; chat costs about $1)")
+    L.append("make kit           # run the live system on the parcels, then score it (Profile is free; chat costs about $1)")
     L.append("PYTHONPATH=. python -m eval.benchmark   # regenerate this page from the committed results")
     L.append("```")
     L.append("")

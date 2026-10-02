@@ -1,0 +1,1261 @@
+{
+ "address": "1500 W Wilson Ave",
+ "lat": 41.96548595,
+ "lon": -87.66783518,
+ "community_area": 3,
+ "community_area_name": "Uptown",
+ "context": {
+  "community_area": 3,
+  "community_area_name": "Uptown",
+  "resolved_address": "1500 W Wilson Ave",
+  "data_as_of": "2026-10-02",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-25).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-25",
+  "crime_last_90d": {
+   "total": 1177,
+   "arrest_rate": 0.134,
+   "by_type": {
+    "THEFT": 380,
+    "BATTERY": 179,
+    "CRIMINAL DAMAGE": 117,
+    "BURGLARY": 102,
+    "ASSAULT": 98
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 380,
+     "prior_year_count": 356,
+     "change_pct": 7
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 179,
+     "prior_year_count": 219,
+     "change_pct": -18
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 117,
+     "prior_year_count": 107,
+     "change_pct": 9
+    },
+    {
+     "category": "BURGLARY",
+     "current_count": 102,
+     "prior_year_count": 60,
+     "change_pct": 70
+    },
+    {
+     "category": "ASSAULT",
+     "current_count": 98,
+     "prior_year_count": 114,
+     "change_pct": -14
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 24,
+   "open_count": 0,
+   "by_type": {
+    "Graffiti Removal Request": 5,
+    "Rodent Baiting/Rat Complaint": 3,
+    "Sign Repair Request - All Other Signs": 3,
+    "Sewer Cleaning Inspection Request": 2,
+    "Traffic Signal Out Complaint": 1,
+    "Sewer Cave-In Inspection Request": 1,
+    "Dead Animal Pick-Up Request": 1,
+    "Report an Injured Animal": 1,
+    "311 INFORMATION ONLY CALL": 1,
+    "Pothole in Street Complaint": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": [
+    "Rodent Baiting/Rat Complaint"
+   ]
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "B1-2",
+   "zone_type": 1,
+   "map_updated": "2025-03-19",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "recently_rezoned": false
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "adu_area",
+     "name": "ADU-Allowed RS Area \u2014 Zone 1",
+     "description": "ADU Eligible Areas",
+     "detail": "Limitations: No Limitations (\u00a717-7-0573, \u00a717-7-0574)."
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    },
+    {
+     "layer_type": "ssa",
+     "name": "Greater Ravenswood",
+     "description": "Special Service Areas"
+    },
+    {
+     "layer_type": "tod_metra",
+     "name": "Transit-Oriented Development (Metra)",
+     "description": "Transit-Oriented Development (Metra)"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": false,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": true,
+   "in_aro_zone": true,
+   "in_ssa": true,
+   "ssa_name": "Greater Ravenswood",
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [],
+   "aro_housing": {
+    "total_projects": 20,
+    "total_units": 976,
+    "projects": [
+     {
+      "name": "4420 N. Sheridan Apts.",
+      "address": "4420 N. Sheridan Road",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "4533 N Clark St.",
+      "address": "4533 N. Clark St.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "4801 N. Ravenswood Ave.",
+      "address": "4801 N. Ravenswood Ave.",
+      "units": 4,
+      "property_type": "ARO"
+     },
+     {
+      "name": "811 Uptown",
+      "address": "811 W. Agatite Ave.",
+      "units": 22,
+      "property_type": "ARO"
+     },
+     {
+      "name": "850 Eastwood",
+      "address": "850 W. Eastwood Ave.",
+      "units": 69,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Carlton Terrace",
+      "address": "4626 N. Magnolia Ave.",
+      "units": 70,
+      "property_type": "Supportive"
+     },
+     {
+      "name": "Harmony Apartments",
+      "address": "4513 N. Clark St.",
+      "units": 6,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Harold Washington Apts.",
+      "address": "4946 N. Sheridan Road",
+      "units": 100,
+      "property_type": "Supportive Housing"
+     },
+     {
+      "name": "Hazel Winthrop Apts.",
+      "address": "4426 N. Magnolia Ave.",
+      "units": 6,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Hazel Winthrop Apts.",
+      "address": "912 W. Montrose Ave.",
+      "units": 6,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Hazel Winthrop Apts.",
+      "address": "852-54 W. Sunnyside Ave./4509 N. Hazel St.",
+      "units": 12,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Hazel Winthrop Apts.",
+      "address": "4813 N. Winthrop Ave.",
+      "units": 6,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Kenmore Senior Housing",
+      "address": "5040 N. Kenmore Ave.",
+      "units": 98,
+      "property_type": "Senior"
+     },
+     {
+      "name": "LALux Apts.",
+      "address": "4747 N. Ashland Ave.",
+      "units": 4,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Leland Apts.",
+      "address": "1207 W. Leland Ave.",
+      "units": 137,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Magnolia Court Apts.",
+      "address": "4878 N. Magnolia Ave.",
+      "units": 60,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Major Jenkins Apts.",
+      "address": "5012 N. Winthrop Ave.",
+      "units": 96,
+      "property_type": "Supportive Housing"
+     },
+     {
+      "name": "Malden Arms Apts.",
+      "address": "4727 N. Malden St.",
+      "units": 41,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Platform 4611",
+      "address": "4611 N. Broadway",
+      "units": 5,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Ruth Shriman House",
+      "address": "4040 N. Sheridan Road",
+      "units": 231,
+      "property_type": "Senior"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "14171060250000",
+   "bldg_class": "517",
+   "land_sqft": 4347,
+   "land_sqft_source": "geometry",
+   "complex_bldg_sqft": 43790,
+   "complex_member_pins": [
+    "14171060120000",
+    "14171060250000",
+    "14171060260000",
+    "14171060270000",
+    "14171060380000",
+    "14171060400000",
+    "14171060440000"
+   ],
+   "year_built_source": "commercial_valuation",
+   "stories_source": "footprint",
+   "stories": 1.0,
+   "bldg_age": 62,
+   "year_built": 1964,
+   "tax_exempt": false,
+   "total_assessed_value": 77471.0,
+   "estimated_annual_tax": 15959.8,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.25,
+   "implied_market_value": 309884.0,
+   "effective_tax_rate": 0.0515,
+   "tax_year": 2024,
+   "tax_code": "73064",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 8538.67
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 3797.6
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 918.24
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 800.6
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 691.87
+    },
+    {
+     "agency": "CITY OF CHICAGO SPECIAL SERVICE AREA 31",
+     "rate": 0.168101,
+     "amount": 395.31
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 351.52
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 304.7
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 161.29
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [
+     {
+      "year": 2025,
+      "stage": "board_of_review",
+      "before_total": 77471.0,
+      "after_total": 77471.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 77471.0,
+      "after_total": 77471.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2021,
+      "stage": "assessor",
+      "before_total": 93240.0,
+      "after_total": 93240.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2021,
+      "stage": "board_of_review",
+      "before_total": 93236.0,
+      "after_total": 85216.0,
+      "result": "Decrease",
+      "reduction_pct": 8.6,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2018,
+      "stage": "board_of_review",
+      "before_total": 67038.0,
+      "after_total": 61195.0,
+      "result": "Decrease",
+      "reduction_pct": 8.7,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2015,
+      "stage": "board_of_review",
+      "before_total": 69319.0,
+      "after_total": 64042.0,
+      "result": "Decrease",
+      "reduction_pct": 7.6,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2012,
+      "stage": "board_of_review",
+      "before_total": 88448.0,
+      "after_total": 76825.0,
+      "result": "Decrease",
+      "reduction_pct": 13.1,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2011,
+      "stage": "board_of_review",
+      "before_total": 80017.0,
+      "after_total": 80017.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2010,
+      "stage": "board_of_review",
+      "before_total": 80017.0,
+      "after_total": 80017.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     }
+    ],
+    "nearby_window_years": [
+     2023,
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 465,
+    "nearby_reduced_count": 183,
+    "nearby_median_reduction_pct": 5.0,
+    "nearby_capped": false
+   },
+   "assessment_history": [
+    {
+     "year": 2026,
+     "land": 59813.0,
+     "building": 17658.0,
+     "total": 77471.0
+    },
+    {
+     "year": 2025,
+     "land": 59813.0,
+     "building": 17658.0,
+     "total": 77471.0
+    },
+    {
+     "year": 2024,
+     "land": 59813.0,
+     "building": 17658.0,
+     "total": 77471.0
+    },
+    {
+     "year": 2023,
+     "land": 61107.0,
+     "building": 24111.0,
+     "total": 85218.0
+    },
+    {
+     "year": 2022,
+     "land": 61107.0,
+     "building": 24111.0,
+     "total": 85218.0
+    }
+   ],
+   "sales_history": [],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.66782,
+       41.96574
+      ],
+      [
+       -87.66782,
+       41.96576
+      ],
+      [
+       -87.66793,
+       41.96576
+      ],
+      [
+       -87.66793,
+       41.96574
+      ],
+      [
+       -87.66792,
+       41.96536
+      ],
+      [
+       -87.66781,
+       41.96536
+      ],
+      [
+       -87.66782,
+       41.96572
+      ],
+      [
+       -87.66782,
+       41.96574
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": true,
+   "tif_name": "Clark/Montrose",
+   "tif_year_start": 1999,
+   "tif_end_year": 2035,
+   "tif_total_revenue": 5287570.0,
+   "tif_total_expenditure": 7586384.0,
+   "tif_property_tax_revenue": 5287570.0,
+   "tif_cumulative_revenue": 71079790.0,
+   "tif_fund_balance": 13964131.0,
+   "tif_annual_expenditure": 7586384.0,
+   "tif_fund_history": [
+    {
+     "year": "2025",
+     "revenue": 5287570.0,
+     "expenditure": 7586384.0,
+     "fund_balance": 13964131.0,
+     "net_income": -1423924.0
+    },
+    {
+     "year": "2024",
+     "revenue": 6275243.0,
+     "expenditure": 11368870.0,
+     "fund_balance": 15388055.0,
+     "net_income": -4581544.0
+    },
+    {
+     "year": "2023",
+     "revenue": 6339286.0,
+     "expenditure": 389356.0,
+     "fund_balance": 19969599.0,
+     "net_income": 6376647.0
+    },
+    {
+     "year": "2022",
+     "revenue": 4620687.0,
+     "expenditure": 1067902.0,
+     "fund_balance": 13592952.0,
+     "net_income": 3123347.0
+    },
+    {
+     "year": "2021",
+     "revenue": 5100137.0,
+     "expenditure": 6192543.0,
+     "fund_balance": 10469605.0,
+     "net_income": -1124301.0
+    }
+   ],
+   "tif_financials": [
+    {
+     "tif_number": "T-T-070",
+     "tif_district": "Clark/Montrose",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "2",
+     "project_name": "Black Ensemble Theater",
+     "annual_report_name": "Black Ensemble Theater",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Completed Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "7557213",
+     "private_funds_to_completion": "0",
+     "public_funds": "10381509.86",
+     "public_funds_to_completion": "0"
+    },
+    {
+     "tif_number": "T-T-070",
+     "tif_district": "Clark/Montrose",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "4",
+     "project_name": "Black Ensemble Studio Theater",
+     "annual_report_name": "Black Ensemble Studio Theater",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Active Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "1460973",
+     "private_funds": "0",
+     "private_funds_to_completion": "2550000",
+     "public_funds": "0",
+     "public_funds_to_completion": "2434955"
+    },
+    {
+     "tif_number": "T-T-070",
+     "tif_district": "Clark/Montrose",
+     "report_year": "2025",
+     "project_iga": "Program",
+     "project_type": "TIFWorks",
+     "project_number": "3",
+     "project_name": "TIFWorks - Clark Montrose",
+     "annual_report_name": "TIFWorks - Clark Montrose",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Active Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "0",
+     "private_funds_to_completion": "0",
+     "public_funds": "0",
+     "public_funds_to_completion": "0"
+    },
+    {
+     "tif_number": "T-T-070",
+     "tif_district": "Clark/Montrose",
+     "report_year": "2025",
+     "project_iga": "Program",
+     "project_type": "SBIF",
+     "project_number": "1",
+     "project_name": "SBIF - Clark Montrose",
+     "annual_report_name": "SBIF - Clark Montrose",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Active Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "0",
+     "private_funds_to_completion": "6600000",
+     "public_funds": "2031315",
+     "public_funds_to_completion": "3300000"
+    },
+    {
+     "tif_number": "T-T-070",
+     "tif_district": "Clark/Montrose",
+     "report_year": "2025",
+     "project_iga": "IGA",
+     "project_type": "CBE",
+     "project_number": "1",
+     "project_name": "IGA - CBE - Mary E. Courtenay",
+     "annual_report_name": "IGA - CBE - Mary E. Courtenay",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Active Project",
+     "current_year_payments": "1813927.84",
+     "estimated_next_year_payments": "0",
+     "private_funds": "0",
+     "private_funds_to_completion": "0",
+     "public_funds": "1813927.84",
+     "public_funds_to_completion": "0"
+    }
+   ],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_tract": "17031031800",
+   "nmtc_severe_distress": false,
+   "nmtc_poverty_rate": 12.6,
+   "census_tract": "17031031800",
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 517 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 15,
+    "total_funding": 1181287.38,
+    "by_program": {
+     "SBIF": 15
+    },
+    "recent_projects": [
+     {
+      "name": "Laura Lane dba Lincoln Square Massage",
+      "program": "SBIF",
+      "incentive_amount": 5974.81,
+      "total_cost": 6988.68,
+      "property_type": "General Commercial",
+      "description": "Exterior renovations including awning frame components. Interior renovations including flooring, sub floor installation, carpet installation.",
+      "date": "2024-10-16"
+     },
+     {
+      "name": "Wellayhimmek LLC dba Nabala Cafe",
+      "program": "SBIF",
+      "incentive_amount": 75000.0,
+      "total_cost": 104585.0,
+      "property_type": "Mixed Use: Retail and Residential",
+      "description": "Exterior renovations install exterior light fixtures. Interior renovations including new framing, prepare the exposed brick wall on south side; electrical upgrades including light fixtures, outlets, switches, conduit, wiring; plumbing work including commercial kitchen, underground plumbing, aboveground plumbing, drains, water supply; painting and finishing; architectural services and permits.",
+      "date": "2024-08-30"
+     },
+     {
+      "name": "IMMM Tong Inc. dba IMMM",
+      "program": "SBIF",
+      "incentive_amount": 75000.0,
+      "total_cost": 84000.0,
+      "property_type": "General Commercial",
+      "description": "Demo ceiling of vestibule to prep for new lighting, install two (2) new HVAC units with associated ductwork and connections, plumbing to include digging trench from the new 3 compartment sink to existing drain, tie in with new cast iron and merge lines, install new sinks and plumbing fixtures, electrical upgrades - install new outlets and switches in bar and ticket area, install new conduits, create new 220a service for warmers, rework circuits in the 3 phase box 9, install new light fixtures in the bar, dining, ticket area, entry door, six (6) new exterior lights, framing for new prep and ticket area, install new pocket door, install drywall, tape, mud and sand, new cabinets, install new focal wall with designed trim, flooring, create new suspended ceiling and painting.",
+      "date": "2024-08-13"
+     },
+     {
+      "name": "South-East Asia Center",
+      "program": "SBIF",
+      "incentive_amount": 125830.0,
+      "total_cost": 125830.0,
+      "property_type": "General Commercial",
+      "description": "Masonry work including tuckpointing along the first floor and second floor of the east and north elevations, rebuilding and restoring the parapet walls along the south, east and north area, and reinstall salvaged and new coping tiles as needed; removal of the existing roofing system down to the wood decking, install new decking as needed, new vapor barrier felt, board insulation with hot asphalt, two new layers of fiberglass base sheets, new flashings, application of modified bitumen roofing material with gutters and downspouts.",
+      "date": "2024-04-23"
+     },
+     {
+      "name": "Nirvana Spa Inc. dba Sir Spa",
+      "program": "SBIF",
+      "incentive_amount": 131364.9,
+      "total_cost": 161800.0,
+      "property_type": "General Commercial",
+      "description": "Exterior improvements including tuckpointing, installation of a new storefront systems along the front and rear of the building, and new exterior windows for the 2nd floor; removal of the existing roofing system down to the wood decking, replace any damaged wood and roof rafters as needed, installing a new roofing system for the 1st and 2nd floor with new insulation, modified membrane, flashings, and termination bars; plumbing work including new cartridges, valves, balancing valves, installation of four (4) new restroom sinks, and new plumbing fixtures for the pantry area; new flooring, cabinetry, and countertop.",
+      "date": "2024-03-07"
+     },
+     {
+      "name": "The 4621 Club Ltd dba Max's Place",
+      "program": "SBIF",
+      "incentive_amount": 150000.0,
+      "total_cost": 182207.7,
+      "property_type": "General Commercial",
+      "description": "Exterior renovations including demolition of west front fa\u00e7ade; masonry and shoring work to rebuild parapet wall (6 course) from top cornice, reset limestone caps; rebuild front wall (replacing old yellow brick) and new brick as needed; install new beam.",
+      "date": "2023-12-20"
+     },
+     {
+      "name": "Si Mas LLC",
+      "program": "SBIF",
+      "incentive_amount": 79650.0,
+      "total_cost": 88500.0,
+      "property_type": "General Commercial",
+      "description": "Concrete flooring, demolition, flooring, framing, and rough in plumbing.",
+      "date": "2023-08-21"
+     },
+     {
+      "name": "BGE 2022 LLC dba Early to Bed",
+      "program": "SBIF",
+      "incentive_amount": 72233.1,
+      "total_cost": 80259.0,
+      "property_type": "Mixed-Use: Retail and Residential",
+      "description": "Tuckpointing, storefront improvements, plumbing work for restroom, roofing work, and new flooring., masonry work to install new face brick, tuck-pointing, remove and replace damaged bricks as necessary; remove and replace roof, replace gutter and downspouts as needed; architectural services and permits.",
+      "date": "2023-01-24"
+     },
+     {
+      "name": "Jumbo Laundry & Cleaners, LLC",
+      "program": "SBIF",
+      "incentive_amount": 89355.0,
+      "total_cost": 119140.0,
+      "property_type": "Retail",
+      "description": "Furnish and install a 148 panel solar photovoltaic array and tie in to electrical system.",
+      "date": "2020-07-30"
+     },
+     {
+      "name": "Hieu Minh Troung",
+      "program": "SBIF",
+      "incentive_amount": 82193.46,
+      "total_cost": 161580.0,
+      "property_type": "General Commercial",
+      "description": "Remove all existing ceiling tiles, raise ceiling with new ceiling framing; remove and replace existing front masonry for three (3) commercial units, remove and replace front door lintels, remove and re-use existing signage; and remove and replace all existing ductwork, furnish and install two (2) rooftop HVAC units.",
+      "date": "2020-04-15"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "census_tract": {
+    "tract_fips": "17031031800",
+    "tract_name": "Census Tract 318, Cook, IL",
+    "census_reporter_url": "https://censusreporter.org/profiles/14000US17031031800/",
+    "population": 1765,
+    "median_household_income": 82313,
+    "per_capita_income": 61182,
+    "median_home_value": 412800,
+    "median_gross_rent": 1469,
+    "owner_occupied_pct": 43.0,
+    "vacancy_rate": 7.9,
+    "poverty_rate": 13.7,
+    "bachelors_or_higher_pct": 69.8,
+    "foreign_born_pct": 19.8,
+    "age_distribution": [
+     {
+      "label": "Under 18",
+      "value": 8.6
+     },
+     {
+      "label": "18-24",
+      "value": 14.1
+     },
+     {
+      "label": "25-34",
+      "value": 27.7
+     },
+     {
+      "label": "35-44",
+      "value": 16.0
+     },
+     {
+      "label": "45-54",
+      "value": 16.7
+     },
+     {
+      "label": "55-64",
+      "value": 8.2
+     },
+     {
+      "label": "65-74",
+      "value": 3.9
+     },
+     {
+      "label": "75+",
+      "value": 4.9
+     }
+    ],
+    "income_distribution": [
+     {
+      "label": "Under $25K",
+      "value": 14.4
+     },
+     {
+      "label": "$25-50K",
+      "value": 16.9
+     },
+     {
+      "label": "$50-75K",
+      "value": 14.1
+     },
+     {
+      "label": "$75-100K",
+      "value": 16.1
+     },
+     {
+      "label": "$100-150K",
+      "value": 14.5
+     },
+     {
+      "label": "$150-200K",
+      "value": 6.9
+     },
+     {
+      "label": "$200K+",
+      "value": 17.0
+     }
+    ],
+    "race_distribution": [
+     {
+      "label": "White",
+      "value": 47.7
+     },
+     {
+      "label": "Black",
+      "value": 2.4
+     },
+     {
+      "label": "Asian",
+      "value": 7.1
+     },
+     {
+      "label": "Two+",
+      "value": 14.0
+     },
+     {
+      "label": "Other",
+      "value": 9.5
+     },
+     {
+      "label": "Hispanic",
+      "value": 19.2
+     }
+    ],
+    "education_distribution": [
+     {
+      "label": "No degree",
+      "value": 3.0
+     },
+     {
+      "label": "High school",
+      "value": 13.8
+     },
+     {
+      "label": "Some college",
+      "value": 13.4
+     },
+     {
+      "label": "Bachelor's",
+      "value": 40.8
+     },
+     {
+      "label": "Graduate+",
+      "value": 29.1
+     }
+    ],
+    "transportation_distribution": [
+     {
+      "label": "Drove alone",
+      "value": 24.1
+     },
+     {
+      "label": "Carpooled",
+      "value": 3.1
+     },
+     {
+      "label": "Public transit",
+      "value": 32.0
+     },
+     {
+      "label": "Walked",
+      "value": 3.2
+     },
+     {
+      "label": "Bicycle",
+      "value": 6.0
+     },
+     {
+      "label": "Work from home",
+      "value": 31.3
+     },
+     {
+      "label": "Other",
+      "value": 0.3
+     }
+    ],
+    "county_median_income": 83498,
+    "city_median_income": 77902
+   },
+   "transit": {
+    "nearest_cta_rail": "Montrose (Brown)",
+    "cta_rail_distance_mi": 0.45,
+    "cta_lines": [
+     "Brown Line"
+    ],
+    "nearest_metra": "Ravenswood",
+    "metra_distance_mi": 0.39,
+    "metra_line": "Union Pacific North",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 95,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 81,
+    "transit_description": "Excellent Transit",
+    "bike_score": 91,
+    "bike_description": "Biker's Paradise",
+    "ws_link": "https://www.walkscore.com/score/1500-W-Wilson-Ave/lat=41.96548595/lng=-87.66783518/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 47,
+    "alderman": "Martin, Matthew J.",
+    "phone": "(773) 868-4747",
+    "email": "Ward47@cityofchicago.org",
+    "website": "http://www.aldermanmartin.com"
+   },
+   "traffic": {
+    "road": "ASHLAND",
+    "daily_vehicles": 22404,
+    "directions": 2,
+    "from_street": "W WILSON AVE",
+    "to_street": "W LAWRENCE AVE",
+    "as_of": "2026-10-02"
+   },
+   "divvy": {
+    "nearest_station": "Clark St & Leland Ave",
+    "distance_mi": 0.11,
+    "docks": 19,
+    "stations_within_radius": 7,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": [],
+  "adu": {
+   "status": "allowed_by_right",
+   "zone": null,
+   "limits": null,
+   "note": "Coach houses and conversion units are permitted by right in this district (\u00a717-3-0207)."
+  },
+  "coverage_notes": [
+   {
+    "id": "aldermanic",
+    "applies": "general",
+    "text": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the alderman of the ward (\u00a717-13-0100, \u00a717-13-0300, \u00a717-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess. Ward 47: Ald. Martin, Matthew J., (773) 868-4747.",
+    "params": {
+     "ward": 47,
+     "alderman": "Martin, Matthew J.",
+     "phone": "(773) 868-4747"
+    },
+    "link": "http://www.aldermanmartin.com",
+    "section": "17-13-0300"
+   },
+   {
+    "id": "map_lag",
+    "applies": "general",
+    "text": "The City's zoning map can lag a passed amendment by up to 90 days.",
+    "params": {},
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "code_vintage",
+    "applies": "general",
+    "text": "The Municipal Code text used here is current through 2026-03-18; a later Council amendment may not be reflected.",
+    "params": {
+     "date": "2026-03-18"
+    },
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "official_letter",
+    "applies": "general",
+    "text": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning ($150, up to 30 days, as published by the Office of the Zoning Administrator, checked 2026-09-30); a letter of opinion covers a specific project.",
+    "params": {
+     "fee": 150,
+     "days": 30,
+     "checked": "2026-09-30"
+    },
+    "link": "https://www.chicago.gov/city/en/depts/dcd/supp_info/office_of_the_zoningadministrator.html",
+    "section": null
+   }
+  ],
+  "code_vintage": {
+   "current_through": "2026-03-18",
+   "label": "Council Journal of March 18, 2026",
+   "source": "Municipal Code of Chicago, American Legal export"
+  },
+  "unit_yield": {
+   "units": 4,
+   "lot_sqft": 4347,
+   "min_lot_area_per_unit": 1000,
+   "arithmetic": "4,347 sq ft \u00f7 1,000 sq ft per unit = 4.3 \u2192 4 units",
+   "basis": "Minimum lot area per dwelling unit for the district",
+   "caveat": "Lot area per unit only: FAR, height, parking and other standards can allow fewer units, and exemptions (efficiency/SRO units, ground-floor Type A units) can allow more.",
+   "lot_area_note": "Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table)."
+  },
+  "tod_benefits": {
+   "parking_relief": true,
+   "parking_max_reduction_pct": 100,
+   "density_bonus_eligible": false,
+   "entitlement_required": false,
+   "note": "Transit-served: minimum parking can be reduced (17-10-0102-B). No density, FAR or height bonus at B1-2: those apply only in dash-3 districts (17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts))."
+  }
+ },
+ "comparables": {
+  "median_sale_price": 204000.0,
+  "median_price_per_buildable_sqft": 14.84,
+  "buildable_median_basis": "mixed",
+  "buildable_median_n": 1,
+  "price_range_min": 204000.0,
+  "price_range_max": 204000.0,
+  "sales_volume": 1,
+  "sales": [
+   {
+    "pin": "14171010510000",
+    "sale_date": "2025-03-10T00:00:00.000",
+    "sale_price": 204000.0,
+    "class_code": "597",
+    "land_sqft": 6248,
+    "deed_type": "Warranty",
+    "distance_mi": 0.17,
+    "lat": 41.9678048316,
+    "lon": -87.6669251545,
+    "zone_class": "B3-2",
+    "far": 2.2,
+    "price_per_buildable_sqft": 14.84,
+    "land_sqft_source": "geometry"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "14171060250000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.96548595,
+ "resolved_lon": -87.66783518,
+ "zone_definition": {
+  "zone_class": "B1-2",
+  "name": "Neighborhood Shopping",
+  "code_section": "\u00a717-3-0102",
+  "far": 2.2,
+  "max_height": "45\u201350 ft (varies by lot frontage & ground-floor commercial)",
+  "lot_coverage": null,
+  "min_lot_sqft": null,
+  "min_lot_area_per_unit": 1000,
+  "lot_area_note": "Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table).",
+  "uses": "Small-scale retail, restaurants, personal services, offices; residential above ground floor. All operations indoors.",
+  "notes": "",
+  "is_fallback": false
+ },
+ "resolution": {
+  "method": "address_points",
+  "point_basis": "address_point",
+  "input_address": "1500 W Wilson Ave",
+  "pin": "14171060250000",
+  "confidence": "authoritative",
+  "point": {
+   "lat": 41.96548595,
+   "lon": -87.66783518
+  },
+  "centroid_gap_ft": 29,
+  "candidates": [
+   {
+    "pin": "14171060250000",
+    "sources": [
+     "address_points"
+    ],
+    "used": true
+   },
+   {
+    "pin": "14171060440000",
+    "sources": [
+     "assessor_addresses"
+    ],
+    "used": false
+   }
+  ],
+  "multiple_parcels": true,
+  "sources_disagree": true,
+  "condo_units": 0,
+  "identity_unconfirmed": false,
+  "unverified_reason": null,
+  "property_record_pin": null
+ },
+ "provenance": {
+  "zoning.district": {
+   "label": "Zoning district B1-2",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning Districts, Zoning MapServer layer 1",
+   "record_id": null,
+   "url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "section": null,
+   "as_of": "2025-03-19",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "as_of is when this district's map record was last edited."
+  },
+  "zoning.far": {
+   "label": "Floor area ratio for B1-2",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-3-0403-A",
+   "url": null,
+   "section": "17-3-0403-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.max_height": {
+   "label": "Maximum building height for B1-2",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-3-0408-A",
+   "url": null,
+   "section": "17-3-0408-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.min_lot_area_per_unit": {
+   "label": "Minimum lot area per dwelling unit for B1-2",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-3-0402-A",
+   "url": null,
+   "section": "17-3-0402-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "overlay.tod_cta": {
+   "label": "Transit-Oriented Development (CTA)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (CTA) (layer 13)",
+   "record_id": "Transit-Oriented Development (CTA)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "overlay.adu_area": {
+   "label": "ADU-Allowed RS Area \u2014 Zone 1",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, ADU Eligible Areas (layer 17)",
+   "record_id": "ADU-Allowed RS Area \u2014 Zone 1",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "overlay.aro_zone": {
+   "label": "Affordable Requirements Ordinance Zones",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Affordable Requirements Ordinance Zones (layer 20)",
+   "record_id": "Affordable Requirements Ordinance Zones",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "overlay.ssa": {
+   "label": "Greater Ravenswood",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Special Service Areas (layer 23)",
+   "record_id": "Greater Ravenswood",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "overlay.tod_metra": {
+   "label": "Transit-Oriented Development (Metra)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (Metra) (layer 24)",
+   "record_id": "Transit-Oriented Development (Metra)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "parcel.identity": {
+   "label": "Parcel 14171060250000",
+   "kind": "official_record",
+   "source": "Cook County Address Points or Assessor Parcel Addresses",
+   "record_id": "14171060250000",
+   "url": "https://www.cookcountyassessor.com/pin/14171060250000",
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": null
+  },
+  "property.land_sqft": {
+   "label": "Lot area",
+   "kind": "official_record",
+   "source": "Parcel polygon area (Cook County property-tax database)",
+   "record_id": "14171060250000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "code.vintage": {
+   "label": "Municipal Code vintage",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, American Legal export",
+   "record_id": null,
+   "url": null,
+   "section": null,
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Council Journal of March 18, 2026"
+  }
+ }
+}

@@ -1,5 +1,5 @@
 {
- "kit_version": "2026-10-01.1",
+ "kit_version": "2026-10-02.1",
  "parcels": [
   {
    "id": "P1",
@@ -28,7 +28,7 @@
   {
    "id": "P5",
    "address": "1601 N Milwaukee Ave",
-   "why": "Overlay stack incl. an individual Chicago Landmark; geocoder trap (address interpolates into a C1-3 polygon)",
+   "why": "Overlay stack incl. a Chicago Landmark district and a CHRS orange-rated building; geocoder trap (address interpolates into a C1-3 polygon)",
    "district": "B3-2"
   },
   {
@@ -42,23 +42,54 @@
    "address": "1218 W George St",
    "why": "Freshness: rezoned M1-2 -> RT-4 by an ordinance passed 2026-06-17 (open-data layer updated 2026-08-21)",
    "district": "RT-4"
+  },
+  {
+   "id": "P8",
+   "address": "233 S Wacker Dr",
+   "why": "Downtown DC-16: base FAR 16 with bonuses, no height cap but a Planned Development height threshold, and its own use table (ground-floor dwellings are a special use)",
+   "district": "DC-16"
+  },
+  {
+   "id": "P9",
+   "address": "3441 W Irving Park Rd",
+   "why": "B3-3 inside the transit-served-location distances: the positive case. Density, FAR and height increases exist at dash-3 but only through a Type I map amendment, a PD or an ARO entitlement, not by right",
+   "district": "B3-3"
+  },
+  {
+   "id": "P10",
+   "address": "1930 N Clybourn Ave",
+   "why": "M2-3 manufacturing district: residential is not a listed use and unlisted uses are prohibited, so a use-allowed lookup must say no",
+   "district": "M2-3"
+  },
+  {
+   "id": "P11",
+   "address": "3500 N Lake Shore Dr",
+   "why": "RM-6.5 inside the Lakefront Protection District: no height cap but a PD threshold, a separate ordinance (Chapter 16-4), and a CHRS orange-rated building that is NOT a designated landmark",
+   "district": "RM-6.5"
+  },
+  {
+   "id": "P12",
+   "address": "368 W Chicago Ave",
+   "why": "C2-5 near rail: parking relief applies, but the density, FAR and height increases for transit-served locations exist only in dash-3 districts, not dash-5",
+   "district": "C2-5"
   }
  ],
  "current": {
   "profile": {
-   "run": "2026-10-02-v4",
+   "run": "2026-10-02-v7a",
    "date": "2026-10-02",
-   "code": "1f97199",
-   "report": "eval/results/2026-10-02-v4/parcel_kit.md",
+   "code": "db15340",
+   "key": "2026-10-02.1",
+   "report": "eval/results/2026-10-02-v7a/parcel_kit.md",
    "aggregate": {
-    "parcels_scored": 7,
-    "coverage": 0.946,
-    "accuracy": 0.971,
-    "points": 68,
-    "possible": 70,
-    "confident_wrong": 0,
+    "parcels_scored": 12,
+    "coverage": 0.953,
+    "accuracy": 0.943,
+    "points": 115,
+    "possible": 122,
+    "confident_wrong": 2,
     "critical_misses": [],
-    "district_correct": 7,
+    "district_correct": 12,
     "scoring": "automatic"
    },
    "fields": {
@@ -264,12 +295,12 @@
       "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
-      "score": 2,
-      "cw": false,
-      "label": "2",
+      "score": 1,
+      "cw": true,
+      "label": "1 CW",
       "basis": "auto",
-      "auto": "2",
-      "detail": "found 6/6"
+      "auto": "1 CW",
+      "detail": "found 5/5; false landmark_building"
      },
      "E": {
       "score": 1,
@@ -371,6 +402,232 @@
       "auto": "2",
       "detail": "groups 1/1"
      }
+    },
+    "P8": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district DC16"
+     },
+     "B": {
+      "score": 0,
+      "cw": false,
+      "label": "0",
+      "basis": "auto",
+      "auto": "0",
+      "detail": "groups 0/2"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P9": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district B33"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 3/3"
+     },
+     "E": {
+      "score": 1,
+      "cw": false,
+      "label": "1",
+      "basis": "auto",
+      "auto": "1",
+      "detail": "groups 1/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
+    },
+    "P10": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district M23"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 2/2"
+     },
+     "F": {
+      "score": null,
+      "cw": false,
+      "label": "NP",
+      "basis": "auto",
+      "auto": "NP",
+      "detail": "groups 0/1"
+     }
+    },
+    "P11": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district RM6.5"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; mla ok"
+     },
+     "D": {
+      "score": 1,
+      "cw": true,
+      "label": "1 CW",
+      "basis": "auto",
+      "auto": "1 CW",
+      "detail": "found 3/3; false landmark_building"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     }
+    },
+    "P12": {
+     "A": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "district C25"
+     },
+     "B": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 1/1"
+     },
+     "C": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "far ok; height_ft ok; mla ok"
+     },
+     "D": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "found 2/2"
+     },
+     "E": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     },
+     "F": {
+      "score": 2,
+      "cw": false,
+      "label": "2",
+      "basis": "auto",
+      "auto": "2",
+      "detail": "groups 2/2"
+     }
     }
    }
   },
@@ -378,14 +635,15 @@
    "run": "2026-10-02-f5a",
    "date": "2026-10-02",
    "code": "ff1b64b",
+   "key": "2026-10-02.1",
    "report": "eval/results/2026-10-02-f5a/parcel_kit.md",
    "aggregate": {
     "parcels_scored": 7,
     "coverage": 0.946,
-    "accuracy": 0.971,
-    "points": 68,
+    "accuracy": 0.957,
+    "points": 67,
     "possible": 70,
-    "confident_wrong": 0,
+    "confident_wrong": 1,
     "critical_misses": [],
     "district_correct": 7,
     "scoring": "automatic"
@@ -593,12 +851,12 @@
       "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
-      "score": 2,
-      "cw": false,
-      "label": "2",
+      "score": 1,
+      "cw": true,
+      "label": "1 CW",
       "basis": "auto",
-      "auto": "2",
-      "detail": "found 6/6"
+      "auto": "1 CW",
+      "detail": "found 5/5; false landmark_building"
      },
      "E": {
       "score": 2,
@@ -701,7 +959,8 @@
       "detail": "groups 2/2"
      }
     }
-   }
+   },
+   "rescored_from": "2026-10-01.1"
   }
  },
  "progression": [
@@ -710,6 +969,7 @@
    "label": "Starting point (recorded 2026-10-01, hand-scored B/E/F)",
    "date": "2026-10-01",
    "code": "dd481c5",
+   "key": "2026-10-01.1",
    "report": null,
    "surfaces": {
     "profile": {
@@ -744,6 +1004,7 @@
    "label": "Chat resolves a typed address to its parcel (F1)",
    "date": "2026-10-01",
    "code": "b9bda71",
+   "key": "2026-10-01.1",
    "report": "eval/results/2026-10-01-f1/parcel_kit.md",
    "surfaces": {
     "chat": {
@@ -764,6 +1025,7 @@
    "label": "No false transit 'density bonus' claim (F2)",
    "date": "2026-10-02",
    "code": "dd5360a",
+   "key": "2026-10-01.1",
    "report": "eval/results/2026-10-02-f2/parcel_kit.md",
    "surfaces": {
     "profile": {
@@ -795,6 +1057,7 @@
    "label": "The binding number: lot area per unit + unit yield (F3)",
    "date": "2026-10-02",
    "code": "dd5360a",
+   "key": "2026-10-01.1",
    "report": "eval/results/2026-10-02-f3/parcel_kit.md",
    "surfaces": {
     "profile": {
@@ -826,6 +1089,7 @@
    "label": "When the district last changed, and how current the code is (F5a)",
    "date": "2026-10-02",
    "code": "ff1b64b",
+   "key": "2026-10-01.1",
    "report": "eval/results/2026-10-02-f5a/parcel_kit.md",
    "surfaces": {
     "profile": {
@@ -857,6 +1121,7 @@
    "label": "Overlays named, with what they require (F7)",
    "date": "2026-10-02",
    "code": "341e91a",
+   "key": "2026-10-01.1",
    "report": "eval/results/2026-10-02-f7/parcel_kit.md",
    "surfaces": {
     "profile": {
@@ -877,6 +1142,7 @@
    "label": "Where the page says it stops (V4)",
    "date": "2026-10-02",
    "code": "1f97199",
+   "key": "2026-10-01.1",
    "report": "eval/results/2026-10-02-v4/parcel_kit.md",
    "surfaces": {
     "profile": {
@@ -891,6 +1157,27 @@
      "scoring": "automatic"
     }
    }
+  },
+  {
+   "id": "2026-10-02-v7a",
+   "label": "Key grows to 12 parcels (downtown, manufacturing, lakefront, transit); P5 key corrected (V7, batch 1)",
+   "date": "2026-10-02",
+   "code": "db15340",
+   "key": "2026-10-02.1",
+   "report": "eval/results/2026-10-02-v7a/parcel_kit.md",
+   "surfaces": {
+    "profile": {
+     "parcels_scored": 12,
+     "coverage": 0.953,
+     "accuracy": 0.943,
+     "points": 115,
+     "possible": 122,
+     "confident_wrong": 2,
+     "critical_misses": [],
+     "district_correct": 12,
+     "scoring": "automatic"
+    }
+   }
   }
  ],
  "review": {
@@ -898,7 +1185,7 @@
   "fields": 0
  },
  "limits": [
-  "Seven parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
+  "A dozen parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
   "The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning attorney (the most interpretive parcels are P2, P3 and P6).",
   "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
   "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",

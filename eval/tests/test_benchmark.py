@@ -18,11 +18,14 @@ def test_page_states_limits_and_failures():
     assert "P2, P5" in md
 
 
-def test_current_results_cover_all_parcels_and_both_surfaces():
+def test_current_results_cover_both_surfaces_and_say_how_many_parcels():
     data = b.collect()
     assert set(data["current"]) == {"profile", "chat"}
-    for s in data["current"].values():
-        assert s["aggregate"]["parcels_scored"] == 7
+    total = len(data["parcels"])
+    assert data["current"]["profile"]["aggregate"]["parcels_scored"] == total  # the Profile is free, so it is always run on every parcel
+    assert 7 <= data["current"]["chat"]["aggregate"]["parcels_scored"] <= total  # chat costs credits: the page says how many ran
+    for surf in data["current"].values():
+        assert surf["key"] == data["kit_version"]  # never shown under an older key: such runs are re-scored
 
 
 def test_baseline_row_reproduces_recorded_numbers():

@@ -10,11 +10,11 @@ We are publishing a benchmark of how accurately zoning tools answer questions ab
 2. Skim the other fields. They are lookups (a district from the City's zoning layer, a number from a code table). Flag anything that looks wrong.
 3. Tell us what is missing: situations in which a tool would likely get Chicago zoning wrong that these seven parcels do not test. We are growing the set to about 25 parcels and will pick from your answer.
 
-Expected effort: about 13 judgment fields, roughly an hour with the code open.
+Expected effort: about 21 judgment fields, roughly an hour with the code open.
 
 ## As of
 
-- Key version `2026-10-01.1`, built 2026-10-01.
+- Key version `2026-10-02.1`: parcels P1 to P7 built 2026-10-01, later parcels on the date each carries as `added`.
 - Municipal Code text current through the Council Journal of 2026-03-18 (American Legal export of Title 17). An amendment after that date is not reflected; tell us if one changes an answer.
 - Parcel facts come from the City of Chicago zoning layer (Data Portal `dj47-wfun`) and Zoning MapServer, Cook County Assessor data, and ordinance PDFs.
 - Overlay answers (field D) read the same City map service that tools use, so they check that a tool reports the map correctly, not that the map is right. They are not the focus of this review.
@@ -107,7 +107,7 @@ Questions:
 
 ### P5 · 1601 N Milwaukee Ave
 
-PIN: 14313320180000. Why it is in the set: Overlay stack incl. an individual Chicago Landmark; geocoder trap (address interpolates into a C1-3 polygon).
+PIN: 14313320180000. Why it is in the set: Overlay stack incl. a Chicago Landmark district and a CHRS orange-rated building; geocoder trap (address interpolates into a C1-3 polygon).
 
 Question put to a tool, field B: *Is ground-floor retail with apartments above allowed?*  
 Field F: *Could I demolish the existing building and build a new mixed-use building here? What approvals or restrictions apply?*
@@ -119,12 +119,13 @@ Field F: *Could I demolish the existing building and build a new mixed-use build
 | C · Floor area ratio | 2.2 | 17-3-0403-A | skim |
 | C · Height (ft) | 45 or 47 or 50 | 17-3-0408-A | skim |
 | C · Minimum lot area per dwelling unit (sq ft) | 1000 or 700 | 17-3-0402-A | skim |
-| Overlays and designations | landmark_building, historic_district, national_register, tod, aro, ssa | Individual landmark (Noel State Bank, layer 7); Milwaukee Avenue landmark district HD-56 (layer 6); National Register (layer 8); TOD (CTA); ARO Inclusionary; SSA #33 Wicker Park | skim |
+| Overlays and designations | historic_district, national_register, tod, aro, ssa | Milwaukee Avenue Chicago Landmark district HD-56, designated 2008-04-09 (layer 6); National Register (layer 8); TOD (CTA); ARO Inclusionary; SSA #33 Wicker Park. NOT an individual Chicago Landmark: Noel State Bank is in layer 7, which holds the Chicago Historic Resources Survey's orange/red-rated buildings (9,298 records, most with no designation date), and is absent from the City's official Chicago Landmarks list (data portal tdab-kixi, 317 landmarks) and from layer 5 (landmark boundaries). Corrected 2026-10-02: the first key read layer 7 as 'individual landmarks'. | **Judgment** |
 | Parking / transit rule | Transit-served: parking reducible up to 100% (17-10-0102-B.1(a)); no added parking for reuse of a contributing building in a landmark district (17-10-0102-A.2) | see the code sections cited in the answer | **Judgment** |
-| Task question | Not by right: written approval of the Commission on Chicago Landmarks is required (Municipal Code 2-120-740) | see the code sections cited in the answer | **Judgment** |
+| Task question | Not by right: the parcel is in the Milwaukee Avenue Chicago Landmark district, so a permit to alter, demolish or build needs written approval of the Commission on Chicago Landmarks (Municipal Code 2-120-740) | see the code sections cited in the answer | **Judgment** |
 
 Questions:
 
+- **P5.D**: We say this is not an individual Chicago Landmark, only inside the Milwaukee Avenue landmark district (designated 2008): the City's landmark-boundary layer and its official landmarks list have no entry for it, and the map layer that does name it is the historic-resources survey (orange rating). Is that right?
 - **P5.E**: Is parking reducible by up to 100% for a transit-served location, with no added parking for reusing a contributing building in a landmark district?
 - **P5.F**: Does an individually landmarked building in a landmark district require the Commission on Chicago Landmarks' written approval before demolition or a new building?
 
@@ -171,6 +172,111 @@ Field F: *What is the zoning here, and has it changed recently?*
 Questions:
 
 - **P7.A**: The rezoning ordinance passed 2026-06-17. Was it in effect on 2026-10-01 (publication and effective date), so that RT-4 rather than M1-2 is the district in effect?
+
+### P8 · 233 S Wacker Dr
+
+PIN: 17162160090000. Why it is in the set: Downtown DC-16: base FAR 16 with bonuses, no height cap but a Planned Development height threshold, and its own use table (ground-floor dwellings are a special use).
+
+Question put to a tool, field B: *Can I build apartments above ground-floor office or retail space, and can I put apartments on the ground floor?*  
+Field F: *What is the maximum floor area ratio and building height allowed here, and can the floor area ratio be exceeded?*
+
+| Field | Our answer | Source | Review |
+|---|---|---|---|
+| Zoning district | DC-16 | dj47-wfun at the Assessor centroid | skim |
+| Use question | Dwelling units above the ground floor: permitted; multi-unit on the ground floor: special use (use table 17-4-0207, rows 3 and 4: DC 'P' above, 'S' on the ground floor) | see the code sections cited in the answer | **Judgment** |
+| C · Floor area ratio | 16 | 17-4-0405-A (DC-16 base FAR 16.0) | skim |
+| C · Minimum lot area per dwelling unit (sq ft) | 100 | 17-4-0404-A (dash -16: dwelling units 100) | skim |
+| Overlays and designations | tod, aro | TOD (CTA); ARO Downtown | skim |
+| Task question | Base FAR 16.0 (17-4-0405-A) with bonus floor area available (17-4-0405-B, 17-4-1000); no maximum building height (17-4-0407), but Planned Development approval is required at 440 ft or more (residential) and 600 ft or more (nonresidential) (17-8-0512-B) | see the code sections cited in the answer | **Judgment** |
+
+Questions:
+
+- **P8.B**: In a DC district, are dwelling units above the ground floor permitted and multi-unit on the ground floor a special use?
+- **P8.F**: Is the base FAR 16.0 with bonuses available, no maximum height, and Planned Development approval required at 440 ft (residential) or 600 ft (nonresidential) or more?
+
+### P9 · 3441 W Irving Park Rd
+
+PIN: 13232020060000. Why it is in the set: B3-3 inside the transit-served-location distances: the positive case. Density, FAR and height increases exist at dash-3 but only through a Type I map amendment, a PD or an ARO entitlement, not by right.
+
+Question put to a tool, field B: *Is ground-floor retail with apartments above allowed, and what minimum lot area per dwelling unit applies?*  
+Field F: *Does being near transit let me build more than the base standards here, and by what process?*
+
+| Field | Our answer | Source | Review |
+|---|---|---|---|
+| Zoning district | B3-3 | dj47-wfun at the Assessor centroid | skim |
+| Use question | Yes: dwelling units above the ground floor are permitted in B3 (use table 17-3-0207, row 3) | see the code sections cited in the answer | skim |
+| C · Floor area ratio | 3 | 17-3-0403-A, dash 3 | skim |
+| C · Height (ft) | 50 or 55 or 60 or 65 | 17-3-0408-A (dash 3: 50/55/65/65 with compliant ground-floor commercial; 50/50/60/60 without, by lot frontage) | skim |
+| C · Minimum lot area per dwelling unit (sq ft) | 400 or 300 | 17-3-0402-A (dash 3: 400 per dwelling unit; 300 efficiency) | skim |
+| Overlays and designations | tod, aro, ssa | TOD (CTA); ARO; SSA Albany Park (observed from the City layers 2026-10-02) | skim |
+| Parking / transit rule | Parking reducible up to 100% in a transit-served location (17-10-0102-B.1(a)) | see the code sections cited in the answer | skim |
+| Task question | Yes, but not by right: in a B3 district within 2,640 ft of a rail station or 1,320 ft of a bus corridor, reduced lot area per unit, higher FAR (3.5 to 4.0 with ARO units) and added height are allowed only through a Type I zoning map amendment, a Planned Development, or an ARO entitlement (17-3-0402-B, 17-3-0403-B, 17-3-0408-B) | see the code sections cited in the answer | **Judgment** |
+
+Questions:
+
+- **P9.F**: At a B3-3 parcel within the transit-served-location distances, are lower lot area per unit, a higher FAR and extra height available only through a Type I map amendment, a Planned Development or an ARO entitlement, and never by right?
+
+### P10 · 1930 N Clybourn Ave
+
+PIN: 14324060010000. Why it is in the set: M2-3 manufacturing district: residential is not a listed use and unlisted uses are prohibited, so a use-allowed lookup must say no.
+
+Question put to a tool, field B: *Could I build apartments here (new residential or a conversion)?*  
+Field F: *What would it take to put housing on this parcel?*
+
+| Field | Our answer | Source | Review |
+|---|---|---|---|
+| Zoning district | M2-3 | dj47-wfun at the Assessor centroid | skim |
+| Use question | No: household living is not in the M-district use table (17-5-0207) and uses not listed are prohibited (17-5-0204) | see the code sections cited in the answer | **Judgment** |
+| C · Floor area ratio | 3 | 17-5-0404 (dash 3) | skim |
+| Overlays and designations | tod, aro | TOD (CTA); ARO (observed from the City layers 2026-10-02) | skim |
+| Task question | Not by right: it needs a zoning map amendment to a district that allows residential (Type I, 17-13-0302) or a Planned Development (17-13-0600) | see the code sections cited in the answer | skim |
+
+Questions:
+
+- **P10.B**: Is residential use prohibited in an M2 district because household living is not in the use table and unlisted uses are prohibited?
+
+### P11 · 3500 N Lake Shore Dr
+
+PIN: 14211120100000. Why it is in the set: RM-6.5 inside the Lakefront Protection District: no height cap but a PD threshold, a separate ordinance (Chapter 16-4), and a CHRS orange-rated building that is NOT a designated landmark.
+
+Question put to a tool, field B: *Is a multi-unit residential building permitted by right?*  
+Field F: *What review beyond the zoning district's standards applies to a new building on this parcel?*
+
+| Field | Our answer | Source | Review |
+|---|---|---|---|
+| Zoning district | RM-6.5 | dj47-wfun at the Assessor centroid | skim |
+| Use question | Yes: multi-unit (3+ units) residential is permitted in RM-6.5 (use table 17-2-0207, row 5) | see the code sections cited in the answer | skim |
+| C · Floor area ratio | 6.6 | 17-2-0304-A (RM-6.5: 6.60; premium may apply, 17-2-0304-C) | skim |
+| C · Minimum lot area per dwelling unit (sq ft) | 300 | 17-2-0303-A (dwelling units 300) | skim |
+| Overlays and designations | lakefront, aro, national_register | Lakefront Protection District (Private Lakefront, layer 3); ARO; National Register individual property 'The Cornelia' (layer 8). A CHRS orange-rated building (layer 7) but NOT a designated Chicago Landmark: absent from layer 5 and from the official landmarks list (tdab-kixi). Observed from the City layers 2026-10-02 | **Judgment** |
+| Task question | All development in the Lake Michigan and Chicago Lakefront Protection District is subject to Chapter 16-4, the Lakefront Protection Ordinance (17-6-0204-B), in addition to the zoning standards; a building of 140 ft or more also needs Planned Development approval in RM-6.5 (17-8-0512-A) | see the code sections cited in the answer | **Judgment** |
+
+Questions:
+
+- **P11.D**: We say this is a National Register property and a historic-survey orange building, but not a designated Chicago Landmark. Is that the right reading of the City's layers?
+- **P11.F**: Is a new building in the Lakefront Protection District subject to Chapter 16-4 in addition to the zoning standards?
+
+### P12 · 368 W Chicago Ave
+
+PIN: 17044360170000. Why it is in the set: C2-5 near rail: parking relief applies, but the density, FAR and height increases for transit-served locations exist only in dash-3 districts, not dash-5.
+
+Question put to a tool, field B: *Can I build apartments above ground-floor retail, and what minimum lot area per dwelling unit applies?*  
+Field F: *Does being near transit let me build more density here than the base standards?*
+
+| Field | Our answer | Source | Review |
+|---|---|---|---|
+| Zoning district | C2-5 | dj47-wfun at the Assessor centroid | skim |
+| Use question | Yes: dwelling units above the ground floor are permitted in C2 (use table 17-3-0207, row 3) | see the code sections cited in the answer | skim |
+| C · Floor area ratio | 5 | 17-3-0403-A, dash 5 | skim |
+| C · Height (ft) | 50 or 55 or 65 or 70 or 75 or 80 | 17-3-0408-A (dash 5: 50/55/70/80 with compliant ground-floor commercial; 50/50/65/75 without, by lot frontage; more than the 100-ft-lot height only by PD) | skim |
+| C · Minimum lot area per dwelling unit (sq ft) | 200 or 135 | 17-3-0402-A (dash 5: 200 per dwelling unit; 135 efficiency) | skim |
+| Overlays and designations | tod, aro | TOD (CTA); ARO (observed from the City layers 2026-10-02) | skim |
+| Parking / transit rule | Parking reducible up to 100% in a transit-served location (17-10-0102-B.1(a)) | see the code sections cited in the answer | skim |
+| Task question | Transit changes parking only: the transit-served-location increases in density, FAR and height apply to B-3 and C-3 districts (and D-3), not dash-5 (17-3-0402-B, 17-3-0403-B, 17-3-0408-B) | see the code sections cited in the answer | **Judgment** |
+
+Questions:
+
+- **P12.F**: Do the transit-served-location increases (density, FAR, height) apply to dash-3 districts only, so that a C2-5 parcel near rail gets parking relief but no density increase?
 
 ## How to reply
 

@@ -23,14 +23,17 @@ from eval import parcel_kit as k
 BASELINE = Path(k.KIT_DIR) / "baseline" / "2026-10-01"
 KEY = k.load_key()
 BY_ID = {p["id"]: p for p in KEY["parcels"]}
+BASELINE_KEY = k.load_key(BASELINE / "key.json")  # the key the 2026-10-01 runs were recorded and scored under
 
 
 # --- the key -----------------------------------------------------------------
 
 def test_key_shape():
-    assert [p["id"] for p in KEY["parcels"]] == [f"P{i}" for i in range(1, 8)]
+    ids = [p["id"] for p in KEY["parcels"]]
+    assert ids == [f"P{i}" for i in range(1, len(ids) + 1)] and len(ids) >= 7
+    with_e = ("P3", "P5", "P9", "P12")  # the parcels near transit, where the parking/transit rule is scored
     for p in KEY["parcels"]:
-        assert p["scored"] == (["A", "B", "C", "D", "E", "F"] if p["id"] in ("P3", "P5") else ["A", "B", "C", "D", "F"])
+        assert p["scored"] == (["A", "B", "C", "D", "E", "F"] if p["id"] in with_e else ["A", "B", "C", "D", "F"])
         for fld in p["scored"]:
             assert fld in p, (p["id"], fld)
 
@@ -328,7 +331,7 @@ def test_aggregate_and_screening_grade():
 @pytest.fixture(scope="module")
 def baseline():
     manual = json.loads((BASELINE / "manual_scores.json").read_text())
-    return k.score_run_dir(BASELINE, KEY, k.SURFACES, None, manual, "BEF")
+    return k.score_run_dir(BASELINE, BASELINE_KEY, k.SURFACES, None, manual, "BEF")
 
 
 def test_baseline_profile_totals_reproduce(baseline):
@@ -362,7 +365,7 @@ def test_automatic_scores_vs_hand_scores(baseline):
 
 
 def test_baseline_without_hand_scores_is_all_automatic():
-    rep = k.score_run_dir(BASELINE, KEY, k.SURFACES, None, None)
+    rep = k.score_run_dir(BASELINE, BASELINE_KEY, k.SURFACES, None, None)
     assert all(b["manual_cells"] == 0 for b in rep["surfaces"].values())
     assert rep["surfaces"]["profile"]["aggregate"]["points"] == 51
     assert rep["surfaces"]["chat"]["aggregate"]["critical_misses"] == ["P2", "P5"]
@@ -391,7 +394,7 @@ def test_truncation_check_tells_a_silent_cut_off_from_a_flagged_one():
 
 
 def test_markdown_report_renders(baseline):
-    md = k.render_markdown(baseline, KEY, {"date": "2026-10-01", "git_sha": "abc1234", "source": "test"})
+    md = k.render_markdown(baseline, BASELINE_KEY, {"date": "2026-10-01", "git_sha": "abc1234", "source": "test"})
     assert "| profile | 32/37 = 86% | 51/64 = 80% | 2 |" in md
     assert "| chat | 28/37 = 76% | 38/56 = 68% | 7 | P2, P5 |" in md
 
