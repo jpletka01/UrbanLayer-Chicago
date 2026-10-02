@@ -66,8 +66,9 @@ def test_planned_development_is_named_and_links_the_ordinance_pdf():
 
 
 def test_landmark_requires_commission_approval_not_design_review():
-    f = describe_overlay("landmark_building", {"LANDMARKNAME": "NOEL STATE BANK"})
-    assert f["name"] == "Noel State Bank"
+    f = describe_overlay("landmark_building", {"NAME": "One North LaSalle Building", "LANDMARK": "4/16/1996"})
+    assert f["name"] == "One North LaSalle Building"
+    assert "designated 4/16/1996" in f["detail"]
     assert "written approval" in f["detail"] and "§2-120-740" in f["detail"]
     assert "design review" not in f["detail"].lower()
     d = describe_overlay("historic_district", HD_56)
@@ -95,7 +96,7 @@ def test_adu_zone_and_limits_are_named():
 # --- carried into the regulatory summary ---------------------------------------------------------
 
 def test_summary_overlays_carry_name_detail_and_link():
-    hits = [(9, SD_606), (17, ADU_Z10), (2, {"PD_NUM": 835}), (7, {"LANDMARKNAME": "NOEL STATE BANK"})]
+    hits = [(9, SD_606), (17, ADU_Z10), (2, {"PD_NUM": 835}), (5, {"NAME": "One North LaSalle Building"})]
     s = _build_summary(hits, None, [])
     by = {o.layer_type: o for o in s.overlays}
     assert by["special_district"].name == "Predominance of the Block (606) District"

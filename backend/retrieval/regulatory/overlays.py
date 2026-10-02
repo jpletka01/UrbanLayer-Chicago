@@ -39,9 +39,14 @@ OVERLAY_LAYERS: dict[int, dict[str, str]] = {
     2:  {"type": "planned_development", "name": "Planned Developments"},
     3:  {"type": "lakefront_protection", "name": "Lakefront Protection District"},
     4:  {"type": "pedestrian_street", "name": "Pedestrian Streets"},
-    5:  {"type": "landmark_district", "name": "Landmark District Boundaries"},
+    # Layer 5 ("Landmark Boundaries") is the designated Chicago Landmarks: it hit 59 of 60 buildings on
+    # the City's official landmark list (data portal tdab-kixi). Layer 6 is the landmark/historic
+    # districts. Layer 7 ("Landmark Buildings") is NOT designations: it is the Chicago Historic
+    # Resources Survey's 9,298 orange/red-rated buildings (9,108 with no designation date) and hit
+    # only 39 of those 60, so it is deliberately not queried. The survey rating is read from
+    # property/chrs.py, which carries the right rule (a demolition delay, not Commission approval).
+    5:  {"type": "landmark_building", "name": "Chicago Landmarks"},
     6:  {"type": "historic_district", "name": "Historic Districts"},
-    7:  {"type": "landmark_building", "name": "Individual Landmark Buildings"},
     8:  {"type": "national_register", "name": "National Register Districts"},
     9:  {"type": "special_district", "name": "Special Districts"},
     11: {"type": "fema_floodplain", "name": "FEMA Floodplain (Local)"},
