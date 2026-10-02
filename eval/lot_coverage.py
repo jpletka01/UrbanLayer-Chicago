@@ -128,6 +128,17 @@ def _no_building(resp: dict) -> str | None:
     return _is_vacant(resp)
 
 
+def _no_own_building_area(resp: dict) -> str | None:
+    """bldg_sqft is withheld, on purpose, for a member of a multi-PIN commercial
+    unit: the assessor's total describes the whole complex, not this lot (F6 —
+    attributing it put a 7-PIN strip center's area on one 4,347 sq ft lot). The
+    unit total is still served as ``complex_bldg_sqft``, so this is an explained
+    absence, not a data gap."""
+    if _positive_num(_prop(resp).get("complex_bldg_sqft")):
+        return "member of a multi-PIN commercial unit; the unit total is shown as complex_bldg_sqft"
+    return _is_vacant(resp)
+
+
 def _positive_num(v: Any) -> bool:
     try:
         return v is not None and float(v) > 0
@@ -176,7 +187,7 @@ FIELD_SPECS: list[FieldSpec] = [
     FieldSpec(
         "bldg_sqft", "critical",
         lambda r, row: _positive_num(_prop(r).get("bldg_sqft")),
-        expected_absent=_no_building,
+        expected_absent=_no_own_building_area,
     ),
     FieldSpec(
         "bldg_class", "critical",

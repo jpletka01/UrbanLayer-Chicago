@@ -89,6 +89,45 @@ async def test_commercial_units_only_for_single_pin_economic_unit():
     assert facts == {"bldg_sqft": 57301, "year_built": 1928, "units": 80}
 
 
+STRIP_CENTER = [{
+    "bldgsf": "43790", "yearbuilt": "1964", "year": "2024",
+    "keypin": "14-17-106-012-0000",
+    "pins": "14-17-106-012-0000, 14-17-106-025-0000, 14-17-106-044-0000",
+}]
+
+
+@pytest.mark.asyncio
+async def test_member_of_a_multi_pin_complex_does_not_get_the_complex_total():
+    """Kit P3: a 7-PIN strip center's 43,790 sq ft was attributed to one 4,347 sq ft
+    member lot (existing FAR 10.07). A non-keypin member gets the total as
+    complex_bldg_sqft, never as its own bldg_sqft."""
+    with patch("backend.retrieval.property.building_facts.socrata_get",
+               new=AsyncMock(return_value=STRIP_CENTER)):
+        facts = await get_commercial_facts("14171060250000")
+    assert facts["bldg_sqft"] is None
+    assert facts["complex_bldg_sqft"] == 43790
+    assert facts["member_pins"] == ["14171060120000", "14171060250000", "14171060440000"]
+    assert facts["year_built"] == 1964  # the year still describes the buildings
+
+
+@pytest.mark.asyncio
+async def test_the_keypin_of_a_multi_pin_complex_keeps_the_area():
+    with patch("backend.retrieval.property.building_facts.socrata_get",
+               new=AsyncMock(return_value=STRIP_CENTER)):
+        facts = await get_commercial_facts("14171060120000")
+    assert facts["bldg_sqft"] == 43790 and "complex_bldg_sqft" not in facts
+    assert len(facts["member_pins"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_rows_without_member_lists_keep_the_pre_f6_behavior():
+    rows = [{"bldgsf": "1000", "year": "2024"}]
+    with patch("backend.retrieval.property.building_facts.socrata_get",
+               new=AsyncMock(return_value=rows)):
+        facts = await get_commercial_facts("17161020270000")
+    assert facts == {"bldg_sqft": 1000, "year_built": None, "units": None}
+
+
 @pytest.mark.asyncio
 async def test_footprint_prefers_populated_row_and_filters_demolished():
     rows = [

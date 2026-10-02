@@ -321,6 +321,11 @@ def _chars_describe_prior_structure(
     return has_building_facts
 
 
+# A building footprint may exceed the lot by this factor before we conclude the
+# building spans several lots (see _build_summary's footprint fallback).
+_FOOTPRINT_SPAN_SLACK = 1.1
+
+
 def _build_summary(
     parcel: dict,
     chars: dict | None,
@@ -451,6 +456,8 @@ def _build_summary(
     # Building-fact fallbacks (condo unit chars → commercial valuation →
     # city footprints), applied ONLY into holes the assessor data left, with
     # per-field provenance so the UI/report can label non-assessor numbers.
+    complex_bldg_sqft: int | None = None
+    complex_member_pins: list[str] | None = None
     year_built_source = "assessor" if year_built else None
     stories_source = "assessor" if stories else None
     units_source = "assessor" if units else None
@@ -472,6 +479,11 @@ def _build_summary(
             if not bldg_sqft and commercial.get("bldg_sqft"):
                 bldg_sqft = commercial["bldg_sqft"]
                 bldg_sqft_source = "commercial_valuation"
+            # A member of a multi-PIN complex: the valuation total describes the
+            # whole complex, so it is carried beside — never as — this parcel's area.
+            if commercial.get("complex_bldg_sqft"):
+                complex_bldg_sqft = commercial["complex_bldg_sqft"]
+                complex_member_pins = commercial.get("member_pins")
             if not year_built and commercial.get("year_built"):
                 year_built = commercial["year_built"]
                 year_built_source = "commercial_valuation"
@@ -495,7 +507,13 @@ def _build_summary(
                 bldg_sqft_source = "energy_benchmark"
         footprint = building_fallbacks.get("footprint")
         if footprint:
-            if not bldg_sqft and footprint.get("bldg_sqft"):
+            # A footprint larger than the lot belongs to a building that spans several
+            # lots (the same strip-center problem as a multi-PIN valuation total) —
+            # not this parcel's own area. 10% slack for polygon measurement error.
+            spans_lots = bool(
+                land_sqft and footprint.get("bldg_sqft") and footprint["bldg_sqft"] > land_sqft * _FOOTPRINT_SPAN_SLACK
+            )
+            if not bldg_sqft and footprint.get("bldg_sqft") and not spans_lots:
                 bldg_sqft = footprint["bldg_sqft"]
                 bldg_sqft_source = "footprint"
             if not year_built and footprint.get("year_built"):
@@ -567,6 +585,8 @@ def _build_summary(
         land_sqft=land_sqft,
         land_sqft_source=land_sqft_source,
         bldg_sqft_source=bldg_sqft_source,
+        complex_bldg_sqft=complex_bldg_sqft if not bldg_sqft else None,
+        complex_member_pins=complex_member_pins if not bldg_sqft else None,
         year_built_source=year_built_source,
         stories_source=stories_source,
         units_source=units_source,

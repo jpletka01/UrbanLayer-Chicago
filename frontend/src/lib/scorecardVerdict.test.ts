@@ -369,3 +369,29 @@ describe("transit-served (TOD) reason — parking relief is not a density bonus"
     expect(r?.text).toBe("scorecard.verdict.reason.todPd");
   });
 });
+
+describe("building area that isn't this lot's (F6)", () => {
+  it("an existing FAR several times the zone cap is treated as unknown, not as a built-out parcel", () => {
+    // kit P3: 43,790 sq ft (a whole strip center) on a 4,347 sq ft lot -> FAR 10.07 vs a 2.2 cap
+    const s = deriveSignals(mk({ zone: "B1-2", far: 2.2, bldg: 43790, land: 4347, bldgClass: "5-17" }));
+    expect(s.bldgAreaLowConfidence).toBe(true);
+    expect(s.existingFar).toBeNull();
+    expect(s.capacityBand).toBe("unknown");
+  });
+
+  it("a plausible dense building is still used (legal nonconforming at ~2x is not flagged)", () => {
+    const s = deriveSignals(mk({ zone: "B1-2", far: 2.2, bldg: 8700, land: 4347, bldgClass: "5-17" })); // FAR ~2.0
+    expect(s.bldgAreaLowConfidence).toBe(false);
+    const nonconforming = deriveSignals(mk({ zone: "B1-2", far: 2.2, bldg: 13000, land: 4347 })); // FAR ~3.0 (1.4x cap)
+    expect(nonconforming.bldgAreaLowConfidence).toBe(false);
+  });
+
+  it("a member of a multi-parcel complex gets a caveat that names the complex, not a bogus FAR", () => {
+    const data = mk({ zone: "B1-2", far: 2.2, noProperty: false, land: 4347, bldgClass: "5-17" });
+    (data.context.property as unknown as Record<string, unknown>).complex_bldg_sqft = 43790;
+    (data.context.property as unknown as Record<string, unknown>).complex_member_pins = ["a", "b", "c", "d", "e", "f", "g"];
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.complexBldg") && c.includes('"n":7') && c.includes("43,790"))).toBe(true);
+    expect(v.signals.existingFar).toBeNull();
+  });
+});

@@ -1,0 +1,1096 @@
+{
+ "address": "401 N Wabash Ave",
+ "lat": 41.88892518,
+ "lon": -87.62649444,
+ "community_area": 8,
+ "community_area_name": "Near North Side",
+ "context": {
+  "community_area": 8,
+  "community_area_name": "Near North Side",
+  "resolved_address": "401 N Wabash Ave",
+  "data_as_of": "2026-10-02",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-25).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-25",
+  "crime_last_90d": {
+   "total": 2677,
+   "arrest_rate": 0.15,
+   "by_type": {
+    "THEFT": 1094,
+    "BATTERY": 366,
+    "DECEPTIVE PRACTICE": 227,
+    "CRIMINAL DAMAGE": 205,
+    "ASSAULT": 165
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 1094,
+     "prior_year_count": 1319,
+     "change_pct": -17
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 366,
+     "prior_year_count": 451,
+     "change_pct": -19
+    },
+    {
+     "category": "DECEPTIVE PRACTICE",
+     "current_count": 227,
+     "prior_year_count": 313,
+     "change_pct": -27
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 205,
+     "prior_year_count": 206,
+     "change_pct": 0
+    },
+    {
+     "category": "ASSAULT",
+     "current_count": 165,
+     "prior_year_count": 186,
+     "change_pct": -11
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 39,
+   "open_count": 9,
+   "by_type": {
+    "Graffiti Removal Request": 8,
+    "Pothole in Street Complaint": 8,
+    "Cab Feedback": 5,
+    "Sign Repair Request - All Other Signs": 5,
+    "Building Violation": 3,
+    "Street Light Out Complaint": 2,
+    "Sidewalk Inspection Request": 2,
+    "Dead Bird": 1,
+    "Sanitation Code Violation": 1,
+    "Wage Complaint": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": []
+  },
+  "violations": {
+   "total": 4,
+   "open_count": 0,
+   "by_category": {
+    "Elevator/Escalator": 4
+   },
+   "top_descriptions": [
+    "MAINTAIN OR REPAIR ELECT ELEVA",
+    "MAINT W.W. PLATFORM"
+   ],
+   "capped": false
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "PD 835",
+   "zone_type": 5,
+   "ordinance_num": "13559",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "planned_development",
+     "name": "Planned Developments",
+     "ordinance": "13559",
+     "description": "Planned Developments"
+    },
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    },
+    {
+     "layer_type": "tod_metra",
+     "name": "Transit-Oriented Development (Metra)",
+     "description": "Transit-Oriented Development (Metra)"
+    }
+   ],
+   "in_planned_development": true,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": false,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": false,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [
+    {
+     "site_name": "CHICAGO HOMETOWN AWARD - BLOOMINGDALE PARK TRAIL",
+     "epa_id": "110005873260",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.89196,
+     "longitude": -87.62024
+    },
+    {
+     "site_name": "GATEWAY PARK INDUSTRIAL COMPLEX",
+     "epa_id": "110039531496",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.884150999999996,
+     "longitude": -87.632393
+    },
+    {
+     "site_name": "3350 S. KEDZIE",
+     "epa_id": "110060983039",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.883829999999996,
+     "longitude": -87.63244999999999
+    },
+    {
+     "site_name": "9705 S. COTTAGE GROVE",
+     "epa_id": "110039531398",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.883829999999996,
+     "longitude": -87.63244999999999
+    },
+    {
+     "site_name": "SUN MACHINE PARTS",
+     "epa_id": "110039531316",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.883829999999996,
+     "longitude": -87.63244999999999
+    },
+    {
+     "site_name": "CHICAGO HOMETOWN AWARD - BLOOMINGDALE PARK TRAIL",
+     "epa_id": "110005873260",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.89196,
+     "longitude": -87.62024
+    }
+   ],
+   "aro_housing": {
+    "total_projects": 20,
+    "total_units": 1010,
+    "projects": [
+     {
+      "name": "847 N. Larabee",
+      "address": "847 N. Larabee St.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "868northwells",
+      "address": "868 N. Wells St.",
+      "units": 32,
+      "property_type": "ARO"
+     },
+     {
+      "name": "920northwells",
+      "address": "920 N. Wells St.",
+      "units": 32,
+      "property_type": "ARO"
+     },
+     {
+      "name": "AMLI 808",
+      "address": "808 N. Wells St.",
+      "units": 32,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Atrium at Old Town Park",
+      "address": "300 W. Hill St.",
+      "units": 41,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Axis Apartments and Lofts",
+      "address": "441 E Erie",
+      "units": 3,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Carling Hotel",
+      "address": "1512 N. LaSalle St.",
+      "units": 80,
+      "property_type": "Supportive"
+     },
+     {
+      "name": "Clybourn 1200",
+      "address": "1200 N. Clybourn Ave.",
+      "units": 52,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Evergreen Towers II",
+      "address": "1343 N. Cleveland Ave.",
+      "units": 101,
+      "property_type": "Senior"
+     },
+     {
+      "name": "North Town Village I & II",
+      "address": "1311 N. Halsted St.",
+      "units": 112,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "North & Vine",
+      "address": "633 W. North Ave.",
+      "units": 7,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Onni Atrium Devp.",
+      "address": "202 W. Hill St.",
+      "units": 43,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Parkside-I Rental",
+      "address": "545 W. Division St.",
+      "units": 116,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Parkside of Old Town IIB",
+      "address": "1151 N. Cleveland Ave.",
+      "units": 12,
+      "property_type": "Multfamily"
+     },
+     {
+      "name": "Parkside of Old Town IIB",
+      "address": "459 W. Division St.",
+      "units": 94,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Parkside of Old Town Phase IIA",
+      "address": "544 W. Oak St.",
+      "units": 111,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Schiff Residences",
+      "address": "1244 N. Clybourn Ave.",
+      "units": 96,
+      "property_type": "SRO/Supportive"
+     },
+     {
+      "name": "Than Tower",
+      "address": "343 W. Schiller St.",
+      "units": 21,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The 808",
+      "address": "808 N. Cleveland Ave.",
+      "units": 20,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Leo",
+      "address": "741 N Wells",
+      "units": 4,
+      "property_type": "ARO"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "17101350382166",
+   "address": "401 N WABASH AVE",
+   "bldg_class": "299",
+   "bldg_sqft": 2612396,
+   "land_sqft": 98019,
+   "land_sqft_source": "gis",
+   "bldg_sqft_source": "energy_benchmark",
+   "year_built_source": "assessor",
+   "stories_source": "footprint",
+   "stories": 92.0,
+   "bldg_age": 20,
+   "year_built": 2006,
+   "tax_exempt": false,
+   "total_assessed_value": 250148.0,
+   "estimated_annual_tax": 49065.31,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.1,
+   "implied_market_value": 2501480.0,
+   "effective_tax_rate": 0.0196,
+   "tax_year": 2024,
+   "tax_code": "74004",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 26917.2
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 11971.51
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 2894.64
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 2523.8
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 2181.04
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 1108.13
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 960.53
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 508.46
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [
+    {
+     "kind": "Homeowner",
+     "eav_reduction": 10000.0
+    },
+    {
+     "kind": "Senior Citizen",
+     "eav_reduction": 8000.0
+    }
+   ],
+   "appeals": {
+    "records": [
+     {
+      "year": 2025,
+      "stage": "assessor",
+      "before_total": 250148.0,
+      "after_total": 250148.0,
+      "result": "no change",
+      "appeal_type": "condo/coop"
+     },
+     {
+      "year": 2025,
+      "stage": "board_of_review",
+      "before_total": 250148.0,
+      "after_total": 250148.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2024,
+      "stage": "assessor",
+      "before_total": 250148.0,
+      "after_total": 250148.0,
+      "result": "no change",
+      "appeal_type": "condo/coop"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 250148.0,
+      "after_total": 250148.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2023,
+      "stage": "assessor",
+      "before_total": 275211.0,
+      "after_total": 275211.0,
+      "result": "no change",
+      "appeal_type": "condo/coop"
+     },
+     {
+      "year": 2023,
+      "stage": "board_of_review",
+      "before_total": 275209.0,
+      "after_total": 275209.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2022,
+      "stage": "assessor",
+      "before_total": 312739.0,
+      "after_total": 275211.0,
+      "result": "change",
+      "reduction_pct": 12.0,
+      "appeal_type": "condo/coop"
+     }
+    ],
+    "nearby_window_years": [
+     2025
+    ],
+    "nearby_appeal_count": 500,
+    "nearby_reduced_count": 89,
+    "nearby_median_reduction_pct": 56.5,
+    "nearby_capped": true
+   },
+   "energy": {
+    "chicago_energy_rating": 3.0,
+    "energy_star_score": 43,
+    "gross_floor_area": 2612396,
+    "year_built": 2008,
+    "primary_property_type": "Mixed Use Property",
+    "site_eui": 59.4,
+    "ghg_intensity": 7.7,
+    "data_year": 2021,
+    "not_submitted": false
+   },
+   "assessment_history": [
+    {
+     "year": 2025,
+     "land": 10090.0,
+     "building": 240058.0,
+     "total": 250148.0
+    },
+    {
+     "year": 2024,
+     "land": 10090.0,
+     "building": 240058.0,
+     "total": 250148.0
+    },
+    {
+     "year": 2023,
+     "land": 8138.0,
+     "building": 267073.0,
+     "total": 275211.0
+    },
+    {
+     "year": 2022,
+     "land": 8138.0,
+     "building": 267073.0,
+     "total": 275211.0
+    }
+   ],
+   "sales_history": [],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.6254224836811,
+       41.88946689435069
+      ],
+      [
+       -87.62541680350546,
+       41.889302699659964
+      ],
+      [
+       -87.62541669903472,
+       41.8892988563956
+      ],
+      [
+       -87.62541431490145,
+       41.88922880941055
+      ],
+      [
+       -87.62573754931717,
+       41.88905171185854
+      ],
+      [
+       -87.62605911036864,
+       41.88882647118797
+      ],
+      [
+       -87.62621988808044,
+       41.88871390400574
+      ],
+      [
+       -87.62638066674369,
+       41.88860128240248
+      ],
+      [
+       -87.62654144363256,
+       41.88848877032969
+      ],
+      [
+       -87.62665721562115,
+       41.88840765029482
+      ],
+      [
+       -87.62670666328482,
+       41.888379633338644
+      ],
+      [
+       -87.62674494975737,
+       41.88835796989256
+      ],
+      [
+       -87.62680245377113,
+       41.888325392829294
+      ],
+      [
+       -87.62691649856497,
+       41.88841440405539
+      ],
+      [
+       -87.6272691290487,
+       41.88830175375341
+      ],
+      [
+       -87.62730692141756,
+       41.888371635592264
+      ],
+      [
+       -87.62730661788537,
+       41.88870604603551
+      ],
+      [
+       -87.62723446796493,
+       41.88874533626467
+      ],
+      [
+       -87.62711090847992,
+       41.888823445207244
+      ],
+      [
+       -87.626988559961,
+       41.88890503361235
+      ],
+      [
+       -87.62684787759164,
+       41.888999365168424
+      ],
+      [
+       -87.62675635404928,
+       41.88905673912675
+      ],
+      [
+       -87.62666029894585,
+       41.889111143301044
+      ],
+      [
+       -87.62652627375023,
+       41.88917785281074
+      ],
+      [
+       -87.62643298971354,
+       41.88921780827972
+      ],
+      [
+       -87.62643649667761,
+       41.88922834395966
+      ],
+      [
+       -87.62643860609684,
+       41.88923924578057
+      ],
+      [
+       -87.62643928226333,
+       41.88925032919826
+      ],
+      [
+       -87.62643927797028,
+       41.88925080186698
+      ],
+      [
+       -87.62643855018577,
+       41.88926076600127
+      ],
+      [
+       -87.62643666183918,
+       41.88927057659705
+      ],
+      [
+       -87.6264336388582,
+       41.8892800989512
+      ],
+      [
+       -87.62643097383841,
+       41.88928639360925
+      ],
+      [
+       -87.62641328817847,
+       41.88930816219577
+      ],
+      [
+       -87.6263923248686,
+       41.889326795326646
+      ],
+      [
+       -87.62636863218121,
+       41.88934180567278
+      ],
+      [
+       -87.62634282977255,
+       41.889352800655
+      ],
+      [
+       -87.62631559247635,
+       41.889359492711606
+      ],
+      [
+       -87.62628763265421,
+       41.8893617068192
+      ],
+      [
+       -87.62625968156463,
+       41.88935938507023
+      ],
+      [
+       -87.62623247023774,
+       41.88935258818748
+      ],
+      [
+       -87.62620671035593,
+       41.88934149393597
+      ],
+      [
+       -87.62618307564071,
+       41.8893263924737
+      ],
+      [
+       -87.6261073545228,
+       41.88934038006932
+      ],
+      [
+       -87.62592246513897,
+       41.8893744766029
+      ],
+      [
+       -87.62581544735846,
+       41.88939423443863
+      ],
+      [
+       -87.62559449331657,
+       41.88943507929094
+      ],
+      [
+       -87.62548872544261,
+       41.88945462567187
+      ],
+      [
+       -87.6254224836811,
+       41.88946689435069
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": false,
+   "tif_fund_history": [],
+   "tif_financials": [],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_tract": "17031081500",
+   "nmtc_severe_distress": false,
+   "nmtc_poverty_rate": 7.4,
+   "census_tract": "17031081500",
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 299 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 15,
+    "total_funding": 1254870.48,
+    "by_program": {
+     "SBIF": 15
+    },
+    "recent_projects": [
+     {
+      "name": "Reggie's Bar & Grill, LLC",
+      "program": "SBIF",
+      "incentive_amount": 20500.0,
+      "total_cost": 45500.0,
+      "property_type": "Commercial",
+      "description": "Replacement of two HVAC rooftop units (a 12.5 ton and a 7.5 ton unit) including all gas and electrical hook-ups and replacement of associated ductwork as needed.",
+      "date": "2018-04-05"
+     },
+     {
+      "name": "Baderbrau LLC",
+      "program": "SBIF",
+      "incentive_amount": 150000.0,
+      "total_cost": 631191.26,
+      "property_type": "Industrial",
+      "description": "Partial completion of the plumbing improvements and concrete work done in connection with the production brewery portion of the build-out at 2515 S. Wabash only: coring for new floor penetrations and excavation for underground plumbing service; saw cutting and concrete removal for underground trenches; all domestic water service and sanitary waste piping as needed; concrete for production area slab flooring, completion of the plumbing improvements and concrete work done in connection with the production brewery portion of the build-out at 2515 S. Wabash: coring for new floor penetrations and excavation for underground plumbing service; saw cutting and concrete removal for underground trenches; all domestic water service and sanitary waste piping as needed; concrete for production area slab flooring; concrete removal and replacement components of phase II work scope; plumbing and sewerage components of phase II work scope; furnish and install duct work for HVAC distribution; furnish and install new storefront systems (frames, glass, and doors) and new perimeter windows.",
+      "date": "2016-10-28"
+     },
+     {
+      "name": "1240 N. Wells, Inc. dba Declan's Irish Pub",
+      "program": "SBIF",
+      "incentive_amount": 59197.5,
+      "total_cost": 87325.0,
+      "property_type": "Commercial",
+      "description": "Fa\u00e7ade improvements (furnish and install new cornice and wood panel cladding below and at entryway columns); furnish and install five (5) new windows and sills at commercial/ground floor at south elevation; furnish and install two (2) new storefront windows and sills at east elevation ground floor; tuck point and related incidental masonry repairs in connection with installation of new windows; furnish and install new pavers at front commercial entry.",
+      "date": "2016-07-12"
+     },
+     {
+      "name": "2255 S. Wabash Ave., LLC",
+      "program": "SBIF",
+      "incentive_amount": 78250.0,
+      "total_cost": 156500.0,
+      "property_type": "Commercial",
+      "description": "Complete roof tear off over 2 commercial spaces down to the decking, replace any damaged metal and wood decking, masonry work along the parapet wall as needed, install insulation, new flashings, new modified bitumen membrane, new gutters and downspouts, and apply reflective aluminum coating to roofing surface.",
+      "date": "2016-07-01"
+     },
+     {
+      "name": "HTNB, LLC dba Vision Boutique",
+      "program": "SBIF",
+      "incentive_amount": 25000.0,
+      "total_cost": 193833.96,
+      "property_type": "Commercial",
+      "description": "Concrete work including trenching for underground plumbing; rough and finish carpentry and framing for office space and restrooms, new insulation and drywall, new doors and hardware, and new acoustical ceiling grid and tiles; HVAC system including ductwork and vents; rough plumbing work and fixtures for hot water and restrooms; rough electrical work including conduit and wiring; painting and finishing.",
+      "date": "2015-07-02"
+     },
+     {
+      "name": "Sean Ghassemi",
+      "program": "SBIF",
+      "incentive_amount": 83236.73,
+      "total_cost": 117770.0,
+      "property_type": "Commercial",
+      "description": "Fa\u00e7ade repairs including window capping, installation of new deck/capping on cornice, parapet wall repairs including tuckpointing, steel, wood and sheet metal repairs, painting and finishing, roofing repairs including new flashings and masonry repairs on parapet wall, and installation of new rolling parking gate with steel frame dedicated to chiropractor\u2019s office (Mr. Ghassemi\u2019s commercial ), renovation of the commercial space in the building basement including demolition of existing concrete floor and pouring new concrete, carpentry and framing for new walls, new ceilings with insulation, new stairwell to chiropractor office on first floor, new vinyl flooring, plumbing and electrical work, painting and finishing; installation of a new HVAC system serving commercial space (only) including 2 new furnaces with condenser, ductwork and wiring; and exterior restoration of entry doorway and doors at front fa\u00e7ade.",
+      "date": "2014-11-14"
+     },
+     {
+      "name": "Stop and Shop For U, Inc. (Frozen Foods)",
+      "program": "SBIF",
+      "incentive_amount": 50000.0,
+      "total_cost": 78700.0,
+      "property_type": "Commercial",
+      "description": "An interior build out of a start-up convenience store called Frozen Foods including rough and finish electrical and lighting, plumbing and fixtures, HVAC duct work, flooring and tiling, drop ceilings, drywall and insulation, rough and finish carpentry, exterior signage and new glass for windows and doors, painting and finishing; located in Suite F.",
+      "date": "2014-01-28"
+     },
+     {
+      "name": "Icon Project Roc, LLC dba Old Town Social",
+      "program": "SBIF",
+      "incentive_amount": 29550.0,
+      "total_cost": 59100.0,
+      "property_type": "Commercial",
+      "description": "Roofing, roofing, gutters and downspouts, tuckpointing.",
+      "date": "2013-06-27"
+     },
+     {
+      "name": "Go Cycles, LLC",
+      "program": "SBIF",
+      "incentive_amount": 50000.0,
+      "total_cost": 91348.39,
+      "property_type": "Commercial",
+      "description": "Build out for a cycling studio and fitness center including electrical, plumbing, and HVAC work, new framing and drywall, insulation and sound proofing, flooring, light fixtures, plumbing fixtures, interior glass sliding door, cabinetry, locker rooms build out, window treatments and exterior and interior signage.",
+      "date": "2013-05-03"
+     },
+     {
+      "name": "The House of Glunz",
+      "program": "SBIF",
+      "incentive_amount": 124625.0,
+      "total_cost": 287942.59,
+      "property_type": "Commercial",
+      "description": "Buildout.",
+      "date": "2012-10-29"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "census_tract": {
+    "tract_fips": "17031081500",
+    "tract_name": "Census Tract 815, Cook, IL",
+    "census_reporter_url": "https://censusreporter.org/profiles/14000US17031081500/",
+    "population": 5237,
+    "median_household_income": 134320,
+    "per_capita_income": 152787,
+    "median_home_value": 674300,
+    "median_gross_rent": 2495,
+    "owner_occupied_pct": 52.2,
+    "vacancy_rate": 19.4,
+    "poverty_rate": 10.9,
+    "bachelors_or_higher_pct": 90.4,
+    "foreign_born_pct": 28.1,
+    "age_distribution": [
+     {
+      "label": "Under 18",
+      "value": 2.8
+     },
+     {
+      "label": "18-24",
+      "value": 14.8
+     },
+     {
+      "label": "25-34",
+      "value": 26.6
+     },
+     {
+      "label": "35-44",
+      "value": 18.3
+     },
+     {
+      "label": "45-54",
+      "value": 5.3
+     },
+     {
+      "label": "55-64",
+      "value": 16.6
+     },
+     {
+      "label": "65-74",
+      "value": 13.3
+     },
+     {
+      "label": "75+",
+      "value": 2.3
+     }
+    ],
+    "income_distribution": [
+     {
+      "label": "Under $25K",
+      "value": 12.3
+     },
+     {
+      "label": "$25-50K",
+      "value": 0.6
+     },
+     {
+      "label": "$50-75K",
+      "value": 4.1
+     },
+     {
+      "label": "$75-100K",
+      "value": 15.2
+     },
+     {
+      "label": "$100-150K",
+      "value": 22.2
+     },
+     {
+      "label": "$150-200K",
+      "value": 9.7
+     },
+     {
+      "label": "$200K+",
+      "value": 36.0
+     }
+    ],
+    "race_distribution": [
+     {
+      "label": "White",
+      "value": 54.4
+     },
+     {
+      "label": "Black",
+      "value": 4.1
+     },
+     {
+      "label": "Asian",
+      "value": 26.0
+     },
+     {
+      "label": "Two+",
+      "value": 4.5
+     },
+     {
+      "label": "Other",
+      "value": 3.0
+     },
+     {
+      "label": "Hispanic",
+      "value": 8.0
+     }
+    ],
+    "education_distribution": [
+     {
+      "label": "No degree",
+      "value": 0.4
+     },
+     {
+      "label": "High school",
+      "value": 2.0
+     },
+     {
+      "label": "Some college",
+      "value": 7.2
+     },
+     {
+      "label": "Bachelor's",
+      "value": 40.2
+     },
+     {
+      "label": "Graduate+",
+      "value": 50.2
+     }
+    ],
+    "transportation_distribution": [
+     {
+      "label": "Drove alone",
+      "value": 27.2
+     },
+     {
+      "label": "Carpooled",
+      "value": 2.2
+     },
+     {
+      "label": "Public transit",
+      "value": 14.9
+     },
+     {
+      "label": "Walked",
+      "value": 27.5
+     },
+     {
+      "label": "Bicycle",
+      "value": 0.5
+     },
+     {
+      "label": "Work from home",
+      "value": 26.1
+     },
+     {
+      "label": "Other",
+      "value": 1.7
+     }
+    ],
+    "county_median_income": 83498,
+    "city_median_income": 77902
+   },
+   "transit": {
+    "nearest_cta_rail": "Grand (Red)",
+    "cta_rail_distance_mi": 0.2,
+    "cta_lines": [
+     "Red Line"
+    ],
+    "nearest_metra": "Millennium Station",
+    "metra_distance_mi": 0.37,
+    "metra_line": "Metra Electric",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 99,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 100,
+    "transit_description": "Rider's Paradise",
+    "bike_score": 77,
+    "bike_description": "Very Bikeable",
+    "ws_link": "https://www.walkscore.com/score/401-N-Wabash-Ave/lat=41.88892518/lng=-87.62649444/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 42,
+    "alderman": "Reilly, Brendan",
+    "phone": "(312) 642-4242",
+    "email": "Ward42@cityofchicago.org"
+   },
+   "traffic": {
+    "road": "STATE",
+    "daily_vehicles": 8958,
+    "directions": 2,
+    "from_street": "E KINZIE ST",
+    "to_street": "E WACKER DR",
+    "as_of": "2026-10-01"
+   },
+   "divvy": {
+    "nearest_station": "State St & Kinzie St",
+    "distance_mi": 0.04,
+    "docks": 32,
+    "stations_within_radius": 27,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": [],
+  "tod_benefits": {
+   "parking_relief": null,
+   "parking_max_reduction_pct": null,
+   "density_bonus_eligible": false,
+   "entitlement_required": false,
+   "note": "Planned Development: the PD ordinance governs parking and density."
+  }
+ },
+ "comparables": {
+  "median_sale_price": 219000.0,
+  "price_range_min": 210000.0,
+  "price_range_max": 345000.0,
+  "sales_volume": 4,
+  "sales": [
+   {
+    "pin": "17094240091043",
+    "sale_date": "2026-04-03T00:00:00.000",
+    "sale_price": 220000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.26,
+    "lat": 41.8860567178,
+    "lon": -87.6298749673,
+    "zone_class": "PD 375"
+   },
+   {
+    "pin": "17094240091088",
+    "sale_date": "2025-06-30T00:00:00.000",
+    "sale_price": 210000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.26,
+    "lat": 41.8860567178,
+    "lon": -87.6298749673,
+    "zone_class": "PD 375"
+   },
+   {
+    "pin": "17094240091078",
+    "sale_date": "2025-04-24T00:00:00.000",
+    "sale_price": 345000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.26,
+    "lat": 41.8860567178,
+    "lon": -87.6298749673,
+    "zone_class": "PD 375"
+   },
+   {
+    "pin": "17094240091048",
+    "sale_date": "2024-08-01T00:00:00.000",
+    "sale_price": 218000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.26,
+    "lat": 41.8860567178,
+    "lon": -87.6298749673,
+    "zone_class": "PD 375"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "17101350390000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": true,
+ "resolved_lat": 41.88892518,
+ "resolved_lon": -87.62649444,
+ "zone_definition": {
+  "zone_class": "PD 835",
+  "name": "Planned Development",
+  "code_section": "\u00a717-8-0500",
+  "far": null,
+  "max_height": null,
+  "lot_coverage": null,
+  "min_lot_sqft": null,
+  "uses": "Standards are site-specific per the approved planned development ordinance.",
+  "notes": "Planned developments have individually negotiated standards approved by City Council. Consult the specific PD ordinance for FAR, height, use, and setback requirements.",
+  "is_fallback": true
+ }
+}

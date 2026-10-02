@@ -185,6 +185,7 @@
       "caveat": {
         "unverified": "Identidad de parcela sin confirmar — las cifras de propiedad y comparables podrían ser de una parcela vecina. Verifique el PIN antes de confiar en ellas.",
         "noBldgArea": "El tamaño del edificio existente es incierto, así que no estimamos cuánta de la superficie permitida ya está en uso.",
+        "complexBldg": "La superficie construida está registrada para un complejo de {{n}} parcelas ({{sqft}} ft² en total), no para este lote, por lo que la superficie existente es desconocida.",
         "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
