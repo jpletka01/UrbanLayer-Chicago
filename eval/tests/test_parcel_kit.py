@@ -241,6 +241,18 @@ def test_coverage_check_requires_the_notes_that_apply_and_forbids_the_ones_that_
     assert "missing official_letter" in failed and "landmark should not apply" in failed and "planned_development has no link" in failed
 
 
+def test_url_check_finds_urls_the_model_wrote_that_we_did_not_supply():
+    profile = {"context": {"parcel_zoning": {"zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"}},
+               "provenance": {"parcel.identity": {"url": "https://www.cookcountyassessor.com/pin/1"}}}
+    chat = {"text": "Map [here](https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning). Code: "
+                    "[x](https://codelibrary.amlegal.com/codes/chicago/latest/chicago_il/0-0-0-563405) and https://chicago.legistar.com/y."}
+    got = k.url_check(chat, profile)
+    assert got["total"] == 3
+    assert got["invented"] == ["https://chicago.legistar.com/y", "https://codelibrary.amlegal.com/codes/chicago/latest/chicago_il/0-0-0-563405"]
+    assert k.url_check({"text": "no links"}, profile) == {"total": 0, "invented": []}
+    assert k.url_check(chat, None) is None
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})

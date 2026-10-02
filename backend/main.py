@@ -733,6 +733,20 @@ def _scorecard_grounding_applies(
     return bool(_PROPERTY_DOMAINS & set(plan.sources)) or plan.workflow_hint == "site_due_diligence"
 
 
+def _provenance_for(context: ContextObject) -> dict[str, dict]:
+    """Dated sources for the parcel facts a chat turn was given (empty without a resolved district)."""
+    from backend.provenance import build_provenance
+
+    if context.parcel_zoning is None:
+        return {}
+    return build_provenance(
+        context=context,
+        zone_definition=context.zone_definition,
+        resolved_pin=context.parcel_pin,
+        resolved_confidence=context.parcel_resolution,
+    )
+
+
 def _ensure_zone_definition(ctx: ContextObject) -> None:
     """Attach the deterministic Title-17 zone table when the turn resolved a
     district but nothing (a Profile handoff) supplied it."""
@@ -1385,8 +1399,14 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     t_first_token: int | None = None
     answer_parts: list[str] = []
     synth_outcome: dict = {}
+    # The model writes the answer; it does not get to write the sources. Any URL it
+    # composes that we did not supply is dropped (a link keeps its label), and a
+    # sources block is appended below from the provenance map and the chunks cited.
+    from backend.chat_sources import UrlGuard, allowed_urls, build_sources_footer, cited_chunks
+
+    url_guard = UrlGuard(allowed_urls(context))
     try:
-        async for token in stream_answer(
+        async for raw_token in stream_answer(
             context=context,
             user_message=req.message,
             history=req.history,
@@ -1398,12 +1418,31 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             language=req.language,
             outcome=synth_outcome,
         ):
+            token = url_guard.feed(raw_token)
+            if not token:
+                continue
             chunk_t = elapsed_ms() if first_token else None
             if first_token:
                 t_first_token = chunk_t
             answer_parts.append(token)
             yield _sse(ChatChunk(type="token", text=token, t_ms=chunk_t))
             first_token = False
+        tail = url_guard.flush()
+        if tail:
+            answer_parts.append(tail)
+            yield _sse(ChatChunk(type="token", text=tail, t_ms=elapsed_ms()))
+        if url_guard.dropped:
+            log.warning("Dropped %d model-written URL(s) (%s): %s", len(url_guard.dropped), request_group, url_guard.dropped[:5])
+        provenance = _provenance_for(context)
+        from backend.code_vintage import get_code_vintage
+
+        footer = build_sources_footer(
+            provenance, cited_chunks("".join(answer_parts), context.code_chunks),
+            (get_code_vintage() or {}).get("current_through"),
+        )
+        if footer:
+            answer_parts.append(footer)
+            yield _sse(ChatChunk(type="token", text=footer, t_ms=elapsed_ms()))
         if synth_outcome.get("stop_reason") == "max_tokens":
             log.warning("Answer hit the synthesizer token cap (%s)", request_group)
             notice = _TRUNCATION_NOTICE.get(req.language, _TRUNCATION_NOTICE["en"])
@@ -1421,6 +1460,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     if answer_parts and not error_msg:
         citation_warnings = citation_problems(
             "".join(answer_parts), len(context.code_chunks), data_sources_present(context),
+            provenance_keys=frozenset(_provenance_for(context)),
         ) or None
         if citation_warnings:
             log.warning("Answer has unsupported citations (%s): %s", request_group, citation_warnings)

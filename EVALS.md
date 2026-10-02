@@ -263,6 +263,18 @@ the Chicago Historic Resources Survey demolition hold, is unit-tested only becau
 kit parcel is rated orange or red
 ([report](eval/results/2026-10-02-v4/parcel_kit.md)).
 
+V5 stops the chat model from writing its own sources. The kit now counts the URLs in
+each chat answer that we did not supply (that appear nowhere in the parcel's Profile
+payload): 9 of 18 in the first baseline run, 5 of 14 and 1 of 10 in two later runs,
+including American Legal links whose ids the model composed (one id cited for two
+different sections) and Legistar links nobody gave it. A streaming guard now drops any
+URL we did not supply (a link keeps its words), and a sources block is appended from
+the provenance map and the code chunks the answer actually cited, with the code's
+current-through date. Replaying the recorded answers through the guard offline shows
+what it removes (10, 5 and 1 URLs) and that every URL we supplied survives. This is
+**not verified on live chat**: it needs chat credits, and the guard is deliberately
+conservative (a real City page the model wrote is dropped unless we supplied it).
+
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 
 | Field | Coverage | Note |

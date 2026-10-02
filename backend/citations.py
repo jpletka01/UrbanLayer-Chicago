@@ -36,13 +36,19 @@ def data_sources_present(context: Any) -> set[str]:
     return {marker for field, marker in DATA_SOURCE_FIELDS.items() if get(field)}
 
 
-def citation_problems(answer: str, num_code_chunks: int, data_present: set[str]) -> list[str]:
-    """Human-readable problems with the answer's citations; empty when all are backed."""
+def citation_problems(
+    answer: str, num_code_chunks: int, data_present: set[str], provenance_keys: frozenset[str] = frozenset(),
+) -> list[str]:
+    """Human-readable problems with the answer's citations; empty when all are backed.
+    ``provenance_keys`` are the fact ids the turn has a dated source for (e.g.
+    ``zoning.far``); a ``[data:zoning.far]`` marker is backed only when its id is one."""
     problems: list[str] = []
     for ref in sorted({int(n) for n in _CODE_REF.findall(answer)}):
         if not 1 <= ref <= num_code_chunks:
             problems.append(f"[{ref}] cites a code chunk that wasn't retrieved ({num_code_chunks} available)")
     for marker in sorted(set(_DATA_REF.findall(answer))):
+        if marker in provenance_keys:
+            continue  # a parcel fact with a dated source in this turn's provenance
         if marker not in KNOWN_DATA_MARKERS:
             problems.append(f"[data:{marker}] is not a known data source")
         elif marker not in data_present:
