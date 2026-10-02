@@ -810,6 +810,41 @@ export async function fetchScorecard(params: {
   } catch { return null; }
 }
 
+/** One Municipal Code subsection (and the table it cites) with how current the code is. */
+export interface CodeSubsection {
+  section_id: string;
+  article: string;
+  article_title: string;
+  heading: string;
+  paragraphs: string[];
+  /** Raw "Columns: ... / Row n: ..." text, one entry per table. */
+  tables: string[];
+  current_through: string | null;
+  vintage_label: string | null;
+  source: string | null;
+}
+
+const subsectionCache = new Map<string, Promise<CodeSubsection | null>>();
+
+export function fetchCodeSubsection(sectionId: string): Promise<CodeSubsection | null> {
+  const key = sectionId.trim();
+  const hit = subsectionCache.get(key);
+  if (hit) return hit;
+  const p = (async () => {
+    try {
+      const resp = await authFetch(`${API_BASE}/api/code/section/${encodeURIComponent(key)}`);
+      return resp.ok ? ((await resp.json()) as CodeSubsection) : null;
+    } catch {
+      return null;
+    }
+  })();
+  subsectionCache.set(key, p);
+  p.then((r) => {
+    if (r === null) subsectionCache.delete(key);
+  });
+  return p;
+}
+
 export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> {
   // Highest-fidelity key only: pin → address → coords (never downgrade).
   const qs = new URLSearchParams();
