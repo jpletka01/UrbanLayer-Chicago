@@ -370,6 +370,34 @@ async def section(section_id: str) -> dict:
     return chunk.model_dump()
 
 
+@app.get("/api/code/section/{section_id}")
+async def code_subsection(section_id: str) -> dict:
+    """One Municipal Code subsection (and the table it cites), with how current the
+    code text is. Backs the Profile's "see the source" on a standard (V2): a Profile
+    number cites ``17-2-0304-A``; the index holds the whole article ``17-2-0300``."""
+    from backend.code_sections import SECTION_ID_RE, article_id, extract_subsection
+    from backend.code_vintage import get_code_vintage
+
+    if not SECTION_ID_RE.match(section_id):
+        raise HTTPException(status_code=422, detail="Not a Municipal Code section id.")
+    chunk = await get_full_section(article_id(section_id))
+    if chunk is None:
+        raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
+    sub = extract_subsection(chunk.text, section_id)
+    if sub is None:
+        raise HTTPException(status_code=404, detail=f"Subsection {section_id} not found in {chunk.section}")
+    vintage = get_code_vintage() or {}
+    return {
+        "section_id": section_id,
+        "article": chunk.section,
+        "article_title": chunk.section_title,
+        **sub,
+        "current_through": vintage.get("current_through"),
+        "vintage_label": vintage.get("label"),
+        "source": vintage.get("source"),
+    }
+
+
 @app.post("/api/map-data")
 async def map_data(req: MapDataRequest) -> MapDataResponse:
     settings = get_settings()

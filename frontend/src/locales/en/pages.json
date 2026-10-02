@@ -125,6 +125,12 @@
     "nearestParcelCaveat": "We couldn't confirm the exact tax parcel for this address, so the property, tax, and comparable-sales figures below describe the nearest parcel — which may be a neighbor. Verify the PIN before relying on parcel-specific numbers.",
     "addressUnavailable": "Address unavailable",
     "vsPrior": "vs {{count}}",
+    "codeSource": {
+      "loading": "Loading the code text…",
+      "unavailable": "The code text isn't available right now.",
+      "open": "See the Municipal Code text this comes from",
+      "vintage": "Municipal Code current through {{date}}. A later Council amendment may not be reflected."
+    },
     "zoningCard": {
       "title": "Zoning",
       "far": "Max FAR",

@@ -1070,6 +1070,7 @@ export default function ScorecardPage() {
                             unitYield={ctx.unit_yield ?? null}
                             freshness={zoning ?? null}
                             codeVintage={ctx.code_vintage ?? null}
+                            provenance={data.provenance ?? null}
                           />
                         </div>
                       )}

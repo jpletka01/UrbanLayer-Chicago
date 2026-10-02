@@ -125,6 +125,12 @@
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
+    "codeSource": {
+      "loading": "Cargando el texto del código…",
+      "unavailable": "El texto del código no está disponible por ahora.",
+      "open": "Ver el texto del Código Municipal de donde proviene",
+      "vintage": "Código Municipal vigente hasta {{date}}. Una enmienda posterior del Concejo puede no estar reflejada."
+    },
     "zoningCard": {
       "title": "Zonificación",
       "far": "FAR máx.",

@@ -2,12 +2,14 @@
 // product's core answer, so the standards read at body scale (not a mono ledger) and
 // FAR utilization is drawn as a meter when building data exists. Data unchanged:
 // ZoneDefinition from the scorecard API + the verdict's FAR signals.
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ZoneDefinition } from "../../lib/api";
+import type { Provenance, ZoneDefinition } from "../../lib/api";
 import type { CodeVintage, UnitYield, ZoningSummary } from "../../lib/types";
 import { localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
+import { CodeSourceModal } from "./CodeSourceModal";
 
 const ZoningIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -40,7 +42,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, provenance }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -50,21 +52,24 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   /** The district's own freshness facts (ordinance date, record-updated date, clerk link). */
   freshness?: Pick<ZoningSummary, "ordinance_num" | "ordinance_date" | "map_updated" | "clerk_url" | "recently_rezoned"> | null;
   codeVintage?: CodeVintage | null;
+  /** Dated sources per fact (backend provenance); a standard's code section opens in the viewer. */
+  provenance?: Record<string, Provenance> | null;
 }) {
   const { t } = useTranslation("pages");
+  const [openSection, setOpenSection] = useState<string | null>(null);
   // PD/PMD standards are negotiated per-ordinance, not tabulated in Title 17 —
   // say so explicitly instead of omitting the rows (a blank FAR on a PD parcel
   // read as missing data, not as "set by ordinance").
   const isPd = /^PMD|^PD/.test(def.zone_class.trim().toUpperCase());
-  const standards: Array<{ label: string; value: string }> = [];
-  if (def.far != null) standards.push({ label: t("scorecard.zoningCard.far"), value: String(def.far) });
+  const standards: Array<{ label: string; value: string; prov?: string }> = [];
+  if (def.far != null) standards.push({ label: t("scorecard.zoningCard.far"), value: String(def.far), prov: "zoning.far" });
   else if (isPd) standards.push({ label: t("scorecard.zoningCard.far"), value: t("scorecard.zoningCard.setByPdOrdinance") });
-  if (def.max_height) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: localizeZoningValue(def.max_height) });
+  if (def.max_height) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: localizeZoningValue(def.max_height), prov: "zoning.max_height" });
   else if (isPd) standards.push({ label: t("scorecard.zoningCard.maxHeight"), value: t("scorecard.zoningCard.setByPdOrdinance") });
   if (def.lot_coverage) standards.push({ label: t("scorecard.zoningCard.lotCoverage"), value: localizeZoningValue(def.lot_coverage) });
   if (def.min_lot_sqft != null) standards.push({ label: t("scorecard.zoningCard.minLotArea"), value: `${def.min_lot_sqft.toLocaleString()} ft²` });
   if (def.min_lot_area_per_unit != null)
-    standards.push({ label: t("scorecard.zoningCard.minLotAreaPerUnit"), value: `${def.min_lot_area_per_unit.toLocaleString()} ft²` });
+    standards.push({ label: t("scorecard.zoningCard.minLotAreaPerUnit"), value: `${def.min_lot_area_per_unit.toLocaleString()} ft²`, prov: "zoning.min_lot_area_per_unit" });
   if (isPd && ordinanceNum) standards.push({ label: t("scorecard.zoningCard.pdOrdinance"), value: ordinanceNum });
 
   return (
@@ -83,6 +88,13 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
               <div key={s.label}>
                 <dt className="text-caption text-text-muted">{s.label}</dt>
                 <dd className="text-body text-text-primary mt-0.5">{s.value}</dd>
+                {s.prov && provenance?.[s.prov]?.section && (
+                  <button type="button" onClick={() => setOpenSection(provenance[s.prov!].section)}
+                    className="text-caption font-mono text-text-secondary hover:text-accent transition-colors mt-0.5"
+                    title={t("scorecard.codeSource.open")} data-testid={`source-${s.prov}`}>
+                    §{provenance[s.prov!].section}
+                  </button>
+                )}
               </div>
             ))}
           </dl>
@@ -148,6 +160,7 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
           )}
         </div>
       </div>
+      {openSection && <CodeSourceModal sectionId={openSection} onClose={() => setOpenSection(null)} />}
     </SubSection>
   );
 }
