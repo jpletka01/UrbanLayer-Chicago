@@ -1,0 +1,12 @@
+{
+  "status": "pending",
+  "reviewer": {
+    "role": "",
+    "credentials": "",
+    "name_published": false,
+    "date": "",
+    "scope": ""
+  },
+  "fields": {},
+  "note": "One entry per reviewed field, keyed 'P2.F': {verdict: agree|disagree|unsure, note: '...'}. Filled from the reviewer's reply to docs/benchmark/review-packet.md. status becomes 'reviewed' once any field is recorded; the benchmark page then reports the agreement rate and every disagreement."
+}

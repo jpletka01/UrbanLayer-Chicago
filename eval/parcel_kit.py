@@ -1148,7 +1148,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--history", metavar="NOTES", help="append a row to eval/results/history.csv with these notes")
     args = ap.parse_args(argv)
 
-    key = load_key()
+    # A replayed run is scored against the key it was recorded under (its own key.json), so a
+    # later correction to the live key does not silently change a published historical result.
+    frozen = Path(args.replay) / "key.json" if args.replay else None
+    key = load_key(frozen) if frozen and frozen.exists() else load_key()
     surfaces = [s for s in args.surfaces.split(",") if s in SURFACES]
     parcels = args.parcels.split(",") if args.parcels else None
     out_dir = Path(args.out_dir) if args.out_dir else Path(__file__).resolve().parent / "results" / date.today().isoformat()

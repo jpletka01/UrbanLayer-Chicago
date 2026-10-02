@@ -1,0 +1,1106 @@
+{
+ "address": "1218 W George St",
+ "lat": 41.93458012,
+ "lon": -87.65966119,
+ "community_area": 6,
+ "community_area_name": "Lake View",
+ "context": {
+  "community_area": 6,
+  "community_area_name": "Lake View",
+  "resolved_address": "1218 W George St",
+  "data_as_of": "2026-10-02",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-25).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-25",
+  "crime_last_90d": {
+   "total": 1530,
+   "arrest_rate": 0.109,
+   "by_type": {
+    "THEFT": 544,
+    "BATTERY": 217,
+    "DECEPTIVE PRACTICE": 154,
+    "CRIMINAL DAMAGE": 140,
+    "MOTOR VEHICLE THEFT": 102
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 544,
+     "prior_year_count": 716,
+     "change_pct": -24
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 217,
+     "prior_year_count": 225,
+     "change_pct": -4
+    },
+    {
+     "category": "DECEPTIVE PRACTICE",
+     "current_count": 154,
+     "prior_year_count": 169,
+     "change_pct": -9
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 140,
+     "prior_year_count": 119,
+     "change_pct": 18
+    },
+    {
+     "category": "MOTOR VEHICLE THEFT",
+     "current_count": 102,
+     "prior_year_count": 63,
+     "change_pct": 62
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 50,
+   "open_count": 2,
+   "by_type": {
+    "Dead Animal Pick-Up Request": 26,
+    "Rodent Baiting/Rat Complaint": 14,
+    "Abandoned Vehicle Complaint": 3,
+    "Water Lead Test Kit Request": 1,
+    "Tree Debris Clean-Up Request": 1,
+    "Sanitation Code Violation": 1,
+    "Building Violation": 1,
+    "Cab Feedback": 1,
+    "Garbage Cart Maintenance": 1,
+    "Finance Parking Code Enforcement Review": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": [
+    "Rodent Baiting/Rat Complaint"
+   ]
+  },
+  "violations": {
+   "total": 1,
+   "open_count": 1,
+   "by_category": {
+    "Roof": 1
+   },
+   "top_descriptions": [
+    "REPAIR ROOF"
+   ],
+   "capped": false
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "RT-4",
+   "zone_type": 4,
+   "ordinance_num": "O2026-0025358",
+   "application_num": "23082T1",
+   "ordinance_date": "2026-06-16",
+   "map_updated": "2026-08-21",
+   "clerk_url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=39EAE819-E452-F111-BEC6-001DD80B0E39",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "recently_rezoned": true
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "adu_area",
+     "name": "ADU-Allowed RS Area \u2014 Zone 1",
+     "description": "ADU Eligible Areas",
+     "detail": "Limitations: No Limitations (\u00a717-7-0573, \u00a717-7-0574)."
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": false,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": true,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [],
+   "aro_housing": {
+    "total_projects": 20,
+    "total_units": 432,
+    "projects": [
+     {
+      "name": "3220 Lincoln",
+      "address": "3220 N. Lincoln Ave.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "3647 N. Southport",
+      "address": "3647 N. Southport Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "621 W Belmont LLC",
+      "address": "621 W. Belmont St.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "913 School Apts.",
+      "address": "913 W. School St.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "927 W. Irving",
+      "address": "927 W. Irving Park Rd.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Britton Bud Apts.",
+      "address": "501 W. Surf St.",
+      "units": 173,
+      "property_type": "Senior"
+     },
+     {
+      "name": "Broadway Apts.",
+      "address": "3120-22 N. Broadway",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Buffet Place",
+      "address": "3208 N. Shefield Ave.",
+      "units": 51,
+      "property_type": "Supportive"
+     },
+     {
+      "name": "Clarkview Apts.",
+      "address": "3228 N. Clark St.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Low-Line Commons",
+      "address": "3421 N. Ashland Ave",
+      "units": 5,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Low-Line Commons",
+      "address": "3431 N Ashland Ave",
+      "units": 8,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Optima Lakeview",
+      "address": "3460 N. Broadway",
+      "units": 11,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Panorama",
+      "address": "3300 N. Clark St.",
+      "units": 5,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Patterson Green LLC",
+      "address": "1118 W. Pattereson Ave.",
+      "units": 2,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Renaissance St. Luke Belmont",
+      "address": "1501 W. Belmont Ave.",
+      "units": 52,
+      "property_type": "Senior"
+     },
+     {
+      "name": "Renaissance St. Luke Greenview Place",
+      "address": "1501 W. Melrose St.",
+      "units": 97,
+      "property_type": "Senior Supportive Living"
+     },
+     {
+      "name": "SOBE Apts.",
+      "address": "3208 N. Southport Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Aurea",
+      "address": "3821 N. Ashland Ave.",
+      "units": 5,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Bel",
+      "address": "941 W. Belmont Ave.",
+      "units": 4,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Medallion",
+      "address": "3121 N. Broadway",
+      "units": 7,
+      "property_type": "ARO"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "14291230290000",
+   "bldg_class": "211",
+   "bldg_sqft": 2350,
+   "land_sqft": 3075,
+   "land_sqft_source": "assessor",
+   "bldg_sqft_source": "assessor",
+   "year_built_source": "assessor",
+   "stories_source": "assessor",
+   "units_source": "assessor",
+   "stories": 2.0,
+   "units": 3,
+   "rooms": 13,
+   "bedrooms": 5,
+   "full_baths": 3,
+   "half_baths": 0,
+   "bldg_age": 144,
+   "year_built": 1882,
+   "exterior_wall": "Frame",
+   "roof_type": "Shingle + Asphalt",
+   "basement": "Full",
+   "garage_size": "2 cars",
+   "air_conditioning": "No Central A/C",
+   "tax_exempt": false,
+   "total_assessed_value": 87000.0,
+   "estimated_annual_tax": 17479.01,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.1,
+   "implied_market_value": 870000.0,
+   "effective_tax_rate": 0.0201,
+   "tax_year": 2024,
+   "tax_code": "73105",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 9588.98
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 4264.73
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 1031.19
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 899.08
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 776.97
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 394.76
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 342.18
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 181.13
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [
+     {
+      "year": 2024,
+      "stage": "assessor",
+      "before_total": 87000.0,
+      "after_total": 87000.0,
+      "result": "no change",
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 87000.0,
+      "after_total": 87000.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2021,
+      "stage": "assessor",
+      "before_total": 90001.0,
+      "after_total": 90001.0,
+      "result": "no change",
+      "appeal_type": "residential"
+     },
+     {
+      "year": 2021,
+      "stage": "board_of_review",
+      "before_total": 89999.0,
+      "after_total": 85655.0,
+      "result": "Decrease",
+      "reduction_pct": 4.8,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2018,
+      "stage": "board_of_review",
+      "before_total": 75780.0,
+      "after_total": 75780.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2017,
+      "stage": "board_of_review",
+      "before_total": 63100.0,
+      "after_total": 53277.0,
+      "result": "Decrease",
+      "reduction_pct": 15.6,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2015,
+      "stage": "board_of_review",
+      "before_total": 73131.0,
+      "after_total": 63100.0,
+      "result": "Decrease",
+      "reduction_pct": 13.7,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2010,
+      "stage": "board_of_review",
+      "before_total": 68807.0,
+      "after_total": 68807.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     }
+    ],
+    "nearby_window_years": [
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 500,
+    "nearby_reduced_count": 184,
+    "nearby_median_reduction_pct": 4.7,
+    "nearby_capped": true
+   },
+   "assessment_history": [
+    {
+     "year": 2026,
+     "land": 43499.0,
+     "building": 43501.0,
+     "total": 87000.0
+    },
+    {
+     "year": 2025,
+     "land": 43499.0,
+     "building": 43501.0,
+     "total": 87000.0
+    },
+    {
+     "year": 2024,
+     "land": 43499.0,
+     "building": 43501.0,
+     "total": 87000.0
+    },
+    {
+     "year": 2023,
+     "land": 53813.0,
+     "building": 31843.0,
+     "total": 85656.0
+    },
+    {
+     "year": 2022,
+     "land": 53813.0,
+     "building": 31843.0,
+     "total": 85656.0
+    }
+   ],
+   "sales_history": [
+    {
+     "date": "2014-08-14T00:00:00.000",
+     "price": 780000.0,
+     "deed_type": "Warranty"
+    },
+    {
+     "date": "2006-03-01T00:00:00.000",
+     "price": 740000.0,
+     "deed_type": "Warranty"
+    }
+   ],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.65962,
+       41.93446
+      ],
+      [
+       -87.65963,
+       41.9348
+      ],
+      [
+       -87.65972,
+       41.93479
+      ],
+      [
+       -87.65971,
+       41.93445
+      ],
+      [
+       -87.65962,
+       41.93446
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": true,
+   "tif_name": "Red and Purple Modernization Phase One Project",
+   "tif_year_start": 2016,
+   "tif_end_year": 2052,
+   "tif_fund_history": [],
+   "tif_financials": [],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_tract": "17031062800",
+   "nmtc_severe_distress": false,
+   "nmtc_poverty_rate": 4.1,
+   "census_tract": "17031062800",
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 211 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 9,
+    "total_funding": 260037.61000000002,
+    "by_program": {
+     "SBIF": 9
+    },
+    "recent_projects": [
+     {
+      "name": "Koval Inc.",
+      "program": "SBIF",
+      "incentive_amount": 150000.0,
+      "total_cost": 301199.01,
+      "property_type": "Industrial",
+      "description": "Remove and replace approx. 16,700 SF of roofing at four (4) roof sections; and remove and replace the existing skylight frames and glass.",
+      "date": "2018-12-10"
+     },
+     {
+      "name": "Facility Wizard Software, Inc. DBA Wizard Software Solutions",
+      "program": "SBIF",
+      "incentive_amount": 9500.0,
+      "total_cost": 19000.0,
+      "property_type": "Commercial",
+      "description": "Furnish and install thirty-one (31) new aluminum bronze windows. Located in Suite 400.",
+      "date": "2018-12-04"
+     },
+     {
+      "name": "The SMB Help Desk, Inc.",
+      "program": "SBIF",
+      "incentive_amount": 22224.38,
+      "total_cost": 29935.5,
+      "property_type": "Commercial",
+      "description": "Demolish old windows and install ten (10) replacement windows at 4147 N. Ravenswood #202.",
+      "date": "2016-02-04"
+     },
+     {
+      "name": "The SMB Help Desk, Inc.",
+      "program": "SBIF",
+      "incentive_amount": 8934.55,
+      "total_cost": 11912.73,
+      "property_type": "Commercial",
+      "description": "Demolish old windows and install fourteen (14) replacement windows at 4147 N. Ravenswood #100.",
+      "date": "2015-05-28"
+     },
+     {
+      "name": "Ork, Inc. dba Ork Posters",
+      "program": "SBIF",
+      "incentive_amount": 20379.64,
+      "total_cost": 27172.85,
+      "property_type": "Commercial",
+      "description": "Installation of an exterior light, interior lighting, flooring, new sliding door system, construction of knee wall, electrical upgrades and plumbing fixtures, installation of 24\u201d LED channel letter exterior signage.",
+      "date": "2014-06-27"
+     },
+     {
+      "name": "Meade, Roach, and Annulis, LLP / Aegis Center",
+      "program": "SBIF",
+      "incentive_amount": 10613.5,
+      "total_cost": 21227.0,
+      "property_type": "Commercial",
+      "description": "New windows for 4147 N. Ravenswood, Ste. 200: demolition and disposal, provide and install 27 windows including frames, material, and labor.",
+      "date": "2013-12-18"
+     },
+     {
+      "name": "Slover Linett Strategies",
+      "program": "SBIF",
+      "incentive_amount": 20300.57,
+      "total_cost": 40601.14,
+      "property_type": "Commercial",
+      "description": "Replacement of windows.",
+      "date": "2012-04-10"
+     },
+     {
+      "name": "Mia Tavola LLC",
+      "program": "SBIF",
+      "incentive_amount": 14289.97,
+      "total_cost": 19053.29,
+      "property_type": "Industrial",
+      "description": "HVAC system and structural engineering services.",
+      "date": "2009-07-23"
+     },
+     {
+      "name": "Bright Endeavors",
+      "program": "SBIF",
+      "incentive_amount": 3795.0,
+      "total_cost": 7590.0,
+      "property_type": "Industrial",
+      "description": "HVAC, sink, electrical work, installation of new beam and support, fixed stairs, drywall, pipe painting, insulation, window trim, and plastic glass covering half walls.",
+      "date": "2008-10-14"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "census_tract": {
+    "tract_fips": "17031062800",
+    "tract_name": "Census Tract 628, Cook, IL",
+    "census_reporter_url": "https://censusreporter.org/profiles/14000US17031062800/",
+    "population": 3925,
+    "median_household_income": 190139,
+    "per_capita_income": 125634,
+    "median_home_value": 741400,
+    "median_gross_rent": 2198,
+    "owner_occupied_pct": 45.3,
+    "vacancy_rate": 5.3,
+    "poverty_rate": 3.0,
+    "bachelors_or_higher_pct": 91.4,
+    "foreign_born_pct": 8.4,
+    "age_distribution": [
+     {
+      "label": "Under 18",
+      "value": 19.5
+     },
+     {
+      "label": "18-24",
+      "value": 15.0
+     },
+     {
+      "label": "25-34",
+      "value": 30.0
+     },
+     {
+      "label": "35-44",
+      "value": 14.6
+     },
+     {
+      "label": "45-54",
+      "value": 7.3
+     },
+     {
+      "label": "55-64",
+      "value": 8.5
+     },
+     {
+      "label": "65-74",
+      "value": 2.1
+     },
+     {
+      "label": "75+",
+      "value": 2.8
+     }
+    ],
+    "income_distribution": [
+     {
+      "label": "Under $25K",
+      "value": 6.0
+     },
+     {
+      "label": "$25-50K",
+      "value": 3.2
+     },
+     {
+      "label": "$50-75K",
+      "value": 5.7
+     },
+     {
+      "label": "$75-100K",
+      "value": 5.3
+     },
+     {
+      "label": "$100-150K",
+      "value": 19.5
+     },
+     {
+      "label": "$150-200K",
+      "value": 14.0
+     },
+     {
+      "label": "$200K+",
+      "value": 46.3
+     }
+    ],
+    "race_distribution": [
+     {
+      "label": "White",
+      "value": 63.1
+     },
+     {
+      "label": "Black",
+      "value": 0.4
+     },
+     {
+      "label": "Asian",
+      "value": 3.7
+     },
+     {
+      "label": "Two+",
+      "value": 10.5
+     },
+     {
+      "label": "Other",
+      "value": 5.1
+     },
+     {
+      "label": "Hispanic",
+      "value": 17.2
+     }
+    ],
+    "education_distribution": [
+     {
+      "label": "No degree",
+      "value": 1.5
+     },
+     {
+      "label": "High school",
+      "value": 2.8
+     },
+     {
+      "label": "Some college",
+      "value": 4.4
+     },
+     {
+      "label": "Bachelor's",
+      "value": 51.4
+     },
+     {
+      "label": "Graduate+",
+      "value": 40.0
+     }
+    ],
+    "transportation_distribution": [
+     {
+      "label": "Drove alone",
+      "value": 26.1
+     },
+     {
+      "label": "Carpooled",
+      "value": 4.3
+     },
+     {
+      "label": "Public transit",
+      "value": 19.4
+     },
+     {
+      "label": "Walked",
+      "value": 4.2
+     },
+     {
+      "label": "Bicycle",
+      "value": 1.5
+     },
+     {
+      "label": "Work from home",
+      "value": 42.4
+     },
+     {
+      "label": "Other",
+      "value": 2.0
+     }
+    ],
+    "county_median_income": 83498,
+    "city_median_income": 77902
+   },
+   "transit": {
+    "nearest_cta_rail": "Wellington (Brown/Purple)",
+    "cta_rail_distance_mi": 0.34,
+    "cta_lines": [
+     "Brown Line",
+     "Purple Line"
+    ],
+    "nearest_metra": "Clybourn",
+    "metra_distance_mi": 1.29,
+    "metra_line": "Union Pacific North",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 94,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 79,
+    "transit_description": "Excellent Transit",
+    "bike_score": 91,
+    "bike_description": "Biker's Paradise",
+    "ws_link": "https://www.walkscore.com/score/1218-W-George-St/lat=41.93458012/lng=-87.65966119/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 32,
+    "alderman": "Waguespack, Scott",
+    "phone": "(773) 248-1330",
+    "email": "Ward32@cityofchicago.org",
+    "website": "http://www.ward32.org"
+   },
+   "traffic": {
+    "road": "LINCOLN",
+    "daily_vehicles": 2488,
+    "directions": 1,
+    "from_street": "W DIVERSEY PKWY",
+    "to_street": "W WELLINGTON AVE",
+    "as_of": "2026-10-02"
+   },
+   "divvy": {
+    "nearest_station": "Lincoln Ave & Diversey Pkwy",
+    "distance_mi": 0.17,
+    "docks": 16,
+    "stations_within_radius": 9,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": [],
+  "adu": {
+   "status": "allowed_by_right",
+   "zone": null,
+   "limits": null,
+   "note": "Coach houses and conversion units are permitted by right in this district (\u00a717-2-0207)."
+  },
+  "coverage_notes": [
+   {
+    "id": "recently_rezoned",
+    "applies": "parcel",
+    "text": "This district was changed by an ordinance dated 2026-06-16. The City's map can lag a passed amendment by up to 90 days, so confirm the current district with the Department of Planning and Development.",
+    "params": {
+     "date": "2026-06-16",
+     "ordinance": "O2026-0025358"
+    },
+    "link": "https://chicityclerkelms.chicago.gov/Matter/?matterId=39EAE819-E452-F111-BEC6-001DD80B0E39",
+    "section": null
+   },
+   {
+    "id": "aldermanic",
+    "applies": "general",
+    "text": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the alderman of the ward (\u00a717-13-0100, \u00a717-13-0300, \u00a717-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess. Ward 32: Ald. Waguespack, Scott, (773) 248-1330.",
+    "params": {
+     "ward": 32,
+     "alderman": "Waguespack, Scott",
+     "phone": "(773) 248-1330"
+    },
+    "link": "http://www.ward32.org",
+    "section": "17-13-0300"
+   },
+   {
+    "id": "map_lag",
+    "applies": "general",
+    "text": "The City's zoning map can lag a passed amendment by up to 90 days.",
+    "params": {},
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "code_vintage",
+    "applies": "general",
+    "text": "The Municipal Code text used here is current through 2026-03-18; a later Council amendment may not be reflected.",
+    "params": {
+     "date": "2026-03-18"
+    },
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "official_letter",
+    "applies": "general",
+    "text": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning ($150, up to 30 days, as published by the Office of the Zoning Administrator, checked 2026-09-30); a letter of opinion covers a specific project.",
+    "params": {
+     "fee": 150,
+     "days": 30,
+     "checked": "2026-09-30"
+    },
+    "link": "https://www.chicago.gov/city/en/depts/dcd/supp_info/office_of_the_zoningadministrator.html",
+    "section": null
+   }
+  ],
+  "code_vintage": {
+   "current_through": "2026-03-18",
+   "label": "Council Journal of March 18, 2026",
+   "source": "Municipal Code of Chicago, American Legal export"
+  },
+  "unit_yield": {
+   "units": 3,
+   "lot_sqft": 3075,
+   "min_lot_area_per_unit": 1000,
+   "arithmetic": "3,075 sq ft \u00f7 1,000 sq ft per unit = 3.1 \u2192 3 units",
+   "basis": "Minimum lot area per dwelling unit for the district",
+   "caveat": "Lot area per unit only: FAR, height, parking and other standards can allow fewer units, and exemptions (efficiency/SRO units, ground-floor Type A units) can allow more.",
+   "lot_area_note": "Ground-floor Type A accessible units are exempt from this count (\u00a717-2-0303-B.2). Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table)."
+  },
+  "tod_benefits": {
+   "parking_relief": true,
+   "parking_max_reduction_pct": 100,
+   "density_bonus_eligible": false,
+   "entitlement_required": false,
+   "note": "Transit-served: minimum parking can be reduced (17-10-0102-B). No density, FAR or height bonus at RT-4: those apply only in dash-3 districts (17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts))."
+  }
+ },
+ "comparables": {
+  "median_sale_price": 1011500.0,
+  "price_range_min": 878000.0,
+  "price_range_max": 1145000.0,
+  "sales_volume": 2,
+  "sales": [
+   {
+    "pin": "14293220311001",
+    "sale_date": "2025-11-14T00:00:00.000",
+    "sale_price": 1145000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.55,
+    "lat": 41.9266789259,
+    "lon": -87.6588487789,
+    "zone_class": "RT-4",
+    "far": 1.2
+   },
+   {
+    "pin": "14294210461002",
+    "sale_date": "2025-04-01T00:00:00.000",
+    "sale_price": 878000.0,
+    "class_code": "299",
+    "deed_type": "Warranty",
+    "distance_mi": 0.55,
+    "lat": 41.9267464375,
+    "lon": -87.658159029,
+    "zone_class": "RT-4",
+    "far": 1.2
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "14291230290000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.93458012,
+ "resolved_lon": -87.65966119,
+ "zone_definition": {
+  "zone_class": "RT-4",
+  "name": "Residential Two-Flat, Townhouse & Multi-Unit",
+  "code_section": "\u00a717-2-0103",
+  "far": 1.2,
+  "max_height": "38 ft",
+  "lot_coverage": null,
+  "min_lot_sqft": 1650,
+  "min_lot_area_per_unit": 1000,
+  "lot_area_note": "Ground-floor Type A accessible units are exempt from this count (\u00a717-2-0303-B.2). Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table).",
+  "uses": "Detached houses, two-flats, townhouses, multi-unit buildings (3+ units), parks, schools, religious institutions, home occupations",
+  "notes": "",
+  "is_fallback": false
+ },
+ "resolution": {
+  "method": "address_points",
+  "point_basis": "address_point",
+  "input_address": "1218 W George St",
+  "pin": "14291230290000",
+  "confidence": "authoritative",
+  "point": {
+   "lat": 41.93458012,
+   "lon": -87.65966119
+  },
+  "centroid_gap_ft": 17,
+  "candidates": [
+   {
+    "pin": "14291230290000",
+    "sources": [
+     "address_points",
+     "assessor_addresses"
+    ],
+    "used": true
+   }
+  ],
+  "multiple_parcels": false,
+  "sources_disagree": false,
+  "condo_units": 0,
+  "identity_unconfirmed": false,
+  "unverified_reason": null,
+  "property_record_pin": null
+ },
+ "provenance": {
+  "zoning.district": {
+   "label": "Zoning district RT-4",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning Districts, Zoning MapServer layer 1",
+   "record_id": "O2026-0025358",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=39EAE819-E452-F111-BEC6-001DD80B0E39",
+   "section": null,
+   "as_of": "2026-08-21",
+   "effective_date": "2026-06-16",
+   "query_date": "2026-10-02",
+   "note": "Application 23082T1. as_of is when this district's map record was last edited."
+  },
+  "zoning.far": {
+   "label": "Floor area ratio for RT-4",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-2-0304-A",
+   "url": null,
+   "section": "17-2-0304-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.max_height": {
+   "label": "Maximum building height for RT-4",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-2-0311-A",
+   "url": null,
+   "section": "17-2-0311-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.min_lot_area_per_unit": {
+   "label": "Minimum lot area per dwelling unit for RT-4",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-2-0303-A",
+   "url": null,
+   "section": "17-2-0303-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "overlay.tod_cta": {
+   "label": "Transit-Oriented Development (CTA)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (CTA) (layer 13)",
+   "record_id": "Transit-Oriented Development (CTA)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "overlay.adu_area": {
+   "label": "ADU-Allowed RS Area \u2014 Zone 1",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, ADU Eligible Areas (layer 17)",
+   "record_id": "ADU-Allowed RS Area \u2014 Zone 1",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "overlay.aro_zone": {
+   "label": "Affordable Requirements Ordinance Zones",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Affordable Requirements Ordinance Zones (layer 20)",
+   "record_id": "Affordable Requirements Ordinance Zones",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "parcel.identity": {
+   "label": "Parcel 14291230290000",
+   "kind": "official_record",
+   "source": "Cook County Address Points or Assessor Parcel Addresses",
+   "record_id": "14291230290000",
+   "url": "https://www.cookcountyassessor.com/pin/14291230290000",
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": null
+  },
+  "property.land_sqft": {
+   "label": "Lot area",
+   "kind": "official_record",
+   "source": "Cook County Assessor (parcel characteristics)",
+   "record_id": "14291230290000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "property.bldg_sqft": {
+   "label": "Building area",
+   "kind": "official_record",
+   "source": "Cook County Assessor (parcel characteristics)",
+   "record_id": "14291230290000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-02"
+  },
+  "code.vintage": {
+   "label": "Municipal Code vintage",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, American Legal export",
+   "record_id": null,
+   "url": null,
+   "section": null,
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-02",
+   "note": "Council Journal of March 18, 2026"
+  }
+ }
+}
