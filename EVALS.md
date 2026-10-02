@@ -133,6 +133,8 @@ These are the first numbers on a primary-source key, and they are not flattering
 | Chat after F4 (answers no longer cut off silently) | 84% | 89% | 0 | none (7/7 right) |
 | Profile after F3 (binding number shown) | 89% | 94% | 0 | none (7/7 right) |
 | Chat after F3 | 95% | 90% | 0 | none (7/7 right) |
+| Profile after F5a (freshness stamps) | 92% | 94% | 0 | none (7/7 right) |
+| Chat after F5a | 95% | 97% | 0 | none (7/7 right) |
 
 The Profile resolves the parcel from the address-point record and gets the
 district right on all seven. Chat resolves the same address by geocode and lands
@@ -189,6 +191,24 @@ corrected "uses" lists (RS-3 allows a two-flat; RT-4 allows multi-unit) are pinn
 to the use table in a test. Still open: 2 of 7 chat answers name an internal field
 (`tod_benefits`) despite the prompt, which the kit now counts; setbacks were not
 added in F3 and the 606 reduction is described, not applied.
+
+Fix F5a answered the kit's freshness probe. P7 was rezoned from M1-2 to RT-4 by an
+ordinance passed on June 16, 2026, and the product could not say so: the City's layer
+returns the ordinance date, the last-edited date and the clerk's ordinance number
+and link, and all of it was discarded, while the application number (23082T1) was
+shown as "the ordinance" and read by the chat model as a year. The lookup now keeps
+those fields, calls the application number what it is, flags a district changed
+within 180 days, and every Profile carries two stamps: when this district's zoning
+record was last updated, and the date the indexed Municipal Code is current
+through (read from the export's own header at ingestion). On P7 the Profile now
+carries a caveat that the district changed by an ordinance dated 2026-06-16, and chat
+names that ordinance with a link to the Clerk's record, says the code text is
+current through March 18, 2026, and notes that the map can lag a passed
+amendment by up to 90 days ([report](eval/results/2026-10-02-f5a/parcel_kit.md)).
+Not built: a "passed but not yet on the map" bridge (F5b) — it needs the Clerk's
+API spike and depends on how a competitor handles the same parcel. The stamp says
+when *this district's record* was edited; it is not a claim that the whole City map
+was refreshed that day.
 
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 

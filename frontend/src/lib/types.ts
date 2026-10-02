@@ -183,8 +183,25 @@ export interface AnalyticsSummary {
 export interface ZoningSummary {
   zone_class: string;
   zone_type: number | null;
+  /** The ordinance identifier (clerk number for a recent amendment). An
+      application number (e.g. 23082T1) is kept apart in application_num. */
   ordinance_num: string | null;
+  application_num?: string | null;
+  /** ISO dates from the City's zoning layer: when the ordinance behind this district
+      passed, and when this district's record was last edited. */
+  ordinance_date?: string | null;
+  map_updated?: string | null;
+  clerk_url?: string | null;
+  /** Ordinance passed within ~180 days — the map can lag a passed amendment by up to 90. */
+  recently_rezoned?: boolean;
   zoning_map_url: string;
+}
+
+/** How current the indexed Municipal Code is (its "current through" date). */
+export interface CodeVintage {
+  current_through: string;
+  label: string;
+  source?: string;
 }
 
 export interface OverlayDistrict {
@@ -635,6 +652,7 @@ export interface UnitYield {
 }
 
 export interface ContextObject {
+  code_vintage?: CodeVintage | null;
   tod_benefits?: TodBenefits | null;
   unit_yield?: UnitYield | null;
   community_area: number | null;

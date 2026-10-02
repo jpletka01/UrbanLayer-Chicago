@@ -1068,6 +1068,8 @@ export default function ScorecardPage() {
                             allowedFar={verdict?.signals.allowedFar}
                             ordinanceNum={zoning?.ordinance_num}
                             unitYield={ctx.unit_yield ?? null}
+                            freshness={zoning ?? null}
+                            codeVintage={ctx.code_vintage ?? null}
                           />
                         </div>
                       )}

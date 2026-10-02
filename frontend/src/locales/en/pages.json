@@ -137,6 +137,9 @@
       "pdOrdinance": "PD ordinance",
       "minLotArea": "Min lot area",
       "minLotAreaPerUnit": "Min lot area per unit",
+      "recentlyRezoned": "Rezoned by an ordinance dated {{date}} — the standards below are the new district's.",
+      "zoningRecordUpdated": "Zoning record last updated",
+      "codeCurrentThrough": "Municipal Code current through",
       "maxUnitsByLotArea": "Max units by lot area",
       "unitYieldCaveat": "Lot area per unit is one limit. FAR, height, parking and other standards can allow fewer units; exemptions can allow more."
     },
@@ -188,6 +191,7 @@
       "caveat": {
         "unverified": "Parcel identity unconfirmed — property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
         "noBldgArea": "Existing building size is uncertain, so we didn't estimate how much of the allowed floor area is already used.",
+        "recentlyRezoned": "This district was changed by an ordinance dated {{date}}. The City's map can lag a passed amendment by up to 90 days — confirm the current district with the Department of Planning and Development.",
         "fallbackZone": "Zoning shown is a category default, not a parcel-specific lookup.",
         "partial": "Some data sources were unavailable: {{sources}}.",
         "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",

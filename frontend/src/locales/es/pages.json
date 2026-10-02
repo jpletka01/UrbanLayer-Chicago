@@ -137,6 +137,9 @@
       "pdOrdinance": "Ordenanza del PD",
       "minLotArea": "Área mínima de lote",
       "minLotAreaPerUnit": "Área mín. de lote por unidad",
+      "recentlyRezoned": "Rezonificado por una ordenanza con fecha {{date}} — las normas siguientes son las del nuevo distrito.",
+      "zoningRecordUpdated": "Registro de zonificación actualizado",
+      "codeCurrentThrough": "Código Municipal vigente hasta",
       "maxUnitsByLotArea": "Unidades máx. por área de lote",
       "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más."
     },
@@ -188,6 +191,7 @@
       "caveat": {
         "unverified": "Identidad de parcela sin confirmar — las cifras de propiedad y comparables podrían ser de una parcela vecina. Verifique el PIN antes de confiar en ellas.",
         "noBldgArea": "El tamaño del edificio existente es incierto, así que no estimamos cuánta de la superficie permitida ya está en uso.",
+        "recentlyRezoned": "Este distrito fue modificado por una ordenanza con fecha {{date}}. El mapa de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada — confirme el distrito vigente con el Departamento de Planificación y Desarrollo.",
         "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",

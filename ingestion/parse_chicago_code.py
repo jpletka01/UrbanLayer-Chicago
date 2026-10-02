@@ -558,6 +558,11 @@ def main() -> None:
 
     if not args.stats:
         OUT_DIR.mkdir(parents=True, exist_ok=True)
+        # How current is this export? Recorded so the product can say so.
+        if args.title is None:
+            from ingestion.code_vintage import write_code_vintage
+
+            log.info("Code vintage: %s", write_code_vintage(args.source)["label"])
 
     stats = {
         "total_sections": 0,
