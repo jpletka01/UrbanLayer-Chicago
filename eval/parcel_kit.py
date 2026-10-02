@@ -588,6 +588,27 @@ def provenance_check(parcel: dict, profile: dict | None) -> dict[str, Any] | Non
     }
 
 
+_URL_RE = re.compile(r"https?://[^\s)>\]\"']+")
+
+
+def _norm_url(u: str) -> str:
+    u = u.strip().rstrip(".,;:!?)").split("#", 1)[0]
+    return u[:-1] if u.endswith("/") else u
+
+
+def url_check(chat: dict | None, profile: dict | None) -> dict[str, Any] | None:
+    """URLs in a chat answer that we did not supply: any not present anywhere in that
+    parcel's Profile payload (the zoning map, clerk record, overlay and PD links, the
+    assessor record, the official letter). The model composes the rest. None when there
+    is no Profile payload to compare against."""
+    if not chat or not profile:
+        return None
+    supplied = {_norm_url(u) for u in _URL_RE.findall(json.dumps(profile))}
+    urls = [_norm_url(u) for u in _URL_RE.findall(chat.get("text") or "")]
+    invented = sorted({u for u in urls if u not in supplied})
+    return {"total": len(urls), "invented": invented}
+
+
 def coverage_check(parcel: dict, profile: dict | None) -> dict[str, Any] | None:
     """Does the Profile say where it stops: the notes that apply to this parcel present
     (and linked where a source exists), the ones that don't absent? None for an older
@@ -870,6 +891,7 @@ def score_run_dir(
         "provenance": {},
         "resolution_panel": {},
         "coverage_panel": {},
+        "chat_urls": {},
     }
     for surface in surfaces:
         per_parcel: dict[str, dict[str, FieldResult]] = {}
@@ -916,6 +938,11 @@ def score_run_dir(
             rc = resolution_record_check(p, runs[p["id"]]["profile"])
             if rc is not None:
                 report["resolution_panel"][p["id"]] = rc
+    if "profile" in surfaces and "chat" in surfaces:
+        for p in selected:
+            uc = url_check(runs[p["id"]]["chat"], runs[p["id"]]["profile"])
+            if uc is not None and not (runs[p["id"]]["chat"] or {}).get("error"):
+                report["chat_urls"][p["id"]] = uc
     if "profile" in surfaces:
         for p in selected:
             cc = coverage_check(p, runs[p["id"]]["profile"])
@@ -1042,6 +1069,20 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
         L.append("|---|---|--:|---|")
         for pid, v in panels.items():
             L.append(f"| {pid} | {v['method']} | {v['candidates']} | {'; '.join(v['failed'])} |")
+        L.append("")
+    urls = report["chat_urls"]
+    if urls:
+        inv = sum(len(v["invented"]) for v in urls.values())
+        tot = sum(v["total"] for v in urls.values())
+        L.append("## URLs in chat answers")
+        L.append("")
+        L.append(f"**{inv} of {tot}** URLs in the chat answers were written by the model rather than supplied by us "
+                 "(not present anywhere in the parcel's Profile payload).")
+        L.append("")
+        L.append("| Parcel | URLs | Not supplied by us |")
+        L.append("|---|--:|---|")
+        for pid, v in urls.items():
+            L.append(f"| {pid} | {v['total']} | {'; '.join(v['invented'])} |")
         L.append("")
     cov = report["coverage_panel"]
     if cov:
