@@ -399,3 +399,81 @@ def min_lot_area_per_unit(zone_class: str | None) -> int | None:
     if prefix in _D_RESIDENTIAL_PREFIXES:
         return _D_PER_UNIT_BY_DASH.get(num)
     return None
+
+
+# --- Transit-served benefits (17-3-04xx-B, 17-4-04xx-B, 17-10-0102-B) ---------
+#
+# Being "near transit" buys two different things, and the code gives them to
+# different districts:
+#   * PARKING relief (17-10-0102-B.1): up to 100% off the minimum within 2,640 ft
+#     of a CTA rail entrance / 1,320 ft of a CTA bus corridor in every district
+#     except D (50%); Metra-only locations get up to 50% in all districts.
+#   * FAR / height / lot-area-per-unit increases (17-3-0402-B, -0403-B, -0408-B
+#     for B/C; the D-district equivalents): ONLY dash-3 districts ("B-3 and C-3",
+#     "D-3"), and only through a Type 1 map amendment, a Planned Development or
+#     an ARO entitlement. B1-2, RS-3, RT-4, B3-2 ... get none of it.
+# The kit (P3 B1-2, P6 RS-3, P7 RT-4) caught the product saying "density bonus"
+# wherever a parcel was transit-served. This is the one place that decides.
+
+_TOD_BONUS_PREFIXES = ("B1", "B2", "B3", "C1", "C2", "C3", "DX", "DR", "DS", "DC")
+_TOD_BONUS_CITATION = "17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts)"
+_TOD_PARKING_CITATION = "17-10-0102-B"
+
+
+def tod_benefits(
+    zone_class: str | None,
+    in_tod_area: bool,
+    layer_types: tuple[str, ...] | list[str] = (),
+) -> dict | None:
+    """What transit-served status does and does not change for a district.
+
+    Returns ``None`` when the parcel is not in a transit-served area. Otherwise:
+    ``parking_relief`` (True, or None for a Planned Development whose ordinance
+    governs), ``parking_max_reduction_pct`` (100 / 50 / None when the CTA-vs-Metra
+    split is unknown), ``density_bonus_eligible`` (dash-3 B/C and D-3 districts
+    only; even then entitlement-gated), ``entitlement_required`` and a one-line
+    ``note`` the UI and the model can restate.
+    """
+    if not in_tod_area:
+        return None
+    norm = (zone_class or "").strip().upper()
+    prefix, dash = _parse_zone_prefix(norm) if norm else ("", None)
+    is_pd = prefix == "PD"
+    is_d = prefix in ("DX", "DR", "DS", "DC")
+    cta = "tod_cta" in layer_types
+    metra = "tod_metra" in layer_types
+
+    if is_pd:
+        pct: int | None = None
+    elif is_d:
+        pct = 50
+    elif cta:
+        pct = 100
+    elif metra:
+        pct = 50
+    else:
+        pct = None  # transit-served, but we don't know by which kind of station
+
+    eligible = prefix in _TOD_BONUS_PREFIXES and dash == "3"
+    if is_pd:
+        note = "Planned Development: the PD ordinance governs parking and density."
+    elif eligible:
+        note = (
+            f"{norm} is a dash-3 district, so FAR, height and lot-area-per-unit increases for "
+            f"transit-served sites are possible, but only with a Type 1 map amendment, Planned "
+            f"Development or ARO entitlement ({_TOD_BONUS_CITATION}). Parking relief applies by right."
+        )
+    else:
+        label = norm or "this district"
+        note = (
+            f"Transit-served: minimum parking can be reduced ({_TOD_PARKING_CITATION}). "
+            f"No density, FAR or height bonus at {label}: those apply only in dash-3 districts "
+            f"({_TOD_BONUS_CITATION})."
+        )
+    return {
+        "parking_relief": None if is_pd else True,
+        "parking_max_reduction_pct": pct,
+        "density_bonus_eligible": eligible,
+        "entitlement_required": eligible,
+        "note": note,
+    }

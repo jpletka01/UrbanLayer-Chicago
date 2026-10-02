@@ -333,7 +333,7 @@
       "description": "Zona de desarrollo orientado al transporte cerca de estaciones del CTA",
       "implications": [
         "Requisitos de estacionamiento reducidos",
-        "Bonificaciones de densidad disponibles"
+        "Bonificaciones de densidad solo en distritos -3 (con aprobación)"
       ]
     },
     "tod_metra": {
@@ -341,7 +341,7 @@
       "description": "Zona de desarrollo orientado al transporte cerca de estaciones de Metra",
       "implications": [
         "Requisitos de estacionamiento reducidos",
-        "Bonificaciones de densidad disponibles"
+        "Bonificaciones de densidad solo en distritos -3 (con aprobación)"
       ]
     },
     "adu_area": {

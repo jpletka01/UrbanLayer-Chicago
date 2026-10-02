@@ -30,6 +30,7 @@ type Mk = {
   lakefront?: boolean;
   flood?: string | null;
   tod?: boolean;
+  todBenefits?: Record<string, unknown> | null;
   adu?: boolean;
   aro?: boolean;
   openViolations?: number;
@@ -105,6 +106,7 @@ function mk(o: Mk): ScorecardResponse {
       flood_zone: o.flood ?? "X",
     },
     violations: { total: 491, open_count: o.openViolations ?? 0 },
+    tod_benefits: o.todBenefits ?? null,
   };
   return {
     address: "1 Test St",
@@ -330,3 +332,40 @@ describe("building-area caveat", () => {
   });
 });
 
+
+describe("transit-served (TOD) reason — parking relief is not a density bonus", () => {
+  const reason = (o: Mk) => computeVerdict(mk(o), t).reasons.find((r) => r.text.startsWith("scorecard.verdict.reason.tod"));
+  const base = { zone: "B1-2", far: 2.2, bldg: 3000, land: 4347, tod: true, tif: false } as const;
+
+  it("never claims a density bonus when the district isn't dash-3 (parking relief only)", () => {
+    const r = reason({
+      ...base,
+      todBenefits: { parking_relief: true, parking_max_reduction_pct: 100, density_bonus_eligible: false, entitlement_required: false, note: "" },
+    });
+    expect(r?.text).toBe('scorecard.verdict.reason.todParking {"pct":100,"zone":"B1-2"}');
+    expect(r?.polarity).toBe("neutral");
+  });
+
+  it("states the dash-3 possibility only when the backend says the district is eligible", () => {
+    const r = reason({
+      ...base,
+      zone: "B3-3",
+      todBenefits: { parking_relief: true, parking_max_reduction_pct: 100, density_bonus_eligible: true, entitlement_required: true, note: "" },
+    });
+    expect(r?.text).toBe('scorecard.verdict.reason.tod {"zone":"B3-3"}');
+    expect(r?.polarity).toBe("positive");
+  });
+
+  it("without backend tod_benefits it falls back to parking-only wording, never a bonus claim", () => {
+    expect(reason({ ...base })?.text).toBe("scorecard.verdict.reason.todParkingGeneric");
+  });
+
+  it("a Planned Development defers to its ordinance", () => {
+    const r = reason({
+      ...base,
+      zone: "PD 835",
+      todBenefits: { parking_relief: null, parking_max_reduction_pct: null, density_bonus_eligible: false, entitlement_required: false, note: "" },
+    });
+    expect(r?.text).toBe("scorecard.verdict.reason.todPd");
+  });
+});

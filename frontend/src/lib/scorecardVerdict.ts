@@ -12,6 +12,7 @@
 // discipline — friction can't be masked, tradeoffs shown inline).
 
 import type { ScorecardResponse } from "./api";
+import type { TodBenefits } from "./types";
 
 // Minimal i18next-compatible signature so the module stays React/i18n-pure and
 // unit-testable (the category/signal logic below needs no strings at all).
@@ -82,6 +83,8 @@ export interface VerdictSignals {
   incentiveCount: number;
   tifBalance: number;
   bonusFlags: string[]; // "tod" | "adu"
+  // Backend-computed (parking relief vs. dash-3-only density bonus); null when absent.
+  todBenefits: TodBenefits | null;
   frictionFlags: string[]; // parcel-specific obstacles only
   frictionLevel: "meaningful" | "low";
   neutralFlags: string[]; // aro, etc. — context, never friction
@@ -231,6 +234,7 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
     incentiveCount,
     tifBalance,
     bonusFlags,
+    todBenefits: ctx.tod_benefits ?? null,
     frictionFlags,
     frictionLevel,
     neutralFlags,
@@ -338,8 +342,24 @@ function incentiveReasons(s: VerdictSignals, data: ScorecardResponse, t: TFunc):
   return out;
 }
 
+// Transit-served parcels get PARKING relief everywhere, but density/FAR/height
+// bonuses only in dash-3 districts (and then only via an entitlement). The old
+// copy said "and a density bonus" for every transit-served parcel — wrong at
+// B1-2, B3-2, RS-3, RT-4 (kit 2026-10-01, P3/P6/P7). Without the backend's
+// tod_benefits we state the parking relief only and claim nothing about density.
+function todReason(s: VerdictSignals, t: TFunc): VerdictReason {
+  const b = s.todBenefits;
+  const zone = s.zoneClass ?? "";
+  const anchor = "regulatory" as const;
+  if (b?.density_bonus_eligible) return { text: t("scorecard.verdict.reason.tod", { zone }), polarity: "positive", cardAnchor: anchor };
+  if (b && b.parking_relief === null) return { text: t("scorecard.verdict.reason.todPd"), polarity: "neutral", cardAnchor: anchor };
+  if (b?.parking_max_reduction_pct != null)
+    return { text: t("scorecard.verdict.reason.todParking", { pct: b.parking_max_reduction_pct, zone }), polarity: "neutral", cardAnchor: anchor };
+  return { text: t("scorecard.verdict.reason.todParkingGeneric"), polarity: "neutral", cardAnchor: anchor };
+}
+
 function bonusReason(s: VerdictSignals, t: TFunc): VerdictReason | null {
-  if (s.bonusFlags.includes("tod")) return { text: t("scorecard.verdict.reason.tod"), polarity: "positive", cardAnchor: "regulatory" };
+  if (s.bonusFlags.includes("tod")) return todReason(s, t);
   if (s.bonusFlags.includes("adu")) return { text: t("scorecard.verdict.reason.adu"), polarity: "positive", cardAnchor: "regulatory" };
   return null;
 }
