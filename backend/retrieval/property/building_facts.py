@@ -107,6 +107,12 @@ async def get_commercial_facts(
     Field semantics (verified live 2026-07-07):
     - bldg_sqft: sum of ``bldgsf`` over the latest valuation year — the economic
       UNIT's building area (provenance "commercial_valuation" discloses this).
+      Attributed to THIS parcel only when the unit is a single PIN or this PIN is
+      the unit's keypin. For any other member of a multi-PIN unit the total
+      describes the whole complex, not this lot (kit P3: a 7-PIN strip center's
+      43,790 sq ft shown against a 4,347 sq ft lot → existing FAR 10.07), so
+      ``bldg_sqft`` is None and the total rides as ``complex_bldg_sqft`` with
+      ``member_pins`` (the verdict then treats building area as unknown).
     - year_built: from the latest year's principal building (largest bldgsf).
       ~35% populated dataset-wide but ~72% of the coverage panel's year_built
       misses recovered in the audit probe.
@@ -187,10 +193,28 @@ async def get_commercial_facts(
         units = max((_pos_int(r.get("tot_units")) or 0 for r in units_rows),
                     default=0) or None
 
-    if not (sqft or year_built or units):
+    # Whose building area is this? The unit's member PINs, from the same rows the
+    # area was summed over. No pins/keypin on the rows ⇒ unknown ⇒ treated as a
+    # single-PIN unit (the pre-F6 behavior).
+    members: set[str] = set()
+    keypins: set[str] = set()
+    for r in sqft_rows:
+        members |= _members(r)
+        if r.get("keypin"):
+            keypins.add(str(r["keypin"]).strip())
+    multi_pin = len(members) > 1
+    complex_sqft = None
+    if sqft and multi_pin and dashed not in keypins:
+        complex_sqft, sqft = sqft, None
+
+    if not (sqft or complex_sqft or year_built or units):
         _commercial_cache.set(pin14, _NOT_FOUND)
         return None
     result = {"bldg_sqft": sqft, "year_built": year_built, "units": units}
+    if multi_pin:
+        result["member_pins"] = sorted(m.replace("-", "") for m in members)
+        if complex_sqft:
+            result["complex_bldg_sqft"] = complex_sqft
     _commercial_cache.set(pin14, result)
     return result
 

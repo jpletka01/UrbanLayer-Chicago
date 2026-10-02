@@ -273,6 +273,11 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             ) : !hasBuildingFacts ? (
               <p className="text-caption text-text-muted">{t("property.buildingDetailsUnavailable")}</p>
             ) : null}
+            {data.complex_bldg_sqft ? (
+              <p className="text-caption text-text-muted" data-testid="complex-building-note">
+                {t("property.complexBuilding", { n: data.complex_member_pins?.length ?? 0, sqft: data.complex_bldg_sqft.toLocaleString() })}
+              </p>
+            ) : null}
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Fact label={t("property.class")} tip={t("property.tips.class")} value={classLabel || null} />

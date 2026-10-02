@@ -1,0 +1,15 @@
+{
+ "category": "entitlement_defined",
+ "headline": "Entitlement-defined parcel",
+ "reasons": [
+  "PD 835 \u2014 entitlements set by the Planned Development ordinance, not as-of-right rules",
+  "Assessment appeals succeed nearby \u2014 89 recent wins, median \u221256.5% \u2014 a property-tax upside",
+  "Planned Development \u2014 entitlements governed by the PD ordinance"
+ ],
+ "caveats": [
+  "Parcel identity unconfirmed \u2014 property and comps figures may be a neighboring parcel. Verify the PIN before relying on them.",
+  "Zoning shown is a category default, not a parcel-specific lookup."
+ ],
+ "next_step": "Ask what this PD permits",
+ "confidence": "caveated"
+}

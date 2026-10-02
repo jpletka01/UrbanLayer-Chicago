@@ -449,3 +449,47 @@ def test_build_summary_skips_valueless_latest_year():
     # The valueless 2026 row is dropped from history entirely.
     assert [r.year for r in summary.assessment_history] == [2025, 2024]
     assert summary.assessment_history[0].total == 114600.0
+
+
+def test_build_summary_complex_member_gets_no_floor_area_from_the_complex_total():
+    """F6: the valuation total of a multi-PIN complex rides beside the parcel as
+    complex_bldg_sqft; bldg_sqft stays empty so no FAR is computed from it."""
+    parcel = {"pin14": "14171060250000", "bldg_class": "517", "address": None, "land_sqft": 4347}
+    fallbacks = {
+        "condo": None, "energy": None, "footprint": None,
+        "commercial": {
+            "bldg_sqft": None, "year_built": 1964, "units": None,
+            "complex_bldg_sqft": 43790,
+            "member_pins": ["14171060120000", "14171060250000", "14171060440000"],
+        },
+    }
+    s = _build_summary(parcel, None, [], [], None, building_fallbacks=fallbacks)
+    assert s.bldg_sqft is None and s.bldg_sqft_source is None
+    assert s.complex_bldg_sqft == 43790 and len(s.complex_member_pins) == 3
+    assert s.year_built == 1964
+
+    # an own area found by a later fallback wins and clears the complex note
+    fallbacks["footprint"] = {"stories": None, "year_built": None, "bldg_sqft": 4000}
+    s2 = _build_summary(parcel, None, [], [], None, building_fallbacks=fallbacks)
+    assert s2.bldg_sqft == 4000 and s2.complex_bldg_sqft is None
+
+
+def test_build_summary_footprint_larger_than_the_lot_is_not_this_parcels_area():
+    """A footprint bigger than the lot belongs to a building spanning several lots
+    (kit P3: 15,500 sq ft footprint matched to a 4,347 sq ft lot)."""
+    parcel = {"pin14": "14171060250000", "bldg_class": "517", "address": None, "land_sqft": 4347}
+    spanning = {
+        "condo": None, "energy": None,
+        "commercial": {"bldg_sqft": None, "year_built": None, "units": None, "complex_bldg_sqft": 43790,
+                       "member_pins": ["a", "b", "c"]},
+        "footprint": {"stories": 1, "year_built": 1964, "bldg_sqft": 15500},
+    }
+    s = _build_summary(parcel, None, [], [], None, building_fallbacks=spanning)
+    assert s.bldg_sqft is None and s.complex_bldg_sqft == 43790  # the complex note survives
+    assert s.stories == 1.0 and s.year_built == 1964  # the footprint's other facts still fill
+
+    ordinary = dict(spanning, commercial=None, footprint={"stories": 1, "year_built": 1964, "bldg_sqft": 3000})
+    assert _build_summary(parcel, None, [], [], None, building_fallbacks=ordinary).bldg_sqft == 3000
+    # within measurement slack of the lot is still a plausible footprint
+    edge = dict(ordinary, footprint={"stories": 1, "year_built": None, "bldg_sqft": 4600})
+    assert _build_summary(parcel, None, [], [], None, building_fallbacks=edge).bldg_sqft == 4600
