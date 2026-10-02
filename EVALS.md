@@ -131,6 +131,8 @@ These are the first numbers on a primary-source key, and they are not flattering
 | Profile after F2 (no false TOD density bonus) | 86% | 83% | 0 | none (7/7 right) |
 | Chat after F2 | 81% | 87% | 1 | none (7/7 right) |
 | Chat after F4 (answers no longer cut off silently) | 84% | 89% | 0 | none (7/7 right) |
+| Profile after F3 (binding number shown) | 89% | 94% | 0 | none (7/7 right) |
+| Chat after F3 | 95% | 90% | 0 | none (7/7 right) |
 
 The Profile resolves the parcel from the address-point record and gets the
 district right on all seven. Chat resolves the same address by geocode and lands
@@ -172,6 +174,21 @@ count falling to 0 in that run is run-to-run variance (the model hedged P2's
 numbers this time), not a fix: F3 is still open. Scorer refinements made along the
 way re-scored the F2 chat row from 84% / 84% to 81% / 87%; compare runs by replaying
 them through the same scorer.
+
+Fix F3 supplied the number a unit count actually turns on. The Profile never showed
+minimum lot area per dwelling unit, and chat filled it in from memory: on the vacant
+RM-4.5 lot it said 1,000 sq ft and FAR 2.2 (the table says 700 and 1.7) and
+concluded "3 units" instead of 4. The zoning table now carries the per-unit
+minimum for every district, the Profile card shows "max units by lot area" with its
+arithmetic and says plainly that FAR, height and parking can bind first, and the
+same table and unit yield reach chat on every parcel-resolved turn, with a rule
+against quoting a standard that isn't in the data. On the same lot chat now says
+FAR 1.7, 700 sq ft per unit, "3,191 ÷ 700 = 4.6 → 4 units" and that six is not
+achievable by right ([report](eval/results/2026-10-02-f3/parcel_kit.md)). Two
+corrected "uses" lists (RS-3 allows a two-flat; RT-4 allows multi-unit) are pinned
+to the use table in a test. Still open: 2 of 7 chat answers name an internal field
+(`tod_benefits`) despite the prompt, which the kit now counts; setbacks were not
+added in F3 and the 606 reduction is described, not applied.
 
 **Lot coverage**, 100 fixed addresses, 0 fetch errors:
 

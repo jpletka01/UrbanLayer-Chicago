@@ -14,7 +14,7 @@ Source sections:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,14 @@ class ZoneDefinition:
     # B/C/M/D districts have no minimum lot size). Distinct from the per-unit
     # density minimums in _MIN_LOT_AREA_PER_UNIT below.
     min_lot_sqft: int | None = None
+    # Minimum lot area PER DWELLING UNIT (Table 17-2-0303-A for R districts,
+    # 17-3-0402-A for B/C, 17-4-0300 for D) — the number that caps unit count on a
+    # given lot. Not stored per row: ``get_zone_definition`` fills it from the one
+    # parity-tested table (``min_lot_area_per_unit``), so it can't drift from it.
+    min_lot_area_per_unit: int | None = None
+    # Exemptions / caveats that change the per-unit number (e.g. the RS-3
+    # Predominance-of-the-Block 1,500 sq ft rule). Empty when none apply.
+    lot_area_note: str = ""
     uses: str = ""
     notes: str = ""
     is_fallback: bool = field(default=False, repr=False)
@@ -74,8 +82,9 @@ ZONE_NAMES: dict[str, str] = {
 # Full zone class data — every standard Chicago zone class
 # ---------------------------------------------------------------------------
 
-_RES_USES = "Detached houses, two-flats, townhouses, parks, schools, religious institutions, home occupations"
+_RES_USES = "Detached houses, two-flats, townhouses, multi-unit buildings (3+ units), parks, schools, religious institutions, home occupations"
 _RS_USES = "Detached houses, parks, schools, religious institutions, home occupations"
+_RS3_USES = "Detached houses, two-flats, parks, schools, religious institutions, home occupations"
 _RM_USES = "Detached houses, two-flats, townhouses, multi-unit buildings, parks, schools, community centers"
 _B1_USES = "Small-scale retail, restaurants, personal services, offices; residential above ground floor. All operations indoors."
 _B2_USES = "Retail, restaurants, services, offices; residential on or above ground floor. All operations indoors."
@@ -98,7 +107,7 @@ ZONE_CLASS_DATA: dict[str, ZoneDefinition] = {
     # ordinance text 2026-07-06 — see tests/test_zoning_ordinance_parity.py.
     "RS-1": ZoneDefinition("RS-1", "Residential Single-Unit", "§17-2-0102", far=0.50, max_height="30 ft", min_lot_sqft=6250, uses=_RS_USES, notes="Largest lot size. Detached houses only."),
     "RS-2": ZoneDefinition("RS-2", "Residential Single-Unit", "§17-2-0102", far=0.65, max_height="30 ft", min_lot_sqft=5000, uses=_RS_USES, notes="Standard single-family. Detached houses only."),
-    "RS-3": ZoneDefinition("RS-3", "Residential Single-Unit", "§17-2-0102", far=0.90, max_height="30 ft", min_lot_sqft=2500, uses=_RS_USES, notes="Most common RS district. Smaller lots."),
+    "RS-3": ZoneDefinition("RS-3", "Residential Single-Unit", "§17-2-0102", far=0.90, max_height="30 ft", min_lot_sqft=2500, uses=_RS3_USES, notes="Most common RS district. Smaller lots."),
 
     # --- Residential Two-Flat/Townhouse (§17-2-0103, §17-2-0300) ---
     "RT-3.5": ZoneDefinition("RT-3.5", "Residential Two-Flat, Townhouse & Multi-Unit", "§17-2-0103", far=1.05, max_height="35 ft", min_lot_sqft=2500, uses=_RES_USES),
@@ -256,7 +265,11 @@ def get_zone_definition(zone_class: str) -> ZoneDefinition:
     normalized = zone_class.strip().upper()
     exact = ZONE_CLASS_DATA.get(normalized)
     if exact:
-        return exact
+        return replace(
+            exact,
+            min_lot_area_per_unit=min_lot_area_per_unit(normalized),
+            lot_area_note=_lot_area_note(normalized),
+        )
 
     prefix, dash = _parse_zone_prefix(zone_class)
 
@@ -476,4 +489,63 @@ def tod_benefits(
         "density_bonus_eligible": eligible,
         "entitlement_required": eligible,
         "note": note,
+    }
+
+
+# --- Unit yield by lot area (F3) -------------------------------------------------
+#
+# "How many units fit?" is answered first by lot area per dwelling unit
+# (Table 17-2-0303-A / 17-3-0402-A / 17-4-0300). Chat used to guess this number
+# from memory (kit: RM-4.5 stated as 1,000 sq ft instead of 700 → 3 units instead
+# of 4). The arithmetic is deterministic, so compute it, show its inputs, and say
+# plainly that it is only one of several limits.
+
+_UNIT_YIELD_CAVEAT = (
+    "Lot area per unit only: FAR, height, parking and other standards can allow fewer units, "
+    "and exemptions (efficiency/SRO units, ground-floor Type A units) can allow more."
+)
+
+
+def _lot_area_note(zone_class: str) -> str:
+    """Exemptions that change the per-unit number for this district (§17-2-0303-B)."""
+    prefix, _ = _parse_zone_prefix(zone_class)
+    notes: list[str] = []
+    if zone_class == "RS-3":
+        notes.append(
+            "Reduced to 1,500 sq ft per unit (two-unit building only) when the parcel is in the "
+            "Predominance of the Block (606) district or 60% or more of the lots on the block face "
+            "already hold two or more units (§17-2-0303-B.1)."
+        )
+    if zone_class in ("RS-3", "RT-3.5", "RT-4"):
+        notes.append("Ground-floor Type A accessible units are exempt from this count (§17-2-0303-B.2).")
+    if prefix in ("RT", "RM", "B1", "B2", "B3", "C1", "C2", "DX", "DC", "DR"):
+        notes.append("Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table).")
+    return " ".join(notes)
+
+
+def max_units_by_lot_area(zone_class: str | None, lot_sqft: float | int | None) -> dict | None:
+    """Maximum dwelling units the lot's AREA allows, with the arithmetic shown.
+
+    None when the district has no per-unit minimum (C3, M, DS, PD, unknown) or the
+    lot area is unknown — never a fabricated number.
+    """
+    mla = min_lot_area_per_unit(zone_class)
+    if not mla or not lot_sqft or lot_sqft <= 0:
+        return None
+    lot = int(round(lot_sqft))
+    units = lot // mla
+    ratio = lot / mla
+    arithmetic = f"{lot:,} sq ft ÷ {mla:,} sq ft per unit = {ratio:.1f} → {units} unit{'s' if units != 1 else ''}"
+    caveat = _UNIT_YIELD_CAVEAT
+    note = _lot_area_note((zone_class or "").strip().upper())
+    if (zone_class or "").strip().upper() == "RS-3":
+        caveat += " In a Predominance of the Block (606) district RS-3 can add a second unit at 1,500 sq ft per unit (§17-2-0303-B.1)."
+    return {
+        "units": units,
+        "lot_sqft": lot,
+        "min_lot_area_per_unit": mla,
+        "arithmetic": arithmetic,
+        "basis": "Minimum lot area per dwelling unit for the district",
+        "caveat": caveat,
+        "lot_area_note": note,
     }

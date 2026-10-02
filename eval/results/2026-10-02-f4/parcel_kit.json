@@ -336,6 +336,9 @@
  "resolution": {},
  "truncation": {
   "P1": {
+   "field_name_leaks": [
+    "zone_definition"
+   ],
    "chars": 6470,
    "item6_present": true,
    "ends_cleanly": true,
@@ -343,6 +346,9 @@
    "silently_cut_off": false
   },
   "P2": {
+   "field_name_leaks": [
+    "zone_definition"
+   ],
    "chars": 6224,
    "item6_present": true,
    "ends_cleanly": true,
@@ -350,6 +356,7 @@
    "silently_cut_off": false
   },
   "P3": {
+   "field_name_leaks": [],
    "chars": 7438,
    "item6_present": true,
    "ends_cleanly": false,
@@ -358,6 +365,7 @@
    "silently_cut_off": false
   },
   "P4": {
+   "field_name_leaks": [],
    "chars": 6500,
    "item6_present": true,
    "ends_cleanly": true,
@@ -365,6 +373,7 @@
    "silently_cut_off": false
   },
   "P5": {
+   "field_name_leaks": [],
    "chars": 7604,
    "item6_present": true,
    "ends_cleanly": false,
@@ -373,6 +382,7 @@
    "silently_cut_off": false
   },
   "P6": {
+   "field_name_leaks": [],
    "chars": 7096,
    "item6_present": true,
    "ends_cleanly": false,
@@ -381,6 +391,7 @@
    "silently_cut_off": false
   },
   "P7": {
+   "field_name_leaks": [],
    "chars": 6374,
    "item6_present": true,
    "ends_cleanly": true,
@@ -393,7 +404,7 @@
  "verdict_text_available": true,
  "meta": {
   "date": "2026-10-02",
-  "git_sha": "33ef302",
+  "git_sha": "dd5360a",
   "source": "replay of eval/results/2026-10-02-f4/parcel_kit_raw",
   "key_version": "2026-10-01.1"
  }
