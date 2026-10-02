@@ -1,4 +1,5 @@
 import builtins
+import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
@@ -182,11 +183,39 @@ class FoodInspectionSummary(BaseModel):
     recent_inspections: list[FoodInspectionDetail] = Field(default_factory=list)
 
 
+# A district changed by ordinance within this many days is flagged "recently
+# rezoned": the City says amendments can take up to 90 days to reach the map, and
+# the kit's P7 parcel was rezoned 65 days before the layer caught up.
+RECENT_REZONING_DAYS = 180
+
+
 class ZoningSummary(BaseModel):
     zone_class: str
     zone_type: int | None = None
+    # The ordinance identifier (clerk's number for a recent amendment, a legacy id
+    # for older ones). An *application* number (23082T1) is kept apart, below.
     ordinance_num: str | None = None
+    application_num: str | None = None
+    # ISO dates from the City's zoning layer: when the ordinance that set this
+    # polygon passed, and when this polygon's record was last edited. Neither is
+    # "when the whole map was refreshed" — they describe THIS district's record.
+    ordinance_date: str | None = None
+    map_updated: str | None = None
+    clerk_url: str | None = None
     zoning_map_url: str = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def recently_rezoned(self) -> bool:
+        """True when the ordinance behind this district passed within the last
+        RECENT_REZONING_DAYS (computed at serialization, so a cached lookup ages)."""
+        if not self.ordinance_date:
+            return False
+        try:
+            passed = datetime.date.fromisoformat(self.ordinance_date)
+        except ValueError:
+            return False
+        return 0 <= (datetime.date.today() - passed).days <= RECENT_REZONING_DAYS
 
 
 class OverlayDistrict(BaseModel):
@@ -721,6 +750,18 @@ class ContextObject(BaseModel):
     partial_failures: list[str] = Field(default_factory=list)
 
     # `property` is a field name in this class body, so spell the builtin out.
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def code_vintage(self) -> dict | None:
+        """How current the indexed Municipal Code is (its 'current through' date).
+        Present whenever the turn resolved a parcel's zoning, so the answer and the
+        Profile can say the code text is a snapshot, not live law."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.code_vintage import get_code_vintage
+
+        return get_code_vintage()
+
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property
     def unit_yield(self) -> dict | None:

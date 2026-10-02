@@ -297,6 +297,9 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   const emptyVacantLot = isVacantClass(data.context?.property?.bldg_class) && !data.context?.property?.bldg_sqft;
   if (s.bldgAreaLowConfidence && s.capacityBand === "unknown" && data.zone_definition?.far != null && !emptyVacantLot)
     caveats.push(t("scorecard.verdict.caveat.noBldgArea"));
+  const rezoned = data.context?.parcel_zoning;
+  if (rezoned?.recently_rezoned && rezoned.ordinance_date)
+    caveats.push(t("scorecard.verdict.caveat.recentlyRezoned", { date: rezoned.ordinance_date }));
   const complexSqft = data.context?.property?.complex_bldg_sqft;
   if (complexSqft)
     caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));

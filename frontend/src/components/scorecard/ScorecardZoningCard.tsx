@@ -4,7 +4,7 @@
 // ZoneDefinition from the scorecard API + the verdict's FAR signals.
 import { useTranslation } from "react-i18next";
 import type { ZoneDefinition } from "../../lib/api";
-import type { UnitYield } from "../../lib/types";
+import type { CodeVintage, UnitYield, ZoningSummary } from "../../lib/types";
 import { localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
@@ -40,13 +40,16 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
   allowedFar?: number | null;
   ordinanceNum?: string | null;
   unitYield?: UnitYield | null;
+  /** The district's own freshness facts (ordinance date, record-updated date, clerk link). */
+  freshness?: Pick<ZoningSummary, "ordinance_num" | "ordinance_date" | "map_updated" | "clerk_url" | "recently_rezoned"> | null;
+  codeVintage?: CodeVintage | null;
 }) {
   const { t } = useTranslation("pages");
   // PD/PMD standards are negotiated per-ordinance, not tabulated in Title 17 —
@@ -104,6 +107,36 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
 
         {def.uses && <p className="text-caption text-text-secondary leading-relaxed">{def.uses}</p>}
         {def.notes && <p className="text-caption text-text-muted leading-relaxed">{def.notes}</p>}
+
+        {freshness?.recently_rezoned && freshness.ordinance_date && (
+          <p className="text-caption text-text-primary rounded-lg border border-accent/40 bg-accent/10 px-3 py-2" data-testid="recently-rezoned">
+            {t("scorecard.zoningCard.recentlyRezoned", { date: freshness.ordinance_date })}
+            {freshness.ordinance_num && (
+              freshness.clerk_url ? (
+                <> <a href={freshness.clerk_url} target="_blank" rel="noopener noreferrer" className="underline">{freshness.ordinance_num} ↗</a></>
+              ) : (
+                <> ({freshness.ordinance_num})</>
+              )
+            )}
+          </p>
+        )}
+
+        {(freshness?.map_updated || codeVintage) && (
+          <dl className="text-caption text-text-muted space-y-0.5" data-testid="freshness-stamps">
+            {freshness?.map_updated && (
+              <div className="flex justify-between gap-3">
+                <dt>{t("scorecard.zoningCard.zoningRecordUpdated")}</dt>
+                <dd className="text-text-secondary">{freshness.map_updated}</dd>
+              </div>
+            )}
+            {codeVintage && (
+              <div className="flex justify-between gap-3">
+                <dt>{t("scorecard.zoningCard.codeCurrentThrough")}</dt>
+                <dd className="text-text-secondary">{codeVintage.current_through}</dd>
+              </div>
+            )}
+          </dl>
+        )}
 
         <div className="flex items-center justify-between gap-2 text-caption text-text-muted">
           <span className="font-mono">{def.code_section}</span>

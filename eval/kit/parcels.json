@@ -818,7 +818,10 @@
     "profile": {
      "groups": [
       [
-       "rezon|M1-2|recently (changed|rezoned)|map amendment|ordinance date"
+       "rezon|M1-2|recently (changed|rezoned)|map amendment|ordinance date",
+       "ordinance dated",
+       "recently rezoned",
+       "changed by an ordinance"
       ]
      ],
      "none": "NP"

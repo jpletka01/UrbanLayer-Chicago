@@ -549,6 +549,10 @@ def assemble_context(
             zone_class=zoning_info["zone_class"],
             zone_type=zoning_info.get("zone_type"),
             ordinance_num=zoning_info.get("ordinance_num"),
+            application_num=zoning_info.get("application_num"),
+            ordinance_date=zoning_info.get("ordinance_date"),
+            map_updated=zoning_info.get("map_updated"),
+            clerk_url=zoning_info.get("clerk_url"),
         )
 
     if aro_housing_rows:

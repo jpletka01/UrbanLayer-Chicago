@@ -7,6 +7,8 @@ ZONE_TYPE, and ORDINANCE_NUM for spatial queries (point or envelope).
 
 import asyncio
 import logging
+import re
+from datetime import datetime, timezone
 
 import httpx
 
@@ -40,6 +42,44 @@ ZONING_QUERY_URL = (
 ZONING_MAP_URL = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning"
 
 
+# Layer 1 also carries WHEN and BY WHAT ORDINANCE the polygon last changed. The
+# product used to discard both and show ORDINANCE_NUM as "the ordinance", but for a
+# recent Type 1 map amendment that field holds the *application* number (23082T1),
+# which the chat model misread as a year. CLERK_DOCNO is the real ordinance number.
+_ZONING_OUT_FIELDS = (
+    "ZONE_CLASS,ZONE_TYPE,ORDINANCE_NUM,ORDINANCE_DATE,UPDATE_TIMESTAMP,CLERK_DOCNO,CLERK_URL,PD_NUM"
+)
+_APPLICATION_NUM_RE = re.compile(r"^\d+T\d*$", re.I)  # "23082T1": application no., not an ordinance
+
+
+def _epoch_ms_to_date(value) -> str | None:
+    """ArcGIS epoch-millisecond date -> ISO date (UTC), None when absent/invalid."""
+    try:
+        if value in (None, ""):
+            return None
+        return datetime.fromtimestamp(float(value) / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+
+
+def _zoning_result(attrs: dict) -> dict:
+    """Shape a layer-1 feature's attributes into the lookup result."""
+    raw_num = (attrs.get("ORDINANCE_NUM") or "").strip() or None
+    clerk_doc = (attrs.get("CLERK_DOCNO") or "").strip() or None
+    application_num = raw_num if raw_num and _APPLICATION_NUM_RE.match(raw_num) else None
+    return {
+        "zone_class": attrs["ZONE_CLASS"],
+        "zone_type": attrs.get("ZONE_TYPE"),
+        # The ordinance identifier: the clerk's number when we have it, a legacy
+        # ordinance id (A7210, 17230, PD ordinance 13559) as-is, never an application no.
+        "ordinance_num": clerk_doc if application_num else (raw_num or clerk_doc),
+        "application_num": application_num,
+        "ordinance_date": _epoch_ms_to_date(attrs.get("ORDINANCE_DATE")),
+        "map_updated": _epoch_ms_to_date(attrs.get("UPDATE_TIMESTAMP")),
+        "clerk_url": (attrs.get("CLERK_URL") or "").strip() or None,
+    }
+
+
 async def lookup_zoning(
     lat: float,
     lon: float,
@@ -48,7 +88,8 @@ async def lookup_zoning(
 ) -> dict | None:
     """Query the ArcGIS Zoning MapServer for the zoning classification at a point.
 
-    Returns {"zone_class": "B3-2", "zone_type": 1, "ordinance_num": "..."} or None.
+    Returns {"zone_class", "zone_type", "ordinance_num", "application_num", "ordinance_date",
+    "map_updated", "clerk_url"} (dates ISO, any may be None) or None.
     """
     key = f"zoning:{round(lat, 5)}:{round(lon, 5)}"
     cached = _cache.get(key)
@@ -62,7 +103,7 @@ async def lookup_zoning(
         "geometryType": "esriGeometryPoint",
         "inSR": "4326",
         "spatialRel": "esriSpatialRelIntersects",
-        "outFields": "ZONE_CLASS,ZONE_TYPE,ORDINANCE_NUM",
+        "outFields": _ZONING_OUT_FIELDS,
         "returnGeometry": "false",
         "f": "json",
     }
@@ -95,11 +136,7 @@ async def lookup_zoning(
     if not zone_class:
         _cache.set(key, _NOT_FOUND)
         return None
-    result = {
-        "zone_class": zone_class,
-        "zone_type": attrs.get("ZONE_TYPE"),
-        "ordinance_num": attrs.get("ORDINANCE_NUM"),
-    }
+    result = _zoning_result(attrs)
     _cache.set(key, result)
     return result
 
