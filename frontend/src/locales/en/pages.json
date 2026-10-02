@@ -125,6 +125,22 @@
     "nearestParcelCaveat": "We couldn't confirm the exact tax parcel for this address, so the property, tax, and comparable-sales figures below describe the nearest parcel — which may be a neighbor. Verify the PIN before relying on parcel-specific numbers.",
     "addressUnavailable": "Address unavailable",
     "vsPrior": "vs {{count}}",
+    "coverage": {
+      "title": "What this page doesn't cover",
+      "always": "True of every parcel ({{count}})",
+      "link": "Read more ↗",
+      "notes": {
+        "planned_development": "This parcel is in {{name}}. Its height, floor area and use standards are set by the PD ordinance and its bulk table, not by Title 17's base-district tables; the base-district numbers on this page do not apply to it.",
+        "landmark": "{{name}} is a Chicago Landmark or in a landmark district: a permit to alter, demolish or build needs the Commission on Chicago Landmarks' written approval (§2-120-740). This page does not assess that review.",
+        "chrs_demolition_delay": "The Chicago Historic Resources Survey color-codes this building {{color}}: a demolition permit may be held for up to 90 days so the Department of Planning and Development can explore preserving it (§14A-4-407.6).",
+        "recently_rezoned": "This district was changed by an ordinance dated {{date}}. The City's map can lag a passed amendment by up to 90 days, so confirm the current district with the Department of Planning and Development.",
+        "adu_limits": "Coach houses and conversion units here come with the ADU zone's limitations ({{zone}}). Confirm they are still available before relying on one.",
+        "aldermanic": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the ward's alderman (§17-13-0100, §17-13-0300, §17-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess.",
+        "map_lag": "The City's zoning map can lag a passed amendment by up to 90 days.",
+        "code_vintage": "The Municipal Code text used here is current through {{date}}; a later Council amendment may not be reflected.",
+        "official_letter": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning (${{fee}}, up to {{days}} days, as published by the Office of the Zoning Administrator, checked {{checked}}); a letter of opinion covers a specific project."
+      }
+    },
     "resolution": {
       "matchedBy": "Matched by {{method}}",
       "gap": "address point {{ft}} ft from the parcel's center",

@@ -777,6 +777,27 @@ class ContextObject(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property
+    def coverage_notes(self) -> list[dict] | None:
+        """Where this page stops, for THIS parcel: what it found that it does not
+        assess (a PD, a landmark, a CHRS demolition hold, a recent rezoning, ADU limits)
+        and what is true of every parcel (alderman's role, map lag, code vintage, the
+        City's official letter). Derived, so the Profile, a cold chat turn and a handoff
+        agree. None when no parcel zoning was resolved."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.retrieval.coverage_notes import build_coverage_notes
+
+        return build_coverage_notes(
+            zoning=self.parcel_zoning,
+            regulatory=self.regulatory,
+            property_=self.property,
+            neighborhood=self.neighborhood,
+            adu=self.adu,
+            code_vintage=self.code_vintage,
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
     def code_vintage(self) -> dict | None:
         """How current the indexed Municipal Code is (its 'current through' date).
         Present whenever the turn resolved a parcel's zoning, so the answer and the

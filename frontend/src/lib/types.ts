@@ -667,7 +667,20 @@ export interface UnitYield {
   lot_area_note: string;
 }
 
+/** One "what this page does not cover" note for this parcel (backend coverage_notes). */
+export interface CoverageNote {
+  id: string;
+  /** "parcel": found on THIS parcel and not assessed here; "general": true of every parcel. */
+  applies: "parcel" | "general";
+  /** English text (what chat restates); the UI translates by id + params. */
+  text: string;
+  params: Record<string, string | number | null>;
+  link: string | null;
+  section: string | null;
+}
+
 export interface ContextObject {
+  coverage_notes?: CoverageNote[] | null;
   adu?: AduStatus | null;
   code_vintage?: CodeVintage | null;
   tod_benefits?: TodBenefits | null;

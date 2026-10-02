@@ -125,6 +125,22 @@
     },
     "addressUnavailable": "Dirección no disponible",
     "vsPrior": "vs {{count}}",
+    "coverage": {
+      "title": "Lo que esta página no cubre",
+      "always": "Válido para toda parcela ({{count}})",
+      "link": "Más información ↗",
+      "notes": {
+        "planned_development": "Esta parcela está en {{name}}. Sus normas de altura, superficie construida y uso las fija la ordenanza del PD y su tabla de volumen, no las tablas de distrito base del Título 17; las cifras de distrito base de esta página no se aplican a ella.",
+        "landmark": "{{name}} es un Hito de Chicago o está en un distrito de hitos: un permiso para alterar, demoler o construir requiere la aprobación por escrito de la Comisión de Hitos de Chicago (§2-120-740). Esta página no evalúa esa revisión.",
+        "chrs_demolition_delay": "La Encuesta de Recursos Históricos de Chicago clasifica este edificio en {{color}}: un permiso de demolición puede retenerse hasta 90 días para que el Departamento de Planificación y Desarrollo explore su preservación (§14A-4-407.6).",
+        "recently_rezoned": "Este distrito fue modificado por una ordenanza con fecha {{date}}. El mapa de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada; confirme el distrito vigente con el Departamento de Planificación y Desarrollo.",
+        "adu_limits": "Las casas de carruaje y unidades de conversión aquí tienen las limitaciones de la zona de ADU ({{zone}}). Confirme que sigan disponibles antes de confiar en una.",
+        "aldermanic": "Las enmiendas al mapa de zonificación, los Desarrollos Planificados, los usos especiales y los ajustes administrativos requieren aviso al concejal del distrito (§17-13-0100, §17-13-0300, §17-13-0600), y que un proyecto sea aprobado depende de aprobaciones discrecionales que esta página no puede evaluar.",
+        "map_lag": "El mapa de zonificación de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada.",
+        "code_vintage": "El texto del Código Municipal usado aquí está vigente hasta {{date}}; una enmienda posterior del Concejo puede no estar reflejada.",
+        "official_letter": "Esta página es una herramienta de evaluación preliminar, no una determinación de zonificación. La Carta de Verificación de Zonificación de la Ciudad confirma la zonificación de una parcela (${{fee}}, hasta {{days}} días, según publica la Oficina del Administrador de Zonificación, verificado {{checked}}); una carta de opinión cubre un proyecto específico."
+      }
+    },
     "resolution": {
       "matchedBy": "Identificada mediante {{method}}",
       "gap": "punto de dirección a {{ft}} ft del centro de la parcela",

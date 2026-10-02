@@ -120,6 +120,20 @@
      "address_points",
      "assessor_addresses"
     ]
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter"
+    ],
+    "must_not": [
+     "adu_limits",
+     "planned_development",
+     "landmark",
+     "recently_rezoned"
+    ]
    }
   },
   {
@@ -243,6 +257,20 @@
      "assessor_addresses"
     ],
     "note": "a vacant lot: no Address Points row"
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter"
+    ],
+    "must_not": [
+     "adu_limits",
+     "planned_development",
+     "landmark",
+     "recently_rezoned"
+    ]
    }
   },
   {
@@ -397,6 +425,19 @@
     ],
     "sources_disagree": true,
     "note": "Address Points names ...025, the Assessor names ...044"
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter"
+    ],
+    "must_not": [
+     "planned_development",
+     "landmark",
+     "recently_rezoned"
+    ]
    }
   },
   {
@@ -499,6 +540,22 @@
     ],
     "unconfirmed": true,
     "note": "a building PIN the Parcel Universe has no record for"
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter",
+     "planned_development"
+    ],
+    "link_for": [
+     "planned_development"
+    ],
+    "must_not": [
+     "landmark",
+     "recently_rezoned"
+    ]
    }
   },
   {
@@ -650,6 +707,19 @@
     "candidates": 3,
     "multiple_parcels": true,
     "note": "the Assessor lists three parcels at the address"
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter",
+     "landmark"
+    ],
+    "must_not": [
+     "planned_development",
+     "recently_rezoned"
+    ]
    }
   },
   {
@@ -769,6 +839,20 @@
      "address_points",
      "assessor_addresses"
     ]
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter",
+     "adu_limits"
+    ],
+    "must_not": [
+     "planned_development",
+     "landmark",
+     "recently_rezoned"
+    ]
    }
   },
   {
@@ -882,6 +966,23 @@
     "methods": [
      "address_points",
      "assessor_addresses"
+    ]
+   },
+   "coverage": {
+    "must": [
+     "aldermanic",
+     "map_lag",
+     "code_vintage",
+     "official_letter",
+     "recently_rezoned"
+    ],
+    "link_for": [
+     "recently_rezoned"
+    ],
+    "must_not": [
+     "planned_development",
+     "landmark",
+     "adu_limits"
     ]
    }
   }

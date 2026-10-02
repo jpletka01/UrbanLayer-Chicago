@@ -230,6 +230,17 @@ def test_resolution_record_check_compares_the_profile_record_with_the_keys_expec
     assert "the used parcel isn't marked exactly once" in k.resolution_record_check(p5, two_used)["failed"]
 
 
+def test_coverage_check_requires_the_notes_that_apply_and_forbids_the_ones_that_do_not():
+    p4 = BY_ID["P4"]
+    ids = ["planned_development", "aldermanic", "map_lag", "code_vintage", "official_letter"]
+    ok = {"context": {"coverage_notes": [{"id": i, "link": "https://x" if i == "planned_development" else None} for i in ids]}}
+    assert k.coverage_check(p4, ok)["failed"] == []
+    assert k.coverage_check(p4, {"context": {}}) is None  # older payload
+    bad = {"context": {"coverage_notes": [{"id": "aldermanic"}, {"id": "landmark"}, {"id": "planned_development", "link": None}]}}
+    failed = k.coverage_check(p4, bad)["failed"]
+    assert "missing official_letter" in failed and "landmark should not apply" in failed and "planned_development has no link" in failed
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})
