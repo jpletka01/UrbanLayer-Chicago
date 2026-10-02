@@ -33,7 +33,9 @@ and the definitive architecture + design-decision + war-story archive is the web
 | **Map / geo visualization / deck.gl layers** | `frontend/CLAUDE.md` (Map sections) → `core/architecture.md` |
 | **Mobile / responsive / phone layout** | `frontend/CLAUDE.md` (Responsive — incl. the 5-device overflow-audit harness; gate layout work with `npm run test:mobile`) |
 | **Data sources / new dataset / endpoints** | `core/data-sources.md` → `strategy/2026-07-02_data-expansion-candidates.md` (backlog) |
-| **Deployment / server ops / Docker / nginx** | `guides/deployment.md` → root `CLAUDE.md` (Workflow Rules) |
+| **Deployment / server ops / Docker / nginx** | `guides/deployment.md` → root `CLAUDE.md` (Workflow Rules) → `deploy/hardening-runbook.md` |
+| **Shipping any change / verifying a deploy** | the `ship-and-verify` skill, then the `live-site-sweep` skill |
+| **Retrieval, prompts, router, models, or Profile data-source changes** | the `eval-refresh` skill → `EVALS.md` |
 | **Auth / conversations / sharing** | `guides/auth-and-conversations.md` |
 | **Performance / latency** | `guides/latency-reduction.md` |
 | **i18n / adding a language** | `frontend/CLAUDE.md` (i18n) + `backend/CLAUDE.md` |
