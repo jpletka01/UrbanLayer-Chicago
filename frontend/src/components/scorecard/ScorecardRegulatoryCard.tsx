@@ -4,7 +4,7 @@
 // Classification is presentational only — the same overlays render, grouped.
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import type { RegulatorySummary } from "../../lib/types";
+import type { AduStatus, RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { humanizeShoutyCase } from "../../lib/format";
 import { getTermInfo } from "../../lib/termDefinitions";
@@ -74,7 +74,18 @@ interface OverlayRow {
   title: string;
   type: string | null;
   detail: string | null;
+  link: string | null;
   term: string;
+}
+
+function SourceLink({ href }: { href: string }) {
+  const { t } = useTranslation("data");
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      className="inline-block text-caption text-text-secondary hover:text-accent transition-colors mt-0.5">
+      {t("regulatory.source")}
+    </a>
+  );
 }
 
 function OverlayRowView({ row }: { row: OverlayRow }) {
@@ -91,6 +102,7 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
             {[row.type, row.detail].filter(Boolean).join(" — ")}
           </div>
         )}
+        {row.link && <SourceLink href={row.link} />}
       </div>
     </div>
   );
@@ -101,17 +113,22 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
 // with a dead-space flank). Top-N rows always visible, the tail discloses.
 const CONSTRAINT_BUDGET = 6;
 
-export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
+export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary; adu?: AduStatus | null }) {
   const { t } = useTranslation("data");
 
   // Same dedup as the sidebar card: status flags that restate an overlay are dropped.
   const overlayCores = new Set(data.overlays.map((ov) => flagCore(ov.layer_type)));
+  // The ADU layer returns a hit for any point inside an ADU zone polygon, but zones only
+  // matter for RS districts; with the backend's adu status the layer artifact is dropped
+  // and replaced by the real answer (allowed by right / allowed with this zone's limits /
+  // not allowed). Without it (older payloads) the flag renders as before.
+  const aduOverlayShown = (type: string) => type !== "adu_area" || !adu || adu.status === "allowed_with_limits";
   const activeFlags = FLAG_KEYS.filter(
-    (k) => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k)),
+    (k) => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k)) && !(adu && k === "in_adu_area"),
   );
 
   const rows: OverlayRow[] = [
-    ...data.overlays.map((ov, i): OverlayRow => {
+    ...data.overlays.filter((ov) => aduOverlayShown(ov.layer_type)).map((ov, i): OverlayRow => {
       const rawTypeLabel = formatLayerType(ov.layer_type);
       const typeLabel = getTermInfo(ov.layer_type)?.label || rawTypeLabel;
       const name = ov.name && normLabel(ov.name) !== normLabel(rawTypeLabel) ? humanizeShoutyCase(ov.name) : null;
@@ -124,16 +141,33 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
         severity: severityOf(ov.layer_type),
         title: name ?? typeLabel,
         type: name ? typeLabel : null,
-        detail: [description, ov.ordinance ? `${t("regulatory.ord")} ${ov.ordinance}` : null].filter(Boolean).join(" · ") || null,
+        // What the overlay requires, in the code's own terms, beats the generic layer name.
+        detail: [
+          ov.layer_type === "adu_area" && adu ? adu.note : (ov.detail ?? description),
+          ov.ordinance ? `${t("regulatory.ord")} ${ov.ordinance}` : null,
+        ].filter(Boolean).join(" · ") || null,
+        link: ov.link ?? null,
         term: ov.layer_type,
       };
     }),
+    ...(adu && adu.status !== "allowed_with_limits"
+      ? [{
+          key: "adu-status",
+          severity: (adu.status === "allowed_by_right" ? "opportunity" : "context") as Severity,
+          title: t(`regulatory.adu.${adu.status}`),
+          type: null,
+          detail: adu.note,
+          link: null,
+          term: "adu_area",
+        } satisfies OverlayRow]
+      : []),
     ...activeFlags.map((key): OverlayRow => ({
       key,
       severity: severityOf(key),
       title: t(`regulatory.flags.${key}`),
       type: key === "in_ssa" && data.ssa_name ? data.ssa_name : null,
       detail: null,
+      link: null,
       term: key,
     })),
   ];
@@ -186,6 +220,16 @@ export function ScorecardRegulatoryCard({ data }: { data: RegulatorySummary }) {
                 </span>
               ))}
             </div>
+            {others.some((r) => r.detail || r.link) && (
+              <ul className="mt-2.5 space-y-1.5" data-testid="overlay-notes">
+                {others.filter((r) => r.detail || r.link).map((r) => (
+                  <li key={r.key} className="text-caption text-text-muted leading-snug">
+                    <span className="text-text-secondary">{r.title}: </span>{r.detail}
+                    {r.link && <> <SourceLink href={r.link} /></>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 

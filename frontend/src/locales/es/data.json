@@ -134,6 +134,8 @@
     "overlays": "Normativas superpuestas",
     "status": "Estado",
     "noOverlays": "No se aplican normativas superpuestas a esta ubicación.",
+    "source": "Ver la fuente ↗",
+    "adu": {"allowed_by_right": "Casas de carruaje y unidades de conversión permitidas por derecho", "not_allowed": "Casas de carruaje y unidades de conversión no permitidas aquí", "allowed_with_limits": "Área de ADU permitida en RS"},
     "floodZone": "Zona inundable",
     "zone": "Zona {{code}}",
     "specialFloodHazard": "Riesgo especial de inundación",

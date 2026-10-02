@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { computeVerdict, deriveSignals, selectCategory, type TFunc } from "./scorecardVerdict";
 import type { ScorecardResponse } from "./api";
@@ -409,5 +411,36 @@ describe("building area that isn't this lot's (F6)", () => {
     const v = computeVerdict(data, t);
     expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.complexBldg") && c.includes('"n":7') && c.includes("43,790"))).toBe(true);
     expect(v.signals.existingFar).toBeNull();
+  });
+});
+
+describe("ADU and landmark reasons (F7)", () => {
+  const withAdu = (zone: string, adu: Record<string, unknown>) => {
+    const d = mk({ zone, far: 0.9, bldg: 900, land: 1000, adu: true });
+    (d.context as unknown as Record<string, unknown>).adu = adu;
+    return computeVerdict(d, t).reasons.map((r) => r.text);
+  };
+
+  it("an RS parcel in an ADU zone gets the opt-in reason, naming the zone", () => {
+    const reasons = withAdu("RS-3", { status: "allowed_with_limits", zone: "ADU-Allowed RS Area — Zone 10", limits: "x", note: "n" });
+    expect(reasons.some((r) => r.startsWith("scorecard.verdict.reason.adu") && r.includes("Zone 10"))).toBe(true);
+  });
+
+  it("RT/RM/B/C parcels get no ADU 'bonus' reason (coach houses are by right there)", () => {
+    const reasons = withAdu("RT-4", { status: "allowed_by_right", zone: null, limits: null, note: "n" });
+    expect(reasons.some((r) => r.includes("reason.adu"))).toBe(false);
+  });
+
+  it("older payloads keep the flag-based reason", () => {
+    const reasons = computeVerdict(mk({ zone: "RS-3", far: 0.9, bldg: 900, land: 1000, adu: true }), t).reasons.map((r) => r.text);
+    expect(reasons.some((r) => r.includes("reason.adu"))).toBe(true);
+  });
+
+  it("a landmark parcel's reason is the Commission-approval requirement, not 'design review'", () => {
+    const en = JSON.parse(readFileSync(resolve(__dirname, "../locales/en/pages.json"), "utf8"));
+    const text: string = en.scorecard.verdict.reason.landmark;
+    expect(text).toContain("Commission on Chicago Landmarks");
+    expect(text).toContain("in writing");
+    expect(text.toLowerCase()).not.toContain("design review");
   });
 });

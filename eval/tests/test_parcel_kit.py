@@ -177,6 +177,27 @@ def test_truncation_check_reports_internal_field_names():
     assert k.truncation_check({"text": "clean answer."})["field_name_leaks"] == []
 
 
+def test_chat_overlays_chained_aliases_before_none():
+    asserted, denied = k.chat_overlays("- **Lakefront Protection / Pedestrian Street / PMD / Special District:** None apply.\n")
+    assert not ({"lakefront", "pedestrian_street", "pmd", "special_district"} & asserted)
+    assert {"lakefront", "pedestrian_street", "pmd"} <= denied
+
+
+def test_a_failed_api_call_is_not_scored_or_read_as_a_silent_cut_off(tmp_path):
+    import shutil
+
+    d = tmp_path / "run"
+    shutil.copytree(BASELINE, d)
+    bad = json.loads((d / "P7.chat.json").read_text())
+    bad.update(error="Something went wrong while answering. Please try again.", text=bad["text"][:600])
+    (d / "P7.chat.json").write_text(json.dumps(bad))
+    rep = k.score_run_dir(d, KEY, ["chat"], None, None)
+    assert "P7" in rep["errored_runs"]["chat"] and "P7" not in rep["surfaces"]["chat"]["fields"]
+    assert rep["truncation"]["P7"]["errored"] is True and rep["truncation"]["P7"]["silently_cut_off"] is False
+    assert rep["surfaces"]["chat"]["aggregate"]["parcels"] == 6
+    assert "NOT SCORED" in k.render_markdown(rep, KEY, {"date": "x", "git_sha": "y", "source": "z"})
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})
