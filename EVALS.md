@@ -48,6 +48,8 @@ Checks that run in CI on every push, with no API keys:
 
 ### The parcel kit
 
+The public write-up, with every parcel's key, the dated results, the failures and a blank scorecard for scoring another tool, is [`docs/benchmark/`](docs/benchmark/README.md), generated from the committed results by `make benchmark`.
+
 The other suites ask whether the system reproduces its own inputs. The kit asks
 whether it is *right*. [`eval/kit/parcels.json`](eval/kit/parcels.json) holds
 seven parcels chosen because each one breaks a lazy system: a vacant lot whose
