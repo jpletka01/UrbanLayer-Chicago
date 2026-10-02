@@ -35,3 +35,18 @@ def test_no_private_research_leaks():
     md, js = b.build()
     for text in (md, js):
         assert "research/" not in text
+
+
+def test_review_pending_is_stated_and_reviewed_flips_the_page(monkeypatch, tmp_path):
+    md, _ = b.build()
+    assert "Outside review: pending" in md and "not yet reviewed" in md
+    rv = {"status": "reviewed", "reviewer": {"role": "a zoning attorney", "credentials": "Chicago bar, 10 yrs", "name_published": False,
+                                             "date": "2026-11-01", "scope": "judgment fields"},
+          "fields": {"P2.F": {"verdict": "agree"}, "P3.E": {"verdict": "disagree", "note": "dash-2 does allow X"}}}
+    f = tmp_path / "review.json"
+    f.write_text(__import__("json").dumps(rv))
+    monkeypatch.setattr(b, "REVIEW_FILE", f)
+    md, js = b.build()
+    assert "1 agreed, 1 disagreed" in md and "dash-2 does allow X" in md  # disagreements are published
+    assert "not yet reviewed" not in md
+    assert __import__("json").loads(js)["review"]["agree"] == 1

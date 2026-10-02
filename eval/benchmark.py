@@ -20,6 +20,7 @@ from eval import parcel_kit as k
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "benchmark"
 RESULTS = ROOT / "eval" / "results"
+REVIEW_FILE = ROOT / "eval" / "kit" / "review.json"
 BASELINE_DIR = ROOT / "eval" / "kit" / "baseline" / "2026-10-01"
 
 # The runs the page publishes, in order. Each is a dated run of the real system on one
@@ -53,6 +54,20 @@ def load_run(entry: dict) -> dict:
     return json.loads((RESULTS / entry["dir"] / "parcel_kit.json").read_text())
 
 
+def review_summary() -> dict:
+    """Agreement of an outside reviewer with the answer key, from eval/kit/review.json."""
+    rv = json.loads(REVIEW_FILE.read_text())
+    fields = rv.get("fields", {})
+    if not fields:
+        return {"status": "pending", "fields": 0}
+    verdicts = [f["verdict"] for f in fields.values()]
+    return {
+        "status": "reviewed", "reviewer": rv["reviewer"], "fields": len(fields),
+        "agree": verdicts.count("agree"), "disagree": verdicts.count("disagree"), "unsure": verdicts.count("unsure"),
+        "disagreements": {t: f for t, f in fields.items() if f["verdict"] != "agree"},
+    }
+
+
 def collect() -> dict:
     key = k.load_key()
     runs = []
@@ -81,13 +96,24 @@ def collect() -> dict:
     return {
         "kit_version": key["version"], "parcels": [{"id": p["id"], "address": p["address"], "why": p["why"], "district": p["A"]["district"]} for p in key["parcels"]],
         "current": current, "progression": [r for r, _ in runs],
-        "limits": LIMITS,
+        "review": (rev := review_summary()),
+        "limits": limits(rev),
     }
 
 
-LIMITS = [
+def limits(rev: dict) -> list[str]:
+    if rev["status"] == "reviewed":
+        r = rev["reviewer"]
+        key_line = (f"The answer key was reviewed by {r['role']} ({r['credentials']}) on {r['date']}: they agreed with {rev['agree']} of "
+                    f"{rev['fields']} fields they examined; every other field is unreviewed (section 5).")
+    else:
+        key_line = ("The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning "
+                    "attorney (the most interpretive parcels are P2, P3 and P6).")
+    return [_LIMITS[0], key_line, *_LIMITS[1:]]
+
+
+_LIMITS = [
     "Seven parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
-    "The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning attorney (the most interpretive parcels are P2, P3 and P6).",
     "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
     "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",
     "Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.",
@@ -105,7 +131,9 @@ def render(data: dict) -> str:
              "the product's **Property Profile** (a deterministic page) and of its **chat** (the same standard prompt, address "
              "only). It was built to find where a zoning tool is wrong, so it includes the failures.")
     L.append("")
-    L.append("> **Read the limits before quoting a number** (section 6). Seven parcels; the key is not yet reviewed by a Chicago professional.")
+    reviewed = data["review"]["status"] == "reviewed"
+    L.append("> **Read the limits before quoting a number** (section 6). Seven parcels; the key "
+             + ("has been reviewed in part by an outside professional (section 5)." if reviewed else "is not yet reviewed by a Chicago professional."))
     L.append("")
     L.append("## 1. Current results")
     L.append("")
@@ -192,6 +220,20 @@ def render(data: dict) -> str:
              "data. Where the key and the product agree because they read the same City service, that is noted (overlays). The key "
              "fixed three errors in an earlier version that had used the product's own output as ground truth.")
     L.append("")
+    rv = data["review"]
+    if rv["status"] == "reviewed":
+        r = rv["reviewer"]
+        who = f"{r['name']}, " if r.get("name_published") and r.get("name") else ""
+        L.append(f"**Outside review.** {who}{r['role']} ({r['credentials']}), {r['date']}; scope: {r['scope']}. "
+                 f"Of {rv['fields']} fields examined: {rv['agree']} agreed, {rv['disagree']} disagreed, {rv['unsure']} unsure.")
+        L.append("")
+        for t, f in sorted(rv["disagreements"].items()):
+            L.append(f"- `{t}` {f['verdict']}: {f.get('note', '')}")
+        L.append("")
+    else:
+        L.append("**Outside review: pending.** The reviewer is sent the [blind review packet](review-packet.md) (the key and its sources, none of any "
+                 "tool's answers). Their agreement rate and every disagreement will be published here, whether or not the key changes.")
+        L.append("")
     L.append("## 6. Limits")
     L.append("")
     for s in data["limits"]:

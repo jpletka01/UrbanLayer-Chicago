@@ -4,7 +4,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 KIT_URL ?= http://localhost:8001
 
-.PHONY: help setup test test-backend test-frontend lint check kit kit-replay benchmark dev up down seed-demo
+.PHONY: help setup test test-backend test-frontend lint check kit kit-replay benchmark review-packet dev up down seed-demo
 
 help:  ## Show this help
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -41,6 +41,9 @@ kit-replay:  ## Parcel kit: re-score the recorded 2026-10-01 runs (no network, n
 
 benchmark:  ## Regenerate docs/benchmark/ (the public parcel-kit page) from the committed results
 	PYTHONPATH=. $(PY) -m eval.benchmark
+
+review-packet:  ## Regenerate the blind answer-key review packet (docs/benchmark/review-packet.md)
+	PYTHONPATH=. $(PY) -m eval.review_packet
 
 dev:  ## Qdrant in Docker, backend on :8001, frontend on :5173 (Ctrl-C stops both)
 	docker compose up -d qdrant

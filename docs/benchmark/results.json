@@ -893,6 +893,10 @@
    }
   }
  ],
+ "review": {
+  "status": "pending",
+  "fields": 0
+ },
  "limits": [
   "Seven parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
   "The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning attorney (the most interpretive parcels are P2, P3 and P6).",

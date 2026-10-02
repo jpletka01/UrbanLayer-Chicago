@@ -125,6 +125,8 @@ The starting point is the uncomfortable part, and it is kept on purpose. The Pro
 
 Key version `2026-10-01.1`, in [`eval/kit/parcels.json`](../../eval/kit/parcels.json), with the source for every field. Sources: the City's open-data zoning layer and its zoning map service (overlays), the Municipal Code text (American Legal export, current through the Council Journal of 2026-03-18), ordinance PDFs, and Cook County Assessor data. Where the key and the product agree because they read the same City service, that is noted (overlays). The key fixed three errors in an earlier version that had used the product's own output as ground truth.
 
+**Outside review: pending.** The reviewer is sent the [blind review packet](review-packet.md) (the key and its sources, none of any tool's answers). Their agreement rate and every disagreement will be published here, whether or not the key changes.
+
 ## 6. Limits
 
 - Seven parcels show kinds of failure. They are not a statistically reliable accuracy rate.
