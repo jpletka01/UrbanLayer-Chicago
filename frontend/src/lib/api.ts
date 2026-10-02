@@ -745,6 +745,24 @@ export interface ZoneDefinition {
   is_fallback: boolean;
 }
 
+/** A dated source for one Profile fact (backend/provenance.py). */
+export interface Provenance {
+  label: string;
+  kind: "official_record" | "code_text" | "derived";
+  source: string | null;
+  record_id: string | null;
+  url: string | null;
+  /** Code section id the source viewer can open (code_text entries). */
+  section: string | null;
+  /** When the source says it last changed / the code is current through. */
+  as_of: string | null;
+  /** When the rule took effect (e.g. the ordinance date). */
+  effective_date: string | null;
+  /** When we queried it. Always set. */
+  query_date: string;
+  note?: string | null;
+}
+
 export interface ScorecardResponse {
   address: string | null;
   lat: number;
@@ -762,6 +780,9 @@ export interface ScorecardResponse {
   resolved_lat: number;
   resolved_lon: number;
   zone_definition?: ZoneDefinition | null;
+  /** Where each fact came from and how current it is, keyed by fact id (zoning.district,
+      zoning.far, overlay.<layer_type>, parcel.identity, ...). */
+  provenance?: Record<string, Provenance>;
   // True when the address-scoped violation lookup actually ran (parsed + queried).
   // Lets the UI show "no violations on record" for a confirmed-zero vs. omitting
   // for an unconfirmed lookup — silence must not mean two different things.

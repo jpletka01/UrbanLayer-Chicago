@@ -198,6 +198,23 @@ def test_a_failed_api_call_is_not_scored_or_read_as_a_silent_cut_off(tmp_path):
     assert "NOT SCORED" in k.render_markdown(rep, KEY, {"date": "x", "git_sha": "y", "source": "z"})
 
 
+def test_provenance_check_counts_stated_facts_with_a_dated_source():
+    p2 = BY_ID["P2"]
+    profile = json.loads((BASELINE / "P2.profile.json").read_text())
+    assert k.provenance_check(p2, profile) is None  # the 2026-10-01 payload predates provenance
+    dated = {"as_of": None, "effective_date": None, "query_date": "2026-10-02"}
+    profile["provenance"] = {
+        "zoning.district": dated, "zoning.far": dated, "zoning.max_height": dated,
+        "overlay.special_district": dated, "overlay.aro_zone": dated,
+    }
+    profile["zone_definition"]["min_lot_area_per_unit"] = 700  # a stated number with no entry yet
+    got = k.provenance_check(p2, profile)
+    assert got["required"] == 6 and got["dated"] == 5 and got["missing"] == ["zoning.min_lot_area_per_unit"]
+    assert got["source_dated"] == 0  # all of these carry only our query date
+    profile["provenance"]["zoning.min_lot_area_per_unit"] = {"as_of": "soon"}  # malformed date is not a date
+    assert k.provenance_check(p2, profile)["missing"] == ["zoning.min_lot_area_per_unit"]
+
+
 def test_score_overlays_rules():
     assert k.score_overlays(["tod", "aro"], {"tod", "aro", "adu"}, set())[:2] == (2, False)  # ADU is never "false"
     score, cw, detail = k.score_overlays(["tod", "aro", "ssa"], {"tod", "aro"}, {"ssa"})

@@ -542,6 +542,52 @@ def resolution_check(profile: dict | None, chat: dict | None) -> dict[str, Any]:
 
 # Context fields the prompt tells the model never to name to the user.
 _INTERNAL_FIELD_NAMES = ("zone_definition", "unit_yield", "tod_benefits", "density_bonus_eligible", "parcel_resolution", "parcel_pin", "returned null")
+# overlay ids the key uses -> the provenance keys a Profile may file them under
+_OVERLAY_PROVENANCE_KEYS = {
+    "pd": ["planned_development"], "landmark_building": ["landmark_building"],
+    "historic_district": ["historic_district", "landmark_district"], "national_register": ["national_register"],
+    "tod": ["tod_cta", "tod_metra"], "aro": ["aro_zone"], "ssa": ["ssa"],
+    "special_district": ["special_district"], "adu": ["adu_area"],
+    "pedestrian_street": ["pedestrian_street"], "lakefront": ["lakefront_protection"], "pmd": ["pmd_subarea"],
+}
+_NUMBER_PROVENANCE_KEYS = {"far": "zoning.far", "height_ft": "zoning.max_height", "mla": "zoning.min_lot_area_per_unit"}
+
+
+def provenance_check(parcel: dict, profile: dict | None) -> dict[str, Any] | None:
+    """Does every district, standard and expected overlay the Profile states carry a
+    dated source? None when the payload has no provenance at all (an older run)."""
+    if not profile or "provenance" not in profile:
+        return None
+    prov = profile.get("provenance") or {}
+
+    def dated(key: str) -> bool:
+        e = prov.get(key) or {}
+        return any(isinstance(e.get(f), str) and re.match(r"^\d{4}-\d{2}-\d{2}$", e[f]) for f in ("as_of", "effective_date", "query_date"))
+
+    required: list[str] = ["zoning.district"]  # field A: always answered by the Profile
+    nums = profile_numbers(profile, parcel["C"]["numbers"])
+    for n in parcel["C"]["numbers"]:
+        key = _NUMBER_PROVENANCE_KEYS.get(n["name"])
+        if key and nums.get(n["name"]):
+            required.append(key)
+    present = profile_overlays(profile)
+    layer_types = {o.get("layer_type") for o in ((profile.get("context") or {}).get("regulatory") or {}).get("overlays") or []}
+    for oid in parcel["D"]["expected"]:
+        if oid in present:
+            keys = [f"overlay.{lt}" for lt in _OVERLAY_PROVENANCE_KEYS.get(oid, [oid]) if lt in layer_types]
+            required.append(keys[0] if keys else f"overlay.{oid}")
+    missing = [k for k in required if not dated(k)]
+
+    def source_dated(key: str) -> bool:  # the source itself says how current it is (not just our query date)
+        e = prov.get(key) or {}
+        return any(isinstance(e.get(f), str) and re.match(r"^\d{4}-\d{2}-\d{2}$", e[f]) for f in ("as_of", "effective_date"))
+
+    return {
+        "required": len(required), "dated": len(required) - len(missing), "missing": missing,
+        "source_dated": sum(1 for k in required if source_dated(k)),
+    }
+
+
 _CUT_OFF_NOTICE = re.compile(r"answer was cut off before it finished|respuesta se cortó antes de terminar", re.I)
 
 
@@ -780,6 +826,7 @@ def score_run_dir(
         "surfaces": {}, "resolution": {}, "truncation": {}, "manual_fields": manual_fields if manual else "",
         "forced_cells": (manual or {}).get("force", {}),
         "errored_runs": {},
+        "provenance": {},
     }
     for surface in surfaces:
         per_parcel: dict[str, dict[str, FieldResult]] = {}
@@ -816,6 +863,11 @@ def score_run_dir(
             report["truncation"][p["id"]] = truncation_check(runs[p["id"]]["chat"])
             if report["truncation"][p["id"]].get("errored"):
                 report["resolution"].pop(p["id"], None)
+    if "profile" in surfaces:
+        for p in selected:
+            pc = provenance_check(p, runs[p["id"]]["profile"])
+            if pc is not None:
+                report["provenance"][p["id"]] = pc
     report["verdict_text_available"] = all(runs[p["id"]]["verdict"] for p in selected if runs[p["id"]]["profile"])
     return report
 
@@ -910,6 +962,20 @@ def render_markdown(report: dict[str, Any], key: dict, meta: dict[str, Any]) -> 
                 f"| {'yes' if t.get('notice_shown') else ''} | {'YES' if t.get('silently_cut_off') else ''} "
                 f"| {', '.join(t.get('field_name_leaks') or [])} |"
             )
+        L.append("")
+    if report["provenance"]:
+        tot = sum(v["required"] for v in report["provenance"].values())
+        ok = sum(v["dated"] for v in report["provenance"].values())
+        L.append("## Provenance (Profile: district, standards and expected overlays with a dated source)")
+        L.append("")
+        sd = sum(v.get("source_dated", 0) for v in report["provenance"].values())
+        L.append(f"**{ok}/{tot}** stated facts carry a dated source; **{sd}/{tot}** carry a date the source itself gives "
+                 "(an edit/effective date or the code's current-through date). The rest carry only the date we queried them.")
+        L.append("")
+        L.append("| Parcel | Facts | With any date | Source-side date | Missing |")
+        L.append("|---|--:|--:|--:|---|")
+        for pid, v in report["provenance"].items():
+            L.append(f"| {pid} | {v['required']} | {v['dated']} | {v.get('source_dated', 0)} | {', '.join(v['missing'])} |")
         L.append("")
     L.append("## Per-cell detail")
     L.append("")
