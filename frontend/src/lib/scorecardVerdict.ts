@@ -28,6 +28,7 @@ export const STACK_MIN = 2;                 // ≥ this many incentives ⇒ "str
 // Appeal-upside gate: dense areas show a handful of small nearby wins everywhere
 // (median −4…−6% is background noise); the reason fires only where appealing
 // demonstrably pays — many wins AND a big median cut.
+export const IMPLAUSIBLE_FAR_MULTIPLE = 3;  // existing FAR above this × the zone cap ⇒ building area isn't this lot's
 export const APPEAL_UPSIDE_MIN_WINS = 10;
 export const APPEAL_UPSIDE_MIN_MEDIAN_PCT = 10;
 
@@ -151,12 +152,18 @@ export function deriveSignals(data: ScorecardResponse): VerdictSignals {
 
   // Pushback #1: bldg_sqft is frequently stale/missing/area-derived. Degrade to
   // "unknown" rather than confidently misclassify a parcel's capacity.
+  // Plausibility guard: an existing FAR several times the zone's maximum means the
+  // building area and the lot aren't the same thing (a complex's total against one
+  // member lot — kit P3 read 10.07 against a 2.2 cap). Legal nonconforming
+  // buildings exist, but not at 3x; treat the area as unknown rather than as fact.
+  const implausibleFar = allowedFar != null && allowedFar > 0 && !!bldg && !!land && bldg / land > IMPLAUSIBLE_FAR_MULTIPLE * allowedFar;
   const bldgAreaLowConfidence =
     pf.includes("property characteristics") ||
     !bldg ||
     !land ||
     (vacantClass && !!bldg && bldg > 0) ||
     bldgAreaNotGfa ||
+    implausibleFar ||
     !!data.nearest_parcel_unverified;
 
   const existingFar = !bldgAreaLowConfidence && bldg && land ? bldg / land : null;
@@ -293,6 +300,9 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   const rezoned = data.context?.parcel_zoning;
   if (rezoned?.recently_rezoned && rezoned.ordinance_date)
     caveats.push(t("scorecard.verdict.caveat.recentlyRezoned", { date: rezoned.ordinance_date }));
+  const complexSqft = data.context?.property?.complex_bldg_sqft;
+  if (complexSqft)
+    caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));
   if (data.zone_definition?.is_fallback) caveats.push(t("scorecard.verdict.caveat.fallbackZone"));
   if ((data.partial_failures?.length ?? 0) > 0)
     caveats.push(t("scorecard.verdict.caveat.partial", { sources: data.partial_failures.join(", ") }));

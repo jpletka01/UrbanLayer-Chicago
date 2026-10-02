@@ -405,6 +405,12 @@ class PropertySummary(BaseModel):
     #   valuation tot_units — filled only for single-PIN economic units).
     land_sqft_source: str | None = None
     bldg_sqft_source: str | None = None
+    # This parcel is one of several in a CCAO commercial "economic unit" whose
+    # valuation total (a whole complex's building area) is NOT this parcel's own.
+    # Set only when no per-parcel area could be established; ``bldg_sqft`` stays
+    # empty so no FAR is computed from the wrong denominator.
+    complex_bldg_sqft: int | None = None
+    complex_member_pins: list[str] | None = None
     year_built_source: str | None = None
     stories_source: str | None = None
     units_source: str | None = None

@@ -355,6 +355,10 @@ export interface PropertySummary {
       "commercial_valuation" | "footprint") — absent when the field is null. */
   land_sqft_source?: string | null;
   bldg_sqft_source?: string | null;
+  /** Set when this parcel is one of several in a commercial "economic unit" whose
+      building-area total is the WHOLE complex's, not this lot's (bldg_sqft stays null). */
+  complex_bldg_sqft?: number | null;
+  complex_member_pins?: string[] | null;
   year_built_source?: string | null;
   stories_source?: string | null;
   units_source?: string | null;

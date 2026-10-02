@@ -17,6 +17,7 @@
     "exemptionsCaveat": "Owner-occupancy exemptions don't transfer to a buyer.",
     "noBuildingVacant": "Vacant land — no building on record.",
     "buildingDetailsUnavailable": "Building details unavailable for this parcel — no assessor, valuation, or footprint record found.",
+    "complexBuilding": "This parcel is one of {{n}} in an assessor commercial unit with {{sqft}} ft² of buildings in total. The assessor doesn't publish this lot's own share, so no floor area is shown.",
     "sources": {
       "geometry": "(from parcel geometry)",
       "condo_unit": "(condo unit)",

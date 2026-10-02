@@ -221,6 +221,17 @@ was refreshed that day.
 | Stories | 69% | Secondary field |
 | Units | 31% | Secondary field; no reliable non-residential source |
 
+**After fix F6 (2026-10-02, [report](eval/results/2026-10-02-f6/lot_coverage.md)).** Building area read
+76 present / 12 missing / 12 explained absences. The 12 are not a regression: they
+are members of multi-PIN commercial units (Presidential Towers' 745,629 sq ft across
+7 PINs, a 27-PIN unit) whose assessor total had been attributed to a single lot.
+The Profile now withholds that figure for such a lot, shows the unit total beside it
+as "recorded for an N-parcel complex", and the coverage suite counts it as an
+explained absence rather than a miss or a hit. PIN, land, year built and zoning FAR
+are unchanged and there were 0 fetch errors. The kit's scores did not move (the
+kit has no field for existing FAR); the check that matters is the P3 payload: no
+floor area for the lot and no FAR of 10.07.
+
 `/api/scorecard` latency from a laptop: p50 3.1 s, p90 7.3 s. First lookups on
 the production server take 15–40 s, so most of the production wait is the
 server's own network path to the city and county APIs, not the application.
