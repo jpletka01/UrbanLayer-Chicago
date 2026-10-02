@@ -11,7 +11,7 @@ from backend.retrieval.regulatory import regulatory_domain
 @patch("backend.retrieval.regulatory.query_all_overlays")
 async def test_assembles_full_summary(mock_overlays, mock_flood, mock_brownfield):
     mock_overlays.return_value = [
-        (5, {"NAME": "Gold Coast", "ORDINANCE": "2005-100"}),
+        (6, {"NAME": "Gold Coast", "ORDINANCE": "2005-100", "LANDMARK": "Y"}),
         (20, {"AREA_NAME": "Near North ARO"}),
     ]
     mock_flood.return_value = {"fld_zone": "AE", "zone_subty": "FLOODWAY", "sfha_tf": "T"}
@@ -37,7 +37,7 @@ async def test_boolean_flags_mapped_correctly(mock_overlays, mock_flood, mock_br
         (2, {"PD_NAME": "Lincoln Yards"}),
         (3, {}),
         (4, {"NAME": "Milwaukee Ave"}),
-        (7, {"NAME": "Wrigley Building"}),
+        (5, {"NAME": "Wrigley Building"}),
         (13, {"NAME": "Damen CTA"}),
         (17, {}),
     ]
@@ -169,3 +169,28 @@ async def test_general_workflow_includes_brownfield(mock_overlays, mock_flood, m
 
     mock_brownfield.assert_awaited_once()
     assert len(result.brownfield_sites) == 1
+
+
+@pytest.mark.asyncio
+@patch("backend.retrieval.regulatory.query_brownfield_sites")
+@patch("backend.retrieval.regulatory.query_flood_zone")
+@patch("backend.retrieval.regulatory.query_all_overlays")
+async def test_a_landmark_district_record_sets_the_district_flag(mock_overlays, mock_flood, mock_brownfield):
+    # Layer 6 holds the Chicago Landmark districts (LANDMARK=Y); they need the same Commission
+    # approval as an individual landmark, so the page must flag them.
+    mock_overlays.return_value = [(6, {"NAME": "Milwaukee Avenue District", "NUMBER_": "HD-56", "LANDMARK": "Y"})]
+    mock_flood.return_value = None
+    mock_brownfield.return_value = []
+    result = await regulatory_domain(41.91, -87.68, client=AsyncMock())
+    assert result.in_landmark_district is True and result.in_historic_district is True
+    assert result.is_landmark_building is False
+
+
+def test_the_historic_resources_survey_layer_is_not_a_landmark_source():
+    """Layer 7 is the survey's 9,298 orange/red buildings, not designations: querying it called
+    every orange-rated building (3500 N Lake Shore Dr, 1601 N Milwaukee Ave) a Chicago Landmark."""
+    from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS
+
+    assert 7 not in OVERLAY_LAYERS
+    assert OVERLAY_LAYERS[5]["type"] == "landmark_building"  # the City's landmark boundaries
+    assert not any(m["type"] == "landmark_building" for lid, m in OVERLAY_LAYERS.items() if lid != 5)

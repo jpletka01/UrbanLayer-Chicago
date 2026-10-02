@@ -130,6 +130,10 @@ def _build_summary(
         flag_field = FLAG_MAP.get(layer_type)
         if flag_field:
             flags[flag_field] = True
+        # The Historic Districts layer flags the districts that are Chicago Landmark districts
+        # (LANDMARK=Y); those need the same Commission approval as an individual landmark.
+        if layer_type == "historic_district" and str(attrs.get("LANDMARK") or "").strip().upper() == "Y":
+            flags["in_landmark_district"] = True
 
         if layer_type == "ssa":
             ssa_name = feature_name or attrs.get("SSA") or attrs.get("SSA_NUM")
