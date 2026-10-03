@@ -35,6 +35,7 @@ PROGRESSION = [
     {"id": "2026-10-02-f7", "label": "Overlays named, with what they require (F7)", "dir": "2026-10-02-f7", "surfaces": ["profile"]},
     {"id": "2026-10-02-v4", "label": "Where the page says it stops (V4)", "dir": "2026-10-02-v4", "surfaces": ["profile"]},
     {"id": "2026-10-02-v7a", "label": "Key grows to 12 parcels (downtown, manufacturing, lakefront, transit); P5 key corrected (V7, batch 1)", "dir": "2026-10-02-v7a", "surfaces": ["profile"]},
+    {"id": "2026-10-03-profile-gaps", "label": "Use rules for downtown/business/manufacturing districts; transit amount on the card; landmark layer fixed (F8)", "dir": "2026-10-03-profile-gaps", "surfaces": ["profile"]},
 ]
 
 FIELD_NAMES = {"A": "District", "B": "Use question", "C": "Bulk numbers", "D": "Overlays", "E": "Parking / transit", "F": "Task answer"}
@@ -129,6 +130,7 @@ _LIMITS = [
     "A dozen parcels show kinds of failure. They are not a statistically reliable accuracy rate.",
     "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
     "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",
+    "Each fix was found by these parcels, so the score on the parcel that exposed it is in-sample: it shows the fix works there, not that it generalises. The parcels added after a fix are the test of that.",
     "Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.",
     "Code text is current through the Council Journal of 2026-03-18; a later amendment is not in the key.",
 ]

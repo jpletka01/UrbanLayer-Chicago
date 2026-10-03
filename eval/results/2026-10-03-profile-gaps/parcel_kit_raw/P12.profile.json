@@ -1,0 +1,895 @@
+{
+ "address": "368 W Chicago Ave",
+ "lat": 41.89681969,
+ "lon": -87.6382892,
+ "community_area": 8,
+ "community_area_name": "Near North Side",
+ "context": {
+  "community_area": 8,
+  "community_area_name": "Near North Side",
+  "resolved_address": "368 W Chicago Ave",
+  "data_as_of": "2026-10-03",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-26).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-26",
+  "crime_last_90d": {
+   "total": 2714,
+   "arrest_rate": 0.148,
+   "by_type": {
+    "THEFT": 1117,
+    "BATTERY": 380,
+    "DECEPTIVE PRACTICE": 223,
+    "CRIMINAL DAMAGE": 206,
+    "ASSAULT": 168
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 1117,
+     "prior_year_count": 1307,
+     "change_pct": -15
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 380,
+     "prior_year_count": 455,
+     "change_pct": -16
+    },
+    {
+     "category": "DECEPTIVE PRACTICE",
+     "current_count": 223,
+     "prior_year_count": 317,
+     "change_pct": -30
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 206,
+     "prior_year_count": 206,
+     "change_pct": 0
+    },
+    {
+     "category": "ASSAULT",
+     "current_count": 168,
+     "prior_year_count": 186,
+     "change_pct": -10
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 8,
+   "open_count": 2,
+   "by_type": {
+    "Sign Repair Request - All Other Signs": 2,
+    "Sidewalk Inspection Request": 2,
+    "Rodent Baiting/Rat Complaint": 1,
+    "Graffiti Removal Request": 1,
+    "Consumer Fraud Complaint": 1,
+    "Ice and Snow Removal Request": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": [
+    "Rodent Baiting/Rat Complaint"
+   ]
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "C2-5",
+   "zone_type": 2,
+   "map_updated": "2026-05-11",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "recently_rezoned": false
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": false,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": false,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [],
+   "aro_housing": {
+    "total_projects": 20,
+    "total_units": 1010,
+    "projects": [
+     {
+      "name": "847 N. Larabee",
+      "address": "847 N. Larabee St.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "868northwells",
+      "address": "868 N. Wells St.",
+      "units": 32,
+      "property_type": "ARO"
+     },
+     {
+      "name": "920northwells",
+      "address": "920 N. Wells St.",
+      "units": 32,
+      "property_type": "ARO"
+     },
+     {
+      "name": "AMLI 808",
+      "address": "808 N. Wells St.",
+      "units": 32,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Atrium at Old Town Park",
+      "address": "300 W. Hill St.",
+      "units": 41,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Axis Apartments and Lofts",
+      "address": "441 E Erie",
+      "units": 3,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Carling Hotel",
+      "address": "1512 N. LaSalle St.",
+      "units": 80,
+      "property_type": "Supportive"
+     },
+     {
+      "name": "Clybourn 1200",
+      "address": "1200 N. Clybourn Ave.",
+      "units": 52,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Evergreen Towers II",
+      "address": "1343 N. Cleveland Ave.",
+      "units": 101,
+      "property_type": "Senior"
+     },
+     {
+      "name": "North Town Village I & II",
+      "address": "1311 N. Halsted St.",
+      "units": 112,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "North & Vine",
+      "address": "633 W. North Ave.",
+      "units": 7,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Onni Atrium Devp.",
+      "address": "202 W. Hill St.",
+      "units": 43,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Parkside-I Rental",
+      "address": "545 W. Division St.",
+      "units": 116,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Parkside of Old Town IIB",
+      "address": "1151 N. Cleveland Ave.",
+      "units": 12,
+      "property_type": "Multfamily"
+     },
+     {
+      "name": "Parkside of Old Town IIB",
+      "address": "459 W. Division St.",
+      "units": 94,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Parkside of Old Town Phase IIA",
+      "address": "544 W. Oak St.",
+      "units": 111,
+      "property_type": "Multifamily"
+     },
+     {
+      "name": "Schiff Residences",
+      "address": "1244 N. Clybourn Ave.",
+      "units": 96,
+      "property_type": "SRO/Supportive"
+     },
+     {
+      "name": "Than Tower",
+      "address": "343 W. Schiller St.",
+      "units": 21,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The 808",
+      "address": "808 N. Cleveland Ave.",
+      "units": 20,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Leo",
+      "address": "741 N Wells",
+      "units": 4,
+      "property_type": "ARO"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "17044360170000",
+   "bldg_class": "597",
+   "bldg_sqft": 87210,
+   "land_sqft": 3435,
+   "land_sqft_source": "geometry",
+   "bldg_sqft_source": "commercial_valuation",
+   "year_built_source": "commercial_valuation",
+   "bldg_age": 27,
+   "year_built": 1999,
+   "tax_exempt": false,
+   "total_assessed_value": 1027417.0,
+   "estimated_annual_tax": 206416.08,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.25,
+   "implied_market_value": 4109668.0,
+   "effective_tax_rate": 0.0502,
+   "tax_year": 2024,
+   "tax_code": "74002",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 113239.76
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 50363.72
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 12177.65
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 10617.54
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 9175.57
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 4661.87
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 4040.9
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 2139.07
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [
+     {
+      "year": 2025,
+      "stage": "board_of_review",
+      "before_total": 1027417.0,
+      "after_total": 1027417.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2024,
+      "stage": "assessor",
+      "before_total": 1027417.0,
+      "after_total": 1027417.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 1027417.0,
+      "after_total": 1027417.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2021,
+      "stage": "board_of_review",
+      "before_total": 727284.0,
+      "after_total": 727284.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2020,
+      "stage": "board_of_review",
+      "before_total": 401752.0,
+      "after_total": 401752.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2019,
+      "stage": "board_of_review",
+      "before_total": 401752.0,
+      "after_total": 401752.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2018,
+      "stage": "board_of_review",
+      "before_total": 409367.0,
+      "after_total": 401752.0,
+      "result": "Decrease",
+      "reduction_pct": 1.9,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2003,
+      "stage": "assessor",
+      "before_total": 59642.0,
+      "after_total": 56514.0,
+      "result": "change",
+      "reduction_pct": 5.2,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2002,
+      "stage": "assessor",
+      "before_total": 57110.0,
+      "after_total": 57110.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2001,
+      "stage": "assessor",
+      "before_total": 57021.0,
+      "after_total": 42768.0,
+      "result": "change",
+      "reduction_pct": 25.0,
+      "appeal_type": "commercial"
+     }
+    ],
+    "nearby_window_years": [
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 498,
+    "nearby_reduced_count": 49,
+    "nearby_median_reduction_pct": 4.2,
+    "nearby_capped": true
+   },
+   "assessment_history": [
+    {
+     "year": 2025,
+     "land": 102375.0,
+     "building": 925042.0,
+     "total": 1027417.0
+    },
+    {
+     "year": 2024,
+     "land": 102375.0,
+     "building": 925042.0,
+     "total": 1027417.0
+    },
+    {
+     "year": 2023,
+     "land": 122850.0,
+     "building": 604435.0,
+     "total": 727285.0
+    },
+    {
+     "year": 2022,
+     "land": 122850.0,
+     "building": 604435.0,
+     "total": 727285.0
+    }
+   ],
+   "sales_history": [],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.63828,
+       41.89702
+      ],
+      [
+       -87.63838,
+       41.89702
+      ],
+      [
+       -87.63838,
+       41.89696
+      ],
+      [
+       -87.63838,
+       41.89691
+      ],
+      [
+       -87.63837,
+       41.89685
+      ],
+      [
+       -87.63837,
+       41.89667
+      ],
+      [
+       -87.63827,
+       41.89667
+      ],
+      [
+       -87.63828,
+       41.89702
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": false,
+   "tif_fund_history": [],
+   "tif_financials": [],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_severe_distress": false,
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 597 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 15,
+    "total_funding": 1254870.48,
+    "by_program": {
+     "SBIF": 15
+    },
+    "recent_projects": [
+     {
+      "name": "Reggie's Bar & Grill, LLC",
+      "program": "SBIF",
+      "incentive_amount": 20500.0,
+      "total_cost": 45500.0,
+      "property_type": "Commercial",
+      "description": "Replacement of two HVAC rooftop units (a 12.5 ton and a 7.5 ton unit) including all gas and electrical hook-ups and replacement of associated ductwork as needed.",
+      "date": "2018-04-05"
+     },
+     {
+      "name": "Baderbrau LLC",
+      "program": "SBIF",
+      "incentive_amount": 150000.0,
+      "total_cost": 631191.26,
+      "property_type": "Industrial",
+      "description": "Partial completion of the plumbing improvements and concrete work done in connection with the production brewery portion of the build-out at 2515 S. Wabash only: coring for new floor penetrations and excavation for underground plumbing service; saw cutting and concrete removal for underground trenches; all domestic water service and sanitary waste piping as needed; concrete for production area slab flooring, completion of the plumbing improvements and concrete work done in connection with the production brewery portion of the build-out at 2515 S. Wabash: coring for new floor penetrations and excavation for underground plumbing service; saw cutting and concrete removal for underground trenches; all domestic water service and sanitary waste piping as needed; concrete for production area slab flooring; concrete removal and replacement components of phase II work scope; plumbing and sewerage components of phase II work scope; furnish and install duct work for HVAC distribution; furnish and install new storefront systems (frames, glass, and doors) and new perimeter windows.",
+      "date": "2016-10-28"
+     },
+     {
+      "name": "1240 N. Wells, Inc. dba Declan's Irish Pub",
+      "program": "SBIF",
+      "incentive_amount": 59197.5,
+      "total_cost": 87325.0,
+      "property_type": "Commercial",
+      "description": "Fa\u00e7ade improvements (furnish and install new cornice and wood panel cladding below and at entryway columns); furnish and install five (5) new windows and sills at commercial/ground floor at south elevation; furnish and install two (2) new storefront windows and sills at east elevation ground floor; tuck point and related incidental masonry repairs in connection with installation of new windows; furnish and install new pavers at front commercial entry.",
+      "date": "2016-07-12"
+     },
+     {
+      "name": "2255 S. Wabash Ave., LLC",
+      "program": "SBIF",
+      "incentive_amount": 78250.0,
+      "total_cost": 156500.0,
+      "property_type": "Commercial",
+      "description": "Complete roof tear off over 2 commercial spaces down to the decking, replace any damaged metal and wood decking, masonry work along the parapet wall as needed, install insulation, new flashings, new modified bitumen membrane, new gutters and downspouts, and apply reflective aluminum coating to roofing surface.",
+      "date": "2016-07-01"
+     },
+     {
+      "name": "HTNB, LLC dba Vision Boutique",
+      "program": "SBIF",
+      "incentive_amount": 25000.0,
+      "total_cost": 193833.96,
+      "property_type": "Commercial",
+      "description": "Concrete work including trenching for underground plumbing; rough and finish carpentry and framing for office space and restrooms, new insulation and drywall, new doors and hardware, and new acoustical ceiling grid and tiles; HVAC system including ductwork and vents; rough plumbing work and fixtures for hot water and restrooms; rough electrical work including conduit and wiring; painting and finishing.",
+      "date": "2015-07-02"
+     },
+     {
+      "name": "Sean Ghassemi",
+      "program": "SBIF",
+      "incentive_amount": 83236.73,
+      "total_cost": 117770.0,
+      "property_type": "Commercial",
+      "description": "Fa\u00e7ade repairs including window capping, installation of new deck/capping on cornice, parapet wall repairs including tuckpointing, steel, wood and sheet metal repairs, painting and finishing, roofing repairs including new flashings and masonry repairs on parapet wall, and installation of new rolling parking gate with steel frame dedicated to chiropractor\u2019s office (Mr. Ghassemi\u2019s commercial ), renovation of the commercial space in the building basement including demolition of existing concrete floor and pouring new concrete, carpentry and framing for new walls, new ceilings with insulation, new stairwell to chiropractor office on first floor, new vinyl flooring, plumbing and electrical work, painting and finishing; installation of a new HVAC system serving commercial space (only) including 2 new furnaces with condenser, ductwork and wiring; and exterior restoration of entry doorway and doors at front fa\u00e7ade.",
+      "date": "2014-11-14"
+     },
+     {
+      "name": "Stop and Shop For U, Inc. (Frozen Foods)",
+      "program": "SBIF",
+      "incentive_amount": 50000.0,
+      "total_cost": 78700.0,
+      "property_type": "Commercial",
+      "description": "An interior build out of a start-up convenience store called Frozen Foods including rough and finish electrical and lighting, plumbing and fixtures, HVAC duct work, flooring and tiling, drop ceilings, drywall and insulation, rough and finish carpentry, exterior signage and new glass for windows and doors, painting and finishing; located in Suite F.",
+      "date": "2014-01-28"
+     },
+     {
+      "name": "Icon Project Roc, LLC dba Old Town Social",
+      "program": "SBIF",
+      "incentive_amount": 29550.0,
+      "total_cost": 59100.0,
+      "property_type": "Commercial",
+      "description": "Roofing, roofing, gutters and downspouts, tuckpointing.",
+      "date": "2013-06-27"
+     },
+     {
+      "name": "Go Cycles, LLC",
+      "program": "SBIF",
+      "incentive_amount": 50000.0,
+      "total_cost": 91348.39,
+      "property_type": "Commercial",
+      "description": "Build out for a cycling studio and fitness center including electrical, plumbing, and HVAC work, new framing and drywall, insulation and sound proofing, flooring, light fixtures, plumbing fixtures, interior glass sliding door, cabinetry, locker rooms build out, window treatments and exterior and interior signage.",
+      "date": "2013-05-03"
+     },
+     {
+      "name": "The House of Glunz",
+      "program": "SBIF",
+      "incentive_amount": 124625.0,
+      "total_cost": 287942.59,
+      "property_type": "Commercial",
+      "description": "Buildout.",
+      "date": "2012-10-29"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "transit": {
+    "nearest_cta_rail": "Chicago (Brown/Purple)",
+    "cta_rail_distance_mi": 0.12,
+    "cta_lines": [
+     "Brown Line",
+     "Purple Line"
+    ],
+    "nearest_metra": "Chicago OTC",
+    "metra_distance_mi": 1.02,
+    "metra_line": "Union Pacific North",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 98,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 86,
+    "transit_description": "Excellent Transit",
+    "bike_score": 84,
+    "bike_description": "Very Bikeable",
+    "ws_link": "https://www.walkscore.com/score/368-W-Chicago-Ave/lat=41.89681969/lng=-87.6382892/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 27,
+    "alderman": "Burnett, Walter R.",
+    "phone": "(312) 432-1995",
+    "email": "Ward27@cityofchicago.org",
+    "website": "http://aldermanburnett.com/"
+   },
+   "traffic": {
+    "road": "CHICAGO",
+    "daily_vehicles": 10057,
+    "directions": 2,
+    "from_street": "N ORLEANS ST",
+    "to_street": "N LARRABEE ST",
+    "as_of": "2026-10-03"
+   },
+   "divvy": {
+    "nearest_station": "Sedgwick St & Chicago Ave",
+    "distance_mi": 0.02,
+    "docks": 11,
+    "stations_within_radius": 19,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": [],
+  "adu": {
+   "status": "allowed_by_right",
+   "zone": null,
+   "limits": null,
+   "note": "Coach houses and conversion units are permitted by right in this district (\u00a717-3-0207)."
+  },
+  "coverage_notes": [
+   {
+    "id": "aldermanic",
+    "applies": "general",
+    "text": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the alderman of the ward (\u00a717-13-0100, \u00a717-13-0300, \u00a717-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess. Ward 27: Ald. Burnett, Walter R., (312) 432-1995.",
+    "params": {
+     "ward": 27,
+     "alderman": "Burnett, Walter R.",
+     "phone": "(312) 432-1995"
+    },
+    "link": "http://aldermanburnett.com/",
+    "section": "17-13-0300"
+   },
+   {
+    "id": "map_lag",
+    "applies": "general",
+    "text": "The City's zoning map can lag a passed amendment by up to 90 days.",
+    "params": {},
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "code_vintage",
+    "applies": "general",
+    "text": "The Municipal Code text used here is current through 2026-03-18; a later Council amendment may not be reflected.",
+    "params": {
+     "date": "2026-03-18"
+    },
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "official_letter",
+    "applies": "general",
+    "text": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning ($150, up to 30 days, as published by the Office of the Zoning Administrator, checked 2026-09-30); a letter of opinion covers a specific project.",
+    "params": {
+     "fee": 150,
+     "days": 30,
+     "checked": "2026-09-30"
+    },
+    "link": "https://www.chicago.gov/city/en/depts/dcd/supp_info/office_of_the_zoningadministrator.html",
+    "section": null
+   }
+  ],
+  "code_vintage": {
+   "current_through": "2026-03-18",
+   "label": "Council Journal of March 18, 2026",
+   "source": "Municipal Code of Chicago, American Legal export"
+  },
+  "unit_yield": {
+   "units": 17,
+   "lot_sqft": 3435,
+   "min_lot_area_per_unit": 200,
+   "arithmetic": "3,435 sq ft \u00f7 200 sq ft per unit = 17.2 \u2192 17 units",
+   "basis": "Minimum lot area per dwelling unit for the district",
+   "caveat": "Lot area per unit only: FAR, height, parking and other standards can allow fewer units, and exemptions (efficiency/SRO units, ground-floor Type A units) can allow more.",
+   "lot_area_note": "Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table)."
+  },
+  "tod_benefits": {
+   "parking_relief": true,
+   "parking_max_reduction_pct": 100,
+   "density_bonus_eligible": false,
+   "entitlement_required": false,
+   "note": "Transit-served: minimum parking can be reduced by up to 100% (17-10-0102-B). No density, FAR or height bonus at C2-5: those apply only in dash-3 districts (17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts))."
+  }
+ },
+ "comparables": {
+  "median_sale_price": 2700000.0,
+  "median_price_per_buildable_sqft": 64.51,
+  "buildable_median_basis": "mixed",
+  "buildable_median_n": 1,
+  "price_range_min": 2700000.0,
+  "price_range_max": 2700000.0,
+  "sales_volume": 1,
+  "sales": [
+   {
+    "pin": "17044460120000",
+    "sale_date": "2024-03-27T00:00:00.000",
+    "sale_price": 2700000.0,
+    "class_code": "592",
+    "land_sqft": 8371,
+    "deed_type": "Other",
+    "distance_mi": 0.18,
+    "lat": 41.8968628621,
+    "lon": -87.6348337496,
+    "zone_class": "C1-5",
+    "far": 5.0,
+    "price_per_buildable_sqft": 64.51,
+    "land_sqft_source": "geometry"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "17044360170000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.89681969,
+ "resolved_lon": -87.6382892,
+ "zone_definition": {
+  "zone_class": "C2-5",
+  "name": "Motor Vehicle-Related Commercial",
+  "code_section": "\u00a717-3-0106",
+  "far": 5.0,
+  "max_height": "50\u201380 ft (varies by lot frontage & ground-floor commercial)",
+  "lot_coverage": null,
+  "min_lot_sqft": null,
+  "min_lot_area_per_unit": 200,
+  "lot_area_note": "Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table).",
+  "uses": "Broadest commercial: nearly any business/service/commercial use including outdoor operations and storage; residential above the ground floor (ground-floor multi-unit housing needs a special use, \u00a717-3-0207).",
+  "notes": "",
+  "is_fallback": false
+ },
+ "resolution": {
+  "method": "address_points",
+  "point_basis": "address_point",
+  "input_address": "368 W Chicago Ave",
+  "pin": "17044360170000",
+  "confidence": "authoritative",
+  "point": {
+   "lat": 41.89681969,
+   "lon": -87.6382892
+  },
+  "centroid_gap_ft": 14,
+  "candidates": [
+   {
+    "pin": "17044360170000",
+    "sources": [
+     "address_points",
+     "assessor_addresses"
+    ],
+    "used": true
+   }
+  ],
+  "multiple_parcels": false,
+  "sources_disagree": false,
+  "condo_units": 0,
+  "identity_unconfirmed": false,
+  "unverified_reason": null,
+  "property_record_pin": null
+ },
+ "provenance": {
+  "zoning.district": {
+   "label": "Zoning district C2-5",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning Districts, Zoning MapServer layer 1",
+   "record_id": null,
+   "url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "section": null,
+   "as_of": "2026-05-11",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "as_of is when this district's map record was last edited."
+  },
+  "zoning.far": {
+   "label": "Floor area ratio for C2-5",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-3-0403-A",
+   "url": null,
+   "section": "17-3-0403-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.max_height": {
+   "label": "Maximum building height for C2-5",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-3-0408-A",
+   "url": null,
+   "section": "17-3-0408-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.min_lot_area_per_unit": {
+   "label": "Minimum lot area per dwelling unit for C2-5",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-3-0402-A",
+   "url": null,
+   "section": "17-3-0402-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "overlay.tod_cta": {
+   "label": "Transit-Oriented Development (CTA)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (CTA) (layer 13)",
+   "record_id": "Transit-Oriented Development (CTA)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "overlay.aro_zone": {
+   "label": "Affordable Requirements Ordinance Zones",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Affordable Requirements Ordinance Zones (layer 20)",
+   "record_id": "Affordable Requirements Ordinance Zones",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "parcel.identity": {
+   "label": "Parcel 17044360170000",
+   "kind": "official_record",
+   "source": "Cook County Address Points or Assessor Parcel Addresses",
+   "record_id": "17044360170000",
+   "url": "https://www.cookcountyassessor.com/pin/17044360170000",
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": null
+  },
+  "property.land_sqft": {
+   "label": "Lot area",
+   "kind": "official_record",
+   "source": "Parcel polygon area (Cook County property-tax database)",
+   "record_id": "17044360170000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "property.bldg_sqft": {
+   "label": "Building area",
+   "kind": "official_record",
+   "source": "Cook County Assessor commercial valuation (economic-unit total)",
+   "record_id": "17044360170000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "code.vintage": {
+   "label": "Municipal Code vintage",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, American Legal export",
+   "record_id": null,
+   "url": null,
+   "section": null,
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Council Journal of March 18, 2026"
+  }
+ }
+}

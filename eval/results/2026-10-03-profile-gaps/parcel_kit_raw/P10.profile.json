@@ -1,0 +1,793 @@
+{
+ "address": "1930 N Clybourn Ave",
+ "lat": 41.9159666,
+ "lon": -87.65713101,
+ "community_area": 7,
+ "community_area_name": "Lincoln Park",
+ "context": {
+  "community_area": 7,
+  "community_area_name": "Lincoln Park",
+  "resolved_address": "1930 N Clybourn Ave",
+  "data_as_of": "2026-10-03",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-26).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-26",
+  "crime_last_90d": {
+   "total": 932,
+   "arrest_rate": 0.062,
+   "by_type": {
+    "THEFT": 347,
+    "BURGLARY": 108,
+    "CRIMINAL DAMAGE": 95,
+    "BATTERY": 95,
+    "DECEPTIVE PRACTICE": 79
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 347,
+     "prior_year_count": 460,
+     "change_pct": -25
+    },
+    {
+     "category": "BURGLARY",
+     "current_count": 108,
+     "prior_year_count": 69,
+     "change_pct": 57
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 95,
+     "prior_year_count": 89,
+     "change_pct": 7
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 95,
+     "prior_year_count": 89,
+     "change_pct": 7
+    },
+    {
+     "category": "DECEPTIVE PRACTICE",
+     "current_count": 79,
+     "prior_year_count": 96,
+     "change_pct": -18
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 5,
+   "open_count": 1,
+   "by_type": {
+    "Graffiti Removal Request": 3,
+    "Pothole in Street Complaint": 2
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": []
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "M2-3",
+   "zone_type": 3,
+   "ordinance_num": "MA234",
+   "ordinance_date": "2017-07-26",
+   "map_updated": "2026-06-30",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "recently_rezoned": false
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": false,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": false,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [
+    {
+     "site_name": "PARK 512 AVENUE PARK",
+     "epa_id": "110005863100",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.91429,
+     "longitude": -87.66776
+    }
+   ],
+   "aro_housing": {
+    "total_projects": 5,
+    "total_units": 186,
+    "projects": [
+     {
+      "name": "Halsted Apts.",
+      "address": "2537 N. Halsted St.",
+      "units": 14,
+      "property_type": "People with Disabilities"
+     },
+     {
+      "name": "Lathrop Elderly Apts.",
+      "address": "2717 N. Leavitt St.",
+      "units": 92,
+      "property_type": "Senior"
+     },
+     {
+      "name": "Southport Lofts",
+      "address": "2065 N. Southport Ave.",
+      "units": 1,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Apartments at Lincoln Common",
+      "address": "2345 N. Lincoln Ave.",
+      "units": 54,
+      "property_type": "ARO"
+     },
+     {
+      "name": "The Ludlow",
+      "address": "2032 N. Clybourn Ave.",
+      "units": 25,
+      "property_type": "ARO"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "14324060010000",
+   "bldg_class": "597",
+   "bldg_sqft": 97054,
+   "land_sqft": 39512,
+   "land_sqft_source": "geometry",
+   "bldg_sqft_source": "commercial_valuation",
+   "year_built_source": "commercial_valuation",
+   "bldg_age": 108,
+   "year_built": 1918,
+   "tax_exempt": false,
+   "total_assessed_value": 1243396.0,
+   "estimated_annual_tax": 250550.46,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.25,
+   "implied_market_value": 4973584.0,
+   "effective_tax_rate": 0.0504,
+   "tax_year": 2024,
+   "tax_code": "74030",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 137044.51
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 60950.95
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 14737.58
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 12849.51
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 11104.41
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 5641.87
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 4890.36
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 2588.74
+    },
+    {
+     "agency": "WEST TOWN & HUMBOLDT EXPANDED MENTAL HEALTH SERVICE DISTRICTERV",
+     "rate": 0.019673,
+     "amount": 742.52
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [
+     {
+      "year": 2025,
+      "stage": "board_of_review",
+      "before_total": 1243396.0,
+      "after_total": 1243396.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2024,
+      "stage": "assessor",
+      "before_total": 2158728.0,
+      "after_total": 1584071.0,
+      "result": "change",
+      "reduction_pct": 26.6,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 1584071.0,
+      "after_total": 1243395.0,
+      "result": "Decrease",
+      "reduction_pct": 21.5,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2023,
+      "stage": "board_of_review",
+      "before_total": 1074935.0,
+      "after_total": 926552.0,
+      "result": "Decrease",
+      "reduction_pct": 13.8,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2022,
+      "stage": "assessor",
+      "before_total": 1473537.0,
+      "after_total": 1074936.0,
+      "result": "change",
+      "reduction_pct": 27.1,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2022,
+      "stage": "board_of_review",
+      "before_total": 1074935.0,
+      "after_total": 905068.0,
+      "result": "Decrease",
+      "reduction_pct": 15.8,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2021,
+      "stage": "assessor",
+      "before_total": 1473537.0,
+      "after_total": 1473537.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2021,
+      "stage": "board_of_review",
+      "before_total": 1473535.0,
+      "after_total": 879038.0,
+      "result": "Decrease",
+      "reduction_pct": 40.3,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2020,
+      "stage": "board_of_review",
+      "before_total": 1525888.0,
+      "after_total": 1076316.0,
+      "result": "Decrease",
+      "reduction_pct": 29.5,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2019,
+      "stage": "board_of_review",
+      "before_total": 1525888.0,
+      "after_total": 1525888.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2018,
+      "stage": "board_of_review",
+      "before_total": 1525888.0,
+      "after_total": 1173191.0,
+      "result": "Decrease",
+      "reduction_pct": 23.1,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2017,
+      "stage": "board_of_review",
+      "before_total": 1456099.0,
+      "after_total": 1456099.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2016,
+      "stage": "board_of_review",
+      "before_total": 1456099.0,
+      "after_total": 1456099.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2004,
+      "stage": "assessor",
+      "before_total": 1538876.0,
+      "after_total": 1538876.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2003,
+      "stage": "assessor",
+      "before_total": 1731111.0,
+      "after_total": 1731111.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2001,
+      "stage": "assessor",
+      "before_total": 682347.0,
+      "after_total": 682347.0,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2000,
+      "stage": "assessor",
+      "before_total": 249772.0,
+      "after_total": 249772.0,
+      "result": "change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 1999,
+      "stage": "assessor",
+      "before_total": 104991.0,
+      "after_total": 104991.0,
+      "result": "change",
+      "appeal_type": "commercial"
+     }
+    ],
+    "nearby_window_years": [
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 498,
+    "nearby_reduced_count": 102,
+    "nearby_median_reduction_pct": 5.2,
+    "nearby_capped": true
+   },
+   "assessment_history": [
+    {
+     "year": 2025,
+     "land": 419299.0,
+     "building": 824097.0,
+     "total": 1243396.0
+    },
+    {
+     "year": 2024,
+     "land": 419299.0,
+     "building": 824097.0,
+     "total": 1243396.0
+    },
+    {
+     "year": 2023,
+     "land": 465888.0,
+     "building": 460665.0,
+     "total": 926553.0
+    },
+    {
+     "year": 2022,
+     "land": 465888.0,
+     "building": 439182.0,
+     "total": 905070.0
+    }
+   ],
+   "sales_history": [],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.65676,
+       41.91599
+      ],
+      [
+       -87.65689,
+       41.91608
+      ],
+      [
+       -87.65702,
+       41.91618
+      ],
+      [
+       -87.65715,
+       41.91627
+      ],
+      [
+       -87.65733,
+       41.91639
+      ],
+      [
+       -87.65748,
+       41.91628
+      ],
+      [
+       -87.65763,
+       41.91616
+      ],
+      [
+       -87.65749,
+       41.91603
+      ],
+      [
+       -87.65738,
+       41.91593
+      ],
+      [
+       -87.65726,
+       41.91582
+      ],
+      [
+       -87.65715,
+       41.91572
+      ],
+      [
+       -87.65703,
+       41.91561
+      ],
+      [
+       -87.65682,
+       41.91574
+      ],
+      [
+       -87.65669,
+       41.91564
+      ],
+      [
+       -87.65649,
+       41.9158
+      ],
+      [
+       -87.65662,
+       41.91589
+      ],
+      [
+       -87.65676,
+       41.91599
+      ]
+     ]
+    ]
+   },
+   "data_gaps": []
+  },
+  "incentives": {
+   "in_tif_district": true,
+   "tif_name": "Cortland and Chicago River",
+   "tif_year_start": 2019,
+   "tif_end_year": 2043,
+   "tif_fund_history": [],
+   "tif_financials": [],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_severe_distress": false,
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 597 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 1,
+    "total_funding": 40062.5,
+    "by_program": {
+     "SBIF": 1
+    },
+    "recent_projects": [
+     {
+      "name": "Chicago Ballet",
+      "program": "SBIF",
+      "incentive_amount": 40062.5,
+      "total_cost": 56500.0,
+      "property_type": "Commercial",
+      "description": "Interior renovation, interior renovation.",
+      "date": "2007-04-18"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "transit": {
+    "nearest_cta_rail": "Armitage (Brown/Purple)",
+    "cta_rail_distance_mi": 0.28,
+    "cta_lines": [
+     "Brown Line",
+     "Purple Line"
+    ],
+    "nearest_metra": "Clybourn",
+    "metra_distance_mi": 0.57,
+    "metra_line": "Union Pacific North",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 94,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 80,
+    "transit_description": "Excellent Transit",
+    "bike_score": 87,
+    "bike_description": "Very Bikeable",
+    "ws_link": "https://www.walkscore.com/score/1930-N-Clybourn-Ave/lat=41.9159666/lng=-87.65713101/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 2,
+    "alderman": "Hopkins, Brian",
+    "phone": "(312) 744-6836 / 9867/6213",
+    "email": "office@aldermanhopkins.com",
+    "website": "https://www.aldermanhopkins.com/"
+   },
+   "divvy": {
+    "nearest_station": "Clifton Ave & Armitage Ave",
+    "distance_mi": 0.16,
+    "docks": 15,
+    "stations_within_radius": 11,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": [],
+  "coverage_notes": [
+   {
+    "id": "aldermanic",
+    "applies": "general",
+    "text": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the alderman of the ward (\u00a717-13-0100, \u00a717-13-0300, \u00a717-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess. Ward 2: Ald. Hopkins, Brian, (312) 744-6836 / 9867/6213.",
+    "params": {
+     "ward": 2,
+     "alderman": "Hopkins, Brian",
+     "phone": "(312) 744-6836 / 9867/6213"
+    },
+    "link": "https://www.aldermanhopkins.com/",
+    "section": "17-13-0300"
+   },
+   {
+    "id": "map_lag",
+    "applies": "general",
+    "text": "The City's zoning map can lag a passed amendment by up to 90 days.",
+    "params": {},
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "code_vintage",
+    "applies": "general",
+    "text": "The Municipal Code text used here is current through 2026-03-18; a later Council amendment may not be reflected.",
+    "params": {
+     "date": "2026-03-18"
+    },
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "official_letter",
+    "applies": "general",
+    "text": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning ($150, up to 30 days, as published by the Office of the Zoning Administrator, checked 2026-09-30); a letter of opinion covers a specific project.",
+    "params": {
+     "fee": 150,
+     "days": 30,
+     "checked": "2026-09-30"
+    },
+    "link": "https://www.chicago.gov/city/en/depts/dcd/supp_info/office_of_the_zoningadministrator.html",
+    "section": null
+   }
+  ],
+  "code_vintage": {
+   "current_through": "2026-03-18",
+   "label": "Council Journal of March 18, 2026",
+   "source": "Municipal Code of Chicago, American Legal export"
+  },
+  "tod_benefits": {
+   "parking_relief": true,
+   "parking_max_reduction_pct": 100,
+   "density_bonus_eligible": false,
+   "entitlement_required": false,
+   "note": "Transit-served: minimum parking can be reduced by up to 100% (17-10-0102-B). No density, FAR or height bonus at M2-3: those apply only in dash-3 districts (17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts))."
+  }
+ },
+ "comparables": {
+  "median_sale_price": 18000000.0,
+  "median_price_per_buildable_sqft": 125.45,
+  "buildable_median_basis": "mixed",
+  "buildable_median_n": 1,
+  "price_range_min": 18000000.0,
+  "price_range_max": 18000000.0,
+  "sales_volume": 1,
+  "sales": [
+   {
+    "pin": "14321330290000",
+    "sale_date": "2026-07-02T00:00:00.000",
+    "sale_price": 18000000.0,
+    "class_code": "531",
+    "land_sqft": 65218,
+    "deed_type": "Other",
+    "distance_mi": 0.26,
+    "lat": 41.9190019602,
+    "lon": -87.6602627202,
+    "zone_class": "C1-2",
+    "far": 2.2,
+    "price_per_buildable_sqft": 125.45,
+    "land_sqft_source": "geometry"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "14324060010000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.9159666,
+ "resolved_lon": -87.65713101,
+ "zone_definition": {
+  "zone_class": "M2-3",
+  "name": "Light Industry",
+  "code_section": "\u00a717-5-0103",
+  "far": 3.0,
+  "max_height": "No height standard in the zoning code",
+  "lot_coverage": null,
+  "min_lot_sqft": null,
+  "min_lot_area_per_unit": null,
+  "lot_area_note": "",
+  "uses": "Moderate manufacturing, warehousing, distribution. Limited retail. No residential: housing is not in the M-district use table and unlisted uses are prohibited, so it needs a rezoning or a Planned Development (\u00a717-5-0204).",
+  "notes": "Title 17 sets no maximum building height for M districts (bulk is governed by FAR and setbacks).",
+  "is_fallback": false
+ },
+ "resolution": {
+  "method": "address_points",
+  "point_basis": "address_point",
+  "input_address": "1930 N Clybourn Ave",
+  "pin": "14324060010000",
+  "confidence": "authoritative",
+  "point": {
+   "lat": 41.9159666,
+   "lon": -87.65713101
+  },
+  "centroid_gap_ft": 12,
+  "candidates": [
+   {
+    "pin": "14324060010000",
+    "sources": [
+     "address_points",
+     "assessor_addresses"
+    ],
+    "used": true
+   }
+  ],
+  "multiple_parcels": false,
+  "sources_disagree": false,
+  "condo_units": 0,
+  "identity_unconfirmed": false,
+  "unverified_reason": null,
+  "property_record_pin": null
+ },
+ "provenance": {
+  "zoning.district": {
+   "label": "Zoning district M2-3",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning Districts, Zoning MapServer layer 1",
+   "record_id": "MA234",
+   "url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "section": null,
+   "as_of": "2026-06-30",
+   "effective_date": "2017-07-26",
+   "query_date": "2026-10-03",
+   "note": "as_of is when this district's map record was last edited."
+  },
+  "zoning.far": {
+   "label": "Floor area ratio for M2-3",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-5-0404",
+   "url": null,
+   "section": "17-5-0404",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "overlay.tod_cta": {
+   "label": "Transit-Oriented Development (CTA)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (CTA) (layer 13)",
+   "record_id": "Transit-Oriented Development (CTA)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "overlay.aro_zone": {
+   "label": "Affordable Requirements Ordinance Zones",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Affordable Requirements Ordinance Zones (layer 20)",
+   "record_id": "Affordable Requirements Ordinance Zones",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "parcel.identity": {
+   "label": "Parcel 14324060010000",
+   "kind": "official_record",
+   "source": "Cook County Address Points or Assessor Parcel Addresses",
+   "record_id": "14324060010000",
+   "url": "https://www.cookcountyassessor.com/pin/14324060010000",
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": null
+  },
+  "property.land_sqft": {
+   "label": "Lot area",
+   "kind": "official_record",
+   "source": "Parcel polygon area (Cook County property-tax database)",
+   "record_id": "14324060010000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "property.bldg_sqft": {
+   "label": "Building area",
+   "kind": "official_record",
+   "source": "Cook County Assessor commercial valuation (economic-unit total)",
+   "record_id": "14324060010000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "code.vintage": {
+   "label": "Municipal Code vintage",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, American Legal export",
+   "record_id": null,
+   "url": null,
+   "section": null,
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Council Journal of March 18, 2026"
+  }
+ }
+}

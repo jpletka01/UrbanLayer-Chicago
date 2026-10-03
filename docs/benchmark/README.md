@@ -8,7 +8,7 @@
 
 | Surface | Run | Parcels scored | Coverage | Accuracy | Confident-wrong fields | Wrong districts | Scoring |
 |---|---|:-:|:-:|:-:|:-:|---|---|
-| Property Profile | 2026-10-02 (`db15340`) | 12/12 | 95% | 94% | 2 | none | automatic |
+| Property Profile | 2026-10-03 (`407ab47`) | 12/12 | 97% | 100% | 0 | none | automatic |
 | Chat | 2026-10-02 (`ff1b64b`, re-scored under key `2026-10-02.1` from its recorded answers) | 7/12 | 95% | 96% | 1 | none | automatic |
 
 *Coverage* is the share of the scored fields the tool made a claim on; *accuracy* is points earned (2 / 1 / 0) over points possible on the fields it answered; a *confident-wrong* field is wrong and stated without hedging; a *wrong district* is the critical failure, because everything else derives from it. The two surfaces' current runs come from different code versions (the newest run that scored the most parcels on each surface; a surface scored on fewer than all parcels says so in its row).
@@ -48,7 +48,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | Field | Question | Key answer | Profile | Chat |
 |---|---|---|:-:|:-:|
 | A | Zoning district | B1-2 | 2 | 2 |
-| B | Use question | Dwelling units above the ground floor: permitted; on the ground floor: special use (17-3-0102-D; 17-3-0103-A) | 1 | 2 |
+| B | Use question | Dwelling units above the ground floor: permitted; on the ground floor: special use (17-3-0102-D; 17-3-0103-A) | 2 | 2 |
 | C | Bulk numbers | far 2.2; height 45, 47, 50; mla 1000, 700 | 2 | 2 |
 | D | Overlays | tod, aro, ssa | 2 | 2 |
 | E | Parking / transit | Parking reducible up to 100% (17-10-0102-B.1(a)); density bonuses only in dash-3/D-3 districts -> NOT at B1-2 | 2 | 1 |
@@ -75,8 +75,8 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | A | Zoning district | B3-2 | 2 | 2 |
 | B | Use question | Yes: B3 permits dwelling units above the ground floor (17-3-0104-C) | 2 | 2 |
 | C | Bulk numbers | far 2.2; height 45, 47, 50; mla 1000, 700 | 2 | 2 |
-| D | Overlays | historic_district, national_register, tod, aro, ssa | 1 CW | 1 CW |
-| E | Parking / transit | Transit-served: parking reducible up to 100% (17-10-0102-B.1(a)); no added parking for reuse of a contributing building in a landmark district (17-10-0102-A.2) | 1 | 2 |
+| D | Overlays | historic_district, national_register, tod, aro, ssa | 2 | 1 CW |
+| E | Parking / transit | Transit-served: parking reducible up to 100% (17-10-0102-B.1(a)); no added parking for reuse of a contributing building in a landmark district (17-10-0102-A.2) | 2 | 2 |
 | F | Task answer | Not by right: the parcel is in the Milwaukee Avenue Chicago Landmark district, so a permit to alter, demolish or build needs written approval of the Commission on Chicago Landmarks (Municipal Code 2-120-740) | 2 | 2 |
 
 ### P6 · 3400 N Central Park Ave · key district **RS-3**
@@ -110,7 +110,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | Field | Question | Key answer | Profile | Chat |
 |---|---|---|:-:|:-:|
 | A | Zoning district | DC-16 | 2 |  |
-| B | Use question | Dwelling units above the ground floor: permitted; multi-unit on the ground floor: special use (use table 17-4-0207, rows 3 and 4: DC 'P' above, 'S' on the ground floor) | 0 |  |
+| B | Use question | Dwelling units above the ground floor: permitted; multi-unit on the ground floor: special use (use table 17-4-0207, rows 3 and 4: DC 'P' above, 'S' on the ground floor) | 2 |  |
 | C | Bulk numbers | far 16; mla 100 | 2 |  |
 | D | Overlays | tod, aro | 2 |  |
 | F | Task answer | Base FAR 16.0 (17-4-0405-A) with bonus floor area available (17-4-0405-B, 17-4-1000); no maximum building height (17-4-0407), but Planned Development approval is required at 440 ft or more (residential) and 600 ft or more (nonresidential) (17-8-0512-B) | 2 |  |
@@ -125,7 +125,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | B | Use question | Yes: dwelling units above the ground floor are permitted in B3 (use table 17-3-0207, row 3) | 2 |  |
 | C | Bulk numbers | far 3; height 50, 55, 60, 65; mla 400, 300 | 2 |  |
 | D | Overlays | tod, aro, ssa | 2 |  |
-| E | Parking / transit | Parking reducible up to 100% in a transit-served location (17-10-0102-B.1(a)) | 1 |  |
+| E | Parking / transit | Parking reducible up to 100% in a transit-served location (17-10-0102-B.1(a)) | 2 |  |
 | F | Task answer | Yes, but not by right: in a B3 district within 2,640 ft of a rail station or 1,320 ft of a bus corridor, reduced lot area per unit, higher FAR (3.5 to 4.0 with ARO units) and added height are allowed only through a Type I zoning map amendment, a Planned Development, or an ARO entitlement (17-3-0402-B, 17-3-0403-B, 17-3-0408-B) | 2 |  |
 
 ### P10 · 1930 N Clybourn Ave · key district **M2-3**
@@ -138,7 +138,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | B | Use question | No: household living is not in the M-district use table (17-5-0207) and uses not listed are prohibited (17-5-0204) | 2 |  |
 | C | Bulk numbers | far 3 | 2 |  |
 | D | Overlays | tod, aro | 2 |  |
-| F | Task answer | Not by right: it needs a zoning map amendment to a district that allows residential (Type I, 17-13-0302) or a Planned Development (17-13-0600) | NP |  |
+| F | Task answer | Not by right: it needs a zoning map amendment to a district that allows residential (Type I, 17-13-0302) or a Planned Development (17-13-0600) | 2 |  |
 
 ### P11 · 3500 N Lake Shore Dr · key district **RM-6.5**
 
@@ -149,7 +149,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | A | Zoning district | RM-6.5 | 2 |  |
 | B | Use question | Yes: multi-unit (3+ units) residential is permitted in RM-6.5 (use table 17-2-0207, row 5) | 2 |  |
 | C | Bulk numbers | far 6.6; mla 300 | 2 |  |
-| D | Overlays | lakefront, aro, national_register | 1 CW |  |
+| D | Overlays | lakefront, aro, national_register | 2 |  |
 | F | Task answer | All development in the Lake Michigan and Chicago Lakefront Protection District is subject to Chapter 16-4, the Lakefront Protection Ordinance (17-6-0204-B), in addition to the zoning standards; a building of 140 ft or more also needs Planned Development approval in RM-6.5 (17-8-0512-A) | 2 |  |
 
 ### P12 · 368 W Chicago Ave · key district **C2-5**
@@ -179,6 +179,7 @@ Each row is a dated run of the real system on one code version (`make kit`), sco
 | Overlays named, with what they require (F7) | 2026-10-02 | `341e91a` | `2026-10-01.1` · 7 | 97% / 0 |  |  | [report](../../eval/results/2026-10-02-f7/parcel_kit.md) |
 | Where the page says it stops (V4) | 2026-10-02 | `1f97199` | `2026-10-01.1` · 7 | 97% / 0 |  |  | [report](../../eval/results/2026-10-02-v4/parcel_kit.md) |
 | Key grows to 12 parcels (downtown, manufacturing, lakefront, transit); P5 key corrected (V7, batch 1) | 2026-10-02 | `db15340` | `2026-10-02.1` · 12 | 94% / 2 |  |  | [report](../../eval/results/2026-10-02-v7a/parcel_kit.md) |
+| Use rules for downtown/business/manufacturing districts; transit amount on the card; landmark layer fixed (F8) | 2026-10-03 | `407ab47` | `2026-10-02.1` · 12 | 100% / 0 |  |  | [report](../../eval/results/2026-10-03-profile-gaps/parcel_kit.md) |
 
 ## 4. What the first run found
 
@@ -198,6 +199,7 @@ Key version `2026-10-02.1`, in [`eval/kit/parcels.json`](../../eval/kit/parcels.
 - The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning attorney (the most interpretive parcels are P2, P3 and P6).
 - Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.
 - Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.
+- Each fix was found by these parcels, so the score on the parcel that exposed it is in-sample: it shows the fix works there, not that it generalises. The parcels added after a fix are the test of that.
 - Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.
 - Code text is current through the Council Journal of 2026-03-18; a later amendment is not in the key.
 
