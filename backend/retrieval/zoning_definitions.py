@@ -86,19 +86,20 @@ _RES_USES = "Detached houses, two-flats, townhouses, multi-unit buildings (3+ un
 _RS_USES = "Detached houses, parks, schools, religious institutions, home occupations"
 _RS3_USES = "Detached houses, two-flats, parks, schools, religious institutions, home occupations"
 _RM_USES = "Detached houses, two-flats, townhouses, multi-unit buildings, parks, schools, community centers"
-_B1_USES = "Small-scale retail, restaurants, personal services, offices; residential above ground floor. All operations indoors."
-_B2_USES = "Retail, restaurants, services, offices; residential on or above ground floor. All operations indoors."
-_B3_USES = "Broad retail, restaurants, services, entertainment, offices; residential above ground floor. Destination-oriented, higher parking."
-_C1_USES = "Retail, restaurants, offices, personal services, auto-oriented commercial; residential above ground floor."
-_C2_USES = "Broadest commercial: nearly any business/service/commercial use including outdoor operations and storage; residential above ground floor."
-_C3_USES = "Commercial and light manufacturing mix; warehousing, distribution, offices, retail. Outdoor operations permitted."
-_M1_USES = "Light manufacturing, offices, business parks, warehousing. No residential."
-_M2_USES = "Moderate manufacturing, warehousing, distribution. Limited retail. No residential."
-_M3_USES = "Heavy manufacturing, processing, warehousing. Most intensive industrial uses. No residential."
-_DX_USES = "Mixed-use: offices, retail, hotels, entertainment, residential. High-density urban core."
-_DC_USES = "Highest-density core: offices, retail, hotels, entertainment, residential."
-_DR_USES = "High-density residential with limited ground-floor commercial."
-_DS_USES = "Service and support uses for downtown: parking, utilities, warehousing, offices."
+_B1_USES = "Small-scale retail, restaurants, personal services, offices; residential above the ground floor (ground-floor multi-unit housing needs a special use, §17-3-0207). All operations indoors."
+_B2_USES = "Retail, restaurants, services, offices; residential on or above the ground floor (§17-3-0207). All operations indoors."
+_B3_USES = "Broad retail, restaurants, services, entertainment, offices; residential above the ground floor (ground-floor multi-unit housing needs a special use, §17-3-0207). Destination-oriented, higher parking."
+_C1_USES = "Retail, restaurants, offices, personal services, auto-oriented commercial; residential above the ground floor (ground-floor multi-unit housing needs a special use, §17-3-0207)."
+_C2_USES = "Broadest commercial: nearly any business/service/commercial use including outdoor operations and storage; residential above the ground floor (ground-floor multi-unit housing needs a special use, §17-3-0207)."
+_C3_USES = "Commercial and light manufacturing mix; warehousing, distribution, offices, retail. Outdoor operations permitted. No dwelling units (§17-3-0207)."
+_M_NO_HOUSING = " No residential: housing is not in the M-district use table and unlisted uses are prohibited, so it needs a rezoning or a Planned Development (§17-5-0204)."
+_M1_USES = "Light manufacturing, offices, business parks, warehousing." + _M_NO_HOUSING
+_M2_USES = "Moderate manufacturing, warehousing, distribution. Limited retail." + _M_NO_HOUSING
+_M3_USES = "Heavy manufacturing, processing, warehousing. Most intensive industrial uses." + _M_NO_HOUSING
+_DX_USES = "Mixed-use: offices, retail, hotels, entertainment, residential. High-density urban core. Dwelling units above the ground floor are permitted; on the ground floor they need a special use (§17-4-0207)."
+_DC_USES = "Highest-density core: offices, retail, hotels, entertainment, residential. Dwelling units above the ground floor are permitted; ground-floor multi-unit housing needs a special use and ground-floor houses, townhouses and two-flats are not allowed (§17-4-0207)."
+_DR_USES = "High-density residential with limited ground-floor commercial. Dwelling units are permitted on every floor (§17-4-0207)."
+_DS_USES = "Service and support uses for downtown: parking, utilities, warehousing, offices. No dwelling units (§17-4-0207)."
 
 ZONE_CLASS_DATA: dict[str, ZoneDefinition] = {
     # --- Residential Single-Unit (§17-2-0102, §17-2-0300) ---
@@ -474,12 +475,14 @@ def tod_benefits(
         note = (
             f"{norm} is a dash-3 district, so FAR, height and lot-area-per-unit increases for "
             f"transit-served sites are possible, but only with a Type 1 map amendment, Planned "
-            f"Development or ARO entitlement ({_TOD_BONUS_CITATION}). Parking relief applies by right."
+            f"Development or ARO entitlement ({_TOD_BONUS_CITATION}). "
+            + (f"Minimum parking can be reduced by up to {pct}% by right ({_TOD_PARKING_CITATION})." if pct is not None else f"Parking relief applies by right ({_TOD_PARKING_CITATION}).")
         )
     else:
         label = norm or "this district"
+        by = f" by up to {pct}%" if pct is not None else ""
         note = (
-            f"Transit-served: minimum parking can be reduced ({_TOD_PARKING_CITATION}). "
+            f"Transit-served: minimum parking can be reduced{by} ({_TOD_PARKING_CITATION}). "
             f"No density, FAR or height bonus at {label}: those apply only in dash-3 districts "
             f"({_TOD_BONUS_CITATION})."
         )

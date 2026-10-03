@@ -4,7 +4,7 @@
 // Classification is presentational only — the same overlays render, grouped.
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import type { AduStatus, RegulatorySummary } from "../../lib/types";
+import type { AduStatus, RegulatorySummary, TodBenefits } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { humanizeShoutyCase } from "../../lib/format";
 import { getTermInfo } from "../../lib/termDefinitions";
@@ -113,7 +113,7 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
 // with a dead-space flank). Top-N rows always visible, the tail discloses.
 const CONSTRAINT_BUDGET = 6;
 
-export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary; adu?: AduStatus | null }) {
+export function ScorecardRegulatoryCard({ data, adu, tod }: { data: RegulatorySummary; adu?: AduStatus | null; tod?: TodBenefits | null }) {
   const { t } = useTranslation("data");
 
   // Same dedup as the sidebar card: status flags that restate an overlay are dropped.
@@ -127,6 +127,10 @@ export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary
     (k) => data[k as keyof RegulatorySummary] === true && !overlayCores.has(flagCore(k)) && !(adu && k === "in_adu_area"),
   );
 
+  // What transit-served status does and does not change (parking relief, no density bonus unless
+  // dash-3) is stated once, on the first transit overlay row. It used to reach the page only as one
+  // verdict reason, which a landmark or flood reason could crowd out (kit P5).
+  const todRowIndex = data.overlays.findIndex((ov) => ov.layer_type === "tod_cta" || ov.layer_type === "tod_metra");
   const rows: OverlayRow[] = [
     ...data.overlays.filter((ov) => aduOverlayShown(ov.layer_type)).map((ov, i): OverlayRow => {
       const rawTypeLabel = formatLayerType(ov.layer_type);
@@ -143,7 +147,7 @@ export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary
         type: name ? typeLabel : null,
         // What the overlay requires, in the code's own terms, beats the generic layer name.
         detail: [
-          ov.layer_type === "adu_area" && adu ? adu.note : (ov.detail ?? description),
+          ov.layer_type === "adu_area" && adu ? adu.note : tod?.note && data.overlays[todRowIndex] === ov ? tod.note : (ov.detail ?? description),
           ov.ordinance ? `${t("regulatory.ord")} ${ov.ordinance}` : null,
         ].filter(Boolean).join(" · ") || null,
         link: ov.link ?? null,

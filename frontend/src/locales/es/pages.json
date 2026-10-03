@@ -215,6 +215,7 @@
         "ez": "En una Zona Empresarial de Illinois — alivio de impuestos sobre ventas y tarifas",
         "distressIncentive": "En un tracto QCT/NMTC — elegible para créditos fiscales de áreas en dificultad",
         "tod": "Distrito -3 cerca del transporte — posible bono de densidad con enmienda Tipo 1, PD o ARO; reducción de estacionamiento por derecho",
+        "todPct": "Distrito -3 cerca del transporte — posible bono de densidad con enmienda Tipo 1, PD o ARO; el estacionamiento mínimo puede reducirse hasta {{pct}}% por derecho",
         "todParking": "Cerca del transporte — el estacionamiento mínimo puede reducirse hasta {{pct}}%; sin bono de densidad en {{zone}}",
         "todParkingGeneric": "Cerca del transporte — el estacionamiento mínimo puede reducirse; sin bono de densidad salvo en distritos -3",
         "todPd": "Desarrollo planificado cerca del transporte — la ordenanza del PD regula estacionamiento y densidad",

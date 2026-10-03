@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { ScorecardRegulatoryCard } from "./ScorecardRegulatoryCard";
-import type { AduStatus, RegulatorySummary } from "../../lib/types";
+import type { AduStatus, RegulatorySummary, TodBenefits } from "../../lib/types";
 
 afterEach(cleanup);
 
@@ -75,5 +75,32 @@ describe("ScorecardRegulatoryCard — overlays named, with what they require (F7
     expect(container.textContent).toContain("written approval");
     expect(container.textContent).toContain("§2-120-740");
     expect(container.textContent?.toLowerCase()).not.toContain("design review");
+  });
+});
+
+
+describe("ScorecardRegulatoryCard — what transit-served status changes (kit P5)", () => {
+  const tod = { layer_type: "tod_cta", name: "Transit-Oriented Development (CTA)", ordinance: null, description: "Transit-Oriented Development (CTA)", detail: null, link: null };
+  const benefits: TodBenefits = {
+    parking_relief: true, parking_max_reduction_pct: 100, density_bonus_eligible: false, entitlement_required: false,
+    note: "Transit-served: minimum parking can be reduced by up to 100% (§17-10-0102-B). No density, FAR or height bonus at B3-2.",
+  };
+
+  it("states the parking amount and the absent density bonus on the transit row", () => {
+    render(<ScorecardRegulatoryCard data={{ ...base, in_tod_area: true, overlays: [tod] }} tod={benefits} />);
+    const notes = screen.getByTestId("overlay-notes").textContent ?? "";
+    expect(notes).toContain("up to 100%");
+    expect(notes).toContain("No density, FAR or height bonus at B3-2");
+  });
+
+  it("says it once even when both a CTA and a Metra overlay are present", () => {
+    const metra = { ...tod, layer_type: "tod_metra", name: "Transit-Oriented Development (Metra)" };
+    render(<ScorecardRegulatoryCard data={{ ...base, in_tod_area: true, overlays: [tod, metra] }} tod={benefits} />);
+    expect((screen.getByTestId("overlay-notes").textContent ?? "").split("up to 100%").length - 1).toBe(1);
+  });
+
+  it("older payloads without tod_benefits render as before", () => {
+    render(<ScorecardRegulatoryCard data={{ ...base, in_tod_area: true, overlays: [tod] }} />);
+    expect(screen.getAllByText(/Transit/i).length).toBeGreaterThan(0);
   });
 });
