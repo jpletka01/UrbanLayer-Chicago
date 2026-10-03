@@ -369,7 +369,12 @@ function todReason(s: VerdictSignals, t: TFunc): VerdictReason {
   const b = s.todBenefits;
   const zone = s.zoneClass ?? "";
   const anchor = "regulatory" as const;
-  if (b?.density_bonus_eligible) return { text: t("scorecard.verdict.reason.tod", { zone }), polarity: "positive", cardAnchor: anchor };
+  if (b?.density_bonus_eligible) {
+    // Say how much the parking minimum can drop when the backend knows (kit P9: "parking relief by right" gave no amount).
+    const pct = b.parking_max_reduction_pct;
+    const key = pct != null ? "scorecard.verdict.reason.todPct" : "scorecard.verdict.reason.tod";
+    return { text: t(key, { zone, pct }), polarity: "positive", cardAnchor: anchor };
+  }
   if (b && b.parking_relief === null) return { text: t("scorecard.verdict.reason.todPd"), polarity: "neutral", cardAnchor: anchor };
   if (b?.parking_max_reduction_pct != null)
     return { text: t("scorecard.verdict.reason.todParking", { pct: b.parking_max_reduction_pct, zone }), polarity: "neutral", cardAnchor: anchor };

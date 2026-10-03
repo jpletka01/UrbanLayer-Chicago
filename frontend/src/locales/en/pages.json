@@ -215,6 +215,7 @@
         "ez": "In an Illinois Enterprise Zone — sales-tax and fee relief",
         "distressIncentive": "In a QCT/NMTC tract — eligible for distressed-area tax credits",
         "tod": "Transit-served dash-3 district — a density bonus is possible with a Type 1 amendment, PD or ARO entitlement; parking relief by right",
+        "todPct": "Transit-served dash-3 district — a density bonus is possible with a Type 1 amendment, PD or ARO entitlement; parking minimums can drop by up to {{pct}}% by right",
         "todParking": "Transit-served — parking minimums can drop by up to {{pct}}%; no density bonus at {{zone}}",
         "todParkingGeneric": "Transit-served — parking minimums can be reduced; no density bonus unless the district is dash-3",
         "todPd": "Transit-served Planned Development — the PD ordinance governs parking and density",

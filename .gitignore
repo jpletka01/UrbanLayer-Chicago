@@ -29,6 +29,8 @@ ingestion/data/sections/*
 # and Predominance-of-the-Block districts (17-7-0570, 17-7-0590), landmark permit review.
 !ingestion/data/sections/17-2-0200.json
 !ingestion/data/sections/17-3-0200.json
+!ingestion/data/sections/17-4-0200.json
+!ingestion/data/sections/17-5-0200.json
 !ingestion/data/sections/17-10-0100.json
 !ingestion/data/sections/17-7-0570.json
 !ingestion/data/sections/17-7-0590.json
