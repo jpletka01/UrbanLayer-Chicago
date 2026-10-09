@@ -13,6 +13,7 @@ const SECTIONS = [
   { id: "scorecard", title: "The Property Profile" },
   { id: "parcel-identity", title: "Parcel Identity" },
   { id: "lot-facts", title: "Lot Facts & Provenance" },
+  { id: "verifiable", title: "Verifiable Answers" },
   { id: "report", title: "Feasibility Report (PDF)" },
   { id: "zoning-cache", title: "Zoning Cache" },
   { id: "payments", title: "Payments & Monetization" },
@@ -20,12 +21,14 @@ const SECTIONS = [
   { id: "conversation", title: "Conversation Management" },
   { id: "auth", title: "Authentication & Security" },
   { id: "rate-limiting", title: "Rate Limiting" },
+  { id: "security-hardening", title: "Security & Hardening" },
   { id: "map", title: "Map & Geo Visualization" },
   { id: "sidebar-cards", title: "Sidebar & Data Cards" },
   { id: "analytics", title: "Analytics" },
   { id: "usage-analytics", title: "Usage Analytics" },
   { id: "file-upload", title: "File Upload & Vision" },
   { id: "admin", title: "Admin & Observability" },
+  { id: "correctness", title: "Measuring Correctness" },
   { id: "eval", title: "Eval & Benchmarks" },
   { id: "infrastructure", title: "Infrastructure & Deployment" },
   { id: "frontend", title: "Frontend Architecture" },
@@ -220,15 +223,15 @@ export function AboutPage() {
             UrbanLayer is a <Accent>parcel feasibility engine</Accent> for Chicago real-estate professionals — it
             answers the question every developer, architect, and attorney asks before committing capital:{" "}
             <em>"What can I build here, and should I?"</em> Type an address and you get the parcel's
-            full <Accent>Property Profile</Accent> (about a second when cached; 15–40 seconds on a first lookup, which
-            queries 25+ public sources) (zoning, overlays, incentives, tax projection, comparable sales);
+            full <Accent>Property Profile</Accent> (zoning, overlays, incentives, tax projection, comparable sales — about a second when
+            cached, 15–40 seconds on a first lookup, which queries 25+ public sources);
             interrogate it via chat with cited municipal code; and buy a $25
             PDF <Accent>Development Feasibility Report</Accent>. Live at <Mono>urbanlayerchicago.com</Mono>.
           </P>
           <P>
             Under the hood it is a retrieval-augmented generation (RAG) system combining <Accent>25+ live
             datasets</Accent> across 5 APIs (Chicago Socrata, Cook County Socrata, ArcGIS, Census, and external
-            services), <Accent>semantic search</Accent> over the entire Chicago Municipal Code (14,535
+            services), <Accent>semantic search</Accent> over the entire Chicago Municipal Code (16,576
             vector-indexed chunks), and <Accent>LLM synthesis</Accent> via Claude to produce sourced, cited answers
             with interactive map visualizations. The product began as a neighborhood Q&amp;A tool and was
             deliberately refocused onto site feasibility — the engine is the same, but every surface now points at
@@ -293,7 +296,7 @@ export function AboutPage() {
 │  Parallel Retrieval — Semaphore(4) concurrent tasks       │
 │  ├─ Socrata APIs (crime, 311, permits, violations,        │
 │  │   business, vacant, food inspections)                  │
-│  ├─ Qdrant Vector Search (14,535 chunks, bge-base)        │
+│  ├─ Qdrant Vector Search (16,576 chunks, bge-base)        │
 │  ├─ ArcGIS Zoning (point lookup + polygon fetch)          │
 │  ├─ Domain Orchestrators:                                 │
 │  │   ├─ Property  (parcel → char/assess/sales/tax)        │
@@ -311,7 +314,7 @@ export function AboutPage() {
 ┌───────────────────────────┐
 │  Streaming Synthesis      │  Sonnet — 2000 tok budget
 │  SSE: plan → context →    │  Inline citations, trend weaving
-│  map_data → tokens → done │  26 synthesis rules
+│  map_data → tokens → done │  37 synthesis rules
 └───────────────────────────┘`}</Code>
 
           <Sub>Stack</Sub>
@@ -326,9 +329,9 @@ export function AboutPage() {
               ["Reranker", "BAAI/bge-reranker-v2-m3 (disabled in prod)", "Same family as embeddings; too slow on prod vCPUs — report now uses a precomputed zoning cache instead"],
               ["Payments", "Stripe (Checkout + webhooks)", "One-time $25 report + $99/mo Pro subscription; no PCI surface"],
               ["Streaming", "SSE (text/event-stream)", "Synthesis is 3-8s; streaming TTFT is better UX"],
-              ["Persistence", "SQLite via aiosqlite (WAL), schema v11", "Single user, single writer — simplest correct solution"],
+              ["Persistence", "SQLite via aiosqlite (WAL), schema v14", "Single user, single writer — simplest correct solution"],
               ["Auth", "Google OAuth2 + self-rolled JWT", "One-click sign-in; httpOnly cookies + CSRF double-submit"],
-              ["Frontend", "React + TypeScript + Vite + Tailwind v3", "Type-safe, dark theme; Inter / Space Grotesk / IBM Plex Mono"],
+              ["Frontend", "React + TypeScript + Vite + Tailwind v3", "Type-safe, light/dark/system themes; Inter / Inter Tight / JetBrains Mono"],
               ["PDF Reports", "WeasyPrint + Jinja + matplotlib", "HTML/CSS → PDF; rendered in an isolated child process"],
               ["Map", "Mapbox GL JS + deck.gl", "WebGL handles 1000s of points, declarative layers"],
               ["Geocoding", "Census Geocoder + Shapely + Cook County Address Points", "Free, deterministic; authoritative address→PIN resolution"],
@@ -466,9 +469,9 @@ export function AboutPage() {
           <SectionHeading id="document-processing">Document Processing</SectionHeading>
           <P>
             Source: <Mono>chicago-il-codes.html</Mono>, a ~100MB HTML export from American Legal Publishing
-            containing the full Chicago Municipal Code (Titles 1-18). Gitignored due to size.
+            containing the Chicago Municipal Code, including Title 14 (the building code) and Titles 16–17 (zoning). Gitignored due to size.
           </P>
-          <Code>{`HTML (100MB) → parse → 8,615 sections → chunk → 14,535 chunks → embed → Qdrant
+          <Code>{`HTML (100MB) → parse → 9,487 sections → chunk → 16,576 chunks → embed → Qdrant
                                                                        ↓
                                                               bge-base-en-v1.5 (768-dim)
                                                               ~3 minutes with MPS acceleration`}</Code>
@@ -491,6 +494,25 @@ export function AboutPage() {
             each half as its own document. The lesson — when a parser's output is suspiciously short, suspect the{" "}
             <em>input's</em> structure before your traversal logic — is the same instinct that later caught the
             null-field assessment bug.
+          </P>
+
+          <Sub>The Title That Was Parsed and Then Thrown Away — An Ingestion Story</Sub>
+          <P>
+            For months the corpus had no building code at all — Title 14, the rules a demolition or renovation permit
+            actually turns on. The project's own notes blamed the parse regex and said a fresh HTML download was needed.
+            Both were wrong: the committed HTML already contained Title 14 and the section regex already matched it.
+            A <em>second, narrower</em> gate in the write path (<Mono>{"\\d+-\\d+-\\d+"}</Mono>) then rejected every section the
+            parser had just found. Both now derive from a single section-id pattern, so they cannot drift apart again.
+          </P>
+          <P>
+            Title 14 turned out to be eleven lettered volumes (14A, 14B … 14X), and the Energy Transformation Code letters
+            its chapter and section segments too (<Mono>14N-C4-C402</Mono>), which also recovered 50 headings that had
+            been silently missing. The corpus grew from <Accent>8,615 to 9,487 sections</Accent> and from{" "}
+            <Accent>14,535 to 16,576 chunks</Accent>, purely additive. Pushing it to production surfaced three traps worth
+            keeping: embedding assigns a random id per point, so re-inserting <em>duplicates</em> rather than replaces
+            (116 duplicate points were created locally before this was understood — verify per-section counts, not just
+            the total); the content hash omits the section title, so a heading-only fix is a silent no-op; and a code
+            deploy does not update the vector store, because Qdrant lives on a persisted volume.
           </P>
 
           <Sub>Chunking</Sub>
@@ -816,7 +838,7 @@ NEIGHBORHOOD-WIDE (community area name):
               ["map_data", "MapDataResponse JSON", "Inline map data (no separate fetch)"],
               ["token", "text string", "Streaming synthesis text"],
               ["error", "error message", "MESSAGE_LIMIT_REACHED or exception"],
-              ["done", "final metadata", "Attach context/plan/mapData to message"],
+              ["done", "final metadata", "Attach context/plan/mapData to message; carries truncated and citation_warnings"],
             ]}
           />
 
@@ -829,12 +851,31 @@ NEIGHBORHOOD-WIDE (community area name):
           </P>
           <P>
             <Accent>API data</Accent> cited with <Mono>[data:crime]</Mono>, <Mono>[data:311]</Mono>, etc.
-            Clicking switches sidebar to the Data tab.
+            Clicking switches sidebar to the Data tab. Parcel facts cite <Mono>[data:{"<fact id>"}]</Mono>, accepted only
+            when that turn actually carries a provenance entry for the fact.
+          </P>
+          <P>
+            Citations are <Accent>checked, not trusted</Accent>: every completed answer is validated against the turn's
+            own context (<Mono>citations.py</Mono>) — a <Mono>[7]</Mono> when only five code chunks were retrieved, or a{" "}
+            <Mono>[data:x]</Mono> for a source that was not present, is logged and reported on the <Mono>done</Mono>{" "}
+            event, and the full-pipeline eval fails the query. Before this, the UI silently dropped a fabricated marker, so it
+            was invisible to users, logs and evals alike. The model also no longer writes its own links — see Verifiable
+            Answers.
+          </P>
+
+          <Sub>Answers That Say When They Were Cut Off</Sub>
+          <P>
+            Answers have a 2,000-token ceiling. On the parcel benchmark, 6 of 7 chat answers hit it mid-sentence with no
+            indication, and two lost the final question. The stream now reads the model's stop reason: on a cut-off it
+            appends a localized notice and sets <Mono>truncated: true</Mono> on <Mono>done</Mono>, and the prompt
+            asks for roughly 800 words, every numbered part answered in order, no closing recap. The token cap was
+            deliberately <em>not</em> raised — brevity and a visible notice first, because a higher cap is a cost decision.
+            Silent cut-offs went from 6 of 7 to zero; 2 of 7 still reach the ceiling, and now say so.
           </P>
 
           <Sub>Synthesis Rules</Sub>
           <P>
-            The system prompt enforces 26 rules including: always cite inline (never end-of-message); surface 7-day crime data lag;
+            The system prompt enforces 37 rules including: always cite inline (never end-of-message); surface 7-day crime data lag;
             use "at least N" for capped results; append legal disclaimer when <Mono>requires_disclaimer</Mono> is
             true; weave the 2-4 most notable month-over-month trends naturally; state zoning classification as a
             definitive fact with the official map URL (never invent URLs). When domain orchestrator data is present,
@@ -862,18 +903,34 @@ NEIGHBORHOOD-WIDE (community area name):
             The page (<Mono>ScorecardPage.tsx</Mono>) accepts a parcel three ways, in precedence
             order: <Mono>?pin=</Mono> → <Mono>?address=</Mono> → <Mono>?lat=&amp;lon=</Mono>. A pin-confirmed result
             canonicalizes the URL to <Mono>?pin=&amp;address=</Mono> (the address is display-only); legacy URLs keep
-            working. Above the card grid sits the <Accent>identity band</Accent>: a Mapbox static thumbnail (shown only
-            when a real pin resolved), an i18n'd parcel-confidence badge with a tooltip that explains a degraded state
-            ("Area data — exact parcel not confirmed"), the dash-formatted PIN linking to the Cook County Assessor, and
-            a facts-only verdict line composed from context flags (zone name · TIF · OZ · TOD · ADU · ARO · flood).
+            working. The hero is a display-scale address with a circled resolution badge (green check = exact, amber =
+            approximate or unconfirmed, meaning on hover), an area · ward · PIN subline, a one-sentence verdict, and{" "}
+            <em>one</em> action row with one filled button — the report offer, with its sample link directly beside it.
+            A deterministic <Accent>verdict band</Accent> (six categories, no model) leads the page with its reasons as tags;
+            a four-tile KPI strip follows (zoning/FAR, assessed value against the area median, estimated tax with its
+            effective rate, comps median), then four module bands — Build, Costs, Market, Record — plus a Neighborhood
+            module, each opening with a one-sentence takeaway.
           </P>
           <P>
-            Three page-local cards render the highest-signal facts without a model in the loop:{" "}
-            <Mono>ZoningCard</Mono> (renders the Title-17 bulk standards from the scorecard API's <Mono>zone_definition</Mono>),{" "}
-            <Mono>CrimeYoYCard</Mono> (year-over-year with prior-year base counts), and <Mono>Address311Card</Mono>.
-            Each card carries exactly one muted "Investigate" link into the chat (solid accent is reserved for the
-            purchase CTA), and the financial snapshot strip surfaces assessed value, annual tax, median comp sale, and
-            active incentive zones. The whole surface is the free preview of what the $25 report contains.
+            Three scoped maps each answer one question: <em>place</em> (satellite or streets, the parcel outline, comps and
+            transit scoped to the opening viewport), <em>zoning</em> (the quilt around the parcel) and{" "}
+            <em>boundaries</em> (overlay, TIF and enterprise-zone boundaries, with hover that picks every stacked layer).
+            Definitions live in tooltips, never in on-page copy, and every "ask" chip opens a grounded quick-chat dock instead
+            of navigating away. The whole surface is the free preview of what the $25 report contains.
+          </P>
+
+          <Sub>Marketing Copy Is a Claim Too</Sub>
+          <P>
+            The homepage's hero card and its "every rule, one verdict" section described 1601 N Milwaukee Ave with invented
+            data: a made-up PIN, "B3-2 at FAR 1.2" (the ordinance says 2.2), a quote attributed to §17-2-0300 (the
+            <em> residential</em> chapter), $8,420 in tax and "0 active overlays". The live profile, one click away, says
+            otherwise — it is a landmark in a historic district and reads "Constrained upside". Both sections now use the live
+            record and verbatim Title 17 text. The same audit caught the page promising "~2 seconds" when a cold lookup takes
+            15–40 s and a cached one about a second. The loading state now names the address, counts elapsed seconds and says
+            what a first lookup costs — it does not fake per-step progress, because the sources resolve in parallel and
+            nothing is streamed. And because the profile caches are in-memory (crime and 311 live 15 minutes, and every deploy
+            empties them), a warm-up script requests the three demo addresses after each deploy and a timer repeats it every
+            ten minutes: measured on production, 14.8 s cold versus 0.8 s warm.
           </P>
 
           {/* ── Parcel Identity ── */}
@@ -931,6 +988,27 @@ Consumers → Property Profile (renders pin + confidence badge)
             assumption of it.</em>
           </P>
 
+          <Sub>The Same Bug on a Second Surface</Sub>
+          <P>
+            The Address Points fix landed on the Property Profile — and the chat kept the old behavior. An address typed into
+            chat went through the router's Census geocode, whose street-interpolated point can sit in a neighboring parcel or
+            zoning district. The parcel benchmark (see Measuring Correctness) caught it: on seven hard parcels, chat named the
+            wrong zoning district on two and showed a neighbor's PIN and facts on five. A typed address in chat is now
+            resolved through the same Address Points / Assessor path as the Profile and uses the parcel's own point, PIN and
+            community area; if no confident parcel exists it keeps the geocode, <em>marks the result approximate, and the
+            answer says so</em>. Wrong districts went from 2 to 0 and the chat's PIN matched the Profile's on 7 of 7. The
+            lesson generalizes: fixing identity on one surface does not fix it on another, and only a benchmark that asks both
+            the same question noticed.
+          </P>
+          <P>
+            Two smaller identity guards came from the same review. The geocoder is national, so "1600 Pennsylvania Ave
+            Washington DC" used to return a full Property Profile assembled from Chicago sources — including a brownfield
+            hundreds of miles away — with a $25 report offer; the profile and report endpoints now return 422 unless the point
+            is in, or within about 200 m of, a Chicago community area. And a typo in the search box ("2130 N Hoyn Ave")
+            used to submit the raw text on Enter, taking 56 seconds and resolving to an unverified neighbor even while the
+            dropdown showed the right address; Enter now takes the corrected suggestion when the house number matches.
+          </P>
+
           {/* ── Lot Facts & Provenance ── */}
           <SectionHeading id="lot-facts">Lot Facts &amp; Provenance</SectionHeading>
           <P>
@@ -974,6 +1052,138 @@ Consumers → Property Profile (renders pin + confidence badge)
             scofflaw list, short-term-rental opt-outs, historic tax-sale years — always dated, never dressed up as
             current distress). End state on the panel: <Accent>every critical field ≥85%, most at 100%</Accent>, and
             the benchmark stays in the repo as the regression gate for the data layer.
+          </P>
+
+          {/* ── Verifiable Answers ── */}
+          <SectionHeading id="verifiable">Verifiable Answers</SectionHeading>
+          <P>
+            A zoning tool is only useful if you can check it, and a screening page that never says where it stops reads as a
+            determination. In October 2026 the Property Profile and the chat were rebuilt around one principle: <Accent>every
+            claim should be checkable, dated, and honest about its edges</Accent>. Each piece below is deterministic — no model
+            decides what to cite — and each statement about the code is pinned to the ingested ordinance text by a test, so a
+            wrong claim fails CI rather than shipping.
+          </P>
+
+          <Sub>A dated source for every fact</Sub>
+          <P>
+            <Mono>/api/scorecard</Mono> returns a <Mono>provenance</Mono> map: for the district (with the ordinance and both
+            dates), each standard (with the code section it comes from and the code's current-through date), each overlay (with
+            the City layer and link), the parcel identity, the land and building area (with the dataset that supplied it) and
+            the code vintage. A fact that isn't present gets no entry. The benchmark counts how many stated facts carry one:
+            <Accent> 46 of 46</Accent> — but only <Accent>25 of 46</Accent> carry a date the source itself gives; overlays and
+            identity carry only the date we queried them, because the City's layers publish no per-feature date. Taxes,
+            comparables and permits are not covered yet. The page reports the weaker number alongside the stronger one.
+          </P>
+
+          <Sub>Click a standard, read the code</Sub>
+          <P>
+            Every standard on the zoning card links to the exact subsection it comes from ("§17-2-0304-A"). The click opens that
+            subsection's text, the table it cites, and how current the code is — "current through …, a later amendment may not
+            be reflected." The index holds whole articles (17-2-0300 is ~32,000 characters, with tables appended as blocks), so{" "}
+            <Mono>GET /api/code/section/{"{id}"}</Mono> cuts the cited subsection out, re-merges tables the index had split into
+            row batches, and parses the flattened "Row n: A: x; B: y" text back into columns. A missing section is a 404, never a
+            guess. It reads the production index, so it needed no new data and no image change.
+          </P>
+
+          <Sub>How the address became this parcel</Sub>
+          <P>
+            The Profile used to show a PIN and a green check. It now says which record matched the address, lists every parcel
+            the county's two address sources give for it (the used one marked), flags when the sources disagree, recognizes a
+            condominium (a building PIN versus its unit PINs is not a disagreement), shows the gap between the address point and
+            the parcel's center, and gives the reason when identity could not be confirmed. Running it on the seven benchmark
+            parcels turned up what a single check hid: a vacant lot has no address point at all and resolves through the
+            Assessor; one address maps to three parcels; for another, the county's two "authoritative" sources name{" "}
+            <em>different parcels</em>; and one is a condo building with one building PIN and about fifty unit PINs. It also
+            exposed a latent bug in the Assessor resolver: the portal spells one year both "2025.0" and "2025", so
+            raw-text bucketing counted two years and a multi-parcel address could resolve to a single parcel with false
+            confidence.
+          </P>
+
+          <Sub>Where the analysis stops</Sub>
+          <P>
+            Each parcel now carries notes saying where the page's analysis ends, each true and sourced. For this parcel: a
+            Planned Development's numbers come from its ordinance, not the base district (with the ordinance PDF); a Chicago
+            Landmark or landmark district needs the Commission on Chicago Landmarks' written approval (§2-120-740); an orange or
+            red historic-survey building can have a demolition permit held up to 90 days (§14A-4-407.6); a recent rezoning may not
+            be on the City's map yet; an ADU zone has limits. For every parcel: the alderman's notice role on map amendments,
+            Planned Developments and special uses (§17-13); the City's 90-day map lag; the Municipal Code's current-through date;
+            and that this is a screening tool — the City's Zoning Verification Letter is the official confirmation. The benchmark
+            requires that each parcel carry <em>exactly</em> the notes that apply (7 of 7). Honest edges: the survey-hold note is
+            unit-tested only because no benchmark parcel is rated orange or red, and the PDF report does not carry these notes yet.
+          </P>
+
+          <Sub>Rezoned three months ago — and the product couldn't say so</Sub>
+          <P>
+            One benchmark parcel had been rezoned from M1-2 to RT-4 by an ordinance passed in June 2026. The City's zoning layer
+            already returns the ordinance date, the record's last-edited timestamp, and the clerk's ordinance number and link —
+            and all of it was being discarded. Worse, the layer's <em>application</em> number (<Mono>23082T1</Mono>) was shown as
+            "the ordinance", and the chat model read it as a year. The lookup now keeps those fields, names the application number
+            for what it is, flags a district changed within 180 days, and reads the Municipal Code export's own "Current through
+            Council Journal of …" header at ingestion. Every Profile carries two stamps — when this district's zoning record was
+            last updated, and the date the indexed code is current through — and chat names the ordinance with its clerk link,
+            says the code text may lag, and notes that the City says amendments can take up to 90 days to reach the map. The stamp
+            is deliberately labelled for <em>this district's record</em>, not "the map": the layer gives per-polygon edit dates,
+            not a refresh date for the whole map.
+          </P>
+
+          <Sub>Naming the overlays, and what they require</Sub>
+          <P>
+            The Profile used to call the 606 district "Special Districts", call any hit on the ADU layer "ADU eligible" without
+            naming the zone or its limits, link nothing for a Planned Development, and describe a landmark's consequence as "expect
+            design review". The City's layers carry the real names, links and limits, so they are now shown: the 606 district by name
+            with its code link and its real scope (RS-3 and RT-3.5 only), the ADU zone with its annual limit and owner-occupancy
+            rule, the PD's number and ordinance PDF, and the written-approval requirement for landmarks. Coach houses are "by
+            right" in RT, RM and B1–C2, allowed with the zone's limits in an RS ADU-Allowed Area, and not allowed in RS outside
+            one — pinned to the use tables and §17-7-0570.
+          </P>
+
+          <Sub>One helper per claim, pinned to the code</Sub>
+          <P>
+            The benchmark found two claims the product was getting wrong, and in both the fix was a single deterministic helper
+            feeding every surface — the Profile payload, a cold chat turn, and the Profile-to-chat handoff.
+          </P>
+          <P>
+            <Accent>The density bonus the code doesn't give.</Accent> Every transit-served parcel was told it gets "reduced parking
+            minimums and a density bonus". The code gives parking relief to every district (§17-10-0102-B) but FAR, height and
+            lot-area increases only to dash-3 districts (B-3, C-3, D-3), and only through a Type 1 amendment, a Planned
+            Development or an ARO entitlement (§17-3-0402/0403/0408-B). The chat model had also read "B-3 and C-3 districts" as
+            "B3 and C3". <Mono>tod_benefits()</Mono> now decides, pinned to the ordinance text by a test; the benchmark's
+            confident-wrong count on the Profile went from 2 to 0.
+          </P>
+          <P>
+            <Accent>The number the model recalled from memory.</Accent> The Profile never showed minimum lot area per dwelling
+            unit — the number a unit count turns on — and chat filled it in from memory. On a vacant RM-4.5 lot it said 1,000 sq ft,
+            FAR 2.2 and "3 units"; the zoning table says 700 sq ft, FAR 1.7 and 4 units. The zone table now rides into the model's
+            context on every parcel-resolved turn, a prompt rule forbids quoting a standard that isn't in the data, and the Profile
+            shows "max units by lot area" with its arithmetic ("3,191 ÷ 700 = 4.6 → 4") and an explicit label that it is
+            lot-area-per-unit only, since FAR, height and parking can bind first. Not done yet: setbacks, and applying the 606
+            reduction to the yield.
+          </P>
+
+          <Sub>The model does not write its own sources</Sub>
+          <P>
+            The benchmark's baseline chat answers carried 18 URLs; <Accent>9 were composed by the model</Accent> — American Legal
+            links with made-up ids (one id cited for two different sections) and Legistar links nobody supplied. A reader who
+            clicks one lands somewhere that does not say what the answer claims. Three layers now prevent that. A streaming{" "}
+            <Mono>UrlGuard</Mono> drops any URL we did not supply (a link keeps its visible label); it is tested to produce
+            identical output however the stream is chunked, loses nothing at end-of-stream, and cannot be stalled by a stray
+            bracket. The prompt forbids writing links or a sources section. And a deterministic "Sources for the parcel data used"
+            block is appended from the provenance map plus the code chunks the answer actually cited, with the code's
+            current-through date. Replaying three recorded benchmark runs through the guard offline, it would have removed 10, 5 and
+            1 model-written URLs and kept every URL we supplied (8, 9 and 9) — a replay, not yet a live-chat measurement. The
+            guard is deliberately conservative: even a real City page the model wrote is dropped unless we supplied it.
+          </P>
+
+          <Sub>An honest absence beats a wrong number</Sub>
+          <P>
+            The assessor's commercial valuation keys one record to a whole "economic unit", often several PINs, and its
+            building-area total was attributed to whichever member parcel was looked up. On the benchmark a 7-PIN strip center's
+            43,790 sq ft landed on a 4,347 sq ft lot — "existing FAR 10.07, at the cap" — and across the 100-address panel,
+            Presidential Towers' 745,629 sq ft was shown on a single lot. Area is now attributed only to a single-PIN unit or the
+            unit's keypin; other members show no floor area and a note ("recorded for an N-parcel complex"), a plausibility guard
+            treats an existing FAR above three times the zone cap as unknown, and a city-footprint fallback is skipped when the
+            footprint exceeds the lot. The coverage metric <em>got worse by design</em>: 12 panel parcels moved from a wrongly
+            attributed area to an explained absence, which the benchmark now classifies as expected-absent instead of hiding.
           </P>
 
           {/* ── Feasibility Report (PDF) ── */}
@@ -1083,6 +1293,13 @@ Consumers → Property Profile (renders pin + confidence badge)
             ]}
           />
           <P>
+            While Stripe keys are not configured (as on production today), <Mono>GET /api/payments/status</Mono> reports that report
+            purchases and Pro subscriptions cannot start, and the buy buttons say "purchases coming soon" instead of failing
+            silently — sample reports and access-code redemption, which need no Stripe, keep working, and checkout returns
+            automatically once keys are present. Retried Stripe webhooks are idempotent, so a redelivery cannot double-count the
+            funnel's money step.
+          </P>
+          <P>
             Purchases are <Accent>PIN-keyed</Accent>: the <Mono>report_purchases</Mono> table (schema v9) records the
             14-digit pin, so entitlement is checked against the exact parcel. The frontend's report functions
             (<Mono>fetchReport</Mono>, <Mono>createReportCheckoutSession</Mono>, <Mono>checkReportAccess</Mono>) all
@@ -1178,11 +1395,12 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <Sub>SQLite Persistence</Sub>
           <P>
-            WAL mode via <Mono>aiosqlite</Mono>, singleton connection, schema v11. Tables: <Mono>conversations</Mono>,
+            WAL mode via <Mono>aiosqlite</Mono>, singleton connection, schema v14. Tables: <Mono>conversations</Mono>,
             <Mono>messages</Mono> (with JSON blob columns for context/plan/mapData), <Mono>uploads</Mono>,
             <Mono>llm_calls</Mono>, <Mono>request_logs</Mono>, <Mono>schema_version</Mono>,
             <Mono>users</Mono>, <Mono>refresh_tokens</Mono>, <Mono>share_tokens</Mono>, <Mono>report_purchases</Mono> (v9),
-            and <Mono>events</Mono> (v10, usage analytics); v11 made purchases PIN-bound. JSON blob columns
+            and <Mono>events</Mono> (v10, usage analytics); v11 made purchases PIN-bound, v12 added account-deletion
+            tombstones, v13 newsletter subscribers, and v14 early-adopter access codes with a time-boxed premium grant. JSON blob columns
             because context/plan/mapData are written once and read whole — no query benefit from normalization
             for a single-user app.
           </P>
@@ -1220,7 +1438,7 @@ Consumers → Property Profile (renders pin + confidence badge)
             rows={[
               ["anonymous", "3 queries/day, basic features", "No sign-in"],
               ["free", "25 queries/day, conversation history", "Google sign-in"],
-              ["premium", "100 queries/day, all features", "Manual upgrade"],
+              ["premium", "100 queries/day, all features", "Manual upgrade or an early-adopter access code"],
               ["admin", "Unlimited, admin dashboard", "Database flag"],
             ]}
           />
@@ -1257,7 +1475,124 @@ Consumers → Property Profile (renders pin + confidence badge)
             A <Accent>daily API budget cap</Accent> ($5/day default, configurable) guards against runaway LLM costs
             regardless of tier. When the cap is hit, all non-admin users get a 429 with a <Mono>Retry-After</Mono> header
             indicating seconds until the budget resets. The budget is computed from <Mono>llm_calls</Mono> table cost
-            estimates (Sonnet $3/$15 per MTok, Haiku $0.80/$4 per MTok).
+            estimates (Sonnet $3/$15 per MTok, Haiku 4.5 $1/$5 per MTok, prompt-cache reads at 0.1× input and five-minute cache writes at 1.25×).
+          </P>
+
+          {/* ── Security & Hardening ── */}
+          <SectionHeading id="security-hardening">Security &amp; Hardening</SectionHeading>
+          <P>
+            In September 2026 the repository was reviewed the way an outside engineer would read it — code, then the live site,
+            then the server — before it was shared. The result was a day of fixes (PRs #24–#30) and a one-time server hardening
+            run. The common thread: most of the dangerous defaults were <em>convenient for development and wrong for
+            production</em>, and nothing in a green test run would have said so.
+          </P>
+
+          <Sub>The rate limit the client could rewrite</Sub>
+          <P>
+            Anonymous chat limits were keyed on the leftmost <Mono>X-Forwarded-For</Mono> entry — a header the client controls.
+            Sending a different value on each request meant unlimited anonymous chat and, with it, a way to exhaust the{" "}
+            <em>global</em> daily LLM budget for every user. The trust chain is now explicit: nginx trusts{" "}
+            <Mono>CF-Connecting-IP</Mono> only from Cloudflare's published ranges, overwrites <Mono>X-Real-IP</Mono> and{" "}
+            <Mono>X-Forwarded-For</Mono> with the real peer instead of appending to what the client sent, and the application
+            reads only <Mono>X-Real-IP</Mono>, and only from a private-network peer. IPv6 clients are bucketed per /64 so rotating
+            within an allocation doesn't reset the window. Verified against a header-echo backend: forged headers from a
+            non-Cloudflare source never reach it.
+          </P>
+
+          <Sub>Ids were enough</Sub>
+          <P>
+            Several endpoints treated knowing an id as authorization. Upload download and delete had no auth at all; the
+            conversation-uploads list accepted anonymous callers; the share-token endpoint returned any conversation's token to
+            any signed-in user; <Mono>/chat</Mono> loaded turn summaries for whatever conversation id it was handed and attached any
+            upload ids to the model prompt, pulling another user's questions and files into the caller's request; and "clear all
+            conversations" deleted the entire uploads directory — every user's files. Every path now checks ownership, unauthorized
+            ids return 404 so they cannot be probed, and conversation ids are random UUIDs instead of a timestamp plus{" "}
+            <Mono>Math.random</Mono>.
+          </P>
+
+          <Sub>A production that didn't know it was production</Sub>
+          <P>
+            Three settings had development defaults that are vulnerabilities in production: no <Mono>GOOGLE_CLIENT_ID</Mono>{" "}
+            disables auth (every request becomes an admin), no <Mono>JWT_SECRET</Mono> falls back to a key published in the
+            repository, and no <Mono>STRIPE_WEBHOOK_SECRET</Mono> skips signature checks, so a forged event could grant premium.
+            With <Mono>ENVIRONMENT=production</Mono> the app now <Accent>refuses to start</Accent> if any of these is missing or
+            weak, or if secure cookies are off or the frontend URL isn't https; unsigned webhooks are rejected in production
+            regardless. Related: <Mono>/api/report?mock=true</Mono> replaced every section with fixture data for template QA, and
+            any user with access to a parcel's report could request it — a PDF of invented numbers presented as that parcel's
+            feasibility report. It is now admin-only.
+          </P>
+
+          <Sub>Input that reaches something expensive</Sub>
+          <P>
+            A ~2,000-character address returned a bare 500 (the geocoder's firewall answers with a 200 and an HTML page, and only
+            timeouts and status errors were caught); the <Mono>pin</Mono> parameter was interpolated unchecked into a SoQL filter;
+            chat history had no length cap, so one request could carry an arbitrarily large forged history into a paid model call;
+            and the <Mono>language</Mono> code was interpolated verbatim into the system prompt. Addresses are capped, PINs are
+            normalized to digits and length-checked, history is capped per message and in total, and language is normalized to a
+            supported code.
+          </P>
+
+          <Sub>The CSP that blocked its own scripts</Sub>
+          <P>
+            The inline pre-paint theme script was blocked on every page (the policy carried no hash), and the session-replay
+            analytics hosts were missing, so replay recorded nothing — the content-security policy was quietly breaking the
+            site's own features. The policy is now defined once and referenced from both server blocks, with the script's
+            hash, <Mono>object-src</Mono>, <Mono>base-uri</Mono> and <Mono>form-action</Mono> added. Default servers drop requests
+            for unknown hosts and reject TLS handshakes without the site's SNI, so scans of the bare origin address get nothing.
+          </P>
+
+          <Sub>Deploying as root</Sub>
+          <P>
+            The deploy job logged in as <Mono>root</Mono> with a key that could do anything on the box and did not verify the
+            server's host key. Deploys now run as a dedicated <Mono>deploy</Mono> user whose key can run exactly one forced
+            command — fast-forward only, fails on a broken build — with the host-key fingerprint pinned, inside a protected{" "}
+            <Mono>production</Mono> environment limited to <Mono>main</Mono>. The server side of this was a written, executed
+            runbook: an admin user created before root login was disabled, password authentication off, an origin firewall that
+            admits web traffic only from Cloudflare, unattended security upgrades, and a nightly database backup. Running it for
+            real produced two corrections worth keeping: a <Mono>--system</Mono> user otherwise gets <Mono>/nonexistent</Mono> as
+            its home directory, so sshd never finds its key; and the deploy action's SSH client negotiates{" "}
+            <em>ECDSA</em> first, so pinning the ed25519 fingerprint fails with "host key mismatch". The runbook also caught a
+            wrong claim of our own — the backup script's default path was wrong, so the repository assumed no backups existed, but the
+            server's cron entry had passed the right path all along; both the script and the docs were corrected.
+          </P>
+
+          <Sub>The vector database that was open to the internet</Sub>
+          <P>
+            While planning a corpus update, <Mono>docker-compose.yml</Mono> turned out to publish the vector store's port on{" "}
+            <Mono>0.0.0.0</Mono>, and Qdrant ships with no authentication: the production index was readable <em>and writable</em>{" "}
+            from the public internet with a single <Mono>curl</Mono>. The obvious fix is wrong: adding a loopback mapping in the
+            production override would have <em>appended</em> to the list under Compose's merge semantics, leaving the public binding
+            alive while looking closed. The fix removes host publishing from the base file (the backend reaches the store over the
+            compose network) and republishes on <Mono>127.0.0.1</Mono> only in the development override that production never
+            loads. After the change the production collection was checked point-for-point against the local corpus.
+          </P>
+
+          <Sub>A code reviewer that never ran</Sub>
+          <P>
+            The project's AI pull-request review workflow had failed at environment validation on every PR for three months — its
+            API key was never configured — leaving a permanently red check that reviewed nothing. It was replaced with what is free
+            on a public repository: CodeQL (<Mono>security-extended</Mono>, deliberately not the noisier quality pack), secret
+            scanning with push protection, Dependabot alerts and security updates, and grouped monthly version updates. The scope
+            change is stated plainly: <em>CodeQL finds security issues, not correctness bugs, so there is currently no general
+            automated reviewer.</em>
+          </P>
+          <P>
+            The first CodeQL run produced the most consequential finding: the SSH deploy action was referenced by a{" "}
+            <em>mutable tag</em> on the very step that receives the production SSH key. It is now pinned to a commit SHA, and every
+            job declares least-privilege permissions. Twenty-three log-injection alerts (user-controlled strings reaching logs)
+            were fixed once, centrally, with a filter on the root log <em>handlers</em> that escapes CR/LF — handlers rather than
+            loggers because a handler sees library loggers too, and rather than editing 23 call sites because the 24th would
+            escape. CodeQL cannot see a runtime filter, so those alerts are dismissed with a written reason; the policy is to keep
+            the Security tab at zero open so a real finding stays visible.
+          </P>
+
+          <Sub>Dependency triage, and what a green check proves</Sub>
+          <P>
+            Twelve Dependabot PRs arrived at once. Nine safe ones were batched into a single change, because every merge to{" "}
+            <Mono>main</Mono> is a deploy — ten merges would have meant ten container rebuilds and ten brief outage windows —
+            taking npm vulnerabilities from 14 to 2. Two were rejected despite passing CI: a Python 3.11→3.14 runtime bump passed
+            because the test job installs Python separately and never builds the Dockerfile, and a test-tooling major passed because
+            npm only <em>warns</em> on a Node engine mismatch. A green check is evidence of what CI ran, not that a change is safe.
           </P>
 
           {/* ── 12. Map & Geo ── */}
@@ -1267,8 +1602,8 @@ Consumers → Property Profile (renders pin + confidence badge)
           <P>
             WebGL rendering handles thousands of points smoothly in the sidebar's constrained viewport. deck.gl's
             declarative layer API makes filter toggling trivial — just rebuild the layers array. Leaflet with
-            SVG overlays would struggle at 2,500 crime points. Dark basemap (<Mono>dark-v11</Mono>) instead
-            of <Mono>streets-v12</Mono> because the entire app is dark-themed.
+            SVG overlays would struggle at 2,500 crime points. The chat map follows the app theme (the dark basemap{" "}
+            <Mono>dark-v11</Mono> in dark mode); the Property Profile's place map adds a satellite ⇄ streets toggle.
           </P>
 
           <Sub>Layer Stack</Sub>
@@ -1398,10 +1733,13 @@ Consumers → Property Profile (renders pin + confidence badge)
             app's own <Mono>events</Mono> table (schema v10) and surfaced in the admin engagement dashboard.
           </P>
           <P>
-            Eight events trace the path from landing to purchase: <Mono>page_view</Mono>, <Mono>hero_address_submit</Mono>,{" "}
-            <Mono>hero_librarian_click</Mono>, <Mono>investigate_click</Mono>, <Mono>chat_message_sent</Mono>,{" "}
-            <Mono>scorecard_bridge_click</Mono>, <Mono>report_cta_click</Mono>, and <Mono>sample_report_click</Mono>.
-            Each carries a per-tab <Accent>session ID</Accent> and a cross-session <Accent>visitor ID</Accent>, so the
+            Sixteen client events trace the path from landing to purchase — among them <Mono>visit_start</Mono> (with
+            referrer, UTM parameters and a persisted first-touch attribution), <Mono>hero_address_submit</Mono>,{" "}
+            <Mono>scorecard_view</Mono>, <Mono>investigate_click</Mono>, <Mono>chat_message_sent</Mono>,{" "}
+            <Mono>report_cta_click</Mono>, <Mono>sample_report_click</Mono>, <Mono>checkout_started</Mono> and{" "}
+            <Mono>discovery_search</Mono> — plus two money events, <Mono>purchase_completed</Mono> and{" "}
+            <Mono>subscription_started</Mono>, that are written <em>only by the Stripe webhook</em> and excluded from the client
+            allowlist, so the funnel's money step cannot be spoofed from a browser. Each carries a per-tab <Accent>session ID</Accent> and a cross-session <Accent>visitor ID</Accent>, so the
             same person can be followed across visits without accounts.
           </P>
           <P>
@@ -1449,9 +1787,15 @@ Consumers → Property Profile (renders pin + confidence badge)
             headers={["Model", "Input", "Output"]}
             rows={[
               ["Claude Sonnet 4.6", "$3.00 / MTok", "$15.00 / MTok"],
-              ["Claude Haiku 4.5", "$0.80 / MTok", "$4.00 / MTok"],
+              ["Claude Haiku 4.5", "$1.00 / MTok", "$5.00 / MTok"],
             ]}
           />
+          <P>
+            The table was wrong until October 2026: Haiku 4.5 had been priced at Haiku 3.5's rates, prompt-cache reads and
+            writes were ignored even though every call records them, and an unpriced model silently fell back to Sonnet rates.
+            Because this table feeds both the admin dashboard and the daily budget cap, the cap was under-counting. Cache tokens
+            are now priced and summed into the budget check, and an unpriced model logs a warning.
+          </P>
 
           <Sub>Cache Statistics</Sub>
           <P>
@@ -1472,24 +1816,140 @@ Consumers → Property Profile (renders pin + confidence badge)
             by <Mono>ProtectedRoute</Mono> requiring admin tier.
           </P>
 
+          {/* ── Measuring Correctness ── */}
+          <SectionHeading id="correctness">Measuring Correctness</SectionHeading>
+          <P>
+            Every other suite on this page asks whether the system reproduces its own inputs: did retrieval return the section
+            the question names, is the field populated, does the answer cite what it retrieved. None of them asks whether the
+            answer is <em>right</em>. So in October 2026 a different kind of test was built, deliberately designed to find where
+            a zoning tool is wrong — and its first run was kept on the public record on purpose.
+          </P>
+
+          <Sub>The parcel kit</Sub>
+          <P>
+            Twelve Chicago parcels, each chosen because it breaks a lazy system: a vacant lot whose address geocodes into the
+            neighboring district; a parcel inside a landmark district; a Planned Development whose numbers live in an ordinance, not a
+            base-district table; one rezoned three months earlier; a downtown DC-16 parcel; an M2-3 manufacturing parcel where
+            residential is prohibited; one inside the Lakefront Protection District; and a transit-served B3-3 (the <em>positive</em>
+            case) beside a C2-5 where the same transit rules do <em>not</em> add density. The answer for each was read from primary
+            sources — the City's zoning layer and map service, the Municipal Code text, ordinance PDFs and Cook County Assessor
+            data — with the source recorded per field. Where a key is read from the code, it is read from the ingested text, never
+            from the product's output.
+          </P>
+          <Table
+            headers={["Field", "What is scored"]}
+            rows={[
+              ["A", "Zoning district in effect — a wrong answer is a critical miss, because everything else derives from it"],
+              ["B", "The parcel's use question (is a two-flat allowed?)"],
+              ["C", "Bulk numbers: FAR, height, minimum lot area per unit"],
+              ["D", "Overlays and designations, as a set (missing, false and denied ones all counted)"],
+              ["E", "Parking and transit rule (only on the parcels near transit)"],
+              ["F", "The parcel's task question (how many units, what approvals, what ADU limits)"],
+            ]}
+          />
+          <P>
+            Two surfaces are scored on the same fields: the deterministic Property Profile, and the chat given only an address
+            (no PIN, as a first-time user would type it). Each field scores 2 / 1 / 0, or "no claim", and a wrong answer stated
+            flatly is flagged <Accent>confident-wrong</Accent> — the failure that matters most for a tool people act on. District,
+            numbers and overlays are scored mechanically; use, parking and task answers by expected-phrase rubrics; a person's
+            scores can override any field, and the report prints how often the automatic score agreed with the hand score. A call
+            that fails is reported as <em>not scored</em>, never as a score. Recorded runs can be re-scored offline
+            (<Mono>make kit-replay</Mono>), a replay scores against the key version it was recorded under, and the public page is
+            regenerated from the committed results by a script whose output a test checks for staleness.
+          </P>
+
+          <Sub>What the first run found</Sub>
+          <P>
+            The Profile resolved the right district on all seven original parcels but stated a false claim (every transit-served
+            parcel gets a density bonus) and never showed the number a unit count turns on. The chat, given only an address,
+            located the parcel from a geocoded street point instead of the parcel, which put it in the neighboring district on two
+            of seven, invented bulk numbers from memory, and stopped at its token cap mid-answer on most parcels without saying so.
+            A recent rezoning could not be stated at all, and a multi-parcel strip center's building area had been attributed to a
+            single lot. Each became one small change with a before-and-after run:
+          </P>
+          <WideTable
+            headers={["Run", "Profile accuracy / confident-wrong", "Chat accuracy / confident-wrong", "What changed"]}
+            rows={[
+              ["Starting point (7 parcels)", "80% / 2", "68% / 7 · wrong district on 2", "First run, recorded as found"],
+              ["Chat resolves a typed address to its parcel", "—", "81% / 1 · no wrong districts", "Same Address Points path as the Profile"],
+              ["No false transit density bonus", "83% / 0", "87% / 1", "tod_benefits() pinned to the ordinance"],
+              ["The binding number", "94% / 0", "90% / 0", "Min lot area per unit + unit yield with arithmetic"],
+              ["Freshness stamps", "94% / 0", "97% / 0", "Ordinance date, code vintage, recent-rezoning flag"],
+              ["Overlays named with their requirements", "97% / 0", "—", "606 district, ADU zone limits, PD links, landmark approval"],
+              ["Key grows to 12 parcels; one key error corrected", "94% / 2", "—", "Downtown, manufacturing, lakefront, transit; see below"],
+            ]}
+          />
+          <P>
+            The chat has been scored on 7 of the 12 parcels so far; its latest recorded row is 95% coverage, 96% accuracy and one
+            confident-wrong field, with no wrong districts. A generic web-search language model, run once on the first seven
+            parcels with no access to this repository, made a claim on about a third of the fields and was right on about half of
+            those.
+          </P>
+
+          <Sub>The Landmark Layer That Wasn't — A Verification Story</Sub>
+          <P>
+            Adding a parcel on Lake Shore Drive made the answer key and the product disagree about whether the building was an
+            individual Chicago Landmark. Rather than assume either side, the next step was a second primary source. The zoning
+            map's layer 7, labelled "Landmark Buildings", turned out to be the <Accent>historic-resources survey</Accent> — 9,298
+            orange- and red-rated buildings, 9,108 of them with no designation date — not designations. The real landmarks are
+            layer 5 (59 of the 60 official landmarks fall inside it, against 39 for layer 7, cross-checked against the City's
+            317-landmark list) and landmark districts are layer 6.
+          </P>
+          <P>
+            Both the product <em>and the original answer key</em> had made the same misreading. On production, owners of roughly
+            9,000 orange-rated buildings were being told a permit needs the Commission on Chicago Landmarks' written approval
+            (§2-120-740) while the rule that actually applies — a possible 90-day demolition delay (§14A-4-407.6) — was hidden.
+            The layer is no longer queried as a landmark source, and the correction is printed on the benchmark page with its
+            date. The lesson went into the method: <em>a disagreement between product and key is a signal to check both</em>, and a
+            map layer's meaning must be verified against a second source, not just its name. An earlier draft of the key had also
+            used the product's own output as ground truth; three such errors were fixed when the key was rebuilt from primary
+            sources.
+          </P>
+
+          <Sub>Review, limits, and reproduction</Sub>
+          <P>
+            The key has been generated into a blind review packet — the key, its sources and thirteen judgment questions, with no
+            tool output — so a Chicago zoning professional can review the evidence without seeing any tool's answers. Their
+            agreement rate and every disagreement will be published whether or not the key changes. Until then, the limits are part
+            of the result:
+          </P>
+          <Table
+            headers={["Limit", "Why it matters"]}
+            rows={[
+              ["Twelve parcels", "They show kinds of failure, not a statistically reliable accuracy rate"],
+              ["Key not yet reviewed by a Chicago professional", "The most interpretive parcels are the minimum-lot-area, transit and ADU ones"],
+              ["Overlay truth comes from the same City service the product queries", "Overlay scores are not independent evidence; district, numbers and task answers are"],
+              ["Rubrics were written looking at earlier runs", "Agreement with a person's scores is in-sample, and each fix is in-sample on the parcel that exposed it"],
+              ["Chat varies run to run", "One run per row; compare runs by the cases that fail, not the third digit"],
+              ["Chat scored on 7 of 12 parcels", "The newest parcels have Profile results only so far"],
+              ["Code text is current through March 18, 2026", "A later amendment is not in the key"],
+            ]}
+          />
+          <P>
+            The benchmark page, the answer key with a source for every field, the dated run reports and a blank scorecard for
+            scoring another tool are all in the repository (<Mono>docs/benchmark/</Mono>, <Mono>eval/kit/</Mono>); the Profile run
+            is free and the chat run costs about a dollar.
+          </P>
+
           {/* ── 17. Eval & Benchmarks ── */}
           <SectionHeading id="eval">Eval & Benchmarks</SectionHeading>
 
-          <Sub>Query Test Suite (26 queries)</Sub>
+          <Sub>Query Test Suite (44 questions)</Sub>
           <P>
             <Mono>eval/queries.json</Mono> with expected intent, sources, community area, and search terms.
             Router-only eval checks that the LLM produces the right retrieval plan. Full pipeline eval
-            runs the complete chat flow and checks for expected terms in the response.
+            runs the complete chat flow, checks for expected terms in the response, and fails a query on any citation warning
+            from the server's citation check. Every run records the git SHA, the router and synthesizer models, and a hash of the
+            prompt file, so two runs are only compared when they measured the same system. The table below is the May 2026
+            run of the original 26-question set; the set has since grown to 44.
           </P>
           <Table
             headers={["Metric", "Value"]}
             rows={[
-              ["Total queries", "26"],
-              ["Pass rate", "22/26 (84.6%)"],
-              ["Router latency p50", "2,478 ms"],
-              ["Retrieval latency p50", "3,565 ms"],
-              ["TTFT p50", "4,827 ms"],
-              ["Total latency p50", "13,788 ms"],
+              ["Total queries (May 2026 set)", "26"],
+              ["Pass rate", "22/26 → 26/26 after the router began writing better zoning search queries"],
+              ["Total latency p50", "13.6 s"],
+              ["Total latency p95", "59 s → 24 s (retrieval p95 54 s → 18 s)"],
             ]}
           />
 
@@ -1504,15 +1964,39 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["v1 (baseline)", "11", "1", "4", "1", "1", "No dedup, no keyword boost"],
               ["v3", "13", "1", "4", "0", "0", "Per-section dedup + keyword boost"],
               ["v4", "15", "1", "2", "0", "0", "bge-reranker-v2-m3, rerank-before-dedup"],
-              ["v5 (current)", "26", "2", "0", "0", "0", "Synonym expansion, keyword-aware dedup, 0.20 keyword weight"],
+              ["v5", "26", "2", "0", "0", "0", "Synonym expansion, keyword-aware dedup, 0.20 keyword weight (reranker on)"],
+              ["Sep 2026, production config", "24", "4", "0", "0", "0", "Reranker off, 5.8 s for all 28 queries; Title 14 now in the corpus"],
             ]}
           />
           <P>
-            v5 reaches <Accent>100% A/B</Accent> across the (expanded) 28-query set. The two C-grades that survived v4
+            v5 reached <Accent>100% A/B</Accent> across the (expanded) 28-query set, and still does in the production
+            configuration. The two C-grades that survived v4
             (<Mono>adu_allowed</Mono>, <Mono>lot_coverage_rm5</Mono>) were terminology gaps; synonym expansion at query
             time closed them. Note the benchmark numbers are from the <em>full</em> pipeline including the reranker —
             in production (reranker off) the dense+keyword fallback carries the chat path, and the report path uses the
             precomputed zoning cache rather than retrieval at all.
+          </P>
+
+          <Sub>Reranker Ablation, and a Stale Label</Sub>
+          <P>
+            The decision to leave the reranker off is backed by a table, not intuition. Re-run on 28 questions with the reranker
+            on, one question improves by one grade (25 A / 3 B against 24 A / 4 B) at roughly 13× the wall time on a laptop — and
+            about 40 seconds per search on the production CPUs, which is what caused the June report timeouts.
+          </P>
+          <P>
+            The same re-run's one "D" turned out to be a <em>stale label, not a regression</em>. The{" "}
+            <Mono>demolition_permit</Mono> question's gold sections named adjacent chapters because, as its own note said, the
+            building code wasn't indexed when it was written. Once Title 14 was indexed, retrieval ranked §14A-4-407
+            ("Demolition", the permit requirements) first. The gold now includes it, and the reason is recorded on the question:
+            labels change only with that kind of evidence.
+          </P>
+          <P>
+            The LLM judge got the same scrutiny. Its documented dimension weights (citation 30%, factuality 30%, completeness 20%,
+            rules 20%) were only a fallback — whenever the judge returned its own holistic grade, that won — and a reply wrapped
+            in a markdown fence failed to parse and scored every dimension F. The overall grade is now always the weighted blend,
+            fences are stripped, and the judge's source list gained the two data sources it was missing (which had made citing them
+            look fabricated). Still true, and stated in the repository: the judge is reference-free (Sonnet grades Sonnet) and
+            uncalibrated against human grades.
           </P>
 
           <Sub>Data Source Coverage Benchmark</Sub>
@@ -1550,6 +2034,15 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Year built / stories", "20% / 1%", "47% / 46%"],
             ]}
           />
+
+          <P>
+            The most recent run (September 2026, 0 fetch errors): the county's PIN matched on 97% (the 3 misses are adjacent
+            addresses the county data doesn't match confidently — the profile marks them unconfirmed instead of guessing), land
+            area, class, zoning, assessment history and tax bill at 100%, zoning FAR 98.9%, year built 88%, stories 69% and units
+            31% (secondary fields with no reliable non-residential source). Building area reads as 76 present, 12 explained
+            absences and 12 tax-exempt misses: the 12 explained ones are members of multi-PIN commercial units whose assessor total
+            had been attributed to a single lot, and are now withheld on purpose.
+          </P>
 
           <Sub>LLM-as-Judge Synthesis Eval</Sub>
           <P>
@@ -1611,11 +2104,42 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <Sub>CI/CD Pipeline</Sub>
           <P>
-            GitHub Actions workflow on push to <Mono>main</Mono>: runs the backend test suite (~599 unit tests;
-            56 real-API integration tests are excluded), the frontend vitest suite, the TypeScript type check, and
-            the frontend build. On success, SSHs into the production server, pulls the latest code, and rebuilds
-            Docker containers — so a push to <Mono>main</Mono> is a deploy. Claude Code GitHub App provides AI code
-            review on PR open/synchronize events.
+            GitHub Actions has four gates. A <Accent>test</Accent> job runs the backend suite (about 1,440 unit tests; 61
+            real-API integration tests are excluded), the eval-scorer tests, the frontend vitest suite (257 tests) and the full
+            TypeScript build. A <Accent>lint</Accent> job runs ruff and ESLint. A <Accent>CodeQL</Accent> scan runs on pull
+            requests, pushes and weekly. A <Accent>changes</Accent> job decides whether a push needs a deploy at all: a push
+            touching only docs runs the tests but skips the container restart (proven live when a docs-only push reported{" "}
+            <Mono>deploy: skipped</Mono>), and it fails safe — a mixed docs-and-code push deploys. On success, the deploy job
+            reaches the server as a least-privilege <Mono>deploy</Mono> user with a pinned host key and runs a fast-forward-only
+            script, so a push to <Mono>main</Mono> is a deploy. <Mono>main</Mono> requires the test and lint checks and blocks
+            force-pushes and deletion.
+          </P>
+          <P>
+            Because merge is deploy, merges are serialized: merging three PRs back-to-back once started three concurrent deploys
+            that collided at container recreation ("name already in use") and took the site to a Cloudflare 521 until a failed run
+            was re-run alone. The rule since: merge one, wait for its deploy to finish, then merge the next.
+          </P>
+
+          <Sub>Gates That Weren't Gating — A Testing Story</Sub>
+          <P>
+            The pre-review audit found that several guards existed on paper and ran nowhere:
+          </P>
+          <Table
+            headers={["Finding", "Fix"]}
+            rows={[
+              ["171 frontend tests existed; no workflow ran them", "vitest runs in CI and gates the deploy"],
+              ["ESLint reported 76 problems and nothing ran it — including a real crash: charts returned early before some hooks, so a chart that mounted empty and then got data threw \"rendered more hooks than during the previous render\"", "Hooks fixed; ESLint and ruff gate the deploy; the warning count can only go down"],
+              ["requirements.txt lacked stripe, weasyprint and sentry — a clean clone had 4 failures and 8 collection errors; CI passed only because it installed a different file", "One requirements chain; a clean clone now installs and runs from the README"],
+              ["All 14 zoning-parity checks skipped in CI because the section JSONs were gitignored build output — the test that blocks fabricated zoning numbers ran only on one laptop", "The 74 KB of ordinance sections it reads are committed; it runs everywhere"],
+              ["Unit tests silently touched the network: retrieval degrades gracefully by design, so a test that forgot a mock still passed while making real calls with retries", "An autouse guard fails any non-integration test that opens a socket or resolves DNS; it found exactly five"],
+              ["The eval scorers themselves were untested — a scorer bug silently changes every reported number", "88 scorer tests run in CI: plan checks, the retrieval A–F rules, coverage statuses, lot-field classification against a recorded response, judge parsing"],
+            ]}
+          />
+          <P>
+            The same sweep gave the repo a <Mono>Makefile</Mono> (<Mono>setup</Mono>, <Mono>test</Mono>, <Mono>lint</Mono>,{" "}
+            <Mono>check</Mono>, <Mono>dev</Mono>), pinned tool versions, an <Mono>.env.example</Mono> listing every setting the code
+            reads (one inline comment had been parsed as the WalkScore API key), and a committed Title 16–17 sample so a fresh
+            clone's chat can cite real sections after a 30-second seed.
           </P>
 
           <Sub>Monitoring & Reliability</Sub>
@@ -1645,6 +2169,10 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Auth race condition", "Conversation load fired before auth resolved", "Gated init on !authLoading flag"],
               ["Silent write failures", "fetch() non-OK responses not thrown", "All write functions now throw on non-OK"],
               ["SSE stream crashes", "Non-fatal LLM errors killed the entire stream", "Two-tier try-except: fatal vs non-fatal call isolation"],
+              ["Chat failed for any parcel with a new crime/311 category", "A month-over-month change of None was compared to 0 in the prompt formatter, so synthesis raised; the same pass found raw exception text streamed to the browser", "Rendered as \"new this month\"; users get a generic retry message while detail stays in the log"],
+              ["Empty Discovery page on a cold visit", "The CSRF cookie is issued by the first /auth/me call; a POST could go out before it returned (2 of 3 cold loads)", "authFetch waits for one shared bootstrap before any state-changing request"],
+              ["Anonymous visits logged 401 errors", "The refresh cookie is httpOnly, so only the server can know whether one exists", "/auth/me reports can_refresh; the client refreshes only when it can"],
+              ["Rate limit bypass, id-only authorization, fail-open config, root deploys, open vector store, mutable action tag", "See Security & Hardening", "Fixed in September 2026"],
             ]}
           />
 
@@ -1724,53 +2252,53 @@ Consumers → Property Profile (renders pin + confidence badge)
           <P>
             As the surface area grew (Property Profile, Report, Discovery, chat, landing), arbitrary <Mono>text-[Npx]</Mono>{" "}
             sizes, ad-hoc <Mono>white/opacity</Mono> chrome, and off-palette hues had crept in. A unification pass
-            replaced them with a small, role-based token system — the same tokens this page is built on. The goal:
-            decisions are made by <em>picking a token</em>, not inventing a value.
+            replaced them with a small, role-based token system, and a later redesign ("Bento Pro") replaced its look while
+            keeping its mechanics. The goal: decisions are made by <em>picking a token</em>, not inventing a value.
+          </P>
+          <Sub>Theming</Sub>
+          <P>
+            Every color is a CSS variable behind a stable Tailwind class name (<Mono>bg-dark-surface</Mono>,{" "}
+            <Mono>text-text-primary</Mono>), so flipping between light, dark and system is a swap of the variables, not of the
+            markup. A pre-paint script prevents a flash of the wrong theme (and the content-security policy carries its hash). An
+            always-dark island, like the hero, mode-locks its subtree with a data attribute; content sections must flip.
+          </P>
+          <Sub>Palette: orange does the work, violet costs money</Sub>
+          <P>
+            A near-black canvas in dark mode and a warm near-white in light, separated by hairline borders rather than shadows.
+            One brand accent, orange <Mono>#F9A474</Mono>, is the only chrome color in both modes; violet is reserved for anything
+            that costs money (the report CTA, premium). Hue is otherwise reserved for genuine state (good, caution, bad) and for
+            functional data encodings — map colors, the Discovery upside ramp, data pills — where color carries meaning rather
+            than decoration. The chart rule is just as strict: series 1 is brand orange and series 2 a neutral gray, never
+            blue — a validated-but-off-brand blue read as clip-art.
           </P>
           <Sub>Type scale</Sub>
           <P>
             Ten named steps replace every arbitrary pixel size — <Mono>text-display / stat / section / subtitle /
             lead / title / body / caption / micro / overline</Mono>. Each bakes in size, line-height, and weight, so
-            you pick the step rather than overriding weight per use.
+            you pick the step rather than overriding weight per use. Three scoped families: <Accent>Inter</Accent> for body and UI,{" "}
+            <Accent>Inter Tight</Accent> for display headings only, and <Accent>JetBrains Mono</Accent> for PINs, code and data.
           </P>
-          <Sub>One neutral ramp</Sub>
+          <Sub>Radius by role, and primitives</Sub>
           <P>
-            A single neutral system (bg <Mono>#0d0d0d</Mono> → surface → elevated → hover, with subtle/regular/strong
-            borders, and primary/secondary/muted text) retired the parallel <Mono>white/opacity</Mono> chrome fork and
-            the one-off <Mono>bubble/drawer/tooltip</Mono> tokens. The accent is a single warm
-            terracotta (<Mono>#c96442</Mono>) with hover and muted variants.
-          </P>
-          <Sub>Radius by role</Sub>
-          <P>
-            Radius encodes role rather than taste: card/panel/modal <Mono>rounded-xl</Mono>, control/input/button{" "}
-            <Mono>rounded-lg</Mono>, chip/badge <Mono>rounded-md</Mono>, inline code <Mono>rounded</Mono>, and
-            avatar/dot/pill <Mono>rounded-full</Mono> (<Mono>2xl</Mono> reserved, by intent, for chat bubbles, the
-            composer, and Pricing cards).
-          </P>
-          <Sub>Fonts</Sub>
-          <P>
-            Three families, each scoped: <Accent>Inter</Accent> for body/UI, <Accent>Space Grotesk</Accent> for display
-            (scoped to <Mono>.text-display</Mono> / <Mono>.text-section</Mono> headings only), and{" "}
-            <Accent>IBM Plex Mono</Accent> for PINs, code, and data.
-          </P>
-          <Sub>Primitives &amp; color discipline</Sub>
-          <P>
-            Three shared primitives in <Mono>src/components/ui/</Mono> — <Mono>Card</Mono>, <Mono>Chip</Mono>,{" "}
-            <Mono>Modal</Mono> — replace hand-rolled card/chip/dialog chrome. The §6 color rule keeps chrome to{" "}
-            <Accent>accent + neutral only</Accent>; hue is reserved for genuine state
-            (<Mono>positive</Mono>=emerald, <Mono>negative</Mono>=rose, <Mono>warning</Mono>=amber). The deliberate
-            exemptions — text over photos, and functional data encoding (map colors, the Discovery upside ramp, data
-            pills, CTA/score colors) — are where color carries real meaning rather than decoration.
+            Radius encodes role rather than taste: cards, panels and modals use the large bento radii (28px / 20px),
+            controls and inputs <Mono>rounded-lg</Mono>, chips and badges <Mono>rounded-md</Mono>. Three shared primitives in{" "}
+            <Mono>src/components/ui/</Mono> — <Mono>Card</Mono>, <Mono>Chip</Mono>, <Mono>Modal</Mono> — replace hand-rolled
+            chrome, and the action hierarchy is fixed: one filled primary per row, outlined secondary, link-style tertiary, and a
+            violet premium button.
           </P>
 
           {/* ── 20. Testing ── */}
           <SectionHeading id="testing">Testing</SectionHeading>
           <P>
-            ~655 backend tests (599 unit + 56 real-API integration). The everyday baseline is{" "}
-            <Mono>pytest -m "not integration"</Mono> — the integration tests hit live external APIs and fail on
-            network/GIS flakiness, not code. The frontend adds a <Mono>vitest</Mono> suite (~51, covering the Property
-            Discovery compiler/selectors), a clean <Mono>tsc</Mono> build, and a <Mono>npm run build</Mono> producing
-            ~322KB JS + 16KB CSS.
+            ~1,500 backend tests (about 1,440 unit + 61 real-API integration), plus 88 tests of the eval scorers themselves.
+            The everyday baseline is <Mono>pytest -m "not integration"</Mono> — the integration tests hit live external APIs
+            and fail on network/GIS flakiness, not code, and an autouse guard fails any unit test that touches the network.
+            The frontend adds a <Mono>vitest</Mono> suite (257 tests across 32 files — Discovery compiler/selectors, landing,
+            nav-string budgets, i18n parity, the hero's crop geometry), a Playwright overflow audit across five phone profiles,
+            and a <Mono>npm run build</Mono> (<Mono>tsc -b</Mono> plus Vite) that is the real deploy gate. The zoning-parity
+            test diffs every hand-typed zoning standard against the ordinance tables parsed from the Municipal Code; the
+            ordinance-pinned tests behind the Verifiable Answers section (transit benefits, coverage notes, provenance code
+            sections) fail CI if a claim drifts from the code text.
           </P>
           <Table
             headers={["Domain", "Test Files", "Key Coverage"]}
@@ -1820,7 +2348,7 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["JWT + httpOnly cookies", "Session storage, bearer tokens in localStorage", "XSS-proof token storage; browser auto-sends cookies; no JS access to tokens", "CSRF protection needed (double-submit pattern); cookie config complexity"],
               ["In-memory rate limiting", "Redis, database-backed", "Single-process — in-memory state is correct and simplest; no external dependency", "Resets on restart; not horizontally scalable"],
               ["Domain orchestrators", "Monolithic retrieval function", "Each domain has different data sources, access patterns, and fallback strategies; separation of concerns", "More modules to maintain; orchestrator coordination overhead"],
-              ["Hetzner CX22", "AWS EC2, DigitalOcean, Railway", "4GB RAM at €4.50/mo — 5-10x cheaper than US cloud for equivalent specs", "Higher latency for US users (~100ms); no managed scaling"],
+              ["Hetzner (CX22, now CX32)", "AWS EC2, DigitalOcean, Railway", "Started at 4GB RAM for €4.50/mo — 5-10x cheaper than US cloud for equivalent specs; bumped to 8GB when the discovery index and PDF rendering landed", "Higher latency for US users (~100ms); no managed scaling"],
               ["Cloudflare Origin Cert", "Let's Encrypt + certbot", "15-year validity, zero renewal automation, no cron jobs, no renewal failures", "Locked into Cloudflare proxying; cert only valid behind Cloudflare"],
               ["Concurrency semaphore", "Unbounded parallelism, queue", "Prevents OOM from 10+ concurrent retrieval tasks on 4GB RAM; simple asyncio primitive", "Limits throughput; sequential bottleneck under high concurrency"],
               ["ML preload at startup", "Lazy-load on first request", "First user doesn't wait 8s for model download; OOM caught at deploy time, not at runtime", "Slower container startup (~30s); startup fails if model missing"],
@@ -1835,13 +2363,22 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Off-box, memory-bounded index build", "Build on the live serving process", "Full-city index build (~3GB) doesn't compete with the server for RAM; bounded by per-CA ingest + streaming finalize", "Extra deploy step; index is stale between monthly rebuilds"],
               ["Subprocess PDF render", "Render in the request process", "Isolates WeasyPrint memory — an OOM kills the child, not the worker", "IPC + temp-file handoff overhead"],
               ["Role-based design tokens", "Ad-hoc Tailwind classes", "Picking a type/neutral/radius token prevents drift across a growing surface area", "One-time migration cost"],
+              ["Benchmark key from primary sources, failures published", "A benchmark scored against the product's own output; publishing only the passing runs", "A key read from the ordinance, with the failing first run kept, is the only way a score can mean something; each fix then ships with a before/after row", "Twelve parcels show kinds of failure, not a rate; the key still needs outside review"],
+              ["One deterministic helper per claim, pinned to the code text", "A prompt rule; trusting the model's memory of the ordinance", "The Profile, a cold chat turn and the handoff all read the same answer, and a wrong claim fails CI", "Each claim needs a helper and a test; coverage grows one claim at a time"],
+              ["The model never writes URLs", "Trusting citations; post-hoc link checking", "A streaming guard drops any link we didn't supply and a footer is built from provenance, so a reader can't land on a page that doesn't say what the answer claims", "Conservative: a real City page the model wrote is dropped unless we supplied it"],
+              ["Say where the analysis stops", "Presenting the page as a determination", "A screening page that never states its edges reads as an official answer; the City's Zoning Verification Letter is named as the confirmation", "More text on the zoning card; notes must be kept pinned to the code"],
+              ["Fail-closed production config", "Convenient dev defaults in every environment", "Missing auth, a published JWT key or unsigned webhooks are vulnerabilities, not conveniences", "The app refuses to start until production settings are right"],
+              ["CodeQL + Dependabot, not an LLM reviewer", "A model reviewing every PR", "The model reviewer never ran (no key) and a permanently red check is worse than none; the free native tools are real and gate nothing falsely", "Security only — no general correctness reviewer"],
+              ["Truncation notice before a higher token cap", "Raising the output limit", "Shorter answers plus a visible cut-off notice fixed the silent failure without raising per-answer cost", "Two of seven benchmark answers still reach the cap (and say so)"],
+              ["Explained absence over a fuller-looking metric", "Attributing a multi-parcel complex's area to one lot", "A wrong 745,629 sq ft on a single lot is worse than an honest blank with a note; the coverage number dropped on purpose", "Lower headline coverage"],
+              ["Batch dependency PRs", "Merging each Dependabot PR", "Every merge to main is a deploy; ten merges is ten rebuilds and ten outage windows", "One larger change to review"],
             ]}
           />
 
           {/* ── 22. At Scale ── */}
           <SectionHeading id="scale">At Scale</SectionHeading>
           <P>
-            Current architecture optimized for single-user deployment on a 4GB VPS. Here's what changes at 1,000x users:
+            Current architecture optimized for single-user deployment on a single 8GB VPS. Here's what changes at 1,000x users:
           </P>
           <WideTable
             headers={["Component", "Current Approach", "At 1,000x Users"]}
@@ -1865,8 +2402,9 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <div className="mt-16 pt-8 border-t border-dark-border/50">
             <p className="text-text-muted text-body">
-              ~655 backend tests. 14,535 code chunks indexed. ~949k parcels in the discovery index.
-              25+ live datasets. 4 domain orchestrators. Property Profile + cited chat + $25 PDF report + discovery.
+              ~1,500 backend tests, 257 frontend tests. 16,576 code chunks indexed. ~949k parcels in the discovery index.
+              25+ live datasets. 4 domain orchestrators. Property Profile + cited chat + $25 PDF report + discovery,
+              scored on a 12-parcel public benchmark.
               Built with FastAPI, Claude, Qdrant, React, Mapbox, deck.gl, WeasyPrint, and Stripe.
               Live at urbanlayerchicago.com.
             </p>
