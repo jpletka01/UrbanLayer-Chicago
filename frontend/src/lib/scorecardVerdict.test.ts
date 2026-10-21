@@ -354,8 +354,17 @@ describe("transit-served (TOD) reason — parking relief is not a density bonus"
       zone: "B3-3",
       todBenefits: { parking_relief: true, parking_max_reduction_pct: 100, density_bonus_eligible: true, entitlement_required: true, note: "" },
     });
-    expect(r?.text).toBe('scorecard.verdict.reason.tod {"zone":"B3-3"}');
+    expect(r?.text).toBe('scorecard.verdict.reason.todPct {"zone":"B3-3","pct":100}');  // states the parking amount
     expect(r?.polarity).toBe("positive");
+  });
+
+  it("keeps the amount-free wording when the parking reduction is unknown", () => {
+    const r = reason({
+      ...base,
+      zone: "B3-3",
+      todBenefits: { parking_relief: true, parking_max_reduction_pct: null, density_bonus_eligible: true, entitlement_required: true, note: "" },
+    });
+    expect(r?.text).toBe('scorecard.verdict.reason.tod {"zone":"B3-3","pct":null}');
   });
 
   it("without backend tod_benefits it falls back to parking-only wording, never a bonus claim", () => {

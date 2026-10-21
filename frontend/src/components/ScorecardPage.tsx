@@ -1090,7 +1090,7 @@ export default function ScorecardPage() {
                     {ctx.regulatory && (
                       <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch mt-8">
                         <div id="scorecard-card-regulatory" className="scroll-mt-28 flex flex-col">
-                          <ScorecardRegulatoryCard data={ctx.regulatory} adu={ctx.adu ?? null} />
+                          <ScorecardRegulatoryCard data={ctx.regulatory} adu={ctx.adu ?? null} tod={ctx.tod_benefits ?? null} />
                         </div>
                         <ParcelMap
                           variant="boundaries"

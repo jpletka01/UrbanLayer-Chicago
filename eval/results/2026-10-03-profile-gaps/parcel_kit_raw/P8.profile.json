@@ -1,0 +1,1269 @@
+{
+ "address": "233 S Wacker Dr",
+ "lat": 41.8786659,
+ "lon": -87.63587413,
+ "community_area": 32,
+ "community_area_name": "Loop",
+ "context": {
+  "community_area": 32,
+  "community_area_name": "Loop",
+  "resolved_address": "233 S Wacker Dr",
+  "data_as_of": "2026-10-03",
+  "data_lag_note": "Crime data excludes the most recent 7 days (as of 2026-09-26).",
+  "data_lag_days": 7,
+  "data_lag_cutoff": "2026-09-26",
+  "crime_last_90d": {
+   "total": 2034,
+   "arrest_rate": 0.168,
+   "by_type": {
+    "THEFT": 793,
+    "BATTERY": 265,
+    "DECEPTIVE PRACTICE": 164,
+    "CRIMINAL DAMAGE": 157,
+    "ASSAULT": 112
+   },
+   "yoy": [
+    {
+     "category": "THEFT",
+     "current_count": 793,
+     "prior_year_count": 871,
+     "change_pct": -9
+    },
+    {
+     "category": "BATTERY",
+     "current_count": 265,
+     "prior_year_count": 335,
+     "change_pct": -21
+    },
+    {
+     "category": "DECEPTIVE PRACTICE",
+     "current_count": 164,
+     "prior_year_count": 217,
+     "change_pct": -24
+    },
+    {
+     "category": "CRIMINAL DAMAGE",
+     "current_count": 157,
+     "prior_year_count": 163,
+     "change_pct": -4
+    },
+    {
+     "category": "ASSAULT",
+     "current_count": 112,
+     "prior_year_count": 122,
+     "change_pct": -8
+    }
+   ],
+   "yoy_period": "Jun\u2013Sep 2026 vs Jun\u2013Sep 2025",
+   "capped": false
+  },
+  "address_311": {
+   "total": 31,
+   "open_count": 4,
+   "by_type": {
+    "Cab Feedback": 14,
+    "Wage Complaint": 4,
+    "Restaurant Complaint": 3,
+    "Finance Parking Code Enforcement Review": 3,
+    "Graffiti Removal Request": 2,
+    "Paid Sick Leave Violation": 1,
+    "Open Fire Hydrant Complaint": 1,
+    "Business Complaints": 1,
+    "Street Light Out Complaint": 1,
+    "Building Violation": 1
+   },
+   "high_risk_flags": [],
+   "routine_service_flags": []
+  },
+  "violations": {
+   "total": 20,
+   "open_count": 5,
+   "by_category": {
+    "Elevator/Escalator": 18,
+    "Inspection Required": 1,
+    "Other": 1
+   },
+   "top_descriptions": [
+    "MAINTAIN OR REPAIR ELECT ELEVA",
+    "ARRANGE FOR RE-INSPECTION",
+    "REPAIR DOOR, INT."
+   ],
+   "capped": false
+  },
+  "code_chunks": [],
+  "parcel_zoning": {
+   "zone_class": "DC-16",
+   "zone_type": 8,
+   "map_updated": "2026-08-26",
+   "zoning_map_url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "recently_rezoned": false
+  },
+  "regulatory": {
+   "overlays": [
+    {
+     "layer_type": "tod_cta",
+     "name": "Transit-Oriented Development (CTA)",
+     "description": "Transit-Oriented Development (CTA)"
+    },
+    {
+     "layer_type": "adu_area",
+     "name": "ADU-Allowed RS Area \u2014 Zone 1",
+     "description": "ADU Eligible Areas",
+     "detail": "Limitations: No Limitations (\u00a717-7-0573, \u00a717-7-0574)."
+    },
+    {
+     "layer_type": "aro_zone",
+     "name": "Affordable Requirements Ordinance Zones",
+     "description": "Affordable Requirements Ordinance Zones"
+    },
+    {
+     "layer_type": "tod_metra",
+     "name": "Transit-Oriented Development (Metra)",
+     "description": "Transit-Oriented Development (Metra)"
+    }
+   ],
+   "in_planned_development": false,
+   "in_landmark_district": false,
+   "is_landmark_building": false,
+   "in_historic_district": false,
+   "on_national_register": false,
+   "in_lakefront_protection": false,
+   "on_pedestrian_street": false,
+   "in_special_district": false,
+   "in_pmd": false,
+   "in_tod_area": true,
+   "in_adu_area": true,
+   "in_aro_zone": true,
+   "in_ssa": false,
+   "flood_zone": "X",
+   "flood_zone_subtype": "AREA OF MINIMAL FLOOD HAZARD",
+   "in_special_flood_hazard": false,
+   "brownfield_sites": [
+    {
+     "site_name": "GATEWAY PARK INDUSTRIAL COMPLEX",
+     "epa_id": "110039531496",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.884150999999996,
+     "longitude": -87.632393
+    },
+    {
+     "site_name": "3350 S. KEDZIE",
+     "epa_id": "110060983039",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.883829999999996,
+     "longitude": -87.63244999999999
+    },
+    {
+     "site_name": "9705 S. COTTAGE GROVE",
+     "epa_id": "110039531398",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.883829999999996,
+     "longitude": -87.63244999999999
+    },
+    {
+     "site_name": "SUN MACHINE PARTS",
+     "epa_id": "110039531316",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.883829999999996,
+     "longitude": -87.63244999999999
+    },
+    {
+     "site_name": "INDUSTRIAL SCRAP RECYCLING COMPANY",
+     "epa_id": "110071967004",
+     "interest_type": "BROWNFIELDS PROPERTY",
+     "latitude": 41.878114,
+     "longitude": -87.629798
+    }
+   ],
+   "aro_housing": {
+    "total_projects": 4,
+    "total_units": 53,
+    "projects": [
+     {
+      "name": "1000M",
+      "address": "1000 S. Michigan Ave.",
+      "units": 23,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Imprint Lofts",
+      "address": "739 S. Clark St.",
+      "units": 7,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Millie on Michigan",
+      "address": "300 N. Michigan Ave.",
+      "units": 7,
+      "property_type": "ARO"
+     },
+     {
+      "name": "Randolph Tower City Apts. (studios only)",
+      "address": "188 W. Randolph St.",
+      "units": 16,
+      "property_type": "Multifamily"
+     }
+    ]
+   }
+  },
+  "property": {
+   "pin14": "17162160090000",
+   "bldg_class": "591",
+   "bldg_sqft": 4667723,
+   "land_sqft": 128620,
+   "land_sqft_source": "geometry",
+   "bldg_sqft_source": "commercial_valuation",
+   "year_built_source": "commercial_valuation",
+   "stories_source": "footprint",
+   "stories": 110.0,
+   "bldg_age": 53,
+   "year_built": 1973,
+   "tax_exempt": false,
+   "total_assessed_value": 241578269.0,
+   "estimated_annual_tax": 50183883.51,
+   "tax_estimate_is_fallback": false,
+   "assessment_level": 0.25,
+   "implied_market_value": 966313076.0,
+   "effective_tax_rate": 0.0502,
+   "tax_year": 2024,
+   "tax_code": "76068",
+   "tax_breakdown": [
+    {
+     "agency": "BOARD OF EDUCATION",
+     "rate": 3.630964,
+     "amount": 27530853.84
+    },
+    {
+     "agency": "CITY OF CHICAGO",
+     "rate": 1.614882,
+     "amount": 12244428.84
+    },
+    {
+     "agency": "COUNTY OF COOK",
+     "rate": 0.390469,
+     "amount": 2960631.11
+    },
+    {
+     "agency": "METRO WATER RECLAMATION DISTRICT OF GREATER CHICAGO",
+     "rate": 0.340445,
+     "amount": 2581336.95
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT",
+     "rate": 0.294209,
+     "amount": 2230764.33
+    },
+    {
+     "agency": "CHICAGO COMMUNITY COLLEGE DISTRICT 508",
+     "rate": 0.14948,
+     "amount": 1133393.79
+    },
+    {
+     "agency": "CITY OF CHICAGO SCHOOL BLDG & IMP FUND",
+     "rate": 0.129569,
+     "amount": 982423.73
+    },
+    {
+     "agency": "FOREST PRESERVE DISTRICT OF COOK COUNTY",
+     "rate": 0.068588,
+     "amount": 520050.93
+    },
+    {
+     "agency": "CHICAGO PARK DISTRICT AQUARIUM & MUSEUM BONDS",
+     "rate": 0.0,
+     "amount": 0.0
+    }
+   ],
+   "tax_exemptions": [],
+   "appeals": {
+    "records": [
+     {
+      "year": 2025,
+      "stage": "board_of_review",
+      "before_total": 306762250.0,
+      "after_total": 241578267.0,
+      "result": "Decrease",
+      "reduction_pct": 21.2,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2024,
+      "stage": "board_of_review",
+      "before_total": 306762250.0,
+      "after_total": 249785657.0,
+      "result": "Decrease",
+      "reduction_pct": 18.6,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2023,
+      "stage": "board_of_review",
+      "before_total": 252799864.0,
+      "after_total": 252799864.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2022,
+      "stage": "assessor",
+      "before_total": 252799866.0,
+      "after_total": 252799866.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2022,
+      "stage": "board_of_review",
+      "before_total": 252799864.0,
+      "after_total": 249684666.0,
+      "result": "Decrease",
+      "reduction_pct": 1.2,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2021,
+      "stage": "assessor",
+      "before_total": 309753181.0,
+      "after_total": 252799866.0,
+      "result": "change",
+      "reduction_pct": 18.4,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2021,
+      "stage": "board_of_review",
+      "before_total": 252799864.0,
+      "after_total": 249684666.0,
+      "result": "Decrease",
+      "reduction_pct": 1.2,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2018,
+      "stage": "board_of_review",
+      "before_total": 174249999.0,
+      "after_total": 174249999.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2013,
+      "stage": "board_of_review",
+      "before_total": 143749999.0,
+      "after_total": 139062018.0,
+      "result": "Decrease",
+      "reduction_pct": 3.3,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2012,
+      "stage": "board_of_review",
+      "before_total": 150000003.0,
+      "after_total": 137676781.0,
+      "result": "Decrease",
+      "reduction_pct": 8.2,
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2011,
+      "stage": "board_of_review",
+      "before_total": 149999999.0,
+      "after_total": 149999999.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2010,
+      "stage": "board_of_review",
+      "before_total": 149999999.0,
+      "after_total": 149999999.0,
+      "result": "No Change",
+      "appeal_type": "Overvaluation"
+     },
+     {
+      "year": 2004,
+      "stage": "assessor",
+      "before_total": 189999999.0,
+      "after_total": 201411692.0,
+      "result": "change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2003,
+      "stage": "assessor",
+      "before_total": 179688405.0,
+      "after_total": 201411710.0,
+      "result": "change",
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2002,
+      "stage": "assessor",
+      "before_total": 174970009.0,
+      "after_total": 169194003.0,
+      "result": "change",
+      "reduction_pct": 3.3,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2001,
+      "stage": "assessor",
+      "before_total": 177933998.0,
+      "after_total": 174970009.0,
+      "result": "change",
+      "reduction_pct": 1.7,
+      "appeal_type": "commercial"
+     },
+     {
+      "year": 2000,
+      "stage": "assessor",
+      "before_total": 179688405.0,
+      "after_total": 179688405.0,
+      "result": "change"
+     },
+     {
+      "year": 1999,
+      "stage": "assessor",
+      "before_total": 141738986.0,
+      "after_total": 141738986.0,
+      "result": "no change",
+      "appeal_type": "commercial"
+     }
+    ],
+    "nearby_window_years": [
+     2023,
+     2024,
+     2025
+    ],
+    "nearby_appeal_count": 290,
+    "nearby_reduced_count": 204,
+    "nearby_median_reduction_pct": 30.9,
+    "nearby_capped": false
+   },
+   "energy": {
+    "chicago_energy_rating": 2.5,
+    "energy_star_score": 51,
+    "gross_floor_area": 4600624,
+    "year_built": 1973,
+    "primary_property_type": "Office",
+    "site_eui": 77.9,
+    "ghg_intensity": 10.6,
+    "data_year": 2021,
+    "not_submitted": false
+   },
+   "assessment_history": [
+    {
+     "year": 2025,
+     "land": 13448400.0,
+     "building": 228129869.0,
+     "total": 241578269.0
+    },
+    {
+     "year": 2024,
+     "land": 13448400.0,
+     "building": 236337259.0,
+     "total": 249785659.0
+    },
+    {
+     "year": 2023,
+     "land": 15209500.0,
+     "building": 237590366.0,
+     "total": 252799866.0
+    },
+    {
+     "year": 2022,
+     "land": 15209500.0,
+     "building": 234475169.0,
+     "total": 249684669.0
+    }
+   ],
+   "sales_history": [
+    {
+     "date": "2015-06-05T00:00:00.000",
+     "price": 300000000.0,
+     "deed_type": "Other"
+    },
+    {
+     "date": "2004-04-01T00:00:00.000",
+     "price": 840000000.0,
+     "deed_type": "Trustee"
+    }
+   ],
+   "parcel_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -87.63656,
+       41.87823
+      ],
+      [
+       -87.63655,
+       41.87817
+      ],
+      [
+       -87.63614,
+       41.87818
+      ],
+      [
+       -87.63612,
+       41.87818
+      ],
+      [
+       -87.6361,
+       41.87818
+      ],
+      [
+       -87.63592,
+       41.87818
+      ],
+      [
+       -87.63573,
+       41.87818
+      ],
+      [
+       -87.63555,
+       41.87819
+      ],
+      [
+       -87.63536,
+       41.87819
+      ],
+      [
+       -87.63537,
+       41.87864
+      ],
+      [
+       -87.63538,
+       41.87882
+      ],
+      [
+       -87.63539,
+       41.87928
+      ],
+      [
+       -87.63557,
+       41.87927
+      ],
+      [
+       -87.63576,
+       41.87927
+      ],
+      [
+       -87.63594,
+       41.87927
+      ],
+      [
+       -87.63613,
+       41.87927
+      ],
+      [
+       -87.63631,
+       41.87926
+      ],
+      [
+       -87.63658,
+       41.87926
+      ],
+      [
+       -87.63657,
+       41.87881
+      ],
+      [
+       -87.63657,
+       41.87872
+      ],
+      [
+       -87.63657,
+       41.87863
+      ],
+      [
+       -87.63656,
+       41.87857
+      ],
+      [
+       -87.63656,
+       41.87851
+      ],
+      [
+       -87.63656,
+       41.87846
+      ],
+      [
+       -87.63656,
+       41.8784
+      ],
+      [
+       -87.63656,
+       41.87834
+      ],
+      [
+       -87.63656,
+       41.87829
+      ],
+      [
+       -87.63656,
+       41.87823
+      ]
+     ]
+    ]
+   },
+   "data_gaps": [],
+   "assessor_permits": {
+    "permits": [
+     {
+      "date_issued": "2026-06-29",
+      "status": "CLOSED",
+      "amount": 39649.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. INSTALL SECURITY. SPECIFIC LOCATION 57TH FLOOR."
+     },
+     {
+      "date_issued": "2026-06-26",
+      "status": "CLOSED",
+      "amount": 1200.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. ALTER EXISTING SECURITY. SPECIFIC LOCATION 00L-10."
+     },
+     {
+      "date_issued": "2026-06-18",
+      "status": "CLOSED",
+      "amount": 85000.0,
+      "work_description": "SELF-CERT 2019 CBRC REVISION TO BUILDING PERMIT 101075768 TO REVISE THE CEILING AT FLOORS 53 AND 54 PER REVISED PLANS. SCOPE LIMITED TO REPLACING PREVIOUSLY OPEN CEILING AREAS AND OPEN-GRID BAFFLES WITH ACOUSTICAL CEILINGS AND SUSPENDED GYPSUM BOARD CEILINGS."
+     },
+     {
+      "date_issued": "2026-06-09",
+      "status": "CLOSED",
+      "amount": 7800000.0,
+      "work_description": "DDS 2019 CBRC  REVISION TO PERMIT 101075483 DUE TO ACAR FOR STAIR ENCLOSURE AND FIRE SHUTTERS.  1A CONSTRUCTION. B-BUSINESS CONSULTANT REVIEWER V3 COMPANIES OF IL"
+     },
+     {
+      "date_issued": "2026-05-19",
+      "status": "CLOSED",
+      "amount": 1.0,
+      "work_description": "FIRE ALARM REPAIR EXISTING SYSTEM. AFFECTS 0 DWELLING UNITS 0 NON-RESIDENTIAL UNITS. HIGH-RISE BUILDING YES. VOICE COMMUNICATION NO. SPECIAL LOCKING YES. MONITORING TYPE SUPERVISING STATION . SPECIFIC LOCATION 72, 73, 74TH FLOORS."
+     },
+     {
+      "date_issued": "2026-05-06",
+      "status": "CLOSED",
+      "amount": 900000.0,
+      "work_description": "SELF CERT 2019 CBRC INTERIOR DEMOLITION ONLY TO EXISTING 39TH AND 40TH FLOOR OFFICE SPACE. SCOPE TO INCLUDE REMOVAL OF NON-LOAD BEARING WALLS, FINISHES, CEILING, ELECTRICAL, MECHANICAL, AND PLUMBING. NO STRUCTURAL. NO CHANGE IN USE. BUSINESS / 1A"
+     },
+     {
+      "date_issued": "2026-04-16",
+      "status": "CLOSED",
+      "amount": 8400.0,
+      "work_description": "LINE VOLTAGE ELECTRICAL WORK. REPAIR OR ALTER DEVICES ON EXISTING CIRCUITS. RECEPTACLE OUTLETS 88 . LIGHTING OUTLETS 0. SPECIFIC LOCATION 54TH FLOOR."
+     },
+     {
+      "date_issued": "2026-04-16",
+      "status": "CLOSED",
+      "amount": 59000.0,
+      "work_description": "LINE VOLTAGE ELECTRICAL WORK. REPAIR OR ALTER DEVICES ON EXISTING CIRCUITS. RECEPTACLE OUTLETS 634 . LIGHTING OUTLETS 0. SPECIFIC LOCATION 53RD FLOOR."
+     },
+     {
+      "date_issued": "2026-04-02",
+      "status": "CLOSED",
+      "amount": 1.0,
+      "work_description": "FIRE ALARM REPAIR EXISTING SYSTEM. AFFECTS 0 DWELLING UNITS 3 NON-RESIDENTIAL UNITS. HIGH-RISE BUILDING YES. VOICE COMMUNICATION NO. SPECIAL LOCKING NO. MONITORING TYPE SUPERVISING STATION . SPECIFIC LOCATION 72ND, 73RD, 74TH FLOORS."
+     },
+     {
+      "date_issued": "2026-04-02",
+      "status": "CLOSED",
+      "amount": 1.0,
+      "work_description": "FIRE ALARM REPAIR EXISTING SYSTEM. AFFECTS 0 DWELLING UNITS 2 NON-RESIDENTIAL UNITS. HIGH-RISE BUILDING YES. VOICE COMMUNICATION NO. SPECIAL LOCKING NO. MONITORING TYPE SUPERVISING STATION . SPECIFIC LOCATION 53RD AND 54TH FLOORS."
+     },
+     {
+      "date_issued": "2026-02-10",
+      "status": "CLOSED",
+      "amount": 4000.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. INSTALL SECURITY. SPECIFIC LOCATION SUITE 3700."
+     },
+     {
+      "date_issued": "2026-02-10",
+      "status": "CLOSED",
+      "amount": 18000.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. INSTALL DATA/VIDEO. SPECIFIC LOCATION 98TH FLOOR."
+     },
+     {
+      "date_issued": "2026-01-27",
+      "status": "CLOSED",
+      "amount": 200000.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. INSTALL DATA/VIDEO. INSTALL OTHER. SPECIFIC LOCATION 53RD AND 54THE FLOORS."
+     },
+     {
+      "date_issued": "2026-01-21",
+      "status": "CLOSED",
+      "amount": 1.0,
+      "work_description": "TEMPORARY SCAFFOLDING QTY 1,  MAX. LENGTH 40 FT., MAX. HEIGHT 90 FT. LOCATION NORTHEAST FACADE. PERMIT EXPIRATION DATE 365 DAYS FROM PERMIT ISSUED DATE   THIS PERMIT IS NOT VALID WITHOUT CORRESPONDING CDOT PUBLIC WAY PERMIT."
+     },
+     {
+      "date_issued": "2026-01-21",
+      "status": "CLOSED",
+      "amount": 195600.0,
+      "work_description": "SELF CERT 2019 CBRC INTERIOR ALTERATIONS TO EXISTING 50TH  51ST FLOOR OFFICE SPACES. WORK TO INCLUDE DEMO, NEW NON LOAD BEARING PARTITIONS, PLUMBING, ELECTRICAL AND MECHANICAL WORK AS PER PLANS. 1A CONSTRUCTION. B-BUSINESS USE"
+     },
+     {
+      "date_issued": "2026-01-20",
+      "status": "CLOSED",
+      "amount": 93718.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. INSTALL TELEPHONE. SPECIFIC LOCATION 53RD AND 54TH."
+     },
+     {
+      "date_issued": "2026-01-13",
+      "status": "CLOSED",
+      "amount": 7800000.0,
+      "work_description": "DDS 2019 CBRC  INTERIOR ALTERATIONS TO FLOORS 72 PARTIAL, 73  74 AT EXISTING OFFICE BUILDING. WORK TO INCLUDE DEMO, NEW PARTITIONS, MECHANICAL, ELECTRICAL AND PLUMBING. DEMO UNDER PERMIT  101074892 1A CONSTRUCTION. B-BUSINESS CONSULTANT REVIEWER V3 COMPANIES"
+     },
+     {
+      "date_issued": "2026-01-12",
+      "status": "CLOSED",
+      "amount": 1230000.0,
+      "work_description": "SELF CERT 2019 CBC INTERIOR ALTERATIONS TO 98TH FLOOR. WORK TO INCLUDE DEMO, NEW PARTITIONS, MECHANICAL, ELECTRICAL AND PLUMBING WORK AS PER PLANS. OCCUPANCY B-BUSINESS, TYPE 1A CONSTRUCTION"
+     },
+     {
+      "date_issued": "2026-01-07",
+      "status": "CLOSED",
+      "amount": 12902.0,
+      "work_description": "LOW VOLTAGE/COMMUNICATION ELECTRICAL WORK. INSTALL SECURITY. SPECIFIC LOCATION SUITE 5230."
+     },
+     {
+      "date_issued": "2025-12-24",
+      "status": "CLOSED",
+      "amount": 400000.0,
+      "work_description": "SPR 2019 CBRC INTERIOR BUILDOUT OF FIRST FLOOR RESTAURANT TENANT SPACE CON TYPE 1A FS OCC A2, M B"
+     },
+     {
+      "date_issued": "2025-12-10",
+      "status": "CLOSED",
+      "amount": 1.0,
+      "work_description": "FOR PERMIT 101075768 REPLACEMENT PLUMBING CONTRACTOR.  NEW CONTRACTORS LISTED UNDER OTHER APPLICANTS AND CONTRACTORS ON PERMIT CERTIFICATE."
+     },
+     {
+      "date_issued": "2025-11-13",
+      "status": "CLOSED",
+      "amount": 1750000.0,
+      "work_description": "DDS 2019 CBC INTERIOR TENANT DEMOLITION TO FLOORS 73 74, PARTIAL TENANT INTERIOR DEMOLITION TO 72ND FLOOR, STAIR INFILL ONLY ON THE 75TH FLOOR OF EXISTING HIGH RISE OFFICE BUILDING. 1A CONSTRUCTION. B-BUSINESS USE CONSULTANT REVIEWER V3 COMPANIES OF IL"
+     },
+     {
+      "date_issued": "2025-10-27",
+      "status": "CLOSED",
+      "amount": 9100000.0,
+      "work_description": "SELF-CERT 2019 CBRC INTERIOR ALTERATION TO EXISTING OFFICE FLOORS 53  54 AS PER PLANS. WORK TO INCLUDE SELECTIVE DEMOLITION, NEW PARTITIONS, CEILING, LIGHTING, DOORS AND HARDWARE, MECHANICAL, ELECTRICAL, AND PLUMBING. NO STRUCTURAL WORK. NO CHANGE IN USE. CON"
+     },
+     {
+      "date_issued": "2025-10-16",
+      "status": "CLOSED",
+      "amount": 125000.0,
+      "work_description": "SELF CERT 2019 CBRC 2ND REVISION TO PERMIT 101051942. CHANGES TO LAYOUT ON 85, 86, AND 93."
+     },
+     {
+      "date_issued": "2025-09-05",
+      "status": "CLOSED",
+      "amount": 5000.0,
+      "work_description": "REVISION TO PERMIT 101068462 TO RE-ROUTE THE HOOD EXHAUST DUCT, PREVIOUSLY SHOWN ROUTED TO BASE BUILDING STACK TO VENT ON ROOF, NOW ROUTED TO LOUVER ON EXTERIOR FACE OF BUILDING. NO CHANGE IN EQUIPMENT OR DUCT SIZING."
+     }
+    ],
+    "count": 25,
+    "truncated": true,
+    "window_years": 5,
+    "total_declared_amount": 29827474.0,
+    "assessable_pending": false,
+    "latest_date": "2026-06-29"
+   }
+  },
+  "incentives": {
+   "in_tif_district": true,
+   "tif_name": "LaSalle Central",
+   "tif_year_start": 2006,
+   "tif_end_year": 2030,
+   "tif_total_revenue": 113259379.0,
+   "tif_total_expenditure": 96056194.0,
+   "tif_property_tax_revenue": 113259379.0,
+   "tif_cumulative_revenue": 1319729471.0,
+   "tif_fund_balance": 400438004.0,
+   "tif_annual_expenditure": 96056194.0,
+   "tif_fund_history": [
+    {
+     "year": "2025",
+     "revenue": 113259379.0,
+     "expenditure": 96056194.0,
+     "fund_balance": 400438004.0,
+     "net_income": 37923993.0
+    },
+    {
+     "year": "2024",
+     "revenue": 211363276.0,
+     "expenditure": 98633439.0,
+     "fund_balance": 362514011.0,
+     "net_income": 115078541.0
+    },
+    {
+     "year": "2023",
+     "revenue": 195636095.0,
+     "expenditure": 182142932.0,
+     "fund_balance": 247435470.0,
+     "net_income": 20822047.0
+    },
+    {
+     "year": "2022",
+     "revenue": 161059713.0,
+     "expenditure": 124347053.0,
+     "fund_balance": 226613423.0,
+     "net_income": 29635148.0
+    },
+    {
+     "year": "2021",
+     "revenue": 151520861.0,
+     "expenditure": 75927906.0,
+     "fund_balance": 196978275.0,
+     "net_income": 75796071.0
+    }
+   ],
+   "tif_financials": [
+    {
+     "tif_number": "T-T-147",
+     "tif_district": "LaSalle Central",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "2",
+     "project_name": "Ziegler HQ",
+     "annual_report_name": "Ziegler",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Completed Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "5847280",
+     "private_funds_to_completion": "0",
+     "public_funds": "724800",
+     "public_funds_to_completion": "0"
+    },
+    {
+     "tif_number": "T-T-147",
+     "tif_district": "LaSalle Central",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "8",
+     "project_name": "UAL - HQ",
+     "annual_report_name": "United Airlines Inc.",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Completed Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "45896881",
+     "private_funds_to_completion": "0",
+     "public_funds": "31663799.81",
+     "public_funds_to_completion": "0"
+    },
+    {
+     "tif_number": "T-T-147",
+     "tif_district": "LaSalle Central",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "9",
+     "project_name": "Riverside Park - II",
+     "annual_report_name": "Riverside Park - II",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Completed Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "11765398",
+     "private_funds_to_completion": "0",
+     "public_funds": "36046870.83",
+     "public_funds_to_completion": "0"
+    },
+    {
+     "tif_number": "T-T-147",
+     "tif_district": "LaSalle Central",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "3",
+     "project_name": "Presence Care Transformation Corp",
+     "annual_report_name": "Presence Care Transformation Corp",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Completed Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "0",
+     "private_funds_to_completion": "0",
+     "public_funds": "0",
+     "public_funds_to_completion": "0"
+    },
+    {
+     "tif_number": "T-T-147",
+     "tif_district": "LaSalle Central",
+     "report_year": "2025",
+     "project_iga": "Project",
+     "project_type": "Project",
+     "project_number": "7",
+     "project_name": "NAVTEQ",
+     "annual_report_name": "NAVTEQ",
+     "current_year_new_deals": false,
+     "ongoing": false,
+     "status": "Completed Project",
+     "current_year_payments": "0",
+     "estimated_next_year_payments": "0",
+     "private_funds": "23583483",
+     "private_funds_to_completion": "0",
+     "public_funds": "5000000",
+     "public_funds_to_completion": "0"
+    }
+   ],
+   "in_opportunity_zone": false,
+   "in_enterprise_zone": false,
+   "in_qct": false,
+   "in_nmtc": false,
+   "nmtc_severe_distress": false,
+   "property_tax_class": "standard",
+   "tax_incentive_description": "Property class 591 is a standard classification \u2014 no tax incentive reduction applies.",
+   "grant_programs": {
+    "total_projects": 1,
+    "total_funding": 247471.45,
+    "by_program": {
+     "SBIF": 1
+    },
+    "recent_projects": [
+     {
+      "name": "Goddess and the Baker Madison, LLC",
+      "program": "SBIF",
+      "incentive_amount": 247471.45,
+      "total_cost": 277368.28,
+      "property_type": "General Commercial",
+      "description": "Exterior renovations including demolition of existing curtain wall; fa\u00e7ade improvements including installation of revolving door system, flashing system for waterproofing, stone trim filler. Interior renovations including drywall; electrical upgrades including rework existing seating lighting; HVAC work including remove baseboard heaters, rework existing heater; painting and finishing; architect fees.",
+      "date": "2025-06-06"
+     }
+    ]
+   }
+  },
+  "neighborhood": {
+   "transit": {
+    "nearest_cta_rail": "Quincy",
+    "cta_rail_distance_mi": 0.11,
+    "cta_lines": [
+     "Brown Line",
+     "Orange Line",
+     "Pink Line",
+     "Purple Line"
+    ],
+    "nearest_metra": "Chicago Union Station",
+    "metra_distance_mi": 0.16,
+    "metra_line": "Burlington Northern",
+    "tod_eligible": true,
+    "tod_type": "CTA rail"
+   },
+   "walkscore": {
+    "walk_score": 99,
+    "walk_description": "Walker's Paradise",
+    "transit_score": 100,
+    "transit_description": "Rider's Paradise",
+    "bike_score": 80,
+    "bike_description": "Very Bikeable",
+    "ws_link": "https://www.walkscore.com/score/233-S-Wacker-Dr/lat=41.8786659/lng=-87.63587413/?utm_source=pletka.com&utm_medium=ws_api&utm_campaign=ws_api"
+   },
+   "ward": {
+    "ward": 42,
+    "alderman": "Reilly, Brendan",
+    "phone": "(312) 642-4242",
+    "email": "Ward42@cityofchicago.org"
+   },
+   "traffic": {
+    "road": "WACKER",
+    "daily_vehicles": 10590,
+    "directions": 2,
+    "from_street": "W VAN BUREN ST",
+    "to_street": "W ADAMS ST",
+    "as_of": "2026-10-03"
+   },
+   "divvy": {
+    "nearest_station": "Franklin St & Adams St",
+    "distance_mi": 0.06,
+    "docks": 15,
+    "stations_within_radius": 37,
+    "radius_mi": 0.5
+   }
+  },
+  "requires_disclaimer": true,
+  "partial_failures": [],
+  "coverage_notes": [
+   {
+    "id": "aldermanic",
+    "applies": "general",
+    "text": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the alderman of the ward (\u00a717-13-0100, \u00a717-13-0300, \u00a717-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess. Ward 42: Ald. Reilly, Brendan, (312) 642-4242.",
+    "params": {
+     "ward": 42,
+     "alderman": "Reilly, Brendan",
+     "phone": "(312) 642-4242"
+    },
+    "link": null,
+    "section": "17-13-0300"
+   },
+   {
+    "id": "map_lag",
+    "applies": "general",
+    "text": "The City's zoning map can lag a passed amendment by up to 90 days.",
+    "params": {},
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "code_vintage",
+    "applies": "general",
+    "text": "The Municipal Code text used here is current through 2026-03-18; a later Council amendment may not be reflected.",
+    "params": {
+     "date": "2026-03-18"
+    },
+    "link": null,
+    "section": null
+   },
+   {
+    "id": "official_letter",
+    "applies": "general",
+    "text": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning ($150, up to 30 days, as published by the Office of the Zoning Administrator, checked 2026-09-30); a letter of opinion covers a specific project.",
+    "params": {
+     "fee": 150,
+     "days": 30,
+     "checked": "2026-09-30"
+    },
+    "link": "https://www.chicago.gov/city/en/depts/dcd/supp_info/office_of_the_zoningadministrator.html",
+    "section": null
+   }
+  ],
+  "code_vintage": {
+   "current_through": "2026-03-18",
+   "label": "Council Journal of March 18, 2026",
+   "source": "Municipal Code of Chicago, American Legal export"
+  },
+  "unit_yield": {
+   "units": 1286,
+   "lot_sqft": 128620,
+   "min_lot_area_per_unit": 100,
+   "arithmetic": "128,620 sq ft \u00f7 100 sq ft per unit = 1286.2 \u2192 1286 units",
+   "basis": "Minimum lot area per dwelling unit for the district",
+   "caveat": "Lot area per unit only: FAR, height, parking and other standards can allow fewer units, and exemptions (efficiency/SRO units, ground-floor Type A units) can allow more.",
+   "lot_area_note": "Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table)."
+  },
+  "tod_benefits": {
+   "parking_relief": true,
+   "parking_max_reduction_pct": 50,
+   "density_bonus_eligible": false,
+   "entitlement_required": false,
+   "note": "Transit-served: minimum parking can be reduced by up to 50% (17-10-0102-B). No density, FAR or height bonus at DC-16: those apply only in dash-3 districts (17-3-0402-B, 17-3-0403-B, 17-3-0408-B (B/C districts); 17-4 (D districts))."
+  }
+ },
+ "comparables": {
+  "median_sale_price": 6250000.0,
+  "price_range_min": 6250000.0,
+  "price_range_max": 6250000.0,
+  "sales_volume": 1,
+  "sales": [
+   {
+    "pin": "17093310190000",
+    "sale_date": "2026-06-29T00:00:00.000",
+    "sale_price": 6250000.0,
+    "class_code": "591",
+    "land_sqft": 1666,
+    "deed_type": "Warranty",
+    "distance_mi": 0.53,
+    "lat": 41.8842210209,
+    "lon": -87.6430001377,
+    "zone_class": "PD 1486",
+    "land_sqft_source": "geometry"
+   }
+  ]
+ },
+ "partial_failures": [],
+ "violations_checked": true,
+ "resolved_pin": "17162160090000",
+ "resolved_confidence": "authoritative",
+ "nearest_parcel_unverified": false,
+ "resolved_lat": 41.8786659,
+ "resolved_lon": -87.63587413,
+ "zone_definition": {
+  "zone_class": "DC-16",
+  "name": "Downtown Core",
+  "code_section": "\u00a717-4-0103",
+  "far": 16.0,
+  "max_height": "No max (bonuses available)",
+  "lot_coverage": null,
+  "min_lot_sqft": null,
+  "min_lot_area_per_unit": 100,
+  "lot_area_note": "Efficiency and SRO units count at smaller areas than a dwelling unit (see the density table).",
+  "uses": "Highest-density core: offices, retail, hotels, entertainment, residential. Dwelling units above the ground floor are permitted; ground-floor multi-unit housing needs a special use and ground-floor houses, townhouses and two-flats are not allowed (\u00a717-4-0207).",
+  "notes": "",
+  "is_fallback": false
+ },
+ "resolution": {
+  "method": "address_points",
+  "point_basis": "address_point",
+  "input_address": "233 S Wacker Dr",
+  "pin": "17162160090000",
+  "confidence": "authoritative",
+  "point": {
+   "lat": 41.8786659,
+   "lon": -87.63587413
+  },
+  "centroid_gap_ft": 34,
+  "candidates": [
+   {
+    "pin": "17162160090000",
+    "sources": [
+     "address_points",
+     "assessor_addresses"
+    ],
+    "used": true
+   }
+  ],
+  "multiple_parcels": false,
+  "sources_disagree": false,
+  "condo_units": 0,
+  "identity_unconfirmed": false,
+  "unverified_reason": null,
+  "property_record_pin": null
+ },
+ "provenance": {
+  "zoning.district": {
+   "label": "Zoning district DC-16",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning Districts, Zoning MapServer layer 1",
+   "record_id": null,
+   "url": "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning",
+   "section": null,
+   "as_of": "2026-08-26",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "as_of is when this district's map record was last edited."
+  },
+  "zoning.far": {
+   "label": "Floor area ratio for DC-16",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-4-0405-A",
+   "url": null,
+   "section": "17-4-0405-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.max_height": {
+   "label": "Maximum building height for DC-16",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-4-0407",
+   "url": null,
+   "section": "17-4-0407",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "zoning.min_lot_area_per_unit": {
+   "label": "Minimum lot area per dwelling unit for DC-16",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, Title 17 (Zoning Ordinance)",
+   "record_id": "\u00a717-4-0404-A",
+   "url": null,
+   "section": "17-4-0404-A",
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Code text current through Council Journal of March 18, 2026."
+  },
+  "overlay.tod_cta": {
+   "label": "Transit-Oriented Development (CTA)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (CTA) (layer 13)",
+   "record_id": "Transit-Oriented Development (CTA)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "overlay.adu_area": {
+   "label": "ADU-Allowed RS Area \u2014 Zone 1",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, ADU Eligible Areas (layer 17)",
+   "record_id": "ADU-Allowed RS Area \u2014 Zone 1",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "overlay.aro_zone": {
+   "label": "Affordable Requirements Ordinance Zones",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Affordable Requirements Ordinance Zones (layer 20)",
+   "record_id": "Affordable Requirements Ordinance Zones",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "overlay.tod_metra": {
+   "label": "Transit-Oriented Development (Metra)",
+   "kind": "official_record",
+   "source": "City of Chicago Zoning MapServer, Transit-Oriented Development (Metra) (layer 24)",
+   "record_id": "Transit-Oriented Development (Metra)",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "parcel.identity": {
+   "label": "Parcel 17162160090000",
+   "kind": "official_record",
+   "source": "Cook County Address Points or Assessor Parcel Addresses",
+   "record_id": "17162160090000",
+   "url": "https://www.cookcountyassessor.com/pin/17162160090000",
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": null
+  },
+  "property.land_sqft": {
+   "label": "Lot area",
+   "kind": "official_record",
+   "source": "Parcel polygon area (Cook County property-tax database)",
+   "record_id": "17162160090000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "property.bldg_sqft": {
+   "label": "Building area",
+   "kind": "official_record",
+   "source": "Cook County Assessor commercial valuation (economic-unit total)",
+   "record_id": "17162160090000",
+   "url": null,
+   "section": null,
+   "as_of": null,
+   "effective_date": null,
+   "query_date": "2026-10-03"
+  },
+  "code.vintage": {
+   "label": "Municipal Code vintage",
+   "kind": "code_text",
+   "source": "Municipal Code of Chicago, American Legal export",
+   "record_id": null,
+   "url": null,
+   "section": null,
+   "as_of": "2026-03-18",
+   "effective_date": null,
+   "query_date": "2026-10-03",
+   "note": "Council Journal of March 18, 2026"
+  }
+ }
+}

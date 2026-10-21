@@ -76,18 +76,18 @@
  ],
  "current": {
   "profile": {
-   "run": "2026-10-02-v7a",
-   "date": "2026-10-02",
-   "code": "db15340",
+   "run": "2026-10-03-profile-gaps",
+   "date": "2026-10-03",
+   "code": "407ab47",
    "key": "2026-10-02.1",
-   "report": "eval/results/2026-10-02-v7a/parcel_kit.md",
+   "report": "eval/results/2026-10-03-profile-gaps/parcel_kit.md",
    "aggregate": {
     "parcels_scored": 12,
-    "coverage": 0.953,
-    "accuracy": 0.943,
-    "points": 115,
-    "possible": 122,
-    "confident_wrong": 2,
+    "coverage": 0.969,
+    "accuracy": 1.0,
+    "points": 124,
+    "possible": 124,
+    "confident_wrong": 0,
     "critical_misses": [],
     "district_correct": 12,
     "scoring": "automatic"
@@ -187,12 +187,12 @@
       "detail": "district B12"
      },
      "B": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "groups 1/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "C": {
       "score": 2,
@@ -295,20 +295,20 @@
       "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
-      "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "1 CW",
-      "detail": "found 5/5; false landmark_building"
+      "auto": "2",
+      "detail": "found 5/5"
      },
      "E": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "groups 1/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "F": {
       "score": 2,
@@ -413,12 +413,12 @@
       "detail": "district DC16"
      },
      "B": {
-      "score": 0,
+      "score": 2,
       "cw": false,
-      "label": "0",
+      "label": "2",
       "basis": "auto",
-      "auto": "0",
-      "detail": "groups 0/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "C": {
       "score": 2,
@@ -479,12 +479,12 @@
       "detail": "found 3/3"
      },
      "E": {
-      "score": 1,
+      "score": 2,
       "cw": false,
-      "label": "1",
+      "label": "2",
       "basis": "auto",
-      "auto": "1",
-      "detail": "groups 1/2"
+      "auto": "2",
+      "detail": "groups 2/2"
      },
      "F": {
       "score": 2,
@@ -529,12 +529,12 @@
       "detail": "found 2/2"
      },
      "F": {
-      "score": null,
+      "score": 2,
       "cw": false,
-      "label": "NP",
+      "label": "2",
       "basis": "auto",
-      "auto": "NP",
-      "detail": "groups 0/1"
+      "auto": "2",
+      "detail": "groups 1/1"
      }
     },
     "P11": {
@@ -563,12 +563,12 @@
       "detail": "far ok; mla ok"
      },
      "D": {
-      "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "1 CW",
-      "detail": "found 3/3; false landmark_building"
+      "auto": "2",
+      "detail": "found 3/3"
      },
      "F": {
       "score": 2,
@@ -1178,6 +1178,27 @@
      "scoring": "automatic"
     }
    }
+  },
+  {
+   "id": "2026-10-03-profile-gaps",
+   "label": "Use rules for downtown/business/manufacturing districts; transit amount on the card; landmark layer fixed (F8)",
+   "date": "2026-10-03",
+   "code": "407ab47",
+   "key": "2026-10-02.1",
+   "report": "eval/results/2026-10-03-profile-gaps/parcel_kit.md",
+   "surfaces": {
+    "profile": {
+     "parcels_scored": 12,
+     "coverage": 0.969,
+     "accuracy": 1.0,
+     "points": 124,
+     "possible": 124,
+     "confident_wrong": 0,
+     "critical_misses": [],
+     "district_correct": 12,
+     "scoring": "automatic"
+    }
+   }
   }
  ],
  "review": {
@@ -1189,6 +1210,7 @@
   "The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning attorney (the most interpretive parcels are P2, P3 and P6).",
   "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
   "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",
+  "Each fix was found by these parcels, so the score on the parcel that exposed it is in-sample: it shows the fix works there, not that it generalises. The parcels added after a fix are the test of that.",
   "Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.",
   "Code text is current through the Council Journal of 2026-03-18; a later amendment is not in the key."
  ]

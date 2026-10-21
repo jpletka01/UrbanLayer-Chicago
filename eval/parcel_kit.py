@@ -440,6 +440,7 @@ def profile_text(resp: dict, verdict: dict | None) -> str:
     parts += [f"{o.get('name', '')} {o.get('description', '')} {o.get('detail') or ''}" for o in reg.get("overlays") or []]
     adu = (resp.get("context") or {}).get("adu") or {}
     parts.append(adu.get("note") or "")
+    parts.append(((resp.get("context") or {}).get("tod_benefits") or {}).get("note") or "")  # shown on the regulatory card
     if verdict:
         parts += [verdict.get("headline", ""), *verdict.get("reasons", []), *verdict.get("caveats", []), verdict.get("next_step", "")]
     return "\n".join(p for p in parts if p)
