@@ -33,6 +33,11 @@ TITLE17 = {
 }
 CITED_OTHER = {"SO2025-0021852", "SO2026-0024086", "O2026-0024022", "O2026-0026243", "SO2025-0017573",
                "SO2026-0027237", "SO2026-0027165"}
+# Passed on or before 2026-06-17 and reviewed in WS1 M4 (SO2026-0024930 only partly in the text).
+IN_2026_06_17_TEXT = {
+    "O2025-0018447", "O2026-0024064", "SO2025-0017570", "SO2026-0024923", "O2026-0025414", "SO2026-0024930",
+    "O2026-0024022", "SO2025-0021852", "SO2026-0024086",
+}
 
 
 def _matters() -> list[clerk.ClerkMatter]:
@@ -80,6 +85,10 @@ def test_sections_come_from_the_title_most_specific_first():
     ("17-3-0500", "17-3-0503-D", True),      # the indexed article
     ("17-3-0503-A", "17-3-0503-D", False),   # siblings
     ("17-9-0129", "17-9-0129.1", False),     # a separate decimal section
+    ("14X-8-802", "14X-8-802.2.2", True),    # Title 14 dots are subsections
+    ("14A-4-407", "14A-4-407.6", True),
+    ("14X-8-802.2.2", "14X-8-802.3.2", False),
+    ("14X-8-80", "14X-8-802.2", False),
     ("17-2-0300", "17-3-0503-D", False),
     ("2-44-170", "2-44", True),
 ])
@@ -93,8 +102,16 @@ def test_the_review_file_matches_the_live_list():
     assert set(reviews) == TITLE17 | CITED_OTHER
     for rec, a in reviews.items():
         m = live[rec]
-        assert a["passed_on"] == m.passed_on.isoformat() and a["url"] == m.url and a["relevance"] == am.relevance(m.title)
-        assert a["codified"] is False and a["product_effect"] in ("applied", "none", "pending")
+        assert a["passed_on"] == m.passed_on.isoformat() and a["url"] == m.url
+        assert a["relevance"] == am.relevance(m.title) or a.get("relevance_basis") == "review"
+        assert a["product_effect"] in ("applied", "none", "pending")
+        # WS1 M4 (2026-06-17 text): everything passed on or before it is reviewed, and in
+        # the text unless a reviewer found part of it missing
+        if a["passed_on"] <= "2026-06-17":
+            assert a["review_status"] == "reviewed" and a["reviewed_on"]
+            assert a["codified"] is (not a.get("codified_partly"))
+        else:
+            assert a["codified"] is False and not a.get("codified_partly")
         # a summary only where someone read the ordinance; never invented from the title
         assert (a["summary"] is None) == (a["summary_basis"] is None)
     assert reviews["SO2026-0025391"]["summary_basis"] == "ordinance"
@@ -133,16 +150,16 @@ def test_never_checked_or_suspect_is_unknown():
 def test_fresh_gives_the_count():
     _write_snapshot()
     cc = currency.code_currency(now=NOW)
-    assert cc["check_state"] == "fresh" and cc["since"] == {"title17": 16, "cited_other": 7}
-    assert len(cc["amendments"]) == 16  # other titles only when they touch something cited
-    assert "Since then City Council has passed 16 amendments to the Zoning Ordinance (Title 17)" in currency.currency_sentence(cc)
+    assert cc["check_state"] == "fresh" and cc["since"] == {"title17": 10, "cited_other": 5}  # 2026-06-17 text (WS1 M4)
+    assert len(cc["amendments"]) == 10  # other titles only when they touch something cited
+    assert "Since then City Council has passed 10 amendments to the Zoning Ordinance (Title 17)" in currency.currency_sentence(cc)
     assert "(checked Oct 21, 2026)" in currency.currency_sentence(cc)
 
 
 def test_aging_gives_the_count_as_of_the_check():
     _write_snapshot(NOW - timedelta(days=5))
     s = currency.currency_sentence(currency.code_currency(now=NOW))
-    assert s.endswith(" As of Oct 16, 2026, City Council had passed 16 amendments to the Zoning Ordinance (Title 17) since then that are not in this text.")
+    assert s.endswith(" As of Oct 16, 2026, City Council had passed 10 amendments to the Zoning Ordinance (Title 17) since then that are not in this text.")
 
 
 @pytest.mark.parametrize("setup", ["missing", "stale", "suspect"])
@@ -154,7 +171,7 @@ def test_unknown_withholds_the_count_but_keeps_the_committed_list(setup):
     cc = currency.code_currency(now=NOW)
     assert cc["check_state"] == "unknown" and cc["since"] is None and cc["checked_at"] is None
     s = currency.currency_sentence(cc)
-    assert "couldn't check" in s and "none" not in s.lower() and "16" not in s
+    assert "couldn't check" in s and "none" not in s.lower() and "10" not in s
     # the committed review file (codified: false) still lists them, TOD Streets included
     assert "SO2026-0025391" in {a["record"] for a in cc["amendments"]}
 
@@ -179,7 +196,7 @@ def test_an_unreviewed_live_amendment_still_shows_with_its_title():
 
 def test_the_snapshot_is_reloaded_when_it_changes():
     _write_snapshot(rows=[])
-    assert currency.code_currency(now=NOW)["since"]["title17"] == 16  # from the review file
+    assert currency.code_currency(now=NOW)["since"]["title17"] == 10  # from the review file
     _write_snapshot(NOW - timedelta(days=30))
     path = currency.snapshot_path()
     import os
@@ -214,11 +231,12 @@ def test_the_parcel_context_lists_all_title17_relevant_first():
         property=PropertySummary(pin14="13131000010000"),
     )
     cc = ctx.code_currency
-    assert len(cc["amendments"]) == 16
+    assert len(cc["amendments"]) == 10
     relevant = [a["record"] for a in cc["amendments"] if a["parcel_relevant"]]
-    # TOD streets by address; the B3 gas-station ban by the business use table (17-3-0207)
-    assert set(relevant) == {"SO2026-0025391", "SO2026-0024923"}
-    assert [a["record"] for a in cc["amendments"][:2]] == ["SO2026-0025391", "SO2026-0024923"]
+    # TOD streets by address. The B3 gas-station change (17-3-0207) is in the 2026-06-17
+    # text now, so it no longer counts as "not reflected on this page".
+    assert set(relevant) == {"SO2026-0025391"}
+    assert cc["amendments"][0]["record"] == "SO2026-0025391"
     note = next(n for n in ctx.coverage_notes if n["id"] == "code_amendments_parcel")
     assert note["applies"] == "parcel" and "SO2026-0025391" in note["text"] and "not reflected on this page" in note["text"]
     assert note["link"].startswith("https://chicityclerkelms.chicago.gov/Matter/?matterId=")
@@ -258,7 +276,7 @@ def test_footer_says_how_current_the_code_is_and_which_amendments_touch_what_was
     ctx = ContextObject(code_chunks=[chunk])
     footer = build_sources_footer({}, [(1, chunk)], "2026-03-18", ctx.code_currency)
     line = footer.strip().splitlines()[-1]
-    assert line.startswith("- **Code text current through Mar 18, 2026** · 16 later zoning amendments (3 touch sections cited above: ")
+    assert line.startswith("- **Code text current through Jun 17, 2026** · 10 later zoning amendments (3 touch sections cited above: ")
     assert "[O2026-0026042](https://chicityclerkelms.chicago.gov/Matter/?matterId=" in line and "(§17-3-0500)" in line
 
 
@@ -297,7 +315,7 @@ def test_the_context_the_model_sees_carries_code_currency():
     _write_snapshot()
     ctx = ContextObject(resolved_address="4000 N Western Ave", parcel_zoning=ZoningSummary(zone_class="B3-2"))
     payload = json.loads(ctx.model_dump_json(exclude={"analytics"}))
-    assert payload["code_currency"]["since"]["title17"] == 16
+    assert payload["code_currency"]["since"]["title17"] == 10
     assert payload["code_currency"]["amendments"][0]["record"] == "SO2026-0025391"
 
 
@@ -309,7 +327,7 @@ def test_the_model_gets_full_rows_only_for_what_touches_the_parcel_or_the_code()
     text = _build_user_text(ctx, "What can I build here?")
     payload = json.loads(text.split("```json\n", 1)[1].split("\n```", 1)[0])
     rows = {a["record"]: a for a in payload["code_currency"]["amendments"]}
-    assert len(rows) == 16 and payload["code_currency"]["since"]["title17"] == 16
+    assert len(rows) == 10 and payload["code_currency"]["since"]["title17"] == 10
     assert rows["SO2026-0025391"]["summary"].startswith("Adds §17-3-0600") and rows["SO2026-0025391"]["parcel_relevant"]
     assert set(rows["SO2026-0028463"]) == {"record", "passed_on", "title"}  # untouched: compact
     assert "url" not in rows["SO2026-0025391"]  # links come from the Sources footer
@@ -334,13 +352,13 @@ def test_report_block_states_the_vintage_the_count_and_the_parcel_items():
     _write_snapshot(datetime.now(timezone.utc) - timedelta(hours=1))
     html = _html()
     assert "How current the law in this report is" in html
-    assert "current through the Council Journal of March 18, 2026" in html
-    assert "Since then City Council has passed 16 amendments to the Zoning Ordinance (Title 17)" in html
-    assert "These 2 may affect this parcel:" in html
-    # the parcel's rows in the zoning section, all 16 under Data Sources
-    assert "All 16 amendments passed since are listed under Data Sources &amp; Disclaimers." in html
-    assert "Code amendments passed since the Council Journal of March 18, 2026" in html
-    assert html.count("May affect this parcel") == 4 and html.count("SO2026-0028463") == 1
+    assert "current through the Council Journal of June 17, 2026" in html
+    assert "Since then City Council has passed 10 amendments to the Zoning Ordinance (Title 17)" in html
+    assert "This one may affect this parcel:" in html  # TOD Streets; the gas-station change is in the text now
+    # the parcel's rows in the zoning section, all 10 under Data Sources
+    assert "All 10 amendments passed since are listed under Data Sources &amp; Disclaimers." in html
+    assert "Code amendments passed since the Council Journal of June 17, 2026" in html
+    assert html.count("May affect this parcel") == 2 and html.count("SO2026-0028463") == 1
     assert "Not yet reviewed" in html and "October 14, 2026" in html
 
 
@@ -415,9 +433,9 @@ def test_admin_code_currency_is_admin_only_and_offline(client):
         d = client.get("/api/admin/code-currency").json()
     finally:
         main.app.dependency_overrides.pop(require_admin, None)
-    assert d["code"]["source_id"] == "code.municipal_text" and d["code"]["lag"]["title17_passed_since"] == 16
+    assert d["code"]["source_id"] == "code.municipal_text" and d["code"]["lag"]["title17_passed_since"] == 10
     assert d["clerk"]["source_id"] == "chi.clerk.legislation" and d["clerk"]["snapshot_state"] == "ok"
-    assert len(d["amendments"]) == 23 and d["map_lag"] is None
+    assert len(d["amendments"]) == 15 and d["map_lag"] is None  # 10 Title 17 + 5 cited (incl. the omnibus remainder)
 
 
 # --- the daily sync -----------------------------------------------------------------------------
@@ -430,9 +448,10 @@ def test_sync_writes_an_ok_snapshot_atomically(monkeypatch, tmp_path):
     monkeypatch.setattr(clerk, "final_since", AsyncMock(return_value=_matters()))
     out = tmp_path / "snap.json"
     code, snap = _run(sync.run(out))
-    assert code == 0 and snap["status"] == "ok" and snap["vintage"] == "2026-03-18"
-    assert snap["counts"] == {"passed_code_amendments": 97, "title17": 16, "cited_other": 7}
-    assert {r["record"] for r in snap["code_amendments"]} == TITLE17 | CITED_OTHER
+    assert code == 0 and snap["status"] == "ok" and snap["vintage"] == "2026-06-17"
+    # the recorded since-March list, cut at the 2026-06-17 vintage: the 9 reviewed in M4 drop out
+    assert snap["counts"] == {"passed_code_amendments": 56, "title17": 10, "cited_other": 4}
+    assert {r["record"] for r in snap["code_amendments"]} == (TITLE17 | CITED_OTHER) - IN_2026_06_17_TEXT
     assert json.loads(out.read_text()) == snap and not list(tmp_path.glob("*.tmp"))
 
 
@@ -503,6 +522,21 @@ def test_codification_check_matches_by_journal_date_and_section(tmp_path):
     assert r["unexplained"] == [{"section": "17-8-0100", "coun_j": "4-15-26"}]
 
 
+def test_codification_check_leaves_a_reviewed_partial_codification_alone(tmp_path):
+    # SO2026-0024930: Art. IV is in the 2026-06-17 text; Titles 14M/14G/14N take effect
+    # 2026-10-01 and aren't. A date match on 17-17 must not flip it to codified.
+    amendments = [{"record": "OMNI", "passed_on": "2026-06-17", "sections": ["14M", "14B-9-913"], "codified_partly": True}]
+    diff = {
+        "old_vintage": "2026-03-18", "new_vintage": "2026-06-17", "added": [],
+        "modified_detail": [{"section": "17-17-0100", "coun_j_dates": ["6-17-26"], "new_coun_j_dates": ["6-17-26"]}],
+    }
+    r = codification_check.check(diff, amendments, tmp_path)
+    assert r["matched"] == [] and r["missing"] == []
+    assert r["partly"] == [{"record": "OMNI", "passed_on": "2026-06-17", "sections": ["14M", "14B-9-913"], "changed": []}]
+    diff["modified_detail"].append({"section": "14M-3-301", "coun_j_dates": ["6-17-26"], "new_coun_j_dates": ["6-17-26"]})
+    assert codification_check.check(diff, amendments, tmp_path)["partly"][0]["changed"] == ["14M-3-301"]
+
+
 def test_codification_check_writes_codified_flags(tmp_path):
     review = tmp_path / "amendments.json"
     review.write_text(json.dumps({"schema": 1, "amendments": {"A": {"codified": False}, "B": {"codified": False}}}))
@@ -514,6 +548,7 @@ def test_codification_check_writes_codified_flags(tmp_path):
 
 def test_currency_check_warns_on_an_old_vintage_and_long_pending_reviews():
     w = currency_check.warnings(date(2026, 10, 21))
-    assert w[0] == "Municipal Code text current through 2026-03-18 (217 days, > 90)"
-    assert any(x.startswith("SO2026-0024923 (passed 2026-05-20) has been pending review") for x in w)
+    assert w[0] == "Municipal Code text current through 2026-06-17 (126 days, > 90)"
+    assert any(x.startswith("O2026-0025429 (passed 2026-07-15) has been pending review") for x in w)
+    assert not any("SO2026-0024923" in x for x in w)  # reviewed in M4
     assert not any("SO2026-0025391" in x for x in currency_check.warnings(date(2026, 10, 30)))  # 16 days pending

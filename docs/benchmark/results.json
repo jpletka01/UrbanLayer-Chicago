@@ -1,5 +1,5 @@
 {
- "kit_version": "2026-10-02.1",
+ "kit_version": "2026-10-21.1",
  "parcels": [
   {
    "id": "P1",
@@ -76,18 +76,18 @@
  ],
  "current": {
   "profile": {
-   "run": "2026-10-02-v7a",
-   "date": "2026-10-02",
-   "code": "db15340",
-   "key": "2026-10-02.1",
-   "report": "eval/results/2026-10-02-v7a/parcel_kit.md",
+   "run": "2026-10-21-m4",
+   "date": "2026-10-21",
+   "code": "5347b8c",
+   "key": "2026-10-21.1",
+   "report": "eval/results/2026-10-21-m4/parcel_kit.md",
    "aggregate": {
     "parcels_scored": 12,
     "coverage": 0.953,
-    "accuracy": 0.943,
-    "points": 115,
+    "accuracy": 0.959,
+    "points": 117,
     "possible": 122,
-    "confident_wrong": 2,
+    "confident_wrong": 0,
     "critical_misses": [],
     "district_correct": 12,
     "scoring": "automatic"
@@ -295,12 +295,12 @@
       "detail": "far ok; height_ft ok; mla ok"
      },
      "D": {
-      "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "1 CW",
-      "detail": "found 5/5; false landmark_building"
+      "auto": "2",
+      "detail": "found 5/5"
      },
      "E": {
       "score": 1,
@@ -563,12 +563,12 @@
       "detail": "far ok; mla ok"
      },
      "D": {
-      "score": 1,
-      "cw": true,
-      "label": "1 CW",
+      "score": 2,
+      "cw": false,
+      "label": "2",
       "basis": "auto",
-      "auto": "1 CW",
-      "detail": "found 3/3; false landmark_building"
+      "auto": "2",
+      "detail": "found 3/3"
      },
      "F": {
       "score": 2,
@@ -635,7 +635,7 @@
    "run": "2026-10-02-f5a",
    "date": "2026-10-02",
    "code": "ff1b64b",
-   "key": "2026-10-02.1",
+   "key": "2026-10-21.1",
    "report": "eval/results/2026-10-02-f5a/parcel_kit.md",
    "aggregate": {
     "parcels_scored": 7,
@@ -1178,6 +1178,27 @@
      "scoring": "automatic"
     }
    }
+  },
+  {
+   "id": "2026-10-21-m4",
+   "label": "Code text refreshed to the Council Journal of June 17, 2026; key re-checked, no value moved (WS1 M4)",
+   "date": "2026-10-21",
+   "code": "5347b8c",
+   "key": "2026-10-21.1",
+   "report": "eval/results/2026-10-21-m4/parcel_kit.md",
+   "surfaces": {
+    "profile": {
+     "parcels_scored": 12,
+     "coverage": 0.953,
+     "accuracy": 0.959,
+     "points": 117,
+     "possible": 122,
+     "confident_wrong": 0,
+     "critical_misses": [],
+     "district_correct": 12,
+     "scoring": "automatic"
+    }
+   }
   }
  ],
  "review": {
@@ -1190,6 +1211,6 @@
   "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
   "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",
   "Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.",
-  "Code text is current through the Council Journal of 2026-03-18; a later amendment is not in the key."
+  "Code text is current through the Council Journal of 2026-06-17; a later amendment is not in the key."
  ]
 }

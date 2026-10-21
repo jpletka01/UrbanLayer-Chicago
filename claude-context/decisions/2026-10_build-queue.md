@@ -383,3 +383,80 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Chat answer behaviour under the extended rule 34. That needs a live model, which build work may not spend; the first real parcel chat after the deploy is the check.
 - Which Title 17 sections the omnibus (SO2026-0024930) touches: it has no section list until M4 reads it, so `amendments_touching` never returns it.
 - Prod's first sync run (after the timer is installed).
+
+## Item 7: code text refresh to the June 17 export (WS1 M4, #PR, 2026-10-2x)
+
+**The Title 13 gate was a real repeal, and bigger than item 4 recorded.**
+- **Decision:** applied with `--force` after reading the export's editor's notes.
+- **Evidence:** the 71 deleted sections are three chapters, not one: 13-84 (45, assembly units), 13-208 (20, temporary overnight shelters) and 13-212 (6, transitional shelters). Each chapter now reads "Reserved", with a note citing Coun. J. 6-17-26, p. 45214, Art. IV §§18, 20 and 21. That is the building-code omnibus, SO2026-0024930, though its title lists Titles 2, 14, 17 and 18, not 13. Item 4's note said "all 71 sections of chapter 13-208"; the per-chapter count corrects it.
+- **Revisit if:** a gate trips on a refresh with no editor's note to explain it. That would be a parser regression, not law.
+
+**Title 14 dots are subsections; Title 17 dots are not.**
+- **Decision:** `sections_overlap` treats `14X-8-802.2.2` as inside `14X-8-802` (any `14<letter>-` id), and keeps `17-9-0129.1` separate from `17-9-0129`.
+- **Alternatives:** match the amendment's dotted ids against the corpus ids by hand in the review file.
+- **Why:** the codification check reported SO2026-0024086 (the 14X heat dates) as MISSING although 14X-8-802 carries its 5-20-26 citation. The corpus indexes Title 14 at the three-part section (`14X-8-802`), and the IBC-style numbering puts subsections after a dot. The same rule keeps CHRS's `14A-4-407.6` inside `14A-4-407`. Four overlap cases pin it.
+- **Revisit if:** a Title 17 section is ever numbered with a dot subsection.
+
+**Codified is decided from the text, not only from the check.**
+- **Decision:** the check's nine matches were each confirmed against the section diff. Where the title and the diff disagreed, the passed ordinance was read (four PDFs: three scans read visually, one with a text layer).
+- **What the reading changed:**
+  - **SO2025-0021852** is titled "§14A-3-306 stop-work orders and §14A-4-406 excavation", but the substitute that passed doesn't touch 14A-3-306. It amends 4-36-010, 4-36-030 and 14A-4-406, and that's the section list now.
+  - **SO2026-0024923** (gas stations): the substitute changes the 17-3-0207 row for B3, C1 and C2 from S to "-". That row is identical in the March and June exports, because the "March 18" export was downloaded on May 28, after passage, and already carried the new row. The March text was newer than its header in at least this one place.
+  - **O2026-0024064** (waste uses) is narrower than its title. It is one exemption, for C2 container storage of up to 20 containers, from 17-9-0117-A and -G.1.
+- **Revisit if:** never; this is the review rule (plan §3.6: no number without the text in hand).
+
+**The omnibus is partly codified, and the review file can now say so.**
+- **Decision:** SO2026-0024930 stays `codified: false` with a new `codified_partly: true`. Its `sections` list only the parts not in our text: Titles 14M, 14G and 14N (repealed and replaced effective 2026-10-01), Chapters 18-28 and 18-36 (repealed 2026-12-01), 14B-9-913/915 (Art. IV §§30–31) and the Art. V residential sections. `codification_check` reports such an entry as "partly", says whether its pending sections changed in a later export, and never flips the flag.
+- **Alternatives:**
+  - `codified: true` (the check's answer): this would drop it from every list, though the 14M/14G/14N text chat retrieves has been superseded since October 1;
+  - leave it `false` with no marker: the next `--write` would flip it, because its §17-17 changes match by date.
+- **Also:** its `relevance` is overridden to `cited_other` (`relevance_basis: review`). Its Title 17 part (Art. IV §44, the 17-17 definitions) is in the text. Counting it among "Title 17 amendments not in this text" would overstate the zoning gap on every Profile.
+- **Known limit:** the check matches by Journal date, so it can't tell the articles apart. Today it already flags 14B-2-202 and 14B-10-1011 for re-review. Both changed on 6-17-26 under Art. IV (§§23, 32, which are in the text), while their Art. V changes are still pending. The flag only asks a person to look, which is the safe direction.
+- **Revisit if:** an export carries the new 14M/14G/14N. The check then lists the changed sections for re-review.
+
+**One product change: C1 and C2 use summaries.**
+- **Decision:** "auto-oriented commercial" (C1) and "nearly any business" (C2) now add "no new gas stations, §17-3-0207". A test pins every B/C summary to the use-table row: C1 and C2 must say it while the row says "-", and the other families mustn't mention gas stations.
+- **Alternatives:** leave it to chat, which retrieves the table.
+- **Why:** these strings reach the Profile's zoning card and the $25 report verbatim, and both read as allowing a gas station. Everything else codified here lands in sections no deterministic rule reads (PPA buffer, Wrigley signs, Cicero overlay, 17-17 definitions, Title 14), so chat answers from the new text with no code change.
+
+**The zoning cache is kept; only its fingerprint moves.**
+- **Decision:** no `zoning_cache_build` run (it spends the production key). Instead:
+  - `--check` reported the cache stale because the Title 17 fingerprint covers every section;
+  - the five sections the builder reads (17-2-0300, 17-3-0400, 17-4-0400, 17-5-0400, 17-10-0200) have identical `content_hash` in both manifests;
+  - so `_meta.corpus_fingerprint` is re-stamped to the new corpus, with a `_meta.fingerprint_rebased` note giving the date, the reason and the sections checked.
+- **Alternatives:**
+  - leave it stale: every later `--check` and WS6's artifact-age check would cry wolf;
+  - narrow the fingerprint to the sections the builder reads: cleaner, but it changes `test_corpus_fingerprint_only_tracks_title_17`'s contract mid-refresh.
+- **Revisit if:** a refresh changes one of those five sections. Then setbacks need a hand re-read (build-order item 7), or a build once a production run is approved.
+
+**The kit's note expectation had gone stale at item 6; fixed here.**
+- **Decision:** the key's `coverage.must` now expects `code_currency` instead of `code_vintage` on all 12 parcels, with a `corrections` entry saying why. The kit test is updated to match.
+- **Why:** #65 replaced the note id whenever amendment data exists, which on prod is always. Since then the Profile kit has reported "0/12 parcels carry exactly their notes" on prod, on a product that was right. It was found by the first Profile kit run after #65, which is this one.
+
+**The answer key moves to the new vintage without value changes.**
+- **Evidence:** the keyed fields cite 17-2-0207/0300s, 17-3-0207/0400s, 17-4, 17-5-0204/0207/0404, 17-6-0204, 17-7-0573/0574/0591, 17-8-0512, 17-10-0102 and 17-13-0302/0600. The refresh changed none of them (17-3-0207's content is identical; see above). So `code_current_through` → 2026-06-17 and version 2026-10-21.1, with no `corrections` entry. The Profile-only kit was re-run locally and against prod (no chat, no model calls).
+
+**Found along the way, not fixed here: section viewers 404 for chapter 17-7's overlay articles.**
+- `/api/code/section/17-7-0574` (ADU) and `/17-7-0591` (606) return 404 on prod today, and the new `17-7-0510` (Cicero overlay) does the same.
+- **Cause:** `code_sections.article_id` rounds a section down to the nearest `…00` article (17-7-0500). Chapter 17-7's articles start at 0510, 0550, 0570, 0580 and 0590.
+- It's an existing bug: it's on prod against the March text, and the Profile cites both sections. Raised as its own follow-up, so this PR stays the refresh.
+
+**Numbers** (2026-10-21; local unless marked prod)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Sections / chunks | 9,487 / 16,576 → 9,453 / 16,584 (37 added, 149 modified, 71 deleted; Title 17: 6 modified, 1 added; 1 gate, Title 13) | `python -m ingestion.update --dry-run` (13.3 s) |
+| Full local embed + promote into `municipal_code_2026-06-17` | 354 s wall, 16,584 points = chunk count | `/usr/bin/time -p python -m ingestion.update --force` |
+| Codification check, the 9 amendments passed after 2026-03-18 and on or before 2026-06-17 | 8 codified + 1 MISSING (Title 14 dot bug) → 8 codified + 1 partly (reviewed), 0 unexplained | `python -m backend.legislation.codification_check --diff ingestion/data/diff/2026-06-17/diff.json --sections ingestion/data/sections` |
+| Corpus-pinned suite (8 files) on the new text | 6 failures, all hard-coded vintage dates → 188 passed; no table, number or citation change needed | the §3.6 pytest command, `-m "not integration"` |
+| Zoning cache | STALE (fingerprint `4321bf04…`) → FRESH (`707f181e…`), entries untouched; the builder's 5 source sections have identical `content_hash` | `python -m backend.zoning_cache_build --check` |
+| Profile JSON, 1601 N Milwaukee: `code_currency.since` | prod (March text) `{title17: 16, cited_other: 7}`, 1 parcel-relevant (SO2026-0024923) → local `{title17: 10, cited_other: 5}`, 0 parcel-relevant | `curl "<host>/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+| Profile kit, 12 parcels | prod before (March text): 117/122, 0 CW, A 12/12 → local after: 117/122, 0 CW, A 12/12; **0 of 12 parcels' field scores differ** | `PYTHONPATH=. python -m eval.parcel_kit --full <host> --surfaces profile` |
+| Kit coverage panel (notes that apply) | 0/12 (stale `code_vintage` id) → 12/12 | same run, after the key fix |
+| Tests | backend 1,566 (item 6's record) → 1,598; eval 90 → 90; vitest 292 → 292 | `make test` |
+
+**Not measured:**
+- Chat answers on the new text (no live model in build work). The first prod chat that cites a changed section is the check, plus next month's approved chat kit.
+- Retrieval quality on the new index (no `--judge` eval). What's known: 16,584 points; sections' chunk-hash multisets are compared on push by `push_index --verify`.
+- The kit run's `code` field reads `5347b8c` (main's HEAD): the run used this branch's uncommitted working tree.
+- Prod push time and the post-deploy prod Profile kit: recorded below once done.

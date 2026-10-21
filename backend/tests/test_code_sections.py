@@ -123,7 +123,7 @@ def test_endpoint_returns_the_subsection_with_the_codes_vintage(client):
     d = r.json()
     fetch.assert_awaited_once_with("17-2-0300")  # asks for the article, not the subsection
     assert d["section_id"] == "17-2-0304-A" and d["article"] == "17-2-0300" and d["heading"] == "Standards"
-    assert d["current_through"] == "2026-03-18" and d["vintage_label"] == "Council Journal of March 18, 2026"
+    assert d["current_through"] == "2026-06-17" and d["vintage_label"] == "Council Journal of June 17, 2026"
     assert d["tables"] and "RS2" in d["tables"][0]
 
 

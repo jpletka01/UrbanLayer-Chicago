@@ -155,7 +155,7 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
 
 ```
 ingestion/
-├── parse_chicago_code.py   # HTML → section JSON files (9,487). `_SECTION_ID` defines the id shape ONCE for both
+├── parse_chicago_code.py   # HTML → section JSON files (9,453 as of the 2026-06-17 export). `_SECTION_ID` defines the id shape ONCE for both
 │                           # SECTION_RE (heading split) and SECTION_ID_RE (write gate) — they had drifted, and the
 │                           # narrower gate silently dropped ALL 872 Title-14 sections. Title 14 = eleven lettered
 │                           # volumes (14A…14X); 14N letters its chapter/section segments too (`14N-C4-C402`)

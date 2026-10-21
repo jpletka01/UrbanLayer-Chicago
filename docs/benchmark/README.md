@@ -8,8 +8,8 @@
 
 | Surface | Run | Parcels scored | Coverage | Accuracy | Confident-wrong fields | Wrong districts | Scoring |
 |---|---|:-:|:-:|:-:|:-:|---|---|
-| Property Profile | 2026-10-02 (`db15340`) | 12/12 | 95% | 94% | 2 | none | automatic |
-| Chat | 2026-10-02 (`ff1b64b`, re-scored under key `2026-10-02.1` from its recorded answers) | 7/12 | 95% | 96% | 1 | none | automatic |
+| Property Profile | 2026-10-21 (`5347b8c`) | 12/12 | 95% | 96% | 0 | none | automatic |
+| Chat | 2026-10-02 (`ff1b64b`, re-scored under key `2026-10-21.1` from its recorded answers) | 7/12 | 95% | 96% | 1 | none | automatic |
 
 *Coverage* is the share of the scored fields the tool made a claim on; *accuracy* is points earned (2 / 1 / 0) over points possible on the fields it answered; a *confident-wrong* field is wrong and stated without hedging; a *wrong district* is the critical failure, because everything else derives from it. The two surfaces' current runs come from different code versions (the newest run that scored the most parcels on each surface; a surface scored on fewer than all parcels says so in its row).
 
@@ -75,7 +75,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | A | Zoning district | B3-2 | 2 | 2 |
 | B | Use question | Yes: B3 permits dwelling units above the ground floor (17-3-0104-C) | 2 | 2 |
 | C | Bulk numbers | far 2.2; height 45, 47, 50; mla 1000, 700 | 2 | 2 |
-| D | Overlays | historic_district, national_register, tod, aro, ssa | 1 CW | 1 CW |
+| D | Overlays | historic_district, national_register, tod, aro, ssa | 2 | 1 CW |
 | E | Parking / transit | Transit-served: parking reducible up to 100% (17-10-0102-B.1(a)); no added parking for reuse of a contributing building in a landmark district (17-10-0102-A.2) | 1 | 2 |
 | F | Task answer | Not by right: the parcel is in the Milwaukee Avenue Chicago Landmark district, so a permit to alter, demolish or build needs written approval of the Commission on Chicago Landmarks (Municipal Code 2-120-740) | 2 | 2 |
 
@@ -149,7 +149,7 @@ Score per field: **2** correct, **1** partial, **0** wrong, **NP** no claim; **C
 | A | Zoning district | RM-6.5 | 2 |  |
 | B | Use question | Yes: multi-unit (3+ units) residential is permitted in RM-6.5 (use table 17-2-0207, row 5) | 2 |  |
 | C | Bulk numbers | far 6.6; mla 300 | 2 |  |
-| D | Overlays | lakefront, aro, national_register | 1 CW |  |
+| D | Overlays | lakefront, aro, national_register | 2 |  |
 | F | Task answer | All development in the Lake Michigan and Chicago Lakefront Protection District is subject to Chapter 16-4, the Lakefront Protection Ordinance (17-6-0204-B), in addition to the zoning standards; a building of 140 ft or more also needs Planned Development approval in RM-6.5 (17-8-0512-A) | 2 |  |
 
 ### P12 · 368 W Chicago Ave · key district **C2-5**
@@ -179,6 +179,7 @@ Each row is a dated run of the real system on one code version (`make kit`), sco
 | Overlays named, with what they require (F7) | 2026-10-02 | `341e91a` | `2026-10-01.1` · 7 | 97% / 0 |  |  | [report](../../eval/results/2026-10-02-f7/parcel_kit.md) |
 | Where the page says it stops (V4) | 2026-10-02 | `1f97199` | `2026-10-01.1` · 7 | 97% / 0 |  |  | [report](../../eval/results/2026-10-02-v4/parcel_kit.md) |
 | Key grows to 12 parcels (downtown, manufacturing, lakefront, transit); P5 key corrected (V7, batch 1) | 2026-10-02 | `db15340` | `2026-10-02.1` · 12 | 94% / 2 |  |  | [report](../../eval/results/2026-10-02-v7a/parcel_kit.md) |
+| Code text refreshed to the Council Journal of June 17, 2026; key re-checked, no value moved (WS1 M4) | 2026-10-21 | `5347b8c` | `2026-10-21.1` · 12 | 96% / 0 |  |  | [report](../../eval/results/2026-10-21-m4/parcel_kit.md) |
 
 ## 4. What the first run found
 
@@ -186,9 +187,11 @@ The starting point is the uncomfortable part, and it is kept on purpose. The Pro
 
 ## 5. The answer key
 
-Key version `2026-10-02.1`, in [`eval/kit/parcels.json`](../../eval/kit/parcels.json), with the source for every field. Sources: the City's open-data zoning layer and its zoning map service (overlays), the Municipal Code text (American Legal export, current through the Council Journal of 2026-03-18), ordinance PDFs, and Cook County Assessor data. Where the key and the product agree because they read the same City service, that is noted (overlays). The key fixed three errors in an earlier version that had used the product's own output as ground truth.
+Key version `2026-10-21.1`, in [`eval/kit/parcels.json`](../../eval/kit/parcels.json), with the source for every field. Sources: the City's open-data zoning layer and its zoning map service (overlays), the Municipal Code text (American Legal export, current through the Council Journal of 2026-06-17), ordinance PDFs, and Cook County Assessor data. Where the key and the product agree because they read the same City service, that is noted (overlays). The key fixed three errors in an earlier version that had used the product's own output as ground truth.
 
 **Correction, 2026-10-02, P5.D.** Was: individual Chicago Landmark (Noel State Bank). Now: Milwaukee Avenue landmark district only; orange-rated in the historic-resources survey, not individually designated. The first key read the zoning map's 'Landmark Buildings' layer (layer 7) as designations. It holds the survey's 9,298 orange/red-rated buildings, most with no designation date. The City's landmark-boundary layer (layer 5) and the official Chicago Landmarks list (data portal tdab-kixi, 317 landmarks) have no entry for the building. Found while keying P11, where the product and the key disagreed. UrbanLayer's Profile and chat both claimed an individual landmark on this parcel; with the corrected key that is now a confident-wrong overlay, and it is a product defect (see the plan, F8).
+
+**Correction, 2026-10-21, all.coverage.** Was: note code_vintage expected. Now: note code_currency expected. WS1 M2 (#65) replaced the bare vintage note with code_currency (vintage plus the amendments passed since) whenever the amendment data is present, which on prod is always. Product id change, not a law change. The coverage panel had reported 0/12 parcels with exactly their notes since #65; with the id updated it measures what it was meant to.
 
 **Outside review: pending.** The reviewer is sent the [blind review packet](review-packet.md) (the key and its sources, none of any tool's answers). Their agreement rate and every disagreement will be published here, whether or not the key changes.
 
@@ -199,7 +202,7 @@ Key version `2026-10-02.1`, in [`eval/kit/parcels.json`](../../eval/kit/parcels.
 - Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.
 - Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.
 - Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.
-- Code text is current through the Council Journal of 2026-03-18; a later amendment is not in the key.
+- Code text is current through the Council Journal of 2026-06-17; a later amendment is not in the key.
 
 ## 7. Reproduce it
 

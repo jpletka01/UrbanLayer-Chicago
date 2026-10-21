@@ -123,14 +123,14 @@ def test_footer_lists_dated_sources_for_the_parcel_data_and_the_chunks_cited():
     ctx = _ctx()
     prov = build_provenance(context=ctx, zone_definition=ctx.zone_definition, resolved_pin=ctx.parcel_pin, resolved_confidence="authoritative", query_date="2026-10-02")
     answer = "RM-4.5 allows FAR 1.7 [1]. Parking relief [2] and again [1]."
-    footer = build_sources_footer(prov, cited_chunks(answer, _chunks()), "2026-03-18")
+    footer = build_sources_footer(prov, cited_chunks(answer, _chunks()), "2026-06-17")  # the shipped vintage, as the bulk line
     assert footer.startswith("\n\n---\n**Sources for the parcel data used**")
     assert "Zoning district RM-4.5" in footer and "ordinance A7210" in footer
     assert "effective 2007-09-05" in footer and "record updated 2021-10-27" in footer and "queried 2026-10-02" in footer
-    assert "§17-2-0304-A / §17-2-0311-A / §17-2-0303-A, code current through 2026-03-18" in footer
+    assert "§17-2-0304-A / §17-2-0311-A / §17-2-0303-A, code current through 2026-06-17" in footer
     assert "[source](https://codelibrary.amlegal.com/codes/chicago/latest/chicagozoning_il/0-0-0-53035)" in footer  # the layer's link, not invented
     assert "[assessor record](https://www.cookcountyassessor.com/pin/16012280180000)" in footer
-    assert "- [1] Municipal Code §17-2-0300 — Bulk and density standards (code current through 2026-03-18)" in footer
+    assert "- [1] Municipal Code §17-2-0300 — Bulk and density standards (code current through 2026-06-17)" in footer
     assert "- [2] Municipal Code §17-10-0100 — Parking" in footer
     assert footer.index("[1] Municipal Code") < footer.index("[2] Municipal Code")
 

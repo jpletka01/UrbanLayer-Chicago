@@ -85,7 +85,7 @@ def test_a_recent_rezoning_links_the_clerk_record():
 def test_standards_cite_their_code_sections_and_the_codes_vintage():
     p = _build(_ctx())
     assert [p[f"zoning.{f}"]["section"] for f in ("far", "max_height", "min_lot_area_per_unit")] == ["17-2-0304-A", "17-2-0311-A", "17-2-0303-A"]
-    assert all(p[f"zoning.{f}"]["as_of"] == "2026-03-18" and p[f"zoning.{f}"]["kind"] == "code_text" for f in ("far", "max_height", "min_lot_area_per_unit"))
+    assert all(p[f"zoning.{f}"]["as_of"] == "2026-06-17" and p[f"zoning.{f}"]["kind"] == "code_text" for f in ("far", "max_height", "min_lot_area_per_unit"))
     bc = _build(_ctx("B1-2"), zone="B1-2")
     assert bc["zoning.far"]["section"] == "17-3-0403-A" and bc["zoning.min_lot_area_per_unit"]["section"] == "17-3-0402-A"
 
@@ -125,7 +125,7 @@ def test_every_entry_is_dated_and_json_safe():
     assert p and all(entry_is_dated(e) for e in p.values())
     assert all(e["query_date"] == "2026-10-02" for e in p.values())
     json.dumps(p)
-    assert p["code.vintage"]["as_of"] == "2026-03-18"
+    assert p["code.vintage"]["as_of"] == "2026-06-17"
 
 
 def test_entry_is_dated_rejects_missing_or_malformed():

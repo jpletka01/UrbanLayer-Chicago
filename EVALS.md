@@ -82,7 +82,7 @@ in view: that agreement is in-sample, not a held-out accuracy.
 not a rate. The key has not yet been reviewed by a Chicago architect or zoning
 attorney (P2, P3 and P6 are the most interpretive). Overlay truth comes from the
 same City service the backend queries, so overlay scores are not independent.
-Code text is current through the Council Journal of 2026-03-18.
+Code text is current through the Council Journal of 2026-06-17.
 
 ```bash
 make kit-replay   # re-score the recorded 2026-10-01 runs: no network, no cost

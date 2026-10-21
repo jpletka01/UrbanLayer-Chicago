@@ -75,7 +75,7 @@ def test_alderman_notice_statements_match_the_code():
 
 def test_the_currency_note_follows_the_codes_current_through_date():
     n = next(x for x in _ctx().coverage_notes if x["id"] == "code_currency")
-    assert "current through the Council Journal of March 18, 2026" in n["text"] and n["params"]["date"] == "2026-03-18"
+    assert "current through the Council Journal of June 17, 2026" in n["text"] and n["params"]["date"] == "2026-06-17"
     # no snapshot (conftest): we couldn't check, so no count and the Clerk's site instead
     assert "couldn't check" in n["text"] and n["params"]["count"] is None
     assert n["link"] == "https://chicityclerkelms.chicago.gov/"
