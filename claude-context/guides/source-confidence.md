@@ -42,6 +42,7 @@ Each provenance entry answers five questions. The schema fields marked **new** a
 - `query_date`: when we asked.
 - `as_of` + `as_of_basis`: when the source says it is current. `as_of_basis` is one of:
   - `source_updated`: the dataset was last updated then;
+  - `record_updated`: one record last changed then (a zoning district's map edit). It says nothing about the dataset's currency, so it never triggers `old_source`;
   - `current_through`: code text current through that date;
   - `period_end`: the end of a statistic's period (an ACS 5-year ends Dec 31 of its last year);
   - `vintage`: a frozen survey;
@@ -148,7 +149,7 @@ Reason codes (for `confidence_reasons`): `low_coverage`, `small_sample`, `high_c
 - Ids are dotted lowercase slugs: `<publisher>.<dataset>[.<sub>]`. Examples: `chi.zoning.districts`, `chi.zoning.overlay.<layer_type>`, `chi.building_footprints`, `cook.assessor.values`, `code.municipal_text`, `census.reporter.acs`. Our own committed artifacts use `artifact.<name>` (`artifact.zoning_cache`).
 - Until the registry file exists, the registry plan's slugs are the contract. When it lands, a parity test checks that every `FACTS[fact].source_id` resolves.
 - **Retired sources stay in the registry** as frozen/retired (for example `kn9c-c2s2`, the 2008–2012 community-area poverty and unemployment set), so old answers still resolve.
-- **Mapping goes one way.** A fact names its source (`FACTS[fact].source_id`). The registry's `fact_keys` is checked against that or derived from it.
+- **Mapping goes one way.** A fact names its source (`FACTS[fact].source_id`, plus `alt_source_ids` for other sources that can supply the same recorded figure and `input_source_ids` for sources it is computed or located from). A test checks that every one of them lists the fact in the registry's `fact_keys`, and that a registry source listing a fact we model is one the fact names.
 - **Static facts are split by owner:**
   - per-figure specs (`FACTS: fact_id → label, source_id, method_key, scope`) live in `provenance.py`;
   - per-source facts (publisher, tier, frozen vintage, displayed label, refresh cadence) live in the registry;
@@ -188,6 +189,8 @@ Confidence computes only `age_days` and the static 24-month display rule. Stalen
 10. **Don't bypass the gates.** If a figure is `withheld`, it must not reach the chat context or the PDF by another route.
 
 ## Rollout
+Status 2026-10-21: step 3 (schema v2) is in `backend/provenance.py`: `ProvenanceEntry`, `make_entry()`, `confidence_state()`, `FACTS`, `resolve_as_of()`. The nine existing fact kinds are upgraded; the UI doesn't read the new fields yet (step 5).
+
 
 The standard is adopted now; the code catches up in order:
 1. This guide.

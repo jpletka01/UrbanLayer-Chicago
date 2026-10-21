@@ -226,16 +226,16 @@ SOURCES: tuple[SourceSpec, ...] = (
     _socrata(
         COOK, "x54s-btds", "cook.assessor.characteristics", "Assessor - Residential Improvement Characteristics",
         COOK_ASSESSOR, "backend/retrieval/property/characteristics.py", surfaces=_PROP,
-        fact_keys=("property.building",), cadence_days=7, warn_days=14, alarm_days=45,
+        fact_keys=("property.building", "property.land_sqft", "property.bldg_sqft"), cadence_days=7, warn_days=14, alarm_days=45,
     ),
     _socrata(
         COOK, "3r7i-mrz4", "cook.assessor.condo_characteristics", "Assessor - Residential Condominium Unit Characteristics",
         COOK_ASSESSOR, "backend/retrieval/property/building_facts.py", surfaces=_PROP,
-        fact_keys=("property.building",), cadence_days=7, warn_days=14, alarm_days=45,
+        fact_keys=("property.building", "property.bldg_sqft"), cadence_days=7, warn_days=14, alarm_days=45,
     ),
     _socrata(
         COOK, "csik-bsws", "cook.assessor.commercial_valuation", "Assessor - Commercial Valuation Data", COOK_ASSESSOR,
-        "backend/retrieval/property/building_facts.py", surfaces=_PROP, fact_keys=("property.building",),
+        "backend/retrieval/property/building_facts.py", surfaces=_PROP, fact_keys=("property.building", "property.bldg_sqft"),
         cadence_days=365, content=Content("max_year", "year"), warn_days=450, alarm_days=750,
     ),
     _socrata(
@@ -268,14 +268,14 @@ SOURCES: tuple[SourceSpec, ...] = (
         id="cook.ptaxsim", name="PTAXSIM (property tax simulation database)", publisher=COOK_ASSESSOR,
         tier="official_estimate", kind="local_db", locator="backend/data/ptaxsim.db", probe="ptaxsim",
         owner_modules=("backend/retrieval/property/tax_estimate.py", "backend/retrieval/property/parcel_geometry.py"),
-        surfaces=_PROP, fact_keys=("property.tax_estimate", "property.land_area"), severity="critical",
+        surfaces=_PROP, fact_keys=("property.tax_estimate", "property.land_area", "property.land_sqft"), severity="critical",
         cadence_days=365, warn_days=800, alarm_days=1200,
         note="Content date = the last tax year in the database. Also probes the upstream release.",
     ),
     _layer(
         "https://gis.cookcountyil.gov/traditional/rest/services/cookVwrDynmc/MapServer/44", "cook.gis.parcels",
         "Cook County GIS parcels (layer 44)", "Cook County GIS", "backend/retrieval/property/parcels.py",
-        surfaces=_PROP, fact_keys=("parcel.identity",), contract=Contract(layer_name="Current Parcel"),
+        surfaces=_PROP, fact_keys=("parcel.identity", "property.land_sqft", "property.bldg_sqft"), contract=Contract(layer_name="Current Parcel"),
         warns_only_while_ok="cook.parcel_universe",
         availability_only=True,
         note="Availability only. Warns and never alarms while the Parcel Universe fallback works.",
@@ -334,7 +334,7 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         CITY, "xq83-jr8c", "chi.energy_benchmarking", "Chicago Energy Benchmarking", "Department of Environment",
-        "backend/retrieval/property/energy.py", surfaces=("profile",), fact_keys=("property.energy",),
+        "backend/retrieval/property/energy.py", surfaces=("profile",), fact_keys=("property.energy", "property.bldg_sqft"),
         cadence_days=365, content=Content("max_year", "data_year"), warn_days=730, alarm_days=1460,
         note="Warns when the newest data year is more than two years behind the current year.",
     ),
@@ -355,7 +355,7 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         CITY, "syp8-uezg", "chi.building_footprints", "Building Footprints", "City of Chicago",
-        "backend/retrieval/property/building_facts.py", surfaces=("profile",), fact_keys=("property.building",),
+        "backend/retrieval/property/building_facts.py", surfaces=("profile",), fact_keys=("property.building", "property.bldg_sqft"),
         frozen=Frozen("2015-08-15", "footprints from 2015"),
     ),
     _socrata(
@@ -515,7 +515,7 @@ SOURCES: tuple[SourceSpec, ...] = (
         id="code.hand_table.zoning_definitions", name="Zoning district table (hand-maintained)", publisher="UrbanLayer",
         tier="official_publication", kind="hand_table", locator="backend/retrieval/zoning_definitions.py",
         probe="hand_table", owner_modules=("backend/retrieval/zoning_definitions.py",),
-        surfaces=("profile", "chat", "report"), fact_keys=("zoning.far", "zoning.height"), severity="critical", availability_only=True,
+        surfaces=("profile", "chat", "report"), fact_keys=("zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit"), severity="critical", availability_only=True,
         note="VERIFIED_AGAINST must equal code_vintage.current_through, so someone re-verifies after each refresh.",
     ),
     SourceSpec(

@@ -643,3 +643,59 @@ Found during item 7 (above). `/api/code/section/17-7-0574` (ADU) and `/17-7-0591
 - A run inside the production container. This Mac has ptaxsim, the Walk Score key and an old Discovery index (that row alarms here); production's index is rebuilt monthly, and its network path to each service is untested until M2's timer runs.
 - Behaviour under a real outage of each service (tested with mocks and one natural blip).
 - Sentry and `/health` (M2).
+
+---
+
+## Item 10: provenance schema v2 (WS0 M2, 2026-10-21)
+
+Backend and types only. No visible change: nothing reads the new fields until M4.
+
+**v1 fields stay byte-for-byte; every new field is additive.**
+- *Decision:* `as_of` stays `None` where the source gives no date (the overlay layers have no edit-date field). `as_of_basis: "queried"` says so. The guide's precedence ends at "`query_date` with basis `queried`", but copying the query date into `as_of` would have changed a v1 field's value and made an unknown date look like a known one.
+- *Alternatives:* fill `as_of` from the registry's frozen vintage and data health now. Rejected for M2, because it moves a v1 value (a footprint-sourced building area would gain a 2015 `as_of`). `resolve_as_of()` implements the whole precedence and is tested, but M2's builder feeds it only the response date. M3's capture is where the registry steps start to apply.
+- *Evidence:* `eval/provenance_diff.py` rebuilds provenance with the code on `main` and with this branch for the 12 recorded kit payloads. All v1 keys and values match, with one intended exception below.
+- *Revisit if:* a consumer needs a non-null `as_of` on every entry. Then add `as_of_effective` rather than overloading `as_of`.
+
+**A polygon-derived lot area is tier D (`our_calculation`), so its `kind` changes from `official_record` to `derived`.**
+- *Decision:* follow the plan's inventory (§3.1: lot area "A / D"). When `land_sqft_source == "geometry"` the number is our planar area of the County's polygon, not a figure the County states. It lists `inputs: ["cook.ptaxsim"]` and `basis_tier: official_estimate`, the weakest input.
+- *Alternatives:* leave it tier A to keep the diff pure. Rejected: a computed figure labeled as a record is the over-claim this standard exists to stop.
+- *Evidence:* 8 of the 12 recorded parcels have a geometry-sourced lot area. Nothing in the frontend reads `kind` (`grep` of `frontend/src`: none). `kind` is already `derived` for an approximate parcel identity.
+- *Revisit if:* a reader of `kind` appears. It is removed one release after nothing reads it.
+
+**`record_updated` added to the as-of bases.**
+- *Decision:* the guide's list (`source_updated`, `current_through`, `period_end`, `vintage`, `tax_year`, `queried`) has nothing for a zoning district's own `map_updated`. The `old_source` rule fires on dataset age: a 2021 map edit on a district would read "dataset is 5 years old", which is false. `record_updated` is exempt from `old_source`; the guide now lists it.
+- *Alternative:* use `source_updated` and special-case the district. Rejected: a per-fact exception in the rule is the kind of thing the guide forbids ("let `provenance.py` decide").
+
+**Confidence rules live in one function, with the coverage kind explicit.**
+- *Decision:* `Coverage.sample` (`area_sample` | `comps` | none) selects which n rule applies. n < 30 withholds only an area sample; comps fade under 5 and withhold under 3; a list or an ACS figure has no n rule. The rule is in the data, so no caller has to remember it.
+- *Alternative:* infer from the fact id. Rejected: the same fact id can be a list in one place and a sample in another.
+- *Evidence:* `test_confidence_state.py` pins each boundary on both sides (9.99/10.00% and 24.99/25.00% coverage; n 29/30 and 2/3/4/5 for comps; CV 30.0/30.1% and 50.0/50.1%; AI agreement 95.0% vs 92.5% and 100% on 29).
+- *Revisit if:* WS4's Assessor rents need a different n gate than 30. Then add a `SampleKind`, not a threshold override.
+
+**Facts name their sources three ways, and the registry is checked both ways.**
+- *Decision:* `FactSpec` has `source_id` (the usual supplier), `alt_source_ids` (other suppliers of the same recorded figure, e.g. GIS or footprints for an area) and `input_source_ids` (sources it is computed or located from, e.g. ptaxsim, the Parcel Universe, the geocoder). Tests assert every named source lists the fact in its `fact_keys`; that a registry source listing a fact we model is one the fact names; and that a recorded figure's tier equals its source's registry tier (inputs are exempt, since the figure is then tier D).
+- *Registry edits (WS6 file, with WS0's ask):* `zoning.height` → `zoning.max_height` plus `zoning.min_lot_area_per_unit` on the Title 17 table; `property.land_sqft` / `property.bldg_sqft` added to the six area sources. These were the ids the Profile already emits.
+- *Known simplification:* an authoritative `parcel.identity` names `cook.address_points` as its source, though it can come from the Assessor's address table. The resolver doesn't tell `build_provenance` which. `cook.parcel_addresses` is an alternate. M3 threads the method through.
+
+**`ProvenanceEntry` forbids unknown fields and values.**
+- *Decision:* `extra="forbid"` and literal types for tier, method key, basis, scope and confidence, so a typo fails a test rather than shipping. `to_dict()` always emits the v1 keys (including `note: null`, which v1 carried on some entries) and the v2 extras only when set, to keep payloads small.
+
+**Not done here, on purpose:** reading `data_health` status (WS6 M2 lands the store; the import is guarded and tested with a fake), `ContextObject.provenance` persistence (M6), and any UI.
+
+**Numbers** (2026-10-21)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend unit tests | 1,698 → 1,752 (+54: new `test_confidence_state.py` and an extended `test_provenance.py`) | `make test` (before: the same command on `main`) |
+| Eval tests | 90 → 92 (the diff tool) | `make test` |
+| Frontend tests, lint warnings | 334 / 67, unchanged | `make test`, `make lint` |
+| Entries rebuilt on 12 recorded kit payloads | 131 entries; no entry removed or added; no v1 field removed | `PYTHONPATH=. python -m eval.provenance_diff eval/results/2026-10-21-m4/parcel_kit_raw --expect property.land_sqft.kind` |
+| v1 values changed | 0, except `property.land_sqft.kind` (`official_record` → `derived`) on the 8 parcels with a polygon-derived lot area | same command without `--expect` |
+| New keys on entries | 15 across the 12 parcels: tier, source_id, as_of_basis, age_days, scope, geography, method_key, method, method_params, basis_tier, inputs, confidence, confidence_reasons, value, plus `note: null` on the entries that had no `note` key | same command |
+| Zoning values moved | 0: every `zoning.*` entry's v1 fields match `main` | same command |
+| Sources named by `FACTS` that resolve in the registry | all (8 static facts plus 14 overlay types) | `test_every_fact_names_a_registered_source_that_lists_it` |
+
+**Not measured:**
+- Payload size (bytes) before and after. Each entry gains roughly 10 small fields; the Profile response carries 8–14 entries.
+- `make kit-replay` re-scores the 2026-10-01 recordings, which predate provenance, so it shows nothing about this change. The payload diff above is the evidence that no zoning value moved.
+- A live `/api/scorecard` from this branch. Local runs need the government APIs. The deployed API is checked after the merge instead.
