@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageHeader from "./PageHeader";
+import { formatKitVintage } from "../lib/kitVintage";
 
 const SECTIONS = [
   { id: "overview", title: "Project Overview" },
@@ -1922,7 +1923,7 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Rubrics were written looking at earlier runs", "Agreement with a person's scores is in-sample, and each fix is in-sample on the parcel that exposed it"],
               ["Chat varies run to run", "One run per row; compare runs by the cases that fail, not the third digit"],
               ["Chat scored on 7 of 12 parcels", "The newest parcels have Profile results only so far"],
-              ["Code text is current through March 18, 2026", "A later amendment is not in the key"],
+              [`Code text is current through ${formatKitVintage()}`, "A later amendment is not in the key"],
             ]}
           />
           <P>

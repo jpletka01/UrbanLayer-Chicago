@@ -134,3 +134,89 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Latency cost of adding B23025 to the tract request (one more table in the same call; expected to be small, unverified).
 - Chat answer quality after removing the community-area fields (a `make kit` chat run would spend production tokens; the monthly production kit run will show it).
 - `eval.lot_coverage` (unaffected in principle: no parcel fields changed).
+
+## Item 4: ingestion safety + prod push tool (WS1 M0, #63, 2026-10-21)
+
+**A parse is not an ingest.**
+- **Decision:** the parser no longer writes `backend/code_vintage.json`. `ingestion.update` writes it only after the embed finishes and the collection's point count equals the staged chunk count. The file now also records `ingested_at`, `chunk_count`, `collection` and `export_sha256`.
+- **Alternatives:** keep writing the vintage at parse time, and tell people not to commit it after a dry run.
+- **Why:** the old `--dry-run` ran the parser, which rewrote both `sections/` and the vintage file. Committing that would have claimed newer text than Qdrant served.
+- **Revisit if:** the prod index can ever be written without going through `update` (it can't today; `push_index` copies a finished local collection).
+
+**Bookkeeping fields stay out of the API and chat.**
+- **Decision:** `get_code_vintage()` returns only `current_through`, `label` and `source`. The new fields come from `get_code_vintage_record()`.
+- **Alternatives:** return the whole file.
+- **Why:** the dict is serialized into the chat context and `/api/scorecard`. Collection names and hashes there cost tokens and help no user.
+
+**Staged parse with a swap, rather than clearing `sections/` first.**
+- **Decision:** a full parse writes `<dir>.tmp` and renames it over the target at the end, logging the ids that disappeared. A `--title` parse writes in place and deletes nothing.
+- **Alternatives:** `rmtree(sections)` before parsing.
+- **Why:** a crash or a bad export mid-parse would leave an empty or partial corpus. A one-title parse that cleared the directory would delete every other title.
+
+**Retitles are caught by a separate `title_hash`, not a wider `content_hash`.**
+- **Decision:** the manifest gets a second hash over every heading field a chunk header prints (section title plus the title, chapter, article, subarticle and part names). `diff_manifests` counts a change in either hash. A `None` title hash (manifests written before this item) never counts as a change.
+- **Alternatives:** add `section_title` to `content_hash`.
+- **Why:** that was tried and reverted on 2026-09-07. It changes every hash, forces a full re-embed, and trips the zoning-cache fingerprint (keyed on `content_hash`) for 147 unchanged Title 17 sections.
+- **Note:** the local manifest was rebuilt with `update --manifest` after a fresh parse matched it exactly, so the next refresh compares titles too.
+
+**Per-vintage collections behind an alias; the prod copy keeps ids and vectors.**
+- **Decision:** a new vintage is embedded in full into `municipal_code_<vintage>`, and the app reads the alias `municipal_code`. `push_index --upload` copies points with their ids and vectors, `--verify` compares per-section multisets of chunk-text hashes, and `--switch` re-verifies before the atomic alias flip.
+- **Alternatives:**
+  - keep one collection and patch it incrementally over the tunnel (the old way);
+  - copy unchanged points forward into the new collection and embed only the changed ones.
+- **Why:**
+  - the old way used `uuid4` ids, so a missed delete duplicated rows, and nothing checked the result;
+  - copy-forward is faster, but it silently reuses stale vectors if the chunker changes between vintages. A full local embed of about 16.6k chunks is cheap, and this is a monthly-at-most job.
+- **Same vintage (a parser fix) is updated in place** in the served collection: removed and modified sections deleted, added and modified ones embedded. `--full` on the served vintage is refused, because rebuilding the collection being served takes it offline.
+- **Revisit if:** refreshes become frequent enough that the full embed time matters.
+
+**Abort gates follow the plan, plus two exceptions found while testing.**
+- **Decision:**
+  - same-vintage re-ingests don't trip the "vintage ≤ old" gate (a parser fix is legitimate); only a vintage going backwards does;
+  - a first-ever ingest skips the title-shape gates;
+  - a brand-new title trips a gate, so a person looks at it.
+- **Evidence (the June 17 export, dry run only, nothing applied):**
+  - 37 added, 149 modified, 71 deleted; 7 Title 17 sections changed;
+  - the Title 13 gate tripped: all 71 sections of chapter 13-208 are gone;
+  - the export's editor's note confirms a real repeal (Coun. J. 6-17-26, temporary overnight shelters). M4 will apply it with `--force` after review. The gate did its job.
+
+**Plan defect (d) was already fixed; no fixtures directory added.**
+- **Decision:** dropped the planned `backend/tests/fixtures/code_sections/`.
+- **Alternatives:** build it anyway.
+- **Why:**
+  - the 14 pinned sections have been committed in place under `ingestion/data/sections/` (via `.gitignore` exceptions) since `5072fbb`;
+  - CI already runs those tests: the last `main` run had 1,461 passed and 1 skipped (the export-header test);
+  - a second copy would need its own sync check. The in-place copies refresh automatically when M4 re-parses, and the git diff shows the change.
+
+**Found along the way: two section files missing locally.**
+- `ingestion/data/sections/` held 9,485 files against a 9,487-entry manifest. `17-4-0200` and `17-5-0200` were missing, though their chunks were in `chunks.jsonl` and Qdrant.
+- A fresh parse of the same export produced both, identical to the manifest, so they were restored.
+- The cause is unknown: the directory was modified 2026-10-09, and nothing in the repo deletes section files. This was the "9,485 vs 9,487" the plan read as stale leftovers.
+
+**The answer key carries its own code vintage.**
+- **Decision:** `eval/kit/parcels.json` gains `code_current_through`. The benchmark and the review packet read it.
+  - `eval/tests/test_code_vintage_sync.py` fails when it differs from `backend/code_vintage.json`, or when EVALS.md quotes another date.
+  - The About page row reads `lib/kitVintage.ts`, which a vitest pins to the key.
+- **Alternatives:** read `backend/code_vintage.json` directly.
+- **Why:** the key was built against specific text. After a refresh, the live vintage would claim the key covers newer law before anyone re-checked it. The failing test makes M4 re-check the key.
+
+**Numbers** (measured 2026-10-21, local)
+
+| Measure | Before | After | How measured |
+|---|---|---|---|
+| Files changed under `sections/` and in the vintage file by `update --dry-run` | every section file rewritten, plus the vintage file | 0 (byte-identical) | `shasum` of every file before/after the dry run |
+| Dry-run changes on the current export (2026-03-18) | n/a | 0 added / 0 modified / 0 deleted, gates pass | `python -m ingestion.update --dry-run` |
+| Dry-run wall time (parse + chunk + diff) | n/a | 13.5 s | `/usr/bin/time -p` on the same command |
+| June 17 export, dry run | n/a | 9,487 → 9,453 sections, 16,576 → 16,584 chunks; 37 / 149 / 71; 1 gate (Title 13) | `python -m ingestion.update --dry-run --source chicago-il-1-june.html` |
+| Local collections | `chicago_municipal_code` (16,576) | `municipal_code_2026-03-18` (16,576) behind `municipal_code` | `push_index --target http://localhost:6333 --status` |
+| Local copy check (snapshot copy vs original) | n/a | 0 sections differ, 16,576 = 16,576, 1.9 s | `push_index --verify --collection municipal_code_2026-03-18 --target-collection chicago_municipal_code` |
+| Prod before the migration: local vs prod `chicago_municipal_code` | unchecked since 2026-09-28 (count only) | 0 sections differ, 16,576 = 16,576 | `push_index --target <tunnel> --verify --collection municipal_code_2026-03-18 --target-collection chicago_municipal_code` |
+| Prod server-side copy to `municipal_code_2026-03-18` | n/a | 16,576 points in 3.5 s, re-verified 0 differences, alias `municipal_code` created | `push_index --target <tunnel> --snapshot-copy chicago_municipal_code --collection municipal_code_2026-03-18`, then `--verify`, `--switch` |
+| Backend tests | 1,462 | 1,483 (+21 in `test_ingestion_pipeline.py`) | `make test` |
+| Eval tests / vitest | 88 / 290 | 90 / 292 | `make test` |
+
+**Not measured:**
+- The full-embed time for a new vintage (no new vintage was applied; M4 measures it).
+- Upload time over the tunnel (no upload ran; the prod migration used a server-side snapshot copy).
+- Live latency through the alias vs the old name (expected the same: an alias is a name lookup; checked only that `/api/code/section/17-2-0304-A` answered 200 in 1.1 s before the deploy).
+- Whether any heading-only change exists between the March and June exports beyond what the content diff shows (the old manifest had no title hashes; the June dry run compared titles from the rebuilt one).

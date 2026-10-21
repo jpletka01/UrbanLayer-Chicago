@@ -3,6 +3,12 @@
 Input: chicago-il-codes.html (a single ~100MB file at the project root).
 Output: one JSON file per section under ingestion/data/sections/{section_id}.json.
 
+A full parse builds the new directory beside the old one and swaps it in only when
+the parse finishes, so a section that was repealed or renumbered disappears from disk
+(and so from the manifest, which deletes it from Qdrant). Writing into the live
+directory left those behind for good. A ``--title`` parse is partial by definition and
+writes in place, deleting nothing.
+
 The parser walks the file in document order using BeautifulSoup, maintaining a
 state machine for the current Title / Chapter / Article / Subarticle / Part.
 A Section header (`<div class="Section toc-destination rbox">`) opens a new
@@ -11,7 +17,8 @@ attach to it until the next hierarchy or Section boundary is encountered.
 
 Run with:
     python -m ingestion.parse_chicago_code
-    python -m ingestion.parse_chicago_code --title 17     # only Title 17
+    python -m ingestion.parse_chicago_code --title 17     # only Title 17, in place
+    python -m ingestion.parse_chicago_code --out ingestion/data/sections.new  # elsewhere
 """
 
 from __future__ import annotations
@@ -20,6 +27,7 @@ import argparse
 import json
 import logging
 import re
+import shutil
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -536,35 +544,8 @@ def _print_stats(stats: dict) -> None:
     print(f"Duplicate section IDs skipped (file republishes Titles 16/17): {stats['dedup_skipped']}")
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--title", type=int, default=None, help="Limit to a single title number (e.g. 17)")
-    parser.add_argument(
-        "--source",
-        type=Path,
-        default=SOURCE_FILE,
-        help="Path to the chicago-il-codes.html file",
-    )
-    parser.add_argument(
-        "--stats",
-        action="store_true",
-        help="Compute and print per-title coverage stats; skip JSON output",
-    )
-    args = parser.parse_args()
-
-    if not args.source.exists():
-        sys.exit(f"Source file not found: {args.source}")
-
-    if not args.stats:
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        # How current is this export? Recorded so the product can say so.
-        if args.title is None:
-            from ingestion.code_vintage import write_code_vintage
-
-            log.info("Code vintage: %s", write_code_vintage(args.source)["label"])
-
-    stats = {
+def _new_stats() -> dict:
+    return {
         "total_sections": 0,
         "total_tables": 0,
         "total_xref_sections": 0,
@@ -577,61 +558,137 @@ def main() -> None:
         "by_title": {},
     }
 
+
+def _count(section: Section, stats: dict) -> None:
+    body_chars = sum(len(p) for p in section.body_paragraphs)
+    b = stats["by_title"].setdefault(
+        section.title_number,
+        {
+            "sections": 0,
+            "tables": 0,
+            "sections_with_xrefs": 0,
+            "sections_with_defs": 0,
+            "sections_with_leg": 0,
+            "empty_body": 0,
+            "tiny_body": 0,
+        },
+    )
+    b["sections"] += 1
+    b["tables"] += len(section.tables)
+    if section.cross_references:
+        b["sections_with_xrefs"] += 1
+    if section.definitions:
+        b["sections_with_defs"] += 1
+    if section.legislative_history:
+        b["sections_with_leg"] += 1
+    if body_chars == 0 and not section.tables:
+        b["empty_body"] += 1
+    elif body_chars < 100 and not section.tables:
+        b["tiny_body"] += 1
+
+    stats["total_sections"] += 1
+    stats["total_tables"] += len(section.tables)
+    stats["total_xref_sections"] += bool(section.cross_references)
+    stats["total_def_sections"] += bool(section.definitions)
+    stats["total_leg_sections"] += bool(section.legislative_history)
+    stats["total_empty_body"] += (body_chars == 0 and not section.tables)
+    stats["total_tiny_body"] += (0 < body_chars < 100 and not section.tables)
+
+
+def write_sections(
+    source: Path, out_dir: Path = OUT_DIR, *, only_title: int | None = None
+) -> tuple[dict, list[str]]:
+    """Parse ``source`` into ``out_dir``. Returns (stats, ids removed from out_dir).
+
+    A full parse writes to ``<out_dir>.tmp`` and replaces ``out_dir`` with it at the end;
+    a crash mid-parse leaves ``out_dir`` as it was. A single-title parse writes in place.
+    """
+    stats = _new_stats()
+    if only_title is not None:
+        target = out_dir
+        target.mkdir(parents=True, exist_ok=True)
+    else:
+        target = out_dir.with_name(out_dir.name + ".tmp")
+        if target.exists():
+            shutil.rmtree(target)
+        target.mkdir(parents=True)
+
     count = 0
-    for section in parse(args.source, only_title=args.title, stats=stats):
+    for section in parse(source, only_title=only_title, stats=stats):
         if not section.section or not SECTION_ID_RE.fullmatch(section.section):
             stats["skipped_non_section"] += 1
             continue
-
-        body_chars = sum(len(p) for p in section.body_paragraphs)
-        t = section.title_number
-        b = stats["by_title"].setdefault(
-            t,
-            {
-                "sections": 0,
-                "tables": 0,
-                "sections_with_xrefs": 0,
-                "sections_with_defs": 0,
-                "sections_with_leg": 0,
-                "empty_body": 0,
-                "tiny_body": 0,
-            },
-        )
-        b["sections"] += 1
-        b["tables"] += len(section.tables)
-        if section.cross_references:
-            b["sections_with_xrefs"] += 1
-        if section.definitions:
-            b["sections_with_defs"] += 1
-        if section.legislative_history:
-            b["sections_with_leg"] += 1
-        if body_chars == 0 and not section.tables:
-            b["empty_body"] += 1
-        elif body_chars < 100 and not section.tables:
-            b["tiny_body"] += 1
-
-        stats["total_sections"] += 1
-        stats["total_tables"] += len(section.tables)
-        stats["total_xref_sections"] += bool(section.cross_references)
-        stats["total_def_sections"] += bool(section.definitions)
-        stats["total_leg_sections"] += bool(section.legislative_history)
-        stats["total_empty_body"] += (body_chars == 0 and not section.tables)
-        stats["total_tiny_body"] += (0 < body_chars < 100 and not section.tables)
-
-        if not args.stats:
-            out_path = OUT_DIR / f"{section.section}.json"
-            out_path.write_text(json.dumps(asdict(section), indent=2))
+        _count(section, stats)
+        (target / f"{section.section}.json").write_text(json.dumps(asdict(section), indent=2))
         count += 1
-        if not args.stats and count % 1000 == 0:
+        if count % 1000 == 0:
             log.info("Parsed %d sections", count)
 
+    removed: list[str] = []
+    if only_title is None:
+        new_ids = {p.stem for p in target.glob("*.json")}
+        if out_dir.exists():
+            removed = sorted({p.stem for p in out_dir.glob("*.json")} - new_ids)
+            old = out_dir.with_name(out_dir.name + ".old")
+            if old.exists():
+                shutil.rmtree(old)
+            out_dir.rename(old)
+            target.rename(out_dir)
+            shutil.rmtree(old)
+        else:
+            target.rename(out_dir)
+        if removed:
+            log.warning(
+                "%d section(s) no longer in the export, removed: %s",
+                len(removed), ", ".join(removed[:20]) + (" ..." if len(removed) > 20 else ""),
+            )
+    log.info(
+        "Done. %d sections written to %s. %d non-section entries skipped.",
+        count, out_dir, stats["skipped_non_section"],
+    )
+    return stats, removed
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--title", type=int, default=None, help="Limit to a single title number (e.g. 17)")
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=SOURCE_FILE,
+        help="Path to the chicago-il-codes.html file",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=OUT_DIR,
+        help="Directory to write sections into (default: ingestion/data/sections)",
+    )
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Compute and print per-title coverage stats; skip JSON output",
+    )
+    args = parser.parse_args()
+
+    if not args.source.exists():
+        sys.exit(f"Source file not found: {args.source}")
+
+    # The code vintage is NOT written here any more: a parse is not an ingest. It is
+    # written by ingestion.update once the new text is in Qdrant, so the product never
+    # claims a vintage the index doesn't serve.
     if args.stats:
+        stats = _new_stats()
+        for section in parse(args.source, only_title=args.title, stats=stats):
+            if not section.section or not SECTION_ID_RE.fullmatch(section.section):
+                stats["skipped_non_section"] += 1
+                continue
+            _count(section, stats)
         _print_stats(stats)
-    else:
-        log.info(
-            "Done. %d sections written to %s. %d non-section entries skipped.",
-            count, OUT_DIR, stats["skipped_non_section"],
-        )
+        return
+
+    write_sections(args.source, args.out, only_title=args.title)
 
 
 if __name__ == "__main__":

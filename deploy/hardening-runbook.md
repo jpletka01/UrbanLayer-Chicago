@@ -285,18 +285,22 @@ To restore prod: stop the backend, copy the chosen file over
 Qdrant was reachable without auth from the internet until 2026-09-08, so the municipal-code
 corpus could in principle have been edited. That would be a prompt-injection path.
 
-Compare the point count with a trusted local build (as of 2026-09-28 both have
-`chicago_municipal_code` = 16,576; checked on prod that day):
+Compare the point count with a trusted local build (as of 2026-10-21 both serve
+`municipal_code_2026-03-18` = 16,576 through the `municipal_code` alias). For a
+section-by-section check instead of a count, run `python -m ingestion.push_index --target
+<tunnel> --verify` from a machine with the local index (claude-context/guides/deployment.md).
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend python -c "
 import httpx
-print(httpx.get('http://qdrant:6333/collections/chicago_municipal_code').json()['result']['points_count'])"
+print(httpx.get('http://qdrant:6333/collections/municipal_code').json()['result']['points_count'])"
 ```
 
-If the count differs, or to be certain, rebuild the collection from source
-(`python -m ingestion.update --full` against the prod Qdrant) or restore them from a local
-snapshot.
+If the count differs, or `--verify` reports differences, give prod a clean copy under a new
+name: copy the local collection to it (`push_index --target http://localhost:6333
+--snapshot-copy <served name> --collection <served name>-restore`), then `--upload`,
+`--verify` and `--switch` with `--collection <served name>-restore`, and `--drop` the
+tampered one.
 
 ## 10. Verify from outside
 

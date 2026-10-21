@@ -17,6 +17,7 @@ Key invariants:
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 from dataclasses import asdict, dataclass, field
@@ -323,18 +324,18 @@ def chunk_section(sec: dict) -> Iterator[Chunk]:
         )
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    if not SECTIONS_DIR.exists():
+def write_chunks(sections_dir: Path = SECTIONS_DIR, out_file: Path = OUT_FILE) -> int:
+    """Chunk every section under ``sections_dir`` into ``out_file``; returns the chunk count."""
+    if not sections_dir.exists():
         raise SystemExit(
-            f"No parsed sections at {SECTIONS_DIR} — run ingestion.parse_chicago_code first"
+            f"No parsed sections at {sections_dir} — run ingestion.parse_chicago_code first"
         )
 
-    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     count = 0
     sections_seen = 0
-    with OUT_FILE.open("w") as fh:
-        for path in sorted(SECTIONS_DIR.glob("*.json")):
+    with out_file.open("w") as fh:
+        for path in sorted(sections_dir.glob("*.json")):
             section = json.loads(path.read_text())
             sections_seen += 1
             for chunk in chunk_section(section):
@@ -342,7 +343,17 @@ def main() -> None:
                 count += 1
             if sections_seen % 1000 == 0:
                 log.info("Processed %d sections, emitted %d chunks", sections_seen, count)
-    log.info("Done. %d chunks from %d sections written to %s", count, sections_seen, OUT_FILE)
+    log.info("Done. %d chunks from %d sections written to %s", count, sections_seen, out_file)
+    return count
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sections", type=Path, default=SECTIONS_DIR)
+    parser.add_argument("--out", type=Path, default=OUT_FILE)
+    args = parser.parse_args()
+    write_chunks(args.sections, args.out)
 
 
 if __name__ == "__main__":

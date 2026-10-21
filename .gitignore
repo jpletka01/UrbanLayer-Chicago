@@ -47,8 +47,8 @@ dist/
 # Playwright test run artifacts
 test-results/
 
-# Large source files (download separately)
-chicago-il-codes.html
+# Large source files (download separately): every American Legal export, old and new
+chicago-il-*.html
 
 # JetBrains IDE
 .idea/

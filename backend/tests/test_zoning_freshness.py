@@ -117,12 +117,12 @@ def test_extract_code_vintage():
 def test_missing_vintage_file_omits_the_stamp_instead_of_faking_one(tmp_path):
     import backend.code_vintage as cv
 
-    cv.get_code_vintage.cache_clear()
+    cv.get_code_vintage_record.cache_clear()
     try:
         with patch.object(cv, "VINTAGE_FILE", tmp_path / "nope.json"):
             assert cv.get_code_vintage() is None
     finally:
-        cv.get_code_vintage.cache_clear()
+        cv.get_code_vintage_record.cache_clear()
 
 
 def test_context_carries_the_vintage_only_for_a_parcel_with_zoning():
