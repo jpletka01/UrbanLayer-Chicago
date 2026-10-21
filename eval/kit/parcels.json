@@ -1,7 +1,7 @@
 {
- "version": "2026-10-02.1",
- "code_current_through": "2026-03-18",
- "note": "Answer key for the Chicago parcel kit, built from primary sources (City zoning layer, Zoning MapServer, Municipal Code text current through the Council Journal of 2026-03-18, ordinance PDFs, Cook County Assessor). P1-P7 are the 2026-10-01 set; P8+ were added 2026-10-02 (`added`), with the same method, to cover downtown, manufacturing, lakefront and transit-served cases the first seven do not. NOT yet reviewed by a Chicago zoning professional: P2, P3 and P6 are the most interpretive, and so are P9 and P12 (transit-served-location rules). Overlay truth comes from the same City service UrbanLayer queries, so overlay scores are not independent.",
+ "version": "2026-10-21.1",
+ "code_current_through": "2026-06-17",
+ "note": "Answer key for the Chicago parcel kit, built from primary sources (City zoning layer, Zoning MapServer, Municipal Code text current through the Council Journal of 2026-06-17 (re-checked 2026-10-21 against the refresh from 2026-03-18: none of the Title 17 sections the refresh changed is one a keyed field cites, so no value moved), ordinance PDFs, Cook County Assessor). P1-P7 are the 2026-10-01 set; P8+ were added 2026-10-02 (`added`), with the same method, to cover downtown, manufacturing, lakefront and transit-served cases the first seven do not. NOT yet reviewed by a Chicago zoning professional: P2, P3 and P6 are the most interpretive, and so are P9 and P12 (transit-served-location rules). Overlay truth comes from the same City service UrbanLayer queries, so overlay scores are not independent.",
  "fields": {
   "A": "Zoning district in effect (critical)",
   "B": "Use question",
@@ -126,7 +126,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -263,7 +263,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -431,7 +431,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -546,7 +546,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter",
      "planned_development"
     ],
@@ -712,7 +712,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter",
      "landmark"
     ],
@@ -844,7 +844,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter",
      "adu_limits"
     ],
@@ -972,7 +972,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter",
      "recently_rezoned"
     ],
@@ -1106,7 +1106,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -1269,7 +1269,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -1370,7 +1370,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -1486,7 +1486,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter",
      "chrs_demolition_delay"
     ],
@@ -1648,7 +1648,7 @@
     "must": [
      "aldermanic",
      "map_lag",
-     "code_vintage",
+     "code_currency",
      "official_letter"
     ],
     "must_not": [
@@ -1671,6 +1671,15 @@
    "now": "Milwaukee Avenue landmark district only; orange-rated in the historic-resources survey, not individually designated",
    "why": "The first key read the zoning map's 'Landmark Buildings' layer (layer 7) as designations. It holds the survey's 9,298 orange/red-rated buildings, most with no designation date. The City's landmark-boundary layer (layer 5) and the official Chicago Landmarks list (data portal tdab-kixi, 317 landmarks) have no entry for the building. Found while keying P11, where the product and the key disagreed.",
    "effect": "UrbanLayer's Profile and chat both claimed an individual landmark on this parcel; with the corrected key that is now a confident-wrong overlay, and it is a product defect (see the plan, F8)."
+  },
+  {
+   "date": "2026-10-21",
+   "parcel": "all",
+   "field": "coverage",
+   "was": "note code_vintage expected",
+   "now": "note code_currency expected",
+   "why": "WS1 M2 (#65) replaced the bare vintage note with code_currency (vintage plus the amendments passed since) whenever the amendment data is present, which on prod is always. Product id change, not a law change.",
+   "effect": "The coverage panel had reported 0/12 parcels with exactly their notes since #65; with the id updated it measures what it was meant to."
   }
  ]
 }

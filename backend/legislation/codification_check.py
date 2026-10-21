@@ -10,6 +10,9 @@ omnibus with no section list matches on the date within its titles).
   false``, so it stays in the "since" list although its date is before the vintage.
 - **unexplained:** the reverse check, a modified section citing a Journal date that is
   no known passed amendment's (e.g. one the title classifier missed). Review by hand.
+- **partly:** a reviewer marked the amendment ``codified_partly`` (part of it is in the
+  text, part takes effect later and isn't). Its ``sections`` then list only the pending
+  parts; the check reports which of those changed, for re-review, and never flips the flag.
 
 Offline: the diff from ``ingestion.update --dry-run``, the parsed sections, the review
 file and the snapshot.
@@ -56,7 +59,7 @@ def check(diff: dict, amendments: list[dict], sections_dir: Path | None = None) 
     changed = changed_sections(diff, sections_dir)
     in_window = [a for a in amendments if (old_v is None or a["passed_on"] > old_v) and a["passed_on"] <= new_v]
 
-    matched, missing = [], []
+    matched, missing, partly = [], [], []
     for a in in_window:
         stamp = coun_j(date.fromisoformat(a["passed_on"]))
         secs = a.get("sections") or []
@@ -65,7 +68,11 @@ def check(diff: dict, amendments: list[dict], sections_dir: Path | None = None) 
                 any(sections_overlap(sid, s) for s in secs) if secs else _title_of(sid) == "17"
             )
         ]
-        (matched if hits else missing).append({"record": a["record"], "passed_on": a["passed_on"], "sections": hits or secs})
+        row = {"record": a["record"], "passed_on": a["passed_on"], "sections": hits or secs}
+        if a.get("codified_partly"):
+            partly.append({**row, "changed": hits})
+        else:
+            (matched if hits else missing).append(row)
 
     known = {coun_j(date.fromisoformat(a["passed_on"])) for a in amendments}
     new_dates = {m["section"]: m.get("new_coun_j_dates") or [] for m in diff.get("modified_detail") or []}
@@ -74,7 +81,7 @@ def check(diff: dict, amendments: list[dict], sections_dir: Path | None = None) 
     )
     return {
         "old_vintage": old_v, "new_vintage": new_v,
-        "matched": matched, "missing": missing,
+        "matched": matched, "missing": missing, "partly": partly,
         "unexplained": [{"section": s, "coun_j": d} for s, d in unexplained],
     }
 
@@ -110,6 +117,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  codified  {r['passed_on']}  {r['record']:<16} {', '.join(r['sections'])}")
     for r in result["missing"]:
         print(f"  MISSING   {r['passed_on']}  {r['record']:<16} {', '.join(r['sections']) or '-'}")
+    for r in result.get("partly") or []:
+        note = f"pending parts changed, re-review: {', '.join(r['changed'])}" if r["changed"] else "pending parts unchanged"
+        print(f"  partly    {r['passed_on']}  {r['record']:<16} (reviewed; {note})")
     for u in result["unexplained"]:
         print(f"  unexplained Coun. J. {u['coun_j']} in {u['section']}")
     if args.write:

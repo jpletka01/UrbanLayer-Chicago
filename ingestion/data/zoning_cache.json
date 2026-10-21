@@ -2,9 +2,22 @@
   "_meta": {
     "built_at": 1781772453,
     "config_version": "1c47d28b50bb2c89",
-    "corpus_fingerprint": "4321bf04157b99d9",
+    "corpus_fingerprint": "707f181e590d0a52",
     "extraction_method": "full_section",
-    "zone_count": 59
+    "zone_count": 59,
+    "fingerprint_rebased": {
+      "on": "2026-10-21",
+      "from": "4321bf04157b99d9",
+      "corpus": "2026-06-17",
+      "reason": "Code refresh 2026-03-18 -> 2026-06-17 changed Title 17 sections the builder does not read; the sections it reads have identical content_hash in both manifests, so the cached entries stand (no model run: build work may not spend the production key).",
+      "sections_checked": [
+        "17-2-0300",
+        "17-3-0400",
+        "17-4-0400",
+        "17-5-0400",
+        "17-10-0200"
+      ]
+    }
   },
   "entries": {
     "B1-1": {

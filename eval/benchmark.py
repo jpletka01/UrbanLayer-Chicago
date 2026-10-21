@@ -35,6 +35,7 @@ PROGRESSION = [
     {"id": "2026-10-02-f7", "label": "Overlays named, with what they require (F7)", "dir": "2026-10-02-f7", "surfaces": ["profile"]},
     {"id": "2026-10-02-v4", "label": "Where the page says it stops (V4)", "dir": "2026-10-02-v4", "surfaces": ["profile"]},
     {"id": "2026-10-02-v7a", "label": "Key grows to 12 parcels (downtown, manufacturing, lakefront, transit); P5 key corrected (V7, batch 1)", "dir": "2026-10-02-v7a", "surfaces": ["profile"]},
+    {"id": "2026-10-21-m4", "label": "Code text refreshed to the Council Journal of June 17, 2026; key re-checked, no value moved (WS1 M4)", "dir": "2026-10-21-m4", "surfaces": ["profile"]},
 ]
 
 FIELD_NAMES = {"A": "District", "B": "Use question", "C": "Bulk numbers", "D": "Overlays", "E": "Parking / transit", "F": "Task answer"}

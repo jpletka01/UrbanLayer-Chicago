@@ -49,6 +49,8 @@ python -m backend.zoning_cache_build --zones RS-3,B3-2   # subset smoke test
 ```
 Then commit the JSON. **Rebuild whenever ingestion re-ingests Title 17** (the `ingestion.update` flag reminds you) or the extraction prompt/model/section-map changes (`config_version` will otherwise make the serving path ignore the cache and fall back to the table).
 
+**A rebuild spends the production Anthropic key, so build work doesn't run one** (build-order hard rule, 2026-10-20). When a refresh changes Title 17 but none of the sections the builder reads (`BULK_SECTION_BY_PREFIX` + `SHARED_PARKING_SECTION`: 17-2-0300, 17-3-0400, 17-4-0400, 17-5-0400, 17-10-0200) — compare their `content_hash` in the old snapshot manifest and the new one — keep the entries and re-stamp `_meta.corpus_fingerprint`, recording `_meta.fingerprint_rebased` (date, old fingerprint, corpus vintage, reason, sections checked). Done for the 2026-06-17 refresh (WS1 M4). If one of those sections changed, re-read it by hand and edit the affected entries' setbacks/notes (labeled per the confidence guide), or get Jack's OK for a build.
+
 ## Known issues / limitations (carry forward)
 
 - **AI setbacks are NOT cross-validated.** No table-equivalent source exists for setbacks, so those AI values are plausible-but-unverified (same multi-row mis-read risk FAR had). Treat as lower-trust than the table-owned bulk numbers. (Min-lot fields are table-owned since 2026-07-06 — the AI values had mis-rows like B3-1 = 400 vs the true 2,500/unit.)

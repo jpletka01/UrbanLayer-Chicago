@@ -39,8 +39,16 @@ def normalize_section(section: str) -> str:
     return f"{m.group(1)}-{m.group(2)}" if m else s
 
 
+# Title 14 (the building code, IBC-style numbering) writes subsections with dots:
+# 14X-8-802.2.2 is inside 14X-8-802, and the corpus indexes it under 14X-8-802. In
+# Title 17 a dot is a separate section (17-9-0129.1 is not inside 17-9-0129).
+_DOTTED_SUBSECTIONS_RE = re.compile(r"^14[A-Z]-")
+
+
 def _within(child: str, parent: str) -> bool:
-    return child == parent or child.startswith(parent + "-")
+    if child == parent or child.startswith(parent + "-"):
+        return True
+    return bool(_DOTTED_SUBSECTIONS_RE.match(parent)) and child.startswith(parent + ".")
 
 
 def _is_article(section: str) -> bool:

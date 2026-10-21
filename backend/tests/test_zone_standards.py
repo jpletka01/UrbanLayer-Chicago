@@ -55,6 +55,30 @@ def test_residential_uses_text_matches_the_use_table(zone):
         assert (term in uses) == allowed, (zone, row, table[row][c], uses)
 
 
+def _gas_station_row() -> list[str]:
+    path = SECTIONS / "17-3-0200.json"
+    if not path.exists():
+        pytest.skip("ordinance corpus not present")
+    for t in json.loads(path.read_text())["tables"]:
+        for r in t["data_rows"]:
+            if r and r[0] == "HH. Gas Stations":
+                return r[2:8]  # B1 B2 B3 C1 C2 C3
+    raise AssertionError("gas station row missing from the 17-3-0207 use table")
+
+
+@pytest.mark.parametrize("zone", [z for z in ZONE_CLASS_DATA if z.startswith(("B", "C"))])
+def test_business_uses_text_says_no_gas_stations_where_the_use_table_does(zone):
+    # SO2026-0024923 (2026-05-20): B3, C1 and C2 went from S to "-". "Auto-oriented" (C1)
+    # and "nearly any business" (C2) would otherwise read as allowing them.
+    row = dict(zip(["B1", "B2", "B3", "C1", "C2", "C3"], _gas_station_row()))
+    family = zone.split("-")[0]
+    uses = ZONE_CLASS_DATA[zone].uses.lower()
+    if family in ("C1", "C2"):
+        assert row[family] == "-" and "no new gas stations" in uses
+    else:
+        assert "gas station" not in uses
+
+
 def test_the_two_misses_the_kit_found_are_fixed():
     assert "two-flat" in get_zone_definition("RS-3").uses.lower()  # P6: a 606 two-flat
     assert "multi-unit" in get_zone_definition("RT-4").uses.lower()  # P7: RT-4 multi-unit

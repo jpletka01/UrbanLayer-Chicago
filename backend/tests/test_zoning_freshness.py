@@ -93,7 +93,7 @@ def test_recently_rezoned_is_in_the_serialized_payload():
 
 def test_code_vintage_is_shipped_and_parses():
     v = get_code_vintage()
-    assert v["current_through"] == "2026-03-18" and v["label"] == "Council Journal of March 18, 2026"
+    assert v["current_through"] == "2026-06-17" and v["label"] == "Council Journal of June 17, 2026"
 
 
 def test_code_vintage_matches_the_export_header_when_the_export_is_present():
@@ -127,7 +127,7 @@ def test_missing_vintage_file_omits_the_stamp_instead_of_faking_one(tmp_path):
 
 def test_context_carries_the_vintage_only_for_a_parcel_with_zoning():
     z = ZoningSummary(zone_class="B1-2", ordinance_date="2007-09-05")
-    assert ContextObject(parcel_zoning=z).model_dump(exclude_none=True)["code_vintage"]["current_through"] == "2026-03-18"
+    assert ContextObject(parcel_zoning=z).model_dump(exclude_none=True)["code_vintage"]["current_through"] == "2026-06-17"
     assert ContextObject().code_vintage is None
 
 
