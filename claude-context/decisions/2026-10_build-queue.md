@@ -384,7 +384,7 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Which Title 17 sections the omnibus (SO2026-0024930) touches: it has no section list until M4 reads it, so `amendments_touching` never returns it.
 - Prod's first sync run (after the timer is installed).
 
-## Item 7: code text refresh to the June 17 export (WS1 M4, #PR, 2026-10-2x)
+## Item 7: code text refresh to the June 17 export (WS1 M4, #66, 2026-10-21)
 
 **The Title 13 gate was a real repeal, and bigger than item 4 recorded.**
 - **Decision:** applied with `--force` after reading the export's editor's notes.
@@ -459,4 +459,18 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Chat answers on the new text (no live model in build work). The first prod chat that cites a changed section is the check, plus next month's approved chat kit.
 - Retrieval quality on the new index (no `--judge` eval). What's known: 16,584 points; sections' chunk-hash multisets are compared on push by `push_index --verify`.
 - The kit run's `code` field reads `5347b8c` (main's HEAD): the run used this branch's uncommitted working tree.
-- Prod push time and the post-deploy prod Profile kit: recorded below once done.
+
+**Prod push and deploy** (2026-10-21, prod)
+
+| Step | Result | Reproduce |
+|---|---|---|
+| Tunnel target, found without `sudo` | Qdrant answered on the Docker bridge address listed in the server's `ip -4 neigh` table (no `docker inspect`, so no password) | `ssh urbanlayer-prod 'ip -4 neigh show'`, then `curl <addr>:6333/` on the server |
+| `push_index --upload` | 16,584 points to `municipal_code_2026-06-17`, 41 s | `python -m ingestion.push_index --target <tunnel> --upload` |
+| `push_index --verify` | 0 sections differ, 16,584 = 16,584, 20 s | `--verify` |
+| `push_index --switch` | re-verified 0 differences; alias `municipal_code_2026-03-18` → `municipal_code_2026-06-17` | `--switch` |
+| Merge to live vintage | 279 s from merge to `/api/code/section/17-2-0304-A` returning `current_through: 2026-06-17` | `curl https://urbanlayerchicago.com/api/code/section/17-2-0304-A` |
+| Live Profile, 1601 N Milwaukee | `since {title17: 10, cited_other: 5}`, 0 parcel-relevant; note reads "current through the Council Journal of June 17, 2026 … 10 amendments" | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+| Live C2 summary (368 W Chicago, C2-5) | carries "(no new gas stations, §17-3-0207)" | same, `zone_definition.uses` |
+| Profile kit on prod, after vs before the deploy | 117/122, 0 CW, A 12/12, notes 12/12; **0 of 12 parcels differ** | `PYTHONPATH=. python -m eval.parcel_kit --full https://urbanlayerchicago.com --surfaces profile` |
+
+Prod still holds `chicago_municipal_code` (pre-migration, 16,576 points, unserved; item 4 meant to drop it) and `municipal_code_2026-03-18` (the rollback). Both can go at the next refresh with `push_index --drop`.
