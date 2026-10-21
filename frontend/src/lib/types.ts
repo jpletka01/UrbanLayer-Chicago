@@ -244,6 +244,11 @@ export interface RegulatorySummary {
   in_special_flood_hazard: boolean;
   brownfield_sites: Record<string, unknown>[];
   aro_housing: AROHousingSummary | null;
+  /** Overlay layer types the City map couldn't answer for. Their in_* flags are
+   *  false because they're UNKNOWN — never render them as "not in". */
+  unchecked_overlays?: string[];
+  /** Plain-language labels for those (also merged into partial_failures). */
+  data_gaps?: string[];
 }
 
 export interface AROHousingProject {

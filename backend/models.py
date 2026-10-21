@@ -267,6 +267,12 @@ class RegulatorySummary(BaseModel):
     in_special_flood_hazard: bool = False
     brownfield_sites: list[dict] = Field(default_factory=list)
     aro_housing: AROHousingSummary | None = None
+    # Overlay layer types the City map couldn't answer for (timeout, HTTP error, 200 +
+    # error body). Their in_* flag is False because it is UNKNOWN, not because the
+    # parcel is clear: never state "not in <overlay>" for these.
+    unchecked_overlays: list[str] = Field(default_factory=list)
+    # Plain-language labels for those, merged into partial_failures.
+    data_gaps: list[str] = Field(default_factory=list)
 
 
 class AssessmentRecord(BaseModel):

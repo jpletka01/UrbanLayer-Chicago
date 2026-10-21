@@ -78,12 +78,12 @@ interface OverlayRow {
   term: string;
 }
 
-function SourceLink({ href }: { href: string }) {
+function SourceLink({ href, label }: { href: string; label?: string }) {
   const { t } = useTranslation("data");
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       className="inline-block text-caption text-text-secondary hover:text-accent transition-colors mt-0.5">
-      {t("regulatory.source")}
+      {label ?? t("regulatory.source")}
     </a>
   );
 }
@@ -112,6 +112,27 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
 // "card = data source, height = data volume" model is what left its pair card
 // with a dead-space flank). Top-N rows always visible, the tail discloses.
 const CONSTRAINT_BUDGET = 6;
+
+const ZONING_MAP_URL = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning";
+
+/** A failed overlay lookup is unknown, not "none": say so instead of disappearing. */
+function UncheckedOverlays({ types }: { types: string[] }) {
+  const { t } = useTranslation("data");
+  const items = [...new Set(types.map((ty) => t(`regulatory.unchecked.types.${ty}`, { defaultValue: formatLayerType(ty) })))];
+  return (
+    <div className="flex items-start gap-2.5 rounded-lg border border-state-warning/25 bg-state-warning/5 px-3 py-2.5"
+      data-testid="overlays-unchecked">
+      {TONE.constraint.icon}
+      <div className="min-w-0">
+        <div className="text-body text-text-primary leading-snug">{t("regulatory.unchecked.title")}</div>
+        <div className="text-caption text-text-muted mt-0.5 leading-snug">
+          {t("regulatory.unchecked.body", { items: items.join(", ") })}
+        </div>
+        <SourceLink href={ZONING_MAP_URL} label={t("regulatory.unchecked.mapLink")} />
+      </div>
+    </div>
+  );
+}
 
 export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary; adu?: AduStatus | null }) {
   const { t } = useTranslation("data");
@@ -174,14 +195,19 @@ export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary
 
   const constraints = rows.filter((r) => r.severity === "constraint");
   const others = rows.filter((r) => r.severity !== "constraint");
+  const unchecked = data.unchecked_overlays ?? [];
 
   return (
     <SubSection title={t("regulatory.title")} icon={ShieldIcon}
-      meta={rows.length > 0 ? t("regulatory.constraintCount", { count: constraints.length }) : undefined}
+      meta={rows.length > 0 && !(data.unchecked_overlays?.length) ? t("regulatory.constraintCount", { count: constraints.length }) : undefined}
       className="flex-1"
     >
       <div className="space-y-5">
-        {rows.length === 0 && <p className="text-body text-text-muted">{t("regulatory.noOverlays")}</p>}
+        {unchecked.length > 0 && <UncheckedOverlays types={unchecked} />}
+
+        {rows.length === 0 && unchecked.length === 0 && (
+          <p className="text-body text-text-muted">{t("regulatory.noOverlays")}</p>
+        )}
 
         {constraints.length > 0 && (
           <div>

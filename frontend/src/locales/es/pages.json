@@ -243,7 +243,8 @@
         "fallbackZone": "La zonificación mostrada es un valor por defecto de categoría, no una consulta específica de la parcela.",
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
-        "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR."
+        "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR.",
+        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review."
       },
       "next": {
         "strong": {

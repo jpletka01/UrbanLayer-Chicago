@@ -894,9 +894,7 @@ async def _retrieve(
             else:
                 results[key] = value
 
-    prop_summary = results.get("property")
-    if prop_summary is not None and hasattr(prop_summary, "data_gaps"):
-        partial_failures.extend(prop_summary.data_gaps)
+    partial_failures.extend(_domain_data_gaps(results, ("property", "regulatory")))
 
     code_chunks = []
     if "vector_search" in plan.sources and plan.search_query:
@@ -964,6 +962,15 @@ async def _retrieve(
     _ensure_zone_definition(ctx)
 
     return ctx
+
+
+def _domain_data_gaps(results: dict[str, Any], keys: tuple[str, ...]) -> list[str]:
+    """``data_gaps`` the domain summaries report (a sub-source that failed inside a
+    domain that otherwise succeeded), for partial_failures."""
+    gaps: list[str] = []
+    for key in keys:
+        gaps.extend(getattr(results.get(key), "data_gaps", None) or [])
+    return gaps
 
 
 async def _fetch_overlay_geojson(
@@ -1797,6 +1804,9 @@ async def _fetch_scorecard_data(
                 partial_failures.append(_FAILURE_MAP[key])
         else:
             results[key] = value
+
+    # Overlay layers the City map couldn't answer: unknown, not "not in it".
+    partial_failures.extend(_domain_data_gaps(results, ("regulatory",)))
 
     from backend.models import RetrievalPlan, Location
     _source_tags = [

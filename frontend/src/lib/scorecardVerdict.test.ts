@@ -39,6 +39,8 @@ type Mk = {
   unverified?: boolean;
   approximate?: boolean;
   partial?: string[];
+  unchecked?: string[];
+  gaps?: string[];
   cityOwned?: boolean;
   scofflaw?: boolean;
   strProhibited?: boolean;
@@ -106,6 +108,8 @@ function mk(o: Mk): ScorecardResponse {
       in_adu_area: !!o.adu,
       in_aro_zone: !!o.aro,
       flood_zone: o.flood ?? "X",
+      unchecked_overlays: o.unchecked ?? [],
+      data_gaps: o.gaps ?? [],
     },
     violations: { total: 491, open_count: o.openViolations ?? 0 },
     tod_benefits: o.todBenefits ?? null,
@@ -442,5 +446,38 @@ describe("ADU and landmark reasons (F7)", () => {
     expect(text).toContain("Commission on Chicago Landmarks");
     expect(text).toContain("in writing");
     expect(text.toLowerCase()).not.toContain("design review");
+  });
+});
+
+describe("scorecardVerdict — overlays the City map couldn't answer (WS6 M7a)", () => {
+  const gap = "landmark designation (City zoning map didn't answer)";
+  const strong = { zone: "DS-5", far: 5.0, bldg: 1000, land: 970 } as const;
+
+  it("an unchecked landmark layer caveats the verdict instead of reading clean", () => {
+    const v = computeVerdict(mk({ ...strong, unchecked: ["landmark_building"], gaps: [gap], partial: [gap] }), t);
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).toContain("scorecard.verdict.caveat.overlayUnchecked");
+    // Said once, by the specific caveat — not repeated in the generic sources line.
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.partial"))).toBe(false);
+  });
+
+  it("other failed sources still get the generic line, without the overlay gap", () => {
+    const v = computeVerdict(mk({ ...strong, unchecked: ["planned_development"], gaps: ["planned development status (City zoning map didn't answer)"], partial: ["planned development status (City zoning map didn't answer)", "crime statistics"] }), t);
+    expect(v.caveats).toContain("scorecard.verdict.caveat.overlayUnchecked");
+    const partial = v.caveats.find((c) => c.startsWith("scorecard.verdict.caveat.partial"));
+    expect(partial).toContain("crime statistics");
+    expect(partial).not.toContain("planned development");
+  });
+
+  it("a non-friction unchecked layer (ARO) caveats via partial only", () => {
+    const aro = "ARO zone (City zoning map didn't answer)";
+    const v = computeVerdict(mk({ ...strong, unchecked: ["aro_zone"], gaps: [aro], partial: [aro] }), t);
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).not.toContain("scorecard.verdict.caveat.overlayUnchecked");
+  });
+
+  it("everything checked: no overlay caveat (unchanged)", () => {
+    const v = computeVerdict(mk(strong), t);
+    expect(v.caveats).not.toContain("scorecard.verdict.caveat.overlayUnchecked");
   });
 });

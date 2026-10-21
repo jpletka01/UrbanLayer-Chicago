@@ -1,3 +1,4 @@
+from backend.retrieval.regulatory.overlays import OverlayResults
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -8,12 +9,12 @@ from backend.retrieval.regulatory import regulatory_domain
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_assembles_full_summary(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = [
+    mock_overlays.return_value = OverlayResults(hits=[
         (6, {"NAME": "Gold Coast", "ORDINANCE": "2005-100", "LANDMARK": "Y"}),
         (20, {"AREA_NAME": "Near North ARO"}),
-    ]
+    ])
     mock_flood.return_value = {"fld_zone": "AE", "zone_subty": "FLOODWAY", "sfha_tf": "T"}
     mock_brownfield.return_value = [{"site_name": "Old Factory", "epa_id": "123"}]
 
@@ -31,16 +32,16 @@ async def test_assembles_full_summary(mock_overlays, mock_flood, mock_brownfield
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_boolean_flags_mapped_correctly(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = [
+    mock_overlays.return_value = OverlayResults(hits=[
         (2, {"PD_NAME": "Lincoln Yards"}),
         (3, {}),
         (4, {"NAME": "Milwaukee Ave"}),
         (5, {"NAME": "Wrigley Building"}),
         (13, {"NAME": "Damen CTA"}),
         (17, {}),
-    ]
+    ])
     mock_flood.return_value = None
     mock_brownfield.return_value = []
 
@@ -61,7 +62,7 @@ async def test_boolean_flags_mapped_correctly(mock_overlays, mock_flood, mock_br
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_handles_partial_failure(mock_overlays, mock_flood, mock_brownfield):
     mock_overlays.side_effect = Exception("MapServer down")
     mock_flood.return_value = {"fld_zone": "X", "zone_subty": None, "sfha_tf": "F"}
@@ -78,7 +79,7 @@ async def test_handles_partial_failure(mock_overlays, mock_flood, mock_brownfiel
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_returns_empty_when_all_fail(mock_overlays, mock_flood, mock_brownfield):
     mock_overlays.side_effect = Exception("fail")
     mock_flood.side_effect = Exception("fail")
@@ -95,11 +96,11 @@ async def test_returns_empty_when_all_fail(mock_overlays, mock_flood, mock_brown
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_ssa_name_extraction(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = [
+    mock_overlays.return_value = OverlayResults(hits=[
         (23, {"SSA_NAME": "Andersonville SSA #22", "SSA": "22"}),
-    ]
+    ])
     mock_flood.return_value = None
     mock_brownfield.return_value = []
 
@@ -112,11 +113,11 @@ async def test_ssa_name_extraction(mock_overlays, mock_flood, mock_brownfield):
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_tod_from_metra(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = [
+    mock_overlays.return_value = OverlayResults(hits=[
         (24, {"NAME": "Western Ave Metra"}),
-    ]
+    ])
     mock_flood.return_value = None
     mock_brownfield.return_value = []
 
@@ -128,9 +129,9 @@ async def test_tod_from_metra(mock_overlays, mock_flood, mock_brownfield):
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_sfha_false_for_non_t_value(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = []
+    mock_overlays.return_value = OverlayResults(hits=[])
     mock_flood.return_value = {"fld_zone": "X", "zone_subty": None, "sfha_tf": "F"}
     mock_brownfield.return_value = []
 
@@ -143,9 +144,9 @@ async def test_sfha_false_for_non_t_value(mock_overlays, mock_flood, mock_brownf
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_business_launch_skips_brownfield(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = [(4, {"NAME": "Milwaukee Ave"})]
+    mock_overlays.return_value = OverlayResults(hits=[(4, {"NAME": "Milwaukee Ave"})])
     mock_flood.return_value = None
     mock_brownfield.return_value = [{"site_name": "Should Not Be Called"}]
 
@@ -159,9 +160,9 @@ async def test_business_launch_skips_brownfield(mock_overlays, mock_flood, mock_
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_general_workflow_includes_brownfield(mock_overlays, mock_flood, mock_brownfield):
-    mock_overlays.return_value = []
+    mock_overlays.return_value = OverlayResults(hits=[])
     mock_flood.return_value = None
     mock_brownfield.return_value = [{"site_name": "Old Plant"}]
 
@@ -174,11 +175,11 @@ async def test_general_workflow_includes_brownfield(mock_overlays, mock_flood, m
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites")
 @patch("backend.retrieval.regulatory.query_flood_zone")
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_a_landmark_district_record_sets_the_district_flag(mock_overlays, mock_flood, mock_brownfield):
     # Layer 6 holds the Chicago Landmark districts (LANDMARK=Y); they need the same Commission
     # approval as an individual landmark, so the page must flag them.
-    mock_overlays.return_value = [(6, {"NAME": "Milwaukee Avenue District", "NUMBER_": "HD-56", "LANDMARK": "Y"})]
+    mock_overlays.return_value = OverlayResults(hits=[(6, {"NAME": "Milwaukee Avenue District", "NUMBER_": "HD-56", "LANDMARK": "Y"})])
     mock_flood.return_value = None
     mock_brownfield.return_value = []
     result = await regulatory_domain(41.91, -87.68, client=AsyncMock())
