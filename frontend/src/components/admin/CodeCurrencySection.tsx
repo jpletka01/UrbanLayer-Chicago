@@ -34,7 +34,7 @@ export function CodeCurrencySection() {
   if (data === undefined) return <p className="text-caption text-text-muted">Loading…</p>;
   if (data === null) return <p className="text-caption text-text-muted">Code currency isn't available right now.</p>;
 
-  const { code, clerk, amendments } = data;
+  const { code, clerk, amendments, map_lag: lagRez } = data;
   const lag = code.lag;
   const unknown = code.check_state === "unknown";
   return (
@@ -73,6 +73,20 @@ export function CodeCurrencySection() {
           ))}
         </dl>
       </div>
+      {lagRez && (
+        <dl className="space-y-1 max-w-xl" data-testid="map-lag">
+          <Stat label="Passed rezonings not on the City's map" value={lagRez.passed_not_on_map ?? "unknown (never checked)"} testId="map-lag-count" />
+          <Stat label="Oldest waiting" value={lagRez.oldest_days != null ? `${lagRez.oldest_days} days` : "none"} />
+          <Stat label="Shown on the Profile (parcels found)" value={lagRez.with_parcels ?? "unknown"} />
+          <Stat label="Titles the parser can't place" value={lagRez.unparsed_titles ?? "unknown"} />
+          <Stat label="Clean titles with no address point" value={lagRez.no_parcels.length} />
+          <Stat label="Rezoning check" value={lagRez.check_status} />
+          {lagRez.unparsed.length > 0 && (
+            <p className="text-caption text-text-secondary break-words">Map by hand in rezoning_overrides.json: {lagRez.unparsed.join(", ")}</p>
+          )}
+          {lagRez.last_error && <p className="text-caption text-state-negative break-words">{lagRez.last_error}</p>}
+        </dl>
+      )}
       {amendments.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-caption border-collapse" data-testid="code-amendments-table">

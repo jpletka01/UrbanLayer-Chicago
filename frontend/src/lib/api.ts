@@ -760,7 +760,23 @@ export interface AdminCodeCurrency {
     contract_ok: boolean;
     contract_problems: string[];
   };
+  map_lag?: AdminMapLag | null;
   amendments: Amendment[];
+}
+
+/** Passed rezonings the City's zoning map lacks (WS1 M5). Counts are null until the check has succeeded once. */
+export interface AdminMapLag {
+  source_id: string;
+  passed_not_on_map: number | null;
+  oldest_days: number | null;
+  flaggable: number | null;
+  with_parcels: number | null;
+  unparsed_titles: number | null;
+  unparsed: string[];
+  no_parcels: string[];
+  check_status: "ok" | "failed" | "missing";
+  last_checked: string | null;
+  last_error: string | null;
 }
 
 export async function fetchAdminCodeCurrency(): Promise<AdminCodeCurrency | null> {

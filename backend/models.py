@@ -815,7 +815,23 @@ class ContextObject(BaseModel):
             code_vintage=self.code_vintage,
             code_currency=self.code_currency,
             address=self.resolved_address,
+            passed_not_on_map=self.passed_not_on_map,
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def passed_not_on_map(self) -> list[dict] | None:
+        """Rezoning ordinances Council has passed that list this address and that the City's zoning
+        map does not carry yet (WS1 M5). The district on this page is then the OLD one. Offline: the
+        daily sync's snapshot, matched on the parcel's PIN (or, when the PIN is unresolved, its
+        address). None when nothing matches or the snapshot can't be trusted. Says "a rezoning listing
+        this address", never "this parcel was rezoned", and never to what."""
+        if self.parcel_zoning is None:
+            return None
+        from backend.legislation.rezonings import matches_for
+
+        pin = None if self.parcel_resolution == "approximate" else self.parcel_pin
+        return matches_for(pin, self.resolved_address, self.parcel_zoning.ordinance_num) or None
 
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property

@@ -5,8 +5,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Provenance, ZoneDefinition } from "../../lib/api";
-import type { CodeCurrency, CodeVintage, CoverageNote, UnitYield, ZoningSummary } from "../../lib/types";
-import { localizeZoningValue } from "../../lib/format";
+import type { CodeCurrency, CodeVintage, CoverageNote, PassedNotOnMap, UnitYield, ZoningSummary } from "../../lib/types";
+import { formatDay, localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
 import { CodeSourceModal } from "./CodeSourceModal";
@@ -52,7 +52,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, coverageNotes }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, coverageNotes, passedNotOnMap }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -68,6 +68,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   provenance?: Record<string, Provenance> | null;
   /** Where the analysis stops for this parcel (backend coverage_notes). */
   coverageNotes?: CoverageNote[] | null;
+  /** Passed rezonings listing this address that the City's map doesn't show yet (WS1 M5). */
+  passedNotOnMap?: PassedNotOnMap[] | null;
 }) {
   const { t } = useTranslation("pages");
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -134,6 +136,14 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
 
         {def.uses && <p className="text-caption text-text-secondary leading-relaxed">{def.uses}</p>}
         {def.notes && <p className="text-caption text-text-muted leading-relaxed">{def.notes}</p>}
+
+        {(passedNotOnMap ?? []).map((hit) => (
+          <p key={hit.record} className="text-caption text-text-primary rounded-lg border border-state-warning/40 bg-state-warning/10 px-3 py-2" data-testid="passed-not-on-map">
+            {t("scorecard.zoningCard.passedNotOnMap", { date: formatDay(hit.passed_on), record: hit.record })}
+            {" "}
+            <a href={hit.url} target="_blank" rel="noopener noreferrer" className="underline">{hit.record} ↗</a>
+          </p>
+        ))}
 
         {freshness?.recently_rezoned && freshness.ordinance_date && (
           <p className="text-caption text-text-primary rounded-lg border border-accent/40 bg-accent/10 px-3 py-2" data-testid="recently-rezoned">

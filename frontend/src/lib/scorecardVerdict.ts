@@ -13,6 +13,7 @@
 
 import type { ScorecardResponse } from "./api";
 import type { AduStatus, TodBenefits } from "./types";
+import { formatDay } from "./format";
 
 // Minimal i18next-compatible signature so the module stays React/i18n-pure and
 // unit-testable (the category/signal logic below needs no strings at all).
@@ -310,6 +311,10 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   const rezoned = data.context?.parcel_zoning;
   if (rezoned?.recently_rezoned && rezoned.ordinance_date)
     caveats.push(t("scorecard.verdict.caveat.recentlyRezoned", { date: rezoned.ordinance_date }));
+  // A rezoning listing this address passed but the City's map hasn't caught up: the district this read
+  // rests on may be the old one (WS1 M5).
+  const notOnMap = data.context?.passed_not_on_map?.[0];
+  if (notOnMap) caveats.push(t("scorecard.verdict.caveat.passedNotOnMap", { date: formatDay(notOnMap.passed_on) }));
   const complexSqft = data.context?.property?.complex_bldg_sqft;
   if (complexSqft)
     caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));

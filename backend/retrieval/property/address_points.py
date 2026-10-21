@@ -105,6 +105,65 @@ async def address_point_pins(address: str, *, client: httpx.AsyncClient | None =
     return pins
 
 
+# An ordinance's legal description can name a range of thousands of numbers; Address Points holds
+# one row per address point, so the cap is a safety net, not a tuning knob.
+_RANGE_LIMIT = 5000
+
+
+async def pins_in_range(
+    *, direction: str, names: list[str], types: list[str], lo: int, hi: int, side: str = "both",
+    client: httpx.AsyncClient | None = None,
+) -> list[dict]:
+    """Every well-formed parcel with an address point on one block-range of one street:
+    ``[{pin, lat, lon, number, name}]`` (one row per distinct PIN, lowest number kept).
+
+    ``names`` are the spellings to try for the street ("FIFTH", "5TH"); ``types`` the street
+    type forms ("AVE", "AVENUE"). ``side`` is "odd", "even" or "both" (WS1 parity rule).
+    Chicago only (the dataset is county-wide). Raises on a query error: the daily sync records
+    that as a failed check rather than as "no parcels".
+    """
+    settings = get_settings()
+    dir_word = _DIRECTION_WORD.get(direction, direction)
+
+    def quoted(values: list[str]) -> str:
+        return ",".join("'" + v.replace("'", "''").upper() + "'" for v in values)
+
+    params = {
+        "$where": (
+            "inc_muni='Chicago' "
+            f"AND upper(st_predir) in ('{direction}','{dir_word}') "
+            f"AND upper(st_name) in ({quoted(names)}) "
+            f"AND upper(st_postyp) in ({quoted(types)}) "
+            f"AND add_number::number between {int(lo)} and {int(hi)}"
+        ),
+        "$select": "pin,lat,long,add_number,st_name",
+        "$limit": _RANGE_LIMIT,
+    }
+    rows = await socrata_get(
+        settings.dataset_address_points, params, client=client,
+        base_url=settings.cook_county_socrata_base, app_token=settings.cook_county_socrata_token or None,
+    )
+    out: dict[str, dict] = {}
+    for r in rows or []:
+        try:
+            number = int(str(r.get("add_number", "")).strip())
+        except (TypeError, ValueError):
+            continue
+        if side == "odd" and number % 2 == 0 or side == "even" and number % 2 == 1:
+            continue
+        pin = str(r.get("pin", "")).replace("-", "")
+        if not _PIN14_RE.fullmatch(pin) or pin == "00000000000000":
+            continue
+        try:
+            lat, lon = float(r["lat"]), float(r["long"])
+        except (KeyError, TypeError, ValueError):
+            lat = lon = None
+        row = {"pin": pin, "lat": lat, "lon": lon, "number": number, "name": str(r.get("st_name", "")).upper()}
+        if pin not in out or number < out[pin]["number"]:
+            out[pin] = row
+    return sorted(out.values(), key=lambda x: x["pin"])
+
+
 async def address_to_pin(
     address: str,
     *,

@@ -722,7 +722,22 @@ export interface CoverageNote {
   ahead_of_code?: boolean;
 }
 
+/** A rezoning ordinance whose legal description lists this address and that the City's map does not
+    carry yet (backend `ContextObject.passed_not_on_map`, WS1 M5). "Listing", never "rezoned": it can
+    name only part of a range, and what it changes to is not read. */
+export interface PassedNotOnMap {
+  record: string;
+  /** ISO date Council passed it. */
+  passed_on: string;
+  url: string;
+  /** The listed range that reaches this address, in the ordinance's words ("6701-6731 S Western Ave"). */
+  segment: string | null;
+  maps: string | null;
+  matched_by: "pin" | "address";
+}
+
 export interface ContextObject {
+  passed_not_on_map?: PassedNotOnMap[] | null;
   coverage_notes?: CoverageNote[] | null;
   adu?: AduStatus | null;
   code_vintage?: CodeVintage | null;

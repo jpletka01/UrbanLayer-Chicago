@@ -451,3 +451,30 @@ def clerk_source_status() -> dict:
         "contract_ok": s.get("status") not in ("suspect",) and not s.get("contract_problems"),
         "contract_problems": s.get("contract_problems") or [],
     }
+
+
+def map_lag_status() -> dict:
+    """Status of "passed but not yet on the City map" for WS6's registry (``chi.zoning.passed_not_on_map``)
+    and the admin card: how many passed rezonings the zoning map lacks, how long the oldest has waited, and
+    the titles we could not place. Counts are null when the rezoning check has never succeeded."""
+    from backend.legislation import rezonings
+
+    s = load_snapshot() or {}
+    check = s.get("rezoning_check") or {}
+    rows = s.get("rezonings") or []
+    ok = bool(check.get("checked_at"))
+    n = rezonings.summary(rows) if ok else {}
+    return {
+        "source_id": "chi.zoning.passed_not_on_map",
+        "passed_not_on_map": n.get("off_map"),
+        "oldest_days": n.get("off_map_oldest_days"),
+        "flaggable": n.get("flaggable"),
+        "with_parcels": n.get("with_parcels"),
+        "unparsed_titles": len(n["unparsed"]) if ok else None,
+        "unparsed": n.get("unparsed") or [],
+        "no_parcels": n.get("no_parcels") or [],
+        "district_read_agreement": None,  # WS1 M6
+        "check_status": check.get("status") or "missing",
+        "last_checked": check.get("checked_at"),
+        "last_error": check.get("last_error"),
+    }

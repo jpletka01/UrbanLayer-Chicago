@@ -138,7 +138,8 @@
         "aldermanic": "Zoning map amendments, Planned Developments, special uses and administrative adjustments require notice to the ward's alderman (§17-13-0100, §17-13-0300, §17-13-0600), and whether a project is approved turns on discretionary approvals this page cannot assess.",
         "map_lag": "The City's zoning map can lag a passed amendment by up to 90 days.",
         "code_vintage": "The Municipal Code text used here is current through {{date}}; a later Council amendment may not be reflected.",
-        "official_letter": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning (${{fee}}, up to {{days}} days, as published by the Office of the Zoning Administrator, checked {{checked}}); a letter of opinion covers a specific project."
+        "official_letter": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning (${{fee}}, up to {{days}} days, as published by the Office of the Zoning Administrator, checked {{checked}}); a letter of opinion covers a specific project.",
+        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development."
       }
     },
     "resolution": {
@@ -190,7 +191,8 @@
       "maxUnitsByLotArea": "Max units by lot area",
       "unitYieldCaveat": "Lot area per unit is one limit. FAR, height, parking and other standards can allow fewer units; exemptions can allow more.",
       "laterAmendments_one": "{{count}} later amendment",
-      "laterAmendments_other": "{{count}} later amendments"
+      "laterAmendments_other": "{{count}} later amendments",
+      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows."
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
@@ -246,7 +248,8 @@
         "partial": "Some data sources were unavailable: {{sources}}.",
         "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",
         "strProhibited": "Short-term rentals are prohibited on this block (precinct owner opt-out) — relevant if you're underwriting STR income.",
-        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review."
+        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
+        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date."
       },
       "next": {
         "strong": {

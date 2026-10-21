@@ -40,6 +40,12 @@ IN_2026_06_17_TEXT = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _no_rezoning_fetch(monkeypatch):
+    """The sync also asks the Clerk for rezonings (WS1 M5, tested in test_rezonings.py); here it finds none."""
+    monkeypatch.setattr(clerk, "passed_since", AsyncMock(return_value=[]))
+
+
 def _matters() -> list[clerk.ClerkMatter]:
     return [clerk.ClerkMatter.from_api(r) for r in json.loads(FIXTURE.read_text())["data"]]
 
@@ -468,7 +474,7 @@ def test_admin_code_currency_is_admin_only_and_offline(client):
         main.app.dependency_overrides.pop(require_admin, None)
     assert d["code"]["source_id"] == "code.municipal_text" and d["code"]["lag"]["title17_passed_since"] == 10
     assert d["clerk"]["source_id"] == "chi.clerk.legislation" and d["clerk"]["snapshot_state"] == "ok"
-    assert len(d["amendments"]) == 15 and d["map_lag"] is None  # 10 Title 17 + 5 cited (incl. the omnibus remainder)
+    assert len(d["amendments"]) == 15 and d["map_lag"]["check_status"] == "missing"  # 10 Title 17 + 5 cited (incl. the omnibus remainder)
 
 
 # --- the daily sync -----------------------------------------------------------------------------

@@ -392,6 +392,24 @@ describe("recently rezoned (F5a)", () => {
   });
 });
 
+describe("passed, not yet on the City map (WS1 M5)", () => {
+  const hit = { record: "O2026-0028350", passed_on: "2026-10-14", url: "https://clerk/x", segment: "6701-6731 S Western Ave", maps: "16-H", matched_by: "pin" };
+
+  it("adds a caveat naming the date, so the verdict doesn't read the old district as settled", () => {
+    const data = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    (data.context as unknown as Record<string, unknown>).passed_not_on_map = [hit];
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.passedNotOnMap") && c.includes("Oct 14, 2026"))).toBe(true);
+  });
+
+  it("no caveat without a listing", () => {
+    const none = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    expect(computeVerdict(none, t).caveats.some((c) => c.includes("passedNotOnMap"))).toBe(false);
+    (none.context as unknown as Record<string, unknown>).passed_not_on_map = [];
+    expect(computeVerdict(none, t).caveats.some((c) => c.includes("passedNotOnMap"))).toBe(false);
+  });
+});
+
 describe("building area that isn't this lot's (F6)", () => {
   it("an existing FAR several times the zone cap is treated as unknown, not as a built-out parcel", () => {
     // kit P3: 43,790 sq ft (a whole strip center) on a 4,347 sq ft lot -> FAR 10.07 vs a 2.2 cap
