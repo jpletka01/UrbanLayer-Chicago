@@ -35,6 +35,7 @@ def build_coverage_notes(
     adu: dict | None,
     code_vintage: dict | None,
     code_currency: dict | None = None,
+    address: str | None = None,
 ) -> list[dict]:
     """The ordered list of notes for one parcel. Every argument may be None."""
     notes: list[dict] = []
@@ -90,7 +91,17 @@ def build_coverage_notes(
             params={"zone": adu.get("zone") or ""}, section="17-7-0574",
         ))
 
-    relevant = [a for a in (code_currency or {}).get("amendments") or [] if a.get("parcel_relevant")]
+    # Law passed after the code text and applied here ahead of codification (WS1 M4b): TOD streets,
+    # pedestrian-street changes the map doesn't show yet, the Milwaukee Ave overlay's strip-center exception.
+    from backend.legislation.applied import applied_law_notes
+
+    notes += applied_law_notes(address, overlays)
+
+    # What's left is parcel-relevant but not applied: said to be missing from this page.
+    relevant = [
+        a for a in (code_currency or {}).get("amendments") or []
+        if a.get("parcel_relevant") and not (a.get("review_status") == "reviewed" and a.get("product_effect") == "applied")
+    ]
     if relevant:
         from backend.legislation.currency import fmt_day
 

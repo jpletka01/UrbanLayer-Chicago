@@ -226,7 +226,7 @@ def parcel_cited_sections(zone_class: str | None, overlays: Iterable = (), note_
     out += [s for s in note_sections if s]
     return list(dict.fromkeys(out))
 
-def _address_parts(address: str | None) -> tuple[int, str, str] | None:
+def address_parts(address: str | None) -> tuple[int, str, str] | None:
     if not address:
         return None
     from backend.retrieval.buildings import parse_chicago_address
@@ -240,16 +240,34 @@ def _address_parts(address: str | None) -> tuple[int, str, str] | None:
         return None
 
 
+def address_suffix(address: str | None) -> str | None:
+    """The street-type word of an address ("AVE" in "3036 W Lawrence Ave"), None when it has none."""
+    if not address:
+        return None
+    from backend.retrieval.buildings import _SUFFIXES
+
+    m = re.search(r"\s(" + _SUFFIXES[3:-1] + r")\b(?:\s.*|,.*)?$", address.split(",")[0].strip().upper())
+    return m.group(1) if m else None
+
+
+def suffix_conflicts(want: str | None, address: str | None) -> bool:
+    """A named street type that the address contradicts ("Lawrence Pl" is not "Lawrence Ave")."""
+    have = address_suffix(address)
+    return bool(want and have and want.upper() != have)
+
+
 def map_effect_matches(effect: dict, address: str | None, overlay_types: Iterable[str] = ()) -> bool:
     """Whether a reviewed map effect reaches this address. A street segment needs its
     number range; a pedestrian-street removal without a range matches a parcel on that
     street that still shows the overlay. An addition without a range matches nothing
     (we'd be guessing the segment)."""
-    parts = _address_parts(address)
+    parts = address_parts(address)
     if parts is None:
         return False
     number, direction, name = parts
     if effect.get("street", "").upper() != name or (effect.get("direction") or direction).upper() != direction:
+        return False
+    if suffix_conflicts(effect.get("suffix"), address):
         return False
     lo, hi = effect.get("from"), effect.get("to")
     if lo is not None and hi is not None:

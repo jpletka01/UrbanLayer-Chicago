@@ -718,6 +718,8 @@ export interface CoverageNote {
   params: Record<string, string | number | null>;
   link: string | null;
   section: string | null;
+  /** True for law Council passed that the published code text lacks (WS1 M4b). */
+  ahead_of_code?: boolean;
 }
 
 export interface ContextObject {

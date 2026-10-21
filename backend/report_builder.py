@@ -34,7 +34,9 @@ from backend.models import (
     ReportData,
     ZoningStandards,
 )
+from backend.legislation.applied import pedestrian_street_removed
 from backend.retrieval.property.assessment_level import assessment_level_for_class
+from backend.retrieval.tod_streets import tod_street_status
 from backend.retrieval.utils import FT_PER_DEG_LAT, MI_PER_DEG_LAT
 from backend.retrieval.vector_search import semantic_search
 from backend.retrieval.zoning import adjacent_parcel_zoning
@@ -2089,7 +2091,16 @@ def _synthesize_opportunities_constraints(
                 "category": "regulatory",
             })
 
-    if reg and any(o.layer_type == "pedestrian_street" for o in (reg.overlays or [])):
+    # Law passed after the code text, applied ahead of codification (WS1 M4b).
+    overlay_types = [o.layer_type for o in (reg.overlays or [])] if reg else []
+    if tod_street_status(ctx.resolved_address):
+        constraints.append({
+            "signal": t("oc.tod_street.signal"),
+            "detail": t("oc.tod_street.detail"),
+            "category": "regulatory",
+        })
+
+    if reg and "pedestrian_street" in overlay_types and not pedestrian_street_removed(ctx.resolved_address, overlay_types):
         opportunities.append({
             "signal": t("oc.pedestrian_overlay.signal"),
             "detail": t("oc.pedestrian_overlay.detail"),

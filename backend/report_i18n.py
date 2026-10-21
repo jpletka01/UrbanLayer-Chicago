@@ -616,6 +616,8 @@ _EN: dict[str, str] = {
     "oc.pedestrian_overlay.detail": "Requires 60% ground-floor transparency and active uses — constrains design but signals walkable commercial corridor with higher foot traffic.",
     "oc.ssa_levy.signal": "Special Service Area levy",
     "oc.ssa_levy.detail": "SSA {ssa} imposes additional property tax (typically 0.5-2.0% of EAV) beyond base property tax.",
+    "oc.tod_street.signal": "TOD street — use limits and rezoning rule",
+    "oc.tod_street.detail": "This lot abuts a transit-oriented development street (§17-3-0600, ordinance SO2026-0025391, not yet in the published code text): eight uses are prohibited (strip centers, drive-throughs, gas stations, car washes, vehicle repair among them) and a rezoning must be to a B or C1 district with a FAR of at least 3. Matched by street address; confirm with the Department of Planning and Development.",
     "oc.high_tax.signal": "High effective tax rate ({rate})",
     "oc.high_tax.detail": "Above Cook County median (~2.1%). Reduces NOI and may impair debt service coverage. Investigate Class 6b/7a/7b/8 incentive eligibility.",
     "oc.assessed_rising.signal": "Assessed value rising ({cagr}% CAGR, reassessment trend)",
@@ -695,6 +697,8 @@ _EN: dict[str, str] = {
     "currency.status_not_reflected": "Not reflected",
     "currency.status_unreviewed": "Not yet reviewed",
     "currency.footnote": "These amendments are not in the code text this report quotes. Read the ordinance (linked) before relying on a standard it touches.",
+    "currency.law_heading": "Law passed since the code text, applied to this parcel",
+    "currency.law_footnote": "Each item is an ordinance City Council passed after the code text this report quotes. It is applied here from the ordinance itself, not from the published code. Confirm with the Department of Planning and Development.",
 }
 
 _ES: dict[str, str] = {
@@ -1260,6 +1264,8 @@ _ES: dict[str, str] = {
     "oc.pedestrian_overlay.detail": "Requiere 60% de transparencia en planta baja y usos activos — restringe el diseño pero señala un corredor comercial caminable con mayor tránsito peatonal.",
     "oc.ssa_levy.signal": "Gravamen de Área de Servicio Especial",
     "oc.ssa_levy.detail": "El SSA {ssa} impone un impuesto predial adicional (normalmente 0.5-2.0% del EAV) más allá del impuesto predial base.",
+    "oc.tod_street.signal": "TOD street — use limits and rezoning rule",
+    "oc.tod_street.detail": "This lot abuts a transit-oriented development street (§17-3-0600, ordinance SO2026-0025391, not yet in the published code text): eight uses are prohibited (strip centers, drive-throughs, gas stations, car washes, vehicle repair among them) and a rezoning must be to a B or C1 district with a FAR of at least 3. Matched by street address; confirm with the Department of Planning and Development.",
     "oc.high_tax.signal": "Tasa impositiva efectiva alta ({rate})",
     "oc.high_tax.detail": "Por encima de la mediana del Condado de Cook (~2.1%). Reduce el NOI y puede afectar la cobertura del servicio de deuda. Investigue la elegibilidad de incentivos Clase 6b/7a/7b/8.",
     "oc.assessed_rising.signal": "Valor de avalúo en aumento ({cagr}% CAGR, tendencia de reevaluación)",
@@ -1339,12 +1345,18 @@ _ES: dict[str, str] = {
     "currency.status_not_reflected": "Not reflected",
     "currency.status_unreviewed": "Not yet reviewed",
     "currency.footnote": "These amendments are not in the code text this report quotes. Read the ordinance (linked) before relying on a standard it touches.",
+    "currency.law_heading": "Law passed since the code text, applied to this parcel",
+    "currency.law_footnote": "Each item is an ordinance City Council passed after the code text this report quotes. It is applied here from the ordinance itself, not from the published code. Confirm with the Department of Planning and Development.",
 }
 
 # Spanish keys still carrying the English text, for WS7 to translate. The guard in
 # test_report_i18n.py checks each exists in both catalogs and still equals the English
 # (so a translated key must also leave this set). Shared convention: WS0, WS1, WS6.
 _UNTRANSLATED_ES: frozenset[str] = frozenset({
+    "oc.tod_street.signal",
+    "oc.tod_street.detail",
+    "currency.law_heading",
+    "currency.law_footnote",
     "currency.heading",
     "currency.vintage",
     "currency.since_fresh__one",

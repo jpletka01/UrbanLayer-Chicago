@@ -685,6 +685,14 @@ a.glossary-link {
   <p style="font-size: 9pt;"><strong>{{ tn("currency.parcel_count", relevant|length) }}</strong></p>
   {{ currency_table(relevant) }}
   {% endif %}
+  {% set law_notes = (ctx.coverage_notes or []) | selectattr("ahead_of_code") | list %}
+  {% if law_notes %}
+  <h3>{{ t("currency.law_heading") }}</h3>
+  {% for n in law_notes %}
+  <p style="font-size: 9pt;">{{ n.text }}{% if n.link %} <a href="{{ n.link }}">{{ n.params.record }}</a>{% endif %}</p>
+  {% endfor %}
+  <p style="font-size: 8pt; color: #6b7280;">{{ t("currency.law_footnote") }}</p>
+  {% endif %}
   <p style="font-size: 8pt; color: #6b7280;">{{ tn("currency.full_list", cc.amendments|length) }}</p>
   {% endif %}
   {% endif %}

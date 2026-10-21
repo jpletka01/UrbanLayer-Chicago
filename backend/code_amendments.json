@@ -178,17 +178,17 @@
       "sections": [
         "17-9-0109A"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Adds a trigger to §17-9-0109-A: an addition to an existing gas station that adds 7 or more electric vehicle supply equipment chargers needs special use approval, like 2 or more new pumps. The rest of the section is unchanged; special use for all new gas stations was already there. (The ordinance's title reads as if the new-station rule were new.)",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "No deterministic rule reads §17-9-0109-A. The B3/C1/C2 'no new gas stations' summaries come from SO2026-0024923 (§17-3-0207). Chat answers from the code text and the amendment list.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/4c0595c6-7a9d-4ada-a276-74acc11da3f1.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "O2026-0025463": {
       "record": "O2026-0025463",
@@ -201,25 +201,34 @@
       "sections": [
         "17-3-0503-D"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Makes N Clark St one pedestrian retail street from Belden Ave (2300 N) to Grace St (3800 N), replacing the Belden–Diversey, Diversey–Wellington and Newport–Addison rows. Newly designated: 3000–3432 N and 3600–3800 N (the ordinance's common address). The §17-3-0504 pedestrian-street standards apply to pedestrian retail streets too.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "applied",
+      "product_notes": "Coverage note pedestrian_street_added on a 3000–3432 or 3600–3800 N Clark address while the City's map layer doesn't show the designation yet (applied.py).",
       "map_effects": [
         {
           "kind": "pedestrian_street_added",
           "direction": "N",
           "street": "CLARK",
-          "from": null,
-          "to": null
+          "from": 3000,
+          "to": 3432,
+          "suffix": "ST"
+        },
+        {
+          "kind": "pedestrian_street_added",
+          "direction": "N",
+          "street": "CLARK",
+          "from": 3600,
+          "to": 3800,
+          "suffix": "ST"
         }
       ],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/9ed83b95-20b4-4329-a823-288d2096c74c.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "O2026-0025464": {
       "record": "O2026-0025464",
@@ -232,25 +241,26 @@
       "sections": [
         "17-3-0503-D"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Designates W Belmont Ave from N Cambridge Ave (531 W) to N Southport Ave (1400 W) a pedestrian retail street. The listed segment used to start at Halsted (800 W), so 531–800 W is new. The §17-3-0504 pedestrian-street standards apply to pedestrian retail streets too.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "applied",
+      "product_notes": "Coverage note pedestrian_street_added on a 531–800 W Belmont address while the City's map layer doesn't show the designation yet (applied.py).",
       "map_effects": [
         {
           "kind": "pedestrian_street_added",
           "direction": "W",
           "street": "BELMONT",
-          "from": null,
-          "to": null
+          "from": 531,
+          "to": 800,
+          "suffix": "AVE"
         }
       ],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/1116b7ed-88a1-429e-9b1e-864ab81638e5.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "O2026-0026278": {
       "record": "O2026-0026278",
@@ -263,17 +273,17 @@
       "sections": [
         "17-6-0403"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Adds a supplemental standard (§17-6-0403-G.18): participant sports and recreation uses in PMDs may not exceed 9,000 sq ft, except in PMD 2, 3, 4A, 5, 7A, 7B, 8A, 8B, 10, 11B and 14, and in PMD 4B when approved as a special use. It also edits that use-table row's PMD 4B entry (the strike-through and underline are hard to read on the scan).",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "Chat only; PMDs are not on the Profile's deterministic rules.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/0a8140f7-ca7f-4cc5-a79a-df0ce661bc7e.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "SO2026-0026276": {
       "record": "SO2026-0026276",
@@ -286,17 +296,17 @@
       "sections": [
         "17-6-0403-F"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Changes the Residential Storage Warehouse row of the §17-6-0403-F use table: PMD 4B becomes special use (S). The ordinance's title says 'by right', but the substitute that passed enters S for that district.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "Chat only; PMDs are not on the Profile's deterministic rules.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/ef079054-9311-40a5-8266-240f6c85a58a.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "O2026-0026042": {
       "record": "O2026-0026042",
@@ -309,25 +319,26 @@
       "sections": [
         "17-3-0503-D"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Removes the pedestrian-street designation from W Lawrence Ave between Whipple St and Albany Ave (3032–3042 W; common address 3034–3042), splitting the Sacramento–Central Park row into Sacramento–Whipple (3000–3032 W) and Albany–Central Park (3042–3600 W).",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "applied",
+      "product_notes": "Coverage note pedestrian_street_removed on a 3034–3042 W Lawrence address while the City's map layer still shows the pedestrian street (applied.py); the report stops listing the pedestrian overlay as an opportunity for that parcel.",
       "map_effects": [
         {
           "kind": "pedestrian_street_removed",
           "direction": "W",
           "street": "LAWRENCE",
-          "from": null,
-          "to": null
+          "from": 3034,
+          "to": 3042,
+          "suffix": "AVE"
         }
       ],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/5a50c210-5797-4af1-a441-fd8b34af5fa6.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "SO2026-0024882": {
       "record": "SO2026-0024882",
@@ -340,17 +351,17 @@
       "sections": [
         "17-9-0111.5"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Allows non-accessory parking on religious assembly grounds currently devoted to accessory parking, in RT4 and higher R districts, up to eight spaces and only when no religious services are being held (new §17-9-0111.5-B; the school rule is §17-9-0111.5-A).",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "Chat only. No deterministic parking rule reads §17-9-0111.5.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/d335dff1-a2a3-4705-9cdd-86d6f5850014.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "SO2026-0027187": {
       "record": "SO2026-0027187",
@@ -363,17 +374,17 @@
       "sections": [
         "17-7-1506"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "Adds an exception to the Milwaukee Avenue Special Character Overlay District's ban on strip centers (§17-7-1506): a strip center is allowed in the case of adaptive reuse or rehabilitation of an existing building. The other four prohibited uses are unchanged.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "applied",
+      "product_notes": "Coverage note milwaukee_sco_strip_centers on a parcel in the Milwaukee Ave Special Character Overlay while the exception is not in the code text (applied.py). The overlay's own detail stays pinned to the codified list.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/2812b37a-95ab-4371-a18f-36b35059cff0.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "SO2026-0025391": {
       "record": "SO2026-0025391",
@@ -389,31 +400,33 @@
         "17-17-02177.5"
       ],
       "sections_basis": "ordinance",
-      "summary": "Adds §17-3-0600, transit-oriented development (TOD) streets: N Western Ave 3600–4859 N and N Ravenswood Ave 4001–4799 N. Eight uses are prohibited on lots abutting a TOD street, and a rezoning of abutting property must be to a B or C1 district with a FAR of at least 3. It also amends §17-3-0308(2) and adds a definition at §17-17-02177.5. Effective on passage.",
+      "summary": "Adds §17-3-0600, transit-oriented development (TOD) streets: N Ravenswood Ave from Irving Park Rd to Lawrence Ave (4001–4799 N) and N Western Ave from Addison St to Ainslie St (3600–4859 N). Eight uses are prohibited on lots abutting a TOD street (strip centers, drive-through facilities, vehicle sales and service with outdoor storage, gas stations, car washes, residential storage warehouses, electronic data storage centers, motor vehicle repair shops). A rezoning of abutting property must be to a B or C1 district with a FAR of at least 3 (applications complete and pending before the effective date follow the old rules unless the applicant opts in). It also ends the §17-3-0308(2) pedestrian-street exceptions on a TOD segment and adds a definition at §17-17-02177.5. Effective on passage.",
       "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "applied",
+      "product_notes": "backend/retrieval/tod_streets.py matches a parcel's street address to the two segments and adds the coverage note tod_street (Profile, chat, report). Address-range match only: a lot that reaches a TOD street from a cross street is not caught. The City's zoning map has no TOD layer yet.",
       "map_effects": [
         {
           "kind": "tod_street",
           "direction": "N",
           "street": "WESTERN",
           "from": 3600,
-          "to": 4859
+          "to": 4859,
+          "suffix": "AVE"
         },
         {
           "kind": "tod_street",
           "direction": "N",
           "street": "RAVENSWOOD",
           "from": 4001,
-          "to": 4799
+          "to": 4799,
+          "suffix": "AVE"
         }
       ],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null,
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/c34787d3-d9a9-4afd-8329-84ad44707f0d.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR",
       "effective": "upon passage and approval (2026-10-14)"
     },
     "SO2026-0028463": {
@@ -428,17 +441,17 @@
         "17-9-0129",
         "17-9-0129.1"
       ],
-      "sections_basis": "title",
-      "summary": null,
-      "summary_basis": null,
+      "sections_basis": "ordinance",
+      "summary": "A lawfully established adult-use cannabis dispensary may add medical cannabis dispensary operations without special use or Type I map amendment or planned development review (new §17-9-0129 item 8). Any physical expansion of the use, structures or zoning lot still triggers that review.",
+      "summary_basis": "ordinance",
       "codified": false,
-      "review_status": "unreviewed",
-      "product_effect": "pending",
-      "product_notes": "",
+      "review_status": "reviewed",
+      "product_effect": "none",
+      "product_notes": "Chat only.",
       "map_effects": [],
-      "source_pdf": null,
-      "reviewed_on": null,
-      "reviewed_by": null
+      "source_pdf": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/e9c0c932-c93a-4bf6-bed6-890f51647b3c.pdf",
+      "reviewed_on": "2026-10-21",
+      "reviewed_by": "claude (scan read in session, 2026-10-21); Jack approves in the WS1 M4b PR"
     },
     "O2026-0024022": {
       "record": "O2026-0024022",
