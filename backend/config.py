@@ -54,7 +54,10 @@ class Settings(BaseSettings):
 
     keyword_boost_weight: float = 0.20
 
-    qdrant_code_collection: str = "chicago_municipal_code"
+    # An alias, not a collection: each code vintage is its own collection
+    # (municipal_code_<current_through>) and a refresh flips this alias to the new one
+    # atomically (ingestion/push_index.py). code_vintage.json:collection names the target.
+    qdrant_code_collection: str = "municipal_code"
 
     socrata_base: str = "https://data.cityofchicago.org/resource"
     dataset_crime: str = "ijzp-q8t2"

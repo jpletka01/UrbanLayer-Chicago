@@ -110,11 +110,11 @@ def collect() -> dict:
         "kit_version": key["version"], "parcels": [{"id": p["id"], "address": p["address"], "why": p["why"], "district": p["A"]["district"]} for p in key["parcels"]],
         "current": current, "progression": [r for r, _ in runs],
         "review": (rev := review_summary()),
-        "limits": limits(rev),
+        "limits": limits(rev, key),
     }
 
 
-def limits(rev: dict) -> list[str]:
+def limits(rev: dict, key: dict) -> list[str]:
     if rev["status"] == "reviewed":
         r = rev["reviewer"]
         key_line = (f"The answer key was reviewed by {r['role']} ({r['credentials']}) on {r['date']}: they agreed with {rev['agree']} of "
@@ -122,7 +122,9 @@ def limits(rev: dict) -> list[str]:
     else:
         key_line = ("The answer key was built from primary sources but has not yet been reviewed by a Chicago architect or zoning "
                     "attorney (the most interpretive parcels are P2, P3 and P6).")
-    return [_LIMITS[0], key_line, *_LIMITS[1:]]
+    vintage = (f"Code text is current through the Council Journal of {key['code_current_through']}; "
+               "a later amendment is not in the key.")
+    return [_LIMITS[0], key_line, *_LIMITS[1:], vintage]
 
 
 _LIMITS = [
@@ -130,7 +132,6 @@ _LIMITS = [
     "Overlay truth comes from the same City service the product queries, so overlay scores are not independent evidence. District, bulk numbers and the task answers are.",
     "Use-question, parking and task answers are scored by expected-phrase rubrics that were written while looking at earlier runs, so agreement with a person's scores is in-sample.",
     "Chat answers vary from run to run; one run per row. Compare runs by the cases that fail, not by the third digit.",
-    "Code text is current through the Council Journal of 2026-03-18; a later amendment is not in the key.",
 ]
 
 
@@ -231,7 +232,7 @@ def render(data: dict) -> str:
     L.append("")
     L.append(f"Key version `{key['version']}`, in [`eval/kit/parcels.json`](../../eval/kit/parcels.json), with the source for every field. "
              "Sources: the City's open-data zoning layer and its zoning map service (overlays), the Municipal Code text "
-             "(American Legal export, current through the Council Journal of 2026-03-18), ordinance PDFs, and Cook County Assessor "
+             f"(American Legal export, current through the Council Journal of {key['code_current_through']}), ordinance PDFs, and Cook County Assessor "
              "data. Where the key and the product agree because they read the same City service, that is noted (overlays). The key "
              "fixed three errors in an earlier version that had used the product's own output as ground truth.")
     L.append("")

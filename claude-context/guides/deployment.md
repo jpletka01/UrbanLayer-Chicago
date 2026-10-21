@@ -51,26 +51,52 @@ container is impossible. Qdrant is also a **persisted named volume** (`qdrant_st
 so a code deploy never touches the corpus: a parser fix ships without changing what prod
 serves.
 
-The corpus is updated by embedding LOCALLY and writing to prod over an SSH tunnel — this
-keeps all model work off the 8 GB box:
+The corpus is updated by embedding LOCALLY and copying the result to prod over an SSH
+tunnel. That keeps all model work off the 8 GB box.
+
+**One collection per code vintage, behind an alias** (WS1 M0, 2026-10-21). The app reads
+the alias `municipal_code` (`settings.qdrant_code_collection`). Each export lives in its
+own collection, `municipal_code_<current_through>` (e.g. `municipal_code_2026-03-18`), and
+`backend/code_vintage.json:collection` names the one the code was ingested into. A refresh
+never edits the collection being served:
+
+1. `python -m ingestion.update --dry-run --source <export>` parses into
+   `ingestion/data/sections.new/` and writes `ingestion/data/diff/<vintage>/report.md`.
+   Nothing else is touched. Review the report and its abort gates.
+2. `python -m ingestion.update --source <export>` (add `--force` once a tripped gate is
+   explained) embeds into the new local collection. Only after the point count matches
+   does it promote the staged files, keep the old ones in
+   `ingestion/data/snapshots/<old vintage>/`, flip the local alias, and write
+   `code_vintage.json` + `code_changes.json`.
+3. Push to prod with `ingestion.push_index` (below), then merge the PR carrying
+   `code_vintage.json`. **Alias first, then the code deploy**: in between, the product
+   understates how current the text is, never overstates it.
 
 ```bash
-# Qdrant publishes NO host port in prod (see the security note in docker-compose.yml),
-# so tunnel to the CONTAINER on the docker bridge, not to 127.0.0.1.
-IP=$(ssh urbanlayer-prod 'docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(docker ps -qf name=qdrant)')
-ssh -f -N -L 6335:$IP:6333 urbanlayer-prod
-curl -s localhost:6335/collections/chicago_municipal_code | jq .result.points_count
+# Qdrant publishes NO host port in prod (see the security note in docker-compose.yml), so
+# tunnel to the CONTAINER on the docker bridge. `jack` isn't in the docker group, so the
+# IP lookup needs sudo (Jack types the password); the IP only changes if the container is recreated.
+ssh -t urbanlayer-prod 'sudo docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $(sudo docker ps -qf name=qdrant)'
+ssh -f -N -L 6335:<that IP>:6333 urbanlayer-prod
+
+python -m ingestion.push_index --target http://localhost:6335 --status   # collections, counts, alias
+python -m ingestion.push_index --target http://localhost:6335 --upload   # local alias target -> prod, same ids/vectors
+python -m ingestion.push_index --target http://localhost:6335 --verify   # per-section chunk-text hashes; must be 0 differences
+python -m ingestion.push_index --target http://localhost:6335 --switch   # re-verifies, then flips the alias atomically
+# rollback: --switch --to municipal_code_<previous vintage>   (kept until the next refresh)
+# cleanup, one refresh later: --drop municipal_code_<older vintage>   (refuses the served one)
 ```
 
-Then embed locally and upsert to `localhost:6335`. **Delete the target sections' points
-first** — `embed_and_store` assigns `uuid.uuid4()` per point, so a re-run without a delete
-DUPLICATES rows rather than replacing them. Verify by comparing per-section point counts
-against local, not just the total.
+`--upload` copies points with their ids and vectors, so nothing is re-embedded on prod and
+a re-run can't duplicate rows (the old hand-push used `uuid4` ids and needed a delete
+first). `--snapshot-copy FROM --collection NEW` copies a collection to a new name on the
+same server (snapshot, then recover from it), with no transfer.
 
-There is one collection, `chicago_municipal_code`. A Title-17-only `chicago_zoning`
-collection used to be written locally but was never searched, and was removed 2026-09-28.
+**Migration done 2026-10-21:** prod's `chicago_municipal_code` (16,576 points) was verified
+equal to local section by section, copied server-side to `municipal_code_2026-03-18`, and
+put behind the `municipal_code` alias before the config change deployed.
 
-**Done 2026-09-08:** Title 14 (the building code) pushed this way — prod 14,535 → 16,576
+**Done 2026-09-08:** Title 14 (the building code) pushed by hand: prod 14,535 → 16,576
 points, matching local exactly, per-section counts verified, `/section/14A-1-101` now 200.
 
 `docker-compose.prod.yml`: builds frontend with `nginx.prod.conf` (HTTPS, security headers, gzip), exposes 80+443, mounts Cloudflare Origin Certificate. Sets `RERANKER_ENABLED=true`.

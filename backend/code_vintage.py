@@ -13,11 +13,14 @@ log = logging.getLogger(__name__)
 
 VINTAGE_FILE = Path(__file__).resolve().parent / "code_vintage.json"
 
+# What users, chat and the API see. The rest of the file (ingested_at, chunk_count,
+# collection, export_sha256) is ingestion bookkeeping for ops checks.
+PUBLIC_FIELDS = ("current_through", "label", "source")
+
 
 @lru_cache(maxsize=1)
-def get_code_vintage() -> dict | None:
-    """{"current_through": "2026-03-18", "label": "Council Journal of March 18, 2026",
-    "source": ...} or None when the file is missing/unreadable (stamp omitted, not faked)."""
+def get_code_vintage_record() -> dict | None:
+    """The whole vintage file, or None when it is missing/unreadable."""
     try:
         data = json.loads(VINTAGE_FILE.read_text())
         if isinstance(data, dict) and data.get("current_through"):
@@ -25,3 +28,12 @@ def get_code_vintage() -> dict | None:
     except (OSError, ValueError):
         log.warning("Code vintage file unreadable: %s", VINTAGE_FILE)
     return None
+
+
+def get_code_vintage() -> dict | None:
+    """{"current_through": "2026-03-18", "label": "Council Journal of March 18, 2026",
+    "source": ...} or None when the file is missing/unreadable (stamp omitted, not faked)."""
+    record = get_code_vintage_record()
+    if record is None:
+        return None
+    return {k: record[k] for k in PUBLIC_FIELDS if k in record}

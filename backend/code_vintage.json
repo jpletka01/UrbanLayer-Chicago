@@ -1,5 +1,9 @@
 {
   "current_through": "2026-03-18",
   "label": "Council Journal of March 18, 2026",
-  "source": "Municipal Code of Chicago, American Legal export"
+  "source": "Municipal Code of Chicago, American Legal export",
+  "ingested_at": "2026-09-07T19:06:00+00:00",
+  "chunk_count": 16576,
+  "collection": "municipal_code_2026-03-18",
+  "export_sha256": "d4065933e2d542afe38834a2cdcacecb32ac69f6551a69b7756d2648bd448deb"
 }

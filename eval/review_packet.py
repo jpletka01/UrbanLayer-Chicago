@@ -79,7 +79,7 @@ def render() -> str:
         "## As of",
         "",
         f"- Key version `{key['version']}`: parcels P1 to P7 built 2026-10-01, later parcels on the date each carries as `added`.",
-        "- Municipal Code text current through the Council Journal of 2026-03-18 (American Legal export of Title 17). "
+        f"- Municipal Code text current through the Council Journal of {key['code_current_through']} (American Legal export of Title 17). "
         "An amendment after that date is not reflected; tell us if one changes an answer.",
         "- Parcel facts come from the City of Chicago zoning layer (Data Portal `dj47-wfun`) and Zoning MapServer, Cook County Assessor data, and ordinance PDFs.",
         "- Overlay answers (field D) read the same City map service that tools use, so they check that a tool reports the map correctly, not that the map is right. "

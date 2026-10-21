@@ -158,20 +158,29 @@ ingestion/
 │                           # narrower gate silently dropped ALL 872 Title-14 sections. Title 14 = eleven lettered
 │                           # volumes (14A…14X); 14N letters its chapter/section segments too (`14N-C4-C402`)
 ├── chunk.py                # Section JSON → chunks.jsonl (MAX_CHARS=1800, table flattening, no overlap)
-├── embed_and_store.py      # chunks.jsonl → Qdrant (bge-base-en-v1.5, one collection: chicago_municipal_code). --recreate, --incremental, --chunks (demo sample)
-├── manifest.py             # Section content hash for incremental updates (SHA-256 of body + tables). ⚠️ does NOT
-│                           # hash section_title, so heading-only fixes are silent no-ops — see known-issues
-├── update.py               # Unified CLI: parse → chunk → diff → embed. Supports --dry-run, --full, --manifest
+├── embed_and_store.py      # chunks.jsonl → Qdrant (bge-base-en-v1.5) into the collection behind the `municipal_code` alias. --recreate, --incremental, --collection, --chunks (demo sample)
+├── manifest.py             # Per-section content_hash (body + tables) + separate title_hash (heading fields), so a
+│                           # retitle re-embeds without moving content_hash (the zoning cache keys on it)
+├── update.py               # parse → sections.new/ + chunks.new.jsonl → diff/<vintage>/report.md + abort gates →
+│                           # (apply) embed into municipal_code_<vintage> → count check → promote + alias + vintage file
+├── diff_report.py          # Per-title counts, added/modified/deleted, Title 17/14/2-44/2-120 text diffs, Coun. J. dates, gates
+├── push_index.py           # Prod push: --upload (ids+vectors copied) / --verify (chunk-hash multisets) / --switch (alias) / --snapshot-copy / --drop
+├── code_vintage.py         # Export header → backend/code_vintage.json (+ ingested_at, chunk_count, collection, export_sha256)
 ├── source_check.py         # Detect whether source HTML changed since last ingestion
 ├── build_transit_stations.py
 └── load_community_areas.py
 ```
 
+The app reads the alias `municipal_code`; each vintage is its own collection (see
+`claude-context/guides/deployment.md`, "Seeding / updating the production code corpus").
+A parse or dry run never writes `backend/code_vintage.json`; only a finished apply does.
+
 ```bash
-python -m ingestion.update                # incremental update (diff against manifest)
-python -m ingestion.update --dry-run      # show changes without modifying Qdrant
-python -m ingestion.update --full         # full rebuild
-python -m ingestion.update --manifest     # just save manifest from current sections
+python -m ingestion.update --dry-run [--source X.html]   # parse + diff report; touches nothing else
+python -m ingestion.update [--source X.html] [--force]   # apply (new vintage → new collection; same vintage → in place)
+python -m ingestion.update --full                        # re-embed every chunk into a fresh collection
+python -m ingestion.update --manifest                    # just save manifest from current sections
+python -m ingestion.push_index --target http://localhost:6335 --status|--upload|--verify|--switch
 python -m ingestion.source_check          # check if source HTML changed
 ```
 

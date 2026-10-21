@@ -55,10 +55,11 @@ def check() -> dict:
     }
 
 
-def save_hash() -> None:
-    if not SOURCE_HTML.exists():
+def save_hash(source: Path | None = None) -> None:
+    source = source or SOURCE_HTML
+    if not source.exists():
         return
-    data = {"hash": _file_hash(SOURCE_HTML)}
+    data = {"hash": _file_hash(source)}
     SOURCE_HASH_FILE.write_text(json.dumps(data, indent=2) + "\n")
 
 

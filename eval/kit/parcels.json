@@ -1,5 +1,6 @@
 {
  "version": "2026-10-02.1",
+ "code_current_through": "2026-03-18",
  "note": "Answer key for the Chicago parcel kit, built from primary sources (City zoning layer, Zoning MapServer, Municipal Code text current through the Council Journal of 2026-03-18, ordinance PDFs, Cook County Assessor). P1-P7 are the 2026-10-01 set; P8+ were added 2026-10-02 (`added`), with the same method, to cover downtown, manufacturing, lakefront and transit-served cases the first seven do not. NOT yet reviewed by a Chicago zoning professional: P2, P3 and P6 are the most interpretive, and so are P9 and P12 (transit-served-location rules). Overlay truth comes from the same City service UrbanLayer queries, so overlay scores are not independent.",
  "fields": {
   "A": "Zoning district in effect (critical)",
