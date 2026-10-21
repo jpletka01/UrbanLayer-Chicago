@@ -122,6 +122,11 @@ function compactUsd(n: number): string {
   return `$${Math.round(n)}`;
 }
 
+// Overlay types whose hit is verdict friction (mirrors frictionPairs below).
+const FRICTION_OVERLAY_TYPES = new Set([
+  "landmark_building", "historic_district", "national_register", "planned_development", "lakefront_protection",
+]);
+
 // --- signal derivation --------------------------------------------------------
 // Thresholds were calibrated against 59 real parcels via a one-off
 // verdict_calibration.py harness (since deleted, 2026-07-03 doc cleanup);
@@ -309,8 +314,18 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   if (complexSqft)
     caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));
   if (data.zone_definition?.is_fallback) caveats.push(t("scorecard.verdict.caveat.fallbackZone"));
-  if ((data.partial_failures?.length ?? 0) > 0)
-    caveats.push(t("scorecard.verdict.caveat.partial", { sources: data.partial_failures.join(", ") }));
+  // A friction overlay the City map couldn't answer for is unknown, not clear: the
+  // verdict can't read clean while landmark / PD / district review is unruled-out.
+  const reg = data.context?.regulatory ?? null;
+  const unchecked = reg?.unchecked_overlays ?? [];
+  if (unchecked.some((ty) => FRICTION_OVERLAY_TYPES.has(ty)))
+    caveats.push(t("scorecard.verdict.caveat.overlayUnchecked"));
+  // Overlay gaps are said by the caveat above (friction) or the Regulatory card's
+  // "couldn't check" row; the generic line lists the remaining sources only.
+  const overlayGaps = new Set(reg?.data_gaps ?? []);
+  const otherFailures = (data.partial_failures ?? []).filter((f) => !overlayGaps.has(f));
+  if (otherFailures.length > 0)
+    caveats.push(t("scorecard.verdict.caveat.partial", { sources: otherFailures.join(", ") }));
   // Parcel-risk caveats (scofflaw list, STR prohibition): rendered with the
   // data-quality caveats but deliberately NOT part of the `caveated` confidence
   // flip below — they are facts about the parcel, not about our data.

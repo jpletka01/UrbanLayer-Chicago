@@ -11,6 +11,7 @@ Covers:
 - D6    — overlay bracket dedup precondition (name == description for nameless layers)
 """
 
+from backend.retrieval.regulatory.overlays import OverlayResults
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -100,10 +101,10 @@ def test_q12_incentive_class_unchanged():
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites", AsyncMock(return_value=[]))
 @patch("backend.retrieval.regulatory.query_flood_zone", AsyncMock(return_value=None))
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_q9_lakefront_leads_with_district_name(mock_overlays):
     # Layer 3 = Lakefront Protection District; feature NAME is the subtype.
-    mock_overlays.return_value = [(3, {"NAME": "Private Lakefront"})]
+    mock_overlays.return_value = OverlayResults(hits=[(3, {"NAME": "Private Lakefront"})])
     result = await regulatory_domain(41.9307, -87.6411, client=AsyncMock())
 
     assert result.in_lakefront_protection is True  # flag stays — it is correct
@@ -118,10 +119,10 @@ async def test_q9_lakefront_leads_with_district_name(mock_overlays):
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites", AsyncMock(return_value=[]))
 @patch("backend.retrieval.regulatory.query_flood_zone", AsyncMock(return_value=None))
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_q11_national_register_name_preserved(mock_overlays):
     # The Lakeview Historic District is a real NR district that spans into Lincoln Park.
-    mock_overlays.return_value = [(8, {"NAME": "Lakeview Historic District"})]
+    mock_overlays.return_value = OverlayResults(hits=[(8, {"NAME": "Lakeview Historic District"})])
     result = await regulatory_domain(41.9307, -87.6411, client=AsyncMock())
 
     ov = result.overlays[0]
@@ -136,10 +137,10 @@ async def test_q11_national_register_name_preserved(mock_overlays):
 @pytest.mark.asyncio
 @patch("backend.retrieval.regulatory.query_brownfield_sites", AsyncMock(return_value=[]))
 @patch("backend.retrieval.regulatory.query_flood_zone", AsyncMock(return_value=None))
-@patch("backend.retrieval.regulatory.query_all_overlays")
+@patch("backend.retrieval.regulatory.query_overlays_checked")
 async def test_d6_nameless_overlay_name_equals_description(mock_overlays):
     # Layer 17 (ADU) returns no NAME field → name falls back to layer name == description.
-    mock_overlays.return_value = [(17, {"ADU_AREA": "No Limitations"})]
+    mock_overlays.return_value = OverlayResults(hits=[(17, {"ADU_AREA": "No Limitations"})])
     result = await regulatory_domain(41.9307, -87.6411, client=AsyncMock())
 
     ov = result.overlays[0]

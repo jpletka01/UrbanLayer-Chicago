@@ -77,3 +77,26 @@ describe("ScorecardRegulatoryCard — overlays named, with what they require (F7
     expect(container.textContent?.toLowerCase()).not.toContain("design review");
   });
 });
+
+describe("ScorecardRegulatoryCard — a layer the City map couldn't answer (WS6 M7a)", () => {
+  it("shows a couldn't-check row instead of 'no overlays'", () => {
+    render(<ScorecardRegulatoryCard data={{ ...base, unchecked_overlays: ["landmark_building"] }} />);
+    const row = screen.getByTestId("overlays-unchecked");
+    expect(row.textContent).toContain("Couldn't check today");
+    expect(row.textContent).toContain("landmark designation");
+    expect(row.querySelector("a")?.getAttribute("href")).toContain("gisapps.chicago.gov/ZoningMapWeb");
+    expect(screen.queryByText("No regulatory overlays apply to this location.")).toBeNull();
+  });
+
+  it("names each unchecked layer once (TOD CTA + Metra share a label)", () => {
+    render(<ScorecardRegulatoryCard data={{ ...base, unchecked_overlays: ["tod_cta", "tod_metra"] }} />);
+    const text = screen.getByTestId("overlays-unchecked").textContent ?? "";
+    expect(text.match(/transit-served/g)?.length).toBe(1);
+  });
+
+  it("everything checked and clear: the plain 'no overlays' line (unchanged)", () => {
+    render(<ScorecardRegulatoryCard data={base} />);
+    expect(screen.queryByTestId("overlays-unchecked")).toBeNull();
+    expect(screen.getByText("No regulatory overlays apply to this location.")).toBeTruthy();
+  });
+});

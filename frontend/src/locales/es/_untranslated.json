@@ -1,0 +1,24 @@
+{
+  "data": [
+    "regulatory.unchecked.body",
+    "regulatory.unchecked.mapLink",
+    "regulatory.unchecked.title",
+    "regulatory.unchecked.types.adu_area",
+    "regulatory.unchecked.types.aro_zone",
+    "regulatory.unchecked.types.fema_floodplain",
+    "regulatory.unchecked.types.historic_district",
+    "regulatory.unchecked.types.lakefront_protection",
+    "regulatory.unchecked.types.landmark_building",
+    "regulatory.unchecked.types.national_register",
+    "regulatory.unchecked.types.pedestrian_street",
+    "regulatory.unchecked.types.planned_development",
+    "regulatory.unchecked.types.pmd_subarea",
+    "regulatory.unchecked.types.special_district",
+    "regulatory.unchecked.types.ssa",
+    "regulatory.unchecked.types.tod_cta",
+    "regulatory.unchecked.types.tod_metra"
+  ],
+  "pages": [
+    "scorecard.verdict.caveat.overlayUnchecked"
+  ]
+}

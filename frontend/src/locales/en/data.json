@@ -135,7 +135,11 @@
     "status": "Status",
     "noOverlays": "No regulatory overlays apply to this location.",
     "source": "Read the source ↗",
-    "adu": {"allowed_by_right": "Coach houses and conversion units permitted by right", "not_allowed": "Coach houses and conversion units not permitted here", "allowed_with_limits": "ADU-Allowed RS Area"},
+    "adu": {
+      "allowed_by_right": "Coach houses and conversion units permitted by right",
+      "not_allowed": "Coach houses and conversion units not permitted here",
+      "allowed_with_limits": "ADU-Allowed RS Area"
+    },
     "floodZone": "Flood Zone",
     "zone": "Zone {{code}}",
     "specialFloodHazard": "Special Flood Hazard",
@@ -168,7 +172,28 @@
     "constraintCount_other": "{{count}} constraints",
     "moreConstraints_one": "and {{count}} more",
     "moreConstraints_other": "and {{count}} more",
-    "environment": "Environment"
+    "environment": "Environment",
+    "unchecked": {
+      "title": "Couldn't check today",
+      "body": "The City's zoning map didn't answer for: {{items}}. This isn't a \"no\" — try again later, or check the City's map.",
+      "mapLink": "City zoning map ↗",
+      "types": {
+        "planned_development": "planned development",
+        "lakefront_protection": "Lakefront Protection District",
+        "pedestrian_street": "pedestrian street",
+        "landmark_building": "landmark designation",
+        "historic_district": "historic and landmark districts",
+        "national_register": "National Register districts",
+        "special_district": "special districts",
+        "fema_floodplain": "local floodplain map",
+        "pmd_subarea": "PMD subareas",
+        "tod_cta": "transit-served (TOD) area",
+        "tod_metra": "transit-served (TOD) area",
+        "adu_area": "ADU eligibility",
+        "aro_zone": "ARO zone",
+        "ssa": "Special Service Area"
+      }
+    }
   },
   "incentives": {
     "title": "Incentives",

@@ -13,7 +13,7 @@ from backend.models import OverlayDistrict, RegulatorySummary
 from backend.retrieval.regulatory.environmental import query_brownfield_sites
 from backend.retrieval.regulatory.flood import query_flood_zone
 from backend.retrieval.regulatory.overlay_facts import describe_overlay
-from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS, query_all_overlays
+from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS, OverlayResults, query_overlays_checked
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +34,25 @@ FLAG_MAP: dict[str, str] = {
     "ssa": "in_ssa",
 }
 
+# What a failed layer means to a reader, for partial_failures ("Couldn't check ...").
+UNCHECKED_LABELS: dict[str, str] = {
+    "planned_development": "planned development status",
+    "lakefront_protection": "Lakefront Protection District",
+    "pedestrian_street": "pedestrian street status",
+    "landmark_building": "landmark designation",
+    "historic_district": "historic and landmark districts",
+    "national_register": "National Register districts",
+    "special_district": "special districts",
+    "fema_floodplain": "local floodplain map",
+    "pmd_subarea": "PMD subareas",
+    "tod_cta": "transit-served (TOD) area",
+    "tod_metra": "transit-served (TOD) area",
+    "adu_area": "ADU eligibility",
+    "aro_zone": "ARO zone",
+    "ssa": "Special Service Area",
+}
+_UNCHECKED_SUFFIX = "(City zoning map didn't answer)"
+
 
 async def regulatory_domain(
     lat: float,
@@ -50,7 +69,7 @@ async def regulatory_domain(
         skip_brownfield = workflow in ("business_launch",)
 
         coros: dict[str, object] = {
-            "overlays": query_all_overlays(lat, lon, client=client),
+            "overlays": query_overlays_checked(lat, lon, client=client),
             "flood": query_flood_zone(lat, lon, client=client),
         }
         if not skip_brownfield:
@@ -59,7 +78,10 @@ async def regulatory_domain(
         results_list = await asyncio.gather(*coros.values(), return_exceptions=True)
         results_map = dict(zip(coros.keys(), results_list))
 
-        overlay_hits = results_map["overlays"] if not isinstance(results_map["overlays"], Exception) else []
+        overlay_results = results_map["overlays"]
+        if isinstance(overlay_results, Exception):
+            # Nothing was checked, which is not the same as "in no overlay".
+            overlay_results = OverlayResults(failed=list(OVERLAY_LAYERS))
         flood_result = results_map["flood"] if not isinstance(results_map["flood"], Exception) else None
         brownfield_result = results_map.get("brownfield")
         if isinstance(brownfield_result, Exception):
@@ -73,7 +95,10 @@ async def regulatory_domain(
         if isinstance(results_map["flood"], Exception):
             log.warning("Flood zone query failed: %s", results_map["flood"])
 
-        return _build_summary(overlay_hits, flood_result, brownfield_result)
+        return _build_summary(
+            overlay_results.hits, flood_result, brownfield_result,
+            failed_layers=overlay_results.failed,
+        )
     finally:
         if owns:
             await client.aclose()
@@ -83,6 +108,8 @@ def _build_summary(
     overlay_hits: list[tuple[int, dict]],
     flood_result: dict | None,
     brownfield_sites: list[dict],
+    *,
+    failed_layers: list[int] | None = None,
 ) -> RegulatorySummary:
     overlays: list[OverlayDistrict] = []
     flags: dict[str, bool | str] = {}
@@ -146,8 +173,21 @@ def _build_summary(
         flood_zone_subtype = flood_result.get("zone_subty")
         in_sfha = flood_result.get("sfha_tf", "").upper() == "T"
 
+    unchecked = list(dict.fromkeys(
+        OVERLAY_LAYERS.get(lid, {}).get("type", f"layer_{lid}") for lid in failed_layers or []
+    ))
+    if failed_layers and len(set(failed_layers)) >= len(OVERLAY_LAYERS):
+        data_gaps = [f"regulatory overlays {_UNCHECKED_SUFFIX}"]
+    else:
+        data_gaps = [
+            f"{label} {_UNCHECKED_SUFFIX}"
+            for label in dict.fromkeys(UNCHECKED_LABELS.get(t, t) for t in unchecked)
+        ]
+
     return RegulatorySummary(
         overlays=overlays,
+        unchecked_overlays=unchecked,
+        data_gaps=data_gaps,
         in_planned_development=flags.get("in_planned_development", False),
         in_landmark_district=flags.get("in_landmark_district", False),
         is_landmark_building=flags.get("is_landmark_building", False),

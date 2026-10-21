@@ -135,7 +135,11 @@
     "status": "Estado",
     "noOverlays": "No se aplican normativas superpuestas a esta ubicación.",
     "source": "Ver la fuente ↗",
-    "adu": {"allowed_by_right": "Casas de carruaje y unidades de conversión permitidas por derecho", "not_allowed": "Casas de carruaje y unidades de conversión no permitidas aquí", "allowed_with_limits": "Área de ADU permitida en RS"},
+    "adu": {
+      "allowed_by_right": "Casas de carruaje y unidades de conversión permitidas por derecho",
+      "not_allowed": "Casas de carruaje y unidades de conversión no permitidas aquí",
+      "allowed_with_limits": "Área de ADU permitida en RS"
+    },
     "floodZone": "Zona inundable",
     "zone": "Zona {{code}}",
     "specialFloodHazard": "Riesgo especial de inundación",
@@ -168,7 +172,28 @@
     "constraintCount_other": "{{count}} restricciones",
     "moreConstraints_one": "y {{count}} más",
     "moreConstraints_other": "y {{count}} más",
-    "environment": "Medio ambiente"
+    "environment": "Medio ambiente",
+    "unchecked": {
+      "title": "Couldn't check today",
+      "body": "The City's zoning map didn't answer for: {{items}}. This isn't a \"no\" — try again later, or check the City's map.",
+      "mapLink": "City zoning map ↗",
+      "types": {
+        "planned_development": "planned development",
+        "lakefront_protection": "Lakefront Protection District",
+        "pedestrian_street": "pedestrian street",
+        "landmark_building": "landmark designation",
+        "historic_district": "historic and landmark districts",
+        "national_register": "National Register districts",
+        "special_district": "special districts",
+        "fema_floodplain": "local floodplain map",
+        "pmd_subarea": "PMD subareas",
+        "tod_cta": "transit-served (TOD) area",
+        "tod_metra": "transit-served (TOD) area",
+        "adu_area": "ADU eligibility",
+        "aro_zone": "ARO zone",
+        "ssa": "Special Service Area"
+      }
+    }
   },
   "incentives": {
     "title": "Incentivos",
