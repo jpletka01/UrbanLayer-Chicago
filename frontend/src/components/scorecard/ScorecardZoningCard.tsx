@@ -11,6 +11,9 @@ import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
 import { CodeSourceModal } from "./CodeSourceModal";
 import { CoverageNotes } from "./CoverageNotes";
+import { ConfidenceCaption } from "../ui/Confidence";
+import { useFact } from "../../lib/provenanceContext";
+import { displayState } from "../../lib/confidence";
 
 const ZoningIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -23,6 +26,10 @@ const ZoningIcon = (
 function FarMeter({ existing, allowed }: { existing: number; allowed: number }) {
   const { t } = useTranslation("pages");
   const share = Math.min(existing / allowed, 1);
+  // FAR used is our arithmetic on the building and lot areas, so it inherits the weakest input.
+  const entry = useFact("property.far_used");
+  const state = displayState(entry);
+  if (state === "withheld") return <ConfidenceCaption entry={entry} />;
   return (
     <div>
       <div className="flex justify-between items-baseline text-caption mb-1">
@@ -32,8 +39,10 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
         </span>
       </div>
       <div className="h-2.5 rounded-full bg-accent/15 overflow-hidden">
-        <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(share * 100, 2)}%` }} />
+        <div className={`h-full rounded-full ${state === "low" ? "bg-accent/40 bg-hatch" : "bg-accent"}`}
+          style={{ width: `${Math.max(share * 100, 2)}%` }} />
       </div>
+      <ConfidenceCaption entry={entry} className="mt-1" />
       {share < 1 && (
         <div className="text-caption text-text-muted mt-1">
           {t("scorecard.zoningCard.farHeadroom", { pct: Math.round((1 - share) * 100) })}

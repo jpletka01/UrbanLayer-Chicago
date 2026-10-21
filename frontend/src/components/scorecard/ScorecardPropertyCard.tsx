@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import type { PropertySummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
 import { InfoTooltip } from "../InfoTooltip";
+import { ConfidenceCaption, SourceTooltip } from "../ui/Confidence";
+import { useFact } from "../../lib/provenanceContext";
 import { PropertyTimeline } from "./PropertyTimeline";
 import { SubSection, ShowMore } from "./ProfileModule";
 
@@ -29,45 +31,36 @@ const BuildingIcon = (
   </svg>
 );
 
-function Fact({ label, value, sourceHint, tip }: {
+function Fact({ label, value, fact, tip }: {
   label: string;
   value: string | null | undefined;
-  /** Provenance note for non-assessor values ("via parcel geometry", "via city
-      footprint data") — rendered as a muted suffix so derived numbers are
-      honest without shouting. */
-  sourceHint?: string | null;
+  /** Provenance fact id. Its caption says where a non-assessor or dated figure came from
+      ("City footprint survey · 2015"); every figure with an entry gets a Source block in its tooltip. */
+  fact?: string;
   /** Term definition, shown on hover/tap (tooltip rule — never on-page copy). */
   tip?: string;
 }) {
+  const entry = useFact(fact ?? "");
   if (!value || value === "—") return null;
   return (
     <div>
       <dt className="text-caption text-text-muted">
-        {tip ? (
-          <InfoTooltip content={{ label, description: tip, bullets: [] }}>{label}</InfoTooltip>
-        ) : (
-          label
-        )}
+        <SourceTooltip label={label} description={tip} entry={entry}>{label}</SourceTooltip>
       </dt>
-      <dd className="text-body text-text-primary mt-0.5">
-        {value}
-        {sourceHint && <span className="text-micro text-text-muted"> {sourceHint}</span>}
-      </dd>
+      <dd className="text-body text-text-primary mt-0.5">{value}</dd>
+      <ConfidenceCaption entry={entry} size="micro" />
     </div>
   );
 }
 
-/** Sources that deserve a label: everything except the assessor's own data
-    (assessor = the default expectation; gis is the county's parcel layer, close enough). */
-function sourceHintFor(source: string | null | undefined, t: (k: string) => string): string | null {
-  if (!source || source === "assessor" || source === "gis") return null;
-  const key = `property.sources.${source}`;
-  const label = t(key);
-  return label === key ? null : label;
-}
-
 export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
   const { t } = useTranslation("data");
+  const assessedEntry = useFact("property.assessed_value");
+  const impliedEntry = useFact("property.implied_market_value");
+  const taxEntry = useFact("property.tax_estimate");
+  const rateEntry = useFact("property.effective_rate");
+  const chrsEntry = useFact("property.flags.chrs");
+  const taxSaleEntry = useFact("property.flags.tax_sale");
 
   // Two distinct absent-building states, never conflated: vacant land (class
   // 1xx) has NO building — a fact, stated affirmatively; anything else with no
@@ -118,9 +111,9 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 {assessed != null && (
                   <div>
                     <div className="text-caption text-text-muted">
-                      <InfoTooltip content={{ label: t("property.assessedValue"), description: t("property.tips.assessed"), bullets: [] }}>
+                      <SourceTooltip label={t("property.assessedValue")} description={t("property.tips.assessed")} entry={assessedEntry}>
                         {t("property.assessedValue")}
-                      </InfoTooltip>
+                      </SourceTooltip>
                     </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(assessed)}</div>
                   </div>
@@ -128,9 +121,9 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 {marketValue != null && (
                   <div>
                     <div className="text-caption text-text-muted">
-                      <InfoTooltip content={{ label: t("property.impliedMarketValue"), description: t("property.tips.implied"), bullets: [] }}>
+                      <SourceTooltip label={t("property.impliedMarketValue")} description={t("property.tips.implied")} entry={impliedEntry}>
                         {t("property.impliedMarketValue")}
-                      </InfoTooltip>
+                      </SourceTooltip>
                     </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(marketValue)}</div>
                   </div>
@@ -138,19 +131,20 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                 {tax != null && (
                   <div>
                     <div className="text-caption text-text-muted">
-                      <InfoTooltip content={{ label: t("property.annualTax"), description: t("property.tips.annualTax"), bullets: [] }}>
+                      <SourceTooltip label={t("property.annualTax")} description={t("property.tips.annualTax")} entry={taxEntry}>
                         {`${t("property.annualTax")}${data.tax_year ? ` (${data.tax_year})` : ""}`}
-                      </InfoTooltip>
+                      </SourceTooltip>
                     </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{fmtDollar(tax)}</div>
+                    <ConfidenceCaption entry={taxEntry} size="micro" omit={["period"]} />
                   </div>
                 )}
                 {effectiveRate && (
                   <div>
                     <div className="text-caption text-text-muted">
-                      <InfoTooltip content={{ label: t("property.effectiveRate"), description: t("property.tips.effRate"), bullets: [] }}>
+                      <SourceTooltip label={t("property.effectiveRate")} description={t("property.tips.effRate")} entry={rateEntry}>
                         {t("property.effectiveRate")}
-                      </InfoTooltip>
+                      </SourceTooltip>
                     </div>
                     <div className="text-body font-medium text-text-primary tabular-nums">{effectiveRate}</div>
                   </div>
@@ -282,20 +276,15 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Fact label={t("property.class")} tip={t("property.tips.class")} value={classLabel || null} />
               <Fact label={t("property.floorArea")} tip={t("property.floorAreaTip")}
-                value={data.bldg_sqft ? `${data.bldg_sqft.toLocaleString()} ft²` : null}
-                sourceHint={sourceHintFor(data.bldg_sqft_source, t)} />
-              <Fact label={t("property.landSqft")} value={data.land_sqft ? data.land_sqft.toLocaleString() : null}
-                sourceHint={sourceHintFor(data.land_sqft_source, t)} />
-              <Fact label={t("property.stories")} value={data.stories ? String(data.stories) : null}
-                sourceHint={sourceHintFor(data.stories_source, t)} />
-              <Fact label={t("property.units")} value={data.units ? String(data.units) : null}
-                sourceHint={sourceHintFor(data.units_source, t)} />
+                value={data.bldg_sqft ? `${data.bldg_sqft.toLocaleString()} ft²` : null} fact="property.bldg_sqft" />
+              <Fact label={t("property.landSqft")} value={data.land_sqft ? data.land_sqft.toLocaleString() : null} fact="property.land_sqft" />
+              <Fact label={t("property.stories")} value={data.stories ? String(data.stories) : null} fact="property.stories" />
+              <Fact label={t("property.units")} value={data.units ? String(data.units) : null} fact="property.units" />
               <Fact label={t("property.commercialUnits")} value={data.commercial_units ? String(data.commercial_units) : null} />
               <Fact label={t("property.rooms")} value={data.rooms ? String(data.rooms) : null} />
               <Fact label={t("property.bedrooms")} value={data.bedrooms ? String(data.bedrooms) : null} />
               <Fact label={t("property.baths")} value={baths} />
-              <Fact label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null}
-                sourceHint={sourceHintFor(data.year_built_source, t)} />
+              <Fact label={t("property.buildingAge")} value={data.bldg_age != null ? `${data.bldg_age} ${t("property.yrs")}` : null} fact="property.year_built" />
             </dl>
 
             {/* Distress/opportunity flags. Tax-sale mentions carry their years —
@@ -330,6 +319,7 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                     )}
                   </span>
                 )}
+                {data.flags.chrs_rating && <ConfidenceCaption entry={chrsEntry} size="micro" />}
                 {data.flags.str_prohibited && (
                   <span className="text-caption text-text-secondary">{t("property.flags.strProhibited")}</span>
                 )}
@@ -342,6 +332,9 @@ export function ScorecardPropertyCard({ data }: { data: PropertySummary }) {
                   <span className="text-caption text-text-secondary">
                     {t("property.flags.scavengerSale", { years: data.flags.scavenger_sale_years.join(", ") })}
                   </span>
+                )}
+                {(data.flags.tax_sale_years.length > 0 || data.flags.scavenger_sale_years.length > 0) && (
+                  <ConfidenceCaption entry={taxSaleEntry} size="micro" />
                 )}
               </div>
             )}

@@ -6,6 +6,8 @@ import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import type { AduStatus, RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
+import { ConfidenceCaption } from "../ui/Confidence";
+import { useFact } from "../../lib/provenanceContext";
 import { humanizeShoutyCase } from "../../lib/format";
 import { getTermInfo } from "../../lib/termDefinitions";
 import { SubSection, ShowMore } from "./ProfileModule";
@@ -90,6 +92,8 @@ function SourceLink({ href, label }: { href: string; label?: string }) {
 
 function OverlayRowView({ row }: { row: OverlayRow }) {
   const tone = TONE[row.severity];
+  // A layer's own entry speaks only when it is stale, low or not the publisher's word (default-quiet).
+  const entry = useFact(`overlay.${row.term}`);
   return (
     <div className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 ${tone.row}`}>
       {tone.icon}
@@ -103,6 +107,7 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
           </div>
         )}
         {row.link && <SourceLink href={row.link} />}
+        <ConfidenceCaption entry={entry} size="micro" />
       </div>
     </div>
   );

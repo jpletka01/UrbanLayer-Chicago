@@ -175,3 +175,14 @@ body::before {
     mask-image: radial-gradient(ellipse 46% 58% at 25% 42%, rgb(0 0 0 / 0.3) 42%, black 80%);
   }
 }
+
+/* Low-confidence fills (WS0 M4). A diagonal stripe drawn from --text-muted, so it flips with
+   the theme. Decoration only: the words "Low confidence" always carry the state. SVG charts
+   draw the same stripe with a <pattern> in currentColor. */
+.bg-hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 3px,
+    rgb(var(--text-muted) / 0.35) 3px 4px
+  );
+}

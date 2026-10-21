@@ -10,6 +10,9 @@ import type { ComparablesSummary } from "../../lib/types";
 import { formatDate } from "../../lib/format";
 import { InfoTooltip } from "../InfoTooltip";
 import { SubSection, ShowMore } from "./ProfileModule";
+import { ConfidenceCaption, ConfidenceValue } from "../ui/Confidence";
+import { useFact } from "../../lib/provenanceContext";
+import { displayState } from "../../lib/confidence";
 
 const ChartIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -40,6 +43,7 @@ interface StripSale {
 function PriceStrip({ data }: { data: ComparablesSummary }) {
   const { t } = useTranslation("data");
   const [hover, setHover] = useState<number | null>(null);
+  const medianEntry = useFact("property.comps.median_price");
   const sales: StripSale[] = data.sales
     .filter((s): s is typeof s & { sale_price: number } => s.sale_price != null && s.sale_price > 0)
     .map((s) => ({ price: s.sale_price, date: s.sale_date, classCode: s.class_code ?? null }));
@@ -49,7 +53,8 @@ function PriceStrip({ data }: { data: ComparablesSummary }) {
   if (max === min) return null;
   const W = 560, H = 36, PX = 10;
   const x = (p: number) => PX + ((p - min) / (max - min)) * (W - 2 * PX);
-  const median = data.median_sale_price;
+  // A withheld median is not drawn: the dots stay, the marker and its label go.
+  const median = displayState(medianEntry) === "withheld" ? null : data.median_sale_price;
 
   const hovered = hover != null ? sales[hover] : null;
   const tipLeftPct = hovered ? (x(hovered.price) / W) * 100 : 0;
@@ -106,6 +111,10 @@ function PriceStrip({ data }: { data: ComparablesSummary }) {
 
 export function ScorecardComparablesCard({ data }: { data: ComparablesSummary }) {
   const { t } = useTranslation("data");
+  const medianEntry = useFact("property.comps.median_price");
+  const landEntry = useFact("property.comps.median_price_per_land_sqft");
+  const bldgEntry = useFact("property.comps.median_price_per_bldg_sqft");
+  const buildableEntry = useFact("property.comps.median_price_per_buildable_sqft");
 
   if (!data.sales || data.sales.length === 0) {
     return (
@@ -134,7 +143,9 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
                     {t("comparables.medianPrice")}
                   </InfoTooltip>
                 </dt>
-                <dd className="text-subtitle text-text-primary mt-0.5">{fmtFull(data.median_sale_price)}</dd>
+                <dd className="text-subtitle text-text-primary mt-0.5">
+                  <ConfidenceValue entry={medianEntry}>{fmtFull(data.median_sale_price)}</ConfidenceValue>
+                </dd>
               </div>
             )}
             {data.median_price_per_land_sqft != null && (
@@ -144,7 +155,9 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
                     {t("comparables.priceLandSqft")}
                   </InfoTooltip>
                 </dt>
-                <dd className="text-subtitle text-text-primary mt-0.5">${data.median_price_per_land_sqft.toFixed(0)}</dd>
+                <dd className="text-subtitle text-text-primary mt-0.5">
+                  <ConfidenceValue entry={landEntry}>${data.median_price_per_land_sqft.toFixed(0)}</ConfidenceValue>
+                </dd>
               </div>
             )}
             {data.median_price_per_bldg_sqft != null ? (
@@ -154,7 +167,9 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
                     {t("comparables.priceBldgSqft")}
                   </InfoTooltip>
                 </dt>
-                <dd className="text-subtitle text-text-primary mt-0.5">${data.median_price_per_bldg_sqft.toFixed(0)}</dd>
+                <dd className="text-subtitle text-text-primary mt-0.5">
+                  <ConfidenceValue entry={bldgEntry}>${data.median_price_per_bldg_sqft.toFixed(0)}</ConfidenceValue>
+                </dd>
               </div>
             ) : (
               <div className="min-w-0">
@@ -164,6 +179,18 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
             )}
           </dl>
           <PriceStrip data={data} />
+        </div>
+
+        {/* What the medians rest on: the search's real radius and window (it widens), and the
+            reason any one of them is faded or not shown. Standard per-ft² medians share the
+            price caption's basis, so they speak only when they differ. */}
+        <div className="space-y-0.5" data-testid="comps-confidence">
+          <ConfidenceCaption entry={medianEntry} />
+          {([
+            [landEntry, t("comparables.priceLandSqft")],
+            [bldgEntry, t("comparables.priceBldgSqft")],
+          ] as const).map(([e, label]) =>
+            displayState(e) !== "standard" ? <ConfidenceCaption key={label} entry={e} prefix={label} /> : null)}
         </div>
 
         {/* Price per BUILDABLE foot — the density-normalized land basis. Given its
@@ -178,7 +205,7 @@ export function ScorecardComparablesCard({ data }: { data: ComparablesSummary })
             </InfoTooltip>
             {": "}
             <span className="text-text-primary">
-              ${data.median_price_per_buildable_sqft.toFixed(0)}
+              <ConfidenceValue entry={buildableEntry}>${data.median_price_per_buildable_sqft.toFixed(0)}</ConfidenceValue>
             </span>
             <span className="text-text-muted">
               {" · "}

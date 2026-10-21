@@ -10,7 +10,13 @@ export interface KpiTile {
   anchor: string;
   label: string;
   value: string;
+  /** Beside the value, in caption type: the year a figure belongs to ("(2024)"). */
+  valueNote?: string;
+  /** Confidence state of the value: low is quieter, withheld is a dash (WS0 M4). */
+  state?: "standard" | "low" | "withheld";
   sub?: ReactNode;
+  /** A ConfidenceCaption (micro) under the context line. */
+  caption?: ReactNode;
   /** How-this-is-computed gloss, shown on hover/tap (tooltip rule). */
   tip?: string;
 }
@@ -50,13 +56,17 @@ export function KpiStrip({ tiles, onScrollTo }: {
             title={t("scorecard.verdict.jumpToEvidence")}
             className="group block mx-auto min-w-0 max-w-full"
           >
-            <div className="text-stat text-text-primary mt-1 truncate group-hover:text-accent transition-colors">
-              {tile.value}
+            {/* The year note wraps under the value on a narrow tile instead of being ellipsized. */}
+            <div className={`mt-1 flex flex-wrap items-baseline justify-center gap-x-1 group-hover:text-accent transition-colors ${
+              tile.state === "withheld" ? "text-text-muted" : tile.state === "low" ? "text-text-secondary" : "text-text-primary"}`}>
+              <span className="text-stat max-w-full truncate">{tile.value}</span>
+              {tile.valueNote && <span className="text-caption text-text-muted">{tile.valueNote}</span>}
             </div>
           </button>
           {tile.sub && (
             <div className="text-caption text-text-muted mt-0.5 leading-snug">{tile.sub}</div>
           )}
+          {tile.caption}
         </div>
       ))}
     </div>

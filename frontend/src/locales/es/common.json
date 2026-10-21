@@ -87,5 +87,87 @@
     "comingSoon": "Compras próximamente",
     "reportsSoon": "La compra de informes en línea estará disponible próximamente. La Ficha gratuita tiene los mismos datos de base, y ya puede ver un informe de muestra.",
     "proSoon": "Las suscripciones Pro estarán disponibles próximamente."
+  },
+  "confidence": {
+    "state": {
+      "low": "Low confidence"
+    },
+    "notVerified": "not verified",
+    "noMargin": "no margin of error published",
+    "wideMargin": "margin of error is {{cv}}% of the estimate",
+    "sampleN": "{{n}} {{unit}}",
+    "coverage": "{{pct}}% coverage",
+    "compsBasis": "{{radius}} mi · {{years}} yr",
+    "widened": "(search widened)",
+    "daysOld_one": "{{count}} day old",
+    "daysOld_other": "{{count}} days old",
+    "unit": {
+      "sales": "sales",
+      "parcels": "parcels",
+      "units": "units",
+      "records": "records"
+    },
+    "tier": {
+      "official_record": "Official record",
+      "official_publication": "Official publication",
+      "official_estimate": "Official estimate",
+      "our_calculation": "Our calculation",
+      "ai_extracted": "Read by AI",
+      "non_government": "Private company"
+    },
+    "method": {
+      "recorded": "Recorded by the publisher",
+      "published_text": "Published Municipal Code text",
+      "code_table": "Title 17 table, checked against the code",
+      "hand_reviewed": "Ordinance not yet in the code, read by us",
+      "survey_estimate": "Census survey estimate",
+      "government_model": "Government model",
+      "bracket_median": "Estimated from income brackets",
+      "calculation": "Our calculation",
+      "keyword_grouping": "Grouped by keyword (our grouping)",
+      "ai_read_code": "Read by AI from the code",
+      "ai_read_ordinance": "Read by AI from a scanned ordinance",
+      "ai_read_filing": "Read by AI from the filing",
+      "commercial_index": "Private company's index"
+    },
+    "source": {
+      "chi_building_footprints": "City footprint survey",
+      "private_walkscore": "Walk Score® (private company)",
+      "artifact_chrs": "Historic Resources Survey (frozen)",
+      "cook_treasurer_tax_sale": "County tax-sale records (frozen)",
+      "cook_treasurer_scavenger_sale": "County tax-sale records (frozen)",
+      "chi_energy_benchmarking": "City energy benchmarking (owner-reported)",
+      "cook_assessor_commercial_valuation": "Assessor commercial valuation",
+      "cook_assessor_condo_characteristics": "Assessor condominium record",
+      "cook_ptaxsim": "Cook County PTAXSIM model"
+    },
+    "basis": {
+      "source_updated": "source last updated",
+      "record_updated": "this record last changed",
+      "current_through": "current through",
+      "period_end": "latest data",
+      "vintage": "dataset vintage",
+      "tax_year": "tax year"
+    },
+    "withheld": {
+      "small_sample": "Not shown: only {{n}} {{unit}} (needs {{min}}).",
+      "low_coverage": "Not shown: the data covers {{pct}}% here (needs {{min}}%).",
+      "high_cv": "Not shown: the margin of error is {{cv}}% of the estimate.",
+      "generic": "Not shown: too little data."
+    },
+    "field": {
+      "authority": "Published by: {{value}}",
+      "asOf": "As of: {{value}}",
+      "asOfUnknown": "No date from the publisher; checked {{date}}",
+      "coverage": "Coverage: {{value}}",
+      "precision": "Precision: {{value}} ({{level}}% margin of error)",
+      "agreement": "Checked: {{agree}} of {{n}} readings agreed with a person",
+      "method": "Method: {{value}}",
+      "source": "Source: {{value}}",
+      "scope": "Covers: {{value}}"
+    },
+    "sourceHeading": "Source",
+    "unavailable": "Couldn't be checked today",
+    "ai": "AI"
   }
 }

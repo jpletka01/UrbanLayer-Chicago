@@ -193,6 +193,8 @@ Status 2026-10-21: step 3 (schema v2) is in `backend/provenance.py`: `Provenance
 
 Status 2026-10-21: step 4 (capture) is in: ACS margins of error and release ids, comp basis, the commercial-valuation year, the benchmark's coverage and build date, the class norm's tax year. `backend/provenance_figures.py` builds an entry for every Profile figure and every area feed (about 60 per Profile); `expected_fact_ids(payload)` is the declared list of what a payload must carry, checked by `test_confidence_coverage.py` over the 12 recorded kit payloads and by `python -m eval.confidence_audit`. Source dates resolve through `data_health.status.latest()`, then the registry's frozen vintage.
 
+Status 2026-10-21: step 5 (display) is in. `frontend/src/lib/confidence.ts` decides what a caption says (`wantsCaption` is the default-quiet rule; `captionParts`, `sourceBullets`, `plainCaption`), `components/ui/Confidence.tsx` renders it (`ConfidenceCaption`, `ConfidenceValue`, `SourceTooltip`, `MethodCaption`), and `lib/provenanceContext.ts` hands the Profile's map to any card (`useFact(id)`). The frontend never recomputes the state; it only copies the thresholds' minima for the "needs N" text (a backend test pins them). Adopted in the KPI strip, Zoning (FAR used), Property, Comparables, Violations, Regulatory, Incentives and the Area block, and in the CSV export. Chat, the sidebar and the report are steps 6 and 7. The caption supports `unavailable` (data health); `stale` (amber) waits for the entry to carry it.
+
 
 The standard is adopted now; the code catches up in order:
 1. This guide.

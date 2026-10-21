@@ -931,3 +931,60 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - Chat: `_provenance_for` is unchanged (still empty without a district) and nothing reads the new entries yet; no model call was made.
 - The plan names `2015-08-14` for the footprints' as-of; the registry's frozen vintage, the checker's store and the data all say `2015-08-15`.
 
+## Item 15: `ConfidenceCaption` on the Profile (2026-10-21)
+
+**The frontend says; the backend decides.**
+- **Decision:** `lib/confidence.ts` reads `entry.confidence` and never recomputes it. The one rule the frontend owns is display policy: `wantsCaption` (tier C–F, low or withheld, or reason `old_source`). The only copies are the minima a withheld sentence prints ("needs 3"), in `DISPLAY_THRESHOLDS`, and `test_frontend_confidence_constants.py` pins them to `provenance.py`.
+- **Alternatives:** recompute states in the component (the guide forbids it); ship the minima inside each entry (a backend change; not worth it for four numbers).
+- **Helpers take an injected `t` and return strings,** not structured parts, so the unit tests assert the real English copy and double as a locale check. *Alternative:* return keys and params and translate in the component (tests then check keys, not words).
+
+**A context carries the provenance map; cards call `useFact(id)`.**
+- **Decision:** `ScorecardPage` wraps the results in a provider; a card asks for its entry. Outside a provider every lookup is undefined and nothing renders, so the chat rail and every existing card test are unchanged.
+- **Alternatives:** thread `provenance` through every card's props (and every future card's). The Zoning card keeps the prop it already had for its § buttons.
+- **Found by lint:** the context and its hooks live in `lib/provenanceContext.ts`, the provider alone in `contexts/`. One file exporting both added two `react-refresh` warnings, and the warning cap is exactly 67.
+
+**A withheld comps median is a dash everywhere it is stated, and the sales list stays.**
+- **Decision:** the KPI tile reads "—" with the reason, the price strip drops its median marker, and the Market takeaway stops quoting a median (`takeaway.marketWithheld`). The verdict (`computeVerdict`) is untouched by design; it still reads the raw median.
+- **Evidence: the plan's premise was wrong.** The plan assumed ¼-mile comp sets "usually have 5–20 sales". On the first 25 addresses of the lot panel (prod, 2026-10-21) the n values are 1 ×9, 2 ×6, 3 ×4, 4 ×1, and none reaches 5. 15 of 20 medians are withheld (n under 3), 5 are faded, **none is standard**. The comps KPI will read "—" on about three parcels in four.
+- **Revisit if:** Jack wants a softer comps gate. It is one number each in `provenance.py` (`COMPS_HIDE_N_BELOW`, `COMPS_FADE_N_BELOW`), its tests and the guide, with no frontend change. The comps also differ between identical runs (item 14's finding), so a tile near the gate can flip between a value and "—" across reloads.
+
+**Quiet means quiet, so some old hints are gone.**
+- **Decision:** the Property card's `sourceHintFor` is replaced by captions plus a "Source:" line in the label's tooltip. The old "(owner-reported, energy benchmarking)", "(assessor commercial valuation)" and "(condo unit)" suffixes no longer print: those entries are tier A in a standard state, which the guide says stays quiet. They now live in the tooltip. The 2015 footprints and the lot area from the parcel polygon, which are tiers A-old and D, do print.
+- **Revisit if:** owner-reported floor area should stay visible. Add `chi.energy_benchmarking` to `CAPTION_SOURCES` in `confidence.ts`.
+- **Also quiet:** zoning standards (tier B), overlays, crime, incentives, flood. They are wired (a stale or low state will speak) but print nothing today. Crime's scope goes in the tooltip ("Covers: West Town") rather than a caption, because the figure is tier A.
+
+**Calculations name their basis, not a date, and not "our calculation" when something else is said.**
+- **Decision:** a calculation prints its method only when nothing else would print; it never prints an as-of date (its inputs have dates, it doesn't). A calculation that carries a `source` string (the lot area: "Parcel polygon area (Cook County property-tax database)") prints it.
+- **Found in the browser:** the first version named any `cook.ptaxsim` calculation "Parcel polygon, county tax database", and so captioned the **class norm** that way too. Both entries list `cook.ptaxsim` as source and input, so the backend fields can't tell them apart. The `source` string can. The cost: that one caption is the backend's English, not a translated key.
+- **Revisit if:** more calculations need a named basis. Give the entry a `method_params.basis` key and translate it.
+
+**Two things with no entry get a static caption.** The Profile's violation category rows come from the address-scoped entry, which has no category fact (`area.violations.categories` is area-scoped and absent here). The rows say "Grouped by keyword (our grouping)" through `MethodCaption`, and the 311 high-risk list says the list is ours.
+
+**Narrow tiles wrap the year instead of cutting it.** Found at 360 px in the browser: "$83K/yr (2024)" was ellipsized to "(…" because the value line truncates. The value and its note now sit in a wrapping flex row.
+
+**The hatch has one user.** `.bg-hatch` is in `index.css` and the FAR meter uses it when FAR used is low. No other Profile fill can be low today: the Profile draws no bars from tract or benchmark figures. SVG charts and maps are not changed.
+
+**CSV.** `buildScorecardCSV` takes the provenance map: rows with an entry gain Source, Authority, As of and Note (the page's own caption). A withheld figure is blank with its reason. Rows without an entry keep empty columns, so the file's shape is stable.
+
+**Not built.** `stale` (amber date) waits for entries to carry it (WS6 M6). `unavailable` is built (`unavailable` prop, tested) but nothing passes it yet (WS6 M7).
+
+**Verification used no model and no local backend.** A scratch stub replayed `/api/scorecard`, `/api/area-stats` and `/api/parcel-map` recorded from prod (read-only GETs), plus one mutated copy with a faded comps median and a faded FAR to exercise the low state. It lives outside the repo.
+
+**Numbers** (2026-10-21)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Frontend tests | 341 (41 files) → 459 (47 files); the locale guard grows 38 → 106 tests as it covers the new `es` keys | `cd frontend && npm test` |
+| Backend tests | 1,923 → 1,926 | `make test` |
+| Lint warnings (cap 67) | 67 → 67, 0 errors | `cd frontend && npm run lint` |
+| Main bundle | 3,922.18 kB (1,118.60 kB gzip) → 3,972.09 kB (1,131.57 kB gzip); CSS 103.10 → 103.32 kB | `cd frontend && npm run build` |
+| Captions per Profile, 25-address prod sample (entries at the captioned sites that pass `wantsCaption`) | mean 6.1, range 4–10; 129 standard, 19 withheld, 5 low | `curl "https://urbanlayerchicago.com/api/scorecard?address=<first 25 of eval/lot_panel.json>, Chicago, IL"`, apply the rule to the provenance map |
+| Comps sample sizes, same 25 | n = 1 ×9, 2 ×6, 3 ×4, 4 ×1 (20 with comps); 15 withheld, 5 low, 0 standard; 3 of 20 searches widened | same |
+| Phone audit, Profile route | 5 of 5 devices, no horizontal overflow | `cd frontend && npx playwright test -g scorecard` (against the replay stub) |
+
+**Not measured:**
+- The other seven phone-audit routes (only the Profile changed; they need the full backend).
+- Spanish rendering: new `es` strings are English and listed in `_untranslated.json`.
+- Screen-reader reading of the captions and tooltips.
+- The caption count includes only entries on the Profile payload; the area benchmark's caption comes from a separate request and is not in the 6.1.
+
