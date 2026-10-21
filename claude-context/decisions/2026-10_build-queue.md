@@ -931,7 +931,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - Chat: `_provenance_for` is unchanged (still empty without a district) and nothing reads the new entries yet; no model call was made.
 - The plan names `2015-08-14` for the footprints' as-of; the registry's frozen vintage, the checker's store and the data all say `2015-08-15`.
 
-## Item 15: `ConfidenceCaption` on the Profile (2026-10-21)
+## Item 15: `ConfidenceCaption` on the Profile (#80, 2026-10-21)
 
 **The frontend says; the backend decides.**
 - **Decision:** `lib/confidence.ts` reads `entry.confidence` and never recomputes it. The one rule the frontend owns is display policy: `wantsCaption` (tier C–F, low or withheld, or reason `old_source`). The only copies are the minima a withheld sentence prints ("needs 3"), in `DISPLAY_THRESHOLDS`, and `test_frontend_confidence_constants.py` pins them to `provenance.py`.
@@ -987,4 +987,16 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - Spanish rendering: new `es` strings are English and listed in `_untranslated.json`.
 - Screen-reader reading of the captions and tooltips.
 - The caption count includes only entries on the Profile payload; the area benchmark's caption comes from a separate request and is not in the 6.1.
+
+**Production** (2026-10-21, after the deploy of #80; docs only)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Served bundle | carries the caption copy ("City footprint survey", "Low confidence", "Couldn't be checked today", "Walk Score® (private company)", "Not shown: only") | `curl -s https://urbanlayerchicago.com/` → the `assets/index-*.js` it names, `grep` the strings |
+| 1601 N Milwaukee, rendered in headless Chromium (dark and light) | KPI strip: assessed "$398K (2026)", tax "$83K/yr (2024)" with "Government model" and "class norm ≈5.3% · tax year 2023", benchmark "14,001 parcels · 44% coverage", comps "—" with "Not shown: only 1 sales (needs 3)". 12 captions on the page: the 2015 footprint stories, the 1996 survey, the lot area, Walk Score ×2 (Walk and Transit) and the rest as above | a Playwright script that loads `/scorecard?address=1601%20N%20Milwaukee%20Ave` and reads `[data-testid=confidence-caption]` |
+| Comps repeatability | the same address had 2 sales in the morning's replay and 1 sale now: the tile is "—" either way, but the figure in the reason moves | same |
+
+**Found after the deploy, not fixed here:** the withheld sentence reads "only 1 sales" (the unit is not pluralized). The fix is a `_one`/`_other` pair in `confidence.withheld.small_sample` and `confidence.sampleN`.
+
+**Not measured:** the live browser tool was unavailable for the post-deploy check, so the DOM and screenshots came from a local headless Chromium against the live site; the admin and signed-in views were not checked.
 
