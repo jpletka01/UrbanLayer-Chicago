@@ -4,11 +4,19 @@ The code is indexed one ARTICLE per record (``17-2-0300``, "Bulk and density
 standards", is ~32,000 characters) with its tables appended as ``[TABLE]`` blocks
 after the paragraphs. A Profile number cites a SUBSECTION (``17-2-0304-A``), so the
 source viewer needs just that subsection and the table it refers to, not the article.
+
+Most articles start on a hundred, but not all: chapter 17-7 indexes the ADU article as
+``17-7-0570`` (holding 17-7-0571 to 0579) beside ``17-7-0500``, ``0510``, ``0550``…, and
+Titles 2/11/15 number their sections 1010, 1020…. So which article holds a section is
+read from the index itself (:func:`set_indexed_sections`), not from the digits.
 """
 
 from __future__ import annotations
 
 import re
+from bisect import bisect_right
+from collections import defaultdict
+from typing import Iterable
 
 SECTION_ID_RE = re.compile(r"^\d{1,2}-\d{1,3}-\d{3,4}(?:-[A-Z])?$")
 _HEADING_RE = re.compile(r"^(\d{1,2}-\d{1,3}-\d{3,4}(?:-[A-Z])?)\s")
@@ -30,13 +38,37 @@ TABLE_HINTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
 }
 
 
+# Indexed four-digit ids by chapter, sorted: {"17-7-": [100, 200, …, 450, 500, 510, 550, …]}.
+# Filled from the Qdrant index by ``vector_search`` (or from a sections dir by a CLI).
+_indexed: dict[str, list[int]] = {}
+
+
+def set_indexed_sections(sections: Iterable[str]) -> None:
+    """Register the section ids the code index holds (any shape; only four-digit ones
+    are kept). Empty clears it, and :func:`article_id` falls back to the hundreds."""
+    by_chapter: dict[str, list[int]] = defaultdict(list)
+    for s in sections:
+        if m := _BASE_RE.match(s):
+            by_chapter[m.group(1)].append(int(m.group(2)))
+    _indexed.clear()
+    _indexed.update({ch: sorted(set(nums)) for ch, nums in by_chapter.items()})
+
+
 def article_id(section_id: str) -> str:
-    """The indexed article holding a section: 17-2-0304-A -> 17-2-0300. Ids without a
-    four-digit part (2-120-740) are indexed as themselves."""
+    """The indexed article holding a section: the largest indexed id at or below it in
+    the same chapter and hundred (17-2-0304-A -> 17-2-0300, 17-7-0574 -> 17-7-0570).
+    With none there (index not registered yet, or a section the text doesn't have yet,
+    like 17-3-0600), the hundred itself (17-7-0574 -> 17-7-0500). The hundred bounds
+    it: an article never runs into the next hundred, which would be its own article.
+    Ids without a four-digit part (2-120-740) are indexed as themselves."""
     m = _BASE_RE.match(section_id)
     if not m:
         return section_id
-    return f"{m.group(1)}{int(m.group(2)) // 100 * 100:04d}"
+    chapter, num = m.group(1), int(m.group(2))
+    hundred = num // 100 * 100
+    starts = _indexed.get(chapter, [])
+    i = bisect_right(starts, num)
+    return f"{chapter}{starts[i - 1] if i and starts[i - 1] >= hundred else hundred:04d}"
 
 
 def _is_descendant(heading_id: str, target: str) -> bool:

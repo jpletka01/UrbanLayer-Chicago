@@ -52,13 +52,15 @@ def _within(child: str, parent: str) -> bool:
 
 
 def _is_article(section: str) -> bool:
-    return bool(_FOUR_DIGIT_RE.match(section)) and section.endswith("00") and article_id(section) == section
+    """An id the code index holds a whole article under: 17-3-0500, and in chapter 17-7
+    also 17-7-0570 (see :func:`backend.code_sections.article_id`)."""
+    return bool(_FOUR_DIGIT_RE.match(section)) and article_id(section) == section
 
 
 def sections_overlap(a: str, b: str) -> bool:
     """True when two section ids name the same text or one contains the other:
     17-3-0503-D ⇄ 17-3-0503 (subsection), 17-9 ⇄ 17-9-0109 (chapter), and an indexed
-    article ⇄ any section in it (17-3-0500 ⇄ 17-3-0503-D). Siblings (17-3-0503-A vs -D)
+    article ⇄ any section in it (17-3-0500 ⇄ 17-3-0503-D, 17-7-0570 ⇄ 17-7-0574). Siblings (17-3-0503-A vs -D)
     and decimal neighbours (17-9-0129 vs 17-9-0129.1, a separate section) don't overlap."""
     a, b = normalize_section(a), normalize_section(b)
     if _within(a, b) or _within(b, a):
