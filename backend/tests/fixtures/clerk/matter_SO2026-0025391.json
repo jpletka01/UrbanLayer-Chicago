@@ -1,0 +1,82 @@
+{
+ "matterId": "275AD0C6-BE53-F111-BEC6-001DD8033B18",
+ "fileYear": 2026,
+ "recordNumber": "SO2026-0025391",
+ "originalRecordNumber": "O2026-0025391",
+ "status": "90-Final",
+ "subStatus": "Passed as Substitute",
+ "matterCategory": "MUNICIPAL CODE AMENDMENTS",
+ "type": "Ordinance",
+ "title": "Amendment of Municipal Code Chapter 17-3 by adding Section 17-3-0600 regarding transient-oriented development (TOD) streets",
+ "introductionDate": "2026-05-20T15:00:00+00:00",
+ "finalActionDate": "2026-10-14T15:00:00+00:00",
+ "recordCreateDate": "2026-05-19T20:10:31+00:00",
+ "lastPublicationDate": "2026-10-15T20:50:01+00:00",
+ "supersededBy": null,
+ "actions": [
+  {
+   "actionDate": "2026-10-13T05:00:00+00:00",
+   "journalPage": "",
+   "actionByName": "",
+   "actionName": "Substituted",
+   "actionText": "",
+   "meetingId": "",
+   "historyId": "736431B6-AFC8-F111-AAAE-001DD803894A",
+   "name": null,
+   "sort": 80
+  },
+  {
+   "actionDate": "2026-05-20T05:00:00+00:00",
+   "journalPage": "42931",
+   "actionByName": "City Council",
+   "actionName": "Referred",
+   "actionText": "The matter was Referred to Committee.",
+   "meetingId": "",
+   "historyId": "EB4B56C1-5155-F111-BEC5-001DD80ACBD0",
+   "name": null,
+   "sort": 60
+  },
+  {
+   "actionDate": "2026-10-13T05:00:00+00:00",
+   "journalPage": "",
+   "actionByName": "Committee on Zoning, Landmarks and Building Standards",
+   "actionName": "Recommended to Pass",
+   "actionText": "The matter was recommended to Pass by controlling legislative body.",
+   "meetingId": "",
+   "historyId": "CB0F194B-D9C8-F111-AAAE-001DD80EFCF5",
+   "name": null,
+   "sort": 90
+  },
+  {
+   "actionDate": "2026-10-14T05:00:00+00:00",
+   "journalPage": "",
+   "actionByName": "City Council",
+   "actionName": "Passed",
+   "actionText": "On motion of Alderperson Villegas, and unsuccessful motion to reconsider by Alderperson Harris, the resolution was Adopted.",
+   "meetingId": "39FE6EE4-2FBC-F111-AAAE-001DD80B58E5",
+   "historyId": "FC159B63-D9C8-F111-AAAE-001DD80EFCF5",
+   "name": null,
+   "sort": 100
+  }
+ ],
+ "attachments": [
+  {
+   "fileName": "SO2026-0025391.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/c34787d3-d9a9-4afd-8329-84ad44707f0d.pdf",
+   "attachmentType": "Legislation"
+  },
+  {
+   "fileName": "O2026-0025391 Ordinance.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/298f50fb-d105-4b1c-bf5b-ff694f31aa71.pdf",
+   "attachmentType": "Legislation"
+  },
+  {
+   "fileName": "O2026-0025391 Mayoral Letter.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/bb0c10e8-cda6-4087-af0f-5fe2c32cd907.pdf",
+   "attachmentType": "Miscellaneous"
+  }
+ ],
+ "relations": [
+  "SO2026-0025391"
+ ]
+}

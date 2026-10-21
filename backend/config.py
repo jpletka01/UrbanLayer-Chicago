@@ -71,6 +71,10 @@ class Settings(BaseSettings):
 
     # Cook County Socrata (datacatalog.cookcountyil.gov)
     cook_county_socrata_base: str = "https://datacatalog.cookcountyil.gov/resource"
+
+    # City Clerk eLMS API (BETA; no key, no stated rate limit). Read by scripts and the
+    # daily legislation sync only -- never on the request path (retrieval/clerk.py).
+    clerk_api_base: str = "https://api.chicityclerkelms.chicago.gov"
     cook_county_socrata_token: str = ""
     dataset_ccao_characteristics: str = "x54s-btds"
     dataset_ccao_assessments: str = "uzyt-m557"
