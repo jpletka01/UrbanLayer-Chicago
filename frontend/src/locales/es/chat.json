@@ -58,7 +58,8 @@
     "view": "Ver § {{id}}",
     "loading": "Cargando vista previa…",
     "unavailable": "Texto completo no disponible para esta referencia.",
-    "openSection": "Haz clic para abrir la sección completa"
+    "openSection": "Haz clic para abrir la sección completa",
+    "notCodified": "Not in the published code text yet; an amendment added it."
   },
   "dataPill": {
     "crime": "Datos de delitos",

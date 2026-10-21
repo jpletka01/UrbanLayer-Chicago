@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchSection } from "../lib/api";
+import { fetchSection, isNotCodified } from "../lib/api";
 import { stripHeader } from "../lib/codeRefs";
 import type { CodeChunk } from "../lib/types";
 import { Tooltip } from "./Tooltip";
@@ -14,6 +14,7 @@ type Preview =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "ok"; chunk: CodeChunk }
+  | { status: "not_codified" }
   | { status: "missing" };
 
 export function CrossRefPill({ sectionId, onClick }: Props) {
@@ -27,8 +28,10 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
     if (loadedRef.current) return;
     loadedRef.current = true;
     setPreview({ status: "loading" });
-    fetchSection(sectionId).then((chunk) =>
-      setPreview(chunk ? { status: "ok", chunk } : { status: "missing" })
+    fetchSection(sectionId).then((found) =>
+      setPreview(
+        isNotCodified(found) ? { status: "not_codified" } : found ? { status: "ok", chunk: found } : { status: "missing" },
+      )
     );
   };
 
@@ -60,6 +63,9 @@ export function CrossRefPill({ sectionId, onClick }: Props) {
           )}
           {preview.status === "missing" && (
             <div className="text-caption text-text-muted">{t("crossref.unavailable")}</div>
+          )}
+          {preview.status === "not_codified" && (
+            <div className="text-caption text-text-muted">{t("crossref.notCodified")}</div>
           )}
           {preview.status === "ok" && (
             <>

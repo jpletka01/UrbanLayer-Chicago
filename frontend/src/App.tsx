@@ -15,6 +15,7 @@ import type { PendingAttachment } from "./components/ChatInput";
 import {
   fetchMapData,
   fetchSection,
+  isNotCodified,
   getConversation,
   getSharedConversation,
   updateMessageMapData,
@@ -743,8 +744,10 @@ export function App() {
 
   async function handleCrossRefClick(sectionId: string) {
     setSectionView({ loading: true, chunk: null });
-    const chunk = await fetchSection(sectionId);
-    setSectionView({ loading: false, chunk });
+    const found = await fetchSection(sectionId);
+    setSectionView(
+      isNotCodified(found) ? { loading: false, chunk: null, notice: found } : { loading: false, chunk: found },
+    );
   }
 
   function handleExport() {

@@ -10,6 +10,7 @@ import type {
 import type {
   AddressSuggestion,
   AdminOverview,
+  Amendment,
   BenchmarkResults,
   ChatChunk,
   CodeChunk,
@@ -323,16 +324,39 @@ export async function createBillingPortal(): Promise<{ url: string }> {
 
 // Sections are immutable, so cache by ID — lets hover-prefetch and the
 // subsequent click share one request. Failed lookups are evicted so they retry.
-const sectionCache = new Map<string, Promise<CodeChunk | null>>();
+const sectionCache = new Map<string, Promise<CodeChunk | SectionNotCodified | null>>();
 
-export function fetchSection(sectionId: string): Promise<CodeChunk | null> {
+/** A 404 that is not "no such section": an amendment passed after the code text's vintage
+ * added the section (17-3-0600), so the text isn't published yet. */
+export interface SectionNotCodified {
+  not_in_published_code: true;
+  section_id: string;
+  message: string;
+  added_by: Amendment[];
+}
+
+export function isNotCodified(x: unknown): x is SectionNotCodified {
+  return !!x && typeof x === "object" && (x as SectionNotCodified).not_in_published_code === true;
+}
+
+async function notCodifiedFrom(resp: Response): Promise<SectionNotCodified | null> {
+  if (resp.status !== 404) return null;
+  try {
+    const body = await resp.json();
+    return isNotCodified(body?.detail) ? body.detail : null;
+  } catch {
+    return null;
+  }
+}
+
+export function fetchSection(sectionId: string): Promise<CodeChunk | SectionNotCodified | null> {
   const key = sectionId.trim();
   const hit = sectionCache.get(key);
   if (hit) return hit;
   const p = (async () => {
     try {
       const resp = await authFetch(`${API_BASE}/section/${encodeURIComponent(key)}`);
-      if (!resp.ok) return null;
+      if (!resp.ok) return notCodifiedFrom(resp);
       return (await resp.json()) as CodeChunk;
     } catch {
       return null;
@@ -708,6 +732,45 @@ export async function fetchRequestLogs(
   } catch { return []; }
 }
 
+/** The admin "Code currency" card: how current the code text is and how well the gap is handled. */
+export interface AdminCodeCurrency {
+  code: {
+    source_id: string;
+    as_of: string | null;
+    ingested_at: string | null;
+    age_days: number | null;
+    lag: {
+      title17_passed_since: number | null;
+      cited_other_passed_since: number | null;
+      unreviewed: number;
+      oldest_unreviewed_days: number | null;
+      uncodified_applied: number;
+    };
+    last_checked: string | null;
+    check_state: "fresh" | "aging" | "unknown";
+    status: "green" | "amber" | "red";
+    reasons: string[];
+  };
+  clerk: {
+    last_success: string | null;
+    last_attempt: string | null;
+    last_error: string | null;
+    consecutive_failures: number;
+    snapshot_state: string;
+    contract_ok: boolean;
+    contract_problems: string[];
+  };
+  amendments: Amendment[];
+}
+
+export async function fetchAdminCodeCurrency(): Promise<AdminCodeCurrency | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/code-currency`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
 export async function fetchBenchmarkResults(): Promise<BenchmarkResults | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/admin/benchmark`);
@@ -846,18 +909,20 @@ export interface CodeSubsection {
   current_through: string | null;
   vintage_label: string | null;
   source: string | null;
+  /** Amendments passed after this text was published that touch the section. */
+  amended_since?: Amendment[];
 }
 
-const subsectionCache = new Map<string, Promise<CodeSubsection | null>>();
+const subsectionCache = new Map<string, Promise<CodeSubsection | SectionNotCodified | null>>();
 
-export function fetchCodeSubsection(sectionId: string): Promise<CodeSubsection | null> {
+export function fetchCodeSubsection(sectionId: string): Promise<CodeSubsection | SectionNotCodified | null> {
   const key = sectionId.trim();
   const hit = subsectionCache.get(key);
   if (hit) return hit;
   const p = (async () => {
     try {
       const resp = await authFetch(`${API_BASE}/api/code/section/${encodeURIComponent(key)}`);
-      return resp.ok ? ((await resp.json()) as CodeSubsection) : null;
+      return resp.ok ? ((await resp.json()) as CodeSubsection) : await notCodifiedFrom(resp);
     } catch {
       return null;
     }

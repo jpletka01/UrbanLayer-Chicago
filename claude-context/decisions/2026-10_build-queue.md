@@ -506,3 +506,65 @@ Found during item 7 (above). `/api/code/section/17-7-0574` (ADU) and `/17-7-0591
 
 - Reproduce: `curl -s -o /dev/null -w "%{http_code}\n" https://urbanlayerchicago.com/api/code/section/17-7-0574`. For after: the same against `http://localhost:8011`, from `uvicorn backend.main:app --port 8011` on this branch with local Qdrant on the 2026-06-17 collection.
 - Tests: 29 new backend cases (article ids, the 17-7 extractions, the endpoint, index registration, overlaps, codification; the old overlap table now also runs with the index registered). Backend 1,626 passed + 1 skipped; eval 90; vitest 292; `npm run build` green. Run as `make test` plus `cd frontend && npm run build && npm run test`.
+
+## Item 8: disclosure UI (WS1 M3, 2026-10-21)
+
+**The code-currency note leaves the collapsed "True of every parcel" list.**
+- **Decision:** when the Profile payload carries the structured `code_currency`, `CoverageNotes` renders the note (with its amendment list one click away) between the parcel notes and the collapsed list. Without it (old payloads, chat) the note stays in the list as before.
+- **Alternatives:** leave it among the general notes and rely on the zoning card's "· N later amendments" stamp.
+- **Why:** M3 exists to tell users about the gap. Inside a closed disclosure the count is invisible, and the stamp alone is a bare number with nowhere to go. The cost is one more always-open sentence in the box.
+- **Revisit if:** WS0 M4's `ConfidenceCaption` takes over the vintage line.
+
+**One row format, three review states, taken from the two review fields.**
+- **Decision:** `amendmentStatus()` maps `review_status` × `product_effect`: `applied` → "Reflected on this page"; `pending`, a missing effect, or never reviewed → "Not yet reviewed"; reviewed with `none` → "Reviewed; not reflected on this page". The Profile list, the viewer banners and the admin table share it.
+- **Alternatives:** the plan's three labels verbatim ("Not reflected" for `none`).
+- **Why:** `none` means a person read the ordinance and found nothing the page states; "Not reflected" alone reads as an unaddressed gap. TOD Streets has a reviewed summary but `product_effect: pending` (M4b applies it), so it correctly shows "Not yet reviewed" next to its summary today.
+- **Revisit if:** M4b flips TOD to `applied`; the label changes with no code change.
+
+**The note's sentence stays the backend's English `currency_sentence`; only the chrome is keyed.**
+- **Decision:** the note text is the `text` the API sends (the same sentence chat and the report use). New keys cover the list label, status labels, banner and notice, plus the "later amendments" count.
+- **Alternatives:** translate the sentence by id with params and plurals.
+- **Why:** the sentence has four states (fresh, aging, unknown, zero) and the no-count rule for unknown lives in one place, the backend. Re-implementing it in two locale files is how "never 'none' without a fresh check" would drift.
+- **Revisit if:** WS7 translates the product; the sentence is then built from `check_state`/`since` keys.
+
+**The 404 for a not-yet-codified section is a value, not an exception.**
+- **Decision:** `fetchSection` and `fetchCodeSubsection` resolve to `CodeChunk | SectionNotCodified | null`; `isNotCodified()` narrows. Only a 404 whose body carries `not_in_published_code` becomes the notice; other failures stay `null`. The notice is cached like a hit.
+- **Alternatives:** a second fetcher just for notices; throwing from the existing ones.
+- **Why:** every viewer already branches on "got text / didn't". A union keeps one request per section and the existing hover-prefetch cache, and the three callers (modal, drawer, pill) each needed a new branch anyway.
+- **Revisit if:** a third kind of non-text answer appears (then a tagged result type).
+
+**Day-only dates go through a new `formatDay`, not `formatDate`.**
+- **Why:** `formatDate("2026-10-14")` parses as UTC midnight and prints "Oct 13, 2026" in Chicago (checked: `TZ=America/Chicago node -e 'new Date("2026-10-14").toLocaleDateString(...)'`). The Clerk's `passed_on` is already a Chicago calendar day.
+- **Not changed:** existing `formatDate` callers; they may have the same off-by-one on day-only strings (not audited).
+
+**The chat sources panel is covered where a section is opened, not on its cards.**
+- **Decision:** the banner and not-codified notice sit in `SourceDetailDrawer` (opened from a cross-reference or citation) and the cross-reference pill's hover preview. The Sources tab's chunk cards carry no marker.
+- **Why:** a chat answer that cites an amended section already says so (prompt rule 34) and ends with the footer line; the drawer is where the user reads the section text.
+- **Revisit if:** users read the cards without opening them and miss it. That needs the per-turn `code_currency.amendments[].touches`, already in the context payload.
+
+**Admin card reads the existing endpoint, with its own fetch.**
+- **Decision:** `CodeCurrencySection` fetches `/api/admin/code-currency` itself (like `VouchersSection`), shows the status, age, check state, Clerk errors and an amendments table, and never prints a count when the check is stale. English-only, as the rest of `/admin`.
+- **Why:** the dashboard's shared loading state is for period-filtered stats; this card has no period.
+
+**Found, not fixed.**
+- The admin card shows the code text as **red, 126 days old**, correctly: the June 17 export is past the 90-day alarm line. WS6 M2's monthly reminder is the intended nudge; a newer American Legal export is the fix.
+- `e2e/mobile-overflow.spec.ts` "about" on the Galaxy S24 failed once with "Execution context was destroyed" mid-scroll and passed on rerun. The page is untouched by this PR; treat as a flake unless it repeats (it did not on the post-rebase run).
+
+**Numbers** (2026-10-21)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Frontend tests | 292 in 36 files → 334 in 40 files (+42) | `cd frontend && npx vitest run` (before: same command in a worktree of `main`) |
+| `make test` | exit 0 | `make test` |
+| CI-parity build | clean | `cd frontend && npm run build` |
+| Mobile overflow audit | 39 of 40 on the first run (the flake above, passes alone); 40 of 40 on the re-run after rebasing onto #68 | `cd frontend && npm run test:mobile` (needs `backend` + `frontend` from `.claude/launch.json`) |
+| Profile, 1601 N Milwaukee (local backend, 2026-10-20 snapshot) | no amendment list → note + "Later amendments (10)" list; zoning stamp "2026-06-17 · 10 later amendments" | open `/scorecard?address=1601 N Milwaukee Ave`, expand the list |
+| Same page at 360 px, list open | `scrollWidth` 360 = viewport; no element past the right edge inside the notes box | `javascript_tool` in the browser pane at 360×800 |
+| Viewer banner | covered by tests; by hand with the live `/api/code/section/17-3-0503-D` payload injected into a modal (3 amendments listed, caveat "does not include those changes") | a fetch stub in the browser pane |
+| Admin card (local, dev auth bypass) | new → status red, 10 Title 17 since, 10 unreviewed, table of 15 | open `/admin` |
+
+**Not measured:**
+- The deployed bundle: size change (the build output was not compared with `main`'s) and the live Profile, banner and admin card (the post-deploy check).
+- The drawer's banner and the not-codified notice in the real chat flow: reaching them needs a chat turn, which build work may not spend. Tests cover both; the first prod parcel chat is the check.
+- Spanish rendering: new keys carry English text (listed in `_untranslated.json`).
+- Screen-reader behaviour of the amber banner (`role="note"` only).

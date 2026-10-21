@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Provenance, ZoneDefinition } from "../../lib/api";
-import type { CodeVintage, CoverageNote, UnitYield, ZoningSummary } from "../../lib/types";
+import type { CodeCurrency, CodeVintage, CoverageNote, UnitYield, ZoningSummary } from "../../lib/types";
 import { localizeZoningValue } from "../../lib/format";
 import { SubSection } from "./ProfileModule";
 import { Chip } from "../ui/Chip";
@@ -43,7 +43,7 @@ function FarMeter({ existing, allowed }: { existing: number; allowed: number }) 
   );
 }
 
-export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, provenance, coverageNotes }: {
+export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordinanceNum, unitYield, freshness, codeVintage, codeCurrency, provenance, coverageNotes }: {
   def: ZoneDefinition;
   mapUrl?: string | null;
   existingFar?: number | null;
@@ -53,6 +53,8 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
   /** The district's own freshness facts (ordinance date, record-updated date, clerk link). */
   freshness?: Pick<ZoningSummary, "ordinance_num" | "ordinance_date" | "map_updated" | "clerk_url" | "recently_rezoned"> | null;
   codeVintage?: CodeVintage | null;
+  /** The Council amendments passed since that vintage; the count rides the stamp (never "none" when unchecked). */
+  codeCurrency?: CodeCurrency | null;
   /** Dated sources per fact (backend provenance); a standard's code section opens in the viewer. */
   provenance?: Record<string, Provenance> | null;
   /** Where the analysis stops for this parcel (backend coverage_notes). */
@@ -60,6 +62,7 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
 }) {
   const { t } = useTranslation("pages");
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const laterAmendments = codeCurrency?.since?.title17 ?? 0;
   // PD/PMD standards are negotiated per-ordinance, not tabulated in Title 17 —
   // say so explicitly instead of omitting the rows (a blank FAR on a PD parcel
   // read as missing data, not as "set by ordinance").
@@ -147,13 +150,18 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
             {codeVintage && (
               <div className="flex justify-between gap-3">
                 <dt>{t("scorecard.zoningCard.codeCurrentThrough")}</dt>
-                <dd className="text-text-secondary">{codeVintage.current_through}</dd>
+                <dd className="text-text-secondary">
+                  {codeVintage.current_through}
+                  {laterAmendments > 0 && (
+                    <span data-testid="later-amendments">{" · "}{t("scorecard.zoningCard.laterAmendments", { count: laterAmendments })}</span>
+                  )}
+                </dd>
               </div>
             )}
           </dl>
         )}
 
-        <CoverageNotes notes={coverageNotes} />
+        <CoverageNotes notes={coverageNotes} codeCurrency={codeCurrency} />
 
         <div className="flex items-center justify-between gap-2 text-caption text-text-muted">
           <span className="font-mono">{def.code_section}</span>

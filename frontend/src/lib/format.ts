@@ -1,6 +1,7 @@
 // Shared display formatters.
 
 import i18n from "./i18n";
+import type { Amendment } from "./types";
 
 const LOCALE_MAP: Record<string, string> = { en: "en-US", es: "es-MX" };
 
@@ -11,6 +12,17 @@ export function formatDate(iso: string): string {
   if (isNaN(t.getTime())) return iso;
   const locale = LOCALE_MAP[i18n.language] ?? "en-US";
   return t.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Format a calendar day ("2026-10-14") as "Oct 14, 2026" without a timezone shift
+ * (`formatDate` parses day-only strings as UTC, which shows the day before in Chicago). */
+export function formatDay(iso: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  if (!m) return iso ?? "";
+  const locale = LOCALE_MAP[i18n.language] ?? "en-US";
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString(locale, {
+    month: "short", day: "numeric", year: "numeric",
+  });
 }
 
 // Tokens kept uppercase when re-casing ALL-CAPS dataset values.
@@ -73,4 +85,10 @@ export function localizeZoningValue(value: string | null | undefined): string {
     .replace("(varies by lot frontage & ground-floor commercial)", `(${i18n.t("data:zoning.variesByFrontageCommercial")})`)
     .replace("(varies by lot frontage)", `(${i18n.t("data:zoning.variesByLotFrontage")})`)
     .replace(/\bft\b/g, i18n.t("data:zoning.feetUnit"));
+}
+
+/** applied → reflected; pending / never reviewed → not yet reviewed; reviewed, no change → not reflected. */
+export function amendmentStatus(a: Pick<Amendment, "review_status" | "product_effect">): "applied" | "none" | "pending" {
+  if (a.review_status !== "reviewed" || a.product_effect === "pending" || !a.product_effect) return "pending";
+  return a.product_effect === "applied" ? "applied" : "none";
 }
