@@ -108,6 +108,17 @@ def _no_legislation_snapshot(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_data_health_store(tmp_path, monkeypatch):
+    """Provenance reads source dates from the data-health store, which differs per machine
+    (absent in CI, whatever the last check wrote locally). Point it at a missing file; a test
+    that needs a store writes one there (see test_provenance_figures.py)."""
+    from backend.data_health import status
+
+    monkeypatch.setattr(status, "DB_FILE", tmp_path / "data_health.db")
+    status.reset_cache()
+
+
+@pytest.fixture(autouse=True)
 def _no_indexed_sections():
     """``article_id`` reads the code index's article ids, registered when vector_search
     first scrolls Qdrant. Start each test unregistered (the hundreds fallback); a test

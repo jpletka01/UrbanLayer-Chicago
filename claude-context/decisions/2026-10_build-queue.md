@@ -863,3 +863,60 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - Production: the panel's first load as admin, its counts against the live store and `/health`, and the stored drill history (checked after the deploy).
 - `npm run test:mobile`: it audits public routes, and the admin panel is a desktop screen. The table scrolls sideways inside its own container; checked at desktop width only.
 - The 18 `unknown` rows on this Mac are overlay layers the local run can't read; production's count differs.
+
+## Item 14: capture metadata and cover every Profile figure (WS0 M3, 2026-10-21)
+
+**A figure's entry is built from a declared list, and a second list written from the payload checks it.**
+- **Decision:** `provenance_figures.figure_entries()` builds one entry per figure present. `expected_fact_ids(payload)` is written from the payload's JSON shape, independent of the builder. `test_confidence_coverage.py` runs the builder over the 12 recorded kit payloads and fails on any expected fact with no entry; `eval/confidence_audit.py` does the same over the 100-address panel.
+- **Alternatives:** one table that drives both the builder and the check (a forgotten figure would be forgotten in both); a runtime assertion in the endpoint (it would turn a missing caption into a 500).
+- **Evidence:** the audit's own first run flagged 19 entries the expectation didn't list. All were zeros: a 0% vacancy rate and a $0 exempt assessed value are figures the page shows, and "present" had treated 0 as absent. The expectation was fixed, not the builder. After the fix, 25 panel addresses: 0 unexpected.
+- **Revisit if:** the Profile gains a figure. The coverage test fails until it has a spec in `FACTS` and a line in `expected_fact_ids`.
+
+**Fact ids follow the registry, with registry keys that cover what is under them.**
+- **Decision:** a registry `fact_key` now covers its own fact and the facts beneath it (`area.tract` lists `area.tract.median_gross_rent`). The two provenance tests that tie `FACTS` to the registry use that rule. The flag sources moved from one shared `property.flags` key to one key each, because a shared prefix would claim every flag for every source.
+- **Alternatives:** 60 registry edits, one per fact; ids that ignore the registry (the plan's own `area.tract.median_gross_rent` wouldn't have matched `neighborhood.tract_demographics`).
+- **Also:** two registry keys renamed (`neighborhood.tract_demographics` → `area.tract`, `neighborhood.demographics` → `area.community_area`); `chi.311` now lists the Profile among its surfaces.
+
+**ACS margins of error come from the response, and percentages get the Census formula.**
+- **Decision:** `CensusTractDemographics` keeps `acs_release`, `moe` and `cv` per field. A count's MOE is the published one; a share's MOE is the Bureau's proportion formula (the ratio formula when the radicand is negative), in percentage points; a bachelor's-or-more share sums its four numerators' MOEs in quadrature. The Census's negative sentinels are not margins.
+- **Evidence:** 1601 N Milwaukee: median rent 2,435 ± 220, CV 0.055, matching the plan's example. The panel then fades 277 figures and withholds 223 of 4,807: tract unemployment is withheld on 32 of 97 parcels (CV over 50%), vacancy on 17 of 91.
+- **Revisit if:** a better small-area source arrives (WS4).
+
+**The class norm is stated with its derivation year, and it is a year stale.**
+- **Evidence:** the frontend's 0.21 is the Chicago composite rate's mode (6.995%) times the state equalizer (3.0163), both tax year 2023 (read from ptaxsim). The same arithmetic on tax year 2024 gives 6.6186% × 3.0355 = 0.2009, so the norm runs about 5% high (a residential norm of 2.1% should read 2.0%).
+- **Decision:** not changed here (M3 changes no displayed number). The entry carries the year and the 2024 figure in its note; a test pins the backend constant to the frontend's. The entry also gets `old_source` once the year is over 24 months old.
+- **Revisit if:** item 15 touches the tax tile. Updating the constant is a one-line change in two places.
+
+**Source dates come from the checker's store, then the frozen vintage; a year-only vintage reads as that year's end.**
+- **Decision:** `data_health/status.latest()` (read-only, cached by file mtime) feeds `resolve_as_of`. The newest date in the data is `period_end`; the publisher's last touch is `source_updated`; an `unknown` row gives nothing. A frozen source dated by year (the 1996 survey) reads `1996-12-31`, basis `vintage`. A year still in progress has no end date yet (an assessment year 2026 has `as_of: null` and a `period`).
+- **Not applied:** overlay entries and `zoning.district` keep their v1 dates (`queried` / the map record's edit date). A layer's newest-edit date would read as "old" on layers that rarely change, which is not the figure's age.
+- **Test isolation:** an autouse fixture points the store at a missing file, so a developer's local checker run can't change a test.
+
+**Figures that stay out.**
+- The verdict is computed in the frontend from figures that now have entries; item 15 captions it.
+- A negative result (not in a TIF district, no flags) is not a figure and gets none.
+- No `provenance` on a parcel-less chat turn: that is item 20.
+
+**Found along the way, not fixed here.**
+- **The Profile never set `comp_basis`.** The scorecard's `ComparablesSummary` constructor dropped it, so the "widened to ½ mile and 5 years" line the plan found (finding 8) could never reach the page. It, the radius, the window and a `widened` flag now ride the payload.
+- **Comps are not repeatable.** Two fresh runs of the same code gave different comp sets: 10 of 12 kit parcels changed between a fresh and a cached run (P1: 2 comps, then 1, with different sales). Main and the branch can't be told apart this way; that is a retrieval-reliability gap (partial 3-hop results). It matters to item 15: the n-based gates (fade under 5, withhold under 3) would flicker with it. On the panel, 70 of 86 price medians are withheld and 10 faded.
+- FEMA flood zones also drop out of some runs (3 of 12 kit parcels, one side only), the failure mode WS6 M7 already names.
+
+**Numbers** (2026-10-21; local backend, public data only)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend tests | 1,869 → 1,923 (+54: figures 27, coverage 27 across the 12 recorded payloads; 3 existing tests updated) | `make test` |
+| Eval, vitest, build, lint | 92 / 341 unchanged; build passes; lint 67 warnings (cap 67), 0 errors | `make test`; `cd frontend && npm run lint && npm run build` |
+| Entries per Profile, 1601 N Milwaukee | 14 → 58 | `curl "http://localhost:8001/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+| Profile payload, 1601 N Milwaukee, raw / gzipped (prod serves gzip) | 48.9 KB / 14.0 KB → 77.9 KB / 17.1 KB (provenance 9.1 → 37.1 KB raw; 1.5 → 4.5 KB gzipped). Under the 10 KB gzipped trim line, so entries stay in full | same, `gzip` over the JSON |
+| Confidence audit, 100-address panel (before the zero fix) | 4,807 figures present, 4,807 with an entry (**100.0%**), 0 facts with gaps, 0 fetch errors; mean 48.3 entries, 62.1 KB per payload of which 30.3 KB provenance; 277 low, 223 withheld; every fact present on at least one address | `PYTHONPATH=. python -m eval.confidence_audit --full http://localhost:8001 --concurrency 2` (24 min) |
+| Confidence audit after the zero fix, 25-address sample | 1,203 / 1,203 (100.0%), 0 unexpected | `… --sample 25` |
+| Displayed figures, 12 kit parcels, fresh main vs fresh branch | 0 differences in the parcel's property, zoning, regulatory, incentive, tract, zone-definition, unit-yield and note fields (live feeds, comps, flood, appeals counts and address violations/311 excluded as volatile) | `eval.parcel_kit --full <url> --surfaces profile` on each, diff of the raw payloads |
+| Profile kit scores | unchanged coverage and accuracy on both runs | same |
+
+**Not measured:**
+- Production: `precision.moe == 220` and `as_of == 2015-08-15` for 1601 N Milwaukee (checked after the deploy), and a 25-address production audit. The plan names `2015-08-14` for the footprints; the registry's frozen vintage and the data say `2015-08-15`.
+- The pre-change mean payload on the panel (only 1601 N Milwaukee was measured before).
+- How the data-health store changes dates on production: locally the store is absent, so source dates came from the registry's frozen vintages and the response's own dates.
+- Chat: `_provenance_for` is unchanged (still empty without a district) and nothing reads the new entries yet; no model call was made.

@@ -419,6 +419,9 @@ class PropertySummary(BaseModel):
     #   valuation tot_units — filled only for single-PIN economic units).
     land_sqft_source: str | None = None
     bldg_sqft_source: str | None = None
+    # The Commercial Valuation vintage (assessment year) behind any field whose source is
+    # "commercial_valuation"; None when no field came from it.
+    commercial_valuation_year: int | None = None
     # This parcel is one of several in a CCAO commercial "economic unit" whose
     # valuation total (a whole complex's building area) is NOT this parcel's own.
     # Set only when no per-parcel area could be established; ``bldg_sqft`` stays
@@ -560,6 +563,11 @@ class CensusTractDemographics(BaseModel):
     bachelors_or_higher_pct: float | None = None
     foreign_born_pct: float | None = None
     acs_period: str | None = None  # the release's years, e.g. "2020–2024"
+    acs_release: str | None = None  # Census Reporter's release id, e.g. "acs2024_5yr"
+    # Published margins of error (90% level; percentage points for the *_pct and *_rate fields)
+    # and coefficients of variation (SE / estimate), keyed by the field name above.
+    moe: dict[str, float] = Field(default_factory=dict)
+    cv: dict[str, float] = Field(default_factory=dict)
 
     age_distribution: list[DistributionBucket] = Field(default_factory=list)
     income_distribution: list[DistributionBucket] = Field(default_factory=list)
@@ -716,6 +724,11 @@ class ComparablesSummary(BaseModel):
     # Human-readable basis describing the comp set used (class + radius + window),
     # set by the progressive-widening search so the reader can judge comparability.
     comp_basis: str | None = None
+    # The comp set's actual search basis (the progressive search widens): radius in miles,
+    # window in years, and whether it widened past the first tier.
+    comp_radius_mi: float | None = None
+    comp_window_years: int | None = None
+    comp_widened: bool = False
     sales: list[ComparableSale] = Field(default_factory=list)
 
 

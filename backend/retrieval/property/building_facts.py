@@ -210,7 +210,12 @@ async def get_commercial_facts(
     if not (sqft or complex_sqft or year_built or units):
         _commercial_cache.set(pin14, _NOT_FOUND)
         return None
-    result = {"bldg_sqft": sqft, "year_built": year_built, "units": units}
+    # The newest valuation year behind any field above: the vintage the facts describe.
+    valuation_year = None
+    top = max((_year_num(r) for r in rows), default=0)
+    if top >= 1990:
+        valuation_year = int(top)
+    result = {"bldg_sqft": sqft, "year_built": year_built, "units": units, "valuation_year": valuation_year}
     if multi_pin:
         result["member_pins"] = sorted(m.replace("-", "") for m in members)
         if complex_sqft:

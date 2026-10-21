@@ -843,6 +843,9 @@ async def _fetch_report_data(
             price_range_max=s.get("price_range_max"),
             sales_volume=s.get("sales_volume", 0),
             comp_basis=s.get("comp_basis"),
+            comp_radius_mi=s.get("comp_radius_mi"),
+            comp_window_years=s.get("comp_window_years"),
+            comp_widened=bool(s.get("comp_widened")),
             sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
         )
 

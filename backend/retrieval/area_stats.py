@@ -27,6 +27,7 @@ import json
 import logging
 import sqlite3
 import time
+from datetime import datetime, timezone
 
 from backend.config import get_settings
 from backend.retrieval.property.assessment_level import assessment_level_for_class
@@ -57,6 +58,14 @@ def _scan_index(path: str) -> dict[int, dict]:
     """Single pass over the discovery index → stats for every community area."""
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
+        # When the index was built: the benchmark is as old as that (WS0 M3).
+        index_built = None
+        try:
+            row = conn.execute("SELECT built_at FROM meta WHERE id = 1").fetchone()
+            if row and isinstance(row[0], (int, float)) and row[0] > 0:
+                index_built = datetime.fromtimestamp(row[0], tz=timezone.utc).strftime("%Y-%m-%d")
+        except sqlite3.Error:
+            pass
         acc: dict[int, dict] = {}
         for attrs_json, regions_json in conn.execute("SELECT attrs, regions FROM parcels"):
             try:
@@ -93,6 +102,10 @@ def _scan_index(path: str) -> dict[int, dict]:
                 "n_assessed": len(a["av"]),
                 "median_mv_per_land_sqft": _median(a["mv_psf"]),
                 "n_mv_psf": len(a["mv_psf"]),
+                # What share of the area's parcels the $/ft² median rests on (the index's land
+                # area is sparse), and the index build date: the figure's coverage and age.
+                "coverage_share": round(len(a["mv_psf"]) / a["n"], 4) if a["n"] else None,
+                "index_built": index_built,
                 "by_land_use": {
                     use: {"n": len(vals), "median_mv_per_land_sqft": _median(vals)}
                     for use, vals in a["by_use"].items()

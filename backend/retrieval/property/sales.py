@@ -110,9 +110,12 @@ async def nearby_comparable_sales(
         (base_radius * 2, base_years + 2),
     ]
     result: dict[str, Any] = {"summary": {}, "sales": []}
-    for rad, yrs in tiers:
+    for tier_i, (rad, yrs) in enumerate(tiers):
         result = await _query_comps(lat, lon, class_prefix, yrs, rad, limit, client)
         if result["sales"]:
+            result["summary"]["comp_radius_mi"] = _deg_to_mi(rad)
+            result["summary"]["comp_window_years"] = yrs
+            result["summary"]["comp_widened"] = tier_i > 0
             result["summary"]["comp_basis"] = (
                 f"Class {class_prefix}xx sales within {_deg_to_mi(rad)} mi, last {yrs} yr "
                 f"(n={len(result['sales'])})"

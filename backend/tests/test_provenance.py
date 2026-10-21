@@ -256,11 +256,16 @@ def test_an_unknown_area_dataset_is_still_a_recorded_county_figure():
 
 # --- the registry agrees with the facts ----------------------------------------------------------------------
 
+def _lists(fact_id: str, keys) -> bool:
+    """A registry key covers its own fact and the facts under it (``area.tract`` lists ``area.tract.median_gross_rent``)."""
+    return fact_id in keys or any(fact_id.startswith(k + ".") for k in keys)
+
+
 def test_every_fact_names_a_registered_source_that_lists_it():
     for fact_id, spec in FACTS.items():
         for sid in (spec.source_id, *spec.alt_source_ids, *spec.input_source_ids):
             assert sid in BY_ID, (fact_id, sid)
-            assert fact_id in BY_ID[sid].fact_keys, (fact_id, sid)
+            assert _lists(fact_id, BY_ID[sid].fact_keys), (fact_id, sid)
 
 
 def test_a_recorded_figures_tier_equals_its_sources_registry_tier():
@@ -283,9 +288,10 @@ def test_every_overlay_layer_has_a_fact_and_every_fact_key_in_the_registry_that_
     assert {f"overlay.{m['type']}" for m in OVERLAY_LAYERS.values()} <= set(FACTS)
     for sid, spec in BY_ID.items():
         for fk in spec.fact_keys:
-            if fk in FACTS:  # the registry's claim about a fact we model must be the fact's own source
-                spec_f = FACTS[fk]
-                assert sid in (spec_f.source_id, *spec_f.alt_source_ids, *spec_f.input_source_ids), (fk, sid)
+            for fid in [f for f in FACTS if f == fk or f.startswith(fk + ".")]:
+                # the registry's claim about a fact we model must be the fact's own source
+                spec_f = FACTS[fid]
+                assert sid in (spec_f.source_id, *spec_f.alt_source_ids, *spec_f.input_source_ids), (fid, sid)
 
 
 def test_every_method_key_has_english_text():
@@ -325,6 +331,8 @@ def test_as_of_prefers_data_healths_latest_check_over_the_frozen_vintage(monkeyp
     mod.latest = lambda sid: {"content_through": "2026-10-19T00:00:00", "published_at": "2026-10-01"}
     monkeypatch.setitem(sys.modules, "backend.data_health.status", mod)
     monkeypatch.setattr("backend.data_health.status", mod, raising=False)
-    assert resolve_as_of("chi.crime") == ("2026-10-19", "source_updated")
+    assert resolve_as_of("chi.crime") == ("2026-10-19", "period_end")  # the newest date in the data
+    mod.latest = lambda sid: {"published_at": "2026-10-01"}
+    assert resolve_as_of("chi.crime") == ("2026-10-01", "source_updated")
     mod.latest = lambda sid: 1 / 0  # an unreadable store falls through, never raises
     assert resolve_as_of("chi.building_footprints") == ("2015-08-15", "vintage")
