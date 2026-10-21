@@ -4,15 +4,19 @@
 # the most recent N copies (default 7).
 #
 # Usage: ./scripts/backup_db.sh [db_path] [backup_dir] [keep_count]
-# Cron:  0 3 * * * /opt/urbanlayer/scripts/backup_db.sh
+# Cron:  0 3 * * * /opt/urbanlayer/scripts/backup_db.sh >> /var/log/urbanlayer-backup.log 2>&1
 #
 # The app database is chicago.db in the backend_data Docker volume, which is
 # now the default. (The old default, backend/data/urbanlayer.db, doesn't exist;
-# production's cron entry passed the right path, so backups did run.) These
-# copies stay on the same host; see deploy/hardening-runbook.md for shipping
-# them off-box.
+# production's cron entry passed the right path, so backups did run.)
+#
+# Copies hold user data, so they are not world-readable: the backup dir is
+# root:jack with setgid (2750), and the umask below makes each copy 640, so
+# jack can read them (scripts/pull_backups.sh pulls them off-box) and nobody
+# else can. See deploy/hardening-runbook.md section 8c.
 
 set -euo pipefail
+umask 027
 
 DB_PATH="${1:-/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db}"
 BACKUP_DIR="${2:-/opt/urbanlayer/backups}"

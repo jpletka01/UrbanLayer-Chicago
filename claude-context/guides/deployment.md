@@ -130,7 +130,9 @@ STRIPE_PRICE_ID=price_...
 
 SQLite backup script at `scripts/backup_db.sh` — `sqlite3 .backup` for WAL-safe copies, retains 7 days. DB path on server: `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`.
 
-Cron (server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh` (defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). Until 2026-09-28 the script defaulted to a nonexistent `urbanlayer.db` and this doc's cron line was wrong, but the server's actual cron entry passed the right path, so nightly backups were running. Since then root's crontab uses the default; backups log to `/var/log/urbanlayer-backup.log`. Copies are on the same host; off-box shipping is in `deploy/hardening-runbook.md`.
+Cron (root, server): `0 3 * * * /opt/urbanlayer/scripts/backup_db.sh >> /var/log/urbanlayer-backup.log 2>&1` (UTC; defaults to the volume path above, `/opt/urbanlayer/backups`, 7 copies). The folder is `root:jack` 2750 and copies are 640 (they hold user data). **The entry was lost in the 2026-09-28 hardening; no backups ran from Sept 28 to Oct 20, when it was restored.**
+
+Off-box: Jack's Mac pulls the copies (`scripts/pull_backups.sh`, launchd job `deploy/launchd/com.urbanlayer.backup-pull.plist`, every 4 h) into `~/Backups/urbanlayer`, keeping 60. It uses a no-passphrase key the server accepts only for read-only `rrsync` of the backups folder, and shows a macOS notification if the pull fails or the newest copy is over 36 h old. The Mac copies aren't encrypted. Setup, the restore test (last passed 2026-10-20) and the prod restore steps are in `deploy/hardening-runbook.md` §8c. A server-side backup-age alarm comes with WS6 M2.
 
 ## Memory Budget (8GB CX32)
 
