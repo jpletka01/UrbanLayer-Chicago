@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -345,7 +346,8 @@ def test_report_block_states_the_vintage_the_count_and_the_parcel_items():
 
 def test_report_block_withholds_the_count_without_a_recent_check():
     html = _html()
-    assert "couldn&#39;t check recently" in html and "https://chicityclerkelms.chicago.gov/" in html
+    assert "couldn&#39;t check recently" in html
+    assert re.search(r'<a href="https://chicityclerkelms\.chicago\.gov/">', html)
     assert "amendments to the Zoning Ordinance (Title 17) that are not in this text" not in html
 
 

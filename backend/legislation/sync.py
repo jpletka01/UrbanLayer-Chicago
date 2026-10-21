@@ -51,7 +51,7 @@ def write_atomic(path: Path, data: dict) -> None:
         with os.fdopen(fd, "w") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.write("\n")
-        os.chmod(tmp, 0o644)
+        os.chmod(tmp, 0o640)  # the backend reads it as the same container user
         os.replace(tmp, path)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
