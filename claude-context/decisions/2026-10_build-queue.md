@@ -915,8 +915,19 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 | Displayed figures, 12 kit parcels, fresh main vs fresh branch | 0 differences in the parcel's property, zoning, regulatory, incentive, tract, zone-definition, unit-yield and note fields (live feeds, comps, flood, appeals counts and address violations/311 excluded as volatile) | `eval.parcel_kit --full <url> --surfaces profile` on each, diff of the raw payloads |
 | Profile kit scores | unchanged coverage and accuracy on both runs | same |
 
+**Production** (2026-10-21, after the deploy of #79; docs only)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| 1601 N Milwaukee, `area.tract.median_gross_rent` | value 2,435, `precision` `{moe: 220, moe_level: 0.9, cv: 0.055}`, period 2020–2024, as_of 2024-12-31 | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+| `property.stories` | as_of 2015-08-15, basis `source_updated` (from the checker's store), reason `old_source` | same |
+| Source dates from the store | `property.sales` as_of 2026-08-12 (`period_end`); crime 2026-10-14 | same |
+| Entries on the Profile | 56 on prod (58 locally: no FEMA zone came back on prod for this parcel) | same |
+| `/api/area-stats?ca=24` | carries `area.benchmarks.market_value_per_land_sqft`; coverage share 0.4421, index built 2026-10-01 | `curl "https://urbanlayerchicago.com/api/area-stats?ca=24"` |
+| 25-address production audit (serial) | 1,185 of 1,185 figures with an entry (100.0%), 0 gaps, 0 unexpected, 0 fetch errors; mean 47.4 entries, 61.9 KB per payload (30.1 KB provenance); 74 low, 51 withheld | `PYTHONPATH=. python -m eval.confidence_audit --full https://urbanlayerchicago.com --sample 25 --concurrency 1` |
+
 **Not measured:**
-- Production: `precision.moe == 220` and `as_of == 2015-08-15` for 1601 N Milwaukee (checked after the deploy), and a 25-address production audit. The plan names `2015-08-14` for the footprints; the registry's frozen vintage and the data say `2015-08-15`.
 - The pre-change mean payload on the panel (only 1601 N Milwaukee was measured before).
-- How the data-health store changes dates on production: locally the store is absent, so source dates came from the registry's frozen vintages and the response's own dates.
 - Chat: `_provenance_for` is unchanged (still empty without a district) and nothing reads the new entries yet; no model call was made.
+- The plan names `2015-08-14` for the footprints' as-of; the registry's frozen vintage, the checker's store and the data all say `2015-08-15`.
+
