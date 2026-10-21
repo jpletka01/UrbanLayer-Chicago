@@ -841,7 +841,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Sort order: alarm, error, warn, unknown, acked, ok, frozen, critical first within a state.**
 - **Decision:** the plan's order. The checker's console output puts `error` first; both are red, so the panel follows the plan, and critical sources lead each state so the ★ ones are never buried.
-- The sort is applied on the server and again in the component (`sortSources`, exported and tested), so a future payload that changes order can't reorder the panel silently.
+- The sort is applied on the server and again in the component (`sortSources` in `lib/dataHealth.ts`, tested), so a future payload that changes order can't reorder the panel silently.
 
 **The "contract result" column says whether a structure check exists, not how it came out.**
 - **Decision:** the column shows "checked" when the source's spec has a layer-name, field or count-band contract, and "—" otherwise. A failed structure check already makes the row `error` or `alarm`, with the finding in its reason.

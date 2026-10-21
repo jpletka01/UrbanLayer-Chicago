@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { DataHealthSection, sortSources } from "./DataHealthSection";
+import { DataHealthSection } from "./DataHealthSection";
+import { sortSources } from "../../lib/dataHealth";
 import type { DataHealth, DataHealthSource, SourceState } from "../../lib/api";
 
 vi.mock("../../lib/api", async (orig) => {

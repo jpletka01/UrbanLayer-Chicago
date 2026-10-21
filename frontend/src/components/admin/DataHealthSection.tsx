@@ -7,23 +7,8 @@ import {
   fetchDataHealth, fetchDataHealthHistory,
   type DataHealth, type DataHealthHistory, type DataHealthSource, type SourceState,
 } from "../../lib/api";
+import { STATE_ORDER, sortSources } from "../../lib/dataHealth";
 import { formatDay } from "../../lib/format";
-
-// Worst first. Both alarm and error are red; the critical ones lead each state.
-export const STATE_ORDER: SourceState[] = ["alarm", "error", "warn", "unknown", "acked", "ok", "frozen_ok"];
-
-export function sortSources(rows: DataHealthSource[]): DataHealthSource[] {
-  const rank = (s: SourceState) => {
-    const i = STATE_ORDER.indexOf(s);
-    return i < 0 ? STATE_ORDER.length : i;
-  };
-  return [...rows].sort(
-    (a, b) =>
-      rank(a.state) - rank(b.state) ||
-      Number(b.severity === "critical") - Number(a.severity === "critical") ||
-      a.id.localeCompare(b.id),
-  );
-}
 
 const stateCls: Record<SourceState, string> = {
   alarm: "text-state-negative border-state-negative/30 bg-state-negative/10",
