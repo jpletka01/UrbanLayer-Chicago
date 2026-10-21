@@ -1,27 +1,31 @@
 # Data health: the source registry and the checker
 
-**Status (2026-10-21): registry, probes and dry run shipped (WS6 M1).** Storage, the daily timer, Sentry alarms and the dead-man check arrive in M2; the admin panel in M3; contracts and sentinels in M4. Until M2 the checker writes nothing and alerts nobody.
+**Status (2026-10-21): registry, probes and dry run (WS6 M1); status store, daily timer, Sentry alarms and the dead-man check (M2).** The admin panel arrives in M3; contracts and sentinels in M4.
 
 **Owner:** WS6. The registry's `id`s are the join key WS0 puts on provenance entries (`source_id`); WS1's code-vintage alarm and WS2's poller register here too. There is one registry and one alarm path.
 
 ## What it is
 
-`backend/data_health/` has four parts:
+`backend/data_health/` has these parts:
 
 | File | Job |
 |---|---|
-| `registry.py` | `SOURCES`: a tuple of `SourceSpec`, one per data source the product shows (80 on 2026-10-21). Who publishes it, its tier, which module reads it, how to read its date, how stale is too stale. |
+| `registry.py` | `SOURCES`: a tuple of `SourceSpec`, one per data source the product shows (81 on 2026-10-21). Who publishes it, its tier, which module reads it, how to read its date, how stale is too stale. |
 | `probes.py` | Reads each source's latest data date (and the cheap contract facts) over HTTP, or from a local file. Parsers are pure and tested on recorded responses. |
 | `evaluate.py` | Pure rules: probe result + spec + today → a status (`ok`, `warn`, `alarm`, `error`, `unknown`, `frozen_ok`, `acked`). |
-| `check.py` | The CLI. `python -m backend.data_health.check --dry-run` prints every source. |
+| `check.py` | The CLI and `check()`, one run: probe, evaluate, store, alert. `--dry-run` prints every source and writes nothing. |
+| `store.py` | `data_health.db` (SQLite on the `backend_data` volume; the checker is the only writer, the app reads it read-only for `/health`). |
+| `alerting.py` | Sentry alarms on transitions and the Cron check-in, behind a `Sink` so tests inject a fake. |
 
-The checker is cheap and dumb: HTTP reads and local files only, **no model calls**, about 100 requests and 3 seconds for the whole registry. It imports no torch, no Discovery and not `backend.main` (a test asserts this), so it can run in its own short-lived container.
+The checker is cheap and dumb: HTTP reads and local files only, **no model calls** (it never spends the production Anthropic key), about 100 requests and 3 seconds for the whole registry. It imports no torch, no Discovery and not `backend.main` (a test asserts this), so it can run in its own short-lived container.
 
 ```bash
 python -m backend.data_health.check --dry-run                       # every source, worst first
 python -m backend.data_health.check --dry-run --only chi.crime,cook.   # a family: a trailing '.' is a prefix
 python -m backend.data_health.check --dry-run --json
 python -m backend.data_health.check --dry-run --today 2026-12-01    # judge ages as of another day
+python -m backend.data_health.check --write --alert                 # what the daily timer runs
+python -m backend.data_health.check --clear drill.synthetic         # delete a drill row
 ```
 
 ## How a date is read
@@ -47,7 +51,7 @@ Sources with no date to read are judged on **findings**: reachability, a layer n
 - **unknown**: no date signal. The 13 overlay layers have no edit-date field, so they are `unknown` with their name and count band checked. Unknown is amber, not red.
 - **frozen_ok**: a frozen source (the 2015 footprints, the 1996 CHRS survey, the 2023 wards) whose publisher date has not moved. These alarm on **change**, not age: if one starts updating, our "frozen" label is wrong.
 - **acked**: a known-stale source with an unexpired `ack`. Amber; does not alarm. An ack past its `until` becomes `alarm`.
-- A transient probe failure (timeout, 5xx) is `warn` on one run and `alarm` on two in a row, so a network blip doesn't page. `previous_error` carries the last run's failure; M2 stores it.
+- A transient probe failure (timeout, 5xx) is `warn` on one run and `alarm` on two in a row, so a network blip doesn't page. `previous_error` carries the last run's failure; the store keeps it (`source_status.probe_error`).
 - A source with a working fallback (`warns_only_while_ok`: Cook GIS layer 44, with Parcel Universe behind it) can only warn.
 
 ## Adding a source
@@ -67,7 +71,7 @@ An ack is a code change, so each one is reviewed in a PR. It names a reason (wha
 - `chi.vacant_buildings`: the feed stopped on 2025-10-08.
 - `chi.nof_large`: stale since 2023-09-19; only a project list in chat.
 
-All three run until 2027-01-31. When one expires and the source is still bad it becomes an alarm, which forces the question.
+All three run until 2027-01-31. A fourth, `code.municipal_text`, runs until 2026-12-15 (see below). When one expires and the source is still bad it becomes an alarm, which forces the question.
 
 ## Gotchas
 
@@ -76,11 +80,53 @@ All three run until 2027-01-31. When one expires and the source is still bad it 
 - **A probe that cannot run here** (no ptaxsim.db, no Discovery index, no Walk Score key) reports `unknown: not probed here`, never `ok`. A dev checkout therefore shows a few unknowns that production does not.
 - **The local Discovery index is old** (built 2026-07-07), so the dry run on a dev machine alarms `internal.discovery_index`. Production rebuilds it monthly.
 
+## Alarms (M2)
+
+**Daily run.** `deploy/data-health-check.timer` starts `data-health-check.service` at 05:37 UTC: `docker compose run --rm --no-deps backend python -m backend.data_health.check --write --alert`. Its own container, so it never stacks memory on the serving process. Install and drill steps: `deploy/README.md`.
+
+**What reaches Sentry** (`alerting.py`; one issue per source and state, so Sentry's new-issue email is the page):
+
+| Event | Sentry |
+|---|---|
+| source enters `alarm` or `error` | one `error` event, fingerprint `["data-health", id, state]`, tags `source_id`, `severity`, `kind` (`stale` or `broken`), `source_kind` |
+| still red on a later day | one more event a day, same fingerprint (bumps the count, no new email) |
+| back to anything but red | an `info` "recovered" event |
+| `warn`, `acked`, `unknown` | nothing (admin panel only) |
+
+What we last notified about is stored per source (`alerted_state`), not inferred from the previous run. **For the first 14 days after the checker's first run only `critical` sources alert**; the rest are held back and alert as a new transition when the period ends.
+
+**Dead-man, three layers.**
+1. A **Sentry Cron monitor** (`data-health-check`, crontab `37 5 * * *`, 90 min margin) gets an `in_progress` then `ok` or `error` check-in per run. The monitor is created from the first check-in's config; nothing to set up in the Sentry UI.
+2. **`/health`** carries `"data_health": {"checker": "ok"|"late", "last_run_age_h": 3.1, "alarms": 2}`. `late` = no finished run in 36 h (or none yet). It never changes the HTTP status.
+3. **`.github/workflows/data-health-deadman.yml`** (daily): fails, and GitHub emails, when the site doesn't answer, `/health` has no `data_health` block, or `checker` isn't `ok`. A red source only adds a warning annotation (Sentry owns those).
+
+**Backup age** (`internal.backups`, critical). `scripts/backup_db.sh` writes `backup_status.json` beside `chicago.db` (on the `backend_data` volume) after each successful backup; the checker container cannot see `/opt/urbanlayer/backups`, so it reads the status file instead of a mount. Warn after 30 h, alarm after 36 h (a missed night). With `BACKUP_STATUS_REQUIRED=true` (set in `docker-compose.prod.yml`) a missing file is an alarm; in dev it reads "not probed here". It sees the on-box copy only, not the off-box pull to the Mac.
+
+**Code vintage** (`code.municipal_text`, critical, WS1's thresholds 60/90 days). American Legal publishes about four months behind Council, so the newest export is already past the 90-day alarm the day it is ingested; the source is acked until 2026-12-15, and the nudge is `.github/workflows/code-export-reminder.yml`: on the 1st of each month it fails (and emails) while `backend/code_vintage.json:ingested_at` is more than 35 days old. When the ack expires, re-decide the thresholds against the publisher's real lag rather than extending it blindly. `code.hand_table.zoning_definitions` alarms when `VERIFIED_AGAINST` differs from the vintage.
+
+**The alarm drill** (production, after install, then quarterly):
+
+```bash
+cd /opt/urbanlayer
+sudo systemctl start data-health-check.service                      # a normal run: rows written, Cron check-in
+# stale source: expect a Sentry email "Data source stale: drill.synthetic"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend \
+  python -m backend.data_health.check --write --alert --inject-fault stale:drill.synthetic
+# broken source: expect "Data source broken: drill.synthetic"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend \
+  python -m backend.data_health.check --write --alert --inject-fault broken:drill.synthetic
+# clear: the next normal run drops the row and sends "recovered"; or delete it now
+docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend \
+  python -m backend.data_health.check --clear drill.synthetic
+curl -s https://urbanlayerchicago.com/health                         # data_health.last_run_age_h under 26
+```
+
+Then resolve the two drill issues in Sentry by hand.
+
 ## Not here yet
 
 | Milestone | Adds |
 |---|---|
-| M2 | `data_health.db`, `--write --alert`, the daily systemd timer, Sentry alarms on transitions, the `/health` block and the dead-man check (a scheduled GitHub Actions workflow; no uptime service) |
 | M3 | the admin "Data health" panel |
 | M4 | value-set contracts, daily known-answer sentinels (FEMA and EPA known answers live here) |
 | M5 | metadata sidecars for committed artifacts (`transit_stations.json` is `unknown` until then), the weekly kit, CI artifact-age warnings |

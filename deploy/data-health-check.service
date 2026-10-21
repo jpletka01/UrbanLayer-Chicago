@@ -1,0 +1,21 @@
+[Unit]
+Description=Daily data-health check (source freshness, contracts, backup age; alarms to Sentry)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/urbanlayer
+# A SEPARATE ephemeral container (`run --rm`, `--no-deps`: no qdrant), like the Discovery rebuild:
+# its own cgroup, never stacked on the serving process, no backend restart. It reads the registry
+# sources over HTTP plus local files on the shared backend_data volume, writes
+# backend/data/data_health.db there (the app opens it read-only for /health), and reports to
+# Sentry (issue on a source turning red, daily heartbeat while it stays red, Cron check-in).
+# HTTP reads only: no model calls, no tokens spent.
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend python -m backend.data_health.check --write --alert
+# Exit 1 = the checker itself crashed (the Sentry Cron monitor marks the run failed). A red
+# SOURCE is not a failed unit: it is reported through Sentry.
+# A compose rebuild during the run can fail it; retry once, half an hour later.
+Restart=on-failure
+RestartSec=30min
+TimeoutStartSec=20min

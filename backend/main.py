@@ -269,8 +269,14 @@ async def health() -> dict:
     # catch a missing DB — prod ran without one for weeks, silently.
     ptaxsim_ok = bool(settings.ptaxsim_enabled and settings.ptaxsim_db_path.exists())
 
+    # Informational, never gating (a red source must not take the app out of rotation): is the
+    # daily data-health checker running, and how many sources are red. "late" = no finished run
+    # in 36 h. The scheduled dead-man workflow (.github/workflows/data-health-deadman.yml) reads it.
+    from backend.data_health.store import health_block
+    data_health = await asyncio.get_running_loop().run_in_executor(None, health_block, settings.data_health_db_path)
+
     ok = qdrant_ok and db_ok
-    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok, "ptaxsim": ptaxsim_ok}
+    result = {"ok": ok, "qdrant": qdrant_ok, "db": db_ok, "ptaxsim": ptaxsim_ok, "data_health": data_health}
     if not ok:
         from fastapi.responses import JSONResponse
         return JSONResponse(content=result, status_code=503)

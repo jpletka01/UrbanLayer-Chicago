@@ -40,3 +40,15 @@ echo "Backup created: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
 # Prune old backups, keep the most recent $KEEP
 ls -1t "$BACKUP_DIR"/urbanlayer_*.db 2>/dev/null | tail -n +$((KEEP + 1)) | xargs -r rm -f
 echo "Retained $(ls -1 "$BACKUP_DIR"/urbanlayer_*.db 2>/dev/null | wc -l) backups"
+
+# Tell the data-health checker (WS6 M2). It runs in a container that cannot see $BACKUP_DIR, so
+# the report goes beside the database, on the backend_data volume it does mount. Written last and
+# atomically (temp + rename): the file existing at all means a backup just completed, and its age
+# is how a stopped cron job is noticed (backup_db.sh stopped silently after 2026-09-28).
+STATUS_FILE="$(dirname "$DB_PATH")/backup_status.json"
+RETAINED=$(ls -1 "$BACKUP_DIR"/urbanlayer_*.db 2>/dev/null | wc -l | tr -d ' ')
+SIZE=$(wc -c < "$BACKUP_FILE" | tr -d ' ')
+printf '{"completed_at": "%s", "newest_backup": "%s", "size_bytes": %s, "retained": %s}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%S+00:00)" "$(basename "$BACKUP_FILE")" "$SIZE" "$RETAINED" > "$STATUS_FILE.tmp"
+chmod 644 "$STATUS_FILE.tmp"
+mv "$STATUS_FILE.tmp" "$STATUS_FILE"

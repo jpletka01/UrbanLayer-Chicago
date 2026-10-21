@@ -699,3 +699,67 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - Payload size (bytes) before and after. Each entry gains roughly 10 small fields; the Profile response carries 8–14 entries.
 - `make kit-replay` re-scores the 2026-10-01 recordings, which predate provenance, so it shows nothing about this change. The payload diff above is the evidence that no zoning value moved.
 - A live `/api/scorecard` from this branch. Local runs need the government APIs. The deployed API is checked after the merge instead.
+
+---
+
+## Item 11: status store, daily timer, Sentry alarms, dead-man (WS6 M2, 2026-10-21)
+
+**The store is a separate SQLite file in journal mode DELETE, written by `sqlite3`, not aiosqlite.**
+- *Decision:* `data_health.db` on the `backend_data` volume; the checker is the only writer and the app opens it `mode=ro` for `/health`.
+- *Alternatives:* a table in `chicago.db` (rejected: the checker is another container, and the plan's reason stands: no lock contention with the app's WAL database). WAL mode for the new file (rejected: a read-only reader in another container needs the `-wal`/`-shm` side files to be usable, and one write a day gains nothing from WAL).
+- *Revisit if:* the checker ever writes more than once a day or the panel (M3) polls hard. Then WAL plus a shared-memory-capable mount.
+
+**What we last notified about is stored, not inferred from the previous state.**
+- *Decision:* `source_status.alerted_state` / `alerted_at`. A transition is "red now, and not already notified for this state"; a heartbeat is "red, notified on an earlier day"; a recovery is "not red, but notified".
+- *Alternatives:* compare today's state with yesterday's. Rejected: the 14-day quiet period holds back non-critical sources, and they must alert as a *new* issue when it ends, and a crash mid-run must not lose or repeat an email.
+- *Evidence:* `test_a_standard_source_is_held_back_for_the_first_two_weeks_then_alerts`, `test_decide` (9 cases), and the §8 test.
+- *Revisit if:* Sentry's own issue state (resolved, ignored) should drive re-alerting.
+
+**`alarm` → `error` is a different issue; `warn` never alerts.**
+- *Decision:* fingerprint is `["data-health", id, state]`, so a source that goes from stale to broken opens a second issue, as the plan says. A source that falls from red to `warn` or `acked` counts as recovered.
+- *Alternative:* alert on `warn` too. Rejected: 6 sources are `warn` on day one; the plan keeps them on the panel.
+
+**Partial runs are forbidden when writing.**
+- *Decision:* `--write` with `--only` is a CLI error. A run deletes the rows of sources not in the run (how a finished drill clears, with a "recovered" event); a partial run would wipe the rest.
+- *Alternative:* never delete; `--clear ID` only. Rejected: a retired registry source would sit in the store forever, and a drill would need a manual step to stop counting in `/health` alarms. `--clear` exists as well.
+
+**The fault drill runs the full real check plus one synthetic source.**
+- *Decision:* `--inject-fault stale:drill.<name>` or `broken:drill.<name>` adds a critical `drill.*` source with a canned probe result, in a normal run. Only `drill.*` ids are accepted, so the flag cannot paint a real source red.
+- *Alternative:* a drill-only run. Rejected: the acceptance wants the Cron check-in and a refreshed `/health` age from the same run, and the run costs about 100 requests.
+
+**The code-vintage alarm is acked until 2026-12-15, and the reminder is a monthly GitHub workflow.**
+- *Decision:* `code.municipal_text` (critical, WS1's 60/90-day thresholds) would alarm on its first run and every day after. American Legal's newest export (current through 2026-06-17) is 126 days old on the day it was ingested. Alarming daily on something nobody can fix trains people to ignore the channel. So: an ack with a reason and an expiry (the registry's own mechanism), plus `code-export-reminder.yml`, which fails on the 1st of each month while `code_vintage.json:ingested_at` is over 35 days old. That is the "download a new export" nudge the queue asks for, on a signal that goes quiet when someone ingests.
+- *Alternatives:* leave it alarming (daily noise); loosen the thresholds now (a WS1-owned decision made without the publisher's real cadence); ack with a far-off expiry (hides it).
+- *Evidence:* `check --dry-run` on 2026-10-21: `code.municipal_text` alarm, 126 d, before the ack.
+- *Revisit if:* the ack expires (2026-12-15). Measure the lag at each export (current-through vs download date) and set the thresholds against that, or alarm on `ingested_at` instead.
+
+**Backup age is read from a status file the backup script writes beside the database.**
+- *Decision:* `scripts/backup_db.sh` writes `backup_status.json` (time, file, size, copies) atomically into the directory of `chicago.db`, which is the `backend_data` volume the checker container already mounts. The probe judges it by hours: warn over 30, alarm over 36. `BACKUP_STATUS_REQUIRED=true` in `docker-compose.prod.yml` makes a missing file an alarm; unset (dev) it is "not probed here".
+- *Alternatives:* a read-only bind mount of `/opt/urbanlayer/backups` into the checker (the directory is `root:jack` 2750; the container would need that group, and another mount on the serving compose file); SSH from the checker (a key in the container). Rejected: both widen what the container can touch for one number.
+- *Why hours, not days:* the registry's day thresholds can't tell "one night missed" (about 26 h at the 05:37 check) from "healthy" (2.6 h) without an off-by-one. `availability_only` plus findings keeps the rule in one function.
+- *Known gap:* it proves the script finished, not that the copy restores, and it does not see the off-box pull to the Mac.
+- *Revisit if:* the status file and the real newest file ever disagree (a deploy that changes the script path). Then add the filename check from the host side.
+
+**The checker's own row (`internal.checker`) is for the panel, not the pager.**
+- *Decision:* a probe reads the store's last finished run (warn after 1 day, alarm after 3). The real dead-man is outside the box: `/health` (`checker: ok|late`, 36 h), the Sentry Cron monitor, and a daily GitHub workflow that fails (and emails) when `/health` is late, missing the block, or the site is down.
+- *Alternative:* an UptimeRobot keyword monitor on `/health`. Not used: free tiers only and no new sign-ups (build-order decision 5).
+- *Note:* the Cron monitor is created from the first check-in's `monitor_config` (crontab `37 5 * * *`, 90 min margin), so nothing is set up in the Sentry UI. Whether the free plan allows it is verified in the production drill.
+
+**Sentry stays out of the dev requirements.**
+- *Decision:* `alerting.Sink` is a protocol; `SentrySink` imports the SDK lazily; tests inject a fake sink, and one test fakes the `sentry_sdk` module to pin the fingerprint, tags and monitor config. The SDK is in `requirements.prod.txt` only, so CI never needs it.
+
+**Numbers** (2026-10-21)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend unit tests | 1,752 → 1,802 (+50: store 13, alerting 22, probes +13 (backup age, checker), backup script 2) | `make test` (main measured the same way in a temporary worktree: 1,752) |
+| Eval tests, frontend | 92 and 334, unchanged (no frontend change) | `make test` |
+| Registry | 80 → 81 sources (`internal.backups`); `internal.checker` gains a probe; 2 sources still without one (`internal.sentinels`, `eval.kit_weekly`) and the transit artifact | `python -m backend.data_health.check --dry-run` |
+| One full `--write --alert` run, this Mac | 100 HTTP requests, 4 s, 82 rows written (81 + the drill), 1 event for the drill | `DATA_HEALTH_DB_PATH=/tmp/x.db python -m backend.data_health.check --write --alert --inject-fault stale:drill.synthetic`, no `SENTRY_DSN` so events are logged |
+| Next normal run | drill row removed, one "recovered" event | same command without the flag |
+| Day-one alerts on this Mac | 1 critical-or-not alarm after the ack: `internal.discovery_index` (standard, so held back by the quiet period); `code.municipal_text` was the other until acked | dry run |
+
+**Not measured:**
+- A run inside the production container, its Sentry delivery, the Cron monitor's acceptance on the free plan, and `/health` on production. All of these are the post-merge drill (needs `sudo` to install the timer).
+- `fed.fema.nfhl` returned `ConnectError` on every local run today (a `warn`, "first run"); whether production's network path reaches it is untested until the first production run.
+- The GitHub workflows have only been exercised locally against stubbed `curl`; their first scheduled run happens after merge (the dead-man will fail until the timer is installed and has finished a run).

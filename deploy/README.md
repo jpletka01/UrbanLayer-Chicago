@@ -1,5 +1,41 @@
 # Deploy units
 
+## Data-health check — daily (WS6 M2)
+
+`backend.data_health.check --write --alert` probes every registered data source (HTTP reads and
+local files; **no model calls**), stores the result in `backend/data/data_health.db` (persistent
+volume) and tells Sentry about sources that turned red. It also checks the age of the newest DB backup
+(`backup_status.json`, written by `scripts/backup_db.sh`). `/health` reads the store and shows
+`data_health.checker` (`ok`, or `late` after 36 h without a finished run). Design and alarm rules:
+`claude-context/guides/data-health.md`.
+
+### Install on the prod host (`ssh urbanlayer-prod`; needs sudo)
+
+```bash
+cd /opt/urbanlayer                                          # the unit files arrive with the deploy
+sudo /opt/urbanlayer/scripts/backup_db.sh                   # once now, so backup_status.json exists before the first check
+sudo cp deploy/data-health-check.service deploy/data-health-check.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now data-health-check.timer
+sudo systemctl start data-health-check.service              # first run now, don't wait for 05:37 UTC
+systemctl status data-health-check.service --no-pager       # "status=0/SUCCESS"
+systemctl list-timers data-health-check.timer               # next run 05:37 UTC
+```
+
+### Check it
+
+```bash
+journalctl -u data-health-check.service -n 120 --no-pager   # the table, worst first, then "Sentry: N event(s)"
+curl -s https://urbanlayerchicago.com/health                # "data_health":{"checker":"ok","last_run_age_h":0.0,...}
+```
+
+Exit `1` = the checker itself crashed (a Sentry Cron `error` check-in; the unit retries once after
+30 min). A red *source* is not a failed unit: it is a Sentry issue. The alarm drill is in the guide.
+
+The GitHub workflows `data-health-deadman.yml` (daily, fails if `/health` shows the checker late) and
+`code-export-reminder.yml` (monthly, fails while the code text was ingested over 35 days ago) email a
+failure to whoever last edited their schedule.
+
 ## Legislation sync — daily (WS1 M2)
 
 `backend.legislation.sync` asks the City Clerk's API what Municipal Code amendments passed

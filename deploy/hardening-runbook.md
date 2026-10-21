@@ -223,7 +223,15 @@ The server runs on UTC, so 03:00 is 21:00/22:00 Chicago time.
 
 > **2026-10-20:** root's crontab was found **empty**. The entry was lost in the
 > 2026-09-28 hardening, so no backup ran from Sept 28 to Oct 20. It's restored (with the
-> log redirect, which the old entry lacked). WS6 M2 adds a server-side backup-age alarm.
+>  log redirect, which the old entry lacked).
+
+**Backup-age alarm (WS6 M2).** After each successful backup the script also writes
+`backup_status.json` (time, file name, size, copies kept) beside `chicago.db` in the
+`backend_data` volume; the data-health checker (`deploy/README.md`) reads it from its
+container, which cannot see `/opt/urbanlayer/backups`. No backup for 30 h is a warning
+and 36 h an alarm (Sentry). It watches the on-box copy only: the Mac pull below is
+not seen from the server. After a deploy that changes the script, run it once by hand
+so the file exists before the first check.
 
 **Off the box: a pull to Jack's Mac** (free, no new accounts). The Mac pulls rather than
 the server pushing, so the server holds no credential for anything else.
