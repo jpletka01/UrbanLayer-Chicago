@@ -846,6 +846,64 @@ export interface Provenance {
   /** When we queried it. Always set. */
   query_date: string;
   note?: string | null;
+  // --- schema v2 (backend/provenance.py; guide: claude-context/guides/source-confidence.md).
+  // Every field below is additive and optional: older stored answers lack them.
+  /** Authority tier: A record, B code text, C government estimate, D our calculation, E AI reading, F private. */
+  tier?: ProvenanceTier;
+  /** Data-health registry id (backend/data_health/registry.py). */
+  source_id?: string | null;
+  /** What `as_of` means. `record_updated` = one record's own edit date, not the dataset's currency. */
+  as_of_basis?: ProvenanceAsOfBasis;
+  /** A statistic's period, e.g. "2020–2024". */
+  period?: string | null;
+  age_days?: number | null;
+  scope?: ProvenanceScope | null;
+  geography?: string | null;
+  /** Absent on a parcel record means "not applicable", not "unknown". */
+  coverage?: ProvenanceCoverage | null;
+  /** Absent means no error is published. */
+  precision?: ProvenancePrecision | null;
+  method_key?: ProvenanceMethodKey;
+  method_params?: Record<string, unknown> | null;
+  /** English fallback for the method; the UI translates by `method_key`. */
+  method?: string;
+  /** A calculation's inputs (fact ids or registry source ids) and the weakest input's tier. */
+  inputs?: string[] | null;
+  basis_tier?: ProvenanceTier | null;
+  corroborated?: boolean | null;
+  /** Computed once by the backend. Read it; never recompute it in a component. */
+  confidence?: ProvenanceConfidence;
+  confidence_reasons?: string[];
+  /** The figure as displayed. */
+  value?: string | number | boolean | null;
+}
+
+export type ProvenanceTier =
+  | "official_record" | "official_publication" | "official_estimate"
+  | "our_calculation" | "ai_extracted" | "non_government";
+export type ProvenanceAsOfBasis =
+  | "source_updated" | "record_updated" | "current_through" | "period_end" | "vintage" | "tax_year" | "queried";
+export type ProvenanceScope = "parcel" | "address" | "radius" | "tract" | "community_area" | "city" | "county";
+export type ProvenanceConfidence = "standard" | "low" | "withheld";
+export type ProvenanceMethodKey =
+  | "recorded" | "published_text" | "code_table" | "hand_reviewed"
+  | "survey_estimate" | "government_model" | "bracket_median" | "calculation" | "keyword_grouping"
+  | "ai_read_code" | "ai_read_ordinance" | "ai_read_filing" | "commercial_index";
+
+export interface ProvenanceCoverage {
+  n?: number | null;
+  share?: number | null;
+  universe?: string | null;
+  unit?: string | null;
+  /** Which n rule applies: an area sample (n < 30 withholds) or a comparable-sales set (fade < 5, withhold < 3). */
+  sample?: "area_sample" | "comps" | null;
+}
+
+export interface ProvenancePrecision {
+  moe?: number | null;
+  moe_level?: number | null;
+  cv?: number | null;
+  agreement?: { n: number; agree: number } | null;
 }
 
 export interface ScorecardResponse {

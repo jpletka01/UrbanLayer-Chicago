@@ -8,10 +8,15 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from backend import main
+from backend.data_health.registry import BY_ID
 from backend.models import ContextObject, OverlayDistrict, PropertySummary, RegulatorySummary, ZoningSummary
-from backend.provenance import BULK_SECTIONS, bulk_family, build_provenance, entry_is_dated
+from backend.provenance import (
+    BULK_SECTIONS, FACTS, METHOD_TEXT, ProvenanceEntry, bulk_family, build_provenance, entry_is_dated,
+    make_entry, resolve_as_of, weakest_tier,
+)
 from backend.retrieval.zoning_definitions import get_zone_definition
 
 SECTIONS = Path(__file__).resolve().parents[2] / "ingestion" / "data" / "sections"
@@ -147,3 +152,179 @@ async def test_scorecard_payload_carries_provenance_for_district_standards_and_o
     prov = out["provenance"]
     for key in ("zoning.district", "zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit", "overlay.special_district", "parcel.identity", "code.vintage"):
         assert key in prov and entry_is_dated(prov[key]), key
+
+
+# --- schema v2 (WS0 M2) -------------------------------------------------------------------------------
+
+
+def _everything() -> dict:
+    """An entry of every kind the Profile emits, including both identity and area variants."""
+    ctx = _ctx()
+    ctx.property.bldg_sqft, ctx.property.bldg_sqft_source = 1900, "footprint"
+    out = _build(ctx)
+    out["identity.approx"] = _build(ctx, conf="approximate")["parcel.identity"]
+    return out
+
+
+def test_every_entry_validates_against_the_schema_and_is_json_safe():
+    for key, e in _everything().items():
+        ProvenanceEntry.model_validate(e)
+        assert set(e) >= {"label", "kind", "source", "record_id", "url", "section", "as_of", "effective_date", "query_date"}, key
+        assert e["tier"] and e["method_key"] and e["method"] and e["as_of_basis"] and e["confidence"] == "standard", key
+    json.dumps(_everything())
+
+
+def test_the_schema_rejects_unknown_fields_and_values():
+    good = _build(_ctx())["zoning.district"]
+    with pytest.raises(ValidationError):
+        ProvenanceEntry.model_validate({**good, "surprise": 1})
+    with pytest.raises(ValidationError):
+        ProvenanceEntry.model_validate({**good, "tier": "gold_standard"})
+    with pytest.raises(ValidationError):
+        ProvenanceEntry.model_validate({**good, "method_key": "vibes"})
+    with pytest.raises(KeyError):
+        make_entry("not.a.fact", query_date="2026-10-02")
+
+
+def test_kind_is_an_alias_of_tier():
+    for key, e in _everything().items():
+        expected = {"official_record": "official_record", "official_publication": "code_text"}.get(e["tier"], "derived")
+        assert e["kind"] == expected, key
+    p = _build(_ctx())
+    assert p["zoning.far"]["tier"] == "official_publication" and p["code.vintage"]["tier"] == "official_publication"
+    assert p["zoning.district"]["tier"] == "official_record"
+
+
+def test_v1_fields_are_unchanged_by_v2():
+    """The wire contract the Zoning card, the sources footer and the citation check read."""
+    p = _build(_ctx())
+    d = p["zoning.district"]
+    assert (d["label"], d["record_id"], d["as_of"], d["effective_date"]) == (
+        "Zoning district RM-4.5", "A7210", "2021-10-27", "2007-09-05")
+    assert d["url"].startswith("https://gisapps.chicago.gov/")
+    assert p["zoning.far"]["record_id"] == "§17-2-0304-A" and p["zoning.far"]["as_of"] == "2026-06-17"
+    assert p["overlay.special_district"]["as_of"] is None  # the layer has no edit date; never invented
+    assert p["parcel.identity"]["record_id"] == "16012280180000"
+
+
+def test_dates_carry_their_meaning():
+    p = _build(_ctx())
+    assert p["zoning.district"]["as_of_basis"] == "record_updated" and p["zoning.district"]["age_days"] > 700
+    assert "old_source" not in p["zoning.district"]["confidence_reasons"]  # a record's edit date is not the dataset's age
+    assert p["zoning.far"]["as_of_basis"] == "current_through" and p["code.vintage"]["as_of_basis"] == "current_through"
+    ov = p["overlay.special_district"]
+    assert ov["as_of_basis"] == "queried" and "age_days" not in ov
+
+
+def test_values_are_the_figures_as_displayed():
+    p = _build(_ctx())
+    assert p["zoning.district"]["value"] == "RM-4.5" and p["property.land_sqft"]["value"] == 3191
+    assert p["zoning.far"]["value"] == get_zone_definition("RM-4.5").far
+    assert p["parcel.identity"]["value"] == "16012280180000" and p["code.vintage"]["value"] == p["code.vintage"]["as_of"]
+
+
+def test_a_polygon_area_is_our_calculation_on_the_countys_geometry():
+    land = _build(_ctx())["property.land_sqft"]  # land_sqft_source == "geometry"
+    assert land["tier"] == "our_calculation" and land["kind"] == "derived" and land["method_key"] == "calculation"
+    assert land["inputs"] == ["cook.ptaxsim"] and land["basis_tier"] == BY_ID["cook.ptaxsim"].tier == "official_estimate"
+    assert land["source_id"] == "cook.ptaxsim"
+
+
+def test_a_stated_area_is_a_recorded_figure_on_its_source():
+    ctx = _ctx()
+    ctx.property.land_sqft_source = "assessor"
+    ctx.property.bldg_sqft, ctx.property.bldg_sqft_source = 1900, "footprint"
+    p = _build(ctx)
+    assert (p["property.land_sqft"]["tier"], p["property.land_sqft"]["source_id"]) == ("official_record", "cook.assessor.characteristics")
+    assert (p["property.bldg_sqft"]["method_key"], p["property.bldg_sqft"]["source_id"]) == ("recorded", "chi.building_footprints")
+    assert "inputs" not in p["property.bldg_sqft"]
+
+
+def test_approximate_identity_is_a_calculation_on_the_parcel_universe():
+    e = _build(_ctx(), conf="approximate")["parcel.identity"]
+    assert e["tier"] == "our_calculation" and e["inputs"] == ["cook.parcel_universe"] and e["basis_tier"] == "official_record"
+    ok = _build(_ctx())["parcel.identity"]
+    assert ok["tier"] == "official_record" and ok["method_key"] == "recorded" and "inputs" not in ok
+
+
+def test_an_unknown_area_dataset_is_still_a_recorded_county_figure():
+    ctx = _ctx()
+    ctx.property.land_sqft_source = "something_new"
+    e = _build(ctx)["property.land_sqft"]
+    assert e["source"] == "something_new" and e["tier"] == "official_record" and e["source_id"] == "cook.assessor.characteristics"
+
+
+# --- the registry agrees with the facts ----------------------------------------------------------------------
+
+def test_every_fact_names_a_registered_source_that_lists_it():
+    for fact_id, spec in FACTS.items():
+        for sid in (spec.source_id, *spec.alt_source_ids, *spec.input_source_ids):
+            assert sid in BY_ID, (fact_id, sid)
+            assert fact_id in BY_ID[sid].fact_keys, (fact_id, sid)
+
+
+def test_a_recorded_figures_tier_equals_its_sources_registry_tier():
+    for fact_id, spec in FACTS.items():
+        if spec.method_key in ("recorded", "published_text", "code_table"):
+            for sid in (spec.source_id, *spec.alt_source_ids):
+                assert BY_ID[sid].tier == spec.tier, (fact_id, sid, BY_ID[sid].tier, spec.tier)
+
+
+def test_every_emitted_entry_resolves_to_a_registered_source():
+    for key, e in _everything().items():
+        assert e["source_id"] in BY_ID, (key, e["source_id"])
+        if e["method_key"] in ("recorded", "published_text", "code_table"):
+            assert e["tier"] == BY_ID[e["source_id"]].tier, key
+
+
+def test_every_overlay_layer_has_a_fact_and_every_fact_key_in_the_registry_that_we_emit_resolves():
+    from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS
+
+    assert {f"overlay.{m['type']}" for m in OVERLAY_LAYERS.values()} <= set(FACTS)
+    for sid, spec in BY_ID.items():
+        for fk in spec.fact_keys:
+            if fk in FACTS:  # the registry's claim about a fact we model must be the fact's own source
+                spec_f = FACTS[fk]
+                assert sid in (spec_f.source_id, *spec_f.alt_source_ids, *spec_f.input_source_ids), (fk, sid)
+
+
+def test_every_method_key_has_english_text():
+    from typing import get_args
+
+    from backend.provenance import MethodKey
+
+    assert set(get_args(MethodKey)) == set(METHOD_TEXT)
+
+
+# --- calculations are never stronger than their weakest input ------------------------------------------------
+
+def test_a_calculation_takes_its_weakest_inputs_tier():
+    assert weakest_tier(["official_record", "official_estimate"]) == "official_estimate"
+    assert weakest_tier(["official_publication", "official_record"]) == "official_publication"
+    assert weakest_tier(["official_record", "ai_extracted", "official_estimate"]) == "ai_extracted"
+    assert weakest_tier([]) is None
+    e = make_entry("zoning.far", query_date="2026-10-02", tier="our_calculation", method_key="calculation",
+                   inputs=["zoning.far", "cook.ptaxsim", "artifact.zoning_cache"])
+    assert e["basis_tier"] == "ai_extracted"  # D on E: the buildable footprint case
+
+
+# --- the as-of precedence --------------------------------------------------------------------------------------
+
+def test_as_of_precedence():
+    assert resolve_as_of("chi.zoning.districts", response_date="2026-08-21", response_basis="record_updated") == ("2026-08-21", "record_updated")
+    assert resolve_as_of("chi.building_footprints") == ("2015-08-15", "vintage")  # a frozen source states its vintage
+    assert resolve_as_of("chi.crime") == (None, "queried")  # live and no date: we only know when we asked
+    assert resolve_as_of(None) == (None, "queried") and resolve_as_of("no.such.source") == (None, "queried")
+
+
+def test_as_of_prefers_data_healths_latest_check_over_the_frozen_vintage(monkeypatch):
+    import sys
+    import types
+
+    mod = types.ModuleType("backend.data_health.status")
+    mod.latest = lambda sid: {"content_through": "2026-10-19T00:00:00", "published_at": "2026-10-01"}
+    monkeypatch.setitem(sys.modules, "backend.data_health.status", mod)
+    monkeypatch.setattr("backend.data_health.status", mod, raising=False)
+    assert resolve_as_of("chi.crime") == ("2026-10-19", "source_updated")
+    mod.latest = lambda sid: 1 / 0  # an unreadable store falls through, never raises
+    assert resolve_as_of("chi.building_footprints") == ("2015-08-15", "vintage")
