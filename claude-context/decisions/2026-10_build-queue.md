@@ -274,7 +274,7 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - How often the API fails over a day. Only one transient failure was seen; WS6's probe will measure the rate.
 - Behaviour above about 20k matching records (guarded by `max_records`, untested live).
 
-## Item 6: amendments since the code vintage (WS1 M2)
+## Item 6: amendments since the code vintage (WS1 M2, #65, 2026-10-21)
 
 **`codified` means "in the code text we serve", and all 23 seeds are `false`.**
 - **Decision:** the review file's `codified` flag is about our text, not American Legal's. Every amendment passed after our March 18 vintage starts `false`; M4's codification check flips the ones the June 17 export contains.
