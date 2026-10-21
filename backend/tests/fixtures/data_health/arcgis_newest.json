@@ -1,0 +1,22 @@
+{
+  "displayFieldName": "ZONE_CLASS",
+  "exceededTransferLimit": true,
+  "features": [
+    {
+      "attributes": {
+        "UPDATE_TIMESTAMP": 1792422017000
+      }
+    }
+  ],
+  "fieldAliases": {
+    "UPDATE_TIMESTAMP": "UPDATE_TIMESTAMP"
+  },
+  "fields": [
+    {
+      "alias": "UPDATE_TIMESTAMP",
+      "length": 8,
+      "name": "UPDATE_TIMESTAMP",
+      "type": "esriFieldTypeDate"
+    }
+  ]
+}

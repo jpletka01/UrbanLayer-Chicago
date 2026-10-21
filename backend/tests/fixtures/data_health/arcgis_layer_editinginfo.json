@@ -1,0 +1,34 @@
+{
+  "editingInfo": {
+    "dataLastEditDate": 1792376426013,
+    "lastEditDate": 1792376426013,
+    "schemaLastEditDate": 1792376426013
+  },
+  "fields": [
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID"
+    },
+    {
+      "name": "REGISTRY_ID",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "PRIMARY_NAME",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "LOCATION_ADDRESS",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "CITY_NAME",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "COUNTY_NAME",
+      "type": "esriFieldTypeString"
+    }
+  ],
+  "name": "FRS_INTERESTS_ACRES"
+}

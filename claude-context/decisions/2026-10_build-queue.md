@@ -568,3 +568,78 @@ Found during item 7 (above). `/api/code/section/17-7-0574` (ADU) and `/17-7-0591
 - The drawer's banner and the not-codified notice in the real chat flow: reaching them needs a chat turn, which build work may not spend. Tests cover both; the first prod parcel chat is the check.
 - Spanish rendering: new keys carry English text (listed in `_untranslated.json`).
 - Screen-reader behaviour of the amber banner (`role="note"` only).
+
+## Item 9: source registry, probes, dry-run checker (WS6 M1, 2026-10-21)
+
+**One registry entry per overlay layer, with the layer's own name as the contract.**
+- **Decision:** the 14 zoning overlay layers are 14 entries (`chi.zoning.overlay.<OVERLAY_LAYERS type>`), not one group. Each pins the *service's* layer name and a count band. A test asserts the registry's layer ids equal `OVERLAY_LAYERS` exactly and that layer 7 is in neither.
+- **Alternatives:** one "overlays" entry; pin the names `OVERLAY_LAYERS` already carries.
+- **Why:** the landmark failure (F8) was a layer id that changed meaning, so the check has to be per layer. The names in `OVERLAY_LAYERS` are *ours* ("Lakefront Protection District"); the server's are different ("Lakefront", "TSL Station"), so a contract on ours would fail on day one. Measured against the live MapServer 2026-10-21.
+- **Revisit if:** the City renames a layer on purpose; the alarm then asks for a review, which is the intent.
+
+**Year columns count as December 31 of that year.**
+- **Decision:** `max(year)` / `max(data_year)` / the ACS end year become `date(Y, 12, 31)`, so "2026" is not stale in January and a tolerance in days means the same thing for every source.
+- **Alternatives:** January 1 (the plan's implied reading); compare years as integers.
+- **Why:** with Jan 1, Assessor values for the current year read 290 days old on the day they are published. With Dec 31, the energy-benchmarking rule "warn when the newest year is below the current year minus two" is exactly `warn_days=730`: 2023 warns from January 2026.
+- **Tolerances that differ from the plan's text, all on this convention:** Assessor values 365/730, commercial valuation 450/750, energy 730/1460, ptaxsim 800/1200 (tax year 2024 is 659 days old and the database is 5 months old).
+
+**Three failure kinds, not one `error`.**
+- **Decision:** a timeout or 5xx is `transient` (`warn`, then `alarm` on a second run in a row). An error *body* (Socrata `errorCode`, ArcGIS `{"error": ...}` on HTTP 200) is `service` and is `error` at once. A broken contract (layer name, a required field) is `error` at once; a feature count outside its band is `alarm`.
+- **Alternatives:** the plan's literal "`error` becomes `warn`, then `alarm`" for everything; treating an error body like a blip.
+- **Why:** a server that answers with an error body is not a network blip, and the plan's own M4 test says a 200-with-`error` body "gives `error`". Absorbing only transport failures keeps the two-run rule for what it is for.
+- **Revisit if:** the City server starts returning error bodies under load; then a body that clears on the next run should be absorbed too.
+
+**`availability_only` means "judged on findings, not on a date".**
+- **Decision:** reachability sources (Census Geocoder, FCC, Walk Score, FEMA, Cook GIS layer 44) and coherence checks (Qdrant alias and count, zoning-cache vintage, `VERIFIED_AGAINST`) set `availability_only`. A source with a contract but no date field (the 13 overlays) is `unknown`, not `ok`.
+- **Why:** "no date to read" has two meanings. A geocoder has none by nature and is fine when it answers right; an overlay layer *could* have one and doesn't, which the plan wants shown as unknown, not green.
+
+**The completeness test reads the code's syntax tree, and digit-less ids needed a second rule.**
+- **Decision:** `test_data_health_registry.py` parses `config.py`, `main.py`, `retrieval/**` and `discovery/**`, skips docstrings, and finds Socrata ids as string constants. An id containing a digit is recognised anywhere; an all-letter id (`aksk-kvfp`, `csik-bsws`, `eejr-xtfb`, `ydgz-vkrp`) looks like a hyphenated word, so it counts only when assigned to a `*dataset*` name or passed as the first argument to `socrata_get`/`grouped_count`/`socrata_aggregate`.
+- **Alternatives:** regex over the source text (matches docstrings and comments, which name retired and unrelated datasets); a digit-required rule alone.
+- **Why:** the digit-required version passed on the first run and was blind to 4 of 40 registered ids. Checked by comparing the found set with the registry: 36 → 39 after the second rule (the 40th, `kn9c-c2s2`, is retired and appears only in a docstring).
+- **Revisit if:** a dataset id is built at runtime from a string; that needs its own rule.
+
+**`VERIFIED_AGAINST` did not exist; it is added, and a test pins it to the served vintage.**
+- **Decision:** `zoning_definitions.py` gains `VERIFIED_AGAINST = "2026-06-17"`, the probe alarms when it differs from `code_vintage.json`, and a unit test fails the next refresh PR until someone re-runs `test_zoning_ordinance_parity.py` and moves it.
+- **Why:** the plan describes the constant as already there; it was not (`rg VERIFIED_AGAINST backend` found nothing). Evidence for "2026-06-17": the parity test, which compares every table value with the ingested June 17 text, passes (14 tests).
+- **Revisit if:** the refresh runbook (WS1 M7) automates the parity run; the constant could then be written by it.
+
+**Day-one differences from the plan's §3.10 table**, each from running the probes on 2026-10-21:
+
+| Plan expected | This run | Why |
+|---|---|---|
+| Report's ACS label alarm | no row | WS0 M1 already derives the period from the data; there is no hard-coded label to compare |
+| `t68z-cikk` fields-read alarm | warn (one release behind) | `demographics.py` no longer reads the missing columns (WS0 M1); the contract lists what it does read, and all are present |
+| Vacant buildings warn | acked | the feed stopped 2025-10-08, 426 days; ack to 2027-01-31 |
+| `transit_stations.json` warn | unknown | the artifact carries no build date; M5's sidecar adds it |
+| (not in the table) Assessor sales | warn | newest `sale_date` 2026-08-12 is 70 days old against the plan's 60/120 |
+| (not in the table) `internal.discovery_index` | alarm | the *local* index was built 2026-07-07; production rebuilds monthly |
+
+**Three acks, for your review** (all to 2027-01-31, owner `jack`): `cook.address_points` (mitigated by `3723-97qp`), `chi.vacant_buildings` (feed stopped), `chi.nof_large` (stale since 2023-09-19 against a quarterly claim).
+
+**The City GIS server returns 403 to a User-Agent containing a URL.**
+- Found when the first dry run came back with all 15 City layers as errors. `curl -A "urbanlayer-data-health/1 (+https://urbanlayerchicago.com)"` gets 403; `-A "urbanlayer-data-health/1"` and `python-httpx/0.27.0` get 200. The checker sends the plain form, and a comment says why.
+
+**Deferred, on purpose.**
+- FEMA and EPA known-answer parcels (M4's sentinels; M1 checks reachability and the layer name).
+- Persisting `previous_error` between runs (M2's store; `evaluate` already takes it).
+- `transit_stations.json` build date and the GTFS comparison (M5's sidecar).
+- Per-source latency budgets; one request-count and one wall-clock number cover M1.
+
+**Numbers** (2026-10-21)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Sources in the registry | 0 → 80: 40 Socrata, 21 ArcGIS layers, 5 APIs, 5 artifacts, 3 internal, 2 local databases, 2 GTFS feeds, 1 vector index, 1 hand table | `python -c "from backend.data_health.registry import SOURCES; print(len(SOURCES))"` |
+| Dry run, whole registry | 100 HTTP requests, 2.6 s and 3.0 s wall (two runs) against a plan limit of 400 requests / 3 min | `python -m backend.data_health.check --dry-run` |
+| Day-one states | 44 ok, 9 frozen_ok, 5 warn, 3 acked, 17 unknown, 2 alarm (code text; local Discovery index) | same command |
+| Run-to-run variation | in 5 full runs one source (FEMA NFHL, `ConnectError`) failed once and read `warn` by the two-run rule | same command, repeated |
+| Costliest sources | 3 requests (zoning layer 1 and layer 2: layer JSON, count, newest edit) | `--dry-run --json` |
+| Backend tests | 1,627 → 1,698 (+71: 16 registry, 25 probes, 30 evaluate) | `make test` |
+| Frontend tests, lint warnings | 334 / 67, unchanged (no frontend change) | `make test`, `make lint` |
+| Import weight | importing the checker loads no torch, numpy, qdrant_client, weasyprint, matplotlib, `backend.main` or `backend.discovery` | `test_importing_the_checker_loads_none_of_the_serving_stack` |
+
+**Not measured:**
+- A run inside the production container. This Mac has ptaxsim, the Walk Score key and an old Discovery index (that row alarms here); production's index is rebuilt monthly, and its network path to each service is untested until M2's timer runs.
+- Behaviour under a real outage of each service (tested with mocks and one natural blip).
+- Sentry and `/health` (M2).
