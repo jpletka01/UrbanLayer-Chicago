@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { CodeSourceModal } from "./CodeSourceModal";
 import { ScorecardZoningCard } from "./ScorecardZoningCard";
 import type { Provenance, ZoneDefinition } from "../../lib/api";
+import { currency, lawrence, tod } from "./amendments.fixtures";
 
 vi.mock("../../lib/api", async (orig) => {
   const mod = await orig<typeof import("../../lib/api")>();
@@ -42,6 +43,31 @@ describe("CodeSourceModal — the exact code text behind a number (V2)", () => {
   });
 });
 
+describe("CodeSourceModal — amendments after the text's vintage (WS1 M3)", () => {
+  it("shows an amber banner above a section an amendment touches", async () => {
+    vi.mocked(fetchCodeSubsection).mockResolvedValue({ ...far, amended_since: [lawrence] });
+    render(<CodeSourceModal sectionId="17-2-0304-A" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByTestId("amended-since")).toBeTruthy());
+    expect(screen.getByTestId("amended-since").textContent).toContain("O2026-0026042");
+    expect(screen.getByTestId("code-vintage")).toBeTruthy();
+  });
+
+  it("no banner when nothing touches the section", async () => {
+    vi.mocked(fetchCodeSubsection).mockResolvedValue({ ...far, amended_since: [] });
+    render(<CodeSourceModal sectionId="17-2-0304-A" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByTestId("code-vintage")).toBeTruthy());
+    expect(screen.queryByTestId("amended-since")).toBeNull();
+  });
+
+  it("explains a section an amendment added instead of 'unavailable'", async () => {
+    vi.mocked(fetchCodeSubsection).mockResolvedValue({ not_in_published_code: true, section_id: "17-3-0600", message: "x", added_by: [tod] });
+    render(<CodeSourceModal sectionId="17-3-0600" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByTestId("not-codified")).toBeTruthy());
+    expect(screen.getByTestId("not-codified").textContent).toContain("SO2026-0025391");
+    expect(screen.queryByText(/isn't available right now/)).toBeNull();
+  });
+});
+
 const rm45: ZoneDefinition = {
   zone_class: "RM-4.5", name: "Residential Multi-Unit", code_section: "§17-2-0104", far: 1.7, max_height: "45–47 ft (varies by lot frontage)",
   lot_coverage: null, min_lot_sqft: 1650, min_lot_area_per_unit: 700, lot_area_note: "", uses: "", notes: "", is_fallback: false,
@@ -68,5 +94,13 @@ describe("ScorecardZoningCard — a standard links to its source", () => {
   it("no source buttons on a payload without provenance (older API)", () => {
     render(<ScorecardZoningCard def={rm45} />);
     expect(screen.queryByTestId("source-zoning.far")).toBeNull();
+  });
+
+  it("the stamp carries the count of later amendments, and says nothing when the check is stale", () => {
+    const { unmount } = render(<ScorecardZoningCard def={rm45} codeVintage={{ current_through: "2026-06-17", label: "x" }} codeCurrency={currency()} />);
+    expect(screen.getByTestId("later-amendments").textContent).toContain("3 later amendments");
+    unmount();
+    render(<ScorecardZoningCard def={rm45} codeVintage={{ current_through: "2026-06-17", label: "x" }} codeCurrency={currency({ check_state: "unknown", since: null })} />);
+    expect(screen.queryByTestId("later-amendments")).toBeNull();
   });
 });

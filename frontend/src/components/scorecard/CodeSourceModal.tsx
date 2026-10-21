@@ -4,9 +4,10 @@
 // viewer says so rather than letting the text read as live law.
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchCodeSubsection, type CodeSubsection } from "../../lib/api";
+import { fetchCodeSubsection, isNotCodified, type CodeSubsection, type SectionNotCodified } from "../../lib/api";
 import { parseCodeTable } from "../../lib/codeTable";
 import { Modal } from "../ui/Modal";
+import { AmendedSinceBanner, NotCodifiedNotice } from "./AmendedSinceBanner";
 
 function CodeTable({ text }: { text: string }) {
   const parsed = parseCodeTable(text);
@@ -37,7 +38,7 @@ function CodeTable({ text }: { text: string }) {
 
 export function CodeSourceModal({ sectionId, onClose }: { sectionId: string; onClose: () => void }) {
   const { t } = useTranslation("pages");
-  const [data, setData] = useState<CodeSubsection | null | undefined>(undefined);
+  const [data, setData] = useState<CodeSubsection | SectionNotCodified | null | undefined>(undefined);
 
   useEffect(() => {
     let live = true;
@@ -47,25 +48,30 @@ export function CodeSourceModal({ sectionId, onClose }: { sectionId: string; onC
     };
   }, [sectionId]);
 
+  const notice = isNotCodified(data) ? data : null;
+  const sub = data && !notice ? (data as CodeSubsection) : null;
+
   return (
-    <Modal onClose={onClose} size="lg" title={`§ ${sectionId}${data ? ` — ${data.heading}` : ""}`}
-      description={data?.article_title}>
+    <Modal onClose={onClose} size="lg" title={`§ ${sectionId}${sub ? ` — ${sub.heading}` : ""}`}
+      description={sub?.article_title}>
       <div className="space-y-4" data-testid="code-source">
         {data === undefined && <p className="text-caption text-text-muted">{t("scorecard.codeSource.loading")}</p>}
         {data === null && <p className="text-caption text-text-muted">{t("scorecard.codeSource.unavailable")}</p>}
-        {data && (
+        {notice && <NotCodifiedNotice notice={notice} />}
+        {sub && (
           <>
+            <AmendedSinceBanner amendments={sub.amended_since} />
             <div className="space-y-2">
-              {data.paragraphs.map((p, i) => (
+              {sub.paragraphs.map((p, i) => (
                 <p key={i} className="text-caption text-text-secondary leading-relaxed">{p}</p>
               ))}
             </div>
-            {data.tables.map((tbl, i) => (
+            {sub.tables.map((tbl, i) => (
               <CodeTable key={i} text={tbl} />
             ))}
-            {data.current_through && (
+            {sub.current_through && (
               <p className="text-caption text-text-muted border-t border-border-subtle pt-3" data-testid="code-vintage">
-                {t("scorecard.codeSource.vintage", { date: data.current_through })}
+                {t("scorecard.codeSource.vintage", { date: sub.current_through })}
               </p>
             )}
           </>

@@ -188,7 +188,9 @@
       "zoningRecordUpdated": "Zoning record last updated",
       "codeCurrentThrough": "Municipal Code current through",
       "maxUnitsByLotArea": "Max units by lot area",
-      "unitYieldCaveat": "Lot area per unit is one limit. FAR, height, parking and other standards can allow fewer units; exemptions can allow more."
+      "unitYieldCaveat": "Lot area per unit is one limit. FAR, height, parking and other standards can allow fewer units; exemptions can allow more.",
+      "laterAmendments_one": "{{count}} later amendment",
+      "laterAmendments_other": "{{count}} later amendments"
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
@@ -475,6 +477,26 @@
       "good_transit": "Good Transit",
       "some_transit": "Some Transit",
       "minimal_transit": "Minimal Transit"
+    },
+    "amendments": {
+      "listSummary_one": "Later amendment ({{count}})",
+      "listSummary_other": "Later amendments ({{count}})",
+      "status": {
+        "applied": "Reflected on this page",
+        "none": "Reviewed; not reflected on this page",
+        "pending": "Not yet reviewed"
+      },
+      "banner": {
+        "title_one": "This section was amended after this text was published.",
+        "title_other": "This section was amended after this text was published.",
+        "caveat_one": "The text below does not include that change.",
+        "caveat_other": "The text below does not include those changes."
+      },
+      "notCodified": {
+        "title": "§ {{section}} isn't in the published Municipal Code text yet",
+        "body_one": "An amendment passed after this text was published added or changed it. See the ordinance:",
+        "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
+      }
     }
   },
   "discovery": {

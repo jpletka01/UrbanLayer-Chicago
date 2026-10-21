@@ -163,6 +163,41 @@ export interface CodeChunk {
   subsection: string | null;
   score: number;
   cross_references: string[];
+  /** Council amendments passed after this text's vintage that touch the section. */
+  amended_since?: Amendment[];
+}
+
+/** One City Council amendment passed after the code text's vintage (backend `legislation.currency.public`). */
+export interface Amendment {
+  record: string;
+  /** ISO day (America/Chicago). */
+  passed_on: string;
+  title: string;
+  /** Reviewed one-liner; null until someone has read the ordinance. Never inferred from the title. */
+  summary: string | null;
+  sections: string[];
+  url: string | null;
+  relevance?: "title17" | "cited_other" | "other" | null;
+  review_status: "reviewed" | "unreviewed" | null;
+  /** applied: this page reflects it; none: reviewed, no change to what we show; pending: not read yet. */
+  product_effect: "applied" | "none" | "pending" | null;
+  codified?: boolean | null;
+  /** True when it touches a section this Profile cites or its map effect reaches the address. */
+  parcel_relevant?: boolean;
+}
+
+/** What the Profile (and chat) carry about how current the code text is (backend `ContextObject.code_currency`). */
+export interface CodeCurrency {
+  current_through: string;
+  label: string | null;
+  source?: string | null;
+  checked_at: string | null;
+  /** fresh (<72 h) | aging (3-14 d) | unknown (no count is shown, never "none"). */
+  check_state: "fresh" | "aging" | "unknown";
+  /** Null when check_state is unknown. */
+  since: { title17: number; cited_other: number } | null;
+  clerk_url: string;
+  amendments: Amendment[];
 }
 
 export interface TrendItem {
@@ -689,6 +724,7 @@ export interface ContextObject {
   coverage_notes?: CoverageNote[] | null;
   adu?: AduStatus | null;
   code_vintage?: CodeVintage | null;
+  code_currency?: CodeCurrency | null;
   tod_benefits?: TodBenefits | null;
   unit_yield?: UnitYield | null;
   community_area: number | null;

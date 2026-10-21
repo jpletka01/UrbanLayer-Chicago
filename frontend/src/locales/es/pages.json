@@ -188,7 +188,9 @@
       "zoningRecordUpdated": "Registro de zonificación actualizado",
       "codeCurrentThrough": "Código Municipal vigente hasta",
       "maxUnitsByLotArea": "Unidades máx. por área de lote",
-      "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más."
+      "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más.",
+      "laterAmendments_one": "{{count}} later amendment",
+      "laterAmendments_other": "{{count}} later amendments"
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -475,6 +477,26 @@
       "good_transit": "Buen transporte",
       "some_transit": "Algo de transporte",
       "minimal_transit": "Transporte mínimo"
+    },
+    "amendments": {
+      "listSummary_one": "Later amendment ({{count}})",
+      "listSummary_other": "Later amendments ({{count}})",
+      "status": {
+        "applied": "Reflected on this page",
+        "none": "Reviewed; not reflected on this page",
+        "pending": "Not yet reviewed"
+      },
+      "banner": {
+        "title_one": "This section was amended after this text was published.",
+        "title_other": "This section was amended after this text was published.",
+        "caveat_one": "The text below does not include that change.",
+        "caveat_other": "The text below does not include those changes."
+      },
+      "notCodified": {
+        "title": "§ {{section}} isn't in the published Municipal Code text yet",
+        "body_one": "An amendment passed after this text was published added or changed it. See the ordinance:",
+        "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
+      }
     }
   },
   "discovery": {

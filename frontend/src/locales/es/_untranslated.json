@@ -21,6 +21,23 @@
     "regulatory.unchecked.types.tod_metra"
   ],
   "pages": [
-    "scorecard.verdict.caveat.overlayUnchecked"
+    "scorecard.amendments.banner.caveat_one",
+    "scorecard.amendments.banner.caveat_other",
+    "scorecard.amendments.banner.title_one",
+    "scorecard.amendments.banner.title_other",
+    "scorecard.amendments.listSummary_one",
+    "scorecard.amendments.listSummary_other",
+    "scorecard.amendments.notCodified.body_one",
+    "scorecard.amendments.notCodified.body_other",
+    "scorecard.amendments.notCodified.title",
+    "scorecard.amendments.status.applied",
+    "scorecard.amendments.status.none",
+    "scorecard.amendments.status.pending",
+    "scorecard.verdict.caveat.overlayUnchecked",
+    "scorecard.zoningCard.laterAmendments_one",
+    "scorecard.zoningCard.laterAmendments_other"
+  ],
+  "chat": [
+    "crossref.notCodified"
   ]
 }

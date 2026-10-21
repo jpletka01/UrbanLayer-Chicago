@@ -13,6 +13,17 @@ export function formatDate(iso: string): string {
   return t.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** Format a calendar day ("2026-10-14") as "Oct 14, 2026" without a timezone shift
+ * (`formatDate` parses day-only strings as UTC, which shows the day before in Chicago). */
+export function formatDay(iso: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  if (!m) return iso ?? "";
+  const locale = LOCALE_MAP[i18n.language] ?? "en-US";
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString(locale, {
+    month: "short", day: "numeric", year: "numeric",
+  });
+}
+
 // Tokens kept uppercase when re-casing ALL-CAPS dataset values.
 const ACRONYMS = new Set([
   "CTA", "CDOT", "CPD", "CFD", "ADA", "TIF", "ARO", "TOD", "SSA",
