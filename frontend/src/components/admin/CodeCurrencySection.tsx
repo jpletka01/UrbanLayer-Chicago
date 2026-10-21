@@ -4,8 +4,8 @@
 // /api/admin/code-currency (no network on the server side). English-only, like the rest of /admin.
 import { useEffect, useState } from "react";
 import { fetchAdminCodeCurrency, type AdminCodeCurrency } from "../../lib/api";
-import { formatDay } from "../../lib/format";
-import { amendmentStatus, RecordLink } from "../scorecard/AmendmentList";
+import { amendmentStatus, formatDay } from "../../lib/format";
+import { RecordLink } from "../scorecard/AmendmentList";
 
 const statusCls = {
   green: "text-state-positive border-state-positive/30 bg-state-positive/10",

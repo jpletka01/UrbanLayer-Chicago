@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { AmendedSinceBanner, NotCodifiedNotice } from "./AmendedSinceBanner";
-import { AmendmentList, amendmentStatus } from "./AmendmentList";
+import { amendmentStatus } from "../../lib/format";
+import { AmendmentList } from "./AmendmentList";
 import { lawrence, noEffect, tod } from "./amendments.fixtures";
 
 afterEach(cleanup);

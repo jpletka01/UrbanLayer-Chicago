@@ -3,14 +3,8 @@
 // someone has read it) · whether this page reflects it. The Profile's coverage note and
 // the section viewers share it, so the same amendment never reads two ways.
 import { useTranslation } from "react-i18next";
-import { formatDay } from "../../lib/format";
+import { amendmentStatus, formatDay } from "../../lib/format";
 import type { Amendment } from "../../lib/types";
-
-/** applied → reflected; pending / never reviewed → not yet reviewed; reviewed, no change → not reflected. */
-export function amendmentStatus(a: Pick<Amendment, "review_status" | "product_effect">): "applied" | "none" | "pending" {
-  if (a.review_status !== "reviewed" || a.product_effect === "pending" || !a.product_effect) return "pending";
-  return a.product_effect === "applied" ? "applied" : "none";
-}
 
 export function RecordLink({ a }: { a: Pick<Amendment, "record" | "url"> }) {
   return a.url ? (
