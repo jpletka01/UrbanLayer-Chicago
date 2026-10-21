@@ -221,7 +221,7 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Live latency through the alias vs the old name (expected the same: an alias is a name lookup; checked only that `/api/code/section/17-2-0304-A` answered 200 in 1.1 s before the deploy).
 - Whether any heading-only change exists between the March and June exports beyond what the content diff shows (the old manifest had no title hashes; the June dry run compared titles from the rebuilt one).
 
-## Item 5: City Clerk API client (WS1 M1, #PR, 2026-10-21)
+## Item 5: City Clerk API client (WS1 M1, #64, 2026-10-21)
 
 **"Passed" includes "Signed".**
 - **Decision:** a matter has passed when `status == "90-Final"` and `subStatus` is one of `Passed`, `Passed as Substitute` or `Signed` (plus `Adopted`, `Approved` and `Approved as Substitute`, which resolutions and orders end with).
