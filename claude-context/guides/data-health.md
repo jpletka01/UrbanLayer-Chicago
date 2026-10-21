@@ -1,6 +1,6 @@
 # Data health: the source registry and the checker
 
-**Status (2026-10-21): registry, probes and dry run (WS6 M1); status store, daily timer, Sentry alarms and the dead-man check (M2).** The admin panel arrives in M3; contracts and sentinels in M4.
+**Status (2026-10-21): registry, probes and dry run (WS6 M1); status store, daily timer, Sentry alarms and the dead-man check (M2).** The admin panel (M3, 2026-10-21) is the "Data Health" row on `/admin`; contracts and sentinels arrive in M4.
 
 **Owner:** WS6. The registry's `id`s are the join key WS0 puts on provenance entries (`source_id`); WS1's code-vintage alarm and WS2's poller register here too. There is one registry and one alarm path.
 
@@ -123,10 +123,13 @@ curl -s https://urbanlayerchicago.com/health                         # data_heal
 
 Then resolve the two drill issues in Sentry by hand.
 
+## The admin panel (M3)
+
+`GET /api/admin/data-health` (admin only; no network) → `backend/data_health/panel.py`: the registry joined with `source_status`, read through the same read-only handle as `/health`. Response: `checker` (state ok|late at 36 h, last run, next run 05:37 UTC, last error, the last 10 runs), `counts` by state, `sources` sorted alarm, error, warn, unknown, acked, ok, frozen (critical first within a state). `?source=<id>` returns that source's 90-day history. A stored row with no registry entry (a fault drill's `drill.*`) is shown, never hidden. `frontend/src/components/admin/DataHealthSection.tsx` renders it; a row click shows the reason, publisher link and the history strip.
+
 ## Not here yet
 
 | Milestone | Adds |
 |---|---|
-| M3 | the admin "Data health" panel |
 | M4 | value-set contracts, daily known-answer sentinels (FEMA and EPA known answers live here) |
 | M5 | metadata sidecars for committed artifacts (`transit_stations.json` is `unknown` until then), the weekly kit, CI artifact-age warnings |
