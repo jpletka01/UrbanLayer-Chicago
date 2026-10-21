@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import type { IncentivesSummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { SubSection, ShowMore } from "./ProfileModule";
+import { ConfidenceCaption } from "../ui/Confidence";
+import { useFact } from "../../lib/provenanceContext";
 
 const DollarIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -30,7 +32,8 @@ function TractLink({ tract }: { tract: string }) {
   );
 }
 
-function ActiveRow({ term, title, children }: { term?: string; title: string; children?: React.ReactNode }) {
+function ActiveRow({ term, title, fact, children }: { term?: string; title: string; fact?: string; children?: React.ReactNode }) {
+  const entry = useFact(fact ?? "");
   return (
     <div className="rounded-lg border border-state-positive/20 bg-state-positive/5 px-3 py-2.5">
       <div className="flex items-center gap-2 text-body text-text-primary">
@@ -40,6 +43,7 @@ function ActiveRow({ term, title, children }: { term?: string; title: string; ch
         {term ? <InfoTooltip term={term}>{title}</InfoTooltip> : title}
       </div>
       {children && <div className="mt-1.5 pl-6 space-y-1">{children}</div>}
+      <ConfidenceCaption entry={entry} size="micro" className="mt-1 pl-6" />
     </div>
   );
 }
@@ -56,6 +60,7 @@ function DetailKV({ label, value }: { label: string; value: string | null | unde
 
 export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
   const { t } = useTranslation("data");
+  const grantsEntry = useFact("incentive.grants");
 
   const inactive: string[] = [];
   if (!data.in_tif_district) inactive.push(t("incentives.short.tif"));
@@ -74,7 +79,7 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
     >
       <div className="space-y-3">
         {data.in_tif_district && (
-          <ActiveRow term="tif_district" title={t("incentives.inTif")}>
+          <ActiveRow term="tif_district" fact="incentive.tif" title={t("incentives.inTif")}>
             {data.tif_name && <DetailKV label={t("incentives.tifName")} value={data.tif_name} />}
             {(data.tif_year_start != null || data.tif_end_year != null) && (
               <DetailKV label={t("incentives.period")} value={[data.tif_year_start, data.tif_end_year].filter(Boolean).join(" — ")} />
@@ -114,7 +119,7 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
         )}
 
         {data.in_opportunity_zone && (
-          <ActiveRow term="opportunity_zone" title={t("incentives.opportunityZone")}>
+          <ActiveRow term="opportunity_zone" fact="incentive.opportunity_zone" title={t("incentives.opportunityZone")}>
             {data.oz_tract && (
               <p className="text-caption text-text-muted">{t("incentives.tract")} <TractLink tract={data.oz_tract} /></p>
             )}
@@ -122,13 +127,13 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
         )}
 
         {data.in_enterprise_zone && (
-          <ActiveRow term="enterprise_zone" title={t("incentives.enterpriseZone")}>
+          <ActiveRow term="enterprise_zone" fact="incentive.enterprise_zone" title={t("incentives.enterpriseZone")}>
             {data.enterprise_zone_name && <p className="text-caption text-text-muted">{data.enterprise_zone_name}</p>}
           </ActiveRow>
         )}
 
         {data.in_qct && (
-          <ActiveRow term="qct" title={t("incentives.qct")}>
+          <ActiveRow term="qct" fact="incentive.lihtc" title={t("incentives.qct")}>
             {data.qct_tract && (
               <p className="text-caption text-text-muted">{t("incentives.tract")} <TractLink tract={data.qct_tract} /></p>
             )}
@@ -136,7 +141,7 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
         )}
 
         {data.in_nmtc && (
-          <ActiveRow term="nmtc" title={t("incentives.nmtcEligible")}>
+          <ActiveRow term="nmtc" fact="incentive.nmtc" title={t("incentives.nmtcEligible")}>
             {data.nmtc_tract && (
               <p className="text-caption text-text-muted">{t("incentives.tract")} <TractLink tract={data.nmtc_tract} /></p>
             )}
@@ -184,6 +189,7 @@ export function ScorecardIncentivesCard({ data }: { data: IncentivesSummary }) {
                   />
                 </div>
               )}
+              <ConfidenceCaption entry={grantsEntry} size="micro" className="pt-2" />
             </div>
           </div>
         )}

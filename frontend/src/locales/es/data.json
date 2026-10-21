@@ -18,13 +18,6 @@
     "noBuildingVacant": "Terreno baldío — sin edificación registrada.",
     "buildingDetailsUnavailable": "Detalles del edificio no disponibles para esta parcela — sin registro del tasador, de valuación ni de huella.",
     "complexBuilding": "Esta parcela es una de {{n}} en una unidad comercial del tasador con {{sqft}} ft² de edificios en total. El tasador no publica la parte de este lote, por lo que no se muestra superficie construida.",
-    "sources": {
-      "geometry": "(según geometría de la parcela)",
-      "condo_unit": "(unidad de condominio)",
-      "commercial_valuation": "(valuación comercial del tasador)",
-      "footprint": "(levantamiento municipal de huellas, 2015)",
-      "energy_benchmark": "(reportado por el propietario, benchmarking energético)"
-    },
     "energy": {
       "rating": "Calificación Energética de Chicago {{rating}}/4",
       "star": "ENERGY STAR {{score}}/100",

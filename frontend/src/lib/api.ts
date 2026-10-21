@@ -1153,6 +1153,8 @@ export async function fetchAreaStats(ca: number): Promise<{
   n_assessed: number;
   median_mv_per_land_sqft: number | null;
   n_mv_psf: number;
+  /** The benchmark's own entry (n, coverage, index build date): absent when there is no median. */
+  provenance?: Record<string, Provenance>;
 } | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/area-stats?ca=${ca}`);

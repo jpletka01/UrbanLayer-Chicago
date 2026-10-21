@@ -28,6 +28,11 @@ import { humanizeShoutyCase } from "../lib/format";
 import PageHeader from "./PageHeader";
 import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
+import { ProvenanceProvider } from "../contexts/ProvenanceContext";
+import type { Provenance } from "../lib/api";
+import { displayState, wantsCaption } from "../lib/confidence";
+import { ConfidenceCaption, SourceTooltip } from "./ui/Confidence";
+import { useFact } from "../lib/provenanceContext";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
 
@@ -64,6 +69,7 @@ interface AreaStats {
   n_assessed: number;
   median_mv_per_land_sqft: number | null;
   n_mv_psf: number;
+  provenance?: Record<string, Provenance>;
 }
 
 // The $/ft² benchmark line renders only when the area median rests on a real
@@ -92,6 +98,7 @@ const cleanIcon = (
 function CrimeYoYBlock({ data }: { data: ScorecardResponse }) {
   const { t } = useTranslation("pages");
   const crime = data.context.crime_last_90d;
+  const crimeEntry = useFact("area.crime");
   if (!crime) return null;
   const yoy = (crime.yoy ?? []).slice(0, 5);
   const maxCount = Math.max(1, ...yoy.flatMap((i) => [i.current_count, i.prior_year_count ?? 0]));
@@ -107,7 +114,11 @@ function CrimeYoYBlock({ data }: { data: ScorecardResponse }) {
             honest (54 → 209 reads differently than +287%). */}
         {yoy.length > 0 && (
           <div className="space-y-2">
-            <div className="text-micro text-text-muted">{crime.yoy_period || t("scorecard.yearOverYear")}</div>
+            <div className="text-micro text-text-muted">
+              <SourceTooltip label={t("scorecard.crimeArea")} entry={crimeEntry}>
+                {crime.yoy_period || t("scorecard.yearOverYear")}
+              </SourceTooltip>
+            </div>
             {yoy.map((item) => (
               <div key={item.category} className="grid grid-cols-[minmax(0,38%)_1fr_auto] items-center gap-x-3">
                 <span className="text-caption text-text-secondary truncate">{humanizeShoutyCase(item.category)}</span>
@@ -146,6 +157,7 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
   const { t } = useTranslation("pages");
   const ws = data.walkscore;
   const tr = data.transit;
+  const walkEntry = useFact("neighborhood.walkscore");
   // Walk Score description strings arrive in English from the API — translate
   // the known canonical set, pass anything novel through untouched.
   const walkDesc = (s: string | null | undefined): string | undefined => {
@@ -153,12 +165,13 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
     const slug = s.toLowerCase().replace(/[^a-z0-9]+/g, "_");
     return t(`scorecard.walkDesc.${slug}`, { defaultValue: s });
   };
-  const stats: Array<{ label: string; value: string; sub?: string; tip?: string }> = [];
+  const stats: Array<{ label: string; value: string; sub?: string; tip?: string; entry?: Provenance }> = [];
+  // Walk Score and Transit Score are one private company's index: both say so.
   if (ws?.walk_score != null) {
-    stats.push({ label: t("scorecard.area.walk"), value: String(ws.walk_score), sub: walkDesc(ws.walk_description), tip: t("scorecard.tips.walkScore") });
+    stats.push({ label: t("scorecard.area.walk"), value: String(ws.walk_score), sub: walkDesc(ws.walk_description), tip: t("scorecard.tips.walkScore"), entry: walkEntry });
   }
   if (ws?.transit_score != null) {
-    stats.push({ label: t("scorecard.area.transitScore"), value: String(ws.transit_score), sub: walkDesc(ws.transit_description), tip: t("scorecard.tips.transitScore") });
+    stats.push({ label: t("scorecard.area.transitScore"), value: String(ws.transit_score), sub: walkDesc(ws.transit_description), tip: t("scorecard.tips.transitScore"), entry: walkEntry });
   }
   if (tr?.nearest_cta_rail && tr.cta_rail_distance_mi != null) {
     stats.push({
@@ -190,7 +203,7 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
             <div key={s.label} className="min-w-0">
               <div className="text-overline uppercase tracking-wider text-text-muted">
                 {s.tip ? (
-                  <InfoTooltip content={{ label: s.label, description: s.tip, bullets: [] }}>{s.label}</InfoTooltip>
+                  <SourceTooltip label={s.label} description={s.tip} entry={s.entry}>{s.label}</SourceTooltip>
                 ) : (
                   s.label
                 )}
@@ -199,6 +212,7 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
                   in a 6-up grid, and without this the full text is unrecoverable. */}
               <div className="text-subtitle text-text-primary mt-0.5 truncate" title={s.value}>{s.value}</div>
               {s.sub && <div className="text-caption text-text-muted mt-0.5 leading-snug">{s.sub}</div>}
+              <ConfidenceCaption entry={s.entry} size="micro" />
             </div>
           ))}
         </div>
@@ -243,6 +257,7 @@ function Address311Block({ data }: { data: ScorecardResponse }) {
         {addr311.high_risk_flags.length > 0 && (
           <div className="space-y-1">
             <div className="text-micro text-state-negative font-medium">{t("scorecard.highRiskFlags")}</div>
+            <div className="text-micro text-text-muted">{t("scorecard.highRiskFlagsOurs")}</div>
             {addr311.high_risk_flags.map((flag) => (
               <div key={flag} className="text-micro text-state-negative flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-state-negative flex-shrink-0" />
@@ -494,6 +509,7 @@ export default function ScorecardPage() {
     : n >= 1_000 ? `$${Math.round(n / 1_000)}K`
     : `$${Math.round(n)}`;
   const tiles: KpiTile[] = [];
+  const prov: Record<string, Provenance> = data?.provenance ?? {};
   if (verdict && ctx) {
     if (zoning) {
       tiles.push({
@@ -531,10 +547,17 @@ export default function ScorecardPage() {
       const medPsf = (areaStats?.n_mv_psf ?? 0) >= MIN_BENCHMARK_N
         ? areaStats?.median_mv_per_land_sqft ?? null
         : null;
+      // The benchmark is our calculation over a sparse index: its entry says how many parcels and
+      // what share of the area it rests on, and the backend decides whether it is faded or not shown.
+      const benchEntry = areaStats?.provenance?.["area.benchmarks.market_value_per_land_sqft"];
+      const benchState = displayState(benchEntry);
+      const showBench = mvPsf != null && medPsf != null && medPsf > 0;
+      const assessedYear = prov["property.assessed_value"]?.period;
       tiles.push({
         anchor: "property",
         label: t("scorecard.tiles.assessed"),
         value: fmtMoneyCompact(av),
+        valueNote: assessedYear ? `(${assessedYear})` : undefined,
         tip: t("scorecard.tips.assessedTile"),
         sub: (
           <>
@@ -546,32 +569,40 @@ export default function ScorecardPage() {
                   : t("scorecard.tiles.assessedDelta", { pct: `${Math.abs(deltaPct)}%`, year: first.year })}
               </span>
             )}
-            {mvPsf != null && medPsf != null && medPsf > 0 && (
-              <span className="block">
+            {showBench && benchState !== "withheld" && (
+              <span className={`block ${benchState === "low" ? "text-text-secondary" : ""}`}>
                 {t("scorecard.tiles.mvBenchmark", {
-                  psf: Math.round(mvPsf), median: Math.round(medPsf),
+                  psf: Math.round(mvPsf!), median: Math.round(medPsf!),
                 })}
               </span>
             )}
           </>
         ),
+        caption: showBench ? <ConfidenceCaption entry={benchEntry} size="micro" omit={["scope"]} /> : undefined,
       });
     }
     if (estTax != null) {
       const rate = ctx.property?.effective_tax_rate;
       const level = ctx.property?.assessment_level;
       const norm = level != null ? level * EFF_RATE_PER_ASSESSMENT_LEVEL : null;
+      const taxEntry = prov["property.tax_estimate"];
+      const taxYear = taxEntry?.period ?? (ctx.property?.tax_year != null ? String(ctx.property.tax_year) : null);
       tiles.push({
         anchor: "property",
         label: t("scorecard.tiles.tax"),
         value: `${fmtMoneyCompact(estTax)}/yr`,
+        valueNote: taxYear ? `(${taxYear})` : undefined,
         tip: t("scorecard.tips.taxTile"),
+        caption: <ConfidenceCaption entry={taxEntry} size="micro" omit={["period"]} />,
         sub: rate != null ? (
           <>
             {t("scorecard.tiles.taxRate", { rate: (rate * 100).toFixed(2) })}
             {norm != null && (
               <span className="block">
                 {t("scorecard.tiles.taxNorm", { norm: (norm * 100).toFixed(1) })}
+                {wantsCaption(prov["property.tax_class_norm"]) && (
+                  <>{" · "}<ConfidenceCaption entry={prov["property.tax_class_norm"]} size="micro" inline /></>
+                )}
               </span>
             )}
           </>
@@ -579,12 +610,18 @@ export default function ScorecardPage() {
       });
     }
     if (data?.comparables?.median_sale_price != null) {
+      // The caption states the search's real radius and window; without an entry (an older stored
+      // payload) the plain count stays.
+      const compsEntry = prov["property.comps.median_price"];
+      const compsState = displayState(compsEntry);
       tiles.push({
         anchor: "comparables",
         label: t("scorecard.tiles.comps"),
-        value: fmtMoneyCompact(data.comparables.median_sale_price),
+        value: compsState === "withheld" ? "—" : fmtMoneyCompact(data.comparables.median_sale_price),
+        state: compsState,
         tip: t("scorecard.tips.compsTile"),
-        sub: t("scorecard.tiles.compsSub", { count: data.comparables.sales_volume }),
+        sub: compsEntry ? undefined : t("scorecard.tiles.compsSub", { count: data.comparables.sales_volume }),
+        caption: compsEntry ? <ConfidenceCaption entry={compsEntry} size="micro" /> : undefined,
       });
     }
   }
@@ -624,12 +661,13 @@ export default function ScorecardPage() {
       takeaways.costs = s;
     }
     if (data?.comparables?.median_sale_price != null) {
-      let s = t("scorecard.takeaway.market", {
-        count: data.comparables.sales_volume,
-        median: fmtMoneyCompact(data.comparables.median_sale_price),
-      });
-      if ((data.comparables.sales_volume ?? 0) < 3) s += " " + t("scorecard.takeaway.marketThin");
-      takeaways.market = s;
+      // A median the backend withholds is not stated in the lead sentence either.
+      takeaways.market = displayState(prov["property.comps.median_price"]) === "withheld"
+        ? t("scorecard.takeaway.marketWithheld", { count: data.comparables.sales_volume })
+        : t("scorecard.takeaway.market", {
+          count: data.comparables.sales_volume,
+          median: fmtMoneyCompact(data.comparables.median_sale_price),
+        }) + ((data.comparables.sales_volume ?? 0) < 3 ? " " + t("scorecard.takeaway.marketThin") : "");
     }
     const recParts: string[] = [];
     if (ctx.violations) {
@@ -743,7 +781,7 @@ export default function ScorecardPage() {
             onClick={() => {
               const slug = buildFilenameSlug(data.address || "property");
               const date = new Date().toISOString().slice(0, 10);
-              downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables), `${slug}_scorecard_${date}.csv`);
+              downloadCSV(buildScorecardCSV(ctx, data.address ?? "", data.comparables, data.provenance), `${slug}_scorecard_${date}.csv`);
             }}
             className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-dark-elevated transition-colors"
           >
@@ -839,6 +877,7 @@ export default function ScorecardPage() {
         )}
 
         {data && ctx && !loading && (
+          <ProvenanceProvider value={data.provenance}>
           <div>
             {/* ── Hero: the place, the read, the map — nothing else ─────────
                 Provenance compresses into ONE meta line; feedback lives in the
@@ -1207,6 +1246,7 @@ export default function ScorecardPage() {
             </div>
 
           </div>
+          </ProvenanceProvider>
         )}
 
       </main>

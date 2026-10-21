@@ -436,7 +436,9 @@
       "recordViolations_other": "{{count}} infracciones registradas en esta dirección ({{open}} abiertas).",
       "recordClean": "Sin infracciones registradas en esta dirección.",
       "record311_other": "La dirección registró {{count}} solicitudes 311 en el último año.",
-      "record311_one": "La dirección registró {{count}} solicitud 311 en el último año."
+      "record311_one": "La dirección registró {{count}} solicitud 311 en el último año.",
+      "marketWithheld_one": "Only {{count}} comparable sale nearby, too few to state a median.",
+      "marketWithheld_other": "Only {{count}} comparable sales nearby, too few to state a median."
     },
     "map": {
       "satellite": "Satélite",
@@ -497,7 +499,8 @@
         "body_one": "An amendment passed after this text was published added or changed it. See the ordinance:",
         "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
       }
-    }
+    },
+    "highRiskFlagsOurs": "Flag list is ours, chosen from 311 request types."
   },
   "discovery": {
     "teaserCount": "{{total}} parcelas coinciden — estás viendo {{shown}}.",
