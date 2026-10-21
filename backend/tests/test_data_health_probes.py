@@ -332,3 +332,12 @@ def test_checker_probe_reads_the_last_finished_run(tmp_path, monkeypatch):
     res = _probe("internal.checker", None, tmp_path)
     assert evaluate(BY_ID["internal.checker"], res, date(2026, 10, 21)).state == "warn"       # 3 days: past warn (1)
     assert evaluate(BY_ID["internal.checker"], res, date(2026, 10, 25)).state == "alarm"
+
+
+def test_the_default_client_retries_connection_errors():
+    """FEMA resets many fresh connections; a probe must not report that as the source being down."""
+    client, _ = probes.make_client()
+    try:
+        assert client._transport._pool._retries == probes.CONNECT_RETRIES   # httpx has no public accessor
+    finally:
+        asyncio.run(client.aclose())

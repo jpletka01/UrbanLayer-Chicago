@@ -32,6 +32,7 @@ from backend.data_health.registry import PORTAL_HOSTS, SourceSpec, socrata_locat
 # "name/1 (+https://site)" and 200 to "name/1" (measured 2026-10-21).
 USER_AGENT = "urbanlayer-data-health/1"
 _TIMEOUT = httpx.Timeout(connect=8.0, read=25.0, write=10.0, pool=10.0)
+CONNECT_RETRIES = 3
 
 _tally: contextvars.ContextVar[list[int] | None] = contextvars.ContextVar("data_health_tally", default=None)
 
@@ -234,9 +235,12 @@ def make_client(transport: httpx.AsyncBaseTransport | None = None) -> tuple[http
         if t is not None:
             t[0] += 1
 
+    # FEMA's hazards.fema.gov resets about half of fresh TCP connections (measured 2026-10-21: 5 of 8,
+    # against 0 of 12 over one kept-alive connection), which made `fed.fema.nfhl` "fail twice in a row" on
+    # production. The transport retries connection errors (never a request that got a response).
     client = httpx.AsyncClient(
         timeout=_TIMEOUT, follow_redirects=True, headers={"User-Agent": USER_AGENT},
-        event_hooks={"request": [on_request]}, transport=transport,
+        event_hooks={"request": [on_request]}, transport=transport or httpx.AsyncHTTPTransport(retries=CONNECT_RETRIES),
     )
     return client, lambda: total[0]
 
