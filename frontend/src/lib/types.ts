@@ -458,19 +458,16 @@ export interface GrantProgramSummary {
   recent_projects: GrantProject[];
 }
 
+/** Community-area figures from the City's ACS extract. The median income is
+    interpolated from 5 brackets (no margin of error). Rent, home value, poverty and
+    the other fields this dataset never held were removed 2026-10-20 (WS0 M1). */
 export interface DemographicsSummary {
   community_area: number | null;
   community_area_name: string | null;
   population: number | null;
   median_household_income: number | null;
-  median_home_value: number | null;
-  median_gross_rent: number | null;
-  median_age: number | null;
-  poverty_rate: number | null;
-  unemployment_rate: number | null;
-  owner_occupied_pct: number | null;
-  bachelors_degree_pct: number | null;
-  vacancy_rate: number | null;
+  /** The ACS 5-year window, e.g. "2019–2023". Absent on older stored contexts. */
+  acs_period?: string | null;
 }
 
 export interface TransitAccess {
@@ -512,8 +509,12 @@ export interface CensusTractDemographics {
   owner_occupied_pct: number | null;
   vacancy_rate: number | null;
   poverty_rate: number | null;
+  /** Absent on contexts stored before 2026-10-20. */
+  unemployment_rate?: number | null;
   bachelors_or_higher_pct: number | null;
   foreign_born_pct: number | null;
+  /** The ACS release's years, e.g. "2020–2024". */
+  acs_period?: string | null;
   age_distribution: DistributionBucket[];
   income_distribution: DistributionBucket[];
   race_distribution: DistributionBucket[];

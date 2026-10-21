@@ -274,11 +274,6 @@ function NeighborhoodTable({ data, t }: { data: NeighborhoodSummary; t: (key: st
           <tbody>
             <tr><td style={{ ...s.td, fontWeight: 600, width: "40%" }}>{t("report.population")}</td><td style={s.td}>{fmt(d.population)}</td></tr>
             <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.medianHouseholdIncome")}</td><td style={s.td}>{fmtCurrency(d.median_household_income)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.medianHomeValue")}</td><td style={s.td}>{fmtCurrency(d.median_home_value)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.medianAge")}</td><td style={s.td}>{d.median_age ?? "—"}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.povertyRate")}</td><td style={s.td}>{fmtPct(d.poverty_rate)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.unemployment")}</td><td style={s.td}>{fmtPct(d.unemployment_rate)}</td></tr>
-            <tr><td style={{ ...s.td, fontWeight: 600 }}>{t("report.ownerOccupied")}</td><td style={s.td}>{fmtPct(d.owner_occupied_pct)}</td></tr>
           </tbody>
         </table>
       )}
@@ -314,7 +309,7 @@ function SafetySection({ data, t }: { data: { crime: CrimeSummary | null; three1
       {crime && (
         <>
           <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#374151", margin: "12px 0 8px" }}>{t("report.crimeLast90")}</h3>
-          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.totalIncidents", { total: fmt(crime.total), rate: fmtPct(crime.arrest_rate) })}</p>
+          <p style={{ fontSize: "13px", margin: "0 0 8px" }}>{t("report.totalIncidents", { total: fmt(crime.total), rate: fmtPct(crime.arrest_rate * 100) })}</p>
           <table style={s.table}>
             <thead><tr><th style={s.th}>{t("report.type")}</th><th style={s.th}>{t("report.count")}</th></tr></thead>
             <tbody>

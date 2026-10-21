@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="census_tract_demographics")
 
-TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B25077,B05002,B25064,B25003,B25002"
+TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B23025,B25077,B05002,B25064,B25003,B25002"
 
 # Chicago (place) and Cook County geo IDs for comparison medians
 CHICAGO_GEO = "16000US1714000"
@@ -283,6 +283,11 @@ async def fetch_census_tract(
         poverty_below = _est(tract_data, "B17001", "B17001002")
         poverty_rate = _pct(poverty_below, poverty_total)
 
+        # Unemployed ÷ civilian labor force (B23025005 / B23025003)
+        labor_force = _est(tract_data, "B23025", "B23025003")
+        unemployed = _est(tract_data, "B23025", "B23025005")
+        unemployment_rate = _pct(unemployed, labor_force)
+
         foreign_total = _est(tract_data, "B05002", "B05002013")
         native_total = _est(tract_data, "B05002", "B05002001")
         foreign_pct = _pct(foreign_total, native_total)
@@ -292,6 +297,9 @@ async def fetch_census_tract(
         cook_data = payload.get("data", {}).get(COOK_COUNTY_GEO, {})
         city_median = _safe_int(_est(chicago_data, "B19013", "B19013001"))
         county_median = _safe_int(_est(cook_data, "B19013", "B19013001"))
+
+        years = (payload.get("release") or {}).get("years")
+        acs_period = years.replace("-", "–") if isinstance(years, str) and years else None
 
         result = CensusTractDemographics(
             tract_fips=tract_fips,
@@ -306,8 +314,10 @@ async def fetch_census_tract(
             owner_occupied_pct=owner_occ_pct,
             vacancy_rate=vacancy_rate,
             poverty_rate=poverty_rate,
+            unemployment_rate=unemployment_rate,
             bachelors_or_higher_pct=bach_pct,
             foreign_born_pct=foreign_pct,
+            acs_period=acs_period,
             age_distribution=age_dist,
             income_distribution=income_dist,
             race_distribution=race_dist,

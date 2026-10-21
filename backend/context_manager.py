@@ -22,7 +22,7 @@ def summarize_turn(
     if context.crime_last_90d:
         c = context.crime_last_90d
         top = max(c.by_type, key=c.by_type.get, default=None) if c.by_type else None
-        line = f"{c.total} crimes, {c.arrest_rate:.0f}% arrest rate"
+        line = f"{c.total} crimes, {c.arrest_rate * 100:.0f}% arrest rate"  # arrest_rate is a fraction
         if top:
             line += f", top type: {top}"
         facts.append(line)

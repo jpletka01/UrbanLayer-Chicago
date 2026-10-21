@@ -1,5 +1,7 @@
 {
   "data": [
+    "neighborhood.caCaption",
+    "neighborhood.caCaptionNoPeriod",
     "regulatory.unchecked.body",
     "regulatory.unchecked.mapLink",
     "regulatory.unchecked.title",
