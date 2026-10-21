@@ -763,3 +763,13 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - A run inside the production container, its Sentry delivery, the Cron monitor's acceptance on the free plan, and `/health` on production. All of these are the post-merge drill (needs `sudo` to install the timer).
 - `fed.fema.nfhl` returned `ConnectError` on every local run today (a `warn`, "first run"); whether production's network path reaches it is untested until the first production run.
 - The GitHub workflows have only been exercised locally against stubbed `curl`; their first scheduled run happens after merge (the dead-man will fail until the timer is installed and has finished a run).
+
+### Item 11 addendum: first production run (2026-10-21)
+
+**The checker's HTTP client retries connection errors (3 times).**
+- *Decision:* `make_client` uses `httpx.AsyncHTTPTransport(retries=3)`. It retries a connect failure only, never a request that got a response, and the per-probe request tally still counts requests, not retries.
+- *Why:* the first production runs flagged `fed.fema.nfhl` "failed twice in a row: ConnectError" (it also failed on this Mac). FEMA's `hazards.fema.gov` resets about half of fresh connections: 5 of 8 new connections failed, 0 of 12 over one kept-alive connection (httpx, 2026-10-21). With a single attempt the "twice in a row" rule fires on a coin flip, which is the alert noise the rule exists to avoid.
+- *Evidence:* 10 consecutive probe runs of `fed.fema.nfhl` after the change: 10 `ok`.
+- *Revisit if:* a source that is really down starts to take 4x as long to report; the connect timeout is 8 s, so the worst case is about 32 s per probe.
+
+**Found, not fixed here (WS6 M7):** `backend/retrieval/regulatory/flood.py` returns `None` on any FEMA error, the same value as "not in a mapped flood zone". With FEMA resetting connections, a Profile can say `in_special_flood_hazard: false` for a parcel whose lookup failed. This is the landmark-layer silent failure again (M7a fixed it for the overlays only). M7 should give flood the same tri-state, and the lookup should retry like the checker now does.
