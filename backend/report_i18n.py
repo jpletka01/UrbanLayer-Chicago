@@ -671,6 +671,30 @@ _EN: dict[str, str] = {
     "dt.teardown__other": "{demo} demolition permits vs {nc} new construction permits suggest a teardown-rebuild cycle in early stages.",
     "dt.moderate__one": "{n} development permit within {radius} in 12 months.",
     "dt.moderate__other": "{n} development permits within {radius} in 12 months.",
+    # How current the law is (WS1 M2)
+    "currency.heading": "How current the law in this report is",
+    "currency.vintage": "The Municipal Code text this report uses is current through the {label}.",
+    "currency.since_fresh__one": "Since then City Council has passed {n} amendment to the Zoning Ordinance (Title 17) that is not in this text (checked {checked}).",
+    "currency.since_fresh__other": "Since then City Council has passed {n} amendments to the Zoning Ordinance (Title 17) that are not in this text (checked {checked}).",
+    "currency.since_aging__one": "As of {checked}, City Council had passed {n} amendment to the Zoning Ordinance (Title 17) since then that is not in this text.",
+    "currency.since_aging__other": "As of {checked}, City Council had passed {n} amendments to the Zoning Ordinance (Title 17) since then that are not in this text.",
+    "currency.none_fresh": "City Council has passed no amendments to the Zoning Ordinance (Title 17) since then (checked {checked}).",
+    "currency.unknown": "We couldn't check recently for amendments passed since then; the City Clerk's site lists them:",
+    "currency.parcel_count__one": "This one may affect this parcel:",
+    "currency.parcel_count__other": "These {n} may affect this parcel:",
+    "currency.full_list__one": "The {n} amendment passed since is listed under Data Sources & Disclaimers.",
+    "currency.full_list__other": "All {n} amendments passed since are listed under Data Sources & Disclaimers.",
+    "currency.list_heading": "Code amendments passed since the {label}",
+    "currency.parcel_flag": "May affect this parcel",
+    "currency.th_passed": "Passed",
+    "currency.th_record": "Ordinance",
+    "currency.th_what": "What it does",
+    "currency.th_status": "In this report",
+    "currency.title_only": "(the ordinance's title; not yet reviewed)",
+    "currency.status_reflected": "Reflected",
+    "currency.status_not_reflected": "Not reflected",
+    "currency.status_unreviewed": "Not yet reviewed",
+    "currency.footnote": "These amendments are not in the code text this report quotes. Read the ordinance (linked) before relying on a standard it touches.",
 }
 
 _ES: dict[str, str] = {
@@ -1291,7 +1315,61 @@ _ES: dict[str, str] = {
     "dt.teardown__other": "{demo} permisos de demolición frente a {nc} permisos de construcción nueva sugieren un ciclo de demolición y reconstrucción en etapas tempranas.",
     "dt.moderate__one": "{n} permiso de desarrollo dentro de {radius} en 12 meses.",
     "dt.moderate__other": "{n} permisos de desarrollo dentro de {radius} en 12 meses.",
+    # How current the law is (WS1 M2). English until WS7 translates (see _UNTRANSLATED_ES).
+    "currency.heading": "How current the law in this report is",
+    "currency.vintage": "The Municipal Code text this report uses is current through the {label}.",
+    "currency.since_fresh__one": "Since then City Council has passed {n} amendment to the Zoning Ordinance (Title 17) that is not in this text (checked {checked}).",
+    "currency.since_fresh__other": "Since then City Council has passed {n} amendments to the Zoning Ordinance (Title 17) that are not in this text (checked {checked}).",
+    "currency.since_aging__one": "As of {checked}, City Council had passed {n} amendment to the Zoning Ordinance (Title 17) since then that is not in this text.",
+    "currency.since_aging__other": "As of {checked}, City Council had passed {n} amendments to the Zoning Ordinance (Title 17) since then that are not in this text.",
+    "currency.none_fresh": "City Council has passed no amendments to the Zoning Ordinance (Title 17) since then (checked {checked}).",
+    "currency.unknown": "We couldn't check recently for amendments passed since then; the City Clerk's site lists them:",
+    "currency.parcel_count__one": "This one may affect this parcel:",
+    "currency.parcel_count__other": "These {n} may affect this parcel:",
+    "currency.full_list__one": "The {n} amendment passed since is listed under Data Sources & Disclaimers.",
+    "currency.full_list__other": "All {n} amendments passed since are listed under Data Sources & Disclaimers.",
+    "currency.list_heading": "Code amendments passed since the {label}",
+    "currency.parcel_flag": "May affect this parcel",
+    "currency.th_passed": "Passed",
+    "currency.th_record": "Ordinance",
+    "currency.th_what": "What it does",
+    "currency.th_status": "In this report",
+    "currency.title_only": "(the ordinance's title; not yet reviewed)",
+    "currency.status_reflected": "Reflected",
+    "currency.status_not_reflected": "Not reflected",
+    "currency.status_unreviewed": "Not yet reviewed",
+    "currency.footnote": "These amendments are not in the code text this report quotes. Read the ordinance (linked) before relying on a standard it touches.",
 }
+
+# Spanish keys still carrying the English text, for WS7 to translate. The guard in
+# test_report_i18n.py checks each exists in both catalogs and still equals the English
+# (so a translated key must also leave this set). Shared convention: WS0, WS1, WS6.
+_UNTRANSLATED_ES: frozenset[str] = frozenset({
+    "currency.heading",
+    "currency.vintage",
+    "currency.since_fresh__one",
+    "currency.since_fresh__other",
+    "currency.since_aging__one",
+    "currency.since_aging__other",
+    "currency.none_fresh",
+    "currency.unknown",
+    "currency.parcel_count__one",
+    "currency.parcel_count__other",
+    "currency.full_list__one",
+    "currency.full_list__other",
+    "currency.list_heading",
+    "currency.parcel_flag",
+    "currency.th_passed",
+    "currency.th_record",
+    "currency.th_what",
+    "currency.th_status",
+    "currency.title_only",
+    "currency.status_reflected",
+    "currency.status_not_reflected",
+    "currency.status_unreviewed",
+    "currency.footnote",
+})
+
 
 MESSAGES: dict[str, dict[str, str]] = {"en": _EN, "es": _ES}
 

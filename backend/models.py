@@ -800,6 +800,33 @@ class ContextObject(BaseModel):
             neighborhood=self.neighborhood,
             adu=self.adu,
             code_vintage=self.code_vintage,
+            code_currency=self.code_currency,
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def code_currency(self) -> dict | None:
+        """The code text's vintage plus what City Council has passed since (WS1 M2):
+        for a parcel, every Title 17 amendment, the ones touching what its Profile cites
+        first (``parcel_relevant``); for a parcel-less code question, only the amendments
+        touching a retrieved chunk's section. Offline (the daily sync's snapshot + the
+        committed review file). None when nothing applies."""
+        from backend.legislation.currency import code_currency, parcel_cited_sections
+
+        chunk_sections = [c.section for c in self.code_chunks]
+        if self.parcel_zoning is None:
+            if not chunk_sections:
+                return None
+            cc = code_currency(chunk_sections=chunk_sections, only_touching=True)
+            return cc if cc and cc["amendments"] else None
+        overlays = list(self.regulatory.overlays) if self.regulatory else []
+        chrs = (getattr(getattr(self.property, "flags", None), "chrs_rating", None) or "").lower()
+        cited = parcel_cited_sections(
+            self.parcel_zoning.zone_class, overlays, ["14A-4-407.6"] if chrs in ("orange", "red") else [],
+        )
+        return code_currency(
+            cited_sections=cited, chunk_sections=chunk_sections, address=self.resolved_address,
+            overlay_types=[o.layer_type for o in overlays],
         )
 
     @computed_field  # type: ignore[prop-decorator]

@@ -97,6 +97,17 @@ def _clear_ttl_caches():
 
 
 @pytest.fixture(autouse=True)
+def _no_legislation_snapshot(tmp_path, monkeypatch):
+    """The app reads the daily legislation sync's snapshot from backend/data, which
+    differs per machine (absent in CI, whatever the last sync wrote locally). Point it
+    at a missing file so every test starts "never checked"; a test that needs one
+    writes it there (see test_legislation_currency.py)."""
+    from backend.legislation import currency
+
+    monkeypatch.setattr(currency, "SNAPSHOT_FILE", tmp_path / "legislation_snapshot.json")
+
+
+@pytest.fixture(autouse=True)
 def _clear_rate_limits():
     """Clear in-memory rate limit counters between tests."""
     from backend.rate_limit import clear_rate_limits

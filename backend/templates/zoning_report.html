@@ -346,6 +346,23 @@ a.glossary-link {
 </head>
 <body>
 
+{% macro currency_table(rows) %}
+  <table>
+    <thead><tr><th>{{ t("currency.th_passed") }}</th><th>{{ t("currency.th_record") }}</th><th>{{ t("currency.th_what") }}</th><th>{{ t("currency.th_status") }}</th></tr></thead>
+    <tbody>
+    {% for a in rows %}
+    <tr>
+      <td style="white-space: nowrap;">{{ a.passed_on|rdate }}</td>
+      <td><a href="{{ a.url }}">{{ a.record }}</a>{% if a.parcel_relevant %}<br><span style="font-size: 7.5pt; color: #b45309;">{{ t("currency.parcel_flag") }}</span>{% endif %}</td>
+      <td style="font-size: 8.5pt;">{{ a.summary or a.title }}{% if not a.summary %} <span style="color: #6b7280;">{{ t("currency.title_only") }}</span>{% endif %}</td>
+      <td style="font-size: 8.5pt;">{% if a.review_status != "reviewed" %}{{ t("currency.status_unreviewed") }}{% elif a.product_effect == "applied" %}{{ t("currency.status_reflected") }}{% else %}{{ t("currency.status_not_reflected") }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("currency.footnote") }}</p>
+{% endmacro %}
+
 {# Convenience aliases #}
 {% set ctx = report.context %}
 {% set prop = ctx.property %}
@@ -643,6 +660,33 @@ a.glossary-link {
   </dl>
   {% else %}
   <p class="section-note">{{ t("zoning.unavailable") }}</p>
+  {% endif %}
+
+  {# How current the law in this report is (WS1 M2): the code text's vintage plus what
+     Council passed since, from the same code_currency the Profile shows. #}
+  {% set cc = ctx.code_currency %}
+  {% if cc %}
+  <h3>{{ t("currency.heading") }}</h3>
+  <p style="font-size: 9pt;">
+    {{ t("currency.vintage", label=(cc.label or cc.current_through)) }}
+    {% if cc.since is none %}
+    {{ t("currency.unknown") }} <a href="{{ cc.clerk_url }}">{{ cc.clerk_url }}</a>
+    {% elif cc.since.title17 == 0 %}
+    {{ t("currency.none_fresh", checked=(cc.checked_at|rdate)) }}
+    {% elif cc.check_state == "aging" %}
+    {{ tn("currency.since_aging", cc.since.title17, checked=(cc.checked_at|rdate)) }}
+    {% else %}
+    {{ tn("currency.since_fresh", cc.since.title17, checked=(cc.checked_at|rdate)) }}
+    {% endif %}
+  </p>
+  {% if cc.amendments %}
+  {% set relevant = cc.amendments | selectattr("parcel_relevant") | list %}
+  {% if relevant %}
+  <p style="font-size: 9pt;"><strong>{{ tn("currency.parcel_count", relevant|length) }}</strong></p>
+  {{ currency_table(relevant) }}
+  {% endif %}
+  <p style="font-size: 8pt; color: #6b7280;">{{ tn("currency.full_list", cc.amendments|length) }}</p>
+  {% endif %}
   {% endif %}
 
   {% if standards and standards.extraction_confidence != "low" %}
@@ -1546,6 +1590,12 @@ a.glossary-link {
 <!-- SECTION 11: Data Sources & Disclaimers -->
 <div class="page-break">
   <h2 id="section-data-sources">{{ t("data.heading") }}</h2>
+
+  {% set cc = ctx.code_currency %}
+  {% if cc and cc.amendments %}
+  <h3 id="section-code-amendments">{{ t("currency.list_heading", label=(cc.label or cc.current_through)) }}</h3>
+  {{ currency_table(cc.amendments) }}
+  {% endif %}
 
   <h3>{{ t("data.sources") }}</h3>
   <table>

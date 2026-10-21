@@ -5,7 +5,7 @@ notes are deterministic (no model): each one is true of THIS parcel or true of e
 parcel, cites its source, and names who to ask. ``applies == "parcel"`` notes come from
 what the Profile found (a PD, a landmark, a CHRS demolition hold, a recent rezoning, an
 ADU zone's limits); ``"general"`` notes apply everywhere (the alderman's role, the
-map's lag, the code's vintage, the City's official letter).
+map's lag, the code's vintage and the amendments passed since, the City's official letter).
 
 Each note carries a stable ``id`` and ``params`` (the frontend translates those) and an
 English ``text`` (what chat restates). Statements are pinned to the ingested code in
@@ -34,6 +34,7 @@ def build_coverage_notes(
     neighborhood,
     adu: dict | None,
     code_vintage: dict | None,
+    code_currency: dict | None = None,
 ) -> list[dict]:
     """The ordered list of notes for one parcel. Every argument may be None."""
     notes: list[dict] = []
@@ -89,6 +90,20 @@ def build_coverage_notes(
             params={"zone": adu.get("zone") or ""}, section="17-7-0574",
         ))
 
+    relevant = [a for a in (code_currency or {}).get("amendments") or [] if a.get("parcel_relevant")]
+    if relevant:
+        from backend.legislation.currency import fmt_day
+
+        items = "; ".join(f"{a['record']} ({fmt_day(a['passed_on'])}): {a.get('summary') or a['title']}" for a in relevant)
+        notes.append(_note(
+            "code_amendments_parcel", "parcel",
+            f"City Council has passed {'amendments' if len(relevant) > 1 else 'an amendment'} since this code text "
+            f"was published that may affect this parcel, and {'they are' if len(relevant) > 1 else 'it is'} not "
+            f"reflected on this page: {items}.",
+            params={"count": len(relevant), "records": [a["record"] for a in relevant]},
+            link=relevant[0].get("url"),
+        ))
+
     # --- true of every parcel -----------------------------------------------------------------
     ward = getattr(neighborhood, "ward", None)
     who = ""
@@ -106,7 +121,20 @@ def build_coverage_notes(
         "map_lag", "general",
         "The City's zoning map can lag a passed amendment by up to 90 days.",
     ))
-    if code_vintage and code_vintage.get("current_through"):
+    if code_currency and code_currency.get("current_through"):
+        from backend.legislation.currency import currency_sentence
+
+        since = code_currency.get("since")
+        notes.append(_note(
+            "code_currency", "general", currency_sentence(code_currency),
+            params={
+                "date": code_currency["current_through"], "label": code_currency.get("label") or "",
+                "count": since.get("title17") if since else None, "checked": code_currency.get("checked_at"),
+                "state": code_currency.get("check_state"),
+            },
+            link=None if since else code_currency.get("clerk_url"),
+        ))
+    elif code_vintage and code_vintage.get("current_through"):
         notes.append(_note(
             "code_vintage", "general",
             f"The Municipal Code text used here is current through {code_vintage['current_through']}; a later Council "

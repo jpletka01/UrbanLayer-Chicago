@@ -380,11 +380,20 @@ async def passed_since(
     key = f"passed:{day}:{'|'.join(categories)}"
     if (hit := _cache.get(key)) is not None:
         return hit
+    out = [m for m in await final_since(day, categories, client=client) if m.passed and m.passed_on and m.passed_on > day]
+    _cache.set(key, out)
+    return out
+
+
+async def final_since(
+    day: date, categories: tuple[str, ...] = (CODE_AMENDMENTS,), *, client: httpx.AsyncClient | None = None,
+) -> list[ClerkMatter]:
+    """Every FINAL matter in ``categories`` acted on after ``day`` (passed or not); oldest
+    first. The daily sync reads the raw outcomes to flag an unknown ``subStatus``."""
     after = datetime.combine(day + timedelta(days=1), time(0), tzinfo=CHICAGO)
     flt = f"status eq {odata_str(FINAL)} and finalActionDate ge {_utc(after)} and {category_filter(categories)}"
-    out = [m async for m in iter_matters(flt, client=client) if m.passed and m.passed_on and m.passed_on > day]
-    out.sort(key=lambda m: (m.final_action_at, m.record_number))
-    _cache.set(key, out)
+    out = [m async for m in iter_matters(flt, client=client)]
+    out.sort(key=lambda m: (m.final_action_at or datetime.min.replace(tzinfo=timezone.utc), m.record_number))
     return out
 
 

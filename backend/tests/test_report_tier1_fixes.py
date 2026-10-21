@@ -13,9 +13,7 @@ Covers:
 See claude-context/guides/report.md (the v6 plan it condenses is in git history) ("Tier 1").
 """
 
-from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
 
 from backend.config import get_settings
 from backend.models import (
@@ -27,22 +25,13 @@ from backend.models import (
     ReportData,
 )
 from backend.report_builder import _compute_comp_valuation, _resolve_market_value_and_tax
-from backend.retrieval.zoning_definitions import get_zone_name
 
 
 def _render(report: ReportData) -> str:
-    """Render the real PDF template to HTML (GIS-independent, like Phase 3)."""
-    template_dir = Path(__file__).resolve().parent.parent / "templates"
-    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
-    env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
-    env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
-    env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
-    env.filters["zone_desc"] = get_zone_name
-    from backend import report_i18n
-    env.globals["t"] = report_i18n.make_translator(report.language)
-    env.globals["tn"] = report_i18n.make_plural(report.language)
-    template = env.get_template("zoning_report.html")
-    return template.render(report=report, report_date="June 11, 2026")
+    """Render the real PDF template to HTML (GIS-independent)."""
+    from backend.main import render_report_html
+
+    return render_report_html(report, report.language, report_date="June 11, 2026")
 
 
 def _comps(**over) -> ComparablesSummary:

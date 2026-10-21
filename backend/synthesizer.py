@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import logging
 from typing import AsyncIterator
 
@@ -64,7 +66,12 @@ def _build_user_text(
     context: ContextObject,
     user_message: str,
 ) -> str:
-    ctx_json = context.model_dump_json(indent=2, exclude={"analytics"})
+    ctx = context.model_dump(mode="json", exclude={"analytics"})
+    if ctx.get("code_currency"):
+        from backend.legislation.currency import for_model
+
+        ctx["code_currency"] = for_model(ctx["code_currency"])
+    ctx_json = json.dumps(ctx, indent=2, ensure_ascii=False)
     parts = [
         "Context data (retrieved from Chicago city databases):\n",
         f"```json\n{ctx_json}\n```\n\n",

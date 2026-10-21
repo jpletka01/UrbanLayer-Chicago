@@ -1,5 +1,40 @@
 # Deploy units
 
+## Legislation sync — daily (WS1 M2)
+
+`backend.legislation.sync` asks the City Clerk's API what Municipal Code amendments passed
+after the code text's vintage and writes `backend/data/legislation_snapshot.json` (persistent
+volume). The app only reads that file (no Clerk call on the request path) and reloads it when it
+changes. Without a check in the last 72 h the Profile, chat and report stop giving a count; after
+14 days they say "we couldn't check" (the committed `backend/code_amendments.json` still lists the
+reviewed ones).
+
+### Install on the prod host (`ssh urbanlayer-prod`; needs sudo)
+
+```bash
+cd /opt/urbanlayer                                          # the unit files arrive with the deploy
+sudo cp deploy/legislation-sync.service deploy/legislation-sync.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now legislation-sync.timer
+sudo systemctl start legislation-sync.service               # first run now, don't wait for 06:00
+systemctl status legislation-sync.service --no-pager        # "status=0/SUCCESS"
+systemctl list-timers legislation-sync.timer                # next run 06:00 Chicago
+```
+
+### Check it
+
+```bash
+journalctl -u legislation-sync.service -n 20 --no-pager     # status=ok ... title17=16 ...
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
+  python -c "from backend.legislation.currency import code_currency_status as s; print(s())"
+```
+
+Exit codes: `1` = the Clerk was unreachable (the last good rows and `checked_at` are kept, so the
+product ages out gracefully); `2` = contract drift (a final `subStatus` never seen before, or a
+previously passed record vanished), snapshot marked `suspect` and treated as unchecked. Both
+report to Sentry. Admins see the same data at `GET /api/admin/code-currency`.
+
+
 ## Property Discovery — monthly index rebuild
 
 The prospecting index (`backend/data/discovery_index.db`, persistent volume) goes stale as CCAO
