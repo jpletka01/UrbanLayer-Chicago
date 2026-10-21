@@ -1,0 +1,50 @@
+name: Data health dead-man
+
+# The external half of the data-health alarms (WS6 M2). Sentry tells us a SOURCE went red, but only
+# if the checker runs. This asks the live site, from outside the box, whether the daily checker
+# has finished a run lately (/health -> data_health.checker, "late" after 36 h) and whether the site
+# itself answers. A failed run emails the person who last edited this schedule. Free: no service,
+# no secret. Source alarms stay in Sentry; this is only "is anybody checking".
+
+on:
+  schedule:
+    - cron: "17 14 * * *"   # daily, 09:17 Chicago (CDT) / 08:17 (CST), after the 05:37 UTC check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deadman:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask /health
+        env:
+          URL: https://urbanlayerchicago.com/health
+        run: |
+          set -euo pipefail
+          body=$(curl -fsS --retry 4 --retry-delay 30 --retry-all-errors --max-time 20 "$URL") || {
+            echo "::error::$URL did not answer (after 4 retries): the site is down or unreachable from GitHub"
+            exit 1
+          }
+          echo "$body"
+          python3 - "$body" <<'PY'
+          import json, sys
+          d = json.loads(sys.argv[1])
+          dh = d.get("data_health")
+          problems = []
+          if d.get("ok") is not True:
+              problems.append(f"/health ok is {d.get('ok')!r} (qdrant={d.get('qdrant')}, db={d.get('db')})")
+          if dh is None:
+              problems.append("/health has no data_health block: the deploy that adds it is missing or reverted")
+          elif dh.get("checker") != "ok":
+              problems.append(f"the data-health checker is {dh.get('checker')!r} (last finished run {dh.get('last_run_age_h')} h ago; "
+                              "expected under 36 h). Check: systemctl status data-health-check.timer; journalctl -u data-health-check.service")
+          if problems:
+              for p in problems:
+                  print(f"::error::{p}")
+              sys.exit(1)
+          if dh.get("alarms"):
+              print(f"::warning::{dh['alarms']} data source(s) are red (see Sentry and the admin Data health panel)")
+          PY

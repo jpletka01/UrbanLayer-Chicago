@@ -179,6 +179,15 @@ class Settings(BaseSettings):
     # the app only reads it, reloading when its mtime changes.
     legislation_snapshot_path: Path = PROJECT_ROOT / "backend" / "data" / "legislation_snapshot.json"
 
+    # Written by the daily checker (`python -m backend.data_health.check --write`) on the same volume;
+    # the app opens it read-only for the /health block. See deploy/README.md.
+    data_health_db_path: Path = PROJECT_ROOT / "backend" / "data" / "data_health.db"
+    # Written by scripts/backup_db.sh (host, as root) after each backup, into the directory that holds
+    # chicago.db, so the checker container can read it without mounting /opt/urbanlayer/backups.
+    backup_status_path: Path = PROJECT_ROOT / "backend" / "data" / "backup_status.json"
+    # Prod sets this: a missing status file then means backups are not running, not "dev checkout".
+    backup_status_required: bool = False
+
     message_limit: int = 10
 
     ptaxsim_db_path: Path = PROJECT_ROOT / "backend" / "data" / "ptaxsim.db"

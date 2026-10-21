@@ -495,6 +495,11 @@ SOURCES: tuple[SourceSpec, ...] = (
         owner_modules=("backend/code_vintage.py", "backend/legislation/currency.py"),
         surfaces=("profile", "chat", "report"), fact_keys=("code.vintage",), severity="critical", cadence_days=30,
         warn_days=60, alarm_days=90,
+        ack=Ack("American Legal publishes about four months behind Council: the newest export available (2026-10-21) is "
+                "current through 2026-06-17, already 126 days old, so the 90-day alarm would fire on day one and every "
+                "day until their next export. The monthly 'download a new export' reminder (.github/workflows/"
+                "code-export-reminder.yml) carries the nudge instead; WS1 M7's checklist says what to do. Re-decide the "
+                "thresholds against the publisher's real lag when this expires.", date(2026, 12, 15), _OWNER),
         note="Content date = current_through. Thresholds are WS1's. Reports the amendments passed since.",
     ),
     SourceSpec(
@@ -566,9 +571,17 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     SourceSpec(
         id="internal.checker", name="The data-health checker itself (dead-man)", publisher="UrbanLayer", tier="internal",
-        kind="internal", locator="backend/data/data_health.db", probe="none",
-        owner_modules=("backend/data_health/check.py",), severity="critical",
-        note="Read by /health and Sentry Cron, never by itself. Lands in WS6 M2.",
+        kind="internal", locator="backend/data/data_health.db", probe="checker",
+        owner_modules=("backend/data_health/check.py",), severity="critical", cadence_days=1, warn_days=1, alarm_days=3,
+        note="Its last finished run. The real dead-man is /health (checker: ok|late) plus the Sentry Cron monitor "
+             "and the scheduled GitHub workflow; this row colours the admin panel.",
+    ),
+    SourceSpec(
+        id="internal.backups", name="Nightly database backup (age of the newest copy)", publisher="UrbanLayer",
+        tier="internal", kind="internal", locator="backend/data/backup_status.json", probe="backup_status",
+        owner_modules=("scripts/backup_db.sh",), severity="critical", availability_only=True,
+        note="scripts/backup_db.sh writes backup_status.json beside chicago.db after each backup. The age rule "
+             "(warn 30 h, alarm 36 h) is in the probe. Covers the on-box copy only; the off-box pull to the Mac is not seen here.",
     ),
 )
 

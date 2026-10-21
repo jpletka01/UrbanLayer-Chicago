@@ -123,7 +123,7 @@ def test_every_named_probe_exists():
 def test_sources_with_no_probe_are_the_planned_placeholders():
     none = {s.id for s in SOURCES if probes.probe_for(s) is None}
     frozen_artifacts = {s.id for s in SOURCES if s.kind == "artifact" and s.frozen}
-    assert none - frozen_artifacts == {"artifact.transit_stations", "internal.sentinels", "eval.kit_weekly", "internal.checker"}
+    assert none - frozen_artifacts == {"artifact.transit_stations", "internal.sentinels", "eval.kit_weekly"}
 
 
 # --- probes over a mock transport ------------------------------------------------------------
@@ -253,3 +253,82 @@ def test_hand_table_and_code_text_probes_read_local_files_only():
     assert n == 0 and res.error is None and not res.findings
     res, n = _run(BY_ID["code.municipal_text"], _handler({}))
     assert n == 0 and res.content == date.fromisoformat(json.loads((Path(__file__).parents[1] / "code_vintage.json").read_text())["current_through"])
+
+
+# --- backup age and the checker's own run (WS6 M2) ---------------------------------------------
+
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
+_NOW = datetime(2026, 10, 21, 5, 37, tzinfo=timezone.utc)
+
+
+def _status(hours_old: float, **kw):
+    done = _NOW - timedelta(hours=hours_old)
+    return {"completed_at": done.isoformat(), "newest_backup": "urbanlayer_x.db", "size_bytes": 4096, "retained": 7, **kw}
+
+
+@pytest.mark.parametrize("hours,level", [(2.6, None), (30, None), (30.1, "warn"), (36, "warn"), (36.1, "alarm"), (200, "alarm")])
+def test_backup_age_thresholds(hours, level):
+    """The cron runs at 03:00 and the check at 05:37, so a healthy copy is ~2.6 h old; one missed night is ~26 h."""
+    _, _, findings = probes.parse_backup_status(_status(hours), _NOW)
+    assert (findings[0].level if findings else None) == level
+
+
+def test_backup_status_reports_the_day_and_flags_an_empty_copy():
+    day, info, findings = probes.parse_backup_status(_status(3, size_bytes=0), _NOW)
+    assert day == date(2026, 10, 21) and "7 retained" in info
+    assert [f.level for f in findings] == ["alarm"] and "empty" in findings[0].text
+
+
+@pytest.mark.parametrize("body", [[], {}, {"completed_at": "yesterday-ish"}])
+def test_backup_status_with_the_wrong_shape_is_a_service_error(body):
+    with pytest.raises(ProbeError) as e:
+        probes.parse_backup_status(body, _NOW)
+    assert e.value.kind == "service"
+
+
+def _probe(name, settings, tmp_path):
+    spec = BY_ID[name]
+    ctx = probes.ProbeContext(client=None, sem=asyncio.Semaphore(1), today=date(2026, 10, 21))
+    return asyncio.run(probes.PROBES[spec.probe](spec, ctx))
+
+
+def test_missing_backup_status_is_unknown_in_dev_and_an_alarm_where_backups_are_required(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    def mk(required):
+        return SimpleNamespace(backup_status_path=tmp_path / "backup_status.json", backup_status_required=required)
+
+    monkeypatch.setattr(probes, "get_settings", lambda: mk(False))
+    assert _probe("internal.backups", None, tmp_path).skipped
+    monkeypatch.setattr(probes, "get_settings", lambda: mk(True))
+    res = _probe("internal.backups", None, tmp_path)
+    assert res.skipped is None and res.findings[0].level == "alarm" and "missing" in res.findings[0].text
+
+
+def test_a_stale_backup_status_file_alarms_through_evaluate(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from backend.data_health.evaluate import evaluate
+    old = datetime.now(timezone.utc) - timedelta(hours=60)
+    f = tmp_path / "backup_status.json"
+    f.write_text(json.dumps({"completed_at": old.isoformat(), "newest_backup": "urbanlayer_x.db", "size_bytes": 9, "retained": 7}))
+    monkeypatch.setattr(probes, "get_settings", lambda: SimpleNamespace(backup_status_path=f, backup_status_required=True))
+    res = _probe("internal.backups", None, tmp_path)
+    st = evaluate(BY_ID["internal.backups"], res, date.today())
+    assert st.state == "alarm" and "h old" in st.reason
+    f.write_text(json.dumps({"completed_at": datetime.now(timezone.utc).isoformat(), "size_bytes": 9, "retained": 7}))
+    assert evaluate(BY_ID["internal.backups"], _probe("internal.backups", None, tmp_path), date.today()).state == "ok"
+
+
+def test_checker_probe_reads_the_last_finished_run(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from backend.data_health.evaluate import evaluate
+    from backend.data_health.store import Store
+    path = tmp_path / "h.db"
+    monkeypatch.setattr(probes, "get_settings", lambda: SimpleNamespace(data_health_db_path=path))
+    assert _probe("internal.checker", None, tmp_path).skipped                      # no store yet
+    with Store(path) as s:
+        rid = s.start_run(_NOW - timedelta(days=3))
+        s.finish_run(rid, _NOW - timedelta(days=3), sources=1, alarms=0, requests=1)
+    res = _probe("internal.checker", None, tmp_path)
+    assert evaluate(BY_ID["internal.checker"], res, date(2026, 10, 21)).state == "warn"       # 3 days: past warn (1)
+    assert evaluate(BY_ID["internal.checker"], res, date(2026, 10, 25)).state == "alarm"

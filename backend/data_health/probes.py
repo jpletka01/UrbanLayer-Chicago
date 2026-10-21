@@ -486,6 +486,64 @@ async def probe_discovery_index(spec: SourceSpec, ctx: ProbeContext) -> ProbeRes
     return ProbeResult(content=_day(row[0], ms=False), info=f"{row[1]:,} parcels")
 
 
+BACKUP_WARN_HOURS = 30    # one nightly backup missed (the check runs ~2.5 h after the 03:00 job)
+BACKUP_ALARM_HOURS = 36   # a night and a half with no new backup
+
+
+def parse_backup_status(body: Any, now: datetime) -> tuple[date, str, list[Finding]]:
+    """(date of the newest backup, an info line, findings) from ``backup_status.json``.
+
+    The file is written by ``scripts/backup_db.sh`` after each successful backup, so its
+    ``completed_at`` going stale is how a stopped cron job (the 2026-09-28 failure) is seen.
+    """
+    if not isinstance(body, dict) or "completed_at" not in body:
+        raise ProbeError("service", "backup_status.json has an unexpected shape")
+    try:
+        done = datetime.fromisoformat(str(body["completed_at"]))
+    except ValueError as exc:
+        raise ProbeError("service", f"backup_status.json completed_at is not a date: {exc}") from exc
+    if done.tzinfo is None:
+        done = done.replace(tzinfo=timezone.utc)
+    hours = (now - done).total_seconds() / 3600
+    size = body.get("size_bytes")
+    info = f"newest backup {body.get('newest_backup', '?')}, {hours:.0f} h old, {body.get('retained', '?')} retained"
+    findings: list[Finding] = []
+    if hours > BACKUP_ALARM_HOURS:
+        findings.append(Finding("alarm", f"the newest backup is {hours:.0f} h old (alarm after {BACKUP_ALARM_HOURS} h)"))
+    elif hours > BACKUP_WARN_HOURS:
+        findings.append(Finding("warn", f"the newest backup is {hours:.0f} h old (warn after {BACKUP_WARN_HOURS} h)"))
+    if isinstance(size, (int, float)) and size <= 0:
+        findings.append(Finding("alarm", "the newest backup is empty"))
+    return done.date(), info, findings
+
+
+async def probe_backup_status(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    settings = get_settings()
+    path = settings.backup_status_path
+    if not path.exists():
+        if settings.backup_status_required:
+            return ProbeResult(findings=[Finding("alarm", f"{path.name} is missing: the nightly backup has not reported "
+                                                          "since it was taught to (scripts/backup_db.sh)")])
+        return ProbeResult(skipped=f"{path.name} not present here (written by the host's backup job)")
+    try:
+        body = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        raise ProbeError("service", f"cannot read {path.name}: {exc}") from exc
+    day, info, findings = parse_backup_status(body, datetime.now(timezone.utc))
+    return ProbeResult(content=day, info=info, findings=findings)
+
+
+async def probe_checker(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """The checker's own last finished run (the external dead-man is /health; this colours the panel)."""
+    from backend.data_health.store import last_run_finished, open_readonly
+
+    with open_readonly(get_settings().data_health_db_path) as con:
+        finished = last_run_finished(con) if con is not None else None
+    if finished is None:
+        return ProbeResult(skipped="no finished run recorded yet")
+    return ProbeResult(content=finished.date(), info=f"last finished run {finished:%Y-%m-%d %H:%M} UTC")
+
+
 PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] = {
     "census_release": probe_census_release,
     "census_geocoder": probe_census_geocoder,
@@ -499,6 +557,8 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "hand_table": probe_hand_table,
     "ptaxsim": probe_ptaxsim,
     "discovery_index": probe_discovery_index,
+    "backup_status": probe_backup_status,
+    "checker": probe_checker,
 }
 
 
