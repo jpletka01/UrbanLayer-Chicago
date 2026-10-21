@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily City Clerk legislation sync
+
+[Timer]
+# 06:00 Chicago time, every day. Council acts roughly monthly, but a daily check is what lets
+# the product say "N amendments since" (it withholds the count once a check is > 72 h old).
+OnCalendar=*-*-* 06:00:00 America/Chicago
+# A missed run (box down at 06:00) runs at the next boot.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

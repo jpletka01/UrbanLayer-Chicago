@@ -273,3 +273,113 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 **Not measured:**
 - How often the API fails over a day. Only one transient failure was seen; WS6's probe will measure the rate.
 - Behaviour above about 20k matching records (guarded by `max_records`, untested live).
+
+## Item 6: amendments since the code vintage (WS1 M2, #65, 2026-10-21)
+
+**`codified` means "in the code text we serve", and all 23 seeds are `false`.**
+- **Decision:** the review file's `codified` flag is about our text, not American Legal's. Every amendment passed after our March 18 vintage starts `false`; M4's codification check flips the ones the June 17 export contains.
+- **Alternatives:** `null` ("not checked yet") until M4.
+- **Why:** the degradation rule lists committed `codified: false` entries even when the Clerk can't be checked. With `null`, a Clerk outage would have hidden TOD Streets, the one the plan names as must-not-disappear.
+- **Revisit if:** we ever serve two code texts at once.
+
+**Summaries are null until someone reads the ordinance; only TOD Streets has one.**
+- **Decision:** `summary` stays null for the 22 title-only seeds, with `summary_basis` saying where a summary came from (`ordinance` for SO2026-0025391, read in full during the 2026-10-20 research). The prompt rule says: with no summary, say only what the title names, and infer nothing.
+- **Alternatives:** the plan's "summaries from their titles".
+- **Why:** a title copied into `summary` would read as a reviewed description everywhere it shows (Profile, report, chat). The gas-station title "prohibit issuance of permits for gas stations in B3, C1 and C2" is easy to over-read as "B3 bans gas stations outright".
+- **Revisit if:** §3.7 reviews land (M4/M4b); each sets `summary`, `review_status: reviewed` and `product_effect`.
+
+**Other cited titles = an explicit prefix list: 7 records, not the plan's ~6.**
+- **Decision:** `CITED_PREFIXES` covers Title 14, 2-44, 2-45-165 (exactly), 2-120 and 18-14.
+- **Why:**
+  - The plan's "2-44-070 (repealed)" is O2026-0024022, whose title leads with a new 2-4-130 and repeals 2-44-070 at the end. With 2-44-140 and 2-44-170, Chapter 2-44 is three records.
+  - The prefix is `2-45-165`, not `2-45`, so the MBE database (2-45-150, SO2024-0012388) stays out.
+  - Recorded live list: 97 passed, 16 Title 17, 7 cited other, 74 other (the classifier test pins all four numbers).
+- **Revisit if:** the product starts citing another chapter (add it to the list and the test).
+
+**A chapter named only as the place a new section goes is dropped.**
+- **Decision:** "Chapter 17-3 by adding Section 17-3-0600" yields `17-3-0600`, not `17-3` + `17-3-0600`. A lone chapter ("Chapter 17-9 regarding waste-related uses") is kept. "17-9-0109A" is normalized to `17-9-0109-A`.
+- **Alternatives:** keep the M1 client's raw list.
+- **Why:** with `17-3` kept, every business-district section (bulk table, use table, pedestrian streets) would have been "amended by TOD Streets".
+
+**Overlap rules: same section, subsection, chapter, or indexed article. Never a sibling, never a decimal neighbour.**
+- **Why:**
+  - The plan's acceptance number is 3 amendments on `17-3-0503-D`, and that is what these rules give.
+  - `17-9-0129.1` is a separate section from `17-9-0129` (the cannabis amendment names both), so `.` is not a segment boundary.
+  - The chunk endpoint gets article ids (`17-3-0500`), so an article must match the sections inside it.
+
+**What makes an amendment "parcel-relevant".**
+- **Decision:** a parcel's cited sections are:
+  - the bulk-standard sections for its district family;
+  - its family's use table (17-x-0207);
+  - its overlays' sections (ADU 17-7-0574, transit 17-10-0102-B, landmarks 2-120-740, the Milwaukee Ave SCO article 17-7-1500);
+  - the CHRS hold 14A-4-407.6 when orange or red.
+
+  Map effects match by address:
+  - a TOD street needs the number range;
+  - a pedestrian-street removal without a range needs the parcel to still show the overlay;
+  - an addition without a range matches nothing.
+- **Alternatives:**
+  - map the pedestrian-street overlay to 17-3-0503;
+  - match street additions on the street name alone.
+- **Why:**
+  - §17-3-0503-D is the *list* of designated streets. Adding Belmont doesn't change a Halsted parcel's rules, and the first version flagged all three street amendments for every pedestrian-street parcel.
+  - A name-only match would flag every Belmont or Clark parcel when only some segments were designated.
+  - Live results: 1601 N Milwaukee (B3-2) flags only SO2026-0024923, the B3 gas-station rule. 4000 N Western (B3-2, in tests) flags TOD Streets and the gas-station rule.
+- **Revisit if:** M4b transcribes the Belmont, Clark and Lawrence segments (add `from`/`to`), or a parcel-geometry abutment check replaces address ranges for TOD streets.
+
+**A stale snapshot's rows stay listed; only the count needs a fresh check. A suspect snapshot's rows are dropped.**
+- **Why:** a law that passed stays passed, so old rows are still true. But a check that saw an unknown `subStatus` or a vanished record may be reading garbage. The count (including "none") follows plan §5.6 exactly: fresh < 72 h, "as of <date>" to 14 days, then withheld.
+
+**Sync failure modes are distinct exits.**
+- **Decision:**
+  - exit 1 = unreachable: the last good rows and `checked_at` are kept and the failures counted;
+  - exit 2 = suspect;
+  - both go to Sentry and leave the systemd unit failed.
+- **Why:** WS6 M2's alarms need "couldn't check" and "checked and found something wrong" apart. The M1 client already raises instead of returning `[]`.
+- **Added to the client:** `clerk.final_since` returns all final outcomes (not just passed), so the sync can see an unknown `subStatus` that `passed_since` would silently drop.
+
+**The timer runs at 06:00 Chicago time via `OnCalendar=... America/Chicago`.**
+- **Why:** the server runs UTC. `systemd-analyze calendar` on the server (systemd 259) normalizes it and gave the next run as 11:00 UTC.
+
+**The Profile note gets a new id, `code_currency`.**
+- **Decision:** a new id replaces `code_vintage` whenever currency data exists. `code_vintage` remains the fallback.
+- **Alternatives:** keep the old id.
+- **Why:** the frontend renders a known id from its i18n key and an unknown one from the note's English `text`. A new id lets the count show on prod before M3 adds the translated keys; the old id would have kept showing the old sentence with no count. Spanish users see English for this one note until M3/WS7.
+
+**A section the text lacks returns a 404 with a structured detail, not a 200.**
+- **Why:** existing clients treat 200 as "here is code text". `detail.added_by` carries the ordinance, and M3 renders it.
+
+**Chat gets a compacted `code_currency`.**
+- **Decision:** full rows only for amendments that touch the parcel or a retrieved chunk; record, date and title for the rest; no URLs (the Sources footer links them).
+- **Why:** 12,063 → 5,062 characters on the 1601 N Milwaukee context, about 1.75k fewer input tokens on every parcel turn (estimated at ~4 chars/token). Every chat turn is a production cost.
+
+**The report shows the parcel's rows in the zoning section; the full list goes in Data Sources.**
+- **Why:** the full 16-row table pushed Bulk & Density two pages down on 1601 N Milwaukee. The zoning section now shows the sentence, this parcel's row and a pointer.
+
+**One shared report renderer.**
+- **Decision:** `render_report_html()` is extracted from `/api/report`. Four report tests that each copied the Jinja setup now call it.
+- **Why:** the new `rdate` filter would otherwise have needed adding in five places, and that duplication is how a test renderer drifts from production.
+
+**Deferred to M7, as the plan's table says:** the `ci.yml` warn step. `currency_check` is built and tested.
+
+**Process slip, recorded so it isn't repeated:**
+- **What happened:** a bare `pytest backend/tests` (without `-m "not integration"`) ran `test_balcony_clarification`, which calls the Anthropic API. The call was rejected ("credit balance is too low"), so nothing was spent.
+- **Rule:** build work runs `make test` or `-m "not integration"` only.
+
+**Numbers** (2026-10-21)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Passed code amendments after the vintage (live Clerk) | 97 total: 16 Title 17, 7 cited other | `python -m backend.legislation.sync --print` |
+| Profile JSON, 1601 N Milwaukee | no amendment data → 16 listed with Clerk links, 1 parcel-relevant, `check_state: fresh` | `curl localhost:8001/api/scorecard?address=1601+N+Milwaukee+Ave` (local backend + local snapshot) |
+| Same, snapshot deleted | → `since: null`, note says "We couldn't check…", 16 still listed from the review file | the same, with `backend/data/legislation_snapshot.json` moved aside |
+| `amended_since` on `/api/code/section/17-3-0503-D` | absent → 3 (Belmont, Clark, Lawrence) | `curl localhost:8001/api/code/section/17-3-0503-D` |
+| `code_currency` in the chat payload (1601 N Milwaukee) | 12,063 → 5,062 chars (parcel context: 49,327 chars before compaction) | `json.dumps(ctx["code_currency"], indent=2)` vs `currency.for_model(...)` |
+| Report PDF, 1601 N Milwaukee | new block on page 5 of 22 | `curl localhost:8001/api/report?address=1601+N+Milwaukee+Ave -H "Cookie: session=dev"` then `pdftotext` |
+| Backend tests | 1,510 → 1,566 (+54 in `test_legislation_currency.py`, +1 coverage note, +1 i18n guard) | `make test` |
+
+**Not measured:**
+- What the extra computed field costs per request on `/api/scorecard`: two mtime-cached JSON reads plus section matching, never timed.
+- Chat answer behaviour under the extended rule 34. That needs a live model, which build work may not spend; the first real parcel chat after the deploy is the check.
+- Which Title 17 sections the omnibus (SO2026-0024930) touches: it has no section list until M4 reads it, so `amendments_touching` never returns it.
+- Prod's first sync run (after the timer is installed).

@@ -4,28 +4,19 @@ The retrieval tri-state itself is in test_regulatory_overlays.py; these pin the
 surfaces: partial_failures (Profile, chat, report) and the report's status grid.
 """
 
-from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
 
 from backend.main import _domain_data_gaps
 from backend.models import ContextObject, PropertySummary, RegulatorySummary, ReportData
-from backend.retrieval.zoning_definitions import get_zone_name
 
 GAP = "landmark designation (City zoning map didn't answer)"
 
 
 def _render(report: ReportData) -> str:
-    template_dir = Path(__file__).resolve().parent.parent / "templates"
-    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
-    env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else "N/A"
-    env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else "N/A"
-    env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else "N/A"
-    env.filters["zone_desc"] = get_zone_name
-    from backend import report_i18n
-    env.globals["t"] = report_i18n.make_translator(report.language)
-    env.globals["tn"] = report_i18n.make_plural(report.language)
-    return env.get_template("zoning_report.html").render(report=report, report_date="October 20, 2026")
+    """Render the real PDF template to HTML (GIS-independent)."""
+    from backend.main import render_report_html
+
+    return render_report_html(report, report.language, report_date="October 20, 2026")
 
 
 def _status_cell(html: str, label: str) -> str:

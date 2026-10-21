@@ -43,7 +43,7 @@ def _ids(ctx: ContextObject) -> list[str]:
 
 def test_every_parcel_gets_the_general_notes_after_the_parcel_specific_ones():
     ids = _ids(_ctx())
-    assert ids == ["aldermanic", "map_lag", "code_vintage", "official_letter"]
+    assert ids == ["aldermanic", "map_lag", "code_currency", "official_letter"]
     notes = _ctx().coverage_notes
     assert all(n["applies"] == "general" for n in notes)
 
@@ -73,9 +73,18 @@ def test_alderman_notice_statements_match_the_code():
     assert "notify the Alderman of the ward" in _text("17-13-0600")  # Planned Development community meeting
 
 
-def test_the_vintage_note_follows_the_codes_current_through_date():
-    n = next(x for x in _ctx().coverage_notes if x["id"] == "code_vintage")
-    assert "2026-03-18" in n["text"] and n["params"]["date"] == "2026-03-18"
+def test_the_currency_note_follows_the_codes_current_through_date():
+    n = next(x for x in _ctx().coverage_notes if x["id"] == "code_currency")
+    assert "current through the Council Journal of March 18, 2026" in n["text"] and n["params"]["date"] == "2026-03-18"
+    # no snapshot (conftest): we couldn't check, so no count and the Clerk's site instead
+    assert "couldn't check" in n["text"] and n["params"]["count"] is None
+    assert n["link"] == "https://chicityclerkelms.chicago.gov/"
+
+
+def test_without_a_currency_the_bare_vintage_note_still_shows():
+    notes = build_coverage_notes(zoning=None, regulatory=None, property_=None, neighborhood=None, adu=None,
+                                 code_vintage={"current_through": "2026-03-18"})
+    assert [n["id"] for n in notes if n["id"].startswith("code_")] == ["code_vintage"]
 
 
 # --- parcel-specific notes ---------------------------------------------------------------------------

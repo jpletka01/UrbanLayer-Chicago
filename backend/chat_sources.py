@@ -59,6 +59,12 @@ def allowed_urls(context: Any) -> set[str]:
     for note in (getattr(context, "coverage_notes", None) or []):
         if note.get("link"):
             urls.add(note["link"])
+    currency = getattr(context, "code_currency", None) or {}
+    for a in currency.get("amendments") or []:
+        if a.get("url"):
+            urls.add(a["url"])
+    if currency.get("clerk_url"):
+        urls.add(currency["clerk_url"])
     return {_norm(u) for u in urls}
 
 
@@ -171,9 +177,40 @@ def _src(entry: dict) -> str:
     return ", ".join(bits)
 
 
-def build_sources_footer(provenance: dict[str, dict], cited_chunks: list[tuple[int, Any]], code_through: str | None) -> str:
+def _code_currency_line(code_currency: dict | None, cited_sections: list[str]) -> str | None:
+    """"Code text current through Mar 18, 2026 · 16 later zoning amendments (1 touches a
+    section cited above: …)". Never a count without a fresh-enough check."""
+    if not code_currency or not code_currency.get("current_through"):
+        return None
+    from backend.legislation.amendments import sections_overlap
+    from backend.legislation.currency import fmt_day
+
+    head = f"Code text current through {fmt_day(code_currency['current_through'])}"
+    since = code_currency.get("since")
+    if since is None:
+        return f"- **{head}** · we couldn't check recently for later amendments ([City Clerk]({code_currency.get('clerk_url')}))"
+    n = since.get("title17", 0)
+    line = f"- **{head}** · {n} later zoning amendment{'s' if n != 1 else ''}"
+    if code_currency.get("check_state") == "aging":
+        line += f" as of {fmt_day(code_currency.get('checked_at'))}"
+    hits = []
+    for a in code_currency.get("amendments") or []:
+        secs = [c for c in cited_sections if any(sections_overlap(c, s) for s in a.get("sections") or [])]
+        if secs:
+            hits.append(f"[{a['record']}]({a['url']}), {fmt_day(a['passed_on'])} (§{', §'.join(secs)})")
+    if hits:
+        line += f" ({len(hits)} {'touch sections' if len(hits) != 1 else 'touches a section'} cited above: {'; '.join(hits)})"
+    return line
+
+
+def build_sources_footer(
+    provenance: dict[str, dict], cited_chunks: list[tuple[int, Any]], code_through: str | None,
+    code_currency: dict | None = None,
+) -> str:
     """Markdown 'Sources' block, or '' when there is nothing to list. ``cited_chunks`` is
-    [(N, CodeChunk)] for the ``[N]`` markers the answer actually used."""
+    [(N, CodeChunk)] for the ``[N]`` markers the answer actually used. When the answer
+    rests on code text, a last line says how current it is and which later amendments
+    touch the sections it cited."""
     lines: list[str] = []
     d = provenance.get("zoning.district")
     if d:
@@ -202,6 +239,11 @@ def build_sources_footer(provenance: dict[str, dict], cited_chunks: list[tuple[i
         lines.append(f"- [{n}] Municipal Code §{chunk.section}{title}{thru}")
     if not lines:
         return ""
+    if bulk or cited_chunks:
+        cited = [e["section"] for e in bulk if e.get("section")] + [c.section for _, c in cited_chunks]
+        currency = _code_currency_line(code_currency, cited)
+        if currency:
+            lines.append(currency)
     return "\n\n---\n**Sources for the parcel data used**\n" + "\n".join(lines) + "\n"
 
 

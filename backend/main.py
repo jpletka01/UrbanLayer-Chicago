@@ -364,10 +364,31 @@ async def section(section_id: str) -> dict:
     Backs the clickable cross-references in the sources panel: a chunk may cite
     a section that wasn't itself retrieved, so we look it up on demand.
     """
+    from backend.legislation.currency import amendments_touching, public
+
     chunk = await get_full_section(section_id)
     if chunk is None:
-        raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
-    return chunk.model_dump()
+        raise _section_not_found(section_id)
+    return {**chunk.model_dump(), "amended_since": [public(a) for a in amendments_touching(section_id)]}
+
+
+def _section_not_found(section_id: str, detail: str | None = None) -> HTTPException:
+    """404 for a section our code text lacks. When an amendment passed after the text's
+    vintage adds it (17-3-0600, TOD streets), say so and link the ordinance instead of
+    a bare "not found"."""
+    from backend.legislation.currency import amendments_touching, public
+
+    added_by = [public(a) for a in amendments_touching(section_id)]
+    if not added_by:
+        return HTTPException(status_code=404, detail=detail or f"Section {section_id} not found")
+    first = added_by[0]
+    return HTTPException(status_code=404, detail={
+        "message": (f"Section {section_id} isn't in the published Municipal Code text we use yet. "
+                    f"{first['record']}, passed {first['passed_on']}, added or changed it; see the ordinance."),
+        "section_id": section_id,
+        "not_in_published_code": True,
+        "added_by": added_by,
+    })
 
 
 @app.get("/api/code/section/{section_id}")
@@ -377,17 +398,19 @@ async def code_subsection(section_id: str) -> dict:
     number cites ``17-2-0304-A``; the index holds the whole article ``17-2-0300``."""
     from backend.code_sections import SECTION_ID_RE, article_id, extract_subsection
     from backend.code_vintage import get_code_vintage
+    from backend.legislation.currency import amendments_touching, public
 
     if not SECTION_ID_RE.match(section_id):
         raise HTTPException(status_code=422, detail="Not a Municipal Code section id.")
     chunk = await get_full_section(article_id(section_id))
     if chunk is None:
-        raise HTTPException(status_code=404, detail=f"Section {section_id} not found")
+        raise _section_not_found(section_id)
     sub = extract_subsection(chunk.text, section_id)
     if sub is None:
-        raise HTTPException(status_code=404, detail=f"Subsection {section_id} not found in {chunk.section}")
+        raise _section_not_found(section_id, f"Subsection {section_id} not found in {chunk.section}")
     vintage = get_code_vintage() or {}
     return {
+        "amended_since": [public(a) for a in amendments_touching(section_id)],
         "section_id": section_id,
         "article": chunk.section,
         "article_title": chunk.section_title,
@@ -1446,6 +1469,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
         footer = build_sources_footer(
             provenance, cited_chunks("".join(answer_parts), context.code_chunks),
             (get_code_vintage() or {}).get("current_through"),
+            context.code_currency,
         )
         if footer:
             answer_parts.append(footer)
@@ -2090,6 +2114,32 @@ async def scorecard(
     return data
 
 
+def render_report_html(report_data, language: str = "en", report_date: str | None = None) -> str:
+    """The report's HTML from its data (deterministic catalog, no LLM)."""
+    from datetime import date
+
+    from jinja2 import Environment, FileSystemLoader
+
+    from backend import report_i18n
+    from backend.legislation.currency import chicago_day
+    from backend.retrieval.zoning_definitions import get_zone_name
+
+    _t = report_i18n.make_translator(language)
+    _na = _t("common.na")
+    env = Environment(loader=FileSystemLoader(str(Path(__file__).parent / "templates")), autoescape=True)
+    env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else _na
+    env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else _na
+    env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else _na
+    env.filters["zone_desc"] = get_zone_name
+    env.filters["rdate"] = lambda iso: report_i18n.format_report_date(chicago_day(iso), language) if iso else _na
+    env.globals["t"] = _t
+    env.globals["tn"] = report_i18n.make_plural(language)
+    return env.get_template("zoning_report.html").render(
+        report=report_data,
+        report_date=report_date or report_i18n.format_report_date(date.today(), language),
+    )
+
+
 @app.get("/api/report")
 async def report(
     request: Request,
@@ -2106,7 +2156,6 @@ async def report(
     from datetime import date
 
     from backend.auth import _TIER_ORDER
-    from jinja2 import Environment, FileSystemLoader
 
     # mock=true fills every section with fixture data for visual QA of the PDF
     # template. A customer must never receive a report built from made-up
@@ -2187,26 +2236,7 @@ async def report(
         del basemap_bytes, basemap_wide_bytes
 
         # Render HTML template
-        from backend import report_i18n
-        _t = report_i18n.make_translator(language)
-        _tn = report_i18n.make_plural(language)
-        _na = _t("common.na")
-        template_dir = Path(__file__).parent / "templates"
-        env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
-        env.filters["fnum"] = lambda v, fmt="{:,.0f}": fmt.format(v) if v is not None else _na
-        env.filters["fpct"] = lambda v: f"{v * 100:.1f}%" if v is not None else _na
-        env.filters["fcur"] = lambda v: f"${v:,.0f}" if v is not None else _na
-        from backend.retrieval.zoning_definitions import get_zone_name
-        env.filters["zone_desc"] = get_zone_name
-        # Translator globals for the template (deterministic catalog, no LLM).
-        env.globals["t"] = _t
-        env.globals["tn"] = _tn
-        template = env.get_template("zoning_report.html")
-
-        html_content = template.render(
-            report=report_data,
-            report_date=report_i18n.format_report_date(date.today(), language),
-        )
+        html_content = render_report_html(report_data, language)
 
         # Generate the PDF in an ISOLATED CHILD PROCESS. write_pdf() (cairo/pango
         # laying out 16–19 image-embedded pages) is the heaviest single step of a
@@ -2566,6 +2596,20 @@ async def admin_requests(request: Request, limit: int = 50, offset: int = 0, _ad
 @app.get("/api/admin/engagement")
 async def admin_engagement(request: Request, period: str = "30d", _admin: dict = Depends(require_admin)) -> dict:
     return await db.get_engagement_stats(period)
+
+
+@app.get("/api/admin/code-currency")
+async def admin_code_currency(request: Request, _admin: dict = Depends(require_admin)) -> dict:
+    """How current the code text is and how well the gap is handled: the WS6 registry's
+    inputs (no network). ``map_lag`` arrives with WS1 M5."""
+    from backend.legislation.currency import amendments_since_vintage, clerk_source_status, code_currency_status, public
+
+    return {
+        "code": code_currency_status(),
+        "clerk": clerk_source_status(),
+        "map_lag": None,
+        "amendments": [public(a) for a in amendments_since_vintage(("title17", "cited_other"))],
+    }
 
 
 @app.get("/api/admin/benchmark")

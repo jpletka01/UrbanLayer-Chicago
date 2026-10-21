@@ -1,0 +1,16 @@
+[Unit]
+Description=Daily City Clerk legislation sync (code amendments passed since the code text's vintage)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/urbanlayer
+# A SEPARATE ephemeral container (`run --rm`, `--no-deps`: no qdrant), like the Discovery
+# rebuild. It writes backend/data/legislation_snapshot.json on the shared backend_data volume
+# atomically (temp file + rename); the live backend re-reads it on the mtime change, so no
+# restart. Exit 1 = the Clerk was unreachable (last good rows kept), 2 = contract drift
+# (snapshot marked suspect); both report to Sentry and leave the unit "failed".
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend python -m backend.legislation.sync
+# Gentle client: serial pages, 1 s apart, 3 tries each. One page today; allow for many.
+TimeoutStartSec=1800
