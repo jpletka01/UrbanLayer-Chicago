@@ -771,6 +771,72 @@ export async function fetchAdminCodeCurrency(): Promise<AdminCodeCurrency | null
   } catch { return null; }
 }
 
+/** The admin "Data health" panel (WS6 M3): the source registry joined with the daily checker's stored status. */
+export type SourceState = "alarm" | "error" | "warn" | "unknown" | "acked" | "ok" | "frozen_ok";
+
+export interface DataHealthSource {
+  id: string;
+  name: string;
+  publisher: string | null;
+  link: string | null;
+  tier: string | null;
+  kind: string | null;
+  severity: "critical" | "standard" | "info";
+  owner_modules: string[];
+  surfaces: string[];
+  state: SourceState;
+  reason: string;
+  as_of: string | null;
+  basis: "content" | "published" | null;
+  age_days: number | null;
+  warn_days: number | null;
+  alarm_days: number | null;
+  frozen: string | null;
+  contract: { layer_name: string | null; required_fields: string[]; count_band: number[] | null } | null;
+  ack: { reason: string; until: string; owner: string } | null;
+  state_since: string | null;
+  checked_at: string | null;
+  probe_error: boolean;
+  latency_ms: number | null;
+  requests: number | null;
+  note: string;
+}
+
+export interface DataHealth {
+  checker: {
+    state: "ok" | "late";
+    last_run: string | null;
+    age_h: number | null;
+    late_after_h: number;
+    next_run: string | null;
+    last_error: string | null;
+    runs: { started_at: string; finished_at: string | null; sources: number; alarms: number; requests: number; error: string | null }[];
+  };
+  counts: Partial<Record<SourceState, number>>;
+  sources: DataHealthSource[];
+}
+
+export interface DataHealthHistory {
+  source: string;
+  history: { checked_at: string; state: SourceState; reason: string; as_of: string | null; age_days: number | null }[];
+}
+
+export async function fetchDataHealth(): Promise<DataHealth | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/data-health`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+export async function fetchDataHealthHistory(source: string): Promise<DataHealthHistory | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/admin/data-health?source=${encodeURIComponent(source)}`);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
 export async function fetchBenchmarkResults(): Promise<BenchmarkResults | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/admin/benchmark`);

@@ -2609,6 +2609,21 @@ async def admin_engagement(request: Request, period: str = "30d", _admin: dict =
     return await db.get_engagement_stats(period)
 
 
+@app.get("/api/admin/data-health")
+async def admin_data_health(
+    request: Request, source: str | None = None, _admin: dict = Depends(require_admin)
+) -> dict:
+    """The Data health panel (WS6 M3): the registry joined with the checker's stored status
+    (read-only, no network), or, with ``?source=``, one source's 90-day history."""
+    from backend.data_health import panel
+
+    path = get_settings().data_health_db_path
+    loop = asyncio.get_running_loop()
+    if source:
+        return await loop.run_in_executor(None, panel.build_history, path, source)
+    return await loop.run_in_executor(None, panel.build_panel, path)
+
+
 @app.get("/api/admin/code-currency")
 async def admin_code_currency(request: Request, _admin: dict = Depends(require_admin)) -> dict:
     """How current the code text is and how well the gap is handled: the WS6 registry's

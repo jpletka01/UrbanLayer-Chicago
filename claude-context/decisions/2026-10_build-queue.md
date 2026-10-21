@@ -821,3 +821,45 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - The PDF visually: the template block is exercised by a render test, not opened as a PDF.
 - `npm run test:mobile`: no layout change (the note renders in the existing "What this page doesn't cover" card; a screenshot at desktop width shows it wrapping normally).
 - Cross-street lots on TOD streets, and a TOD street's abutting lots on the far side of an alley or cross street.
+
+## Item 13: admin Data health panel (WS6 M3, 2026-10-21)
+
+**A row on the admin dashboard, not a tab.**
+- **Decision:** `DataHealthSection` is a new section on `AdminDashboard`, above Code Currency.
+- **Alternative:** a tab, as the plan says. `AdminDashboard` has no tabs: it is a stack of sections (overview, latency, requests, Code Currency, Early Access), so a tab would have meant building tab chrome for one panel.
+- **Revisit if:** the page grows past what one scroll reaches. Then tabs for the whole dashboard, as its own change.
+
+**The payload is built by a module that imports none of the serving stack, and never raises.**
+- **Decision:** `backend/data_health/panel.py` reads the store through the `open_readonly` handle `/health` uses. A missing or unreadable file returns a "checker late" payload with no rows, not a 500. A test runs `import backend.data_health.panel` in a subprocess and asserts torch, `backend.main` and discovery are absent.
+- **Why:** an admin looking at a broken checker is exactly who must not meet an error page; and the module stays usable from the checker's container.
+- **Revisit if:** the app and the checker ever stop sharing the `backend_data` volume.
+
+**Every registered source gets a row even before its first check; unregistered stored rows are shown too.**
+- **Decision:** rows = the live registry (retired excluded) plus any stored row with no registry entry. An unchecked source reads `unknown` / "not checked yet".
+- **Why:** the plan's acceptance wants the M2 drill source visible and red, and a `drill.*` id is not in the registry. A source added to the registry reads honestly on the panel the day it merges, not only after the next 05:37 run.
+- **Evidence:** `test_a_stale_source_comes_first_and_red_with_its_reason`, `test_every_registered_source_has_a_row_even_before_its_first_check`.
+
+**Sort order: alarm, error, warn, unknown, acked, ok, frozen, critical first within a state.**
+- **Decision:** the plan's order. The checker's console output puts `error` first; both are red, so the panel follows the plan, and critical sources lead each state so the ★ ones are never buried.
+- The sort is applied on the server and again in the component (`sortSources` in `lib/dataHealth.ts`, tested), so a future payload that changes order can't reorder the panel silently.
+
+**The "contract result" column says whether a structure check exists, not how it came out.**
+- **Decision:** the column shows "checked" when the source's spec has a layer-name, field or count-band contract, and "—" otherwise. A failed structure check already makes the row `error` or `alarm`, with the finding in its reason.
+- **Alternative:** a separate pass/fail field. The store has none: contract findings are folded into the state's reason (M1). Splitting them is M4's work, when value-set contracts and sentinels add results worth their own column.
+- **Revisit if:** M4 stores per-contract results. This column then shows them.
+
+**Not in scope, as the plan says:** the weekly kit summary (M5) and replacing the empty Benchmark/Judge panels.
+
+**Numbers** (2026-10-21; local)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend tests | 1,855 → 1,869 (+14, `test_data_health_panel.py`) | `make test` |
+| Frontend tests | 334 → 341 (+7, `DataHealthSection.test.tsx`); `npm run build` passes | `make test`; `cd frontend && npm run build` |
+| Panel on a real store (one full `check --write` against the public APIs, 100 requests, plus the synthetic drill) | 82 rows; counts `2 alarm, 5 warn, 18 unknown, 4 acked, 44 ok, 9 frozen`, matching the CLI summary line; `drill.synthetic` first and red | `DATA_HEALTH_DB_PATH=… python -m backend.data_health.check --write --alert --inject-fault stale:drill.synthetic`, then the backend with the same env and `curl localhost:8001/api/admin/data-health` |
+| Counts vs `/health` | `alarms` = alarm + error in the panel's counts (pinned by a test) | `test_counts_match_the_store_and_the_health_block` |
+
+**Not measured:**
+- Production: the panel's first load as admin, its counts against the live store and `/health`, and the stored drill history (checked after the deploy).
+- `npm run test:mobile`: it audits public routes, and the admin panel is a desktop screen. The table scrolls sideways inside its own container; checked at desktop width only.
+- The 18 `unknown` rows on this Mac are overlay layers the local run can't read; production's count differs.
