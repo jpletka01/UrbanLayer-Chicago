@@ -18,6 +18,7 @@ reusable lesson, not the full narrative.
 - `guides/frontend-guide.md` — components, design tokens, state, map system, responsive, animations.
 - `guides/report.md` — **the $25 Feasibility Report** (current V6 architecture, render isolation, honesty rules, known data-blocks, QA parcels).
 - `guides/zoning-cache.md` — precomputed zoning-extraction cache (reranker is out of the report path); rebuild + limits.
+- `guides/source-confidence.md` — **the source confidence standard**: authority tiers, the five fields (source, date, coverage, precision, method), withhold/fade thresholds, caption rules, source ids, the "adding a figure" checklist. Read before adding or changing any displayed figure.
 - `guides/parcel-resolution-truth-model.md` — the canonical address→PIN contract (who may write parcel identity; approximate/nearest-unverified rules).
 - `guides/scorecard-dashboard-model.md` — the Scorecard's dashboard+chat model and card architecture.
 - `guides/deployment.md` — server ops, `.env` template, deploy commands, monitoring, DB backups.
