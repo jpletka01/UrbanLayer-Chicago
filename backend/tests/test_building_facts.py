@@ -46,7 +46,7 @@ async def test_commercial_fields_use_per_field_newest_year():
     with patch("backend.retrieval.property.building_facts.socrata_get",
                new=AsyncMock(return_value=rows)):
         facts = await get_commercial_facts("14174040240000")
-    assert facts == {"bldg_sqft": 39000, "year_built": 1920, "units": 48}
+    assert {k: v for k, v in facts.items() if k != "valuation_year"} == {"bldg_sqft": 39000, "year_built": 1920, "units": 48}
 
 
 @pytest.mark.asyncio
@@ -86,7 +86,7 @@ async def test_commercial_units_only_for_single_pin_economic_unit():
     with patch("backend.retrieval.property.building_facts.socrata_get",
                new=AsyncMock(return_value=single)):
         facts = await get_commercial_facts("16172000010000")
-    assert facts == {"bldg_sqft": 57301, "year_built": 1928, "units": 80}
+    assert {k: v for k, v in facts.items() if k != "valuation_year"} == {"bldg_sqft": 57301, "year_built": 1928, "units": 80}
 
 
 STRIP_CENTER = [{
@@ -125,7 +125,7 @@ async def test_rows_without_member_lists_keep_the_pre_f6_behavior():
     with patch("backend.retrieval.property.building_facts.socrata_get",
                new=AsyncMock(return_value=rows)):
         facts = await get_commercial_facts("17161020270000")
-    assert facts == {"bldg_sqft": 1000, "year_built": None, "units": None}
+    assert {k: v for k, v in facts.items() if k != "valuation_year"} == {"bldg_sqft": 1000, "year_built": None, "units": None}
 
 
 @pytest.mark.asyncio

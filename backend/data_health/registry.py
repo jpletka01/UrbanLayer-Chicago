@@ -214,7 +214,7 @@ SOURCES: tuple[SourceSpec, ...] = (
     _socrata(
         COOK, "uzyt-m557", "cook.assessor.values", "Assessor - Assessed Values", COOK_ASSESSOR,
         "backend/retrieval/property/assessments.py", surfaces=_PROP,
-        fact_keys=("property.assessed_value", "property.tax"), severity="critical", cadence_days=365,
+        fact_keys=("property.assessed_value", "property.assessment_history", "property.implied_market_value", "property.tax", "property.tax_estimate"), severity="critical", cadence_days=365,
         content=Content("max_year", "year"), warn_days=365, alarm_days=730,
     ),
     _socrata(
@@ -226,16 +226,16 @@ SOURCES: tuple[SourceSpec, ...] = (
     _socrata(
         COOK, "x54s-btds", "cook.assessor.characteristics", "Assessor - Residential Improvement Characteristics",
         COOK_ASSESSOR, "backend/retrieval/property/characteristics.py", surfaces=_PROP,
-        fact_keys=("property.building", "property.land_sqft", "property.bldg_sqft"), cadence_days=7, warn_days=14, alarm_days=45,
+        fact_keys=("property.building", "property.land_sqft", "property.bldg_sqft", "property.year_built", "property.stories", "property.units", "property.far_used"), cadence_days=7, warn_days=14, alarm_days=45,
     ),
     _socrata(
         COOK, "3r7i-mrz4", "cook.assessor.condo_characteristics", "Assessor - Residential Condominium Unit Characteristics",
         COOK_ASSESSOR, "backend/retrieval/property/building_facts.py", surfaces=_PROP,
-        fact_keys=("property.building", "property.bldg_sqft"), cadence_days=7, warn_days=14, alarm_days=45,
+        fact_keys=("property.building", "property.bldg_sqft", "property.year_built"), cadence_days=7, warn_days=14, alarm_days=45,
     ),
     _socrata(
         COOK, "csik-bsws", "cook.assessor.commercial_valuation", "Assessor - Commercial Valuation Data", COOK_ASSESSOR,
-        "backend/retrieval/property/building_facts.py", surfaces=_PROP, fact_keys=("property.building", "property.bldg_sqft"),
+        "backend/retrieval/property/building_facts.py", surfaces=_PROP, fact_keys=("property.building", "property.bldg_sqft", "property.year_built", "property.units"),
         cadence_days=365, content=Content("max_year", "year"), warn_days=450, alarm_days=750,
     ),
     _socrata(
@@ -255,20 +255,20 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         COOK, "55ju-2fs9", "cook.treasurer.tax_sale", "Treasurer - Annual Tax Sale", "Cook County Treasurer",
-        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags",),
+        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags.tax_sale",),
         frozen=Frozen("2016-12-06", "tax sales 2014-2015; dataset not updated since 2016"),
         note="A flag that never fires for a recent sale; the Profile must not read 'none' as 'never sold'.",
     ),
     _socrata(
         COOK, "ydgz-vkrp", "cook.treasurer.scavenger_sale", "Treasurer - Scavenger Tax Sale", "Cook County Treasurer",
-        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags",),
+        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags.tax_sale",),
         frozen=Frozen("2016-12-06", "scavenger sales through 2015; dataset not updated since 2016"),
     ),
     SourceSpec(
         id="cook.ptaxsim", name="PTAXSIM (property tax simulation database)", publisher=COOK_ASSESSOR,
         tier="official_estimate", kind="local_db", locator="backend/data/ptaxsim.db", probe="ptaxsim",
         owner_modules=("backend/retrieval/property/tax_estimate.py", "backend/retrieval/property/parcel_geometry.py"),
-        surfaces=_PROP, fact_keys=("property.tax_estimate", "property.land_area", "property.land_sqft"), severity="critical",
+        surfaces=_PROP, fact_keys=("property.tax_estimate", "property.effective_rate", "property.tax_class_norm", "property.exemptions", "property.land_area", "property.land_sqft"), severity="critical",
         cadence_days=365, warn_days=800, alarm_days=1200,
         note="Content date = the last tax year in the database. Also probes the upstream release.",
     ),
@@ -288,7 +288,7 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         CITY, "v6vf-nfxy", "chi.311", "311 Service Requests", "City of Chicago", "backend/retrieval/three11.py",
-        surfaces=("chat", "map"), fact_keys=("area.311",), cadence_days=1,
+        surfaces=("profile", "chat", "map"), fact_keys=("area.311", "property.311"), cadence_days=1,
         content=Content("max_date", "created_date"), warn_days=7, alarm_days=21,
     ),
     _socrata(
@@ -340,22 +340,22 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         CITY, "aksk-kvfp", "chi.city_owned_land", "City-Owned Land Inventory", "DPD",
-        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags",),
+        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags.city_owned",),
         cadence_days=1, warn_days=30, alarm_days=120,
     ),
     _socrata(
         CITY, "crg5-4zyp", "chi.scofflaw", "Building Code Scofflaw List", "Department of Law",
-        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags",),
+        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags.scofflaw",),
         cadence_days=180, warn_days=200, alarm_days=400, note="Published twice a year.",
     ),
     _socrata(
         CITY, "7bzs-jsyj", "chi.str_prohibited", "House Share Prohibited Buildings List", "BACP",
-        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags",),
+        "backend/retrieval/property/parcel_flags.py", surfaces=("profile",), fact_keys=("property.flags.str_prohibited",),
         warn_days=180, alarm_days=540,
     ),
     _socrata(
         CITY, "syp8-uezg", "chi.building_footprints", "Building Footprints", "City of Chicago",
-        "backend/retrieval/property/building_facts.py", surfaces=("profile",), fact_keys=("property.building", "property.bldg_sqft"),
+        "backend/retrieval/property/building_facts.py", surfaces=("profile",), fact_keys=("property.building", "property.bldg_sqft", "property.year_built", "property.stories"),
         frozen=Frozen("2015-08-15", "footprints from 2015"),
     ),
     _socrata(
@@ -443,14 +443,14 @@ SOURCES: tuple[SourceSpec, ...] = (
         id="census.reporter.acs", name="ACS 5-year tract data (via Census Reporter)", publisher="US Census Bureau",
         tier="official_estimate", kind="api", locator="https://api.censusreporter.org/1.0", probe="census_release",
         owner_modules=("backend/retrieval/neighborhood/census_tract.py",), surfaces=("profile", "chat", "report"),
-        fact_keys=("neighborhood.tract_demographics",), severity="standard", cadence_days=365,
+        fact_keys=("area.tract",), severity="standard", cadence_days=365,
         content=Content("release_year"), warn_days=800, alarm_days=1200,
         note="Content date = the end year of the newest release. The page's period label is read from the data.",
     ),
     _socrata(
         CITY, "t68z-cikk", "chi.acs_community_area", "ACS 5 Year Data by Community Area", "City of Chicago",
         "backend/retrieval/neighborhood/demographics.py", tier="official_estimate", surfaces=("profile", "chat"),
-        fact_keys=("neighborhood.demographics",), cadence_days=365,
+        fact_keys=("area.community_area",), cadence_days=365,
         content=Content("max_year", "acs_year", reference="census_latest_release"),
         contract=Contract(required_fields=("community_area", "acs_year", "under_25_000", "_25_000_to_49_999",
                                            "_50_000_to_74_999", "_75_000_to_125_000", "_125_000")),
@@ -520,7 +520,7 @@ SOURCES: tuple[SourceSpec, ...] = (
         id="code.hand_table.zoning_definitions", name="Zoning district table (hand-maintained)", publisher="UrbanLayer",
         tier="official_publication", kind="hand_table", locator="backend/retrieval/zoning_definitions.py",
         probe="hand_table", owner_modules=("backend/retrieval/zoning_definitions.py",),
-        surfaces=("profile", "chat", "report"), fact_keys=("zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit"), severity="critical", availability_only=True,
+        surfaces=("profile", "chat", "report"), fact_keys=("zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit", "zoning.unit_yield", "zoning.adu", "zoning.tod_benefits"), severity="critical", availability_only=True,
         note="VERIFIED_AGAINST must equal code_vintage.current_through, so someone re-verifies after each refresh.",
     ),
     SourceSpec(
@@ -542,7 +542,7 @@ SOURCES: tuple[SourceSpec, ...] = (
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",
         tier="official_record", kind="artifact", locator="ingestion/data/chrs_orange_red.json.gz", probe="none",
         owner_modules=("backend/retrieval/property/chrs.py", "ingestion/build_chrs_artifact.py"), surfaces=("profile",),
-        fact_keys=("property.flags",), frozen=Frozen("1996", "1996 survey, still legally in force"),
+        fact_keys=("property.flags.chrs",), frozen=Frozen("1996", "1996 survey, still legally in force"),
     ),
     SourceSpec(
         id="artifact.community_areas_geojson", name="Community area boundaries (committed)", publisher="City of Chicago",

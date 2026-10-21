@@ -191,6 +191,8 @@ Confidence computes only `age_days` and the static 24-month display rule. Stalen
 ## Rollout
 Status 2026-10-21: step 3 (schema v2) is in `backend/provenance.py`: `ProvenanceEntry`, `make_entry()`, `confidence_state()`, `FACTS`, `resolve_as_of()`. The nine existing fact kinds are upgraded; the UI doesn't read the new fields yet (step 5).
 
+Status 2026-10-21: step 4 (capture) is in: ACS margins of error and release ids, comp basis, the commercial-valuation year, the benchmark's coverage and build date, the class norm's tax year. `backend/provenance_figures.py` builds an entry for every Profile figure and every area feed (about 60 per Profile); `expected_fact_ids(payload)` is the declared list of what a payload must carry, checked by `test_confidence_coverage.py` over the 12 recorded kit payloads and by `python -m eval.confidence_audit`. Source dates resolve through `data_health.status.latest()`, then the registry's frozen vintage.
+
 
 The standard is adopted now; the code catches up in order:
 1. This guide.

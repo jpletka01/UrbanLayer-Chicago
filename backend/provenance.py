@@ -228,6 +228,9 @@ class ProvenanceEntry(BaseModel):
         v2 extras only when set."""
         d = self.model_dump(mode="json")
         always = {*_V1_KEYS, "tier", "as_of_basis", "method_key", "method", "confidence", "confidence_reasons"}
+        for nested in ("coverage", "precision"):  # "not published" stays absent, never a block of nulls
+            if isinstance(d.get(nested), dict):
+                d[nested] = {k: v for k, v in d[nested].items() if v is not None} or None
         return {k: v for k, v in d.items() if k in always or (v is not None and v != [])}
 
 
@@ -293,6 +296,103 @@ FACTS: dict[str, FactSpec] = {
 }
 
 
+def _rec(label: str, source_id: str, scope: str = "parcel", **kw) -> FactSpec:
+    return FactSpec(label, source_id, "recorded", scope, "official_record", **kw)
+
+
+def _calc(label: str, source_id: str, scope: str = "parcel", method_key: str = "calculation") -> FactSpec:
+    return FactSpec(label, source_id, method_key, scope, "our_calculation")
+
+
+_TRACT_FIELDS = {
+    "population": "Tract population",
+    "median_household_income": "Tract median household income",
+    "per_capita_income": "Tract per-capita income",
+    "median_home_value": "Tract median home value",
+    "median_gross_rent": "Tract median gross rent",
+    "owner_occupied_pct": "Tract owner-occupied share",
+    "vacancy_rate": "Tract housing vacancy rate",
+    "poverty_rate": "Tract poverty rate",
+    "unemployment_rate": "Tract unemployment rate",
+    "bachelors_or_higher_pct": "Tract share with a bachelor's degree or more",
+    "foreign_born_pct": "Tract foreign-born share",
+    "city_median_income": "Chicago median household income",
+    "county_median_income": "Cook County median household income",
+}
+
+# WS0 M3: every figure the Profile shows (and every area feed a chat turn can carry) names its
+# source here. Ids are a stable contract, like the facts above.
+FACTS.update({
+    "property.assessed_value": _rec("Assessed value", "cook.assessor.values"),
+    "property.assessment_history": _rec("Assessment history", "cook.assessor.values"),
+    "property.implied_market_value": _calc("Implied market value", "cook.assessor.values"),
+    "property.tax_estimate": FactSpec(
+        "Estimated annual tax", "cook.ptaxsim", "government_model", "parcel", "official_estimate",
+        input_source_ids=("cook.assessor.values",),  # the fallback estimate is our arithmetic on the assessed value
+    ),
+    "property.effective_rate": _calc("Effective tax rate", "cook.ptaxsim"),
+    "property.tax_class_norm": _calc("Class-norm effective tax rate", "cook.ptaxsim", scope="city"),
+    "property.exemptions": FactSpec("Tax exemptions", "cook.ptaxsim", "government_model", "parcel", "official_estimate"),
+    "property.sales": _rec("Sales history", "cook.assessor.sales"),
+    "property.year_built": _rec(
+        "Year built", "cook.assessor.characteristics",
+        alt_source_ids=("cook.assessor.condo_characteristics", "cook.assessor.commercial_valuation", "chi.building_footprints"),
+    ),
+    "property.stories": _rec("Stories", "cook.assessor.characteristics", alt_source_ids=("chi.building_footprints",)),
+    "property.units": _rec("Dwelling units", "cook.assessor.characteristics", alt_source_ids=("cook.assessor.commercial_valuation",)),
+    "property.energy": _rec("Energy benchmarking", "chi.energy_benchmarking"),
+    "property.assessor_permits": _rec("Assessor permits", "cook.assessor.permits"),
+    "property.appeals": _rec("Assessment appeals", "cook.assessor.appeals", alt_source_ids=("cook.bor.appeals",)),
+    "property.flags.chrs": _rec("Historic Resources Survey rating", "artifact.chrs"),
+    "property.flags.tax_sale": _rec("Tax-sale history", "cook.treasurer.tax_sale", alt_source_ids=("cook.treasurer.scavenger_sale",)),
+    "property.flags.city_owned": _rec("City-owned land", "chi.city_owned_land"),
+    "property.flags.scofflaw": _rec("Building-code scofflaw list", "chi.scofflaw"),
+    "property.flags.str_prohibited": _rec("Short-term-rental prohibited building", "chi.str_prohibited"),
+    "property.violations": _rec("Building violations at the address", "chi.violations", scope="address"),
+    "property.311": _rec("311 requests at the address", "chi.311", scope="address"),
+    "property.far_used": _calc("FAR used", "cook.assessor.characteristics"),
+    "zoning.unit_yield": _calc("Maximum units by lot area", "code.hand_table.zoning_definitions"),
+    "zoning.adu": _calc("Accessory dwelling unit status", "code.hand_table.zoning_definitions"),
+    "zoning.tod_benefits": _calc("Transit-served benefits", "code.hand_table.zoning_definitions"),
+    "regulatory.flood": _rec("FEMA flood zone", "fed.fema.nfhl"),
+    "regulatory.environmental": _rec("EPA-registered sites near the parcel", "fed.epa.frs", scope="radius"),
+    "incentive.tif": _rec("TIF district", "chi.tif.boundaries", alt_source_ids=("chi.tif.projects", "chi.tif.fund_analysis")),
+    "incentive.enterprise_zone": _rec("Enterprise zone", "chi.enterprise_zones"),
+    "incentive.opportunity_zone": _rec("Opportunity zone", "fed.hud.opportunity_zones", scope="tract"),
+    "incentive.lihtc": _rec("Qualified census tract", "fed.hud.qct", scope="tract"),
+    "incentive.nmtc": _rec("New Markets Tax Credit tract", "fed.cdfi.nmtc", scope="tract"),
+    "incentive.grants": _rec("City incentive grants in the area", "chi.sbif", scope="community_area", alt_source_ids=("chi.nof_large", "chi.nof_small")),
+    "incentive.aro": _rec("Affordable rental housing in the area", "chi.aro_projects", scope="community_area"),
+    "neighborhood.ward": _rec("Ward and alderman", "chi.wards", alt_source_ids=("chi.ward_offices",)),
+    "geo.community_area": _rec("Community area", "chi.community_areas", alt_source_ids=("artifact.community_areas_geojson",)),
+    "neighborhood.transit": _rec("Nearest transit", "chi.cta.gtfs", scope="radius", alt_source_ids=("chi.metra.gtfs", "artifact.transit_stations")),
+    "neighborhood.divvy": _rec("Nearest Divvy station", "chi.divvy", scope="radius"),
+    "neighborhood.traffic": _rec("Daily traffic on the nearest counted street", "chi.traffic", scope="radius"),
+    "neighborhood.walkscore": FactSpec("Walk Score", "private.walkscore", "commercial_index", "address", "non_government"),
+    **{
+        f"area.tract.{k}": FactSpec(label, "census.reporter.acs", "survey_estimate",
+                                    "city" if k == "city_median_income" else "county" if k == "county_median_income" else "tract",
+                                    "official_estimate")
+        for k, label in _TRACT_FIELDS.items()
+    },
+    "area.community_area.population": FactSpec("Community-area population", "chi.acs_community_area", "survey_estimate", "community_area", "official_estimate"),
+    "area.community_area.median_household_income": _calc("Community-area median household income", "chi.acs_community_area", "community_area", "bracket_median"),
+    "area.crime": _rec("Crime", "chi.crime", "community_area"),
+    "area.311": _rec("311 requests", "chi.311", "community_area"),
+    "area.permits": _rec("Building permits", "chi.permits", "community_area"),
+    "area.violations": _rec("Building violations", "chi.violations", "community_area"),
+    "area.violations.categories": _calc("Violation categories", "chi.violations", "community_area", "keyword_grouping"),
+    "area.business": _rec("Business licenses", "chi.business_licenses", "community_area"),
+    "area.vacant": _rec("Vacant and abandoned buildings", "chi.vacant_buildings", "community_area"),
+    "area.food": _rec("Food inspections", "chi.food_inspections", "community_area"),
+    "area.benchmarks.market_value_per_land_sqft": _calc("Area median market value per land ft²", "internal.discovery_index", "community_area"),
+    "property.comps.median_price": _calc("Median comparable sale price", "cook.assessor.sales", "radius"),
+    "property.comps.median_price_per_land_sqft": _calc("Median comparable price per land ft²", "cook.assessor.sales", "radius"),
+    "property.comps.median_price_per_bldg_sqft": _calc("Median comparable price per building ft²", "cook.assessor.sales", "radius"),
+    "property.comps.median_price_per_buildable_sqft": _calc("Median comparable price per buildable ft²", "cook.assessor.sales", "radius"),
+})
+
+
 def weakest_tier(tiers: list[str]) -> str | None:
     """The weakest of ``tiers`` by the guide's A-F order; None for an empty list."""
     known = [t for t in tiers if t in TIER_ORDER]
@@ -313,24 +413,26 @@ def resolve_as_of(
     source_id: str | None, *, response_date: str | None = None, response_basis: str | None = None,
 ) -> tuple[str | None, str]:
     """``(as_of, as_of_basis)`` by the guide's precedence: a date the response carries, then
-    data health's latest check, then the registry's frozen vintage, else none and ``queried``.
+    data health's latest check (the newest date in the data: ``period_end``; else when the
+    publisher last touched it: ``source_updated``), then the registry's frozen vintage, else
+    none and ``queried``. The query date is never an as-of.
 
-    The data-health store lands with WS6 M2; the import is guarded so nothing waits on it.
-    M2 builds feed only the response date (the registry steps arrive with M3's capture), so
-    existing entries keep their v1 ``as_of`` exactly.
+    Entries built before WS0 M3 pass only the response date, so their v1 ``as_of`` is unchanged.
     """
     if response_date:
         return response_date, response_basis or "source_updated"
     if source_id:
         try:
-            from backend.data_health import status  # type: ignore[attr-defined]
+            from backend.data_health import status
 
             latest = status.latest(source_id)
-            got = latest and (latest.get("content_through") or latest.get("published_at"))
-            if got:
-                return str(got)[:10], "source_updated"
-        except Exception:  # not shipped yet, or the store is unreadable: fall through
-            pass
+        except Exception:  # an unreadable store: fall through
+            latest = None
+        if latest:
+            if latest.get("content_through"):
+                return str(latest["content_through"])[:10], "period_end"
+            if latest.get("published_at"):
+                return str(latest["published_at"])[:10], "source_updated"
         from backend.data_health.registry import BY_ID
 
         spec = BY_ID.get(source_id)
@@ -448,6 +550,17 @@ _AREA_SOURCE_IDS = {
 }
 
 
+def _vintage_for(src: str | None, prop, qd: str) -> dict:
+    """as_of / basis / period for a lot or building area by the dataset behind it (WS0 M3), so the
+    2015 footprints and a commercial valuation year say so. Computed areas keep their v1 dates."""
+    from backend.provenance_figures import _building_dates
+
+    if src in (None, "geometry"):
+        return {}
+    d = _building_dates(src, prop, qd)
+    return {k: v for k, v in d.items() if v is not None}
+
+
 def _area_basis(fact: str, src: str | None) -> dict:
     """tier/source/method overrides for a lot or building area, by the dataset that supplied it.
     A polygon area is our arithmetic on the County's geometry (tier D on its source's tier), not
@@ -465,6 +578,8 @@ def build_provenance(
     resolved_pin: str | None,
     resolved_confidence: str | None,
     query_date: str | None = None,
+    comparables=None,
+    address_scoped_violations: bool = False,
 ) -> dict[str, dict]:
     """Provenance for the facts the Profile shows. ``context`` is the assembled
     ContextObject; a fact that isn't present gets no entry (never a made-up one)."""
@@ -554,7 +669,7 @@ def build_provenance(
                     source=_AREA_SOURCES.get(src or "", src or "Cook County records"),
                     record_id=prop.pin14,
                     value=_scalar(value),
-                    **_area_basis(fact, src),
+                    **{**_vintage_for(src, prop, qd), **_area_basis(fact, src)},
                 )
 
     if vintage:
@@ -565,6 +680,13 @@ def build_provenance(
             note=vintage.get("label"),
             value=_scalar(vintage["current_through"]),
         )
+
+    # WS0 M3: every other figure the Profile shows, and every area feed a chat turn can carry.
+    from backend.provenance_figures import figure_entries
+
+    out.update(figure_entries(
+        context, comparables=comparables, qd=qd, existing=out, address_scoped_violations=address_scoped_violations,
+    ))
     return out
 
 

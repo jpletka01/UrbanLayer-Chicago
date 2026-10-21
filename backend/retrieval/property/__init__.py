@@ -347,6 +347,7 @@ def _build_summary(
     land_sqft = _safe_int(parcel.get("land_sqft"))
     land_sqft_source = "gis" if land_sqft else None
     bldg_sqft_source = "gis" if bldg_sqft else None
+    commercial_valuation_year: int | None = None
 
     bldg_class_description = None
     stories = None
@@ -479,6 +480,7 @@ def _build_summary(
             if not bldg_sqft and commercial.get("bldg_sqft"):
                 bldg_sqft = commercial["bldg_sqft"]
                 bldg_sqft_source = "commercial_valuation"
+                commercial_valuation_year = commercial.get("valuation_year")
             # A member of a multi-PIN complex: the valuation total describes the
             # whole complex, so it is carried beside — never as — this parcel's area.
             if commercial.get("complex_bldg_sqft"):
@@ -487,11 +489,13 @@ def _build_summary(
             if not year_built and commercial.get("year_built"):
                 year_built = commercial["year_built"]
                 year_built_source = "commercial_valuation"
+                commercial_valuation_year = commercial.get("valuation_year")
                 bldg_age = datetime.date.today().year - year_built
             if not units and commercial.get("units"):
                 # Filled only for single-PIN economic units (get_commercial_facts).
                 units = commercial["units"]
                 units_source = "commercial_valuation"
+                commercial_valuation_year = commercial.get("valuation_year")
         energy = building_fallbacks.get("energy")
         if energy:
             from backend.models import EnergyBenchmark
@@ -585,6 +589,7 @@ def _build_summary(
         land_sqft=land_sqft,
         land_sqft_source=land_sqft_source,
         bldg_sqft_source=bldg_sqft_source,
+        commercial_valuation_year=commercial_valuation_year,
         complex_bldg_sqft=complex_bldg_sqft if not bldg_sqft else None,
         complex_member_pins=complex_member_pins if not bldg_sqft else None,
         year_built_source=year_built_source,

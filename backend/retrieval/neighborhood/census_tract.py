@@ -1,6 +1,7 @@
 """Census tract demographics via Census Reporter API (ACS 5-year estimates)."""
 
 import logging
+import math
 
 import httpx
 
@@ -61,6 +62,45 @@ def _est(data: dict, table: str, col: str) -> float | None:
     if not tbl:
         return None
     return _safe_float(tbl.get("estimate", {}).get(col))
+
+
+def _err(data: dict, table: str, col: str) -> float | None:
+    """The published margin of error (90% level) for a column; None when absent, negative
+    (the Census's "controlled estimate" sentinels) or not a number."""
+    tbl = data.get(table)
+    if not tbl:
+        return None
+    v = _safe_float((tbl.get("error") or {}).get(col))
+    return v if v is not None and v >= 0 else None
+
+
+MOE_Z = 1.645  # ACS margins of error are at the 90% confidence level
+
+
+def _moe_sum(*moes: float | None) -> float | None:
+    """MOE of a sum of estimates: root of the summed squares. None if any part has none."""
+    if not moes or any(m is None for m in moes):
+        return None
+    return math.sqrt(sum(m * m for m in moes))  # type: ignore[operator]
+
+
+def _moe_prop(num: float | None, num_moe: float | None, den: float | None, den_moe: float | None) -> float | None:
+    """MOE (in percentage points) of a proportion whose numerator is part of its denominator,
+    by the Census Bureau's formula; falls back to the ratio formula when the radicand is negative."""
+    if num is None or num_moe is None or den is None or den_moe is None or den <= 0:
+        return None
+    p = num / den
+    radicand = num_moe**2 - p**2 * den_moe**2
+    if radicand < 0:
+        radicand = num_moe**2 + p**2 * den_moe**2
+    return round(math.sqrt(radicand) / den * 100, 1)
+
+
+def _cv(estimate: float | None, moe: float | None) -> float | None:
+    """Coefficient of variation: standard error (MOE / 1.645) over the estimate."""
+    if estimate is None or moe is None or estimate <= 0:
+        return None
+    return round(moe / MOE_Z / estimate, 3)
 
 
 def _parse_age(data: dict) -> tuple[list[DistributionBucket], float | None]:
@@ -298,7 +338,40 @@ async def fetch_census_tract(
         city_median = _safe_int(_est(chicago_data, "B19013", "B19013001"))
         county_median = _safe_int(_est(cook_data, "B19013", "B19013001"))
 
-        years = (payload.get("release") or {}).get("years")
+        # Margins of error (90%) and their coefficients of variation, for the figures the page shows.
+        # Percentages carry their MOE in percentage points.
+        bach_cols = [f"B15003{i:03d}" for i in (22, 23, 24, 25)]
+        bach_moe = _moe_sum(*(_err(tract_data, "B15003", c) for c in bach_cols))
+        moe: dict[str, float] = {}
+        for name, value in (
+            ("population", _err(tract_data, "B01001", "B01001001")),
+            ("median_household_income", _err(tract_data, "B19013", "B19013001")),
+            ("per_capita_income", _err(tract_data, "B19301", "B19301001")),
+            ("median_home_value", _err(tract_data, "B25077", "B25077001")),
+            ("median_gross_rent", _err(tract_data, "B25064", "B25064001")),
+            ("owner_occupied_pct", _moe_prop(owner_occ, _err(tract_data, "B25003", "B25003002"), tenure_total, _err(tract_data, "B25003", "B25003001"))),
+            ("vacancy_rate", _moe_prop(vacant, _err(tract_data, "B25002", "B25002003"), occ_total, _err(tract_data, "B25002", "B25002001"))),
+            ("poverty_rate", _moe_prop(poverty_below, _err(tract_data, "B17001", "B17001002"), poverty_total, _err(tract_data, "B17001", "B17001001"))),
+            ("unemployment_rate", _moe_prop(unemployed, _err(tract_data, "B23025", "B23025005"), labor_force, _err(tract_data, "B23025", "B23025003"))),
+            ("bachelors_or_higher_pct", _moe_prop(
+                sum(_est(tract_data, "B15003", c) or 0 for c in bach_cols), bach_moe,
+                _est(tract_data, "B15003", "B15003001"), _err(tract_data, "B15003", "B15003001"))),
+            ("foreign_born_pct", _moe_prop(foreign_total, _err(tract_data, "B05002", "B05002013"), native_total, _err(tract_data, "B05002", "B05002001"))),
+            ("city_median_income", _err(chicago_data, "B19013", "B19013001")),
+            ("county_median_income", _err(cook_data, "B19013", "B19013001")),
+        ):
+            if value is not None:
+                moe[name] = round(value, 1)
+        estimates = {
+            "population": population, "median_household_income": median_income, "per_capita_income": per_capita,
+            "median_home_value": home_value, "median_gross_rent": median_rent, "owner_occupied_pct": owner_occ_pct,
+            "vacancy_rate": vacancy_rate, "poverty_rate": poverty_rate, "unemployment_rate": unemployment_rate,
+            "bachelors_or_higher_pct": bach_pct, "foreign_born_pct": foreign_pct,
+            "city_median_income": city_median, "county_median_income": county_median,
+        }
+        cv = {k: c for k, m in moe.items() if (c := _cv(estimates.get(k), m)) is not None}
+        release = payload.get("release") or {}
+        years = release.get("years")
         acs_period = years.replace("-", "–") if isinstance(years, str) and years else None
 
         result = CensusTractDemographics(
@@ -318,6 +391,9 @@ async def fetch_census_tract(
             bachelors_or_higher_pct=bach_pct,
             foreign_born_pct=foreign_pct,
             acs_period=acs_period,
+            acs_release=release.get("id") if isinstance(release.get("id"), str) else None,
+            moe=moe,
+            cv=cv,
             age_distribution=age_dist,
             income_distribution=income_dist,
             race_distribution=race_dist,

@@ -1913,6 +1913,10 @@ async def _fetch_scorecard_data(
                     price_range_min=s.get("price_range_min"),
                     price_range_max=s.get("price_range_max"),
                     sales_volume=s.get("sales_volume", 0),
+                    comp_basis=s.get("comp_basis"),
+                    comp_radius_mi=s.get("comp_radius_mi"),
+                    comp_window_years=s.get("comp_window_years"),
+                    comp_widened=bool(s.get("comp_widened")),
                     sales=[ComparableSale(**sale) for sale in comps_data["sales"]],
                 )
         except Exception as exc:
@@ -1948,15 +1952,20 @@ async def area_stats(ca: int) -> dict:
     from backend.retrieval.area_stats import get_area_stats
 
     stats = await get_area_stats(ca)
-    return stats or {
-        "community_area": ca,
-        "n_parcels": 0,
-        "median_assessed": None,
-        "n_assessed": 0,
-        "median_mv_per_land_sqft": None,
-        "n_mv_psf": 0,
-        "by_land_use": {},
-    }
+    if not stats:
+        return {
+            "community_area": ca,
+            "n_parcels": 0,
+            "median_assessed": None,
+            "n_assessed": 0,
+            "median_mv_per_land_sqft": None,
+            "n_mv_psf": 0,
+            "by_land_use": {},
+        }
+    from backend.provenance_figures import area_benchmark_entry
+
+    entry = area_benchmark_entry(stats)
+    return {**stats, "provenance": {"area.benchmarks.market_value_per_land_sqft": entry} if entry else {}}
 
 
 _parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")
@@ -2116,6 +2125,8 @@ async def scorecard(
         zone_definition=data.get("zone_definition"),
         resolved_pin=resolved_pin,
         resolved_confidence=resolved_confidence,
+        comparables=data.get("comparables"),
+        address_scoped_violations=True,
     )
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
