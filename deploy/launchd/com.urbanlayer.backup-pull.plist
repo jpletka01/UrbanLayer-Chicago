@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Off-box pull of the production DB backups to this Mac (scripts/pull_backups.sh).
+  Runs at login and every 4 hours while the Mac is awake; a run missed during
+  sleep fires on wake. Install (replaces __HOME__ and __REPO__):
+    sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$PWD|g" deploy/launchd/com.urbanlayer.backup-pull.plist \
+      > ~/Library/LaunchAgents/com.urbanlayer.backup-pull.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.urbanlayer.backup-pull.plist
+  See deploy/hardening-runbook.md section 8c.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.urbanlayer.backup-pull</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__REPO__/scripts/pull_backups.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>14400</integer>
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/urbanlayer-backup-pull.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/urbanlayer-backup-pull.log</string>
+</dict>
+</plist>
