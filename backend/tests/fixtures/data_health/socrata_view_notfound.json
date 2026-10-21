@@ -1,0 +1,8 @@
+{
+  "code": "not_found",
+  "data": {
+    "id": "zzzz-zzzz"
+  },
+  "error": true,
+  "message": "Not found"
+}

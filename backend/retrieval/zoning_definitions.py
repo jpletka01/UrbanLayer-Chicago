@@ -16,6 +16,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field, replace
 
+# The code vintage (code_vintage.json:current_through) this table was last checked against.
+# Evidence is test_zoning_ordinance_parity.py, which compares every value here with the
+# ingested ordinance text. Data health alarms when this no longer equals the served vintage,
+# so after each code refresh: run that test, fix the table, then move this date.
+VERIFIED_AGAINST = "2026-06-17"
+
 
 @dataclass(frozen=True)
 class ZoneDefinition:

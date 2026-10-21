@@ -1,0 +1,13 @@
+{
+  "result": {
+    "addressMatches": [
+      {
+        "coordinates": {
+          "x": -87.632335272385,
+          "y": 41.883377755162
+        },
+        "matchedAddress": "121 N LA SALLE ST, CHICAGO, IL, 60602"
+      }
+    ]
+  }
+}

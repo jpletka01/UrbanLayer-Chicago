@@ -1,0 +1,95 @@
+{
+  "fields": [
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID"
+    },
+    {
+      "name": "ZONING_ID",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "CASE_NUMBER",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "ZONE_TYPE",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "ZONE_CLASS",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "ORDINANCE_NUM",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "ORDINANCE_DATE",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "name": "CREATE_TIMESTAMP",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "name": "CREATE_USERID",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "UPDATE_TIMESTAMP",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "name": "UPDATE_USERID",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "PD_NUM",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "PMD_SUB_AREA",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "PEDSTREET_AREANAME",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "OVERRIDE_REASON_CD",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "OVERRIDE_COMMENTS",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "SHAPE",
+      "type": "esriFieldTypeGeometry"
+    },
+    {
+      "name": "SHAPE.AREA",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "SHAPE.LEN",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "GLOBALID",
+      "type": "esriFieldTypeGlobalID"
+    },
+    {
+      "name": "CLERK_DOCNO",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "CLERK_URL",
+      "type": "esriFieldTypeString"
+    }
+  ],
+  "maxRecordCount": 2000,
+  "name": "Zoning Boundaries",
+  "type": "Feature Layer"
+}
