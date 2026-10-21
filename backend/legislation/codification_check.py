@@ -29,6 +29,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from backend.code_sections import set_indexed_sections
 from backend.legislation import currency
 from backend.legislation.amendments import sections_overlap
 
@@ -110,6 +111,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     diff = json.loads(args.diff.read_text())
+    if args.sections:  # which ids are whole articles (17-7-0570 holds 17-7-0573), from the new export
+        set_indexed_sections(p.stem for p in args.sections.glob("*.json"))
     since = date.fromisoformat(diff["old_vintage"]) if diff.get("old_vintage") else date(1900, 1, 1)
     result = check(diff, currency.amendments_since(since, currency.ALL_SCOPES), args.sections)
     print(f"{result['old_vintage']} -> {result['new_vintage']}")

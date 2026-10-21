@@ -2,6 +2,7 @@
 number can show the exact code text it came from. The article text is rebuilt here in
 the index's own format (paragraphs, then ``[TABLE]`` blocks) from the ingested JSON."""
 
+import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -10,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend import main
-from backend.code_sections import SECTION_ID_RE, TABLE_HINTS, article_id, extract_subsection
+from backend.code_sections import SECTION_ID_RE, TABLE_HINTS, article_id, extract_subsection, set_indexed_sections
 from backend.models import CodeChunk
 from backend.provenance import BULK_SECTIONS
 
@@ -38,6 +39,29 @@ def _article(file: str) -> str:
 def test_article_ids():
     assert [article_id(x) for x in ("17-2-0304-A", "17-2-0300", "17-3-0408-A", "17-4-0407", "17-10-0102-B", "2-120-740")] == [
         "17-2-0300", "17-2-0300", "17-3-0400", "17-4-0400", "17-10-0100", "2-120-740"]
+
+
+def test_article_ids_come_from_the_index(indexed_code):
+    """Chapter 17-7 starts articles off the hundred: the ADU section 17-7-0574 lives in
+    17-7-0570 and 606's 17-7-0591 in 17-7-0590 (both 404'd when rounded to 17-7-0500)."""
+    assert {x: article_id(x) for x in (
+        "17-7-0574", "17-7-0591", "17-7-0593-A", "17-7-0513", "17-7-0503", "17-7-0459", "17-7-0570",
+        "17-2-0304-A", "17-3-0503-D", "17-11-0055", "11-4-1010", "2-120-740",
+    )} == {
+        "17-7-0574": "17-7-0570", "17-7-0591": "17-7-0590", "17-7-0593-A": "17-7-0590", "17-7-0513": "17-7-0510",
+        "17-7-0503": "17-7-0500", "17-7-0459": "17-7-0450", "17-7-0570": "17-7-0570",
+        "17-2-0304-A": "17-2-0300", "17-3-0503-D": "17-3-0500", "17-11-0055": "17-11-0050",
+        "11-4-1010": "11-4-1010", "2-120-740": "2-120-740",
+    }
+
+
+def test_article_ids_never_cross_into_the_next_hundred(indexed_code):
+    # 17-3-0600 (TOD Streets) isn't in the text yet: it is its own id, not part of 17-3-0500
+    assert article_id("17-3-0600") == "17-3-0600" and article_id("17-3-0601-A") == "17-3-0600"
+    # a chapter the index doesn't hold, and an unregistered index, fall back to the hundred
+    assert article_id("17-99-0574") == "17-99-0500"
+    set_indexed_sections(())
+    assert article_id("17-7-0574") == "17-7-0500"
 
 
 @pytest.mark.parametrize("bad", ["../etc/passwd", "17-2-0304-a", "17-2", "17-2-0304-AB", "", "17-2-0304; drop", "abc"])
@@ -69,6 +93,18 @@ def test_a_section_level_id_includes_its_subsections():
     assert sub["tables"] == []  # a whole section has no single table to attach
 
 
+@pytest.mark.parametrize("article,sec,starts,next_heading", [
+    ("17-7-0570", "17-7-0574", "Areas and Limitations. Additional Dwelling Unit-Allowed RS Areas", "17-7-0575"),
+    ("17-7-0590", "17-7-0591", "Boundaries. The Predominance of the Block (606) District", "17-7-0592"),
+    ("17-7-0590", "17-7-0593-A", "In the RS3 district", "17-7-0593-B"),
+])
+def test_chapter_17_7_sections_cut_out_of_their_article(indexed_code, article, sec, starts, next_heading):
+    assert article_id(sec) == article
+    sub = extract_subsection(_article(article), sec)
+    assert sub["paragraphs"][0].startswith(f"{sec} {starts}")
+    assert not any(p.startswith(next_heading + " ") for p in sub["paragraphs"])  # stops at the next heading
+
+
 def test_unknown_subsection_is_none():
     assert extract_subsection(_article("17-2-0300"), "17-2-0399-Z") is None
     assert extract_subsection("no headings here", "17-2-0304-A") is None
@@ -97,7 +133,8 @@ def test_table_hints_match_the_codes_real_column_headers():
 
 def _client():
     from unittest.mock import MagicMock
-    with patch("backend.main.get_settings") as s, patch("backend.main.db") as db:
+    with patch("backend.main.get_settings") as s, patch("backend.main.db") as db, \
+            patch("backend.retrieval.vector_search._get_known_sections", new=AsyncMock(return_value=frozenset())):
         s.return_value = MagicMock(anthropic_api_key="k", socrata_app_token="t", qdrant_url="http://localhost:6333",
                                    router_model="m", synthesizer_model="m", message_limit=10)
         db.init_db = AsyncMock()
@@ -135,6 +172,25 @@ def test_endpoint_errors(client):
         assert client.get("/api/code/section/17-2-0399-Z").status_code == 404
 
 
+@pytest.mark.parametrize("sec,article,heading", [
+    ("17-7-0574", "17-7-0570", "Areas and Limitations"),
+    ("17-7-0591", "17-7-0590", "Boundaries"),
+    ("17-2-0304-A", "17-2-0300", "Standards"),
+])
+def test_endpoint_opens_the_article_the_index_holds_the_section_in(client, indexed_code, sec, article, heading):
+    """The endpoint loads the index before resolving (a cold process has none registered):
+    17-7-0574 was a 404 ("not found in 17-7-0500") while the Profile cited it."""
+    set_indexed_sections(())
+    load_index = AsyncMock(side_effect=lambda: set_indexed_sections(indexed_code) or frozenset(indexed_code))
+    with patch("backend.retrieval.vector_search._get_known_sections", new=load_index), \
+            patch.object(main, "get_full_section", new=AsyncMock(side_effect=lambda a: _chunk(a))) as fetch:
+        r = client.get(f"/api/code/section/{sec}")
+    assert r.status_code == 200, r.json()
+    fetch.assert_awaited_once_with(article)
+    d = r.json()
+    assert d["article"] == article and d["heading"] == heading and d["paragraphs"][0].startswith(sec + " ")
+
+
 def test_a_table_the_index_split_into_row_batches_is_put_back_together():
     text = (
         "17-2-0311-A Standards. Height limits:\n\n17-2-0311-B Exemptions. x"
@@ -149,3 +205,22 @@ def test_a_table_the_index_split_into_row_batches_is_put_back_together():
         "Row 1: District: RS1; Maximum Building Height (feet): 30",
         "Row 2: District: RS2; Maximum Building Height (feet): 30",
     ]
+
+
+def test_scrolling_the_index_registers_its_articles(monkeypatch):
+    """vector_search's one-time section scroll is what feeds article_id in the app."""
+    from unittest.mock import MagicMock
+
+    from backend.retrieval import vector_search as vs
+
+    page = MagicMock()
+    page.json.return_value = {"result": {"points": [{"payload": {"section": s}} for s in ("17-7-0500", "17-7-0570")],
+                                         "next_page_offset": None}}
+    qdrant = MagicMock(post=AsyncMock(return_value=page))
+    monkeypatch.setattr(vs, "_known_sections_cache", None)
+    monkeypatch.setattr(vs, "_get_qdrant_client", lambda: qdrant)
+    monkeypatch.setattr(vs, "get_settings", lambda: MagicMock(qdrant_url="http://q", qdrant_code_collection="c"))
+
+    assert article_id("17-7-0574") == "17-7-0500"
+    asyncio.run(vs._get_known_sections())
+    assert article_id("17-7-0574") == "17-7-0570"

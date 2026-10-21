@@ -395,13 +395,18 @@ def _section_not_found(section_id: str, detail: str | None = None) -> HTTPExcept
 async def code_subsection(section_id: str) -> dict:
     """One Municipal Code subsection (and the table it cites), with how current the
     code text is. Backs the Profile's "see the source" on a standard (V2): a Profile
-    number cites ``17-2-0304-A``; the index holds the whole article ``17-2-0300``."""
+    number cites ``17-2-0304-A``; the index holds the whole article ``17-2-0300``
+    (and ``17-7-0574`` lives in ``17-7-0570``)."""
     from backend.code_sections import SECTION_ID_RE, article_id, extract_subsection
     from backend.code_vintage import get_code_vintage
     from backend.legislation.currency import amendments_touching, public
+    from backend.retrieval.vector_search import _get_known_sections
 
     if not SECTION_ID_RE.match(section_id):
         raise HTTPException(status_code=422, detail="Not a Municipal Code section id.")
+    # Registers the index's article ids (cached after the first call), which article_id
+    # needs: 17-7-0574 lives in the indexed article 17-7-0570, not 17-7-0500.
+    await _get_known_sections()
     chunk = await get_full_section(article_id(section_id))
     if chunk is None:
         raise _section_not_found(section_id)

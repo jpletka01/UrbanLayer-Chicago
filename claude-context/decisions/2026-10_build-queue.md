@@ -474,3 +474,35 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 | Profile kit on prod, after vs before the deploy | 117/122, 0 CW, A 12/12, notes 12/12; **0 of 12 parcels differ** | `PYTHONPATH=. python -m eval.parcel_kit --full https://urbanlayerchicago.com --surfaces profile` |
 
 Prod still holds `chicago_municipal_code` (pre-migration, 16,576 points, unserved; item 4 meant to drop it) and `municipal_code_2026-03-18` (the rollback). Both can go at the next refresh with `push_index --drop`.
+
+## Fix: the section viewer finds chapter 17-7's off-hundred articles (standalone, not a queue item, 2026-10-21)
+
+Found during item 7 (above). `/api/code/section/17-7-0574` (ADU) and `/17-7-0591` (606) returned 404 on prod although the Profile cites both: `article_id` rounded every section down to its `…00`, and chapter 17-7 indexes articles at 0450, 0510, 0550, 0560, 0570, 0580 and 0590.
+
+**Which article holds a section is read from the index, bounded by the hundred.**
+- **Decision:** `article_id` returns the largest indexed id in the same chapter that is ≤ the section and in the same hundred. With none, it falls back to the old `…00` rounding. The ids are registered by `set_indexed_sections`, which `vector_search._get_known_sections` calls on its one-time Qdrant scroll. The endpoint awaits that scroll before resolving, so a cold process doesn't fall back. `codification_check` registers the export's own sections from `--sections`.
+- **Alternatives:**
+  - a hard-coded table of chapter 17-7's articles: goes stale on the next refresh that adds an overlay (17-7-0510 was new in this one);
+  - read `ingestion/data/sections/`: not in the image (`.dockerignore`), so prod would always fall back;
+  - plain "largest ≤" without the hundred bound: an uncodified 17-3-0600 (TOD Streets) would resolve into 17-3-0500, so amendments to it would read as touching 17-3-0500 (the new test pins this);
+  - pass the index into every `sections_overlap` call: `currency` and `chat_sources` are sync and offline, and they have no index at hand.
+- **Why:** the index is the only source that's both on prod and current. Process state is a fair price because it degrades to exactly the old behavior when Qdrant is unreachable. `amendments._is_article` now follows the same rule, so 17-7-0570 ⇄ 17-7-0574 overlap, and 17-7-0500 (Burling Street) no longer claims ADU amendments.
+- **Not changed:** an article-level id on the subsection endpoint (`/api/code/section/17-7-0510`, and `/17-2-0300` before this fix too) is still 404 ("not found in 17-7-0510"): the article's body has no heading paragraph of its own. Whole articles are served by `/section/{id}` (`/section/17-7-0510` is 200 on prod). Its sections 17-7-0511 to 0513 now open.
+- **Revisit if:** an article spans more than a hundred, or a chapter indexes a section beside its article in the same hundred (it would claim the ids above it). Neither is in the 2026-06-17 index.
+
+**Scan: off-hundred four-digit ids across the index** (2026-06-17 `chunks.jsonl`: 9,107 sections, 531 four-digit ids in 28 chapters)
+- Title 17, articles off the hundred: **17-7** (0450, 0510, 0550, 0560, 0570, 0580, 0590) and **17-11** (0050). These are the only ones the bug affected.
+- Outside Title 17, 10 chapters number *sections* by tens: 2-32 (19), 2-92 (7), 4-156 (7), 10-28 (15), 11-4 (170), 13-96 (23), 15-16 (54), 15-24 (21), 15-28 (20) and 18-28 (4). Each is its own indexed record. The old rounding sent 11-4-1010 to a non-existent 11-4-1000; it now maps to itself. The Profile cites none of them, and chat opens them through `/section/{id}`, which never used `article_id`.
+
+**Numbers** (2026-10-21)
+
+| `GET /api/code/section/…` | prod before | local after |
+|---|---|---|
+| 17-7-0574 (ADU) | 404 "not found in 17-7-0500" | 200, article 17-7-0570 |
+| 17-7-0591 (606) | 404 | 200, article 17-7-0590 |
+| 17-7-0513 (Cicero overlay) | 404 | 200, article 17-7-0510 |
+| 17-7-0510 (the article id) | 404 | 404 (unchanged contract, see above) |
+| 17-2-0304-A / 17-3-0503-D | 200 / 200 | 200 / 200 (articles 17-2-0300 / 17-3-0500) |
+
+- Reproduce: `curl -s -o /dev/null -w "%{http_code}\n" https://urbanlayerchicago.com/api/code/section/17-7-0574`. For after: the same against `http://localhost:8011`, from `uvicorn backend.main:app --port 8011` on this branch with local Qdrant on the 2026-06-17 collection.
+- Tests: 29 new backend cases (article ids, the 17-7 extractions, the endpoint, index registration, overlaps, codification; the old overlap table now also runs with the index registered). Backend 1,626 passed + 1 skipped; eval 90; vitest 292; `npm run build` green. Run as `make test` plus `cd frontend && npm run build && npm run test`.

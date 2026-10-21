@@ -22,6 +22,7 @@ from typing import Any
 
 import httpx
 
+from backend.code_sections import set_indexed_sections
 from backend.config import get_settings
 from backend.models import CodeChunk
 
@@ -84,6 +85,7 @@ async def _get_known_sections() -> frozenset[str]:
             if offset is None:
                 break
         _known_sections_cache = frozenset(sections)
+        set_indexed_sections(_known_sections_cache)
         log.info("Section index built: %d unique sections", len(_known_sections_cache))
         return _known_sections_cache
 

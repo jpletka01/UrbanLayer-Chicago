@@ -92,7 +92,23 @@ def test_sections_come_from_the_title_most_specific_first():
     ("17-2-0300", "17-3-0503-D", False),
     ("2-44-170", "2-44", True),
 ])
-def test_section_overlap_rules(a, b, expected):
+@pytest.mark.parametrize("index", [False, True])
+def test_section_overlap_rules(a, b, expected, index, request):
+    if index:  # the same answers once the code index's article ids are registered
+        request.getfixturevalue("indexed_code")
+    assert am.sections_overlap(a, b) is expected and am.sections_overlap(b, a) is expected
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    ("17-7-0570", "17-7-0574", True),        # the ADU article holds 17-7-0571..0579
+    ("17-7-0590", "17-7-0593-A", True),      # 606
+    ("17-7-0510", "17-7-0513", True),        # Cicero Ave overlay (new in the 2026-06-17 text)
+    ("17-7-0500", "17-7-0574", False),       # 17-7-0500 is the Burling Street overlay, not ADUs
+    ("17-7-0570", "17-7-0591", False),
+    ("17-3-0500", "17-3-0600", False),       # TOD Streets isn't in the text, still not in 17-3-0500
+    ("11-4-1010", "11-4-1020", False),       # Title 11 sections, not articles of each other
+])
+def test_section_overlap_follows_the_indexed_articles(indexed_code, a, b, expected):
     assert am.sections_overlap(a, b) is expected and am.sections_overlap(b, a) is expected
 
 
@@ -383,7 +399,8 @@ def client():
 
     from backend import main
 
-    with patch("backend.main.get_settings") as s, patch("backend.main.db") as db:
+    with patch("backend.main.get_settings") as s, patch("backend.main.db") as db, \
+            patch("backend.retrieval.vector_search._get_known_sections", new=AsyncMock(return_value=frozenset())):
         s.return_value = MagicMock(anthropic_api_key="k", socrata_app_token="t", qdrant_url="http://localhost:6333",
                                    router_model="m", synthesizer_model="m", message_limit=10)
         db.init_db = AsyncMock()
@@ -520,6 +537,16 @@ def test_codification_check_matches_by_journal_date_and_section(tmp_path):
     assert [x["record"] for x in r["matched"]] == ["A", "OMNI"]
     assert [x["record"] for x in r["missing"]] == ["B"]  # its section wasn't changed: still uncodified
     assert r["unexplained"] == [{"section": "17-8-0100", "coun_j": "4-15-26"}]
+
+
+def test_codification_check_finds_a_section_inside_an_off_hundred_article(tmp_path, indexed_code):
+    # The export changes the indexed article 17-7-0570; an amendment to 17-7-0574 is in it
+    amendments = [{"record": "ADU", "passed_on": "2026-02-18", "sections": ["17-7-0574"]}]
+    diff = {
+        "old_vintage": "2026-01-01", "new_vintage": "2026-06-17", "added": [],
+        "modified_detail": [{"section": "17-7-0570", "coun_j_dates": ["2-18-26"], "new_coun_j_dates": ["2-18-26"]}],
+    }
+    assert [x["record"] for x in codification_check.check(diff, amendments, tmp_path)["matched"]] == ["ADU"]
 
 
 def test_codification_check_leaves_a_reviewed_partial_codification_alone(tmp_path):
