@@ -135,7 +135,7 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Chat answer quality after removing the community-area fields (a `make kit` chat run would spend production tokens; the monthly production kit run will show it).
 - `eval.lot_coverage` (unaffected in principle: no parcel fields changed).
 
-## Item 4: ingestion safety + prod push tool (WS1 M0, #PR, 2026-10-21)
+## Item 4: ingestion safety + prod push tool (WS1 M0, #63, 2026-10-21)
 
 **A parse is not an ingest.**
 - **Decision:** the parser no longer writes `backend/code_vintage.json`. `ingestion.update` writes it only after the embed finishes and the collection's point count equals the staged chunk count. The file now also records `ingested_at`, `chunk_count`, `collection` and `export_sha256`.
