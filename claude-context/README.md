@@ -59,7 +59,9 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   understated, incl. in the $25 report) + MiniChatDock + feedback/segment re-home + card-height fix],
   **`2026-09-08_backlog-sweep`** [publicly-exposed unauthenticated prod Qdrant CLOSED; Title 14 — the whole
   building code — finally indexed and pushed to prod; vitest wired into CI; deploy gated on non-docs
-  changes; Discovery range slider, Divvy, assessor permits, FAR-normalized comps]).
+  changes; Discovery range slider, Divvy, assessor permits, FAR-normalized comps],
+  **`2026-09-28_pre-share-review`** [multi-lens review → PRs #24–#30: security fixes, visible bugs, lint in
+  CI, EVALS.md, README, purchases-coming-soon; production server hardened via `deploy/hardening-runbook.md`]).
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,

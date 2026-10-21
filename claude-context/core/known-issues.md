@@ -38,6 +38,8 @@
 
 **Cloudflare Insights beacon CORS**: Cloudflare-injected beacon intermittently fails with CORS and subresource integrity hash mismatches. Harmless console noise, not fixable by us.
 
+**Purchases are off in production: Stripe isn't configured** (found 2026-09-28): the server `.env` has no `STRIPE_SECRET_KEY`, webhook secret or price ids, so checkout would 503. Since PR #29 the UI reads `GET /api/payments/status` and shows "Purchases coming soon" on the Profile, purchase modal, Pricing and the Discovery upgrade prompt; access codes still work. Adding the keys to the server `.env` re-enables purchases with no code change (production startup then also requires `STRIPE_WEBHOOK_SECRET`).
+
 **UpgradePrompt / ReportPurchasePrompt copy is hardcoded English**: Both paywall modals (`UpgradePrompt.tsx`, `ReportPurchasePrompt.tsx`) have no i18n keys — Spanish users see English. Pre-existing; surfaced during coherence-audit step 2 (2026-06-12), which fixed the related untranslated `es/pages.json` `scorecard.reportCTA` block but left the modals as-is (north-star says don't expand Spanish by default; fix if/when pricing copy changes again).
 
 **TOD radii don't exist as a map layer**: Coherence audit §6 calls for "transit stations + TOD radii" in the default map; only stations render (`MapView.tsx` transit layer). Radii around CTA stations (the literal zoning-bonus determinant distance) would be new feature work.
@@ -76,10 +78,6 @@
 **Permits carry 10-digit parcel PINs, the index has 14-digit unit-PINs**: Chicago building permits (`ydr8-5enu`) `pin_list` holds 10-digit parcel ids; CCAO/Discovery use 14-digit (parcel + 4-digit unit suffix). Match on the shared **10-digit prefix**, never zero-pad the 10-digit to 14 (left-padding gives `00001708320016`, which matches nothing). Same condo-prefix idea as the Discovery address fallback.
 
 **Legacy `user_id IS NULL` conversations**: Conversations created before auth have `user_id = NULL`. Ownership checks must use `WHERE user_id = ? OR user_id IS NULL`. Applies to share creation/revocation, conversation loading, and any user-scoped operations. **Since 2026-06-12 (audit step 3)** all `/api/conversations/*` endpoints `require_auth`, so anonymous HTTP callers can no longer reach the NULL fallback — it exists only so signed-in/dev users keep seeing legacy rows. The one-time prod cleanup (`DELETE FROM conversations WHERE user_id IS NULL`, children first — SQLite FK cascade is off) **was run 2026-06-12**: prod has 0 NULL rows (backup at `/app/backend/data/chicago.backup-2026-06-12-prenullclean.db`). Local dev DBs may still hold NULL rows. NOTE: anonymous chat is intentionally NOT persisted — never "fix" anon chat by re-opening these endpoints. Operational gotcha: the live backend's aiosqlite connection holds a persistent SQLite write lock — ad-hoc writes from a second connection need a fresh backend restart (busy_timeout alone won't get you in).
-
-**`GET /api/uploads/{upload_id}/file` is unauthenticated**: Upload downloads are keyed only by UUID (needed for shared-transcript rendering). Enumeration is impractical, but there's no ownership check. Flagged during audit step 3; tighten if uploads ever carry sensitive content.
-
-**Display PINs are dash-formatted; `_resolve_location` rejects them**: PIN-display helpers (`format_pin` in `retrieval/utils.py`, used by the Discovery index builder) emit `14-28-115-084-0000`, but `_resolve_location` rejects dashed pins with 422. Strip to 14 digits (`pin.replace(/\D/g, "")`) before using as a `?pin=` query key. (Was originally an `/api/explore` gotcha; `/explore` was retired 2026-06-14 but the dash-format-vs-resolver mismatch still applies to any display pin → Scorecard handoff.)
 
 **Port must be 8001**: Frontend proxy config and API URLs assume backend on 8001. Changing it requires updating `vite.config.ts` proxy + frontend API base URL.
 
