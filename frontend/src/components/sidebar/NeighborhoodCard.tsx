@@ -148,6 +148,7 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
         </svg>
         <span className="text-micro text-text-muted uppercase tracking-wider group-hover:text-text-secondary transition-colors">
           {t("neighborhood.tractDetail", { tract: tractNum })}
+          {ct.acs_period && <span className="normal-case tracking-normal"> · {t("neighborhood.acsPeriod", { period: ct.acs_period })}</span>}
         </span>
       </button>
       {!open ? null : (
@@ -165,6 +166,7 @@ function CensusTractSection({ ct }: { ct: CensusTractDemographics }) {
       </div>
 
       <div className="space-y-0.5">
+        <KV label={t("neighborhood.unemployment")} value={fmtPct(ct.unemployment_rate)} />
         <KV label={t("neighborhood.perCapitaIncome")} value={fmtDollar(ct.per_capita_income)} />
         <KV label={t("neighborhood.homeValue")} value={fmtDollar(ct.median_home_value)} />
         <KV label={t("neighborhood.medianRent")} value={fmtDollar(ct.median_gross_rent)} />
@@ -216,24 +218,22 @@ export function NeighborhoodCard({ data }: { data: NeighborhoodSummary }) {
   return (
     <CollapsibleCard title={t("neighborhood.title")} icon={PeopleIcon}>
       <div className="space-y-3">
-        {demo && (
-          <>
-            <div className="grid grid-cols-3 gap-2 py-1">
+        {/* Community-area block: only what the City's ACS extract holds. The income
+            median is interpolated from 5 brackets with no margin of error, so the
+            caption says so and names the vintage — the tract block below is a
+            different (newer) ACS release, and the two must never read as one. */}
+        {demo && (demo.population != null || demo.median_household_income != null) && (
+          <div className="space-y-1">
+            <div className="grid grid-cols-2 gap-2 py-1">
               <StatBox label={t("neighborhood.population")} value={fmtNum(demo.population)} />
               <StatBox label={t("neighborhood.medIncome")} value={fmtDollar(demo.median_household_income)} />
-              <StatBox label={t("neighborhood.homeValue")} value={fmtDollar(demo.median_home_value)} />
             </div>
-
-            <div className="space-y-0.5">
-              <KV label={t("neighborhood.medianRent")} value={fmtDollar(demo.median_gross_rent)} />
-              <KV label={t("neighborhood.medianAge")} value={demo.median_age != null ? String(demo.median_age) : null} />
-              <KV label={t("neighborhood.povertyRate")} value={fmtPct(demo.poverty_rate)} />
-              <KV label={t("neighborhood.unemployment")} value={fmtPct(demo.unemployment_rate)} />
-              <KV label={t("neighborhood.ownerOccupied")} value={fmtPct(demo.owner_occupied_pct)} />
-              <KV label={t("neighborhood.bachelorsDegree")} value={fmtPct(demo.bachelors_degree_pct)} />
-              <KV label={t("neighborhood.vacancyRate")} value={fmtPct(demo.vacancy_rate)} />
-            </div>
-          </>
+            <p className="text-micro text-text-muted leading-snug" data-testid="ca-demographics-caption">
+              {demo.acs_period
+                ? t("neighborhood.caCaption", { area: demo.community_area_name ?? "", period: demo.acs_period })
+                : t("neighborhood.caCaptionNoPeriod", { area: demo.community_area_name ?? "" })}
+            </p>
+          </div>
         )}
 
         {data.census_tract && <CensusTractSection ct={data.census_tract} />}

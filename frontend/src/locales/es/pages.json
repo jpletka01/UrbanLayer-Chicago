@@ -101,7 +101,7 @@
     "downloadCsv": "Descargar CSV",
     "downloadCsvShort": "CSV",
     "generating": "Generando...",
-    "dataAsOf": "Datos al {{date}}",
+    "dataAsOf": "Consultado el {{date}}",
     "someDataUnavailable": "Algunos datos no están disponibles: {{sources}}",
     "nearestParcelCaveat": "No pudimos confirmar la parcela fiscal exacta para esta dirección, por lo que las cifras de propiedad, impuestos y ventas comparables a continuación describen la parcela más cercana, que podría ser una vecina. Verifique el PIN antes de usar números específicos de la parcela.",
     "reportCTA": {
@@ -454,10 +454,6 @@
       "nearestDivvy": "Divvy más cercano",
       "divvyDocks_one": "{{count}} anclaje",
       "divvyDocks_other": "{{count}} anclajes",
-      "income": "Ingreso mediano",
-      "rent": "Renta mediana",
-      "population": "Población",
-      "ownerOcc": "{{pct}}% ocupado por dueños",
       "todEligible": "Elegible TOD"
     },
     "tips": {

@@ -525,18 +525,16 @@ class IncentivesSummary(BaseModel):
 
 
 class DemographicsSummary(BaseModel):
+    """Community-area figures from the City's ACS extract (t68z-cikk). Holds only what
+    that dataset publishes; ``median_household_income`` is interpolated from 5 brackets
+    with no margin of error. Stored contexts may carry fields removed 2026-10-20
+    (rent, home value, poverty, …); pydantic ignores them."""
+
     community_area: int | None = None
     community_area_name: str | None = None
     population: int | None = None
     median_household_income: int | None = None
-    median_home_value: int | None = None
-    median_gross_rent: int | None = None
-    median_age: float | None = None
-    poverty_rate: float | None = None
-    unemployment_rate: float | None = None
-    owner_occupied_pct: float | None = None
-    bachelors_degree_pct: float | None = None
-    vacancy_rate: float | None = None
+    acs_period: str | None = None  # e.g. "2019–2023"
 
 
 class DistributionBucket(BaseModel):
@@ -558,8 +556,10 @@ class CensusTractDemographics(BaseModel):
     owner_occupied_pct: float | None = None
     vacancy_rate: float | None = None
     poverty_rate: float | None = None
+    unemployment_rate: float | None = None
     bachelors_or_higher_pct: float | None = None
     foreign_born_pct: float | None = None
+    acs_period: str | None = None  # the release's years, e.g. "2020–2024"
 
     age_distribution: list[DistributionBucket] = Field(default_factory=list)
     income_distribution: list[DistributionBucket] = Field(default_factory=list)

@@ -120,7 +120,7 @@
     "downloadCsv": "Download CSV",
     "downloadCsvShort": "CSV",
     "generating": "Generating...",
-    "dataAsOf": "Data as of {{date}}",
+    "dataAsOf": "Checked {{date}}",
     "someDataUnavailable": "Some data unavailable: {{sources}}",
     "nearestParcelCaveat": "We couldn't confirm the exact tax parcel for this address, so the property, tax, and comparable-sales figures below describe the nearest parcel — which may be a neighbor. Verify the PIN before relying on parcel-specific numbers.",
     "addressUnavailable": "Address unavailable",
@@ -454,10 +454,6 @@
       "nearestDivvy": "Nearest Divvy",
       "divvyDocks_one": "{{count}} dock",
       "divvyDocks_other": "{{count}} docks",
-      "income": "Median income",
-      "rent": "Median rent",
-      "population": "Population",
-      "ownerOcc": "{{pct}}% owner-occupied",
       "todEligible": "TOD-eligible"
     },
     "tips": {

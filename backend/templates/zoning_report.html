@@ -1109,19 +1109,6 @@ a.glossary-link {
   <p class="section-note">{{ t("market.no_comps") }}</p>
   {% endif %}
 
-  {% if nbr and nbr.demographics %}
-  <h3>{{ t("market.demographics") }}</h3>
-  <dl class="info-grid">
-    {% if nbr.demographics.population %}<dt>{{ t("market.population") }}</dt><dd>{{ nbr.demographics.population|fnum }}</dd>{% endif %}
-    {% if nbr.demographics.median_household_income %}<dt>{{ t("market.median_income") }}</dt><dd>{{ nbr.demographics.median_household_income|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.median_gross_rent %}<dt>{{ t("market.median_rent") }}</dt><dd>{{ nbr.demographics.median_gross_rent|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.median_home_value %}<dt>{{ t("market.median_home_value") }}</dt><dd>{{ nbr.demographics.median_home_value|fcur }}</dd>{% endif %}
-    {% if nbr.demographics.poverty_rate is not none %}<dt>{{ t("market.poverty_rate") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.poverty_rate * 100) }}%</dd>{% endif %}
-    {% if nbr.demographics.owner_occupied_pct is not none %}<dt>{{ t("market.owner_occupied") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.owner_occupied_pct * 100) }}%</dd>{% endif %}
-    {% if nbr.demographics.bachelors_degree_pct is not none %}<dt>{{ t("market.bachelors") }}</dt><dd>{{ "%.1f"|format(nbr.demographics.bachelors_degree_pct * 100) }}%</dd>{% endif %}
-  </dl>
-  {% endif %}
-
   {% if nbr and nbr.walkscore %}
   <div class="scores">
     {% if nbr.walkscore.walk_score is not none %}

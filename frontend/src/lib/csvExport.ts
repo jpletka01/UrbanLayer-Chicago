@@ -215,15 +215,8 @@ export function buildScorecardCSV(ctx: ContextObject, address: string, comparabl
     const kvRows = [
       { field: "Community Area", value: d.community_area_name ?? "" },
       { field: "Population", value: d.population ?? "" },
-      { field: "Median Household Income", value: d.median_household_income ?? "" },
-      { field: "Median Home Value", value: d.median_home_value ?? "" },
-      { field: "Median Gross Rent", value: d.median_gross_rent ?? "" },
-      { field: "Median Age", value: d.median_age ?? "" },
-      { field: "Poverty Rate", value: d.poverty_rate != null ? `${(d.poverty_rate * 100).toFixed(1)}%` : "" },
-      { field: "Unemployment Rate", value: d.unemployment_rate != null ? `${(d.unemployment_rate * 100).toFixed(1)}%` : "" },
-      { field: "Owner Occupied", value: d.owner_occupied_pct != null ? `${(d.owner_occupied_pct * 100).toFixed(1)}%` : "" },
-      { field: "Bachelor's Degree+", value: d.bachelors_degree_pct != null ? `${(d.bachelors_degree_pct * 100).toFixed(1)}%` : "" },
-      { field: "Vacancy Rate", value: d.vacancy_rate != null ? `${(d.vacancy_rate * 100).toFixed(1)}%` : "" },
+      { field: "Median Household Income (estimated from 5 brackets)", value: d.median_household_income ?? "" },
+      { field: "ACS Period", value: d.acs_period ?? "" },
     ];
     addSection(parts, "Demographics", toCSV(kvRows, [
       { key: "field", header: "Metric" },

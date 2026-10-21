@@ -138,12 +138,12 @@ function CrimeYoYBlock({ data }: { data: ScorecardResponse }) {
   );
 }
 
-/** Designed area-context block: access + demographics as a stat row, ward
-    representation as a line. Every number here describes the community area —
-    the module header carries the scope label. */
+/** Designed area-context block: access as a stat row, ward representation as a
+    line. Every number here describes the area — the module header carries the
+    scope label. No demographics: the Profile's fetch skips them, and they return
+    with tract aggregation and margins of error (WS0 Q6). */
 function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
   const { t } = useTranslation("pages");
-  const demo = data.demographics;
   const ws = data.walkscore;
   const tr = data.transit;
   // Walk Score description strings arrive in English from the API — translate
@@ -179,18 +179,6 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
         dv.docks != null ? t("scorecard.area.divvyDocks", { count: dv.docks }) : null,
       ].filter(Boolean).join(" · "),
       tip: t("scorecard.tips.divvy", { count: dv.stations_within_radius, radius: dv.radius_mi }),
-    });
-  }
-  if (demo?.median_household_income != null) {
-    stats.push({ label: t("scorecard.area.income"), value: `$${Math.round(demo.median_household_income / 1000)}K` });
-  }
-  if (demo?.median_gross_rent != null) {
-    stats.push({ label: t("scorecard.area.rent"), value: `$${Math.round(demo.median_gross_rent).toLocaleString()}` });
-  }
-  if (demo?.population != null) {
-    stats.push({
-      label: t("scorecard.area.population"), value: demo.population.toLocaleString(),
-      sub: demo.owner_occupied_pct != null ? t("scorecard.area.ownerOcc", { pct: Math.round(demo.owner_occupied_pct) }) : undefined,
     });
   }
   if (stats.length === 0 && !data.ward) return null;
@@ -1200,8 +1188,9 @@ export default function ScorecardPage() {
                   </ProfileModule>
                 )}
 
-                {/* Page footer — the provenance zone: feedback, data-as-of, and
-                    the verdict methodology disclosure end the read together. */}
+                {/* Page footer — the provenance zone: feedback, the check date, and
+                    the verdict methodology disclosure end the read together.
+                    data_as_of is when we queried, not a data date. */}
                 <div className="border-t border-dark-border mt-10 pt-5 space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />

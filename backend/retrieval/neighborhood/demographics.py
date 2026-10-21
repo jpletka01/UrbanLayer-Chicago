@@ -1,9 +1,16 @@
-"""Community area demographics from Chicago Data Portal ACS dataset.
+"""Community area demographics from the Chicago Data Portal's ACS dataset.
 
-Merges two Socrata datasets:
-- t68z-cikk: ACS demographics (population, income brackets, age/sex, race)
-- kn9c-c2s2: Census selected socioeconomic indicators (poverty, unemployment,
-  per capita income, education, hardship index)
+t68z-cikk ("ACS 5 Year Data by Community Area") publishes population, 5 household-
+income brackets, age/sex and race counts for one ACS vintage, with no margins of
+error. It has no rent, home value, tenure, education, vacancy, poverty or
+unemployment column, so this module reports only what it holds: population and a
+median household income interpolated from the brackets (a weak estimate; see
+``_TOP_BRACKET_ASSUMED_CEILING``).
+
+kn9c-c2s2 (poverty/unemployment) is no longer read: its figures are 2008–2012 and
+it was last updated in 2014. Poverty and unemployment come from the census tract
+(``census_tract.py``, current ACS) until community-area figures are aggregated
+from tracts with their margins of error.
 """
 
 import asyncio
@@ -40,21 +47,6 @@ _INCOME_BRACKETS: list[tuple[str, float, float]] = [
     ("_125_000", 125_000, _TOP_BRACKET_ASSUMED_CEILING),
 ]
 
-# Median household income ≈ 1.8 × per-capita income is a rough citywide ratio
-# (avg Chicago household ≈ 2.4 people, incomes not evenly distributed). Last-
-# resort fallback only — used when both the published median and the bracket
-# distribution are missing.
-_PER_CAPITA_TO_MEDIAN_HH = 1.8
-
-_AGE_FIELDS: list[tuple[str, float]] = [
-    ("male_0_to_17", 8.5), ("female_0_to_17", 8.5),
-    ("male_18_to_24", 21.0), ("female_18_to_24", 21.0),
-    ("male_25_to_34", 29.5), ("female_25_to_34", 29.5),
-    ("male_35_to_49", 42.0), ("female_35_to_49", 42.0),
-    ("male_50_to_64", 57.0), ("female_50_to_64", 57.0),
-    ("male_65", 75.0), ("female_65", 75.0),
-]
-
 
 async def _load_all(*, client: httpx.AsyncClient | None = None) -> dict[int, dict]:
     global _cache
@@ -63,16 +55,12 @@ async def _load_all(*, client: httpx.AsyncClient | None = None) -> dict[int, dic
             return _cache
         settings = get_settings()
 
-        acs_coro = socrata_get(settings.dataset_demographics, {"$limit": 100}, client=client)
-        socio_coro = socrata_get(settings.dataset_socioeconomic, {"$limit": 100}, client=client)
-        results = await asyncio.gather(acs_coro, socio_coro, return_exceptions=True)
-        acs_rows = results[0] if not isinstance(results[0], Exception) else []
-        socio_rows = results[1] if not isinstance(results[1], Exception) else []
-        if isinstance(results[0], Exception):
-            log.warning("Failed to load ACS demographics: %s", results[0])
-        if isinstance(results[1], Exception):
-            log.warning("Failed to load socioeconomic indicators: %s", results[1])
-        if not acs_rows and not socio_rows:
+        try:
+            acs_rows = await socrata_get(settings.dataset_demographics, {"$limit": 100}, client=client)
+        except Exception as exc:
+            log.warning("Failed to load ACS demographics: %s", exc)
+            return {}
+        if not acs_rows:
             return {}
 
         result: dict[int, dict] = {}
@@ -83,13 +71,6 @@ async def _load_all(*, client: httpx.AsyncClient | None = None) -> dict[int, dic
                 ca = _NAME_TO_CA.get(ca_raw.upper())
             if ca is not None:
                 result[ca] = row
-
-        for row in socio_rows:
-            ca = _safe_int(row.get("ca"))
-            if ca is not None and ca in result:
-                result[ca]["_socio"] = row
-            elif ca is not None:
-                result[ca] = {"_socio": row}
 
         _cache = result
         return _cache
@@ -111,14 +92,6 @@ def _safe_float(val: object) -> float | None:
         return float(val)
     except (TypeError, ValueError):
         return None
-
-
-def _pct(numerator: object, denominator: object) -> float | None:
-    n = _safe_float(numerator)
-    d = _safe_float(denominator)
-    if n is None or d is None or d == 0:
-        return None
-    return round(n / d * 100, 1)
 
 
 def _estimate_median_income(row: dict) -> int | None:
@@ -144,87 +117,24 @@ def _estimate_median_income(row: dict) -> int | None:
     return None
 
 
-def _estimate_median_age(row: dict) -> float | None:
-    """Estimate median age from age/sex bracket distribution."""
-    buckets: list[tuple[float, float]] = []
-    for field, midpoint in _AGE_FIELDS:
-        count = _safe_float(row.get(field))
-        if count is not None and count > 0:
-            buckets.append((midpoint, count))
-    if not buckets:
-        return None
-    total = sum(c for _, c in buckets)
-    if total <= 0:
-        return None
-    buckets.sort(key=lambda x: x[0])
-    target = total / 2.0
-    cumulative = 0.0
-    for midpoint, count in buckets:
-        cumulative += count
-        if cumulative >= target:
-            return round(midpoint, 1)
-    return None
+def _acs_period(acs_year: object) -> str | None:
+    """'2023' → '2019–2023': the 5-year window a 5-year ACS vintage covers."""
+    year = _safe_int(acs_year)
+    return f"{year - 4}–{year}" if year else None
 
 
 def _build_demographics(row: dict, community_area: int) -> DemographicsSummary:
-    socio = row.get("_socio") or {}
-    population = _safe_int(row.get("total_population") or row.get("population"))
-
-    median_income = (
-        _safe_int(row.get("median_household_income"))
-        or _estimate_median_income(row)
-    )
-    per_capita = _safe_int(socio.get("per_capita_income_"))
-    if median_income is None and per_capita is not None:
-        median_income = int(per_capita * _PER_CAPITA_TO_MEDIAN_HH)
-
-    poverty_rate = _safe_float(socio.get("percent_households_below_poverty"))
-    unemployment_rate = _safe_float(socio.get("percent_aged_16_unemployed"))
-
-    below_poverty = _safe_int(row.get("below_poverty_level"))
-    if poverty_rate is None and below_poverty is not None and population:
-        # NOTE definition drift: the primary figure is HOUSEHOLDS below poverty
-        # (kn9c socio dataset); this fallback is PERSONS below poverty ÷ total
-        # population. Close in practice but not the same statistic.
-        poverty_rate = _pct(below_poverty, population)
-
-    unemployed = _safe_int(row.get("unemployed"))
-    in_labor_force = _safe_int(row.get("in_labor_force") or row.get("civilian_labor_force"))
-    if unemployment_rate is None and unemployed is not None:
-        unemployment_rate = _pct(unemployed, in_labor_force)
-
-    owner_occupied = _safe_int(row.get("owner_occupied_housing_units") or row.get("owner_occupied"))
-    total_housing = _safe_int(row.get("total_housing_units") or row.get("housing_units"))
-    bachelors = _safe_int(
-        row.get("bachelors_degree_or_higher")
-        or row.get("bachelor_s_degree_or_higher")
-    )
-    pop_25_plus = _safe_int(row.get("population_25_years_and_over") or row.get("pop_25_over"))
-    vacant = _safe_int(row.get("vacant_housing_units") or row.get("vacant"))
-
     ca_name = (
         row.get("community_area_name")
         or row.get("name")
-        or socio.get("community_area_name")
         or COMMUNITY_AREAS.get(community_area)
     )
-
     return DemographicsSummary(
         community_area=community_area,
         community_area_name=ca_name,
-        population=population,
-        median_household_income=median_income,
-        median_home_value=_safe_int(
-            row.get("median_home_value")
-            or row.get("median_value_owner_occupied")
-        ),
-        median_gross_rent=_safe_int(row.get("median_gross_rent") or row.get("median_rent")),
-        median_age=_safe_float(row.get("median_age")) or _estimate_median_age(row),
-        poverty_rate=poverty_rate,
-        unemployment_rate=unemployment_rate,
-        owner_occupied_pct=_pct(owner_occupied, total_housing),
-        bachelors_degree_pct=_pct(bachelors, pop_25_plus),
-        vacancy_rate=_pct(vacant, total_housing),
+        population=_safe_int(row.get("total_population") or row.get("population")),
+        median_household_income=_estimate_median_income(row),
+        acs_period=_acs_period(row.get("acs_year")),
     )
 
 
