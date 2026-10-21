@@ -220,3 +220,56 @@ Checks (after; the "before" counts weren't taken): `make test`: 1,462 backend + 
 - Upload time over the tunnel (no upload ran; the prod migration used a server-side snapshot copy).
 - Live latency through the alias vs the old name (expected the same: an alias is a name lookup; checked only that `/api/code/section/17-2-0304-A` answered 200 in 1.1 s before the deploy).
 - Whether any heading-only change exists between the March and June exports beyond what the content diff shows (the old manifest had no title hashes; the June dry run compared titles from the rebuilt one).
+
+## Item 5: City Clerk API client (WS1 M1, #64, 2026-10-21)
+
+**"Passed" includes "Signed".**
+- **Decision:** a matter has passed when `status == "90-Final"` and `subStatus` is one of `Passed`, `Passed as Substitute` or `Signed` (plus `Adopted`, `Approved` and `Approved as Substitute`, which resolutions and orders end with).
+- **Alternatives:** the plan's rule, `subStatus` starts with "Passed".
+- **Why:** 4 of the 59 main-category code amendments since March 18 end "Signed". One of them is SO2026-0024930, the 2026-06-17 omnibus amendment to Titles 2, 14, 17 and 18. The plan's rule would have dropped a Title 17 amendment.
+- **Vocabulary:** final `subStatus` values over a year of records (8,639 rows, 2025-10-01 to 2026-10-21) are pinned as `KNOWN_FINAL_SUBSTATUSES`. An unknown value is contract drift for the sync to flag, not something to guess about.
+- **Revisit if:** the live contract test sees a new final status.
+
+**Categories are matched as a string range, not with `eq`.**
+- **Decision:** `category_filter` sends `matterCategory ge 'X' and matterCategory lt 'X'+1`, with several categories OR'ed in one request.
+- **Alternatives:**
+  - `eq` misses subcategories;
+  - `startswith` and `contains` return HTTP 400 (both tried);
+  - filtering only on status and date and checking categories client-side would page through about 8.6k rows a year.
+- **Why:** code amendments also come as subcategories ("MUNICIPAL CODE AMENDMENTS | 4-60-023 Package Goods", mostly liquor moratoria). Since March 18 that is 100 records, not 59. The range filter returns them in one page.
+
+**The plan's "54 passed code amendments" is 97 on current data.**
+- **Why:** the plan counted the main category only, without "Signed". Main category: 59 final = 52 Passed/Passed as Substitute + 4 Signed + 2 Failed + 1 Vetoed. With subcategories: 100 final, 97 passed.
+- **The Title 17 count is unchanged at 16.** Subcategories add none, and "Signed" adds the omnibus, which the plan's 16 already counted by title.
+
+**Title 17 = the title names Title 17 or a `17-x` section.**
+- **Decision:** a regex on the title.
+- **Alternatives:** keyword matching ("zoning", "transit", "pedestrian").
+- **Why:** keywords pull in O2026-0026413 (Chapter 9-64, parking under CTA tracks). The section-number rule gives exactly the 16 on live data.
+- **Limits:** `touched_sections` and `kind` come from the title (`sections_confidence = "title"`) until M2's reviewed file replaces them. `addresses` stays empty until M2/M5.
+
+**The passed text of a substitute is the Legislation PDF named for the SO number.**
+- **Decision:** prefer one with "Final" in the name, else any SO-named one.
+- **Alternatives:** match on "Final" only.
+- **Why:** TOD Streets (SO2026-0025391) has its passed text as `SO2026-0025391.pdf`, with no "Final". Matching on "Final" would have picked the original `O… Ordinance.pdf`, which is not what passed.
+
+**Failure contract and politeness, as planned, plus one fix.**
+- Every function raises `ClerkUnavailable` and never returns `[]`. That covers a failed page mid-pagination and a short page.
+- A 400 raises `ClerkQueryError` and is not retried. 5xx and network errors get 3 tries with 1/2/4 s backoff.
+- Pages are fetched serially with a 1 s pause, and calls are cached for 6 h.
+- **Fix found by the live test:** the shared `httpx.AsyncClient` is bound to the event loop that made it. A module-level client failed with "Event loop is closed" the second time `asyncio.run` (or a new pytest loop) used it, which the daily sync could have hit.
+- **Evidence:** a transient failure was seen live once while paging. It succeeded on retry.
+
+**Numbers** (live API, 2026-10-21)
+
+| Measure | Value | How measured |
+|---|---|---|
+| Passed code amendments after 2026-03-18 (incl. subcategories) | 97 (plan: 54, main category only) | `python -m backend.retrieval.clerk passed-since 2026-03-18` |
+| Title 17 amendments after 2026-03-18 | 16 | `python -m backend.retrieval.clerk title17 2026-03-18` |
+| Newest `recordCreateDate` | 2026-10-20T22:01:07Z; the newest `introductionDate` in the same window was 2026-12-08 | `python -m backend.retrieval.clerk latest` |
+| Final records 2025-10-01 → 2026-10-21 | 8,639 (18 pages of 500; 1–3 s per page) | the recorded survey request, `filter=status eq '90-Final' and finalActionDate gt 2025-10-01T00:00:00Z` |
+| Backend tests | 1,483 → 1,510 (+27 offline Clerk tests); +5 live contract tests (integration) | `make test`; `pytest backend/tests/test_clerk_contract.py -m integration` |
+
+**Not measured:**
+- How often the API fails over a day. Only one transient failure was seen; WS6's probe will measure the rate.
+- Behaviour above about 20k matching records (guarded by `max_records`, untested live).

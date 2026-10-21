@@ -1,0 +1,97 @@
+{
+ "matterId": "7D1E3ACE-E564-F111-A823-001DD80071EA",
+ "fileYear": 2026,
+ "recordNumber": "SO2026-0026077",
+ "originalRecordNumber": "O2026-0026077",
+ "status": "90-Final",
+ "subStatus": "Passed as Substitute",
+ "matterCategory": "ZONING RECLASSIFICATIONS",
+ "type": "Ordinance",
+ "title": "Zoning Reclassification Map No. 1-E at 301-363 E Huron St, 300-362 E Erie St, 333-425 E Erie St, 659-679 N Fairbanks Ct, 628-678 N McClurg Ct, 629-649 N McClurg Ct and 400-424 E Ontario St - App No. 23092",
+ "introductionDate": "2026-06-17T15:00:00+00:00",
+ "finalActionDate": "2026-09-23T15:00:00+00:00",
+ "recordCreateDate": "2026-06-10T16:02:45+00:00",
+ "lastPublicationDate": "2026-10-09T15:40:02+00:00",
+ "supersededBy": null,
+ "actions": [
+  {
+   "actionDate": "2026-06-17T05:00:00+00:00",
+   "journalPage": "44533",
+   "actionByName": "City Council",
+   "actionName": "Referred",
+   "actionText": "The matter was Referred to Committee.",
+   "meetingId": "",
+   "historyId": "ACF23DCF-E864-F111-A823-001DD80071EA",
+   "name": null,
+   "sort": 70
+  },
+  {
+   "actionDate": "2026-09-22T05:00:00+00:00",
+   "journalPage": "",
+   "actionByName": "",
+   "actionName": "Substituted",
+   "actionText": "",
+   "meetingId": "",
+   "historyId": "A620E449-3DB8-F111-AAAC-001DD80FDA55",
+   "name": null,
+   "sort": 80
+  },
+  {
+   "actionDate": "2026-09-22T05:00:00+00:00",
+   "journalPage": "",
+   "actionByName": "Committee on Zoning, Landmarks and Building Standards",
+   "actionName": "Recommended to Pass",
+   "actionText": "The matter was recommended to Pass by controlling legislative body.",
+   "meetingId": "",
+   "historyId": "3D597370-4AB8-F111-AAAC-001DD80FDA55",
+   "name": null,
+   "sort": 90
+  },
+  {
+   "actionDate": "2026-09-23T05:00:00+00:00",
+   "journalPage": "49669",
+   "actionByName": "City Council",
+   "actionName": "Passed",
+   "actionText": "On motion of Alderperson Villegas, and unsuccessful motion to reconsider by Alderperson Mitchell, the matter was Passed.",
+   "meetingId": "5F86622E-F485-F111-AB0E-001DD80ED7AA",
+   "historyId": "A364AF88-4AB8-F111-AAAC-001DD80FDA55",
+   "name": null,
+   "sort": 100
+  }
+ ],
+ "attachments": [
+  {
+   "fileName": "O2026-0026077 Statements and Plans.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/3bc63719-ee52-4f88-b204-4b1794d64148.pdf",
+   "attachmentType": "Exhibits"
+  },
+  {
+   "fileName": "SO2026-0026077 Final Statements and Plans.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/5749041a-ca00-4e1c-85f0-55b0d3830821.pdf",
+   "attachmentType": "Exhibits"
+  },
+  {
+   "fileName": "O2026-0026077 Ordinance.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/f4cbee66-7800-4885-b777-cf8188d4a777.pdf",
+   "attachmentType": "Legislation"
+  },
+  {
+   "fileName": "O2026-0026077 Application.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/13e9541b-3b6c-44f9-b915-6680554c4877.pdf",
+   "attachmentType": "Miscellaneous"
+  },
+  {
+   "fileName": "SO2026-0026077 Final Ordinance.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/66a12f4c-6673-447c-b49a-7d4a30ed9520.pdf",
+   "attachmentType": "Legislation"
+  },
+  {
+   "fileName": "ZLB Letter 9-22-2026.pdf",
+   "path": "https://occprodstoragev1.blob.core.usgovcloudapi.net/matterattachmentspublic/5e17dfbb-9268-45b0-aed2-a6e4b8870c85.pdf",
+   "attachmentType": "Committee Letter"
+  }
+ ],
+ "relations": [
+  "SO2026-0026077"
+ ]
+}
