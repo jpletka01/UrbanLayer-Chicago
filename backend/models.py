@@ -801,6 +801,7 @@ class ContextObject(BaseModel):
             adu=self.adu,
             code_vintage=self.code_vintage,
             code_currency=self.code_currency,
+            address=self.resolved_address,
         )
 
     @computed_field  # type: ignore[prop-decorator]

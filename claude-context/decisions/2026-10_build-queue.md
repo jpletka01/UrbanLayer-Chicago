@@ -773,3 +773,51 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - *Revisit if:* a source that is really down starts to take 4x as long to report; the connect timeout is 8 s, so the worst case is about 32 s per probe.
 
 **Found, not fixed here (WS6 M7):** `backend/retrieval/regulatory/flood.py` returns `None` on any FEMA error, the same value as "not in a mapped flood zone". With FEMA resetting connections, a Profile can say `in_special_flood_hazard: false` for a parcel whose lookup failed. This is the landmark-layer silent failure again (M7a fixed it for the overlays only). M7 should give flood the same tri-state, and the lookup should retry like the checker now does.
+
+## Item 12: law passed after June 17, applied ahead of codification (WS1 M4b, 2026-10-21)
+
+**Applied law speaks as its own parcel notes, not as a new field.**
+- **Decision:** a reviewed amendment with `product_effect: applied` produces a coverage note (`tod_street`, `pedestrian_street_added`, `pedestrian_street_removed`, `milwaukee_sco_strip_centers`) carrying `ahead_of_code: true`. `legislation/applied.py` builds them; `build_coverage_notes` takes the parcel's address to match.
+- **Alternatives:** a new `ContextObject.law_changes` field (a second list the Profile, chat prompt and every consumer would need to learn); changing the overlay objects or the zone summary (it would mix what the City's map says with what we infer from an ordinance).
+- **Why:** coverage notes already reach the Profile (rendered with the English text as the fallback, so no frontend change and no new `es` keys), the chat context (rule 36) and the PDF. One prompt sentence and one template block cover the rest.
+- **Also:** an applied amendment no longer appears in the "not reflected on this page" note. That note now means what it says.
+- **Revisit if:** a surface needs the structured facts (the prohibited-use list as data, for a filter). Then `tod_street_status` is already the structured form.
+
+**Transcribed from the scans, in session, and pinned both ways.**
+- **Decision:** I read the ten passed PDFs as images (none has a text layer) and committed only the rows and phrases the product uses, at `backend/tests/fixtures/ordinances/passed_2026-07_to_10.json`, labeled as read-in-session. For each rule the test asserts the code against that transcription while the code text lacks the change (and that the code text still shows the *old* rows), and against the code text once a refresh carries it.
+- **Alternatives:** trust the Clerk titles (the title of SO2026-0026276 says "by right"; the substitute enters S); store the PDFs (102 MB-class risk for nothing; the URLs are in `source_pdf`).
+- **Evidence:** the readings changed three summaries. O2026-0025429 only adds the 7-EV-charger trigger (special use for all new gas stations was already text); SO2026-0026276 sets PMD 4B to special use, not by right; the Clark ordinance merges three rows into Belden–Grace and newly designates only 3000–3432 N and 3600–3800 N.
+- **Revisit if:** a refresh codifies one. `codification_check --write` flips `codified`, and the test then reads the code text instead.
+
+**TOD streets match by street address, with the street type.**
+- **Decision:** a parcel is on a TOD street when its street, direction, number and street type fall in a §17-3-0603 segment. The note says plainly that a lot reaching the street only from a cross street is not caught.
+- **Alternatives:** parcel geometry against the street's right-of-way (the plan's follow-up; no street-centerline artifact in the repo, and TOD streets are not in the zoning MapServer); matching without the street type (found while testing: "3036 W Lawrence **Pl**" matched Lawrence **Ave**; `map_effect_matches` had the same gap, so `suffix` is now an optional field on a map effect and `address_suffix` reads it).
+- **Revisit if:** a cross-street lot on Western or Ravenswood shows up in a customer question, or the City publishes a TOD layer.
+
+**Pedestrian-street notes can't depend on the map layer, because it's blind.**
+- **Evidence:** the plan's first design said "note only where the overlay layer disagrees with the ordinance". Probing the local Profile shows layer 4 returns nothing at 1000 W Armitage, 1650 W Belmont, 2400 N Clark, 3300 W Lawrence or 3500 N Clark, all on long-designated pedestrian streets (a point-in-polygon lookup on street segments). Its silence says nothing about whether the map has caught up.
+- **Decision:** match by address range alone and say the map "may" lag. An addition keeps its note after codification (the page can't otherwise say a lot abuts a pedestrian street); a removal goes quiet once the code text carries it. The report drops its "pedestrian street overlay" opportunity on a removed segment.
+- **Not fixed here:** the Profile's `on_pedestrian_street` flag is effectively always false. A parcel on any pedestrian street, not just the changed ones, is missed. That is a WS0/WS6 finding (it feeds item 22's partial-failure work), raised in the PR.
+
+**One in-session range choice: Lawrence is 3034–3042, not 3032–3042.**
+- The table rows end at 3032 W and restart at 3042 W, and the ordinance's common address is 3034–3042. The effect uses the common address, the narrower claim, so a lot at 3032 is not told its designation was removed.
+
+**Non-Title-17 items stay unreviewed, and the pending-review warning now points at them.**
+- The four cited-other items (2-44-140, 2-44-170, 18-14, 2-45-165) are not parcel surfaces; they need a wording check, not a rule. `currency_check` warns on them after its pending threshold. The Title 17 list is fully reviewed: 10 of 10 after June 17.
+
+**Numbers** (2026-10-21; local unless marked)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend tests | 1,803 → 1,855 collected (+52: `test_applied_law.py` 49, `test_legislation_currency.py` +3) | `make test`; `pytest backend/tests -m "not integration" --collect-only` on main in a worktree for the before |
+| Eval, vitest | 92 / 334 unchanged; `npm run build` passes | `make test`; `cd frontend && npm run build` |
+| Title 17 amendments after the vintage that are reviewed | 0 of 10 → 10 of 10 (5 applied, 5 none) | `python -c "import json;…"` over `code_amendments.json`, or `test_every_title17_amendment_after_the_vintage_is_reviewed_with_a_source_pdf` |
+| Profile, 4000 N Western Ave (local backend, public data only) | no `tod_street` note → note present; 1 parcel-relevant amendment, listed as applied | `curl "http://localhost:8001/api/scorecard?address=4000+N+Western+Ave"` |
+| Profile, 3036 W Lawrence Ave / 3100 N Clark St / 2100 N Milwaukee Ave | `pedestrian_street_removed` / `pedestrian_street_added` / `milwaukee_sco_strip_centers` notes present | same, other addresses |
+| Off-segment checks | 4801 N Ravenswood, 2000 N Damen, 3500 N Clark, 3036 W Lawrence **Pl**: no note | same |
+
+**Not measured:**
+- Chat wording with the new prompt sentence (no live model). Pinned only by a test that the sentence exists; the first prod chat on Western Ave is the check, plus the monthly chat kit.
+- The PDF visually: the template block is exercised by a render test, not opened as a PDF.
+- `npm run test:mobile`: no layout change (the note renders in the existing "What this page doesn't cover" card; a screenshot at desktop width shows it wrapping normally).
+- Cross-street lots on TOD streets, and a TOD street's abutting lots on the far side of an alley or cross street.

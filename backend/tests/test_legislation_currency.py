@@ -253,9 +253,24 @@ def test_the_parcel_context_lists_all_title17_relevant_first():
     # text now, so it no longer counts as "not reflected on this page".
     assert set(relevant) == {"SO2026-0025391"}
     assert cc["amendments"][0]["record"] == "SO2026-0025391"
+    # M4b applies TOD streets ahead of codification, so it speaks as its own note, not as "not reflected".
+    note = next(n for n in ctx.coverage_notes if n["id"] == "tod_street")
+    assert note["applies"] == "parcel" and "SO2026-0025391" in note["text"]
+    assert note["link"].startswith("https://chicityclerkelms.chicago.gov/Matter/?matterId=")
+    assert "code_amendments_parcel" not in [n["id"] for n in ctx.coverage_notes]
+
+
+def test_a_parcel_relevant_amendment_that_is_not_applied_is_said_not_reflected(monkeypatch):
+    _write_snapshot()
+    reviews = {**currency.load_reviews()}
+    reviews["SO2026-0025391"] = {**reviews["SO2026-0025391"], "review_status": "unreviewed", "product_effect": "pending"}
+    monkeypatch.setattr(currency, "load_reviews", lambda: reviews)
+    ctx = ContextObject(
+        resolved_address="4000 N Western Ave, Chicago, IL 60618",
+        parcel_zoning=ZoningSummary(zone_class="B3-2"), regulatory=RegulatorySummary(overlays=[]),
+    )
     note = next(n for n in ctx.coverage_notes if n["id"] == "code_amendments_parcel")
     assert note["applies"] == "parcel" and "SO2026-0025391" in note["text"] and "not reflected on this page" in note["text"]
-    assert note["link"].startswith("https://chicityclerkelms.chicago.gov/Matter/?matterId=")
 
 
 def test_a_residential_parcel_off_the_tod_streets_has_no_parcel_note():
@@ -375,7 +390,8 @@ def test_report_block_states_the_vintage_the_count_and_the_parcel_items():
     assert "All 10 amendments passed since are listed under Data Sources &amp; Disclaimers." in html
     assert "Code amendments passed since the Council Journal of June 17, 2026" in html
     assert html.count("May affect this parcel") == 2 and html.count("SO2026-0028463") == 1
-    assert "Not yet reviewed" in html and "October 14, 2026" in html
+    assert "Law passed since the code text, applied to this parcel" in html and "October 14, 2026" in html
+    assert "Reflected" in html and "Not yet reviewed" not in html  # every Title 17 amendment is reviewed (M4b)
 
 
 def test_report_block_withholds_the_count_without_a_recent_check():
@@ -576,6 +592,7 @@ def test_codification_check_writes_codified_flags(tmp_path):
 def test_currency_check_warns_on_an_old_vintage_and_long_pending_reviews():
     w = currency_check.warnings(date(2026, 10, 21))
     assert w[0] == "Municipal Code text current through 2026-06-17 (126 days, > 90)"
-    assert any(x.startswith("O2026-0025429 (passed 2026-07-15) has been pending review") for x in w)
+    assert any(x.startswith("O2026-0026243 (passed 2026-07-15) has been pending review") for x in w)
     assert not any("SO2026-0024923" in x for x in w)  # reviewed in M4
-    assert not any("SO2026-0025391" in x for x in currency_check.warnings(date(2026, 10, 30)))  # 16 days pending
+    assert not any("O2026-0025429" in x for x in w)  # every Title 17 item reviewed in M4b
+    assert not any("SO2026-0027237" in x for x in currency_check.warnings(date(2026, 10, 30)))  # 16 days pending

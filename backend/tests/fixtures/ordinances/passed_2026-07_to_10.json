@@ -1,0 +1,51 @@
+{
+  "_readme": "Transcriptions of the parts of passed ordinances the product applies ahead of codification (WS1 M4b). Each was read from the Clerk's scanned PDF (no text layer) in a Claude Code session on 2026-10-21 and approved by Jack in the M4b PR. Labeled data, not model output at runtime. tests/test_applied_law.py pins the code to this file; once the code text carries the change, the same test pins the code to the code text instead.",
+  "SO2026-0025391": {
+    "what": "TOD streets, new §17-3-0600; §17-3-0603 segment table, §17-3-0604 prohibited uses, §17-3-0602-E rezoning rule",
+    "segments": [
+      {"street": "Ravenswood", "from": "Irving Park", "to": "Lawrence", "coord_from": "4001N", "coord_to": "4799N"},
+      {"street": "Western", "from": "Addison", "to": "Ainslie", "coord_from": "3600N", "coord_to": "4859N"}
+    ],
+    "prohibited_uses": [
+      "strip centers",
+      "drive-through facilities",
+      "vehicle sales and service uses involving any outdoor storage of vehicles or goods",
+      "gas stations",
+      "car washes",
+      "residential storage warehouses",
+      "electronic data storage centers",
+      "motor vehicle repair shops"
+    ],
+    "rezoning": "rezoned to a \"B\" or \"C1\" district with a minimum of 3 FAR",
+    "effective": "full force and effect upon passage and approval"
+  },
+  "O2026-0025464": {
+    "what": "Belmont pedestrian retail street, §17-3-0503-D.2 (table 1 in the code text)",
+    "common_address": "531 - 800 West Belmont Avenue",
+    "old_row": ["Belmont", "Halsted", "Southport", "800W", "1400W"],
+    "new_row": ["Belmont", "Cambridge", "Southport", "531W", "1400W"]
+  },
+  "O2026-0025463": {
+    "what": "Clark pedestrian retail street, §17-3-0503-D.2 (table 1 in the code text)",
+    "common_address": "3000 - 3432 North Clark Street, 3600 - 3800 North Clark Street",
+    "old_rows": [
+      ["Clark", "Belden", "Diversey", "2300N", "2800N"],
+      ["Clark", "Newport", "Addison", "3432N", "3600N"],
+      ["Clark", "Diversey", "Wellington", "2800N", "3000N"]
+    ],
+    "new_row": ["Clark", "Belden", "Grace", "2300N", "3800N"]
+  },
+  "O2026-0026042": {
+    "what": "Lawrence de-designated as a pedestrian street, §17-3-0503-D.1 (table 0 in the code text)",
+    "common_address": "3034-3042 W. Lawrence Avenue",
+    "old_row": ["Lawrence", "Sacramento", "Central Park", "3000W", "3600W"],
+    "new_rows": [
+      ["Lawrence", "Sacramento", "Whipple", "3000W", "3032W"],
+      ["Lawrence", "Albany", "Central Park", "3042W", "3600W"]
+    ]
+  },
+  "SO2026-0027187": {
+    "what": "Milwaukee Avenue Special Character Overlay, §17-7-1506 item 1",
+    "new_text": "Strip centers, except for in the case of adaptive reuse or rehabilitation of an existing building;"
+  }
+}
