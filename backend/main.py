@@ -2684,13 +2684,14 @@ async def admin_code_currency(request: Request, _admin: dict = Depends(require_a
     """How current the code text is and how well the gap is handled: the WS6 registry's
     inputs (no network). ``map_lag`` = passed rezonings the City's zoning map lacks."""
     from backend.legislation.currency import (
-        amendments_since_vintage, clerk_source_status, code_currency_status, map_lag_status, public,
+        amendments_since_vintage, clerk_source_status, code_currency_status, designation_status, map_lag_status, public,
     )
 
     return {
         "code": code_currency_status(),
         "clerk": clerk_source_status(),
         "map_lag": map_lag_status(),
+        "designations": designation_status(),
         "amendments": [public(a) for a in amendments_since_vintage(("title17", "cited_other"))],
     }
 

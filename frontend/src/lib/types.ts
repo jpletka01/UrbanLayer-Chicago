@@ -738,7 +738,25 @@ export interface PassedNotOnMap {
   matched_by: "pin" | "address";
 }
 
+/** A Chicago Landmark designation ordinance that lists this parcel's address (or, for a district, a block it
+    is on) and that the City's landmark map doesn't show this parcel for yet (backend/legislation/designations.py). */
+export interface PassedLandmarkDesignation {
+  record: string;
+  /** ISO date Council passed it. */
+  passed_on: string;
+  url: string;
+  /** What the title calls it ("Chicago Daily News Building"); "building" when the title names none. */
+  name: string | null;
+  kind: "building" | "district";
+  /** The listed range that reaches this address, in the ordinance's words ("900-1199 W Bryn Mawr Ave"). */
+  segment: string | null;
+  /** False when the landmark layers did not answer for this parcel: the map's answer is unknown. */
+  map_checked: boolean;
+  matched_by: "pin" | "address";
+}
+
 export interface ContextObject {
+  passed_landmark_designations?: PassedLandmarkDesignation[] | null;
   passed_not_on_map?: PassedNotOnMap[] | null;
   coverage_notes?: CoverageNote[] | null;
   adu?: AduStatus | null;

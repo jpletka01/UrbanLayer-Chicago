@@ -1348,3 +1348,46 @@ So an outage of the Assessor's feed would read as "no sales, no comps" for up to
 - About 70 `except Exception` blocks remain in the retrieval layer. I audited the ones that *cache* a failure, not each one that swallows an error and returns empty; flood, the incentive layers (QCT, OZ, NMTC), Walk Score and the parcel lookups are the next to read.
 - Spanish: the new Profile strings are English, listed in `_untranslated.json`; the report's new notice is English in `_UNTRANSLATED_ES`.
 
+
+## Item 16b: landmark designations the map doesn't show yet (WS1 M5b, 2026-10-22)
+
+**"Not yet on the map" is decided by the parcel's own overlay result, not by comparing names.** Item 16 declined this because the landmark layers carry a name, an address and a designation date as text and no ordinance number, so asking the rezoning question ("does a polygon carry this record number?") would have been a fuzzy match. The design that replaced it asks nothing of the map's text. A parcel is flagged when (1) a designation ordinance passed within `LOOKBACK_DAYS` has a title that lists this parcel's address or, for a district, a block it is on, **and** (2) the parcel's own landmark-layer result (the overlay query the Profile already ran, layers 5 and 6) does not already say landmark. If the map shows the parcel as a landmark or in a landmark district there is nothing to add; if it doesn't, the ordinance is news the map hasn't caught up to. *Alternative:* match the layer's name or address text to the title. Rejected for the reason above. *Evidence (live, 2026-10-22):* with the new snapshot rows, the three parcels whose designation is not on the map yet (13100 S Ellis Ave, 2 N Riverside Plz, a Bryn Mawr Ave parcel) are flagged by PIN, and the two already on the map (4644 S Dearborn St, 1926 N Halsted St) get nothing added and keep the existing "landmark" note.
+
+**Words that stay true.** "A designation ordinance *listing this address* passed on <date>", never that the parcel is a landmark. A district's title names blocks ("900 through 1100 blocks of W Bryn Mawr Ave"); its boundary is in the ordinance, so the words are "names the blocks of ... which include this address ... this page cannot say whether this parcel is inside it". When a landmark layer failed (item 22's `unchecked_overlays`), the words say the map could not be checked and do not claim it says no. The ordinance's `name` is shown, except the title's generic word "building".
+
+**The title grammar** (`designation_titles.py`, reusing the rezoning parser's street, type and parity rules): `Historical landmark designation for <name> at <address>[/<address>]` (the name may itself contain " at ", so the split is the first "at" followed by a number), `located at`, and blocks: a block is a hundred (`1600-1800 blocks` = 1600-1899), a side is a parity (east of a north-south street, north of an east-west one, is even) and a side on the wrong axis is refused, not widened. Anything unaccounted for is `partial`/`unparsed` and gets no flag. 14 of the 15 real titles read clean; the other ("5830 W Midway Park", a street with no type we recognize) is listed for review, not guessed.
+
+**The lookback, measured.** `eval/designation_backtest.py` asks the landmark layers, for each resolved parcel, whether the map shows it today, bucketed by the ordinance's age (this run: 31 sampled parcels, 0 wrong-street, gate 0):
+
+| Ordinance age | Individual landmark parcels on the map | District parcels on the map |
+|---|---|---|
+| under 30 days | 0 of 1 | 1 of 12 |
+| 90 to 180 days | 2 of 3 | n/a |
+| 180 to 400 days | 3 of 3 | 12 of 12 |
+
+So the map takes more than 90 days for some (the Chicago Daily News Building, passed July 15, was still off the map at 99 days) and has caught up on everything past 180. `LOOKBACK_DAYS = 180`. *Revisit if:* a later run shows an ordinance still off the map past 180 days (then the flag would drop it while it is still news).
+- **A district's listed blocks are not its boundary.** The Humboldt-Sacramento extension (246 days old) has all 12 sampled parcels on the map, so there the listed blocks matched the district. For the Bryn Mawr district at 29 days, 11 of 12 sampled parcels are not on the map yet. How many parcels on a listed block turn out to be outside a district polygon is not measured here (it would need the polygon of a district the map already carries, for which only one exists in the window).
+
+**Coverage is partial, and says so.** Of the 8 designations in the 180-day window, 5 resolve to parcels (a single building is one Address Points row); 3 have no address point for the listed number (30 N LaSalle St, 2219 N Kenmore Ave, 2324 N Chalmers St), as do some of the older ones. Those are listed in the admin card (`designation_status`), and a parcel whose PIN is unresolved is matched on its parsed address instead, like the rezoning flag. A designation on a vacant lot resolves to nothing, same as rezonings.
+
+**Surfaces.** A coverage note (`landmark_designation_passed`, §2-120-740 and the Clerk link), a box at the head of the Regulatory card, a verdict caveat that also stops the verdict reading confident, prompt rule 39 (never "not a landmark" while the field is present), the report's regulatory section plus its landmark status row ("Designation passed, not on the map yet" in place of "No"), and an admin line. The match is a computed field on `ContextObject` (like `passed_not_on_map`), so the Profile, a cold chat turn and a handoff agree.
+
+**Same weakness as the rezoning check, stated:** a failed designation check keeps the previous rows and records `designation_check.status = failed`, but only the admin card shows it; the sync's Sentry report still fires only for the code-amendment check. *Revisit if:* the daily checker should register the Clerk-derived checks as sources (WS6).
+
+**Numbers** (2026-10-22; Clerk, Address Points and the City's map are public and free; no model, no production key)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,115 → 2,157 (+42, `test_designations.py`) | `make test` |
+| Eval tests | 104 → 106 | `make test` |
+| Frontend tests | 524 → 542 (+18: box, verdict, admin card, untranslated-key guards); lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Titles read clean | 14 of 15 (93%; gate 90%) | `PYTHONPATH=. python -m eval.designation_backtest` |
+| Wrong-street parcels | 0 of 31 sampled (gate 0) | same |
+| Designations placed on parcels in the window | 5 of 8 | `python -m backend.legislation.sync --print` (also runs the rest of the sync) |
+| Recorded titles | 15, committed (`fixtures/clerk/landmark_designations_2026-10-22.json`) | the Clerk's `HISTORICAL LANDMARKS | Designation` category |
+
+**Not verified:**
+- Production: the flag needs the daily sync to have written `designations` into the prod snapshot (06:00 Chicago the next morning, or a manual `sudo systemctl start legislation-sync.service`); until then `matches_for` returns nothing, which is the safe state. After it runs, 13100 S Ellis Ave and 1122 W Bryn Mawr Ave should show the box.
+- The report's new section and landmark row are pinned by tests, not seen in a PDF.
+- The prompt rule's effect on an answer (no model).
+- Spanish: new strings are English, listed as untranslated.

@@ -314,6 +314,10 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   // rests on may be the old one (WS1 M5).
   const notOnMap = data.context?.passed_not_on_map?.[0];
   if (notOnMap) caveats.push(t("scorecard.verdict.caveat.passedNotOnMap", { date: notOnMap.passed_on }));
+  // A Chicago Landmark designation listing this address passed and the City's landmark map doesn't show it for the
+  // parcel yet: a Commission on Chicago Landmarks review may apply that the overlays can't rule out (WS1 M5b).
+  const designated = data.context?.passed_landmark_designations?.[0];
+  if (designated) caveats.push(t("scorecard.verdict.caveat.landmarkDesignationPassed", { date: designated.passed_on }));
   const complexSqft = data.context?.property?.complex_bldg_sqft;
   if (complexSqft)
     caveats.push(t("scorecard.verdict.caveat.complexBldg", { n: data.context?.property?.complex_member_pins?.length ?? 0, sqft: complexSqft.toLocaleString() }));
@@ -345,6 +349,7 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
     !!data.nearest_parcel_unverified ||
     data.resolved_confidence === "approximate" ||
     !!data.zone_definition?.is_fallback ||
+    (data.context?.passed_landmark_designations?.length ?? 0) > 0 ||
     (data.partial_failures?.length ?? 0) > 0;
   return { confidence: caveated ? "caveated" : "high", caveats };
 }

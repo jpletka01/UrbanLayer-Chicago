@@ -26,6 +26,30 @@ def _note(id_: str, applies: str, text: str, *, params: dict | None = None, link
     return {"id": id_, "applies": applies, "text": text, "params": params or {}, "link": link, "section": section}
 
 
+def landmark_designation_text(hit: dict) -> str:
+    """The sentence for one passed designation that lists this parcel. A district names blocks, and its boundary
+    is in the ordinance text, so for a district we say the address is on a block the title names and that this
+    page cannot say whether the parcel is inside it. When the landmark layers did not answer, we do not claim
+    the map doesn't show it."""
+    from backend.legislation.currency import fmt_day
+
+    what = f"{hit['name']} ({hit['record']})" if hit.get("name") and hit["name"].lower() != "building" else hit["record"]
+    if hit.get("kind") == "district":
+        listed = (f"A Chicago Landmark district designation ordinance, {what}, passed City Council on {fmt_day(hit['passed_on'])} "
+                  f"and names the blocks of {hit.get('segment') or 'this street'}, which include this address. The ordinance sets "
+                  "the district's boundary, so this page cannot say whether this parcel is inside it.")
+    else:
+        listed = (f"A Chicago Landmark designation ordinance listing this address, {what}, passed City Council on "
+                  f"{fmt_day(hit['passed_on'])}.")
+    if hit.get("map_checked", True):
+        map_part = " The City's landmark map did not show this parcel as a landmark when we checked, so the overlays on this page may be missing a review requirement."
+    else:
+        map_part = " The City's landmark map could not be checked today, so the overlays on this page may be missing a review requirement."
+    return (listed + map_part + " Alterations, demolition and new construction on a designated Chicago Landmark need the Commission on "
+            "Chicago Landmarks' written approval before a permit can issue (§2-120-740). Confirm with the Department of "
+            "Planning and Development.")
+
+
 def build_coverage_notes(
     *,
     zoning,
@@ -37,6 +61,7 @@ def build_coverage_notes(
     code_currency: dict | None = None,
     address: str | None = None,
     passed_not_on_map: list[dict] | None = None,
+    passed_landmark_designations: list[dict] | None = None,
 ) -> list[dict]:
     """The ordered list of notes for one parcel. Every argument may be None."""
     notes: list[dict] = []
@@ -97,6 +122,16 @@ def build_coverage_notes(
             "district with the Department of Planning and Development.",
             params={"date": hit["passed_on"], "record": hit["record"], "segment": hit.get("segment") or ""},
             link=hit.get("url"),
+        ))
+
+    # A landmark designation that lists this address passed but the City's landmark map doesn't show the parcel
+    # yet (WS1 M5b). Says what we know (the ordinance lists this address or block), never that the parcel is a landmark.
+    for hit in passed_landmark_designations or []:
+        notes.append(_note(
+            "landmark_designation_passed", "parcel", landmark_designation_text(hit),
+            params={"date": hit["passed_on"], "record": hit["record"], "name": hit.get("name") or "",
+                    "segment": hit.get("segment") or "", "kind": hit.get("kind") or "building"},
+            link=hit.get("url"), section="2-120-740",
         ))
 
     if adu and adu.get("status") == "allowed_with_limits" and adu.get("limits"):

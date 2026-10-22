@@ -844,6 +844,7 @@ class ContextObject(BaseModel):
             code_currency=self.code_currency,
             address=self.resolved_address,
             passed_not_on_map=self.passed_not_on_map,
+            passed_landmark_designations=self.passed_landmark_designations,
         )
 
     @computed_field  # type: ignore[prop-decorator]
@@ -860,6 +861,23 @@ class ContextObject(BaseModel):
 
         pin = None if self.parcel_resolution == "approximate" else self.parcel_pin
         return matches_for(pin, self.resolved_address, self.parcel_zoning.ordinance_num) or None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @builtins.property
+    def passed_landmark_designations(self) -> list[dict] | None:
+        """Chicago Landmark designation ordinances passed lately whose title lists this address, for a parcel
+        the City's landmark map does not already show as a landmark (WS1 M5b). A designation reaches the map
+        weeks to months after it passes, so the overlays on this page can read "no landmark" in the meantime.
+        Offline: the daily sync's snapshot, matched on the parcel's PIN (or, when the PIN is unresolved, its
+        address); the parcel's own overlay result decides whether the map already knows (no name is matched).
+        None when nothing matches or the snapshot can't be trusted. Says "a designation ordinance listing this
+        address", never "this is a landmark"."""
+        if self.parcel_pin is None and not self.resolved_address:
+            return None
+        from backend.legislation.designations import matches_for
+
+        pin = None if self.parcel_resolution == "approximate" else self.parcel_pin
+        return matches_for(pin, self.resolved_address, self.regulatory) or None
 
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property

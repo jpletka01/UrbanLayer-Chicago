@@ -478,3 +478,27 @@ def map_lag_status() -> dict:
         "last_checked": check.get("checked_at"),
         "last_error": check.get("last_error"),
     }
+
+
+def designation_status() -> dict:
+    """Status of "a landmark designation passed that the map doesn't show on the parcel yet" for the admin card:
+    how many recent designations we could place on a parcel, and the titles we could not. Counts are null when
+    the designation check has never succeeded."""
+    from backend.legislation import designations
+
+    s = load_snapshot() or {}
+    check = s.get("designation_check") or {}
+    ok = bool(check.get("checked_at"))
+    n = designations.summary(s.get("designations") or []) if ok else {}
+    return {
+        "passed": n.get("passed"),
+        "flaggable": n.get("flaggable"),
+        "with_parcels": n.get("with_parcels"),
+        "unparsed_titles": len(n["unparsed"]) if ok else None,
+        "unparsed": n.get("unparsed") or [],
+        "no_parcels": n.get("no_parcels") or [],
+        "check_status": check.get("status") or "missing",
+        "last_checked": check.get("checked_at"),
+        "last_error": check.get("last_error"),
+    }
+

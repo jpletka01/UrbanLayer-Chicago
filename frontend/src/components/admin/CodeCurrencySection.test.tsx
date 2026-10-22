@@ -56,6 +56,37 @@ describe("CodeCurrencySection — rezonings the City's map lacks (WS1 M5)", () =
   });
 });
 
+describe("CodeCurrencySection — landmark designations (WS1 M5b)", () => {
+  it("shows how many were placed on a parcel and the titles that were not", async () => {
+    vi.mocked(fetchAdminCodeCurrency).mockResolvedValue({
+      ...base,
+      designations: {
+        passed: 8, flaggable: 8, with_parcels: 5, unparsed_titles: 1, unparsed: ["O2025-0019665"], no_parcels: ["O2026-0024659"],
+        check_status: "ok", last_checked: "2026-10-22T11:00:00Z", last_error: null,
+      },
+    });
+    render(<CodeCurrencySection />);
+    await waitFor(() => expect(screen.getByTestId("designations")).toBeTruthy());
+    expect(screen.getByTestId("designations-count").textContent).toBe("8");
+    expect(screen.getByText(/Not placed \(no flag\): O2025-0019665/)).toBeTruthy();
+  });
+
+  it("says unknown, never zero, when the check has never run; renders nothing for an older payload", async () => {
+    vi.mocked(fetchAdminCodeCurrency).mockResolvedValue({
+      ...base,
+      designations: { passed: null, flaggable: null, with_parcels: null, unparsed_titles: null, unparsed: [], no_parcels: [], check_status: "missing", last_checked: null, last_error: null },
+    });
+    const { unmount } = render(<CodeCurrencySection />);
+    await waitFor(() => expect(screen.getByTestId("designations-count")).toBeTruthy());
+    expect(screen.getByTestId("designations-count").textContent).toBe("unknown (never checked)");
+    unmount();
+    vi.mocked(fetchAdminCodeCurrency).mockResolvedValue(base);
+    render(<CodeCurrencySection />);
+    await waitFor(() => expect(screen.getByTestId("code-currency")).toBeTruthy());
+    expect(screen.queryByTestId("designations")).toBeNull();
+  });
+});
+
 describe("CodeCurrencySection — admin 'Code currency' card", () => {
   it("shows status, age, the Title 17 count and the unreviewed amendments", async () => {
     vi.mocked(fetchAdminCodeCurrency).mockResolvedValue(base);

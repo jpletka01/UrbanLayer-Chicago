@@ -894,6 +894,16 @@ a.glossary-link {
   <p class="section-note"><span class="status-warn">{{ t("reg.unchecked") }}:</span> {{ t("reg.unchecked_note", items=reg.data_gaps | join(", ")) }}</p>
   {% endif %}
 
+  {# A passed Chicago Landmark designation the City's map doesn't show on this parcel yet (WS1 M5b). #}
+  {% for hit in (ctx.passed_landmark_designations or []) %}
+  {% set what = (hit.name ~ " (" ~ hit.record ~ ")") if hit.name and hit.name|lower != "building" else hit.record %}
+  <div style="margin: 6pt 0; padding: 5pt 8pt; background: #fffbeb; border-left: 4pt solid #d97706; border-radius: 2pt; font-size: 9pt;" data-testid="landmark-designation-passed">
+    <strong>{{ t("reg.designation_heading") }}.</strong>
+    {% if hit.kind == "district" %}{{ t("reg.designation_district", what=what, date=(hit.passed_on|rdate), segment=(hit.segment or t("common.na"))) }}{% else %}{{ t("reg.designation_building", what=what, date=(hit.passed_on|rdate)) }}{% endif %}{{ t("reg.designation_map_checked" if hit.map_checked else "reg.designation_map_unchecked") }}{{ t("reg.designation_review") }}
+    {% if hit.url %}<a href="{{ hit.url }}">{{ hit.record }}</a>{% endif %}
+  </div>
+  {% endfor %}
+
   <dl class="info-grid">
     <dt><a href="#glossary-pd" class="glossary-link">{{ t("reg.planned_development") }}</a></dt>
     <dd>{% if reg and reg.in_planned_development %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif "planned_development" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
@@ -905,7 +915,7 @@ a.glossary-link {
        so it gets its own row. Keeping them separate avoids the old contradiction where the
        overlay matrix listed an NR-only "...Historic District" while this grid said "No". #}
     <dt>{{ t("reg.landmark_district") }}</dt>
-    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif "landmark_building" in unk or "historic_district" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
+    <dd>{% if reg and (reg.in_landmark_district or reg.in_historic_district) %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif ctx.passed_landmark_designations %}<span class="status-warn">{{ t("reg.designation_passed") }}</span>{% elif "landmark_building" in unk or "historic_district" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt>{{ t("reg.national_register") }}</dt>
     <dd>{% if reg and reg.on_national_register %}<span class="status-warn">{{ t("reg.yes") }}</span>{% elif "national_register" in unk %}<span class="status-warn">{{ t("reg.unchecked") }}</span>{% else %}<span class="status-no">{{ t("reg.no") }}</span>{% endif %}</dd>
     <dt><a href="#glossary-tod" class="glossary-link">TOD</a> {{ t("reg.tod_eligible") }}</dt>

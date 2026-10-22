@@ -4,13 +4,14 @@
 // Classification is presentational only — the same overlays render, grouped.
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import type { AduStatus, RegulatorySummary } from "../../lib/types";
+import type { AduStatus, PassedLandmarkDesignation, RegulatorySummary } from "../../lib/types";
 import { InfoTooltip } from "../InfoTooltip";
 import { ConfidenceCaption } from "../ui/Confidence";
 import { useFact } from "../../lib/provenanceContext";
 import { humanizeShoutyCase } from "../../lib/format";
 import { ZONING_MAP_URL } from "../../lib/failedSources";
 import { getTermInfo } from "../../lib/termDefinitions";
+import { LandmarkDesignationBox } from "./LandmarkDesignationBox";
 import { SubSection, ShowMore } from "./ProfileModule";
 
 const ShieldIcon = (
@@ -139,7 +140,11 @@ function UncheckedOverlays({ types }: { types: string[] }) {
   );
 }
 
-export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary; adu?: AduStatus | null }) {
+export function ScorecardRegulatoryCard({ data, adu, designations }: {
+  data: RegulatorySummary; adu?: AduStatus | null;
+  /** Passed Chicago Landmark designations the map does not show for this parcel yet (WS1 M5b). */
+  designations?: PassedLandmarkDesignation[] | null;
+}) {
   const { t } = useTranslation("data");
 
   // Same dedup as the sidebar card: status flags that restate an overlay are dropped.
@@ -208,9 +213,11 @@ export function ScorecardRegulatoryCard({ data, adu }: { data: RegulatorySummary
       className="flex-1"
     >
       <div className="space-y-5">
+        <LandmarkDesignationBox hits={designations} />
+
         {unchecked.length > 0 && <UncheckedOverlays types={unchecked} />}
 
-        {rows.length === 0 && unchecked.length === 0 && (
+        {rows.length === 0 && unchecked.length === 0 && !(designations?.length) && (
           <p className="text-body text-text-muted">{t("regulatory.noOverlays")}</p>
         )}
 

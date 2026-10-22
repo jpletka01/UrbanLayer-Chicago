@@ -250,7 +250,8 @@
         "strProhibited": "Short-term rentals are prohibited on this block (precinct owner opt-out) — relevant if you're underwriting STR income.",
         "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
         "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
-        "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows."
+        "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows.",
+        "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out."
       },
       "next": {
         "strong": {
@@ -509,6 +510,14 @@
       "title": "Couldn't check today",
       "body": "{{what}} didn't answer when this page loaded, so what's shown here may be incomplete. That isn't a \"no\": reload to try again.",
       "mapLink": "City zoning map ↗"
+    },
+    "landmarkDesignation": {
+      "title": "A Chicago Landmark designation passed that the City's map doesn't show for this parcel yet",
+      "building": "{{what}} passed Council on {{date}} and lists this address.",
+      "district": "{{what}} passed Council on {{date}} and names the blocks of {{segment}}, which include this address. The ordinance sets the district's boundary, so this page can't say whether this parcel is inside it.",
+      "mapChecked": "The City's landmark map didn't show this parcel as a landmark when checked, so the overlays on this page may be missing a review requirement.",
+      "mapUnchecked": "The City's landmark map couldn't be checked today, so the overlays on this page may be missing a review requirement.",
+      "review": "A designated Chicago Landmark needs the Commission on Chicago Landmarks' written approval before a permit to alter, demolish or build can issue (§2-120-740)."
     }
   },
   "discovery": {
