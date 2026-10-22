@@ -34,7 +34,7 @@ export function CodeCurrencySection() {
   if (data === undefined) return <p className="text-caption text-text-muted">Loading…</p>;
   if (data === null) return <p className="text-caption text-text-muted">Code currency isn't available right now.</p>;
 
-  const { code, clerk, amendments, map_lag: lagRez } = data;
+  const { code, clerk, amendments, map_lag: lagRez, designations: desig } = data;
   const lag = code.lag;
   const unknown = code.check_state === "unknown";
   return (
@@ -85,6 +85,19 @@ export function CodeCurrencySection() {
             <p className="text-caption text-text-secondary break-words">Map by hand in rezoning_overrides.json: {lagRez.unparsed.join(", ")}</p>
           )}
           {lagRez.last_error && <p className="text-caption text-state-negative break-words">{lagRez.last_error}</p>}
+        </dl>
+      )}
+      {desig && (
+        <dl className="space-y-1 max-w-xl" data-testid="designations">
+          <Stat label="Landmark designations passed (last 180 days)" value={desig.passed ?? "unknown (never checked)"} testId="designations-count" />
+          <Stat label="Shown on the Profile (parcels found)" value={desig.with_parcels ?? "unknown"} />
+          <Stat label="Titles the parser can't place" value={desig.unparsed_titles ?? "unknown"} />
+          <Stat label="Clean titles with no address point" value={desig.no_parcels.length} />
+          <Stat label="Designation check" value={desig.check_status} />
+          {desig.unparsed.length > 0 && (
+            <p className="text-caption text-text-secondary break-words">Not placed (no flag): {desig.unparsed.join(", ")}</p>
+          )}
+          {desig.last_error && <p className="text-caption text-state-negative break-words">{desig.last_error}</p>}
         </dl>
       )}
       {amendments.length > 0 && (

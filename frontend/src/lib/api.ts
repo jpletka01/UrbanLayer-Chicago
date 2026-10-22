@@ -763,6 +763,8 @@ export interface AdminCodeCurrency {
     contract_problems: string[];
   };
   map_lag?: AdminMapLag | null;
+  /** Passed Chicago Landmark designations and how many we could place on a parcel (WS1 M5b). */
+  designations?: AdminDesignations | null;
   amendments: Amendment[];
 }
 
@@ -771,6 +773,18 @@ export interface AdminMapLag {
   source_id: string;
   passed_not_on_map: number | null;
   oldest_days: number | null;
+  flaggable: number | null;
+  with_parcels: number | null;
+  unparsed_titles: number | null;
+  unparsed: string[];
+  no_parcels: string[];
+  check_status: "ok" | "failed" | "missing";
+  last_checked: string | null;
+  last_error: string | null;
+}
+
+export interface AdminDesignations {
+  passed: number | null;
   flaggable: number | null;
   with_parcels: number | null;
   unparsed_titles: number | null;

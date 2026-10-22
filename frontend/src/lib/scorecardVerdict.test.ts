@@ -412,6 +412,26 @@ describe("passed, not yet on the City map (WS1 M5)", () => {
   });
 });
 
+describe("a landmark designation that lists this address and isn't on the map yet (WS1 M5b)", () => {
+  const hit = { record: "O2026-0027059", passed_on: "2026-09-23", url: "https://clerk/x", name: "Bryn Mawr Avenue District", kind: "district", segment: "900-1199 W Bryn Mawr Ave", map_checked: true, matched_by: "pin" };
+
+  it("caveats the verdict, names the date, and stops it reading confident", () => {
+    const data = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    (data.context as unknown as Record<string, unknown>).passed_landmark_designations = [hit];
+    const v = computeVerdict(data, t);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.landmarkDesignationPassed") && c.includes("2026-09-23"))).toBe(true);
+    expect(v.confidence).toBe("caveated");
+  });
+
+  it("no caveat, and no change in confidence, without a listing", () => {
+    const none = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
+    const base = computeVerdict(none, t);
+    expect(base.caveats.some((c) => c.includes("landmarkDesignationPassed"))).toBe(false);
+    (none.context as unknown as Record<string, unknown>).passed_landmark_designations = [];
+    expect(computeVerdict(none, t).confidence).toBe(base.confidence);
+  });
+});
+
 describe("building area that isn't this lot's (F6)", () => {
   it("an existing FAR several times the zone cap is treated as unknown, not as a built-out parcel", () => {
     // kit P3: 43,790 sq ft (a whole strip center) on a 4,347 sq ft lot -> FAR 10.07 vs a 2.2 cap

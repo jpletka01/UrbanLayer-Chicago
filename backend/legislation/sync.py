@@ -31,13 +31,13 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from backend.legislation import currency, rezonings
+from backend.legislation import currency, designations, rezonings
 from backend.legislation.amendments import live_record
 from backend.retrieval import clerk
 
 log = logging.getLogger(__name__)
 
-SCHEMA = 2  # 2: adds ``rezonings`` and ``rezoning_check`` (WS1 M5); a schema-1 file reads as "no rezoning data"
+SCHEMA = 3  # 3: adds ``designations`` and ``designation_check`` (WS1 M5b); 2: ``rezonings`` (WS1 M5). An older file reads as "no data" for what it lacks
 
 
 def _iso(dt: datetime) -> str:
@@ -74,6 +74,23 @@ async def _rezoning_part(previous: dict | None, now: datetime, client) -> tuple[
                   "parser": rezonings.PARSER_VERSION, "counts": rezonings.summary(rows)}
 
 
+async def _designation_part(previous: dict | None, now: datetime, client) -> tuple[list[dict], dict]:
+    """The Chicago Landmark designations Council passed lately, with the parcels their titles list. Like the
+    rezoning part, a failure here must not cost the code-amendment check: the previous rows are kept."""
+    prev_rows = (previous or {}).get("designations") or []
+    since = (now.astimezone(clerk.CHICAGO).date()) - timedelta(days=designations.LOOKBACK_DAYS)
+    try:
+        matters = await clerk.passed_since(since, (designations.CATEGORY,), client=client)
+        rows = await designations.build_rows(matters, prev_rows)
+    except Exception as exc:  # the resolver raises on any Address Points error: a failed check, never "no parcels"
+        log.error("Designation check failed (previous rows kept): %s", exc)
+        old = (previous or {}).get("designation_check") or {}
+        return prev_rows, {**old, "status": "failed", "last_error": f"{type(exc).__name__}: {exc}"[:300],
+                           "last_attempt_at": _iso(now)}
+    return rows, {"status": "ok", "checked_at": _iso(now), "last_attempt_at": _iso(now), "last_error": None,
+                  "parser": designations.PARSER_VERSION, "counts": designations.summary(rows, now.astimezone(clerk.CHICAGO).date())}
+
+
 async def build_snapshot(previous: dict | None, *, now: datetime | None = None, client=None) -> dict:
     """The new snapshot. Raises ``clerk.ClerkUnavailable``/``ClerkQueryError`` when the
     Clerk can't be checked (the caller records the failure)."""
@@ -95,6 +112,7 @@ async def build_snapshot(previous: dict | None, *, now: datetime | None = None, 
         problems += [f"{rec} was listed as passed on the last check and is gone now" for rec in gone]
 
     rezoning_rows, rezoning_check = await _rezoning_part(previous, now, client)
+    designation_rows, designation_check = await _designation_part(previous, now, client)
     return {
         "schema": SCHEMA,
         "vintage": day.isoformat(),
@@ -112,6 +130,8 @@ async def build_snapshot(previous: dict | None, *, now: datetime | None = None, 
         "code_amendments": kept,
         "rezonings": rezoning_rows,
         "rezoning_check": rezoning_check,
+        "designations": designation_rows,
+        "designation_check": designation_check,
     }
 
 
@@ -127,6 +147,7 @@ def failed_snapshot(previous: dict | None, error: str, *, now: datetime | None =
         "consecutive_failures": int(prev.get("consecutive_failures") or 0) + 1,
         "code_amendments": prev.get("code_amendments") or [],
         "rezonings": prev.get("rezonings") or [],
+        "designations": prev.get("designations") or [],
     }
 
 
@@ -175,6 +196,11 @@ def main(argv: list[str] | None = None) -> int:
         n = rc.get("counts") or {}
         print(f"  rezonings: {rc.get('status')} passed={n.get('passed')} off_map={n.get('off_map')} flaggable={n.get('flaggable')} "
               f"unparsed={len(n.get('unparsed') or [])} no_parcels={len(n.get('no_parcels') or [])}")
+    dc = snap.get("designation_check") or {}
+    if dc:
+        n = dc.get("counts") or {}
+        print(f"  landmark designations: {dc.get('status')} passed={n.get('passed')} flaggable={n.get('flaggable')} "
+              f"with_parcels={n.get('with_parcels')} unparsed={len(n.get('unparsed') or [])} no_parcels={len(n.get('no_parcels') or [])}")
     for p in snap.get("contract_problems") or []:
         print(f"  problem: {p}")
     if snap.get("last_error"):
