@@ -3,7 +3,7 @@
 Load only what the current task needs. **Don't read everything.** One line per file below; the
 `load-urbanlayer-context` skill maps common work-types → the exact files to open.
 
-**The definitive archive is the website About page** (`frontend/src/components/AboutPage.tsx`, ~35
+**The definitive archive is the website About page** (`frontend/src/components/AboutPage.tsx`, ~38
 sections): architecture, design decisions, and war stories in full. Files under `archive/` and `audits/`
 are now short **pointers** into that record + git history — read them for the one-paragraph summary and
 reusable lesson, not the full narrative.
