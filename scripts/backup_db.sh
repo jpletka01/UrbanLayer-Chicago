@@ -41,6 +41,20 @@ echo "Backup created: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
 ls -1t "$BACKUP_DIR"/urbanlayer_*.db 2>/dev/null | tail -n +$((KEEP + 1)) | xargs -r rm -f
 echo "Retained $(ls -1 "$BACKUP_DIR"/urbanlayer_*.db 2>/dev/null | wc -l) backups"
 
+# Stored report originals (WS6 M8): the PDF a buyer was sold exists nowhere else, so it rides the nightly backup.
+# They live beside the database on the backend_data volume (reports/<purchase_id>/<ms>.pdf) and are write-once,
+# so the mirror is append-only: `rsync --ignore-existing` never overwrites a file already copied (a damaged
+# original cannot replace its good copy) and, without --delete, never removes one. (rsync, not `cp -n`: newer
+# coreutils make `cp -n` exit non-zero for a file it skipped, which `set -e` would turn into a failed backup.
+# rsync is on the server: the off-box pull is an rrsync forced command.)
+REPORTS_DIR="$(dirname "$DB_PATH")/reports"
+if [ -d "$REPORTS_DIR" ] && [ -n "$(ls -A "$REPORTS_DIR" 2>/dev/null)" ]; then
+    command -v rsync >/dev/null || { echo "rsync is not installed (apt install rsync)" >&2; exit 1; }
+    mkdir -p "$BACKUP_DIR/reports"
+    rsync -rt --ignore-existing "$REPORTS_DIR/" "$BACKUP_DIR/reports/"
+    echo "Report originals mirrored: $(find "$BACKUP_DIR/reports" -type f -name '*.pdf' | wc -l | tr -d ' ') PDFs in $BACKUP_DIR/reports"
+fi
+
 # Tell the data-health checker (WS6 M2). It runs in a container that cannot see $BACKUP_DIR, so
 # the report goes beside the database, on the backend_data volume it does mount. Written last and
 # atomically (temp + rename): the file existing at all means a backup just completed, and its age

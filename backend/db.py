@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 14
+_SCHEMA_VERSION = 15
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -233,6 +233,44 @@ CREATE INDEX IF NOT EXISTS idx_vr_code ON voucher_redemptions(voucher_code);
 """)
 
 
+async def _migrate_v15(db: aiosqlite.Connection) -> None:
+    """Fact snapshots and rendered reports (WS6 M8).
+
+    messages.facts_json: what an answer rested on (data_health/facts.py), written server-side when the
+    message is stored. report_renders: one row per report render (facts + data dates; the PDF itself only for
+    a purchase's ORIGINAL, stored once). The partial unique index makes "the original is stored once" a
+    database rule, not a code convention. Both foreign keys SET NULL so an account deletion (which removes the
+    user's PDFs and render rows explicitly) can never be blocked by, or cascade into, the purchase ledger.
+    """
+    cur = await db.execute("PRAGMA table_info(messages)")
+    cols = {row[1] for row in await cur.fetchall()}
+    if "facts_json" not in cols:
+        await db.execute("ALTER TABLE messages ADD COLUMN facts_json TEXT")
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS report_renders (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchase_id   INTEGER REFERENCES report_purchases(id) ON DELETE SET NULL,
+    user_id       TEXT REFERENCES users(id) ON DELETE SET NULL,
+    pin           TEXT,
+    lat           REAL,
+    lon           REAL,
+    kind          TEXT NOT NULL CHECK (kind IN ('original', 'updated')),
+    rendered_at   INTEGER NOT NULL,
+    facts_json    TEXT NOT NULL,
+    vintages_json TEXT,
+    pdf_path      TEXT,
+    pdf_sha256    TEXT,
+    pdf_bytes     INTEGER,
+    language      TEXT NOT NULL DEFAULT 'en'
+);
+
+CREATE INDEX IF NOT EXISTS idx_rr_purchase ON report_renders(purchase_id, kind);
+CREATE INDEX IF NOT EXISTS idx_rr_user ON report_renders(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rr_one_original
+    ON report_renders(purchase_id) WHERE kind = 'original' AND purchase_id IS NOT NULL;
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -375,6 +413,7 @@ async def init_db() -> None:
         await _migrate_v12(_db)
         await _migrate_v13(_db)
         await _migrate_v14(_db)
+        await _migrate_v15(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -418,6 +457,9 @@ async def init_db() -> None:
         if version < 14:
             await _migrate_v14(_db)
             version = 14
+        if version < 15:
+            await _migrate_v15(_db)
+            version = 15
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -557,6 +599,28 @@ async def create_conversation(
     return {"id": conv_id, "title": title, "language": language, "created_at": now, "updated_at": now}
 
 
+def _facts_json(msg: dict, now_ms: int) -> str | None:
+    """The fact snapshot for an assistant message that resolved a parcel (data_health/facts.py), built here from
+    the validated context. Never read from the client's payload: the message dict has no ``facts`` key by
+    construction (``StoredMessage`` drops unknown fields). None for a user turn, an answer about the area or the
+    code, or a context we cannot read: a missing snapshot must never fail the save."""
+    if msg.get("role") != "assistant" or not msg.get("context"):
+        return None
+    try:
+        from datetime import datetime, timezone
+
+        from backend.data_health import facts
+        from backend.models import ContextObject
+
+        ctx = ContextObject.model_validate(msg["context"])
+        answered = datetime.fromtimestamp(now_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        snap = facts.snapshot(ctx, answered_at=answered)
+        return json.dumps(snap, separators=(",", ":")) if facts.resolved_parcel(snap) else None
+    except Exception:
+        log.warning("Could not build a fact snapshot for a stored message", exc_info=True)
+        return None
+
+
 async def save_messages(conv_id: str, messages: list[dict]) -> None:
     db = _get_db()
 
@@ -573,8 +637,8 @@ async def save_messages(conv_id: str, messages: list[dict]) -> None:
             """
             INSERT INTO messages
               (conversation_id, role, content, context_json, plan_json,
-               map_data_json, map_fetched_at, summary_json, position, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               map_data_json, map_fetched_at, summary_json, position, created_at, facts_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 conv_id,
@@ -587,6 +651,7 @@ async def save_messages(conv_id: str, messages: list[dict]) -> None:
                 json.dumps(msg["summary"]) if msg.get("summary") else None,
                 next_pos + i,
                 now,
+                _facts_json(msg, now),
             ),
         )
 
@@ -1350,7 +1415,13 @@ async def delete_user_account(user_id: str) -> dict:
     )
     conv_ids = [r["id"] for r in await cur.fetchall()]
 
+    cur = await conn.execute(
+        "SELECT pdf_path FROM report_renders WHERE user_id = ? AND pdf_path IS NOT NULL", (user_id,),
+    )
+    report_files = [r["pdf_path"] for r in await cur.fetchall()]
+
     await conn.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
+    await conn.execute("DELETE FROM report_renders WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM events WHERE user_id = ?", (user_id,))
     await conn.execute("DELETE FROM request_logs WHERE user_id = ?", (user_id,))
     await conn.execute(
@@ -1369,7 +1440,19 @@ async def delete_user_account(user_id: str) -> dict:
         except Exception:
             pass
 
-    return {"conversations_deleted": len(conv_ids)}
+    # The user's stored report PDFs (the purchase rows stay, tombstoned, as financial history). Best-effort,
+    # after the commit, like the uploads: a filesystem failure must not leave dangling rows.
+    root = settings.report_store_dir
+    for rel in report_files:
+        try:
+            f = root / rel
+            f.unlink(missing_ok=True)
+            if f.parent != root and f.parent.is_dir() and not any(f.parent.iterdir()):
+                f.parent.rmdir()
+        except Exception:
+            pass
+
+    return {"conversations_deleted": len(conv_ids), "report_files_deleted": len(report_files)}
 
 
 # ---------------------------------------------------------------------------
@@ -1459,6 +1542,133 @@ async def has_purchased_report(
         (user_id, pin, lat, lon),
     )
     return await cur.fetchone() is not None
+
+
+async def find_report_purchase(
+    user_id: str, lat: float, lon: float, pin: str | None = None,
+) -> int | None:
+    """The id of the user's newest completed purchase for this parcel, by the same rule as
+    ``has_purchased_report`` (PIN first, legacy coordinates second), or None."""
+    conn = _get_db()
+    cur = await conn.execute(
+        """
+        SELECT id FROM report_purchases
+        WHERE user_id = ?
+          AND (pin = ?
+               OR (ROUND(lat, 4) = ROUND(?, 4) AND ROUND(lon, 4) = ROUND(?, 4)))
+          AND status = 'completed'
+        ORDER BY completed_at DESC
+        LIMIT 1
+        """,
+        (user_id, pin, lat, lon),
+    )
+    row = await cur.fetchone()
+    return row["id"] if row else None
+
+
+class OriginalExists(Exception):
+    """A purchase's original is already stored (the partial unique index refused a second)."""
+
+
+def _report_dir(purchase_id: int) -> Path:
+    return get_settings().report_store_dir / str(purchase_id)
+
+
+async def get_original_render(purchase_id: int) -> dict | None:
+    """The stored original's row (``rendered_at``, ``pdf_path``, ``pdf_sha256``...), or None."""
+    conn = _get_db()
+    cur = await conn.execute(
+        "SELECT * FROM report_renders WHERE purchase_id = ? AND kind = 'original' LIMIT 1", (purchase_id,),
+    )
+    row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+def read_original_pdf(row: dict) -> bytes | None:
+    """The stored original's bytes, verified against the hash recorded when it was written. None when the
+    file is gone or does not match: an original we cannot prove is intact is never served as one."""
+    import hashlib
+
+    try:
+        data = (get_settings().report_store_dir / row["pdf_path"]).read_bytes()
+    except (OSError, KeyError, TypeError):
+        return None
+    return data if hashlib.sha256(data).hexdigest() == row.get("pdf_sha256") else None
+
+
+async def record_render(
+    *, user_id: str | None, purchase_id: int | None, pin: str | None, lat: float, lon: float, kind: str,
+    facts: dict, vintages: list[dict] | None, language: str, pdf: bytes | None = None,
+) -> int:
+    """Record one report render. Only a purchase's ORIGINAL keeps its PDF (``pdf`` is ignored for any other
+    kind); every render keeps its facts and data dates. Raises ``OriginalExists`` when the purchase already has
+    an original. The file is written first under a temporary name and renamed after the row is in, so a
+    refused or failed insert leaves no stray file and a row never points at a missing one."""
+    import asyncio
+    import hashlib
+    import os
+
+    rendered_at = _now_ms()
+    path = digest = None
+    size = None
+    tmp: Path | None = None
+    final: Path | None = None
+    if kind == "original" and purchase_id is not None and pdf:
+        final = _report_dir(purchase_id) / f"{rendered_at}.pdf"
+        tmp = final.with_suffix(".pdf.tmp")
+        digest, size = hashlib.sha256(pdf).hexdigest(), len(pdf)
+        path = f"{purchase_id}/{final.name}"
+
+        def write() -> None:
+            final.parent.mkdir(parents=True, exist_ok=True)
+            tmp.write_bytes(pdf)
+
+        await asyncio.get_running_loop().run_in_executor(None, write)
+    conn = _get_db()
+    try:
+        cur = await conn.execute(
+            """
+            INSERT INTO report_renders
+              (purchase_id, user_id, pin, lat, lon, kind, rendered_at, facts_json, vintages_json,
+               pdf_path, pdf_sha256, pdf_bytes, language)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (purchase_id, user_id, pin, round(lat, 4), round(lon, 4), kind, rendered_at,
+             json.dumps(facts, separators=(",", ":")), json.dumps(vintages) if vintages is not None else None,
+             path, digest, size, language),
+        )
+        await conn.commit()
+    except aiosqlite.IntegrityError as exc:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+        if kind == "original":
+            raise OriginalExists(str(purchase_id)) from exc
+        raise
+    except BaseException:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+        raise
+    if tmp is not None and final is not None:
+        os.replace(tmp, final)
+    return cur.lastrowid  # type: ignore[return-value]
+
+
+async def get_purchase_originals(user_id: str) -> dict[int, dict]:
+    """``{purchase_id: {"rendered_at", "available"}}`` for the user's stored originals, for the settings list.
+    ``available`` is whether the file is still there (hash not re-checked here: that happens on download)."""
+    conn = _get_db()
+    cur = await conn.execute(
+        """
+        SELECT purchase_id, rendered_at, pdf_path FROM report_renders
+        WHERE user_id = ? AND kind = 'original' AND purchase_id IS NOT NULL
+        """,
+        (user_id,),
+    )
+    root = get_settings().report_store_dir
+    return {
+        r["purchase_id"]: {"rendered_at": r["rendered_at"], "available": bool(r["pdf_path"]) and (root / r["pdf_path"]).is_file()}
+        for r in await cur.fetchall()
+    }
 
 
 async def get_user_report_purchases(user_id: str) -> list[dict]:

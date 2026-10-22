@@ -791,7 +791,11 @@
     "accessCodeAlreadyUsed": "Ya has usado este código.",
     "accessCodeExhausted": "Este código alcanzó su límite de canjes.",
     "accessCodeError": "Algo salió mal — inténtalo de nuevo.",
-    "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}."
+    "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}.",
+    "downloadOriginal": "Original · {{date}}",
+    "downloadUpdated": "Updated copy",
+    "originalNote": "The original is the first report generated for this purchase, kept exactly as sold. The updated copy is a new report with today's data.",
+    "originalMissing": "The stored original couldn't be found. An updated copy is available."
   },
   "notFound": {
     "title": "Página no encontrada",

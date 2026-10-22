@@ -299,6 +299,9 @@ export interface ReportPurchase {
   amount_cents: number;
   created_at: number;
   completed_at: number | null;
+  /** The first report this purchase rendered, kept as sold (WS6 M8). Null for a purchase made before originals
+      were kept: its next download becomes one. `available` is false if the stored file has gone missing. */
+  original?: { rendered_at: number; available: boolean } | null;
 }
 
 export async function fetchMyPurchases(): Promise<ReportPurchase[]> {
@@ -1094,7 +1097,10 @@ export function fetchCodeSubsection(sectionId: string): Promise<CodeSubsection |
   return p;
 }
 
-export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> {
+/** The PDF report. ``copy`` picks which: "original" is the first report this purchase rendered, kept as sold;
+    "updated" (and the default) is a live render with today's data, labeled once an original exists. A purchase's
+    first download becomes its original whichever is asked for. */
+export async function fetchReport(parcel: SelectedParcel, copy?: "original" | "updated"): Promise<Blob | null> {
   // Highest-fidelity key only: pin → address → coords (never downgrade).
   const qs = new URLSearchParams();
   if (parcel.pin) {
@@ -1106,6 +1112,7 @@ export async function fetchReport(parcel: SelectedParcel): Promise<Blob | null> 
     qs.set("lon", String(parcel.lon));
   }
   if (i18n.language && i18n.language !== "en") qs.set("language", i18n.language);
+  if (copy) qs.set("copy", copy);
   try {
     const resp = await authFetch(`${API_BASE}/api/report?${qs}`);
     if (!resp.ok) return null;

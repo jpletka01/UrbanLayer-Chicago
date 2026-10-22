@@ -1416,3 +1416,43 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 
 **Not verified on prod, and needs one step from Jack:** the flag itself. The production snapshot has no `designations` until the sync runs: the 06:00 Chicago timer does it tomorrow, or run it now on the server (needs sudo): `sudo systemctl start legislation-sync.service`, then `sudo journalctl -u legislation-sync.service -n 30 --no-pager` (the log has a line `landmark designations: ok passed=8 ... with_parcels=5`). Afterwards `curl "https://urbanlayerchicago.com/api/scorecard?pin=25351000060000"` should show one `passed_landmark_designations` entry (O2026-0027058, building, 13100 S Ellis Ave), and `pin=14054080110000` one district entry (O2026-0027059); `pin=14313320180000` (1601 N Milwaukee) and `pin=20044480440000` (4644 S Dearborn St, already a landmark on the map) none. The report's new notice and the prompt rule's effect were not seen on prod.
 
+## Item 23: fact snapshots, report originals, report cover (WS6 M8, 2026-10-22)
+
+**The policy, as Jack approved it (option C):** a purchase keeps the first report it renders as its **original**, stored once, byte for byte; every later download is a live render with today's data, and its cover says "Updated copy of the report first generated on <date>". Free and unlimited for now. `GET /api/report?copy=original` returns the stored PDF; no `copy`, or `updated`, renders live.
+- **The first render is the original, whichever copy was asked for.** A purchase made before this shipped has no original; its next download becomes one, and Settings labels that honestly ("Original · <the day it was first kept>", not the purchase date). *Alternative:* back-fill by re-rendering old purchases. Rejected: that would invent an "original" that is today's data under yesterday's date.
+- **Only the original keeps its PDF.** An updated copy keeps its facts and data dates (a row, about 3.7 KB), not a second 2 MB file. Subscribers and admins render without a purchase: their renders are recorded with `purchase_id` NULL and no PDF (the plan's free "report history"). A mock render is never recorded.
+
+**"Stored once" is a database rule.** `report_renders` has a partial unique index on `purchase_id WHERE kind = 'original'`, so two concurrent first downloads cannot both become the original: the loser gets `OriginalExists` and is recorded as an updated copy (`test_a_race_for_the_original_makes_the_loser_an_updated_copy`). The file is written under a temporary name and renamed after the row is in; a refused or failed insert leaves no stray file and a row never points at a missing one.
+
+**An original we cannot prove intact is never served as one.** Each stored PDF's SHA-256 is recorded when it is written and checked on every `copy=original`; a missing or altered file answers **410 `original_unavailable`** and Settings says the original couldn't be found while still offering an updated copy. *Alternative:* serve whatever is on disk. Rejected: the point of an original is that it is what was sold. A buyer cannot fetch another user's original (404): the stored original belongs to the purchase found for *this* user.
+
+**The fact snapshot is built on the server, from a validated context, and nothing in it comes from the client's say-so.** `data_health/facts.py` `snapshot(context, ...)` keeps what a material change is measured against: the district and its ordinance, overlays (sorted, names normalized so spacing and punctuation never count as a change), the verdict-driving flags, standards, the code vintage and the sections cited, headline records, the date each source was current, the passed ordinances that list the parcel, and what could not be checked (as keys). A saved chat message gets its snapshot when it is stored, from the parsed context; the payload's own `facts`/`facts_json` is dropped by the request model (`test_a_snapshot_the_client_sends_is_ignored_the_server_builds_its_own`). An answer about an area or the code, or a context the server can't read, gets none, and a snapshot failure never fails the save. A user can still edit their own message's context; that changes only the notes on their own conversation. M9 does the comparing; this item only keeps what to compare.
+
+**Schema v15** (`messages.facts_json`; `report_renders`), migrated in place: a v14 database keeps its messages, gets the column, the table and the index (`test_a_v14_database_migrates_in_place_and_keeps_its_messages`, which rolls a real file back to v14 first). Both foreign keys are `ON DELETE SET NULL`.
+
+**Account deletion removes the user's PDFs and render rows and leaves the purchase ledger**, tombstoned as before. Files are removed after the commit, best-effort, like the uploads.
+
+**Found by the tests, fixed:**
+- Two bulk-standard facts cite the same section, so a snapshot listed `17-3-0400` twice (`bulk_sections` is now de-duplicated).
+- The nightly backup would have broken on newer servers. My first version mirrored the originals with `cp -an`; `cp -n` exits non-zero for a file it skipped on coreutils 9.2 and later (and on macOS), and the script runs under `set -e`, so a second night would have failed the whole backup. It uses `rsync --ignore-existing` instead (rsync is already on the server: the off-box pull is an rrsync forced command).
+- Existing Tier-0 report tests had no database; they now stub the purchase lookup the endpoint makes.
+
+**Backups.** Originals live on the `backend_data` volume (`backend/data/reports/<purchase_id>/<ms>.pdf`) and exist nowhere else, so `scripts/backup_db.sh` now mirrors them beside the nightly database copy, append-only: `rsync --ignore-existing` never overwrites a file already copied (a damaged original can't replace its good copy) and never deletes one. This closes the server side of plan question Q8. **It is a second copy on the same disk, not an off-box one:** `scripts/pull_backups.sh` (on Jack's Mac) still pulls only `urbanlayer_*.db`. Extending it is one more rsync of `./reports/` and a run to test it; I left it alone because it runs from Jack's launchd and can't be tried from here. *Revisit if:* the box is lost with reports on it.
+
+**Numbers** (2026-10-22; public data, no model; Stripe not involved, see below)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,157 → 2,187 (+30: snapshots 12, originals 15, backup script 3) | `make test` |
+| Eval scorer tests | 106 | `make test` |
+| Frontend tests | 542 → 551 (+9: the Settings row 5, untranslated-key guards 4); lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Real report, 1601 N Milwaukee, local | first download 12.5 s, stored as the original (2,038,871 bytes); second download 5.3 s, an updated copy (the cover names the first's date); `copy=original` returned the first byte for byte (same SHA-256) | the scratch server run in the decision text: `DB_PATH=... REPORT_STORE_DIR=... uvicorn`, then three `curl`s of `/api/report?pin=14313320180000[&copy=original]` |
+| Snapshot size | 1.3 KB for a bare parcel; 2.7 KB in the real report's `report_renders` row; the data dates 0.96 KB | same run: `select length(facts_json), length(vintages_json) from report_renders` |
+| Disk | the original is **2.0 MB, not the plan's 1.5 MB**: about 2 GB per 1,000 purchases | same |
+
+**Not verified:**
+- **Stripe test mode.** The plan's acceptance is a purchase through Stripe's test mode. I did not run a checkout (no webhook forwarding here, and prod's Stripe is still off): I seeded a completed purchase row for the local dev user and drove the real report route, which exercises everything after the webhook.
+- Production: nothing has been deployed with this yet. The first buyer download after deploy becomes that purchase's original; the server backup script change takes effect when the deploy pulls it, and the first run to confirm is `sudo /opt/urbanlayer/scripts/backup_db.sh` (look for "Report originals mirrored").
+- Spanish: the new cover line and Settings strings are English, listed as untranslated.
+- The off-box copy of the originals (above).
+

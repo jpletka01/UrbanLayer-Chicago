@@ -132,6 +132,15 @@ def _no_live_failures(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _report_store_in_tmp(tmp_path, monkeypatch):
+    """Stored report originals go under settings.report_store_dir (backend/data/reports). No test may write
+    there: every test gets its own."""
+    from backend.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "report_store_dir", tmp_path / "reports", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _no_indexed_sections():
     """``article_id`` reads the code index's article ids, registered when vector_search
     first scrolls Qdrant. Start each test unregistered (the hundreds fallback); a test
