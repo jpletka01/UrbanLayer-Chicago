@@ -246,9 +246,20 @@ def _data_dates_line(provenance: dict[str, dict], code_currency: dict | None, sk
     return f"- **Data dates:** {' · '.join(items)}" if items else None
 
 
+def _unchecked_line(partial_failures: list[str] | None) -> str | None:
+    """"**Couldn't check today:** property records, landmark designation (City zoning map didn't answer). ..."
+    Written by us, not the model: an answer that left a source out says so whether or not the model follows
+    the prompt rule that asks it to."""
+    items = list(dict.fromkeys(f for f in (partial_failures or []) if f))
+    if not items:
+        return None
+    return (f"**Couldn't check today:** {', '.join(items)}. Anything these would have shown is missing from this "
+            "answer, which is not the same as none on record.")
+
+
 def build_sources_footer(
     provenance: dict[str, dict], cited_chunks: list[tuple[int, Any]], code_through: str | None,
-    code_currency: dict | None = None,
+    code_currency: dict | None = None, partial_failures: list[str] | None = None,
 ) -> str:
     """Markdown 'Sources' block, or '' when there is nothing to list. ``cited_chunks`` is
     [(N, CodeChunk)] for the ``[N]`` markers the answer actually used. When the answer
@@ -283,8 +294,9 @@ def build_sources_footer(
         thru = f" (code current through {code_through})" if code_through else ""
         title = f" — {chunk.section_title}" if getattr(chunk, "section_title", None) else ""
         lines.append(f"- [{n}] Municipal Code §{chunk.section}{title}{thru}")
+    unchecked = _unchecked_line(partial_failures)
     if not lines:
-        return ""
+        return f"\n\n---\n{unchecked}\n" if unchecked else ""
     currency = None
     if bulk or cited_chunks:
         cited = [e["section"] for e in bulk if e.get("section")] + [c.section for _, c in cited_chunks]
@@ -297,7 +309,7 @@ def build_sources_footer(
         lines.append(currency)
     # an area-only answer (crime, census tract) has no parcel data to speak of
     heading = "Sources for the data used" if area_lines and not parcel_lines and not cited_chunks else "Sources for the parcel data used"
-    return f"\n\n---\n**{heading}**\n" + "\n".join(lines) + "\n"
+    return f"\n\n---\n**{heading}**\n" + "\n".join(lines) + "\n" + (f"\n{unchecked}\n" if unchecked else "")
 
 
 def cited_chunks(answer: str, code_chunks: list[Any]) -> list[tuple[int, Any]]:

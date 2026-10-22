@@ -147,9 +147,12 @@ def evaluate(
     *,
     previous_error: bool = False,
     peers: Mapping[str, str] | None = None,
+    live: tuple[int, int] | None = None,
 ) -> Status:
     """Judge one source. ``previous_error``: the last run's probe failed too.
-    ``peers``: other sources' states, for ``warns_only_while_ok``."""
+    ``peers``: other sources' states, for ``warns_only_while_ok``. ``live``: ``(calls, failures)`` of the
+    app's own calls to this source over the last day (data_health/live.py); a high failure rate is a
+    finding of its own, so an outage between two daily probes still shows."""
     if probe is None:
         if spec.frozen:
             return Status("frozen_ok", f"frozen: {spec.frozen.label}")
@@ -186,6 +189,12 @@ def evaluate(
 
     for f in contract_findings(spec, probe) + probe.findings:
         parts.append((f.level, f.text))
+    if live is not None:
+        from backend.data_health.live import rate_finding
+
+        found = rate_finding(*live)
+        if found:
+            parts.append(found)
 
     state, reasons = _worst(parts)
     if state == "ok" and spec.frozen is not None and date_state == "frozen_ok":

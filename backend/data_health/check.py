@@ -42,13 +42,17 @@ class Row:
 async def run_all(
     specs: tuple[SourceSpec, ...] = SOURCES, *, today: date | None = None, concurrency: int = 8,
     previous_errors: set[str] | None = None, transport=None,
-    overrides: dict[str, ProbeResult] | None = None,
+    overrides: dict[str, ProbeResult] | None = None, live_calls: dict[str, tuple[int, int]] | None = None,
 ) -> tuple[list[Row], int]:
     """Probe and evaluate ``specs``. Returns the rows and the total HTTP request count.
 
     ``overrides`` replaces a source's probe with a canned result (the fault-injection drill)."""
     today = today or date.today()
     overrides = overrides or {}
+    if live_calls is None:
+        from backend.data_health import live
+
+        live_calls = live.read_window()  # the app's own call outcomes over the last day; {} when it has none
     client, total = make_client(transport)
     ctx = ProbeContext(client=client, sem=asyncio.Semaphore(concurrency), today=today)
 
@@ -60,12 +64,13 @@ async def run_all(
     finally:
         await client.aclose()
     prev = previous_errors or set()
-    rows = [Row(s, r, evaluate(s, r, today, previous_error=s.id in prev)) for s, r in zip(specs, results)]
+    rows = [Row(s, r, evaluate(s, r, today, previous_error=s.id in prev, live=live_calls.get(s.id))) for s, r in zip(specs, results)]
     # Second pass: a source with a working fallback can only warn, so it needs its peer's state.
     peers = {r.spec.id: r.status.state for r in rows}
     for r in rows:
         if r.spec.warns_only_while_ok:
-            r.status = evaluate(r.spec, r.probe, today, previous_error=r.spec.id in prev, peers=peers)
+            r.status = evaluate(r.spec, r.probe, today, previous_error=r.spec.id in prev, peers=peers,
+                                live=live_calls.get(r.spec.id))
     return rows, total()
 
 

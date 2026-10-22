@@ -32,20 +32,22 @@ async def test_returns_empty_list_for_no_data(mock_socrata):
 
 
 @pytest.mark.asyncio
-async def test_handles_socrata_error(mock_socrata):
+async def test_a_failed_call_raises_instead_of_reading_as_no_assessments(mock_socrata):
+    """WS6 M7: a failure is not "none on file". The property domain catches it and reports the gap."""
     mock_socrata.side_effect = Exception("Socrata error")
-    result = await get_assessments("14241020170000")
-    assert result == []
+    with pytest.raises(Exception, match="Socrata error"):
+        await get_assessments("14241020170000")
 
 
 @pytest.mark.asyncio
-async def test_negative_cache_prevents_retry(mock_socrata):
+async def test_a_failure_is_not_cached_but_an_empty_answer_is(mock_socrata):
     mock_socrata.side_effect = Exception("Socrata error")
-    result1 = await get_assessments("99999999999999")
-    assert result1 == []
-    assert mock_socrata.call_count == 1
-
+    with pytest.raises(Exception):
+        await get_assessments("99999999999999")
+    mock_socrata.side_effect = None
+    mock_socrata.return_value = []
+    assert await get_assessments("99999999999999") == []  # the retry ran: the failure was not remembered
+    assert mock_socrata.call_count == 2
     mock_socrata.reset_mock()
-    result2 = await get_assessments("99999999999999")
-    assert result2 == []
+    assert await get_assessments("99999999999999") == []  # a genuinely empty answer stays cached
     assert mock_socrata.call_count == 0

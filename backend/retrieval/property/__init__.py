@@ -97,12 +97,14 @@ async def property_domain(
         results = await asyncio.gather(*coros, return_exceptions=True)
 
         data_gaps: list[str] = []
+        failed_calls: list[str] = []  # the gaps that are a call failing, not a record being absent (WS6 M7)
 
         idx = 0
         chars = results[idx] if not isinstance(results[idx], Exception) else None
         if isinstance(results[idx], Exception):
             log.warning("CCAO characteristics failed: %s", results[idx])
             data_gaps.append("property characteristics")
+            failed_calls.append("property characteristics")
         idx += 1
 
         assessments: list[dict] = []
@@ -113,12 +115,15 @@ async def property_domain(
             if isinstance(results[idx], Exception):
                 log.warning("CCAO assessments failed: %s", results[idx])
                 data_gaps.append("property assessments")
+                failed_calls.append("property assessments")
             elif not assessments:
                 data_gaps.append("property assessments")
             idx += 1
             sales = results[idx] if not isinstance(results[idx], Exception) else []
             if isinstance(results[idx], Exception):
                 log.warning("CCAO sales failed: %s", results[idx])
+                data_gaps.append("property sales history")
+                failed_calls.append("property sales history")
             idx += 1
             appeals_summary = results[idx] if not isinstance(results[idx], Exception) else None
             if isinstance(results[idx], Exception):
@@ -131,6 +136,7 @@ async def property_domain(
             if isinstance(results[idx], Exception):
                 log.warning("PTAXSIM tax estimate failed: %s", results[idx])
                 data_gaps.append("property tax estimate")
+                failed_calls.append("property tax estimate")
             elif tax_result is None:
                 data_gaps.append("property tax estimate")
             idx += 1
@@ -173,7 +179,7 @@ async def property_domain(
                               appeals_summary=appeals_summary,
                               parcel_flags=parcel_flags,
                               assessor_permits=assessor_permits,
-                              data_gaps=data_gaps)
+                              data_gaps=data_gaps, failed_calls=failed_calls)
     finally:
         if owns:
             await client.aclose()
@@ -339,6 +345,7 @@ def _build_summary(
     parcel_flags=None,
     assessor_permits=None,
     data_gaps: list[str] | None = None,
+    failed_calls: list[str] | None = None,
 ) -> PropertySummary:
     pin14 = parcel["pin14"]
     address = parcel.get("address")
@@ -627,4 +634,5 @@ def _build_summary(
         sales_history=sales_history,
         parcel_geometry=parcel_geometry,
         data_gaps=data_gaps or [],
+        failed_calls=failed_calls or [],
     )

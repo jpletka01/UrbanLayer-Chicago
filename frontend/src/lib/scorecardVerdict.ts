@@ -327,7 +327,12 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   // Overlay gaps are said by the caveat above (friction) or the Regulatory card's
   // "couldn't check" row; the generic line lists the remaining sources only.
   const overlayGaps = new Set(reg?.data_gaps ?? []);
-  const otherFailures = (data.partial_failures ?? []).filter((f) => !overlayGaps.has(f));
+  // The district itself couldn't be looked up (WS6 M7): every standard below it is unknown, so the verdict says
+  // so in its own words rather than burying "parcel zoning" in the generic list.
+  const zoningFailed = (data.failed_sources ?? []).find((f) => f.key === "zoning");
+  if (zoningFailed) caveats.push(t("scorecard.verdict.caveat.zoningUnchecked"));
+  const zoningLabels = new Set(zoningFailed?.labels ?? []);
+  const otherFailures = (data.partial_failures ?? []).filter((f) => !overlayGaps.has(f) && !zoningLabels.has(f));
   if (otherFailures.length > 0)
     caveats.push(t("scorecard.verdict.caveat.partial", { sources: otherFailures.join(", ") }));
   // Parcel-risk caveats (scofflaw list, STR prohibition): rendered with the

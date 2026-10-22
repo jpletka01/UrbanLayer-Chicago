@@ -9,6 +9,11 @@ volume) and tells Sentry about sources that turned red. It also checks the age o
 `data_health.checker` (`ok`, or `late` after 36 h without a finished run). Design and alarm rules:
 `claude-context/guides/data-health.md`.
 
+The **app** writes a second file on the same volume, `backend/data/data_health_live.db`: hourly counts of its own
+calls to each source and how many failed (WS6 M7, `backend/data_health/live.py`). The checker reads the last 24 hours
+and turns a failure rate over 20% (50% = alarm) of at least 10 calls into `warn` (`alarm`) between two daily probes.
+Each container only ever writes its own file. The file appears an hour after a deploy; delete it to reset the counts.
+
 ### Install on the prod host (`ssh urbanlayer-prod`; needs sudo)
 
 ```bash

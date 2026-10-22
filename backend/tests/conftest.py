@@ -119,6 +119,19 @@ def _no_data_health_store(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_live_failures(tmp_path, monkeypatch):
+    """Live call counts are per process and the live-failure file differs per machine; every test starts
+    with neither, and no test can be told a source is failing by a leftover dev file."""
+    from backend.data_health import live
+
+    monkeypatch.setattr(live, "DB_FILE", tmp_path / "data_health_live.db")
+    monkeypatch.delenv("DATA_HEALTH_FAULT", raising=False)
+    live.reset()
+    yield
+    live.reset()
+
+
+@pytest.fixture(autouse=True)
 def _no_indexed_sections():
     """``article_id`` reads the code index's article ids, registered when vector_search
     first scrolls Qdrant. Start each test unregistered (the hundreds fallback); a test

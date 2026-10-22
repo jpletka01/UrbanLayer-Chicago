@@ -116,17 +116,24 @@ async def lookup_zoning(
     # rendered silent absence (4/100 first-hit misses in the 2026-07-02 lot
     # coverage benchmark were exactly this). Only a definitive empty/zone-less
     # response means not-found (and only that is negatively cached).
+    from backend.data_health import live
+
     try:
+        if live.fault("source", "-", "chi.zoning.districts"):
+            raise RuntimeError("forced by DATA_HEALTH_FAULT")
         resp = await client.get(ZONING_QUERY_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
     except Exception as exc:
         log.warning("Zoning lookup failed for (%s, %s): %s", lat, lon, exc)
+        live.record("chi.zoning.districts", False)
         raise
     # ArcGIS reports errors in a 200 body ({"error": {...}}) — that is a failed
     # lookup, not an empty result.
     if isinstance(data.get("error"), dict):
+        live.record("chi.zoning.districts", False)
         raise RuntimeError(f"ArcGIS zoning query error: {data['error'].get('message')}")
+    live.record("chi.zoning.districts", True)
     features = data.get("features", [])
     if not features:
         _cache.set(key, _NOT_FOUND)
