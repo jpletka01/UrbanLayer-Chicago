@@ -1000,7 +1000,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not measured:** the live browser tool was unavailable for the post-deploy check, so the DOM and screenshots came from a local headless Chromium against the live site; the admin and signed-in views were not checked.
 
-## Item 16: passed, but not yet on the City map (2026-10-21)
+## Item 16: passed, but not yet on the City map (#82, #83, 2026-10-21)
 
 **The ordinance is matched on its record number, and "off the map" means no polygon carries it.**
 - **Decision:** a passed rezoning is *on the map* when at least one layer-1 polygon has its record number in `CLERK_DOCNO`. The check is one batched `IN (…)` query (40 records) with distinct values, and an unreachable or erroring map raises `MapCheckUnavailable` (never "everything is off the map").
@@ -1061,4 +1061,17 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - How often a parcel the Profile flags is one the reader cares about (no usage yet).
 - The other seven phone-audit routes.
 - Spanish rendering (new strings are English, listed in `_untranslated.json`).
+
+**Production** (2026-10-22, after the deploys of #82 and #83 and the first prod sync, run by hand with `sudo systemctl start legislation-sync.service`)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| First prod sync | `status=ok`, `rezonings: ok passed=352 off_map=80 flaggable=77 unparsed=3 no_parcels=23`: the same counts as the local run | `sudo journalctl -u legislation-sync.service -n 25` on the server |
+| 6711 S Western Ave, after #82 only | flagged (O2026-0028350, "6701-6731 S Western Ave") but `matched_by: address` and the context's `parcel_pin` was null | `curl "https://urbanlayerchicago.com/api/scorecard?address=6711+S+Western+Ave"` |
+| 6711 S Western Ave, after #83 | `parcel_pin` 20193000320000, `parcel_resolution` authoritative, `matched_by: pin`, coverage note `passed_not_on_map` | same |
+| 1218 W George St (on the map, rezoned June) | `passed_not_on_map` absent; live map ordinance O2026-0025358 | same, `address=1218+W+George+St` |
+| 4000 N Western Ave | absent | same |
+| `/health` | `data_health.checker: ok` | `curl https://urbanlayerchicago.com/health` |
+
+**Not measured:** the rendered amber box and the paid report's warning on prod (both tested offline and the box checked against a replayed payload; the report needs a purchase or an admin download). The 06:00 timer's own first run. `docker` is not available to `jack`, so any manual run needs `sudo systemctl start`.
 
