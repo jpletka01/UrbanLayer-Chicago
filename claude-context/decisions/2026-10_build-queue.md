@@ -1127,7 +1127,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not yet verified on prod:** the acceptance run (sentinels 13/13 and the contract results on the panel). It needs the checker started on the server, `sudo systemctl start data-health-check.service`, or the 05:37 UTC timer. After it runs, the admin panel's `internal.sentinels` row should read "13 of 13 sentinels match the answer key" and every Socrata row's contract cell should read "N fields …". Until then the only evidence is the local dry run in the Numbers block above, which hit the same services.
 
-## Item 18: CI artifact ages and the weekly kit (2026-10-22)
+## Item 18: CI artifact ages and the weekly kit (#87, 2026-10-22)
 
 **Running the kit found a regression of mine from item 16.** The Profile kit run printed "Verdict text was unavailable (node missing?)" although node is installed. `eval/kit/verdict_text.mjs` loads `frontend/src/lib/scorecardVerdict.ts` in plain Node, and item 16 had added `import { formatDay } from "./format"` to it; `format.ts` imports i18n, which plain Node can't load. The eval test that checks the verdict script had started to *skip* ("this node cannot strip TypeScript types") in item 16, and I put that down to the node version instead of looking. The caveat now passes the ISO date to `t` (like the older "recently rezoned" caveat) and imports nothing heavy; the test runs again (eval tests 92 → 103 with the new gate tests). **Lesson:** a skipped test that appears in a PR is a finding; read the reason before explaining it.
 
@@ -1158,4 +1158,17 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 | Daily dry run | 81 sources, 108 requests; no source without a probe; `eval.kit_weekly` unknown until the first run | `python -m backend.data_health.check --dry-run` |
 
 **Not measured:** a scheduled Monday run; the Sentry path (no `SENTRY_DSN` secret is set yet: Jack's call); how often the accepted baseline will need refreshing.
+
+**A test that passed locally failed in CI, for the same reason as the item 16 skip: I ran it before the new file was tracked.** `test_every_committed_data_artifact_is_registered` lists tracked files under `ingestion/data` (`git ls-files`); the new `transit_stations.meta.json` was untracked when I ran `make test`, so it never saw it. The test now treats a `*.meta.json` sidecar as belonging to the registered artifact beside it, and checks that one exists. **Lesson:** `git add` new files before the final `make test`, since several tests read the index.
+
+**Production** (2026-10-22, after the deploy of #87 and one manual dispatch of the new workflow)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| CI on the PR | the artifact-age step ran, printed one `::warning` (the code text, 127 days, acked) and the job stayed green | the "Committed artifact ages (warn only)" step in the PR's `test` job |
+| Deploy | CI, lint, test and deploy green; `/health` ok | `curl https://urbanlayerchicago.com/health` |
+| Weekly kit, `workflow_dispatch` (normal) | passed in about 2 minutes: accuracy 117/122, coverage 61/64, confident-wrong 0, districts 12/12; the run's artifact (192 KB, kept 90 days) was uploaded | Actions > Weekly parcel kit |
+| Registry | `eval.kit_weekly` read the run through the public Actions API: `ok`, dated 2026-10-22 | `python -m backend.data_health.check --dry-run --only eval.kit_weekly` |
+
+**Not yet verified:** the drill (`inject_mismatch`: the run must go red and email) and the Monday schedule's first run. The drill sends a failure email on purpose, so it waits for Jack's go-ahead.
 
