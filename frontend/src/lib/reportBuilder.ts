@@ -177,12 +177,13 @@ export function buildReportData(
     sections.push(buildSafetySection(crime, three11, permits, violations, businesses));
   }
 
-  const qaPairs: Array<{ question: string; answer: string }> = [];
+  const qaPairs: Array<{ question: string; answer: string; answeredAt?: number }> = [];
   for (let i = 0; i < messages.length; i++) {
     if (messages[i].role === "user" && i + 1 < messages.length && messages[i + 1].role === "assistant") {
       qaPairs.push({
         question: messages[i].content,
         answer: stripMarkdown(messages[i + 1].content),
+        answeredAt: messages[i + 1].createdAt,
       });
     }
   }

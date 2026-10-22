@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 _db: aiosqlite.Connection | None = None
 
-_SCHEMA_VERSION = 15
+_SCHEMA_VERSION = 16
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS conversations (
@@ -271,6 +271,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_rr_one_original
 """)
 
 
+async def _migrate_v16(db: aiosqlite.Connection) -> None:
+    """The "since then" cache (WS6 M9): today's facts for a parcel, one row per (parcel, UTC day), so a crowd
+    opening a shared link costs one lookup. Rebuildable; never the source of an answer's own facts."""
+    await db.executescript("""\
+CREATE TABLE IF NOT EXISTS fact_checks (
+    check_key    TEXT NOT NULL,
+    day          TEXT NOT NULL,
+    current_json TEXT NOT NULL,
+    created_at   INTEGER NOT NULL,
+    PRIMARY KEY (check_key, day)
+);
+""")
+
+
 async def _migrate_v11(db: aiosqlite.Connection) -> None:
     """Add nullable pin column to report_purchases — entitlement keys on the
     parcel PIN when known. Legacy pin-less rows stay entitled via the
@@ -414,6 +428,7 @@ async def init_db() -> None:
         await _migrate_v13(_db)
         await _migrate_v14(_db)
         await _migrate_v15(_db)
+        await _migrate_v16(_db)
         await _db.commit()
     else:
         version = row[0]
@@ -460,6 +475,9 @@ async def init_db() -> None:
         if version < 15:
             await _migrate_v15(_db)
             version = 15
+        if version < 16:
+            await _migrate_v16(_db)
+            version = 16
         # Compare against the STARTING version: after the chain runs, the local
         # `version` always equals _SCHEMA_VERSION, so the old `version !=
         # _SCHEMA_VERSION` check never fired and the stamp was never persisted —
@@ -555,14 +573,14 @@ async def get_conversation(
         return None
 
     cur = await db.execute(
-        "SELECT role, content, context_json, plan_json, map_data_json, map_fetched_at, summary_json "
+        "SELECT role, content, context_json, plan_json, map_data_json, map_fetched_at, summary_json, created_at "
         "FROM messages WHERE conversation_id = ? ORDER BY position",
         (conv_id,),
     )
     rows = await cur.fetchall()
     messages = []
     for r in rows:
-        msg: dict[str, Any] = {"role": r["role"], "content": r["content"]}
+        msg: dict[str, Any] = {"role": r["role"], "content": r["content"], "created_at": r["created_at"]}
         if r["context_json"]:
             msg["context"] = json.loads(r["context_json"])
         if r["plan_json"]:
@@ -614,7 +632,8 @@ def _facts_json(msg: dict, now_ms: int) -> str | None:
 
         ctx = ContextObject.model_validate(msg["context"])
         answered = datetime.fromtimestamp(now_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        snap = facts.snapshot(ctx, answered_at=answered)
+        loc = (msg.get("plan") or {}).get("location") or {}
+        snap = facts.snapshot(ctx, answered_at=answered, lat=loc.get("resolved_lat"), lon=loc.get("resolved_lon"))
         return json.dumps(snap, separators=(",", ":")) if facts.resolved_parcel(snap) else None
     except Exception:
         log.warning("Could not build a fact snapshot for a stored message", exc_info=True)
@@ -1669,6 +1688,80 @@ async def get_purchase_originals(user_id: str) -> dict[int, dict]:
         r["purchase_id"]: {"rendered_at": r["rendered_at"], "available": bool(r["pdf_path"]) and (root / r["pdf_path"]).is_file()}
         for r in await cur.fetchall()
     }
+
+
+async def get_purchase_original_facts(user_id: str) -> dict[int, dict]:
+    """``{purchase_id: snapshot}`` of each stored original's facts, for the settings "since your report" flags.
+    The snapshot gets the render's own point when it kept none."""
+    conn = _get_db()
+    cur = await conn.execute(
+        """
+        SELECT purchase_id, facts_json, lat, lon, pin FROM report_renders
+        WHERE user_id = ? AND kind = 'original' AND purchase_id IS NOT NULL
+        """,
+        (user_id,),
+    )
+    out: dict[int, dict] = {}
+    for r in await cur.fetchall():
+        try:
+            snap = json.loads(r["facts_json"])
+        except (TypeError, ValueError):
+            continue
+        if isinstance(snap, dict):
+            snap.setdefault("pin", r["pin"])
+            if snap.get("lat") is None or snap.get("lon") is None:
+                snap["lat"], snap["lon"] = r["lat"], r["lon"]
+            out[r["purchase_id"]] = snap
+    return out
+
+
+async def get_message_facts(conv_id: str) -> list[dict]:
+    """Every message of a conversation with what a "since then" check needs: ``position``, ``role``,
+    ``created_at``, the stored ``facts`` (or None), and the ``context`` / ``plan`` it can be rebuilt from."""
+    conn = _get_db()
+    cur = await conn.execute(
+        "SELECT position, role, created_at, facts_json, context_json, plan_json FROM messages "
+        "WHERE conversation_id = ? ORDER BY position",
+        (conv_id,),
+    )
+    out = []
+    for r in await cur.fetchall():
+        def parse(raw):
+            try:
+                return json.loads(raw) if raw else None
+            except ValueError:
+                return None
+
+        out.append({
+            "index": len(out), "role": r["role"], "created_at": r["created_at"], "facts": parse(r["facts_json"]),
+            "context": parse(r["context_json"]) if r["role"] == "assistant" else None,
+            "plan": parse(r["plan_json"]) if r["role"] == "assistant" else None,
+        })
+    return out
+
+
+async def get_fact_check(key: str, day: str) -> dict | None:
+    """Today's facts for a parcel, as kept by the first check of the day."""
+    conn = _get_db()
+    cur = await conn.execute("SELECT current_json FROM fact_checks WHERE check_key = ? AND day = ?", (key, day))
+    row = await cur.fetchone()
+    if row is None:
+        return None
+    try:
+        return json.loads(row["current_json"])
+    except ValueError:
+        return None
+
+
+async def put_fact_check(key: str, day: str, current: dict) -> None:
+    """Keep today's facts for a parcel (a day's first complete check wins) and drop rows older than a week."""
+    conn = _get_db()
+    await conn.execute(
+        "INSERT OR IGNORE INTO fact_checks (check_key, day, current_json, created_at) VALUES (?, ?, ?, ?)",
+        (key, day, json.dumps(current, separators=(",", ":")), _now_ms()),
+    )
+    await conn.execute("DELETE FROM fact_checks WHERE day < date(?, '-7 day')", (day,))
+    await conn.commit()
 
 
 async def get_user_report_purchases(user_id: str) -> list[dict]:

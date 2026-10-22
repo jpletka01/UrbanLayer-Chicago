@@ -72,3 +72,35 @@ describe("PurchaseRow — the original and an updated copy (WS6 M8)", () => {
     expect(onDownloaded).not.toHaveBeenCalled();
   });
 });
+
+describe("PurchaseRow — facts changed since the report (WS6 M9)", () => {
+  it("says what changed when the original's facts differ from today's", () => {
+    render(
+      <PurchaseRow
+        purchase={purchase({
+          original,
+          changes: {
+            status: "changes", unchecked: [],
+            changes: [{ kind: "district", old: "B3-2", new: "B2-3", record: "O2026-7", passed_on: "2026-09-23" }],
+          },
+        })}
+      />,
+    );
+    const line = screen.getByTestId("purchase-changes");
+    expect(line.textContent).toContain("B3-2");
+    expect(line.textContent).toContain("B2-3");
+    expect(line.textContent).toContain("O2026-7");
+  });
+
+  it("says nothing when nothing changed, when it could not be checked, or when there is no original", () => {
+    for (const changes of [
+      { status: "none" as const, changes: [], unchecked: [] },
+      { status: "unavailable" as const, changes: [], unchecked: ["everything"] },
+      null,
+    ]) {
+      render(<PurchaseRow purchase={purchase({ original, changes })} />);
+      expect(screen.queryByTestId("purchase-changes")).toBeNull();
+      cleanup();
+    }
+  });
+});

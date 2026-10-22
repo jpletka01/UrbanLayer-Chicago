@@ -71,5 +71,59 @@
     "vacant_buildings": "Edificios vacantes",
     "food_inspections": "Inspecciones de alimentos"
   },
-  "grounded": {}
+  "grounded": {},
+  "sinceThen": {
+    "answeredOn": "Answered {{date}}",
+    "rebuilt": "details rebuilt from the saved answer",
+    "noChange": "rechecked today: no material change",
+    "partial": "rechecked today: no change in what we could read (couldn't re-check {{what}})",
+    "unavailable": "couldn't re-check today",
+    "heading": "Since this answer ({{date}}):",
+    "openProfile": "Open today's Property Profile",
+    "askAgain": "Ask again with today's data",
+    "recordLink": "{{record}} ↗",
+    "district": {
+      "plain": "the City's map now shows {{new}}, not {{old}}.",
+      "withRecord": "the City's map now shows {{new}}, not {{old}} (Ordinance {{record}}, passed {{date}})."
+    },
+    "overlay": {
+      "added": "the City's map now shows {{layer}} here.",
+      "addedNamed": "the City's map now shows {{layer}} here ({{name}}).",
+      "removed": "the City's map no longer shows {{layer}} here."
+    },
+    "standards": "{{field}} for {{zone}} changed from {{old}} to {{new}}.",
+    "fields": {
+      "far": "Floor area ratio",
+      "max_height": "Maximum height",
+      "min_lot_area_per_unit": "Minimum lot area per unit"
+    },
+    "amendment": {
+      "after": "Council passed {{record}} on {{date}}; it amends {{sections}}, which this answer cited.",
+      "before": "{{record}}, passed {{date}}, amends {{sections}}, which this answer cited; the code text it used did not include that change."
+    },
+    "mapAmendment": "a rezoning ordinance listing this address has passed ({{record}}, {{date}}) and is not on the City's zoning map yet.",
+    "designation": "a Chicago Landmark designation listing this address has passed ({{record}}, {{date}}) and is not on the City's landmark map yet.",
+    "textRefresh": "the code text was updated through {{date}}, and {{sections}} changed.",
+    "what": {
+      "everything": "anything",
+      "district": "the district",
+      "overlays": "some map layers"
+    },
+    "layers": {
+      "planned_development": "a Planned Development",
+      "lakefront_protection": "the Lakefront Protection District",
+      "pedestrian_street": "a Pedestrian Street",
+      "landmark_building": "a Chicago Landmark",
+      "historic_district": "a Landmark or Historic District",
+      "national_register": "a National Register District",
+      "special_district": "a Special District",
+      "pmd_subarea": "a Planned Manufacturing District",
+      "tod_cta": "a Transit-Oriented Development (CTA) area",
+      "tod_metra": "a Transit-Oriented Development (Metra) area",
+      "adu_area": "an ADU-eligible area",
+      "aro_zone": "an Affordable Requirements Ordinance zone",
+      "fema_floodplain": "a FEMA floodplain"
+    },
+    "exportAnswered": "Answered {{date}}"
+  }
 }

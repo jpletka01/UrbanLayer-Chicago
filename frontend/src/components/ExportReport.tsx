@@ -351,7 +351,7 @@ function SafetySection({ data, t }: { data: { crime: CrimeSummary | null; three1
 export function ExportReport({ report, onClose }: Props) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const { t } = useTranslation("data");
+  const { t, i18n } = useTranslation("data");
 
   const handleDownload = useCallback(async () => {
     if (!reportRef.current) return;
@@ -501,7 +501,7 @@ export function ExportReport({ report, onClose }: Props) {
                   </div>
                 );
               case "qa": {
-                const pairs = section.content as Array<{ question: string; answer: string }>;
+                const pairs = section.content as Array<{ question: string; answer: string; answeredAt?: number }>;
                 return (
                   <div key={i}>
                     <h2 style={s.h2}>{section.title}</h2>
@@ -509,6 +509,9 @@ export function ExportReport({ report, onClose }: Props) {
                       <div key={j} style={s.qa}>
                         <p style={s.question}>{t("report.questionPrefix")} {qa.question}</p>
                         <p style={s.answer}>{qa.answer}</p>
+                        {qa.answeredAt != null && (
+                          <p style={s.subtitle}>{t("chat:sinceThen.answeredOn", { date: new Date(qa.answeredAt).toLocaleDateString(i18n.language, { year: "numeric", month: "long", day: "numeric" }) })}</p>
+                        )}
                       </div>
                     ))}
                   </div>

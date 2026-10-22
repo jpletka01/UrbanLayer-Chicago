@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ActivityItem, ContextObject, DataSource, Message, ScorecardContext, SidebarView } from "../lib/types";
+import type { ActivityItem, ContextObject, DataSource, Message, ScorecardContext, SidebarView, SinceThenResult } from "../lib/types";
 import { propertyStarterKeys } from "../lib/scorecardContext";
 import { ChatInput, type PendingAttachment } from "./ChatInput";
+import { AnsweredOnNote } from "./AnsweredOnNote";
 import { ContextChipStrip } from "./ContextChipStrip";
 import { MessageBubble } from "./MessageBubble";
 
@@ -35,6 +36,15 @@ interface Props {
   /** Open the side panel / mobile sheet on a tab, loading the given assistant
    *  message's turn (per-message context chips under each answer). */
   onOpenPanel?: (assistantIndex: number, tab: SidebarView) => void;
+  /** "Since then" notes from the server, keyed by message index (reopened and shared conversations only). */
+  sinceThen?: Record<string, SinceThenResult>;
+}
+
+/** The Profile link for the parcel an answer resolved (`/scorecard?pin=`, else the address). */
+function profileHrefFor(ctx: ContextObject | undefined): string | null {
+  const pin = ctx?.property?.pin14;
+  if (pin) return `/scorecard?pin=${encodeURIComponent(pin)}`;
+  return ctx?.resolved_address && ctx.parcel_zoning ? `/scorecard?address=${encodeURIComponent(ctx.resolved_address)}` : null;
 }
 
 export function ChatInterface({
@@ -58,6 +68,7 @@ export function ChatInterface({
   propertyContext,
   onPropertyStarterClick,
   onOpenPanel,
+  sinceThen,
 }: Props) {
   const { t } = useTranslation(["common", "chat"]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -139,13 +150,27 @@ export function ChatInterface({
                 onSelect={m.role === "user" ? () => onMessageClick?.(i) : undefined}
                 activities={isStreaming ? activities : undefined}
                 footer={
-                  showChips ? (
-                    <ContextChipStrip
-                      context={m.context ?? null}
-                      mapData={m.mapData ?? null}
-                      onOpen={(tab) => onOpenPanel!(i, tab)}
-                    />
-                  ) : undefined
+                  <>
+                    {showChips && (
+                      <ContextChipStrip
+                        context={m.context ?? null}
+                        mapData={m.mapData ?? null}
+                        onOpen={(tab) => onOpenPanel!(i, tab)}
+                      />
+                    )}
+                    {m.role === "assistant" && !isStreaming && m.createdAt != null && (
+                      <AnsweredOnNote
+                        createdAt={m.createdAt}
+                        note={sinceThen?.[String(i)]}
+                        profileHref={profileHrefFor(m.context)}
+                        onAskAgain={
+                          !readOnly && i > 0 && messages[i - 1].role === "user"
+                            ? () => onSubmit(messages[i - 1].content)
+                            : undefined
+                        }
+                      />
+                    )}
+                  </>
                 }
               />
             );

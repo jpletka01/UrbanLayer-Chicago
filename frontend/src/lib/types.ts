@@ -35,6 +35,9 @@ export interface Message {
   mapFetchedAt?: number;
   attachments?: UploadMeta[];
   turnSummary?: TurnSummary;
+  /** When the server stored this message (epoch ms): set on a reopened or shared conversation, never on an
+      answer from this session. Its presence is what puts "Answered <date>" under an answer. */
+  createdAt?: number;
 }
 
 export type SourceTag =
@@ -920,6 +923,26 @@ export interface StoredMessage {
   map_data?: MapData | null;
   map_fetched_at?: number | null;
   summary?: TurnSummary | null;
+  created_at?: number | null;
+}
+
+/** What changed since an answer or a report was made (WS6 M9; backend `data_health/diff.py`). */
+export type SinceThenChange =
+  | { kind: "district"; old: string; new: string; record?: string | null; passed_on?: string | null; url?: string | null }
+  | { kind: "overlay"; change: "added" | "removed"; layer: string; name?: string | null }
+  | { kind: "standards"; field: string; old: string | number; new: string | number; zone_class?: string | null }
+  | { kind: "amendment"; phase: "after_answer" | "before_answer"; record: string; title?: string | null; passed_on: string; url?: string | null; sections: string[] }
+  | { kind: "map_amendment"; record: string; passed_on?: string | null; url?: string | null }
+  | { kind: "designation"; record: string; passed_on?: string | null; url?: string | null; name?: string | null }
+  | { kind: "text_refresh"; current_through: string; sections: string[] }
+  | { kind: "correction"; id: string; date: string; summary: string };
+
+export interface SinceThenResult {
+  status: "changes" | "none" | "partial" | "unavailable" | "too_soon" | "skipped" | "no_parcel";
+  answered_on?: string | null;
+  reconstructed?: boolean;
+  changes: SinceThenChange[];
+  unchecked: string[];
 }
 
 export interface ConversationDetail {

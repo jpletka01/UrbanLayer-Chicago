@@ -192,6 +192,7 @@ async def test_a_v14_database_migrates_in_place_and_keeps_its_messages(tmp_path)
     # roll the file back to what v14 looked like: no facts column, no render table, stamped 14
     con = sqlite3.connect(path)
     con.execute("DROP TABLE report_renders")
+    con.execute("DROP TABLE fact_checks")
     con.execute("ALTER TABLE messages DROP COLUMN facts_json")
     con.execute("UPDATE schema_version SET version = 14")
     con.commit()
@@ -200,11 +201,44 @@ async def test_a_v14_database_migrates_in_place_and_keeps_its_messages(tmp_path)
         await db.init_db()
         try:
             cur = await db._get_db().execute("SELECT version FROM schema_version")
-            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION == 15
+            assert (await cur.fetchone())[0] == db._SCHEMA_VERSION == 16
             cur = await db._get_db().execute("PRAGMA table_info(messages)")
             assert "facts_json" in {r[1] for r in await cur.fetchall()}
             cur = await db._get_db().execute("SELECT name FROM sqlite_master WHERE name IN ('report_renders', 'idx_rr_one_original')")
             assert {r[0] for r in await cur.fetchall()} == {"report_renders", "idx_rr_one_original"}
+            assert (await db.get_conversation("c1"))["messages"][0]["content"] == "answer"
+            cur = await db._get_db().execute("SELECT name FROM sqlite_master WHERE name = 'fact_checks'")
+            assert await cur.fetchone() is not None
+        finally:
+            await db.close_db()
+
+
+@pytest.mark.asyncio
+async def test_a_v15_database_gains_the_since_then_cache_and_keeps_everything_else(tmp_path):
+    path = tmp_path / "v15.db"
+    settings = MagicMock()
+    settings.db_path = path
+    settings.report_store_dir = tmp_path / "reports"
+    with patch("backend.db.get_settings", return_value=settings):
+        await db.init_db()
+        await db.create_conversation("c1", "t", None)
+        await db.save_messages("c1", [stored(ctx=parcel_ctx())])
+        await db.close_db()
+    con = sqlite3.connect(path)
+    con.execute("DROP TABLE fact_checks")
+    con.execute("UPDATE schema_version SET version = 15")
+    con.commit()
+    con.close()
+    with patch("backend.db.get_settings", return_value=settings):
+        await db.init_db()
+        try:
+            await db.put_fact_check("k", "2026-10-25", {"a": 1})
+            assert await db.get_fact_check("k", "2026-10-25") == {"a": 1} and await db.get_fact_check("k", "2026-10-26") is None
+            await db.put_fact_check("k", "2026-10-25", {"a": 2})  # the day's first complete check wins
+            assert await db.get_fact_check("k", "2026-10-25") == {"a": 1}
+            await db.put_fact_check("old", "2026-10-01", {"a": 3})
+            await db.put_fact_check("new", "2026-10-25", {"a": 4})  # drops rows more than a week old
+            assert await db.get_fact_check("old", "2026-10-01") is None
             assert (await db.get_conversation("c1"))["messages"][0]["content"] == "answer"
         finally:
             await db.close_db()
