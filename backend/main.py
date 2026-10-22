@@ -2081,6 +2081,10 @@ async def scorecard(
 
     data["resolved_pin"] = resolved_pin
     data["resolved_confidence"] = resolved_confidence
+    # The context's own identity, so what it derives from the parcel (passed_not_on_map matches on the
+    # PIN first) sees the reconciled PIN rather than the address alone.
+    data["context"].parcel_pin = resolved_pin
+    data["context"].parcel_resolution = resolved_confidence
     data["nearest_parcel_unverified"] = nearest_parcel_unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon
