@@ -102,10 +102,14 @@
     "daysOld_one": "{{count}} day old",
     "daysOld_other": "{{count}} days old",
     "unit": {
-      "sales": "sales",
-      "parcels": "parcels",
-      "units": "units",
-      "records": "records"
+      "sales_one": "sale",
+      "sales_other": "sales",
+      "parcels_one": "parcel",
+      "parcels_other": "parcels",
+      "units_one": "unit",
+      "units_other": "units",
+      "records_one": "record",
+      "records_other": "records"
     },
     "tier": {
       "official_record": "Official record",

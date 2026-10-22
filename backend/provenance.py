@@ -304,6 +304,19 @@ def _calc(label: str, source_id: str, scope: str = "parcel", method_key: str = "
     return FactSpec(label, source_id, method_key, scope, "our_calculation")
 
 
+# WS0 M5: what the $25 report reads from the precomputed zoning cache. The cache's setbacks, uses, parking and
+# notes are read from the code text by AI (tier E); FAR, height and the lot standards stay with the Title 17
+# table (``zoning.far`` etc., tier B). The envelope is our arithmetic on the AI-read setbacks.
+FACTS.update({
+    "zoning.setbacks": FactSpec("Required setbacks", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
+    "zoning.permitted_uses": FactSpec("Permitted uses", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
+    "zoning.special_uses": FactSpec("Special uses", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
+    "zoning.parking": FactSpec("Parking requirements", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
+    "zoning.notes": FactSpec("Zoning notes", "artifact.zoning_cache", "ai_read_code", "parcel", "ai_extracted"),
+    "zoning.envelope": FactSpec("Buildable envelope", "artifact.zoning_cache", "calculation", "parcel", "our_calculation"),
+})
+
+
 _TRACT_FIELDS = {
     "population": "Tract population",
     "median_household_income": "Tract median household income",
