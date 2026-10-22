@@ -82,7 +82,9 @@ async def regulatory_domain(
         if isinstance(overlay_results, Exception):
             # Nothing was checked, which is not the same as "in no overlay".
             overlay_results = OverlayResults(failed=list(OVERLAY_LAYERS))
-        flood_result = results_map["flood"] if not isinstance(results_map["flood"], Exception) else None
+        # A flood lookup that raised is UNKNOWN; None is FEMA's answer that the point is in no mapped zone.
+        flood_unchecked = isinstance(results_map["flood"], Exception)
+        flood_result = None if flood_unchecked else results_map["flood"]
         brownfield_result = results_map.get("brownfield")
         if isinstance(brownfield_result, Exception):
             log.warning("Brownfield query failed: %s", brownfield_result)
@@ -92,12 +94,12 @@ async def regulatory_domain(
 
         if isinstance(results_map["overlays"], Exception):
             log.warning("Overlay queries failed: %s", results_map["overlays"])
-        if isinstance(results_map["flood"], Exception):
+        if flood_unchecked:
             log.warning("Flood zone query failed: %s", results_map["flood"])
 
         return _build_summary(
             overlay_results.hits, flood_result, brownfield_result,
-            failed_layers=overlay_results.failed,
+            failed_layers=overlay_results.failed, flood_unchecked=flood_unchecked,
         )
     finally:
         if owns:
@@ -110,6 +112,7 @@ def _build_summary(
     brownfield_sites: list[dict],
     *,
     failed_layers: list[int] | None = None,
+    flood_unchecked: bool = False,
 ) -> RegulatorySummary:
     overlays: list[OverlayDistrict] = []
     flags: dict[str, bool | str] = {}
@@ -204,6 +207,7 @@ def _build_summary(
         ssa_name=ssa_name,
         flood_zone=flood_zone,
         flood_zone_subtype=flood_zone_subtype,
-        in_special_flood_hazard=in_sfha,
+        in_special_flood_hazard=None if flood_unchecked else in_sfha,
+        flood_unchecked=flood_unchecked,
         brownfield_sites=brownfield_sites,
     )

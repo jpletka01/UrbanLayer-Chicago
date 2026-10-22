@@ -17,9 +17,10 @@ Counting is in memory, O(1) per call, and never raises: telemetry must not be ab
     DATA_HEALTH_FAULT=overlay:5                      # a City map overlay layer (5 = landmark building)
     DATA_HEALTH_FAULT="overlay:5,6;source:chi.crime" # several, ";"-separated, comma-separated ids
     DATA_HEALTH_FAULT=socrata:ijzp-q8t2              # a Socrata dataset by its id
+    DATA_HEALTH_FAULT=source:fed.fema.nfhl           # FEMA's flood map (a registry source id)
 
 ``source:`` takes a registry source id and covers the Socrata datasets, the overlay layers, the zoning
-layer and the census tract call that source stands for.
+layer, the census tract call and FEMA's flood lookup that source stands for.
 """
 
 from __future__ import annotations

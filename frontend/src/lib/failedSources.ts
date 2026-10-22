@@ -16,6 +16,7 @@ export const MODULE_OF: Readonly<Record<string, ProfileModuleName>> = {
   property: "economics", incentives: "economics",
   comparables: "market", nearby_construction: "market",
   violations: "record", address_311: "record", address_permits: "record", address_violations: "record",
+  flood: "record",
   crime: "area", crime_yoy: "area", neighborhood: "area", aro_housing: "area", "311": "area",
   permits: "area", business: "area", vacant: "area", food_inspections: "area",
 };
@@ -29,6 +30,9 @@ export function failedIn(failed: readonly FailedSource[] | null | undefined, mod
 export function failedLabels(failed: readonly FailedSource[] | null | undefined, module: ProfileModuleName): string[] {
   return [...new Set(failedIn(failed, module).flatMap((f) => f.labels))];
 }
+
+/** FEMA's Flood Map Service Center: where to look a flood zone up yourself when ours couldn't. */
+export const FEMA_FLOOD_MAP_URL = "https://msc.fema.gov/portal/home";
 
 /** The City's own zoning map: where to look up a district or an overlay yourself when ours couldn't. */
 export const ZONING_MAP_URL = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning";

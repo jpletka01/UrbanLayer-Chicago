@@ -17,6 +17,7 @@ from typing import Iterable
 LABELS: dict[str, str] = {
     "property": "property records",
     "regulatory": "regulatory overlays",
+    "flood": "FEMA flood zone",
     "zoning": "parcel zoning",
     "incentives": "incentive zones",
     "neighborhood": "demographics and transit",
@@ -42,13 +43,14 @@ ALIASES: dict[str, str] = {"zoning_lookup": "zoning", "comparable_sales": "compa
 
 # Where a failure shows: the Profile module (and, in the report, the section) whose figures it leaves out.
 # ``build`` = zoning and overlays, ``economics`` = the parcel's records and incentives, ``market`` = comps and
-# nearby sales, ``record`` = violations, 311 and permits at the address, ``area`` = the neighborhood. These are the
+# nearby sales, ``record`` = violations, 311 and permits at the address, and the flood zone, ``area`` = the neighborhood. These are the
 # Profile's module ids (``module-<name>``), so the frontend table must match (a pytest pins it).
 MODULES: dict[str, str] = {
     "zoning": "build", "regulatory": "build", "adjacent_zoning": "build",
     "property": "economics", "incentives": "economics",
     "comparables": "market", "nearby_construction": "market",
     "violations": "record", "address_311": "record", "address_permits": "record", "address_violations": "record",
+    "flood": "record",  # the flood zone is shown on the Environment card, in "what to watch for"
     "crime": "area", "crime_yoy": "area", "neighborhood": "area", "aro_housing": "area", "311": "area",
     "permits": "area", "business": "area", "vacant": "area", "food_inspections": "area",
 }

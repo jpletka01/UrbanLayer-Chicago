@@ -251,6 +251,7 @@
         "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
         "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
         "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows.",
+        "floodUnchecked": "The FEMA flood zone couldn't be checked today (FEMA's flood map didn't answer), so this verdict can't rule out a floodplain constraint.",
         "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out."
       },
       "next": {

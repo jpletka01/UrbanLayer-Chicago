@@ -203,7 +203,10 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         surfaces=_PROP, fact_keys=("regulatory.flood",), severity="standard",
         contract=Contract(layer_name="Flood Hazard Zones"),
         availability_only=True,
-        note="Availability and layer name. A known-answer parcel is M4's sentinel work.",
+        note=("Availability and layer name. A known-answer parcel is M4's sentinel work. The app's own lookup "
+              "(retrieval/regulatory/flood.py) raises when FEMA doesn't answer, so the Profile, chat and report say "
+              "'couldn't check' (never 'no flood zone'), and each call's outcome is counted live (live.py). "
+              "FEMA resets many fresh connections; the lookup retries those, the probe does too."),
     ),
     _layer(
         "https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/FRS_INTERESTS_ACRES/FeatureServer/0",

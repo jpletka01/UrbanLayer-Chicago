@@ -7,6 +7,7 @@ const failed: FailedSource[] = [
   { key: "crime", labels: ["crime statistics"] },
   { key: "regulatory", labels: ["landmark designation (City zoning map didn't answer)"] },
   { key: "zoning", labels: ["parcel zoning"] },
+  { key: "flood", labels: ["FEMA flood zone"] },
 ];
 
 describe("failedSources — a failure shows in the module whose figures it left out", () => {
@@ -15,7 +16,8 @@ describe("failedSources — a failure shows in the module whose figures it left 
     expect(failedIn(failed, "market").map((f) => f.key)).toEqual(["comparables"]);
     expect(failedIn(failed, "area").map((f) => f.key)).toEqual(["crime"]);
     expect(failedIn(failed, "build").map((f) => f.key)).toEqual(["regulatory", "zoning"]);
-    expect(failedIn(failed, "record")).toEqual([]);
+    // the flood zone is shown on the Environment card, under "what to watch for"
+    expect(failedIn(failed, "record").map((f) => f.key)).toEqual(["flood"]);
   });
 
   it("words it with what reported it, once each", () => {

@@ -19,6 +19,13 @@ describe("UncheckedRow — a module says what it couldn't check instead of going
     expect(screen.getByRole("link", { name: /City zoning map/ }).getAttribute("href")).toBe("https://gisapps.chicago.gov/ZoningMapWeb/");
   });
 
+  it("words its own link", () => {
+    render(<UncheckedRow labels={["FEMA flood zone"]} href="https://msc.fema.gov/portal/home" linkLabel="FEMA flood map ↗" />);
+    const link = screen.getByRole("link", { name: /FEMA flood map/ });
+    expect(link.getAttribute("href")).toBe("https://msc.fema.gov/portal/home");
+    expect(screen.queryByText(/City zoning map/)).toBeNull();
+  });
+
   it("renders nothing when nothing failed", () => {
     const { container } = render(<UncheckedRow labels={[]} />);
     expect(container.firstChild).toBeNull();

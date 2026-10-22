@@ -711,14 +711,15 @@ export default function ScorecardPage() {
     build: failedIn(failed, "build").filter((f) => f.key !== "regulatory" || !ctx?.regulatory).flatMap((f) => f.labels),
     economics: failedLabels(failed, "economics"),
     market: failedLabels(failed, "market"),
-    record: failedLabels(failed, "record"),
+    // the flood zone says so inside its own Environment card (like the overlay rows), not at the module head
+    record: failedIn(failed, "record").filter((f) => f.key !== "flood").flatMap((f) => f.labels),
     area: failedLabels(failed, "area"),
   };
   const hasBuild = !!(zdef || ctx?.regulatory) || unchecked.build.length > 0;
   const hasEconomics = !!(ctx?.property || ctx?.incentives) || unchecked.economics.length > 0;
   const hasMarket = !!(data?.comparables && data.comparables.sales.length > 0) || unchecked.market.length > 0;
   const hasRecord = !!(ctx && (ctx.violations || data?.violations_checked || ctx.regulatory?.flood_zone
-    || (ctx.regulatory?.brownfield_sites.length ?? 0) > 0 || ctx.address_311)) || unchecked.record.length > 0;
+    || ctx.regulatory?.flood_unchecked || (ctx.regulatory?.brownfield_sites.length ?? 0) > 0 || ctx.address_311)) || unchecked.record.length > 0;
   const modulePresence: Record<ModuleId, boolean> = {
     "module-build": hasBuild,
     "module-economics": hasEconomics,
@@ -1222,7 +1223,7 @@ export default function ScorecardPage() {
                       ) : null}
                       {/* 311 is address-point scoped, like the address-scoped violations. */}
                       {data.context.address_311 && <Address311Block data={data} />}
-                      {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.brownfield_sites.length > 0) && (
+                      {ctx.regulatory && (ctx.regulatory.flood_zone || ctx.regulatory.flood_unchecked || ctx.regulatory.brownfield_sites.length > 0) && (
                         <ScorecardEnvironmentCard data={ctx.regulatory} />
                       )}
                     </div>

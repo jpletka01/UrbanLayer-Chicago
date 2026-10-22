@@ -264,7 +264,9 @@ class RegulatorySummary(BaseModel):
     ssa_name: str | None = None
     flood_zone: str | None = None
     flood_zone_subtype: str | None = None
-    in_special_flood_hazard: bool = False
+    # None = UNKNOWN (FEMA's flood map didn't answer, ``flood_unchecked``); never state "not in" for it.
+    in_special_flood_hazard: bool | None = False
+    flood_unchecked: bool = False
     brownfield_sites: list[dict] = Field(default_factory=list)
     aro_housing: AROHousingSummary | None = None
     # Overlay layer types the City map couldn't answer for (timeout, HTTP error, 200 +

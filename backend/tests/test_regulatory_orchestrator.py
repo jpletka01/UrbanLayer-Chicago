@@ -89,7 +89,9 @@ async def test_returns_empty_when_all_fail(mock_overlays, mock_flood, mock_brown
 
     assert len(result.overlays) == 0
     assert result.flood_zone is None
-    assert result.in_special_flood_hazard is False
+    # the lookup raised: the flood zone is unknown, which is not False ("not in a special flood hazard area")
+    assert result.flood_unchecked is True
+    assert result.in_special_flood_hazard is None
     assert len(result.brownfield_sites) == 0
 
 

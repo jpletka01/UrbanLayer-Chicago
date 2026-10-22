@@ -336,7 +336,12 @@ function assessConfidence(data: ScorecardResponse, s: VerdictSignals, t: TFunc):
   const zoningFailed = (data.failed_sources ?? []).find((f) => f.key === "zoning");
   if (zoningFailed) caveats.push(t("scorecard.verdict.caveat.zoningUnchecked"));
   const zoningLabels = new Set(zoningFailed?.labels ?? []);
-  const otherFailures = (data.partial_failures ?? []).filter((f) => !overlayGaps.has(f) && !zoningLabels.has(f));
+  // FEMA's flood map didn't answer: flood is a friction signal when known, so an unknown one means the verdict
+  // can't rule out a floodplain constraint (the category itself is left alone: unknown is not "constrained").
+  const floodFailed = (data.failed_sources ?? []).find((f) => f.key === "flood");
+  if (reg?.flood_unchecked || floodFailed) caveats.push(t("scorecard.verdict.caveat.floodUnchecked"));
+  const floodLabels = new Set(floodFailed?.labels ?? []);
+  const otherFailures = (data.partial_failures ?? []).filter((f) => !overlayGaps.has(f) && !zoningLabels.has(f) && !floodLabels.has(f));
   if (otherFailures.length > 0)
     caveats.push(t("scorecard.verdict.caveat.partial", { sources: otherFailures.join(", ") }));
   // Parcel-risk caveats (scofflaw list, STR prohibition): rendered with the

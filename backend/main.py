@@ -971,6 +971,10 @@ async def _retrieve(
             ctx.parcel_zoning = sc.parcel_zoning
         if sc.regulatory is not None:
             ctx.regulatory = sc.regulatory
+            # The flood lookup the Profile couldn't make is still unknown here (this turn skipped the fetch):
+            # the footer must say so. The label is ours, never client text.
+            if sc.regulatory.flood_unchecked and failures.label("flood") not in ctx.partial_failures:
+                ctx.partial_failures.append(failures.label("flood"))
         if sc.property is not None:
             ctx.property = sc.property
         if sc.incentives is not None:
@@ -1004,10 +1008,14 @@ async def _retrieve(
 
 def _domain_data_gaps(results: dict[str, Any], keys: tuple[str, ...]) -> list[str]:
     """``data_gaps`` the domain summaries report (a sub-source that failed inside a
-    domain that otherwise succeeded), for partial_failures."""
+    domain that otherwise succeeded), for partial_failures. FEMA's flood lookup is a sub-source of the
+    regulatory domain with its own flag, not an overlay gap."""
     gaps: list[str] = []
     for key in keys:
-        gaps.extend(getattr(results.get(key), "data_gaps", None) or [])
+        summary = results.get(key)
+        gaps.extend(getattr(summary, "data_gaps", None) or [])
+        if getattr(summary, "flood_unchecked", False):
+            gaps.append(failures.label("flood"))
     return gaps
 
 
