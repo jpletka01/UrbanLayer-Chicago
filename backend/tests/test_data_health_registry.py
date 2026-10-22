@@ -189,11 +189,16 @@ def test_every_committed_data_artifact_is_registered():
         ).stdout.split()
     except (OSError, subprocess.SubprocessError):
         pytest.skip("not a git checkout")
-    artifacts = {p for p in out if not p.startswith("ingestion/data/sections/")}
+    # A `<name>.meta.json` sidecar (WS6 M5) dates the artifact beside it; it is covered by that artifact's entry,
+    # and must sit next to a registered artifact.
+    sidecars = {p for p in out if p.endswith(".meta.json")}
+    artifacts = {p for p in out if not p.startswith("ingestion/data/sections/") and p not in sidecars}
     if not artifacts:
         pytest.skip("no tracked artifacts (not a git checkout)")
     registered = {s.locator for s in SOURCES if s.kind == "artifact"}
     assert artifacts <= registered, f"committed artifacts with no registry entry: {sorted(artifacts - registered)}"
+    for side in sidecars:
+        assert any(side == loc.rsplit(".", 1)[0] + ".meta.json" for loc in registered), f"{side}: no registered artifact beside it"
 
 
 def test_hand_table_is_verified_against_the_served_code_vintage():

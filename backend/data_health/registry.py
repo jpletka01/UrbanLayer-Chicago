@@ -38,6 +38,9 @@ COOK = "cook"      # datacatalog.cookcountyil.gov
 PORTAL_HOSTS = {CITY: "https://data.cityofchicago.org", COOK: "https://datacatalog.cookcountyil.gov"}
 
 ZONING_MAPSERVER = "https://gisapps.chicago.gov/arcgis/rest/services/ExternalApps/Zoning/MapServer"
+KIT_WEEKLY_RUNS_URL = (
+    "https://api.github.com/repos/jpletka01/UrbanLayer-Chicago/actions/workflows/kit-weekly.yml/runs"
+)
 
 
 @dataclass(frozen=True)
@@ -549,10 +552,11 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     # --- Committed artifacts -----------------------------------------------------------------
     SourceSpec(
         id="artifact.transit_stations", name="Transit stations (committed)", publisher="UrbanLayer from CTA/Metra GTFS",
-        tier="official_record", kind="artifact", locator="ingestion/data/transit_stations.json", probe="none",
+        tier="official_record", kind="artifact", locator="ingestion/data/transit_stations.json", probe="artifact_sidecar",
         owner_modules=("ingestion/build_transit_stations.py",), surfaces=("profile", "map"),
-        fact_keys=("neighborhood.transit",),
-        note="No build date on the artifact yet: M5 adds a sidecar and the GTFS comparison. Date status is unknown until then.",
+        fact_keys=("neighborhood.transit",), cadence_days=180, warn_days=180, alarm_days=365,
+        note="Build date from transit_stations.meta.json (written by the build script). The probe also notes when the "
+             "CTA feed was last modified, so a rebuild is visible as due.",
     ),
     SourceSpec(
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",
@@ -575,9 +579,11 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     ),
     # --- Internal checks (their probes arrive with the milestone in ``note``) -----------------
     SourceSpec(
-        id="eval.kit_weekly", name="Weekly parcel kit against production", publisher="UrbanLayer", tier="internal",
-        kind="internal", locator="github:kit-weekly", probe="none", owner_modules=("backend/data_health/registry.py",),
-        severity="standard", note="Lands in WS6 M5.",
+        id="eval.kit_weekly", name="Weekly parcel kit against production (Profile, no model)", publisher="UrbanLayer",
+        tier="internal", kind="api", locator=KIT_WEEKLY_RUNS_URL, probe="kit_weekly",
+        owner_modules=(".github/workflows/kit-weekly.yml",), severity="standard", cadence_days=7, warn_days=9, alarm_days=16,
+        note="The newest successful run of .github/workflows/kit-weekly.yml (public GitHub Actions API; Mondays 10:00 UTC). "
+             "A failed latest run alarms at once; no run yet reads unknown until the first scheduled Monday.",
     ),
     SourceSpec(
         id="internal.sentinels", name="Daily sentinels: the 12 kit parcels + a landmark control against the answer key",

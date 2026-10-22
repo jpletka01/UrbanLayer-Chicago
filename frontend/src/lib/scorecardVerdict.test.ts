@@ -399,7 +399,7 @@ describe("passed, not yet on the City map (WS1 M5)", () => {
     const data = mk({ zone: "B3-2", far: 2.2, bldg: 1500, land: 3000 });
     (data.context as unknown as Record<string, unknown>).passed_not_on_map = [hit];
     const v = computeVerdict(data, t);
-    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.passedNotOnMap") && c.includes("Oct 14, 2026"))).toBe(true);
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.passedNotOnMap") && c.includes("2026-10-14"))).toBe(true);
   });
 
   it("no caveat without a listing", () => {

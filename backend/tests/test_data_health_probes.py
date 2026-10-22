@@ -120,10 +120,11 @@ def test_every_named_probe_exists():
             assert s.probe in probes.PROBES, f"{s.id}: probe {s.probe!r} is not defined"
 
 
-def test_sources_with_no_probe_are_the_planned_placeholders():
+def test_every_source_has_a_probe_or_is_a_frozen_artifact():
+    """M5 filled the last two placeholders (the transit sidecar and the weekly kit)."""
     none = {s.id for s in SOURCES if probes.probe_for(s) is None}
     frozen_artifacts = {s.id for s in SOURCES if s.kind == "artifact" and s.frozen}
-    assert none - frozen_artifacts == {"artifact.transit_stations", "eval.kit_weekly"}
+    assert none - frozen_artifacts == set()
 
 
 # --- probes over a mock transport ------------------------------------------------------------

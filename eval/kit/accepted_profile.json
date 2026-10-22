@@ -1,0 +1,95 @@
+{
+ "note": "The last accepted Profile kit scores (WS6 M5). The weekly run fails if any cell falls below these, if field A is not 2, or on any confident-wrong claim. Refresh only after a person reviews the run: python -m eval.kit_gate <parcel_kit.json> --update-accepted",
+ "key_version": "2026-10-21.1",
+ "accepted_on": "2026-10-22",
+ "scores": {
+  "P1": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "F": 2
+  },
+  "P10": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "F": null
+  },
+  "P11": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "F": 2
+  },
+  "P12": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "E": 2,
+   "F": 2
+  },
+  "P2": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "F": 2
+  },
+  "P3": {
+   "A": 2,
+   "B": 1,
+   "C": 2,
+   "D": 2,
+   "E": 2,
+   "F": 2
+  },
+  "P4": {
+   "A": 2,
+   "B": 2,
+   "C": null,
+   "D": 2,
+   "F": null
+  },
+  "P5": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "E": 1,
+   "F": 2
+  },
+  "P6": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "F": 2
+  },
+  "P7": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "F": 2
+  },
+  "P8": {
+   "A": 2,
+   "B": 0,
+   "C": 2,
+   "D": 2,
+   "F": 2
+  },
+  "P9": {
+   "A": 2,
+   "B": 2,
+   "C": 2,
+   "D": 2,
+   "E": 1,
+   "F": 2
+  }
+ }
+}

@@ -50,6 +50,7 @@ COPY backend/ /app/backend/
 # Runtime data files needed by geo.py, transit.py, and the zoning cache (zoning_cache.py).
 COPY ingestion/data/community_areas.geojson /app/ingestion/data/community_areas.geojson
 COPY ingestion/data/transit_stations.json /app/ingestion/data/transit_stations.json
+COPY ingestion/data/transit_stations.meta.json /app/ingestion/data/transit_stations.meta.json
 COPY ingestion/data/zoning_cache.json /app/ingestion/data/zoning_cache.json
 COPY ingestion/data/chrs_orange_red.json.gz /app/ingestion/data/chrs_orange_red.json.gz
 

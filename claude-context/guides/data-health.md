@@ -142,8 +142,17 @@ Freshness says a source is current; contracts and sentinels say it still *means*
 - **Never re-baselined automatically.** An alarm is either a City data change (review, re-key the kit, regenerate) or our code reading it wrongly (fix the code). Run one by hand: `python -m backend.data_health.sentinels --check`.
 - The F8 replay (`test_data_health_sentinels.py`): the pre-fix mapping (layer 7 as "landmark building") applied to a recorded layer-7 hit at P11 derives a landmark the key says is not there, and alarms.
 
+## Artifact ages and the weekly kit (M5)
+
+**CI artifact ages** (`backend/data_health/artifacts.py`): `python -m backend.data_health.artifacts --ci` is a step in `ci.yml`'s `test` job, `continue-on-error: true`. It prints a `::warning` annotation per artifact past its tolerance and a table in the job summary; it never fails the build (a stale artifact must not block a hotfix deploy; the daily checker is the real alarm). It reads only repo files: the code text's "current through" date (60/90 days; the registry's ack for it is named in the message), `zoning_cache.json` (its build date and that `_meta.code_vintage` equals the code text's), `transit_stations.meta.json` (180/365), the answer key's version date (180), `docs/benchmark/results.json` (45) and the hand table's `VERIFIED_AGAINST`. Run it by hand without `--ci` to get a nonzero exit on a red artifact.
+- **Sidecars:** a committed artifact with no date of its own gets `<name>.meta.json` beside it, written by its build script. `transit_stations.meta.json` is the first. A sidecar must be in `.gitignore`, the `.dockerignore` allowlist and a Dockerfile `COPY`, or the daily checker can't read it on the box.
+- `zoning_cache_build` writes `_meta.code_vintage`; the committed cache records `2026-06-17` (the reviewed rebase of 2026-10-21).
+
+**Weekly kit** (`.github/workflows/kit-weekly.yml`, Mondays 10:00 UTC + manual dispatch): runs `python -m eval.parcel_kit --full https://urbanlayerchicago.com --surfaces profile` (the free `/api/scorecard`: no model, no secret) and judges it with `python -m eval.kit_gate` against `eval/kit/accepted_profile.json`. It fails if any parcel's district (field A) is not 2, on any confident-wrong claim, or if any cell falls below the accepted run. The run is kept 90 days as an artifact. A failed run emails whoever last edited the schedule; with a `SENTRY_DSN` repo secret it also sends one Sentry event.
+- **Drill:** Actions > Weekly parcel kit > Run workflow with `inject_mismatch` ticked. The scored copy has P1's district corrupted; the run must go red. Never edit the accepted file to make a run pass: after a person reviews an improvement, `python -m eval.kit_gate <parcel_kit.json> --update-accepted`.
+- **Registry:** `eval.kit_weekly` reads the workflow's runs through the public Actions API (warn 9 days, alarm 16 days or a failed latest run; unknown before the first run). `artifact.transit_stations` is dated by its sidecar, with the CTA feed's Last-Modified as context.
+- The chat surface (about $1.20 a run, production credits) is a separate monthly production check, not run here.
+
 ## Not here yet
 
-| Milestone | Adds |
-|---|---|
-| M5 | metadata sidecars for committed artifacts (`transit_stations.json` is `unknown` until then), the weekly kit, CI artifact-age warnings |
+Nothing from the WS6 phase 1 plan. Phase 2 (M6 data dates on every answer, M7 partial failures shown, M8 fact snapshots, M9 "since then") is in the build queue.
