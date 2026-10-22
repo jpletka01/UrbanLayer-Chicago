@@ -15,6 +15,8 @@ const SECTIONS = [
   { id: "parcel-identity", title: "Parcel Identity" },
   { id: "lot-facts", title: "Lot Facts & Provenance" },
   { id: "verifiable", title: "Verifiable Answers" },
+  { id: "code-currency", title: "Law Since the Code Text" },
+  { id: "source-confidence", title: "Source Confidence" },
   { id: "report", title: "Feasibility Report (PDF)" },
   { id: "zoning-cache", title: "Zoning Cache" },
   { id: "payments", title: "Payments & Monetization" },
@@ -29,12 +31,14 @@ const SECTIONS = [
   { id: "usage-analytics", title: "Usage Analytics" },
   { id: "file-upload", title: "File Upload & Vision" },
   { id: "admin", title: "Admin & Observability" },
+  { id: "data-health", title: "Data Health" },
   { id: "correctness", title: "Measuring Correctness" },
   { id: "eval", title: "Eval & Benchmarks" },
   { id: "infrastructure", title: "Infrastructure & Deployment" },
   { id: "frontend", title: "Frontend Architecture" },
   { id: "design-system", title: "Design System" },
   { id: "testing", title: "Testing" },
+  { id: "build-log", title: "Build Log: October 2026" },
   { id: "decisions", title: "Design Decisions" },
   { id: "scale", title: "At Scale" },
 ];
@@ -232,7 +236,7 @@ export function AboutPage() {
           <P>
             Under the hood it is a retrieval-augmented generation (RAG) system combining <Accent>25+ live
             datasets</Accent> across 5 APIs (Chicago Socrata, Cook County Socrata, ArcGIS, Census, and external
-            services), <Accent>semantic search</Accent> over the entire Chicago Municipal Code (16,576
+            services), <Accent>semantic search</Accent> over the entire Chicago Municipal Code (16,584
             vector-indexed chunks), and <Accent>LLM synthesis</Accent> via Claude to produce sourced, cited answers
             with interactive map visualizations. The product began as a neighborhood Q&amp;A tool and was
             deliberately refocused onto site feasibility — the engine is the same, but every surface now points at
@@ -297,7 +301,7 @@ export function AboutPage() {
 │  Parallel Retrieval — Semaphore(4) concurrent tasks       │
 │  ├─ Socrata APIs (crime, 311, permits, violations,        │
 │  │   business, vacant, food inspections)                  │
-│  ├─ Qdrant Vector Search (16,576 chunks, bge-base)        │
+│  ├─ Qdrant Vector Search (16,584 chunks, bge-base)        │
 │  ├─ ArcGIS Zoning (point lookup + polygon fetch)          │
 │  ├─ Domain Orchestrators:                                 │
 │  │   ├─ Property  (parcel → char/assess/sales/tax)        │
@@ -472,7 +476,7 @@ export function AboutPage() {
             Source: <Mono>chicago-il-codes.html</Mono>, a ~100MB HTML export from American Legal Publishing
             containing the Chicago Municipal Code, including Title 14 (the building code) and Titles 16–17 (zoning). Gitignored due to size.
           </P>
-          <Code>{`HTML (100MB) → parse → 9,487 sections → chunk → 16,576 chunks → embed → Qdrant
+          <Code>{`HTML (100MB) → parse → 9,453 sections → chunk → 16,584 chunks → embed → Qdrant
                                                                        ↓
                                                               bge-base-en-v1.5 (768-dim)
                                                               ~3 minutes with MPS acceleration`}</Code>
@@ -513,7 +517,10 @@ export function AboutPage() {
             keeping: embedding assigns a random id per point, so re-inserting <em>duplicates</em> rather than replaces
             (116 duplicate points were created locally before this was understood — verify per-section counts, not just
             the total); the content hash omits the section title, so a heading-only fix is a silent no-op; and a code
-            deploy does not update the vector store, because Qdrant lives on a persisted volume.
+            deploy does not update the vector store, because Qdrant lives on a persisted volume. (Those counts are from that
+            earlier ingestion; the June 2026 refresh, described under Law Since the Code Text, moved the corpus to 9,453
+            sections and 16,584 chunks and made the ingestion safe to run: a parse no longer writes the vintage file, and each
+            vintage is its own collection behind an alias.)
           </P>
 
           <Sub>Chunking</Sub>
@@ -1073,7 +1080,9 @@ Consumers → Property Profile (renders pin + confidence badge)
             the code vintage. A fact that isn't present gets no entry. The benchmark counts how many stated facts carry one:
             <Accent> 46 of 46</Accent> — but only <Accent>25 of 46</Accent> carry a date the source itself gives; overlays and
             identity carry only the date we queried them, because the City's layers publish no per-feature date. Taxes,
-            comparables and permits are not covered yet. The page reports the weaker number alongside the stronger one.
+            comparables and permits were not covered yet. The page reported the weaker number alongside the stronger one. That was the first
+            pass: the Source Confidence section below describes the standard that extended an entry to every figure the Profile shows
+            (about 56 per parcel) and added how far to trust each one.
           </P>
 
           <Sub>Click a standard, read the code</Sub>
@@ -1110,7 +1119,7 @@ Consumers → Property Profile (renders pin + confidence badge)
             Planned Developments and special uses (§17-13); the City's 90-day map lag; the Municipal Code's current-through date;
             and that this is a screening tool — the City's Zoning Verification Letter is the official confirmation. The benchmark
             requires that each parcel carry <em>exactly</em> the notes that apply (7 of 7). Honest edges: the survey-hold note is
-            unit-tested only because no benchmark parcel is rated orange or red, and the PDF report does not carry these notes yet.
+            unit-tested only because no benchmark parcel is rated orange or red, and the PDF report carried none of them at the time. It now carries the code-currency, passed-rezoning and landmark-designation notices (not every note).
           </P>
 
           <Sub>Rezoned three months ago — and the product couldn't say so</Sub>
@@ -1185,6 +1194,213 @@ Consumers → Property Profile (renders pin + confidence badge)
             treats an existing FAR above three times the zone cap as unknown, and a city-footprint fallback is skipped when the
             footprint exceeds the lot. The coverage metric <em>got worse by design</em>: 12 panel parcels moved from a wrongly
             attributed area to an explained absence, which the benchmark now classifies as expected-absent instead of hiding.
+          </P>
+
+          {/* ── Code Currency ── */}
+          <SectionHeading id="code-currency">Law Since the Code Text</SectionHeading>
+          <P>
+            The Municipal Code the product reads is an export from American Legal Publishing, and the law moves faster than the
+            export does: City Council meets roughly monthly, and the publisher's "current through" date trailed the Council
+            Journal by about ten weeks. A zoning tool that quotes last quarter's text as if it were today's is wrong in a way it
+            cannot see. In October 2026 the product was taught to <Accent>know how old its text is, say so, and close the gap
+            where it can</Accent> — as one serial queue of small, separately merged and separately deployed changes.
+          </P>
+
+          <Sub>Telling users the gap exists</Sub>
+          <P>
+            A daily job (06:00 Chicago time, a systemd timer on the server) reads the City Clerk's legislation API and writes a
+            snapshot of what Council passed after the code text's date. Every Profile, chat answer and report then says how
+            current the text is and how many later amendments passed, and a section viewer says when a section it shows has been
+            amended or has not been codified yet. The rule that mattered most: <Accent>never state a count — or "none" — without a
+            check less than 14 days old</Accent>; a check older than 72 hours is labelled "as of" its date, and no check at all
+            says "we couldn't check", not zero. Reviews of each Title 17 amendment are recorded in a committed file, so a person
+            reads each ordinance before the page claims anything about it.
+          </P>
+          <P>
+            The client for that API found its first surprises before it found any law. The plan's rule for "passed" was a status
+            that starts with "Passed"; four records that end "Signed" would have been dropped, including the June 2026 omnibus
+            that amends Titles 2, 14, 17 and 18. The category filter that works is a string range (equality misses subcategories;
+            "startswith" and "contains" return HTTP 400), which turned the plan's 54 passed code amendments into 97. And a shared
+            HTTP client bound to one event loop failed with "Event loop is closed" the second time anything reused it — the kind of
+            bug a daily job would have hit at 06:00 on a day nobody was watching.
+          </P>
+
+          <Sub>Refreshing the text itself</Sub>
+          <P>
+            The first refresh moved the corpus from the March export to one current through June 17, 2026: 9,487 sections became
+            9,453 and 16,576 chunks became 16,584 (37 sections added, 149 modified, 71 deleted). Getting there exposed that the
+            ingestion pipeline was not safe to run. The "dry run" still rewrote every section file and the vintage file, so
+            committing it afterwards would have claimed newer text than the vector store served. A parse is no longer an ingest:
+            the vintage file is written only after the embed finishes and the collection's point count equals the chunk count; each
+            vintage is its own Qdrant collection behind an alias; and a push to production copies ids and vectors, compares
+            per-section chunk-hash multisets, re-verifies, and only then flips the alias atomically (about 41 seconds to upload and
+            20 to verify).
+          </P>
+          <P>
+            Three results from reading what the refresh did, rather than trusting its summary:
+          </P>
+          <Table
+            headers={["What looked like", "What it was"]}
+            rows={[
+              ["A tripped safety gate: Title 13 lost all 71 sections of one chapter", "A real repeal across three chapters (shelters and assembly units), confirmed from the export's editor's notes and Council Journal citation — the gate did its job, and the earlier note had undercounted"],
+              ["An amendment (the 14X heat dates) the codification check reported MISSING", "A dot-numbering rule: Title 14 indexes at the three-part section and numbers subsections after a dot, while Title 17 does not. Fixed in the overlap rule, with the four cases pinned"],
+              ["An omnibus ordinance the check called codified", "Its Title 17 part was in the text; its building-code parts (Titles 14M, 14G and 14N, repealed and replaced from October 1) were not. The review file now records it as partly codified instead of letting the next run flip it"],
+              ["A \"March 18\" export", "Downloaded May 28, after the gas-station amendment passed, so it already carried the new use-table row. The header lagged the contents — which is why every amendment is checked against the section text, not the date"],
+              ["Titles that name sections", "Narrower than they read: one substitute doesn't touch the section its title leads with; a waste-uses ordinance is a single exemption for twenty containers. Each was read from the ordinance PDF before the review file said anything about it"],
+            ]}
+          />
+          <P>
+            One product change fell out of it: the C1 and C2 use summaries now say "no new gas stations", because those strings reach
+            the zoning card and the report verbatim and had read as allowing one. The zoning cache was not rebuilt — that spends the
+            production model key — because the five sections its builder reads had identical hashes in both exports; its fingerprint
+            was re-stamped with the reason recorded.
+          </P>
+
+          <Sub>Law that passed after the text</Sub>
+          <P>
+            For the handful of ordinances that passed after June 17 and change what a page states (TOD Streets, pedestrian-street
+            changes on Belmont, Clark and Lawrence, the Milwaukee Avenue strip-center exception), the product applies them ahead of
+            codification, labelled as such. None of the ten PDFs has a text layer, so each was read from its scan and only the rows and
+            phrases the product uses were committed as a labelled transcription; tests pin the code to it while the text lacks the
+            change, and to the text once a refresh carries it. Reading changed three summaries (one title said "by right" where the
+            substitute enters a special use), and testing showed a "Lawrence Pl" address matching a rule written for "Lawrence Ave"
+            until the street type became part of the match. Along the way a quiet finding: the City's pedestrian-street map layer returns nothing on
+            streets that have been designated for years, so its silence says nothing about whether the map has caught up.
+          </P>
+
+          <Sub>Passed, but not yet on the City map</Sub>
+          <P>
+            A rezoning reaches the City's zoning map weeks or months after Council passes it, and in between the Profile's district is
+            the old one. The sync lists the last year's passed rezonings, asks the map whether any polygon carries each record number,
+            parses the title's address ranges, and resolves them to parcels for the ones the map lacks. Eighty were off the map on the
+            first run, 42 of them from a single July meeting, past the 90 days the page's own caveat promises. The wording is "a
+            rezoning listing this address", never "rezoned", because an ordinance's legal description can cover part of a range.
+          </P>
+          <Table
+            headers={["Measure", "Result"]}
+            rows={[
+              ["Titles that parse clean", "346 of 352 (98.3%); the six that don't are two reversed ranges, two fused numbers, a typo and a street with no type — listed, never guessed"],
+              ["Backtest on 207 ordinances already on the map", "463 sampled parcels; 445 sit on a polygon carrying the ordinance (96.1%); 0 wrong-street"],
+              ["Resolved to at least one parcel", "77% — the resolver only knows built addresses, so a vacant lot resolves to nothing"],
+              ["A retry on the other side of the street when a range found nothing", "Tried, measured (7 of 60 on a polygon carrying the ordinance), and removed"],
+            ]}
+          />
+          <P>
+            The first production check caught something the unit tests could not: the Profile matched 6711 S Western Ave by address, not
+            by its PIN, because the Profile path never set the context's parcel PIN. The tests had built their input by hand, with a PIN.
+            A corner lot would have been missed. The fix sets identity from the reconciled parcel, and the lesson is in the PR: a check
+            that builds its own input cannot catch an input the real path never sets.
+          </P>
+          <P>
+            Landmark designations got their own design. The landmark layers carry a name and an address as text and no ordinance
+            number, so "is it on the map yet" would have been a fuzzy match. Instead a parcel is flagged when a designation ordinance
+            passed in the last 180 days lists its address (or a block it is on) and the parcel's own landmark-layer result does not
+            already say landmark. The 180 days is measured: the map takes more than 90 days for some designations and had caught up on
+            everything past 180. Whether the rule would flag a parcel on a listed block that falls outside a district's boundary is
+            not measured.
+          </P>
+
+          <Sub>Reading the new district — built, dormant</Sub>
+          <P>
+            The last piece reads each off-map ordinance's PDF with the model and shows "The ordinance changes it from C2-2 to B2-5
+            (read by AI from the scanned ordinance; check the PDF)". A reading is shown only when its from-district equals what the live
+            map shows at the ordinance's own parcels; a mismatch shows nothing, and a failed read is retried, never stored as "no
+            district". It ships switched off: building it spent no model credits, and its first live run is a production decision. The
+            backtest read 30 ordinances already on the map and agreed with the map on all 30 — but those readings were made by the
+            engineer, not the production model, and all were one-page typed ordinances, so the agreement log it keeps once enabled is
+            the real measure. The backtest's real find was a spelling one: ordinances print "RS3", "RT4", "RM 4.5" and "RM- 4.5"
+            (six of the thirty ordinances), which the first normalizer rejected.
+          </P>
+          <P>
+            The monthly routine that keeps all of this current is a written guide, not a plan: download the new export when the
+            publisher's date moves, run the parse as a dry run, read the gates, review every new Title 17 amendment, and push the new
+            collection. It differs from the original plan where the real refreshes disagreed with it (finding the production vector
+            store without root, not running the build that spends the key, running the free Profile kit instead of the paid chat one).
+            A new registry source alarms when a Title 17 amendment waits more than 45 days for review — and it is deliberately separate
+            from the code-text age alarm, which is acknowledged until December because the publisher's lag keeps it permanently red.
+          </P>
+
+          {/* ── Source Confidence ── */}
+          <SectionHeading id="source-confidence">Source Confidence</SectionHeading>
+          <P>
+            "Every claim is checkable" (above) said where a fact came from. It did not say how far to trust it, and the Profile
+            printed a median rent and a tract unemployment rate in the same type as a Cook County tax record. The October 2026
+            confidence standard gives every figure the product shows the same five answers — <Accent>source, date, coverage,
+            precision and method</Accent> — and makes the product say less when the answers are weak. The rules live in one guide and
+            one function: the backend decides whether a figure is <Mono>standard</Mono>, <Mono>low</Mono> (shown, faded, with its
+            reason) or <Mono>withheld</Mono>, and the frontend, the chat and the report only print what it decided.
+          </P>
+          <Table
+            headers={["Evidence", "Faded as low confidence", "Withheld"]}
+            rows={[
+              ["A sampled area figure", "Coverage under 25%, or margin of error over 30% of the estimate", "Coverage under 10%, fewer than 30 in the sample, or margin over 50%"],
+              ["Comparable sales", "Fewer than 5 sales", "Fewer than 3 sales (the sales list itself always shows)"],
+              ["An AI reading", "Low confidence unless a deterministic check agrees with it or measured agreement is at least 95% on at least 30 hand-checked items; always labelled as an AI reading", "—"],
+              ["Our own calculation", "Labelled as such, with the weakest input it was built on", "—"],
+            ]}
+          />
+          <P>
+            These are defaults, not measurements, and the first time they met real data they moved the product. A figure that is
+            captioned quietly when it is a standard official record says nothing; one that is an estimate, a calculation, an AI
+            reading or a private company's index (Walk Score) says so in a short line under the number.
+          </P>
+
+          <Sub>What the audit found before any rule was applied</Sub>
+          <Table
+            headers={["Found", "What changed"]}
+            rows={[
+              ["The 2008–2012 community-area poverty and unemployment figures were still shown beside 2020–2024 tract figures", "Removed. The City dataset behind the rest has only 30 columns — population, five income brackets, age, sex, race — so community-area poverty and unemployment could only ever be empty too; eight fields went, not the plan's five"],
+              ["A report block printing demographics ×100 was unreachable", "Deleted rather than fixed: dead template code is a trap that would one day print unlabelled bracket estimates in a paid report"],
+              ["The opposite bug: an arrest rate (a fraction) printed unscaled as 0.1%, including in the summary later chat turns read", "Fixed in the export and the turn summary; a wrong number was being fed to the model on follow-ups"],
+              ["The community-area median income is estimated from five brackets, with no margin of error", "Kept — it is the only area income figure — but captioned as exactly that, apart from the ACS 2020–2024 tract block below it"],
+              ["The class-norm effective tax rate (0.21) was derived from tax year 2023", "Stated with its year; tax year 2024 gives 0.2009, about 5% lower. Not changed, because the work changed no displayed number"],
+              ["Comparable sales: the plan assumed a quarter-mile search yields 5–20 sales", "On 25 production addresses the counts were 1 (nine times), 2 (six), 3 (four) and 4 (once). Fifteen of twenty medians are withheld, five faded, none standard — the comps tile reads a dash on about three parcels in four"],
+              ["Comps differ between identical runs: the same address returned 2 sales in the morning and 1 in the afternoon", "Recorded: a tile near the gate can flip between a value and a dash across reloads. The gate thresholds are a one-line change if a softer rule is wanted"],
+              ["The Profile never set the comp search basis, so \"widened to half a mile and five years\" could never reach the page", "The radius, window and a widened flag now ride the payload"],
+            ]}
+          />
+          <P>
+            Margins of error come from the Census response, not an assumption. A count's margin is the published one, a share's follows
+            the Bureau's proportion formula, and unemployment uses the civilian labour force as its denominator (the column meanings
+            were read from the live table metadata, not memory). The ACS period is read from the response, so the label updates when
+            Census Reporter's "latest" moves. A suspicious result got the raw data: a tract showing poverty and unemployment both at
+            exactly 9.1% looked like a copy-paste bug and was a coincidence (423 of 4,670 and 245 of 2,681).
+          </P>
+
+          <Sub>Coverage, measured</Sub>
+          <P>
+            A confidence audit walks a 100-address panel and checks every figure the Profile displays against its provenance entry. The
+            first run found 19 gaps; every one was a displayed zero — a 0% vacancy rate and a $0 exempt assessed value are figures —
+            and the audit's definition of "present" was wrong, not the builder. Entries per Profile rose from 14 to 58 locally (56 on
+            production, where no flood zone came back). On the 100-address panel 4,807 of 4,807 displayed figures had an entry; on 25
+            production addresses, 1,185 of 1,185, with 74 faded and 51 withheld. A second, independently written list of what a
+            payload should contain checks the builder, so a figure that is forgotten in both places cannot pass.
+          </P>
+
+          <Sub>In chat: a withheld number never reaches the model</Sub>
+          <P>
+            Telling the model not to say a figure is weaker than not giving it one: a model that has seen "poverty 1.0%" can still say
+            it. So a withheld figure is cleared from the context before it reaches the model or the sidebar, and a short plain-words
+            list says what was left out and why. The clearing works on a copy, because retrieval results are cached and shared — clearing
+            in place would have withheld a figure from every later answer, which a test pins. Estimates, calculations and AI readings
+            are named to the model as such, and a deterministic "Sources for the data used" footer carries a period and the 90%
+            margin-of-error level for every area source. What it costs: across 54 real tracts (697 figures), 77% are standard, 18%
+            faded and 6% (39) withheld, concentrated in rates on small tracts — vacancy in 14 of 54, unemployment in 11. Whether those
+            should be shown faded with their margin instead is an open product decision. Whether the model follows the new prompt rule
+            has not been measured: that needs a live run, and build work does not spend the production key.
+          </P>
+
+          <Sub>In the report, and on every date</Sub>
+          <P>
+            The $25 report labels AI-read content only where it exists: the zoning cache's setbacks, uses, parking and notes are marked
+            "read by AI from §17-3-0400 · not verified", while FAR and height come from the Title 17 table and carry no label. So the
+            acceptance criterion "shows the AI labels" is parcel-dependent — a residential parcel shows one, a table-served exempt
+            parcel none — and the report stayed honest rather than label what is not AI-read. The static eight-category sources table
+            was replaced by one generated from what the report actually used (33 rows for 1601 N Milwaukee, 27 and 23 for the
+            controls). Every answer, report and Profile now carries the dates of its headline facts ("Crime through Oct 14, 2026",
+            "ACS (tract) 2020–2024"); a source that gives no date reads "checked" with the day we asked, never a made-up date, and a
+            lint fails any year range typed into a string. One bug was visible in the output: "only 1 sales", on the Profile and in the
+            report, until both got plural forms.
           </P>
 
           {/* ── Feasibility Report (PDF) ── */}
@@ -1817,6 +2033,147 @@ Consumers → Property Profile (renders pin + confidence badge)
             by <Mono>ProtectedRoute</Mono> requiring admin tier.
           </P>
 
+          <Sub>Data Health and Code Currency panels</Sub>
+          <P>
+            Two admin sections cover the data rather than the traffic. <Accent>Data health</Accent> lists every registered source — a
+            source added to the registry reads "not checked yet" the day it merges, not only after the next daily run — sorted alarm,
+            error, warn, unknown, acknowledged, ok, with critical sources first within a state, plus the checker's own freshness. Its
+            payload comes from a module that imports none of the serving stack and never raises, so an admin looking at a broken
+            checker meets an empty table, not an error page. <Accent>Code currency</Accent> shows the code text's age, the Clerk check
+            state and errors, and every amendment since with its review status; it never prints a count when the check is stale.
+          </P>
+
+          {/* ── Data Health ── */}
+          <SectionHeading id="data-health">Data Health</SectionHeading>
+          <P>
+            A product built on 80-odd public sources is only as right as its quietest source. Before October 2026 nothing watched them:
+            a renamed column, a stalled feed or a map layer that changed meaning would have shown up as a wrong answer, if at all. The
+            data-health system is a <Accent>registry of every source, a daily checker that reads each one's own newest date, and a rule
+            for what to do when one fails</Accent> — built on free tiers only, with alarms through Sentry email and scheduled GitHub
+            Actions rather than any paid service.
+          </P>
+
+          <Sub>The registry and the checker</Sub>
+          <P>
+            One entry per source (82 today: Socrata datasets, ArcGIS layers, APIs, committed artifacts, local databases, GTFS feeds,
+            the vector index) with its publisher, authority class, what it supplies and its tolerance for staleness; the 14 zoning
+            overlay layers are 14 entries, each pinning the service's own layer name, because the landmark failure described under Measuring Correctness was a
+            layer id that changed meaning. A dry run reads all of them in about three seconds and 100 requests. Day one: 44 ok, 9 frozen
+            on purpose, 5 warn, 3 acknowledged with a reason and an expiry, 17 unknown and 2 alarms.
+          </P>
+          <P>
+            Design choices that came from running it rather than from the plan:
+          </P>
+          <Table
+            headers={["Choice", "Why"]}
+            rows={[
+              ["A year column counts as December 31 of that year", "With January 1, Assessor values read 290 days old on the day they were published"],
+              ["Three failure kinds, not one", "A timeout is transient (warn, alarm on a second run in a row); an error body returned with HTTP 200 is a service error at once; a broken contract is an error at once"],
+              ["A registry completeness test that reads the code's syntax tree", "A regex over source text matched docstrings; a rule requiring a digit in a dataset id passed on its first run while blind to 4 of 40 ids (all-letter ids look like hyphenated words)"],
+              ["A constant the plan called existing (VERIFIED_AGAINST) did not exist", "Added, and pinned by a test to the served code vintage, so the next refresh fails until the zoning-parity test is rerun"],
+              ["The checker's HTTP client retries connection resets", "FEMA's hazard server reset 5 of 8 fresh connections and 0 of 12 over one kept-alive connection; with a single attempt the twice-in-a-row rule fires on a coin flip"],
+              ["A custom User-Agent without a URL", "The City's GIS server answers 403 to a User-Agent containing one; the first dry run came back with all 15 City layers as errors"],
+            ]}
+          />
+          <P>
+            A daily systemd timer stores results in a separate SQLite file the checker alone writes and the app opens read-only (a
+            read-only reader in another container cannot use a WAL file's side files, and one write a day gains nothing from WAL). A
+            stored "what we last notified about" decides the alerts, not a comparison with yesterday, so a crash mid-run can neither lose
+            nor repeat an email; a non-critical source is held back for its first two weeks. The dead-man check lives outside the box:
+            the Sentry Cron monitor, the <Mono>/health</Mono> block, and a daily GitHub Actions run that fails — and so emails — when the
+            checker is late or the site is down. Acknowledging a source is deliberate and visible: the code text's age is acknowledged
+            until December because the publisher's own lag keeps it permanently red, and a monthly workflow reminds a person to download
+            a new export instead.
+          </P>
+
+          <Sub>Contracts and sentinels</Sub>
+          <P>
+            A scanner reads the code for every column each Socrata source's modules actually name and keeps the ones that exist in the
+            live dataset (37 sources, 280 columns), so a column the publisher renames fails the next run. Its first scan gave the
+            Assessor values source two columns instead of twelve, because the modules that fetch rows are not the ones that read their
+            fields; the scanner now reads the property module too. Value sets are pinned where a misread changes a fact — the zone
+            class must start with a known district family, the landmark flag is Y or N.
+          </P>
+          <P>
+            Sentinels run the twelve benchmark parcels and a landmark positive control through production's own zoning and overlay
+            lookups against the answer key every day. The first live run alarmed on 8 of 13 parcels, and none was a real misread —
+            which is why it is worth telling. The address's Assessor centroid missed a National Register property 150 metres away that
+            the address point hit, so sentinels now use the point the Profile resolves to. The ADU layer now covers most of the city
+            ("Zone 1, no limitations") and the key's "transit" is the CTA layer, so two overlays found where the key is silent are no
+            longer a mismatch (a key-listed overlay must still be found). And a text filter on the word "district" had hidden an overlay
+            finding, because "special_district" contains it — the comparison became two functions. An alarm is never re-baselined
+            automatically. The landmark failure is replayed from a recorded layer-7 hit: the pre-fix mapping derives a landmark where the
+            key says none, so the sentinel alarms, and with today's mapping it is clean.
+          </P>
+
+          <Sub>Honest failures</Sub>
+          <P>
+            The first honesty fix was the tri-state: an overlay layer the City's map failed to answer used to read "not in this
+            overlay", a confident false negative on a landmark question. It now reads "couldn't check", on the Profile, in chat and in the
+            report. Forcing a source to fail with a development-only fault flag then showed a worse gap one layer down. When the
+            Assessor's sales feed failed, <Accent>the Profile lost its comps and sales history and said nothing</Accent>: the sales and
+            assessment calls caught the error, cached "none on file" for 24 hours, and the comparable-sales query cached "no comps" for an
+            hour. Four calls now raise and cache nothing, a table of what failed words them identically on every surface, and an
+            exempt parcel's genuinely absent assessment is not reported as a failure. An app-side counter records each source's live
+            outcome hourly, and the checker alarms over 50% failures of at least 10 calls — thresholds that have not yet met real
+            traffic.
+          </P>
+          <P>
+            FEMA's flood lookup was the same trap with a worse base rate. Against live FEMA, three of four fresh lookups on the unmodified
+            code silently returned no flood zone, byte-identical to a parcel with none: <Accent>on that evidence production had been dropping
+            flood zones most of the time</Accent>, not only during an outage. A failed lookup now raises, the card says "FEMA flood zone didn't answer
+            ... that isn't a no", and the verdict is hedged without being downgraded; the report no longer ticks its flood checklist
+            item. After the deploy FEMA failed every lookup made from the production server (6 of 6), where a dev machine gets about a
+            third through — so the retry rescued none there, and why production fares worse is not established. Dozens of other
+            places in the retrieval layer still swallow an error and return an empty result; they are the next audit.
+          </P>
+
+          <Sub>Keeping what an answer said, and saying what changed</Sub>
+          <P>
+            A chat message and every rendered report keep a small server-built record of the facts they rested on (a snapshot of about
+            1–4 KB: district, overlays, flags, standards, code vintage and cited sections, source dates, passed ordinances, what could not
+            be checked); the client's own copy is ignored. A purchase keeps the first report it renders as its <Accent>original</Accent>
+            — stored once, enforced by a partial unique index, hash-checked on every download — and later downloads are live renders
+            labelled "Updated copy of the report first generated on ...". A damaged original answers 410 and is never served as the
+            original; none is back-filled for purchases that pre-date the feature, because that would invent an original with today's
+            data under yesterday's date. A purchase's originals live on the same disk as the database, so the nightly backup mirrors
+            them append-only (rsync with --ignore-existing; the first version used cp -n, which exits non-zero for a skipped file on
+            newer coreutils and would have failed the whole backup on the second night). An off-box copy of the originals still needs one more rsync on the owner's
+            Mac.
+          </P>
+          <P>
+            "Since then" compares a snapshot with today's facts and says what is material: a district change with the ordinance and its
+            Clerk link, an overlay that carries a rule, a bulk standard of the same district, an amendment to a section the answer cited,
+            a passed rezoning or designation, and a short list of recorded corrections to the product's own past claims (the landmark
+            survey layer and the 2026-07-06 zoning-table heights). It runs on reopened conversations, shared links and the purchases
+            list. Today's facts come from the Profile's own lookups, so both sides are built by one function; a lookup that failed makes
+            no claim, an overlay the map could not answer then or now is skipped in both directions, and the answer is "no change in what
+            we could read", never a flat "no change". Two corrections the plan wanted were left out because the snapshot cannot express
+            them (the commercial tax-rate fix stores no building class); "newer data available" is not built.
+          </P>
+
+          <Sub>Backups that stopped without anyone knowing</Sub>
+          <P>
+            The queue began with an operations fix. The last on-box database backup was a manual run on September 28; nothing had logged
+            the silence, and root's crontab was empty after the hardening work that day — 22 days with no backups. The nightly job is
+            restored with its output logged, writes a status file the checker alarms on past 36 hours (it proves the script finished, not
+            that a copy restores), and an off-box copy now comes from a pull rather than a push: the owner's Mac pulls every four hours
+            over a read-only rrsync key, so a compromised server can reach nothing else and delete no copy. The tooling quirks went in
+            the notes: macOS openrsync sends --dirs, which rrsync rejects, and macOS sqlite3 refuses the copies read-only unless they are
+            opened as immutable.
+          </P>
+
+          <Sub>The weekly kit and a regression of our own</Sub>
+          <P>
+            A scheduled workflow runs the free Profile kit weekly and judges it against a committed accepted run, not against a perfect
+            score: the key legitimately has zeros and "no claim" cells, so the gate is "no cell fell below the accepted run and nothing
+            confident-wrong appeared". A drill input corrupts a district in the scored copy and the gate must fail. The first kit run
+            after the "not yet on the map" work exposed a regression introduced in that very change: the verdict-text script loads a
+            TypeScript file in plain Node, and the new caveat had imported a date formatter that imports i18n, which plain Node cannot
+            load — and the test that guards the script had started <em>skipping</em> in that same PR, which was put down to the Node
+            version instead of being read. A skipped test that appears in a PR is a finding.
+          </P>
+
           {/* ── Measuring Correctness ── */}
           <SectionHeading id="correctness">Measuring Correctness</SectionHeading>
           <P>
@@ -2105,8 +2462,8 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <Sub>CI/CD Pipeline</Sub>
           <P>
-            GitHub Actions has four gates. A <Accent>test</Accent> job runs the backend suite (about 1,440 unit tests; 61
-            real-API integration tests are excluded), the eval-scorer tests, the frontend vitest suite (257 tests) and the full
+            GitHub Actions has four gates. A <Accent>test</Accent> job runs the backend suite (about 2,270 unit tests; 66
+            real-API integration tests are excluded), the eval-scorer tests, the frontend vitest suite (620 tests) and the full
             TypeScript build. A <Accent>lint</Accent> job runs ruff and ESLint. A <Accent>CodeQL</Accent> scan runs on pull
             requests, pushes and weekly. A <Accent>changes</Accent> job decides whether a push needs a deploy at all: a push
             touching only docs runs the tests but skips the container restart (proven live when a docs-only push reported{" "}
@@ -2133,7 +2490,7 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["requirements.txt lacked stripe, weasyprint and sentry — a clean clone had 4 failures and 8 collection errors; CI passed only because it installed a different file", "One requirements chain; a clean clone now installs and runs from the README"],
               ["All 14 zoning-parity checks skipped in CI because the section JSONs were gitignored build output — the test that blocks fabricated zoning numbers ran only on one laptop", "The 74 KB of ordinance sections it reads are committed; it runs everywhere"],
               ["Unit tests silently touched the network: retrieval degrades gracefully by design, so a test that forgot a mock still passed while making real calls with retries", "An autouse guard fails any non-integration test that opens a socket or resolves DNS; it found exactly five"],
-              ["The eval scorers themselves were untested — a scorer bug silently changes every reported number", "88 scorer tests run in CI: plan checks, the retrieval A–F rules, coverage statuses, lot-field classification against a recorded response, judge parsing"],
+              ["The eval scorers themselves were untested — a scorer bug silently changes every reported number", "88 scorer tests (106 today) run in CI: plan checks, the retrieval A–F rules, coverage statuses, lot-field classification against a recorded response, judge parsing"],
             ]}
           />
           <P>
@@ -2147,9 +2504,13 @@ Consumers → Property Profile (renders pin + confidence badge)
           <Table
             headers={["System", "Purpose"]}
             rows={[
-              ["Sentry (EU region)", "Exception tracking with source maps, traces synthesis/retrieval errors"],
+              ["Sentry (EU region)", "Exception tracking with source maps, traces synthesis/retrieval errors; also the delivery path for data-health alarms and the daily checker's Cron monitor"],
               ["UptimeRobot", "5-minute health checks against /health endpoint, email alerts on downtime"],
-              ["Daily backup cron", "3am UTC, SQLite database + uploads, 7 rolling backups"],
+              ["Daily backup cron", "3am UTC, SQLite database + uploads, 7 rolling backups, logged; writes a status file the checker alarms on past 36 hours; purchased-report originals mirrored append-only; the owner's Mac pulls copies every 4 hours over a read-only key"],
+              ["Data-health checker", "Daily timer: reads every registered source's newest date, structure and sentinel parcels; Sentry email on transitions and a daily heartbeat while red"],
+              ["Dead-man switch", "A scheduled GitHub Actions run fails (and emails) when the checker is late or /health is down — outside the box it watches"],
+              ["Legislation sync", "06:00 Chicago daily timer: City Clerk passed ordinances, rezonings and landmark designations not yet on the map"],
+              ["Weekly parcel kit", "A scheduled workflow runs the free 12-parcel Profile kit and judges it against the last accepted run; a monthly reminder asks for a new code export"],
               ["Admin dashboard", "Self-hosted observability: LLM costs, latency, error rates, request logs"],
             ]}
           />
@@ -2291,11 +2652,11 @@ Consumers → Property Profile (renders pin + confidence badge)
           {/* ── 20. Testing ── */}
           <SectionHeading id="testing">Testing</SectionHeading>
           <P>
-            ~1,500 backend tests (about 1,440 unit + 61 real-API integration), plus 88 tests of the eval scorers themselves.
+            ~2,340 backend tests (about 2,270 unit + 66 real-API integration), plus 106 tests of the eval scorers themselves.
             The everyday baseline is <Mono>pytest -m "not integration"</Mono> — the integration tests hit live external APIs
             and fail on network/GIS flakiness, not code, and an autouse guard fails any unit test that touches the network.
-            The frontend adds a <Mono>vitest</Mono> suite (257 tests across 32 files — Discovery compiler/selectors, landing,
-            nav-string budgets, i18n parity, the hero's crop geometry), a Playwright overflow audit across five phone profiles,
+            The frontend adds a <Mono>vitest</Mono> suite (620 tests across 56 files — Discovery compiler/selectors, landing,
+            nav-string budgets, i18n parity, confidence captions, the "since then" notes, the hero's crop geometry), a Playwright overflow audit across five phone profiles,
             and a <Mono>npm run build</Mono> (<Mono>tsc -b</Mono> plus Vite) that is the real deploy gate. The zoning-parity
             test diffs every hand-typed zoning standard against the ordinance tables parsed from the Municipal Code; the
             ordinance-pinned tests behind the Verifiable Answers section (transit benefits, coverage notes, provenance code
@@ -2316,6 +2677,8 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["API & Integration", "api, integration, map_data, analytics", "SSE endpoint, end-to-end flow, row fetching, MoM trends"],
               ["Report & Payments", "report_tier0/1, report_render, zoning_extract, resolve_location", "Render isolation, zoning extraction, address→PIN precedence, Stripe entitlement"],
               ["Discovery", "discovery (compile/evaluate/registry) + vitest", "CQS compile, predicate evaluation, index build, FE compiler/selectors"],
+              ["Legislation & code currency", "address_titles (352 recorded titles), rezonings, designations, applied_law, legislation_currency, ordinance_reader, clerk_client", "Title parsing with the unreadable ones pinned, \"never a count without a fresh check\", overlap rules, law applied ahead of codification pinned to transcribed ordinances, the 30-ordinance reader backtest"],
+              ["Data health & confidence", "data_health_* (registry, probes, evaluate, store, alerting, contracts, sentinels, panel), confidence_state, provenance, partial_failures, since_then, report originals", "Status rules, alert transitions, F8 replay, boundary tests on every confidence threshold, a failure that raises and caches nothing, hash-checked report originals, a v14 database migrating in place"],
             ]}
           />
           <P>
@@ -2323,6 +2686,55 @@ Consumers → Property Profile (renders pin + confidence badge)
             Cook County GIS, FEMA, EPA, CCAO). Shared fixtures in <Mono>conftest.py</Mono> (<Mono>mock_settings</Mono> with
             dataset IDs + limits). Async tests via <Mono>pytest-asyncio</Mono>. No external API calls — all network
             tests are mocked. Autouse fixture clears all 25 TTL caches between tests.
+          </P>
+
+          {/* ── Build Log ── */}
+          <SectionHeading id="build-log">Build Log: October 2026</SectionHeading>
+          <P>
+            Twenty-eight queue items and two standalone fixes shipped between October 20 and 22, 2026 as one serial queue: each on its own branch, each a separate
+            pull request with a decisions entry (what was decided, the alternatives, the evidence, when to revisit), each merged
+            alone and verified against the live site before the next. The sections above describe what exists. This one is what was
+            unexpected, because the plan was wrong or the world was, roughly in the order it was found.
+          </P>
+          <WideTable
+            headers={["Expected", "Found", "What it changed"]}
+            rows={[
+              ["Backups were running", "The last one was a manual run on September 28; root's crontab was empty", "Restored, logged, alarmed on age, and copied off the box by a pull"],
+              ["Only the plan's five demographic fields were stale", "The source dataset has 30 columns, so eight fields could never be filled", "Eight removed, so the model stops implying we hold a figure"],
+              ["54 passed code amendments since the code's date", "97: a \"Signed\" status and subcategories the plan's rule dropped", "A different passed rule and a string-range category filter"],
+              ["A dry run touches nothing", "It rewrote every section file and the vintage file", "A parse is no longer an ingest; vintages are collections behind an alias"],
+              ["A tripped gate means a parser regression", "71 deleted sections were a real repeal", "Gates are read against the export's editor's notes, not overridden"],
+              ["A \"March 18\" export is March 18 law", "Downloaded May 28; it already carried a May change", "Amendments are verified against section text, never the header date"],
+              ["The City GIS accepts any client", "It answers 403 to a User-Agent that contains a URL", "The checker sends a plain User-Agent, with a comment saying why"],
+              ["A cache of failures is harmless", "An Assessor outage read as \"no sales, no comps\" for up to a day", "Failures raise and cache nothing; four calls changed"],
+              ["Flood failures are rare", "Three of four fresh FEMA lookups silently returned no zone; later 6 of 6 failed from the server", "A tri-state \"couldn't check\" on every surface; the retry rescued none in production"],
+              ["Sentinels would catch misreads", "The first live run alarmed on 8 of 13 parcels, none real", "Resolved coordinates, an uncurated-overlay allowance, and a comparison that no longer string-matches"],
+              ["Matching a rezoning by address is enough", "Production matched 6711 S Western Ave by address, not PIN, because the real path never set the PIN", "Identity is set from the reconciled parcel; a live check caught what hand-built tests could not"],
+              ["\"Not yet on the map\" for landmarks is the same as for rezonings", "The landmark layers carry no ordinance number", "A different design: no name matching; the parcel's own overlay result decides"],
+              ["Comparable sales yield 5–20 sales", "One to four; comps even differ between identical runs", "Most comps medians read a dash; the gate is a one-line decision left to the owner"],
+              ["The kit passes after a small change", "It printed \"verdict text unavailable\"; a guarding test had begun skipping and was blamed on Node", "A skipped test in a PR is read, not explained away"],
+              ["Local tests equal CI", "One PR failed in CI because a new file was untracked when the suite ran (some tests read the git index)", "Add new files, then run the final suite"],
+              ["cp -n is a safe append", "On newer coreutils it exits non-zero for a skipped file, and the script ran under set -e", "rsync --ignore-existing; the second night's backup would have failed"],
+              ["The vector store is closed to the internet", "(Earlier) the compose file published its port", "Closed; the push tool reaches it through an SSH tunnel to its bridge address, found without sudo"],
+              ["Merge order doesn't matter", "(Earlier) three back-to-back merges collided at container recreation and took the site to a 521", "One merge, wait for its deploy, then the next"],
+              ["An acknowledged source still pages", "An ack turns any alarm on that source into \"acked\"", "The amendment-review alarm is its own source, so the code text's ack cannot swallow it"],
+              ["GitHub's job list shows a run's state", "Twice the run status and the job list disagreed, once for over an hour", "The live bundle and API are the evidence, not either list"],
+            ]}
+          />
+          <P>
+            Three rules governed all of it. <Accent>No production model tokens for build work</Accent>: verification used fixtures, recorded
+            replays, direct reads of government APIs and, where a scanned ordinance needed reading, the engineer's own reading committed
+            as a labelled transcription. A bare test run that touched the Anthropic API once was rejected for a low balance before
+            anything was spent, and became a rule — run only the suite that excludes real-API tests. <Accent>Free tiers only, no new
+            sign-ups</Accent>, which is why the alarms are Sentry email and scheduled workflows. And <Accent>a push to main is a
+            deploy</Accent>, so every change is verified against what the live API and the served bundle say, not what git says.
+          </P>
+          <P>
+            What is still honestly open, as of the end of the queue: the AI-read district is built and off, with its accuracy unmeasured
+            on the production model; the chat answers under the new confidence rule have never been run end to end (that needs the
+            production key); no purchase has gone through Stripe, so the original-and-updated-copy flow has run only against a seeded
+            row; the monthly refresh guide has not been followed by a real refresh; vacant lots have no address point, so a rezoning on
+            one is not flagged; and the comps gate and the tract-rate gate are product decisions waiting for the owner.
           </P>
 
           {/* ── 21. Design Decisions ── */}
@@ -2373,6 +2785,14 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Truncation notice before a higher token cap", "Raising the output limit", "Shorter answers plus a visible cut-off notice fixed the silent failure without raising per-answer cost", "Two of seven benchmark answers still reach the cap (and say so)"],
               ["Explained absence over a fuller-looking metric", "Attributing a multi-parcel complex's area to one lot", "A wrong 745,629 sq ft on a single lot is worse than an honest blank with a note; the coverage number dropped on purpose", "Lower headline coverage"],
               ["Batch dependency PRs", "Merging each Dependabot PR", "Every merge to main is a deploy; ten merges is ten rebuilds and ten outage windows", "One larger change to review"],
+              ["The backend decides confidence; everyone else prints it", "Each surface recomputing its own thresholds", "One function holds every rule, boundary-tested on both sides, so the Profile, chat and report cannot disagree about a figure", "Frontend and report mirror the quiet-by-default caption rule and must be kept in step by tests"],
+              ["Withhold a figure by removing it from the model's context", "Prompting the model not to state it", "A model that has seen \"poverty 1.0%\" can still say it", "Chat says less on small tracts (6% of sampled tract figures)"],
+              ["A failed lookup raises and caches nothing", "Returning an empty result and caching it", "An outage read as \"no sales\" or \"no flood zone\" for hours; an exception cannot be mistaken for a value", "Pages show \"couldn't check\" when a service fails, which production's FEMA lookup does often"],
+              ["A source registry that reads each source's own newest date", "Alerting on request errors alone", "A stalled feed or a renamed column is a wrong answer long before it is an error", "82 entries to keep honest; thresholds are defaults until they meet real traffic"],
+              ["Pull-based off-box backups", "Pushing to cloud storage", "The server holds no credential for the copies, so a compromised server cannot delete them", "Copies go stale if the owner's Mac is off"],
+              ["Apply passed law ahead of codification, labelled", "Waiting for the publisher's next export", "Council's changes reach users in days, not ten weeks, and the page says it is ahead of the text", "Each rule is transcribed from a scanned ordinance and pinned by a test until a refresh carries it"],
+              ["Show a model-read district only when the live map agrees on the from-district", "Trusting the model's JSON", "A deterministic check is the only thing that catches a misread", "Shown for fewer ordinances; the feature ships off until its first approved run"],
+              ["Keep the first render of a purchased report as its original", "Re-rendering on every download; back-filling old purchases", "What was sold stays what was sold; an altered file is never served as the original", "About 2 MB per purchase on the same disk as the database"],
             ]}
           />
 
@@ -2403,7 +2823,7 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <div className="mt-16 pt-8 border-t border-dark-border/50">
             <p className="text-text-muted text-body">
-              ~1,500 backend tests, 257 frontend tests. 16,576 code chunks indexed. ~949k parcels in the discovery index.
+              ~2,340 backend tests, 620 frontend tests. 16,584 code chunks indexed (current through June 17, 2026). ~949k parcels in the discovery index.
               25+ live datasets. 4 domain orchestrators. Property Profile + cited chat + $25 PDF report + discovery,
               scored on a 12-parcel public benchmark.
               Built with FastAPI, Claude, Qdrant, React, Mapbox, deck.gl, WeasyPrint, and Stripe.
