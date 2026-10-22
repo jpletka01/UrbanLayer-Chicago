@@ -1641,3 +1641,19 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - **Spanish.** The new strings are English, listed in `_untranslated.json`.
 - **The transcript PDF export** carries "Answered <date>" under each answer by code and type check only.
 - **Wording on a date near midnight.** The note shows the viewer's local date while `answered_on` is UTC; they can differ by a day.
+
+**Production** (2026-10-22, after the deploy of #106, merge commit `a210ddd`)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI / Deploy on `a210ddd`: `changes`, `lint`, `test` and `deploy` all `success`; CodeQL success | `gh run view <id> --json jobs` |
+| Health | `/health` ok (`qdrant`, `db`, `ptaxsim` true); checker ok, last run 1.8 h old; `alarms: 1` (the known `fed.fema.nfhl`) | `curl https://urbanlayerchicago.com/health` |
+| Frontend | served bundle `index-BOqqsknk.js` carries "rechecked today: no material change", "Ask again with today's data" and "Facts changed since your report" | `curl -s https://urbanlayerchicago.com/assets/index-*.js \| grep -o -E "rechecked today: no material change"` (name from the home page) |
+| New routes exist (so the new image runs) | anonymous `/api/share/nope/changes` answers 404 `Shared conversation not found` (not the router's "Not Found"); `/api/conversations/x/changes` and `/api/me/purchases` answer 401 | `curl -i` on each |
+| Profile payload | 1601 N Milwaukee: B3-2, ordinance 17230, code through 2026-06-17, `data_dates` present; `failed_sources` is the FEMA flood row, as since #104; 56 provenance entries (flood unchecked) | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on production:**
+- **A real "since then" note.** It needs a signed-in conversation (or a share link) with a parcel answer; the chat route that makes one spends the production key, so I did not make one. The first look is yours: reopen an old parcel conversation and a share link of it.
+- **The schema v16 migration on the production database** (no login to read it): it is covered by the v14 and v15 migration tests, and `/health` reports `db: true` after the restart.
+- **The Settings purchase line** (no purchase exists on production; Stripe is off).
+- **The cold-lookup time on the server.** FEMA fails there (see item 24 and the flood fix), but flood is not part of the comparison, so a note should not wait on it; not timed.
