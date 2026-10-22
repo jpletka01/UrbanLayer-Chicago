@@ -1172,7 +1172,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not yet verified:** the drill (`inject_mismatch`: the run must go red and email) and the Monday schedule's first run. The drill sends a failure email on purpose, so it waits for Jack's go-ahead.
 
-## Item 19: confidence in the $25 report (2026-10-22)
+## Item 19: confidence in the $25 report (#90, 2026-10-22)
 
 **The report's provenance is built where the report is rendered, and a failure there never blocks a paid report.**
 - **Decision:** `render_report_html` builds the map (`report_provenance.entries_for_report`) and binds `conf_caption`, `conf_state` and `sources_rows` as Jinja globals. *Alternative:* compute it once in `_fetch_report_data`. Rejected: the admin mock path and every direct render would then miss it, and the map depends only on the finished `ReportData`.
@@ -1205,6 +1205,17 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not verified:** an admin download from production (needs an admin session, so Jack); the Spanish PDF beyond the structure (new strings are English, listed in `_UNTRANSLATED_ES`); `make kit` replay (the kit scores the Profile and chat, not the PDF).
 
+
+**Production** (2026-10-22, after the deploy of #90)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI, lint, test and deploy green; `/health` ok | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle carries the plural unit keys (`sales_one`) | `grep sales_one` on the `assets/index-*.js` the home page names |
+| Report endpoint, anonymous | answers 401, not 500 | `curl -i "https://urbanlayerchicago.com/api/report?address=1601+N+Milwaukee+Ave"` |
+| Profile | 1601 N Milwaukee still returns its 56 provenance entries | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on prod:** the rendered PDF, which needs an admin session. To check it: signed in as admin, open `https://urbanlayerchicago.com/api/report?address=1601+N+Milwaukee+Ave` (B3-2) and look for "AI · Read by AI from §17-3-0400 · … · not verified" under the setbacks and notes, an envelope caption if the lot geometry exists, the comps caption, and a Data Sources table of about 30 rows ending with the AI note. `&mock=true` shows every section populated.
 
 ## Item 20: confidence in chat (2026-10-22)
 
@@ -1244,3 +1255,4 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - **`make kit` (chat).** The plan's acceptance is "scores not below the 2026-10-01 baseline" and "a neighborhood answer states the ACS period and margin". Both need the live model, which is production credits and off limits for build work. What is proven instead: the rule's text, that the period/margin/withheld data reach the prompt input, and that a withheld value does not. Not proven: that the model follows rule 38, or that it does not over-hedge because of `figure_notes`. A kit run, or a replay with the answers read in conversation, would close it.
 - **The tract numbers above came from a scratch version of `eval/tract_confidence.py`** (same logic, 6 concurrent requests) before Census Reporter blocked my client; the committed script (one request a second) could not be re-run when I finished because the block hadn't lifted. Rerun it to confirm.
 - **Spanish:** the one new key (`neighborhood.marginNote`) is English in `es` and listed in `_untranslated.json`.
+
