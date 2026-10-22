@@ -1256,3 +1256,13 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - **The tract numbers above came from a scratch version of `eval/tract_confidence.py`** (same logic, 6 concurrent requests) before Census Reporter blocked my client; the committed script (one request a second) could not be re-run when I finished because the block hadn't lifted. Rerun it to confirm.
 - **Spanish:** the one new key (`neighborhood.marginNote`) is English in `es` and listed in `_untranslated.json`.
 
+**Production** (2026-10-22, after the deploy of #92)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI, lint, test and deploy green; `/health` ok | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle carries the rail's margin note ("90% margin of error") | `grep "90% margin of error"` on the `assets/index-*.js` the home page names |
+| Profile payload unchanged | `context` has no `provenance`, `withheld_figures` or `figure_notes`; still 56 provenance entries for 1601 N Milwaukee | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on prod:** the backend's chat path. No read-only request reaches it (the chat route spends the production key, and OpenAPI is off), so the deploy job's success is the only evidence the new image is running. To check it: ask any neighborhood question in chat and look for a "Sources for the data used" block with a period and the 90% margin-of-error level, and, in the Data panel, the tract's `±` margins. A tract with a very wide margin (a small tract's vacancy rate) should show "Not shown: …". Rule 38's effect on the answer text is not measured anywhere yet (no `make kit`).
+
