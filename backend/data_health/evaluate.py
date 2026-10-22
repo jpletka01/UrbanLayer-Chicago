@@ -57,6 +57,7 @@ class ProbeResult:
     layer_name: str | None = None
     fields: tuple[str, ...] = ()
     count: int | None = None
+    values: dict[str, tuple[str, ...]] = field(default_factory=dict)   # distinct values of the contract's value fields
     findings: list[Finding] = field(default_factory=list)
     error: ProbeError | None = None
     skipped: str | None = None           # the probe could not run here (no API key, no local file)
@@ -80,7 +81,7 @@ def _worst(parts: list[tuple[str, str]]) -> tuple[str, list[str]]:
 
 
 def contract_findings(spec: SourceSpec, probe: ProbeResult) -> list[Finding]:
-    """The cheap structural contract: layer name, required fields, feature-count band."""
+    """The structural contract: layer name, required fields, count band, value sets."""
     c = spec.contract
     if c is None:
         return []
@@ -96,6 +97,10 @@ def contract_findings(spec: SourceSpec, probe: ProbeResult) -> list[Finding]:
         lo, hi = c.count_band
         if not lo <= probe.count <= hi:
             out.append(Finding("alarm", f"{probe.count:,} features, expected {lo:,} to {hi:,}"))
+    if c.values and probe.values:
+        from backend.data_health.contracts import value_findings
+
+        out += value_findings(spec, probe.values)
     return out
 
 

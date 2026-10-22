@@ -808,7 +808,7 @@ export interface DataHealthSource {
   warn_days: number | null;
   alarm_days: number | null;
   frozen: string | null;
-  contract: { layer_name: string | null; required_fields: string[]; count_band: number[] | null } | null;
+  contract: { layer_name: string | null; required_fields: string[]; count_band: number[] | null; values?: string[] } | null;
   ack: { reason: string; until: string; owner: string } | null;
   state_since: string | null;
   checked_at: string | null;

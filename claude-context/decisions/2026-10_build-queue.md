@@ -1075,3 +1075,44 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not measured:** the rendered amber box and the paid report's warning on prod (both tested offline and the box checked against a replayed payload; the report needs a purchase or an admin download). The 06:00 timer's own first run. `docker` is not available to `jack`, so any manual run needs `sudo systemctl start`.
 
+## Item 17: contracts and daily sentinels (2026-10-22)
+
+**The fields we read come from the code, by a scanner, and the list is committed.**
+- **Decision:** `contracts --scan` takes each Socrata source's reader modules, collects every lowercase word inside a string literal, and keeps the ones that are columns of the live dataset. The result (`fields_read.json`: 37 sources, 280 columns) merges into each source's `required_fields`; a column the publisher renames or drops is an `error` on the next run. A test fails if a listed column is no longer mentioned by its modules, and if a new Socrata source with named columns has no entry.
+- **Alternatives:** hand-typed lists in the registry (37 sources, and they drift); a runtime import of each module's query constants (modules build queries inline, so there is nothing to import).
+- **Limit found while building it:** the assessor sources' own modules only *fetch* rows (`assessments.py` names `pin` and `year` and nothing else); the facts are built in `retrieval/property/__init__.py`. The first scan therefore gave `cook.assessor.values` 2 columns, not 12. `EXTRA_READERS` adds that module for the six property sources (values 2 → 12 columns, characteristics 2 → 19). Any other source whose reads happen in a different module than its fetch has the same blind spot.
+- **Heuristic:** a word that is also a column of another dataset but is read for a different purpose is included. The cost is a false alarm only if that column later vanishes, which a person would want to hear about anyway.
+
+**Value sets are three, chosen where a misread changes a fact.** Layer 1 `ZONE_CLASS` must start with a known district family (checked over all 1,526 distinct values: mostly `PD n`, plus typos like `RM4-.5` that still start with a family; every class in our zoning table starts with one, which a test asserts); layer 6 `LANDMARK` is Y or N; Address Points `st_predir` is a compass word. Wards (50) and community areas (77) have exact count bands; ward offices 45–55.
+
+**One sentinel source, not thirteen.** `internal.sentinels` (critical) runs every parcel and reports the failures in its reason. *Alternative:* a source per parcel (13 rows on the panel, 13 alarms when the City renames a layer). One alarm per cause is the point; the reason names each parcel and field.
+
+**The first live run alarmed on 8 of 13 parcels; none was a real misread, and each cause changed the design.**
+- **Coordinates.** The kit key's overlay set for P11 includes the National Register property "The Cornelia", which the Assessor centroid misses (it sits 150 m away on a large parcel) and the address point hits. The sentinels now use the point the Profile resolves the address to (Address Points), and fall back to the centroid only for a vacant lot (P2, which has no address point).
+- **`adu_area` and `tod_metra`** came back on parcels the key doesn't list them for: layer 17 now covers most of the city ("Zone 1, no limitations"; the key encodes ADU through field F for RS districts), and the key's "tod" is the CTA layer. *Alternatives:* edit the key (it is hand-verified and belongs to the kit), or alarm (permanently red). Decision: `UNCURATED_EXTRA` — finding one of these not in the key is not a mismatch; a key-listed overlay must still be found. *Revisit if* a misread of either becomes plausible: move them into the key.
+- **A string match hid an overlay finding.** When an overlay layer is down the run keeps only district findings; the first version filtered on the word "district", which also appears in `special_district`. The test caught it; the comparison is now two functions (`compare_district`, `compare_overlays`), not a text filter.
+
+**An alarm is never re-baselined automatically.** It is either a City data change (review, re-key the kit, regenerate `sentinels.json`) or our code reading it wrongly. The alarm text names the parcel and field, and flags a landmark type the key says is absent with "F8".
+
+**The F8 replay is a recorded fact, not a story.** The live layer-7 hit at P11 (survey rating orange) is a fixture; the pre-fix layer mapping applied to it derives `landmark_building`, the key says there is none, and the sentinel alarms; with today's mapping the same hits are clean. A separate test keeps layer 7 out of `OVERLAY_LAYERS`.
+
+**The positive control is 5749 W Race Ave** (Marie Schock House, designated 1999-01-20 on the official list `tdab-kixi`; layer 5 covers it). Note the list calls it L-225 and layer 5 labels it L-224: a discrepancy between the City's own sources, harmless here.
+
+**Numbers** (2026-10-22; public sources only, no model)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 1,980 → 2,013 (+33: contracts 17, sentinels 16; four existing tests updated) | `make test` |
+| Frontend tests | 470 → 471; lint 67/67 warnings, 0 errors; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Fields-read contracts | 37 sources, 280 columns (before the assessor readers: 245) | `python -m backend.data_health.contracts --scan` |
+| Live schema check | all 280 columns exist today (no `MISSING LIVE`) | same |
+| Sentinels, live | 13 of 13 match (12 kit parcels + the control); 2.7 s end to end, cold | `python -m backend.data_health.sentinels --check` |
+| First sentinel run, before the two fixes above | 5 of 13 matched; 8 flagged (7 `adu_area`, 3 `tod_metra`, 1 missing `national_register`) | same, at the first commit |
+| Full dry run | 81 sources, 106 HTTP requests in 2 to 4 s; contracts and sentinels add no `error`; the 1 alarm is the stale local Discovery index, unchanged | `python -m backend.data_health.check --dry-run` |
+
+**Not measured:**
+- The production run (needs the checker started by hand with `sudo`; the timer's first run after deploy will also show it).
+- How often the key and the live overlay set legitimately drift (one run proves nothing about the alarm rate; the first 14 days are Sentry-quiet by design).
+- Contracts on ArcGIS layers beyond layer name, count band and the two value sets (no fields-read lists for layers; the overlay readers take attributes by name inside `regulatory/`).
+- The request count of the sentinels: they use production's own clients, so the checker's HTTP tally does not include them (about 13 × 15 City map calls).
+

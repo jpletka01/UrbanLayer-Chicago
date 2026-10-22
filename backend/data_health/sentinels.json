@@ -1,0 +1,199 @@
+{
+ "kit_version": "2026-10-21.1",
+ "kit_code_current_through": "2026-06-17",
+ "sentinels": [
+  {
+   "id": "P1",
+   "address": "6247 N Rockwell St",
+   "pin": "13012120030000",
+   "lat": 41.99544816,
+   "lon": -87.69440463,
+   "district": "RS-2",
+   "overlays": [
+    "aro_zone"
+   ],
+   "control": false,
+   "basis": "City zoning layer dj47-wfun at the Assessor centroid; 17-2-0100"
+  },
+  {
+   "id": "P2",
+   "address": "1256 N Artesian Ave",
+   "pin": "16012280180000",
+   "lat": 41.9047031359,
+   "lon": -87.6886596331,
+   "district": "RM-4.5",
+   "overlays": [
+    "aro_zone",
+    "special_district"
+   ],
+   "control": false,
+   "basis": "Ordinance A7210; the Census-geocoded address point falls in an adjacent RS-3 polygon"
+  },
+  {
+   "id": "P3",
+   "address": "1500 W Wilson Ave",
+   "pin": "14171060250000",
+   "lat": 41.96548595,
+   "lon": -87.66783518,
+   "district": "B1-2",
+   "overlays": [
+    "aro_zone",
+    "ssa",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "dj47-wfun at the Assessor centroid"
+  },
+  {
+   "id": "P4",
+   "address": "401 N Wabash Ave",
+   "pin": "17101350390000",
+   "lat": 41.88892518,
+   "lon": -87.62649444,
+   "district": "PD 835",
+   "overlays": [
+    "aro_zone",
+    "planned_development",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "Ordinance 13559 (07/31/2002); PD835.pdf"
+  },
+  {
+   "id": "P5",
+   "address": "1601 N Milwaukee Ave",
+   "pin": "14313320180000",
+   "lat": 41.91085876,
+   "lon": -87.67777584,
+   "district": "B3-2",
+   "overlays": [
+    "aro_zone",
+    "historic_district",
+    "national_register",
+    "ssa",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "Ordinance 17230; the Census-geocoded address point falls in a C1-3 polygon (O2021-4070). Address spans 3 PINs, all B3-2"
+  },
+  {
+   "id": "P6",
+   "address": "3400 N Central Park Ave",
+   "pin": "13233160400000",
+   "lat": 41.9429879322,
+   "lon": -87.7178641776,
+   "district": "RS-3",
+   "overlays": [
+    "adu_area",
+    "aro_zone",
+    "special_district",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "dj47-wfun (polygon edited 2026-08-27)"
+  },
+  {
+   "id": "P7",
+   "address": "1218 W George St",
+   "pin": "14291230290000",
+   "lat": 41.93458012,
+   "lon": -87.65966119,
+   "district": "RT-4",
+   "overlays": [
+    "aro_zone",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "Ordinance O2026-0025358 (App. 23082T1), passed 2026-06-17; the address point lands in an adjacent RT-4 polygon (O2018-3982)"
+  },
+  {
+   "id": "P8",
+   "address": "233 S Wacker Dr",
+   "pin": "17162160090000",
+   "lat": 41.8786659,
+   "lon": -87.63587413,
+   "district": "DC-16",
+   "overlays": [
+    "aro_zone",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "dj47-wfun at the Assessor centroid"
+  },
+  {
+   "id": "P9",
+   "address": "3441 W Irving Park Rd",
+   "pin": "13232020060000",
+   "lat": 41.9535270891,
+   "lon": -87.7145404768,
+   "district": "B3-3",
+   "overlays": [
+    "aro_zone",
+    "ssa",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "dj47-wfun at the Assessor centroid"
+  },
+  {
+   "id": "P10",
+   "address": "1930 N Clybourn Ave",
+   "pin": "14324060010000",
+   "lat": 41.9159666,
+   "lon": -87.65713101,
+   "district": "M2-3",
+   "overlays": [
+    "aro_zone",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "dj47-wfun at the Assessor centroid"
+  },
+  {
+   "id": "P11",
+   "address": "3500 N Lake Shore Dr",
+   "pin": "14211120100000",
+   "lat": 41.94679263,
+   "lon": -87.64286609,
+   "district": "RM-6.5",
+   "overlays": [
+    "aro_zone",
+    "lakefront_protection",
+    "national_register"
+   ],
+   "control": false,
+   "basis": "dj47-wfun at the Assessor centroid"
+  },
+  {
+   "id": "P12",
+   "address": "368 W Chicago Ave",
+   "pin": "17044360170000",
+   "lat": 41.89681969,
+   "lon": -87.6382892,
+   "district": "C2-5",
+   "overlays": [
+    "aro_zone",
+    "tod_cta"
+   ],
+   "control": false,
+   "basis": "dj47-wfun at the Assessor centroid"
+  },
+  {
+   "id": "C1",
+   "address": "5749 W Race Ave",
+   "pin": "16082210010000",
+   "lat": 41.88982945,
+   "lon": -87.76968812,
+   "district": "RS-3",
+   "overlays": [
+    "adu_area",
+    "aro_zone",
+    "landmark_building",
+    "national_register",
+    "tod_cta"
+   ],
+   "control": true,
+   "basis": "Positive control: a designated individual Chicago Landmark (official list data.cityofchicago.org tdab-kixi; layer 5 covers it). Review before committing."
+  }
+ ]
+}

@@ -47,6 +47,23 @@ describe("sortSources", () => {
   });
 });
 
+describe("DataHealthSection — contract column (WS6 M4)", () => {
+  it("says what each source's daily contract checks, and lists it on hover", async () => {
+    vi.mocked(fetchDataHealth).mockResolvedValue(health({}, [
+      src("chi.zoning.districts", "ok", {
+        contract: { layer_name: "Zoning Boundaries", required_fields: ["ZONE_CLASS", "ORDINANCE_NUM"], count_band: [14131, 15618], values: ["ZONE_CLASS"] },
+      }),
+      src("chi.crime", "ok", { contract: null }),
+    ]));
+    render(<DataHealthSection />);
+    await waitFor(() => expect(screen.getByTestId("dh-table")).toBeTruthy());
+    const cell = screen.getByText("2 fields · 1 value set · count band · layer name");
+    expect(cell.getAttribute("title")).toContain("Fields read: ZONE_CLASS, ORDINANCE_NUM");
+    expect(cell.getAttribute("title")).toContain("Value sets: ZONE_CLASS");
+    expect(cell.getAttribute("title")).toContain("Count band: 14131–15618");
+  });
+});
+
 describe("DataHealthSection — admin 'Data health' panel", () => {
   it("lists the worst source first, with its state and counts", async () => {
     vi.mocked(fetchDataHealth).mockResolvedValue(
