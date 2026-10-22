@@ -532,7 +532,9 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="artifact.zoning_cache", name="Precomputed zoning standards cache", publisher="UrbanLayer", tier="ai_extracted",
         kind="artifact", locator="ingestion/data/zoning_cache.json", probe="zoning_cache",
         owner_modules=("backend/zoning_cache.py", "backend/zoning_cache_build.py"), surfaces=("report",),
-        fact_keys=("zoning.setbacks",), severity="critical", availability_only=True,
+        fact_keys=("zoning.setbacks", "zoning.permitted_uses", "zoning.special_uses", "zoning.parking", "zoning.notes",
+                   "zoning.envelope"),
+        severity="critical", availability_only=True,
         note="Its vintage must equal the code vintage. M5 writes code_vintage into _meta; until then the rebase record is read.",
     ),
     SourceSpec(

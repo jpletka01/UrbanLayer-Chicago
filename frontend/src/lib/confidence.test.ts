@@ -146,6 +146,13 @@ describe("withheld figures say why", () => {
     expect(c.parts).toEqual([]);
   });
 
+  it("agrees the unit with the count: one sale, two sales", () => {
+    const one = captionParts(comps(1, { confidence: "withheld", confidence_reasons: ["small_sample"] }), t);
+    expect(one.withheld).toBe("Not shown: only 1 sale (needs 3).");
+    expect(captionParts(comps(1), t).parts[0]).toBe("1 sale");
+    expect(captionParts(comps(8), t).parts[0]).toBe("8 sales");
+  });
+
   it("too small an area sample uses the area minimum", () => {
     const e = entry({
       tier: "our_calculation", confidence: "withheld", confidence_reasons: ["small_sample"],

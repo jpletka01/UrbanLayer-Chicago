@@ -1172,3 +1172,36 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not yet verified:** the drill (`inject_mismatch`: the run must go red and email) and the Monday schedule's first run. The drill sends a failure email on purpose, so it waits for Jack's go-ahead.
 
+## Item 19: confidence in the $25 report (2026-10-22)
+
+**The report's provenance is built where the report is rendered, and a failure there never blocks a paid report.**
+- **Decision:** `render_report_html` builds the map (`report_provenance.entries_for_report`) and binds `conf_caption`, `conf_state` and `sources_rows` as Jinja globals. *Alternative:* compute it once in `_fetch_report_data`. Rejected: the admin mock path and every direct render would then miss it, and the map depends only on the finished `ReportData`.
+- A failure to build it is logged and leaves the captions quiet (an existing test hands the renderer a mock object; the first version raised on it, which is how I found the guard was needed).
+- The report reuses the Profile's `build_provenance`, so the two surfaces can't disagree about a figure's tier or date.
+
+**AI labels appear only where the cache holds AI-read data, and the report claims nothing else.** The cache's setbacks, permitted and special uses, parking and notes are tier E (`ai_read_code`, "not verified", the district's code section, the code vintage the cache was checked against); FAR, height and the lot standards stay with the Title 17 table (tier B, no caption). The envelope is tier D built on E ("built on AI-read setbacks"); it exists only when AI-read setbacks do. When the standards came from the table fallback (`extraction_confidence` low or `definitions`), no entry is made and nothing is called AI-read. *Evidence, three real parcels rendered from live public data (no model):*
+- 1601 N Milwaukee (B3-2): AI labels on setbacks and notes (§17-3-0400); the comps median "Not shown: only 1 sale".
+- 642 W Belden (RT-4, the taxable control): one AI label, on notes (§17-2-0300): the residential cache entries hold notes but no setbacks.
+- 481 W Deming (the exempt control): no AI label and no AI row in the table (served from the table); the comps median is faded ("Low confidence · 3 sales · 0.55 mi · 3 yr (search widened)").
+- **So the plan's acceptance, "shows the AI labels", is parcel-dependent.** A residential parcel shows few; I kept it honest rather than label what isn't AI-read. If AI setbacks for residential districts matter to the report, that is a cache-content question (a rebuild needs the production key), not a rendering one.
+
+**The sources table is generated and the static one is gone.** One row per source actually used (registry name, publisher, authority class, how current, what it supplied), strongest authority first. 48 catalog keys (24 per language) went with the old rows, which named eight categories whether or not the report used them. Real counts: 33 rows (1601 N Milwaukee), 27 (642 W Belden), 23 (481 W Deming). A survey or tax year shows as its period ("2020–2024", "2024"), not "December 31, 2024"; the backend's one-year range "2003–2003" shows as "2003".
+
+**Quiet by default, with the same words as the Profile.** `caption()` mirrors `frontend/src/lib/confidence.ts` (tier C–F, low or withheld, or a source over 24 months old). In the PDF a standard official record prints nothing. The report's own comps gate (median only for 3 or more sales) already matched the standard; the per-sqft median is now also hidden when the backend withholds it.
+
+**Fixed along the way: "only 1 sales".** The unit didn't agree with the count on the Profile (item 15) or in the new report. Both now use plural keys (`confidence.unit.sales_one/_other`, `conf.unit.sales__one/__other`) with tests for one and many.
+
+**The PDF layout needed one fix, found by looking at it.** The sources heading and its intro paragraph sat alone at the foot of a page with the table on the next; the intro now keeps with the table (`page-break-after: avoid`). The 1601 N Milwaukee PDF is 24 pages; the sources table starts on page 21.
+
+**Numbers** (2026-10-22; public data, no model, no purchase)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,033 → 2,051 (+18) | `make test` |
+| Frontend tests | 471 → 476 (unit-plural cases, locale guard); lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Sources table rows | 33 / 27 / 23 for 1601 N Milwaukee / 642 W Belden / 481 W Deming; every row resolves to a registry name | render script over `_fetch_report_data` + `render_report_html` (scratch) |
+| Captions on those pages | 3 / 1 / 1 (setbacks, notes, comps; notes; comps) | same |
+| Live Profile provenance as a table input (56 entries) | 20 or more rows; 27 of 56 entries would caption (13 are ACS tract figures, tier C) | `test_report_sources_table.py` |
+
+**Not verified:** an admin download from production (needs an admin session, so Jack); the Spanish PDF beyond the structure (new strings are English, listed in `_UNTRANSLATED_ES`); `make kit` replay (the kit scores the Profile and chat, not the PDF).
+

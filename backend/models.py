@@ -1139,6 +1139,9 @@ class ReportData(BaseModel):
     # the INV-5 disclosure on the report cover when resolution was degraded.
     resolved_pin: str | None = None
     resolved_confidence: str | None = None
+    # WS0 M5: where each figure came from and how far to trust it (report_provenance.entries_for_report),
+    # filled when the report is rendered; the Data Sources table is built from it.
+    provenance: dict[str, dict] = Field(default_factory=dict)
     # V5 synthesis fields
     opportunities: list[dict] = Field(default_factory=list)
     constraints: list[dict] = Field(default_factory=list)

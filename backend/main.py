@@ -2160,6 +2160,22 @@ def render_report_html(report_data, language: str = "en", report_date: str | Non
     env.filters["rdate"] = lambda iso: report_i18n.format_report_date(chicago_day(iso), language) if iso else _na
     env.globals["t"] = _t
     env.globals["tn"] = report_i18n.make_plural(language)
+    # Per-figure confidence (WS0 M5): the Profile's provenance for this parcel plus the report's own AI readings.
+    from backend import report_provenance
+    from backend.zoning_cache import get_cached_zoning_meta
+
+    try:
+        standards = report_data.zoning_standards
+        zone = report_data.context.parcel_zoning.zone_class if report_data.context.parcel_zoning else None
+        ai_meta = None
+        if standards is not None and standards.extraction_confidence in ("high", "medium"):
+            ai_meta = get_cached_zoning_meta(zone) or {"sections": [], "code_vintage": None}
+        report_data.provenance = report_provenance.entries_for_report(report_data, ai_meta)
+    except Exception:
+        # Confidence captions must never stop a paid report from rendering: without a map they stay quiet.
+        log.warning("report provenance failed; rendering without confidence captions", exc_info=True)
+        report_data.provenance = {}
+    env.globals.update(report_provenance.helpers(report_data.provenance, _t, language))
     return env.get_template("zoning_report.html").render(
         report=report_data,
         report_date=report_date or report_i18n.format_report_date(date.today(), language),

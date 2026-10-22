@@ -110,11 +110,16 @@ function fmtAsOf(entry: Provenance): string | null {
   return formatDay(entry.as_of);
 }
 
+/** "1 sale", "2 sales": the unit agrees with the count (i18next plural keys `confidence.unit.<unit>_one/_other`). */
+function unitText(t: TFunction, unit: string | null | undefined, n: number): string {
+  return unit ? t(`confidence.unit.${unit}`, { count: n, defaultValue: unit }) : "";
+}
+
 function withheldSentence(entry: Provenance, t: TFunction): string {
   const reasons = entry.confidence_reasons ?? [];
   const reason = WITHHOLD_REASONS.find((r) => reasons.includes(r));
   const cov = entry.coverage ?? {};
-  const unit = cov.unit ? t(`confidence.unit.${cov.unit}`, { defaultValue: cov.unit }) : "";
+  const unit = unitText(t, cov.unit, cov.n ?? 0);
   if (reason === "small_sample") {
     const min = cov.sample === "comps" ? DISPLAY_THRESHOLDS.compsHideNBelow : DISPLAY_THRESHOLDS.hideNBelow;
     return t("confidence.withheld.small_sample", { n: cov.n ?? 0, unit, min });
@@ -173,7 +178,7 @@ export function captionParts(entry: Provenance | null | undefined, t: TFunction,
   // How much it covers.
   if (cov?.n != null && cov.unit) {
     parts.push(t("confidence.sampleN", {
-      n: cov.n.toLocaleString("en-US"), unit: t(`confidence.unit.${cov.unit}`, { defaultValue: cov.unit }),
+      n: cov.n.toLocaleString("en-US"), unit: unitText(t, cov.unit, cov.n),
     }));
   }
   if (comps) parts.push(comps);
@@ -235,7 +240,7 @@ export function sourceBullets(entry: Provenance | null | undefined, t: TFunction
   if (cov && (cov.n != null || cov.share != null)) {
     const bits = [
       cov.n != null && cov.unit
-        ? t("confidence.sampleN", { n: cov.n.toLocaleString("en-US"), unit: t(`confidence.unit.${cov.unit}`, { defaultValue: cov.unit }) })
+        ? t("confidence.sampleN", { n: cov.n.toLocaleString("en-US"), unit: unitText(t, cov.unit, cov.n) })
         : null,
       cov.share != null ? t("confidence.coverage", { pct: Math.round(cov.share * 100) }) : null,
     ].filter(Boolean);

@@ -276,6 +276,10 @@ tr.summary td { border-top: 2px solid #374151; font-weight: 600; }
 }
 
 /* Disclaimer */
+/* WS0 M5: confidence captions under figures (quiet by default; see report_provenance.py) */
+.conf { font-size: 7.5pt; color: #6b7280; line-height: 1.35; margin: 2pt 0 5pt 0; }
+.conf-ai { font-family: "JetBrains Mono", monospace; font-size: 6.5pt; border: 0.5pt solid #9ca3af; border-radius: 2pt; padding: 0 2pt; margin-right: 3pt; color: #374151; }
+.conf-low { color: #b45309; font-weight: 600; }
 .disclaimer {
   background: #fef3c7;
   border: 1px solid #f59e0b;
@@ -345,6 +349,9 @@ a.glossary-link {
 </style>
 </head>
 <body>
+{# A figure's confidence caption: nothing for a standard official record, else who read it, how old, how sure. #}
+{% macro conf_line(fact) %}{% set c = conf_caption(fact) %}{% if c %}<div class="conf" data-conf="{{ fact }}">{% if c.ai %}<span class="conf-ai">{{ t("conf.ai") }}</span>{% endif %}{% if c.lead %}<span class="conf-low">{{ c.lead }}</span>{% if c.text %} · {% endif %}{% endif %}{{ c.text }}</div>{% endif %}{% endmacro %}
+
 
 {% macro currency_table(rows) %}
   <table>
@@ -732,6 +739,7 @@ a.glossary-link {
     {% if standards.rear_setback_ft is not none %}<tr><td>{{ t("zoning.rear_yard") }}</td><td>{{ standards.rear_setback_ft }}</td></tr>{% endif %}
     </tbody>
   </table>
+  {{ conf_line("zoning.setbacks") }}
 
   {% if report.envelope_summary %}
   <h3>{{ t("zoning.envelope_summary") }}</h3>
@@ -746,17 +754,20 @@ a.glossary-link {
     {% endif %}
   </div>
   {% endif %}
-  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("zoning.envelope_note") }}</p>
+  <p style="font-size: 7pt; color: #888; margin-top: 2pt;">{{ t("zoning.envelope_note") }}{% if conf_caption("zoning.envelope") %} {{ t("conf.envelope_caption") }}{% endif %}</p>
+  {{ conf_line("zoning.envelope") }}
   {% endif %}
 
   {% if standards.permitted_uses %}
   <h3>{{ t("zoning.permitted_uses") }}</h3>
   <p style="font-size: 9pt;">{{ standards.permitted_uses | join(", ") }}</p>
+  {{ conf_line("zoning.permitted_uses") }}
   {% endif %}
 
   {% if standards.special_uses %}
   <h3>{{ t("zoning.special_uses") }}</h3>
   <p style="font-size: 9pt;">{{ standards.special_uses | join(", ") }}</p>
+  {{ conf_line("zoning.special_uses") }}
   {% endif %}
 
   {% if standards.parking_residential or standards.parking_commercial %}
@@ -765,6 +776,7 @@ a.glossary-link {
     {% if standards.parking_residential %}<dt>{{ t("zoning.parking_residential") }}</dt><dd>{{ standards.parking_residential }}</dd>{% endif %}
     {% if standards.parking_commercial %}<dt>{{ t("zoning.parking_commercial") }}</dt><dd>{{ standards.parking_commercial }}</dd>{% endif %}
   </dl>
+  {{ conf_line("zoning.parking") }}
   {% endif %}
 
   {% if standards.notes %}
@@ -774,6 +786,7 @@ a.glossary-link {
     <li>{{ note }}</li>
     {% endfor %}
   </ul>
+  {{ conf_line("zoning.notes") }}
   {% endif %}
 
   {% elif standards and standards.extraction_confidence == "low" %}
@@ -1100,6 +1113,7 @@ a.glossary-link {
   {% if comps and comps.sales_volume %}
   <h3>{{ t("market.comp_sales_heading_pre") }}<a href="#glossary-arms-length" class="glossary-link">{{ tn("market.comp_sales_link_full", comps.sales_volume, n=comps.sales_volume) }}</a>)</h3>
 
+  {{ conf_line("property.comps.median_price") }}
   {% if report.comp_valuation %}
   {% set cv = report.comp_valuation %}
   <div class="dev-potential" style="background: #fefce8; border-color: #fde68a;">
@@ -1122,7 +1136,7 @@ a.glossary-link {
       <br><span style="font-size: 8pt; color: #92400e;">{{ t("market.too_few_sales") }}</span>
     </div>
     {% endif %}
-    {% if cv.median_price_per_bldg_sqft %}
+    {% if cv.median_price_per_bldg_sqft and conf_state("property.comps.median_price_per_bldg_sqft") != "withheld" %}
     <div class="detail" style="margin-top: 4pt;">{{ t("market.median_per_sqft") }}<strong>${{ "%.0f"|format(cv.median_price_per_bldg_sqft) }}</strong> <span style="font-size: 7pt; color: #92400e;">{{ t("market.median_per_sqft_hint") }}</span></div>
     {% endif %}
     {% if not cv.data_limited %}
@@ -1392,6 +1406,7 @@ a.glossary-link {
 
   {% if crime %}
   <h3>{{ t("site.crime_heading") }}</h3>
+  {{ conf_line("area.crime") }}
   <p style="font-size: 9pt;">
     {{ t("site.crime_body", total=crime.total, rate="%.0f"|format(crime.arrest_rate * 100)) }}
     {% if crime.yoy %}
@@ -1615,19 +1630,19 @@ a.glossary-link {
   {% endif %}
 
   <h3>{{ t("data.sources") }}</h3>
-  <table>
-    <thead><tr><th>{{ t("data.th_category") }}</th><th>{{ t("data.th_source") }}</th><th>{{ t("data.th_notes") }}</th></tr></thead>
+  <p style="font-size: 8.5pt; margin-bottom: 6pt; page-break-after: avoid;">{{ t("conf.sources_intro") }}</p>
+  {% set rows = sources_rows() %}
+  <table data-testid="sources-table">
+    <thead><tr><th>{{ t("conf.th_source") }}</th><th>{{ t("conf.th_published_by") }}</th><th>{{ t("conf.th_authority") }}</th><th>{{ t("conf.th_as_of") }}</th><th>{{ t("conf.th_used_for") }}</th></tr></thead>
     <tbody>
-    <tr><td>{{ t("data.row_property_cat") }}</td><td>{{ t("data.row_property_src") }}</td><td>{{ t("data.row_property_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_zoning_cat") }}</td><td>{{ t("data.row_zoning_src") }}</td><td>{{ t("data.row_zoning_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_regulatory_cat") }}</td><td>{{ t("data.row_regulatory_src") }}</td><td>{{ t("data.row_regulatory_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_incentives_cat") }}</td><td>{{ t("data.row_incentives_src") }}</td><td>{{ t("data.row_incentives_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_demographics_cat") }}</td><td>{{ t("data.row_demographics_src") }}</td><td>{{ t("data.row_demographics_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_crime_cat") }}</td><td>{{ t("data.row_crime_src") }}</td><td>{{ t("data.row_crime_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_permits_cat") }}</td><td>{{ t("data.row_permits_src") }}</td><td>{{ t("data.row_permits_notes") }}</td></tr>
-    <tr><td>{{ t("data.row_aro_cat") }}</td><td>{{ t("data.row_aro_src") }}</td><td>{{ t("data.row_aro_notes") }}</td></tr>
+    {% for r in rows %}
+    <tr data-source="{{ r.source_id }}"><td>{{ r.name }}</td><td>{{ r.publisher }}</td><td>{{ r.authority }}</td><td>{{ r.as_of }}</td><td>{{ r.used }}</td></tr>
+    {% endfor %}
     </tbody>
   </table>
+  {% if rows | selectattr("tier", "equalto", "ai_extracted") | list %}
+  <p style="font-size: 8pt; color: #6b7280; margin-top: 4pt;">{{ t("conf.sources_ai_note") }}</p>
+  {% endif %}
 
   <hr style="border: none; border-top: 1px solid #374151; margin: 16pt 0;">
 
