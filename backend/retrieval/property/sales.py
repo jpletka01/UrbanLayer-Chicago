@@ -50,9 +50,9 @@ async def get_sales(
         _cache.set(key, result)
         return result
     except Exception as exc:
+        # Raise, and cache nothing: a failed call is not "no sales on record" (WS6 M7).
         log.warning("CCAO sales failed for PIN %s: %s", pin14, exc)
-        _cache.set(key, _NOT_FOUND)
-        return []
+        raise
 
 
 def _normalize_pin(pin: str) -> str:
@@ -298,5 +298,8 @@ async def _query_comps(
         return {"summary": summary, "sales": comps}
 
     except Exception as exc:
+        # Raise: an empty result here meant "no comps nearby" to the caller, which cached it for an hour and
+        # showed the market module as absent. The callers already turn an exception into "comparable sales"
+        # in partial_failures (WS6 M7).
         log.warning("Comparable sales failed for (%s, %s): %s", lat, lon, exc)
-        return {"summary": {}, "sales": []}
+        raise

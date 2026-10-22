@@ -28,6 +28,7 @@ import httpx
 
 from backend import report_i18n
 from backend.config import get_settings
+from backend.data_health import failures
 from backend.models import (
     ComparableSale,
     ComparablesSummary,
@@ -765,13 +766,9 @@ async def _fetch_report_data(
     # Gather v2 results
     v2_done = await asyncio.gather(*v2_tasks.values(), return_exceptions=True)
     v2_results: dict[str, Any] = {}
-    _V2_FAILURE_MAP = {
-        "adjacent_zoning": "adjacent zoning",
-        "address_permits": "address-specific permits",
-        "address_violations": "address-specific violations",
-        "comparable_sales": "comparable sales",
-        "nearby_construction": "nearby construction activity",
-    }
+    _V2_FAILURE_MAP = {k: failures.label(k) for k in (
+        "adjacent_zoning", "address_permits", "address_violations", "comparable_sales", "nearby_construction",
+    )}
     for key, value in zip(v2_tasks.keys(), v2_done):
         if isinstance(value, Exception):
             log.warning("Report v2 retrieval %s failed: %s", key, value)

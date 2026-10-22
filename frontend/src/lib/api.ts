@@ -1,5 +1,6 @@
 import i18n from "./i18n";
 import type { DataDate } from "./dataDates";
+import type { FailedSource } from "./failedSources";
 import { parseSSE } from "./sse";
 import { flush, getVisitorId, track } from "./tracking";
 import type {
@@ -1011,6 +1012,8 @@ export interface ScorecardResponse {
   provenance?: Record<string, Provenance>;
   /** The dates behind this page, in reading order (backend/data_health/vintages.py). */
   data_dates?: DataDate[];
+  /** What couldn't be checked, by source key, with the words that reported it (backend/data_health/failures.py). */
+  failed_sources?: FailedSource[];
   /** How the address became this parcel: method, every parcel at the address, disagreements. */
   resolution?: ParcelResolutionRecord;
   // True when the address-scoped violation lookup actually ran (parsed + queried).

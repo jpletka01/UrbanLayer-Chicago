@@ -1296,3 +1296,42 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not verified:** production (the report PDF needs an admin session, and the store-backed "through" dates for sales and violations only exist there); the Spanish pages beyond structure (new wording is English, listed in `_UNTRANSLATED_ES` and `_untranslated.json`); the chat footer end to end against the live model (no key used).
 
+
+## Item 22: partial failures, shown honestly (2026-10-22)
+
+**The overlay half of M7 shipped in item 1; what was left turned out to be where the real silence was.** Overlays already said "couldn't check". The plan's list for the rest was module rows, a chat line, a report notice and live telemetry. Forcing the Assessor sales source to fail (the new fault flag, below) showed a worse gap: **the Profile lost its comps and its sales history and `partial_failures` stayed empty.** Reading why:
+- `get_assessments` and `get_sales` caught an error, **cached "none on file" for 24 hours** and returned empty;
+- the comparable-sales query caught an error and returned "no comps", which its caller **cached for an hour**;
+- `get_characteristics` swallowed the error and returned None.
+
+So an outage of the Assessor's feed would read as "no sales, no comps" for up to a day, with no caveat. *Evidence:* an AST scan of `backend/retrieval` for `except` handlers that store a negative result in a cache finds exactly three (assessments, sales, address points); address points' is a parse guard, not an outage, and the other two are fixed. All four calls now **raise and cache nothing**; the property domain (already built to catch exceptions) turns that into a gap, and the comps callers (scorecard, report) already turned an exception into "comparable sales". Five existing tests asserted the old behavior, including one named `test_negative_cache_prevents_retry` for the failure case; I rewrote them to say a failure raises and is not cached while a genuinely empty answer still is.
+- **A gap is not always a failure.** `property assessments` and `property tax estimate` also appear for an exempt parcel, which has none. Showing "couldn't check" there would be false, so `PropertySummary.failed_calls` holds only the gaps that were a call failing, and only those go to the Profile's `partial_failures` (`test_a_record_the_source_does_not_have_is_a_gap_but_not_a_failed_call`). Chat already carried every gap.
+
+**One table of what failed.** Three places had their own label dicts (chat retrieval, scorecard, report) and one literal ("comparable sales"). They now draw from `data_health/failures.py` (`LABELS`, `MODULES`, `failed_detail`), so the Profile, chat and report agree. `/api/scorecard` carries `failed_sources: [{key, labels}]`: the key places a failure in a module, the labels (what actually reported it, e.g. "property sales history") word it. The frontend's module table equals the backend's; a pytest reads the TypeScript and compares.
+
+**Surfaces.**
+- **Profile:** each of the five modules (Build, Costs, Market, Record, Area) shows an `UncheckedRow` at its head when its source failed, and a module with nothing else in it now stays on the page and the section rail. The Regulatory card keeps its own overlay row, so a `regulatory` failure only gets the module row when there is no card. The verdict has its own caveat when the district lookup failed ("can't say what district the parcel is in") instead of burying "parcel zoning" in the generic list.
+- **Chat:** a `**Couldn't check today:**` line, written by us, after the sources block (or alone when there are none), so honesty no longer depends on the model following prompt rule 16.
+- **Report:** a notice at the head of each section that left a source out (zoning, property, market, financial, site condition), using the words that reported it; the cover's "Not checked" line is item 21's.
+
+**Live failure rate, in a file the app owns.** `live.py` counts each call's outcome per registry source (once per call, not per retry) in `socrata_get`, the overlay layers, the zoning layer and the census tract call; an hourly flush writes `backend/data/data_health_live.db`; the checker reads the last 24 hours (over 20% of at least 10 calls is `warn`, over 50% `alarm`). *Alternative:* the app writing into `data_health.db`. Rejected: that file has one writer by design (the checker), read-only for the app; two writers across two containers is what its journal mode was chosen to avoid. Telemetry never raises, drops ids the registry doesn't know, and keeps the counts if a flush fails (all pinned by tests).
+- **Not counted yet:** the other ArcGIS layers (parcels, FEMA, EPA, HUD), Walk Score, the Clerk. *Revisit if:* an outage shows up on one of those first.
+- **No threshold has met real traffic.** 20% and 50% are the plan's numbers; production has no live counts yet, so the false-alarm rate is unknown.
+
+**The fault flag, generalized.** `DATA_HEALTH_FAULT` already forced an overlay layer to fail (M7a). It now also takes `socrata:<dataset>` and `source:<registry id>` (several joined by `;`), is ignored when `environment=production`, and logs loudly at startup when set. *Evidence, run locally from live public data:* with `overlay:5` the Profile's Regulatory card says "couldn't check landmark designation", the verdict is caveated and the hero lists it, and nothing says "not a landmark"; with `source:chi.zoning.districts;source:chi.crime;source:cook.assessor.sales` the Build, Costs, Market and Area modules each show their row and the verdict names the district.
+
+**Numbers** (2026-10-22; public data, no model)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,085 → 2,115 (+30 in `test_partial_failures.py`; 5 old tests rewritten) | `make test` |
+| Frontend tests | 512 → 524 (+7 for the row and the table, +1 verdict, +4 untranslated-key guards); lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Mobile overflow audit | 40 of 40 | `cd frontend && npm run test:mobile` |
+| Failure-caching sites in `backend/retrieval` | 3 found, 2 real (fixed), 1 parse guard | AST scan in the decision text |
+| Fault run: forced sources → modules that say so | 4 of 5 modules, plus the verdict and the hero line | `DATA_HEALTH_FAULT=...` as above |
+
+**Not measured / not verified:**
+- How often production sources fail (no live counts exist until a day after deploy), and the checker's behavior on them. After the deploy `backend/data/data_health_live.db` appears within an hour; the next daily check reads it.
+- The chat footer line and the report sections are pinned by tests, not seen end to end on production (the chat route spends the key; the report needs an admin session).
+- About 70 `except Exception` blocks remain in the retrieval layer. I audited the ones that *cache* a failure, not each one that swallows an error and returns empty; flood, the incentive layers (QCT, OZ, NMTC), Walk Score and the parcel lookups are the next to read.
+- Spanish: the new Profile strings are English, listed in `_untranslated.json`; the report's new notice is English in `_UNTRANSLATED_ES`.

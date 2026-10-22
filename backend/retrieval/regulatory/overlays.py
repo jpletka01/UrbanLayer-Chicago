@@ -6,7 +6,6 @@ This generalizes the point-query pattern from ``zoning.py`` (layer 1).
 
 import asyncio
 import logging
-import os
 from dataclasses import dataclass, field
 
 import httpx
@@ -49,14 +48,10 @@ class OverlayResults:
 
 
 def _faulted_layers() -> set[int]:
-    """Layers forced to fail via ``DATA_HEALTH_FAULT=overlay:5[,6]`` (never in production)."""
-    spec = os.environ.get("DATA_HEALTH_FAULT", "")
-    if not spec.startswith("overlay:"):
-        return set()
-    from backend.config import get_settings
-    if get_settings().environment == "production":
-        return set()
-    return {int(x) for x in spec.split(":", 1)[1].split(",") if x.strip().isdigit()}
+    """Layers forced to fail via ``DATA_HEALTH_FAULT=overlay:5[,6]`` (never in production; see data_health/live.py)."""
+    from backend.data_health import live
+
+    return {int(x) for x in live.fault_ids("overlay") if x.isdigit()}
 
 ZONING_BASE_URL = (
     "https://gisapps.chicago.gov/arcgis/rest/services"
@@ -99,7 +94,11 @@ async def query_overlay_checked(
     Returns the first feature's attributes dict, or ``None`` when the point is in no
     feature. Raises :class:`OverlayLayerError` when the layer couldn't be checked.
     """
-    if layer_id in _faulted_layers():
+    from backend.data_health import live
+
+    sid = live.source_for_overlay(OVERLAY_LAYERS[layer_id]["type"]) if layer_id in OVERLAY_LAYERS else None
+    if layer_id in _faulted_layers() or live.fault("overlay", layer_id, sid):
+        live.record(sid, False)
         raise OverlayLayerError(f"layer {layer_id}: forced by DATA_HEALTH_FAULT")
     url = f"{ZONING_BASE_URL}/{layer_id}/query"
     params = {
@@ -124,12 +123,14 @@ async def query_overlay_checked(
             features = data.get("features")
             if features is None:
                 raise OverlayLayerError(f"layer {layer_id}: no 'features' in response")
+            live.record(sid, True)
             if not features:
                 return None
             return features[0].get("attributes", {})
         except Exception as exc:
             last_exc = exc
     log.warning("Overlay query layer %d failed for (%s, %s): %s", layer_id, lat, lon, last_exc)
+    live.record(sid, False)
     raise OverlayLayerError(str(last_exc)) from last_exc
 
 

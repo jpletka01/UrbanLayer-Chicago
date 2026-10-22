@@ -38,8 +38,12 @@
     "scorecard.highRiskFlagsOurs",
     "scorecard.takeaway.marketWithheld_one",
     "scorecard.takeaway.marketWithheld_other",
+    "scorecard.unchecked.body",
+    "scorecard.unchecked.mapLink",
+    "scorecard.unchecked.title",
     "scorecard.verdict.caveat.overlayUnchecked",
     "scorecard.verdict.caveat.passedNotOnMap",
+    "scorecard.verdict.caveat.zoningUnchecked",
     "scorecard.zoningCard.laterAmendments_one",
     "scorecard.zoningCard.laterAmendments_other",
     "scorecard.zoningCard.passedNotOnMap"

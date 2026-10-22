@@ -759,6 +759,8 @@ _EN: dict[str, str] = {
     "cover.generated_on": "Generated on",
     "cover.data_as_of": "Data as of",
     "cover.not_checked": "Not checked in this report:",
+    "data.unchecked_section": "Couldn't check:",
+    "data.unchecked_section_body": "{items} did not answer when this report was generated, so the figures that depend on it are missing or incomplete here. That is not the same as none on record.",
 }
 
 _ES: dict[str, str] = {
@@ -1467,6 +1469,8 @@ _ES: dict[str, str] = {
     "cover.generated_on": "Generated on",
     "cover.data_as_of": "Data as of",
     "cover.not_checked": "Not checked in this report:",
+    "data.unchecked_section": "Couldn't check:",
+    "data.unchecked_section_body": "{items} did not answer when this report was generated, so the figures that depend on it are missing or incomplete here. That is not the same as none on record.",
 }
 
 # Spanish keys still carrying the English text, for WS7 to translate. The guard in
@@ -1558,6 +1562,8 @@ _UNTRANSLATED_ES: frozenset[str] = frozenset({
     "cover.generated_on",
     "cover.data_as_of",
     "cover.not_checked",
+    "data.unchecked_section",
+    "data.unchecked_section_body",
     "zoning.passed_not_on_map_heading",
     "zoning.passed_not_on_map",
     "oc.tod_street.signal",

@@ -40,6 +40,7 @@ type Mk = {
   approximate?: boolean;
   partial?: string[];
   unchecked?: string[];
+  failed?: { key: string; labels: string[] }[];
   gaps?: string[];
   cityOwned?: boolean;
   scofflaw?: boolean;
@@ -118,6 +119,7 @@ function mk(o: Mk): ScorecardResponse {
     address: "1 Test St",
     context,
     partial_failures: o.partial ?? [],
+    failed_sources: o.failed ?? [],
     resolved_pin: o.unverified ? null : "12345678901234",
     resolved_confidence: o.approximate || o.unverified ? "approximate" : "authoritative",
     nearest_parcel_unverified: !!o.unverified,
@@ -492,6 +494,16 @@ describe("scorecardVerdict — overlays the City map couldn't answer (WS6 M7a)",
     const v = computeVerdict(mk({ ...strong, unchecked: ["aro_zone"], gaps: [aro], partial: [aro] }), t);
     expect(v.confidence).toBe("caveated");
     expect(v.caveats).not.toContain("scorecard.verdict.caveat.overlayUnchecked");
+  });
+
+  it("a district lookup that failed says so, once, and the verdict is not confident", () => {
+    const v = computeVerdict(mk({ noZone: true, noProperty: true, partial: ["parcel zoning", "crime statistics"], failed: [{ key: "zoning", labels: ["parcel zoning"] }, { key: "crime", labels: ["crime statistics"] }] }), t);
+    expect(v.category).toBe("insufficient_data");
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).toContain("scorecard.verdict.caveat.zoningUnchecked");
+    const partial = v.caveats.find((c) => c.startsWith("scorecard.verdict.caveat.partial"));
+    expect(partial).toContain("crime statistics");
+    expect(partial).not.toContain("parcel zoning");
   });
 
   it("everything checked: no overlay caveat (unchanged)", () => {

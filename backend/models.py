@@ -477,6 +477,9 @@ class PropertySummary(BaseModel):
     sales_history: list[SaleRecord] = Field(default_factory=list)
     parcel_geometry: dict | None = None
     data_gaps: list[str] = Field(default_factory=list)
+    # The subset of those that are a call that FAILED (a source didn't answer), as opposed to a figure the
+    # source has no record of (no assessments for an exempt parcel). Only these are "couldn't check" (WS6 M7).
+    failed_calls: list[str] = Field(default_factory=list)
     assessor_permits: AssessorPermitSummary | None = None
 
 

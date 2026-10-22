@@ -249,7 +249,8 @@
         "scofflaw": "On the Building Code Scofflaw List — unresolved enforcement against this building; budget for compliance.",
         "strProhibited": "Short-term rentals are prohibited on this block (precinct owner opt-out) — relevant if you're underwriting STR income.",
         "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
-        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date."
+        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
+        "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows."
       },
       "next": {
         "strong": {
@@ -503,7 +504,12 @@
         "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
       }
     },
-    "highRiskFlagsOurs": "Flag list is ours, chosen from 311 request types."
+    "highRiskFlagsOurs": "Flag list is ours, chosen from 311 request types.",
+    "unchecked": {
+      "title": "Couldn't check today",
+      "body": "{{what}} didn't answer when this page loaded, so what's shown here may be incomplete. That isn't a \"no\": reload to try again.",
+      "mapLink": "City zoning map ↗"
+    }
   },
   "discovery": {
     "teaserCount": "{{total}} parcels match — you're seeing {{shown}}.",

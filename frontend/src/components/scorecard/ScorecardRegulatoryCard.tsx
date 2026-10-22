@@ -9,6 +9,7 @@ import { InfoTooltip } from "../InfoTooltip";
 import { ConfidenceCaption } from "../ui/Confidence";
 import { useFact } from "../../lib/provenanceContext";
 import { humanizeShoutyCase } from "../../lib/format";
+import { ZONING_MAP_URL } from "../../lib/failedSources";
 import { getTermInfo } from "../../lib/termDefinitions";
 import { SubSection, ShowMore } from "./ProfileModule";
 
@@ -118,7 +119,6 @@ function OverlayRowView({ row }: { row: OverlayRow }) {
 // with a dead-space flank). Top-N rows always visible, the tail discloses.
 const CONSTRAINT_BUDGET = 6;
 
-const ZONING_MAP_URL = "https://gisapps.chicago.gov/ZoningMapWeb/?liab=1&config=zoning";
 
 /** A failed overlay lookup is unknown, not "none": say so instead of disappearing. */
 function UncheckedOverlays({ types }: { types: string[] }) {

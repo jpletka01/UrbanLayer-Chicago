@@ -26,6 +26,8 @@ import { InfoTooltip } from "./InfoTooltip";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
 import { formatDay, humanizeShoutyCase } from "../lib/format";
 import { dataDatePhrase } from "../lib/dataDates";
+import { failedIn, failedLabels, ZONING_MAP_URL } from "../lib/failedSources";
+import { UncheckedRow } from "./scorecard/UncheckedRow";
 import PageHeader from "./PageHeader";
 import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
@@ -701,17 +703,28 @@ export default function ScorecardPage() {
   };
 
   // Module presence — drives both rendering and the sticky section rail.
-  const hasBuild = !!(zdef || ctx?.regulatory);
-  const hasEconomics = !!(ctx?.property || ctx?.incentives);
-  const hasMarket = !!(data?.comparables && data.comparables.sales.length > 0);
+  // A module whose source didn't answer still renders, saying so (WS6 M7): missing reads as "nothing here".
+  // The overlay layers have their own "couldn't check" row inside the Regulatory card, so a regulatory
+  // failure only needs the module-level row when that card has nothing to hang it on.
+  const failed = data?.failed_sources;
+  const unchecked = {
+    build: failedIn(failed, "build").filter((f) => f.key !== "regulatory" || !ctx?.regulatory).flatMap((f) => f.labels),
+    economics: failedLabels(failed, "economics"),
+    market: failedLabels(failed, "market"),
+    record: failedLabels(failed, "record"),
+    area: failedLabels(failed, "area"),
+  };
+  const hasBuild = !!(zdef || ctx?.regulatory) || unchecked.build.length > 0;
+  const hasEconomics = !!(ctx?.property || ctx?.incentives) || unchecked.economics.length > 0;
+  const hasMarket = !!(data?.comparables && data.comparables.sales.length > 0) || unchecked.market.length > 0;
   const hasRecord = !!(ctx && (ctx.violations || data?.violations_checked || ctx.regulatory?.flood_zone
-    || (ctx.regulatory?.brownfield_sites.length ?? 0) > 0 || ctx.address_311));
+    || (ctx.regulatory?.brownfield_sites.length ?? 0) > 0 || ctx.address_311)) || unchecked.record.length > 0;
   const modulePresence: Record<ModuleId, boolean> = {
     "module-build": hasBuild,
     "module-economics": hasEconomics,
     "module-market": hasMarket,
     "module-record": hasRecord,
-    "module-area": !!(data?.context.crime_last_90d || ctx?.neighborhood),
+    "module-area": !!(data?.context.crime_last_90d || ctx?.neighborhood) || unchecked.area.length > 0,
   };
   const navSections = MODULE_IDS.filter((id) => modulePresence[id]);
 
@@ -1089,6 +1102,7 @@ export default function ScorecardPage() {
                       ? `What are the allowed uses, setbacks, and FAR for ${zdef.zone_class} zoning?`
                       : `What are the development restrictions from regulatory overlays at ${addr}?`)}
                   >
+                    {unchecked.build.length > 0 && <UncheckedRow labels={unchecked.build} href={ZONING_MAP_URL} className="mb-6" />}
                     <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch">
                       {zdef && (
                         <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col">
@@ -1146,12 +1160,13 @@ export default function ScorecardPage() {
                     action={moduleAsk("economics", "scorecard.ask.costs", `Tell me about the building, taxes, and assessment history at ${addr}`)}
                   >
                     <div className="space-y-10">
-                      {ctx.property && (
+                      {unchecked.economics.length > 0 && <UncheckedRow labels={unchecked.economics} />}
+                      {ctx?.property && (
                         <div id="scorecard-card-property" className="scroll-mt-28">
                           <ScorecardPropertyCard data={ctx.property} />
                         </div>
                       )}
-                      {ctx.incentives && (
+                      {ctx?.incentives && (
                         <div id="scorecard-card-incentives" className="scroll-mt-28 max-w-3xl">
                           <ScorecardIncentivesCard data={ctx.incentives} />
                         </div>
@@ -1161,16 +1176,19 @@ export default function ScorecardPage() {
                 )}
 
                 {/* §3 — The market */}
-                {hasMarket && data.comparables && (
+                {hasMarket && (
                   <ProfileModule
                     id="module-market"
                     title={t("scorecard.sections.marketTitle")}
                     takeaway={takeaways.market}
                     action={moduleAsk("market", "scorecard.ask.market", `What are the recent comparable sales near ${addr} and what do they suggest about property values?`)}
                   >
-                    <div id="scorecard-card-comparables" className="scroll-mt-28">
-                      <ScorecardComparablesCard data={data.comparables} />
-                    </div>
+                    {unchecked.market.length > 0 && <UncheckedRow labels={unchecked.market} className="mb-6" />}
+                    {data.comparables && data.comparables.sales.length > 0 && (
+                      <div id="scorecard-card-comparables" className="scroll-mt-28">
+                        <ScorecardComparablesCard data={data.comparables} />
+                      </div>
+                    )}
                   </ProfileModule>
                 )}
 
@@ -1184,6 +1202,7 @@ export default function ScorecardPage() {
                       ? moduleAsk("record", "scorecard.ask.recordViolations", `Explain the building violations at ${addr} and typical remediation steps`)
                       : moduleAsk("record", "scorecard.ask.record311", `What are the 311 complaint patterns at ${addr} and what do they indicate?`)}
                   >
+                    {unchecked.record.length > 0 && <UncheckedRow labels={unchecked.record} className="mb-6" />}
                     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-8 md:items-start">
                       {/* Violations tri-state: a record at this address, a confirmed
                           "none on record" (clean — lookup ran, zero rows), or nothing
@@ -1213,7 +1232,7 @@ export default function ScorecardPage() {
                 {/* §5 — The neighborhood: AREA-level context, a designed module
                     (not a buried appendix). The scope label rides the module
                     header so area numbers can never read as parcel facts. */}
-                {(data.context.crime_last_90d || ctx.neighborhood) && (
+                {modulePresence["module-area"] && (
                   <ProfileModule
                     id="module-area"
                     title={t("scorecard.neighborhoodContext.title")}
@@ -1222,6 +1241,7 @@ export default function ScorecardPage() {
                       : null}
                     action={moduleAsk("neighborhood", "scorecard.ask.area", `What's the neighborhood like around ${addr}?`)}
                   >
+                    {unchecked.area.length > 0 && <UncheckedRow labels={unchecked.area} className="mb-6" />}
                     {ctx.neighborhood && <NeighborhoodBlock data={ctx.neighborhood} />}
                     {data.context.crime_last_90d && (
                       <div className="mt-8 max-w-3xl">

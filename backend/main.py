@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import time
 from typing import Any, AsyncIterator, NamedTuple
@@ -55,6 +56,7 @@ from backend.models import (
     ScorecardContext,
     TurnSummary,
 )
+from backend.data_health import failures
 from backend.provenance import withhold_low_evidence
 from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
 from backend.retrieval.geo import (
@@ -195,6 +197,14 @@ async def _startup() -> None:
             "breakdown) will be absent. Seed it with scripts/download_ptaxsim.py",
             settings.ptaxsim_db_path,
         )
+    # Live call outcomes per source, flushed hourly for the checker (WS6 M7). A forced fault is loud: it is a
+    # dev switch and must never be set on a server (the flag is ignored in production regardless).
+    from backend.data_health import live
+
+    if os.environ.get("DATA_HEALTH_FAULT"):
+        log.warning("DATA_HEALTH_FAULT=%s: forcing failures (ignored in production)", os.environ["DATA_HEALTH_FAULT"])
+    global _live_flush_task
+    _live_flush_task = asyncio.create_task(live.flush_loop())
     await _preload_datasets()
 
 
@@ -236,8 +246,13 @@ async def _preload_datasets() -> None:
         log.warning("ML model preload failed: %s", exc)
 
 
+_live_flush_task: asyncio.Task | None = None
+
+
 @app.on_event("shutdown")
 async def _shutdown() -> None:
+    if _live_flush_task is not None:
+        _live_flush_task.cancel()  # its cancel handler flushes the last counts
     await db.close_db()
     from backend.retrieval.property.tax_estimate import close as close_ptaxsim
     await close_ptaxsim()
@@ -893,22 +908,11 @@ async def _retrieve(
             )
         ))
 
-    _FAILURE_LABELS = {
-        "crime": "crime statistics",
-        "crime_yoy": "crime year-over-year comparison",
-        "311": "311 service requests",
-        "permits": "building permits",
-        "violations": "building violations",
-        "business": "business licenses",
-        "vacant": "vacant buildings",
-        "food_inspections": "food inspections",
-        "aro_housing": "affordable housing data",
-        "zoning_lookup": "parcel zoning",
-        "regulatory": "regulatory overlays",
-        "property": "property records",
-        "incentives": "incentive zones",
-        "neighborhood": "demographics and transit",
-    }
+    # What a failed retrieval is called lives in data_health/failures.py, shared by every surface.
+    _FAILURE_LABELS = {k: failures.label(k) for k in (
+        "crime", "crime_yoy", "311", "permits", "violations", "business", "vacant", "food_inspections", "aro_housing",
+        "zoning_lookup", "regulatory", "property", "incentives", "neighborhood",
+    )}
 
     results: dict[str, Any] = {}
     partial_failures: list[str] = []
@@ -1489,6 +1493,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             provenance, cited_chunks("".join(answer_parts), context.code_chunks),
             (get_code_vintage() or {}).get("current_through"),
             context.code_currency,
+            context.partial_failures,
         )
         if footer:
             answer_parts.append(footer)
@@ -1825,18 +1830,10 @@ async def _fetch_scorecard_data(
     results: dict[str, Any] = {}
     partial_failures: list[str] = []
     comparables_summary = None
-    _FAILURE_MAP = {
-        "property": "property records",
-        "regulatory": "regulatory overlays",
-        "zoning": "parcel zoning",
-        "incentives": "incentive zones",
-        "neighborhood": "demographics and transit",
-        "aro_housing": "affordable housing data",
-        "crime": "crime statistics",
-        "crime_yoy": "crime year-over-year comparison",
-        "violations": "building violations",
-        "address_311": "address 311 complaints",
-    }
+    _FAILURE_MAP = {k: failures.label(k) for k in (
+        "property", "regulatory", "zoning", "incentives", "neighborhood", "aro_housing", "crime", "crime_yoy",
+        "violations", "address_311",
+    )}
 
     done = await asyncio.gather(*tasks.values(), return_exceptions=True)
     for key, value in zip(tasks.keys(), done):
@@ -1848,8 +1845,12 @@ async def _fetch_scorecard_data(
         else:
             results[key] = value
 
-    # Overlay layers the City map couldn't answer: unknown, not "not in it".
+    # Overlay layers the City map couldn't answer: unknown, not "not in it". And the Assessor/PTAXSIM calls that
+    # failed (not the figures a source simply has no record of): a Profile that lost its sales history says so.
     partial_failures.extend(_domain_data_gaps(results, ("regulatory",)))
+    partial_failures.extend(
+        g for g in (getattr(results.get("property"), "failed_calls", None) or []) if g not in partial_failures
+    )
 
     from backend.models import RetrievalPlan, Location
     _source_tags = [
@@ -1929,7 +1930,7 @@ async def _fetch_scorecard_data(
                 )
         except Exception as exc:
             log.warning("Scorecard comparable sales failed: %s", exc)
-            partial_failures.append("comparable sales")
+            partial_failures.append(failures.label("comparables"))
 
     # Tri-state for the violations card: a present summary (ctx.violations), a
     # confirmed-zero ("no violations on record"), or an unconfirmed lookup
@@ -1948,6 +1949,9 @@ async def _fetch_scorecard_data(
         "context": ctx,
         "comparables": comparables_summary,
         "partial_failures": partial_failures,
+        # the stable keys behind those labels + the words that reported them, so a module can say what it left
+        # out (data_health/failures.py)
+        "failed_sources": failures.failed_detail(partial_failures),
         "violations_checked": violations_checked,
     }
 
@@ -2192,6 +2196,10 @@ def render_report_html(report_data, language: str = "en", report_date: str | Non
     except Exception:
         code_currency = None
     env.globals.update(report_provenance.helpers(report_data.provenance, _t, language, code_currency=code_currency))
+    # What the report could not check, by section (data_health/failures.py): a section that left a source out
+    # says so at its head instead of reading as "nothing there".
+    _detail = failures.failed_detail(report_data.partial_failures)
+    env.globals["failed_in"] = lambda *keys: list(dict.fromkeys(lab for d in _detail if d["key"] in keys for lab in d["labels"]))
     return env.get_template("zoning_report.html").render(
         report=report_data,
         report_date=report_date or report_i18n.format_report_date(date.today(), language),

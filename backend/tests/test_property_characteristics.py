@@ -38,7 +38,8 @@ async def test_returns_none_for_empty_result(mock_socrata):
 
 
 @pytest.mark.asyncio
-async def test_handles_socrata_error(mock_socrata):
+async def test_a_failed_call_raises_instead_of_reading_as_no_building_record(mock_socrata):
+    """WS6 M7: the property domain reports "property characteristics" as a gap; a failure is not "none on file"."""
     mock_socrata.side_effect = Exception("Socrata error")
-    result = await get_characteristics("14241020170000")
-    assert result is None
+    with pytest.raises(Exception, match="Socrata error"):
+        await get_characteristics("14241020170000")

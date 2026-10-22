@@ -358,6 +358,12 @@ a.glossary-link {
 {% macro conf_line(fact) %}{% set c = conf_caption(fact) %}{% if c %}<div class="conf" data-conf="{{ fact }}">{% if c.ai %}<span class="conf-ai">{{ t("conf.ai") }}</span>{% endif %}{% if c.lead %}<span class="conf-low">{{ c.lead }}</span>{% if c.text %} · {% endif %}{% endif %}{{ c.text }}</div>{% endif %}{% endmacro %}
 
 
+{# A section that left a source out says so at its head (WS6 M7): missing is not "none on record". #}
+{% macro unchecked_note(keys) %}
+  {% set f = failed_in(*keys) %}
+  {% if f %}<p class="section-note" data-testid="section-unchecked"><span class="status-warn">{{ t("data.unchecked_section") }}</span> {{ t("data.unchecked_section_body", items=f | join(", ")) }}</p>{% endif %}
+{% endmacro %}
+
 {% macro currency_table(rows) %}
   <table>
     <thead><tr><th>{{ t("currency.th_passed") }}</th><th>{{ t("currency.th_record") }}</th><th>{{ t("currency.th_what") }}</th><th>{{ t("currency.th_status") }}</th></tr></thead>
@@ -674,6 +680,7 @@ a.glossary-link {
 <!-- SECTION 3: Zoning & Development Standards -->
 <div class="section-flow">
   <h2 id="section-zoning">{{ t("zoning.heading") }}</h2>
+  {{ unchecked_note(["zoning", "adjacent_zoning"]) }}
 
   {% if zoning %}
   <dl class="info-grid">
@@ -969,6 +976,7 @@ a.glossary-link {
 <!-- SECTION 5: Property & Physical Characteristics (flows) -->
 <div class="section-flow">
   <h2 id="section-property">{{ t("prop.heading") }}</h2>
+  {{ unchecked_note(["property", "incentives"]) }}
 
   {% if prop %}
   <dl class="info-grid">
@@ -1124,6 +1132,7 @@ a.glossary-link {
 <!-- SECTION 6: Market Context & Comparables -->
 <div class="page-break">
   <h2 id="section-market">Market Context &amp; Comparables</h2>
+  {{ unchecked_note(["comparables", "nearby_construction"]) }}
 
   {% if comps and comps.sales_volume %}
   <h3>{{ t("market.comp_sales_heading_pre") }}<a href="#glossary-arms-length" class="glossary-link">{{ tn("market.comp_sales_link_full", comps.sales_volume, n=comps.sales_volume) }}</a>)</h3>
@@ -1261,6 +1270,7 @@ a.glossary-link {
 <!-- SECTION 7: Financial Feasibility & Incentives (flows) -->
 <div class="section-flow">
   <h2 id="section-financial">{{ t("fin.heading") }}</h2>
+  {{ unchecked_note(["incentives", "property"]) }}
 
   {% if inc %}
   <dl class="info-grid">
@@ -1353,6 +1363,7 @@ a.glossary-link {
 <!-- SECTION 8: Site Condition & History (flows) -->
 <div class="section-flow">
   <h2 id="section-site-condition">Site Condition &amp; History</h2>
+  {{ unchecked_note(["violations", "address_violations", "address_permits", "address_311", "crime", "crime_yoy"]) }}
 
   {% if report.address_violations %}
   <h3>{{ t("site.violations_heading", n=report.address_violations|length) }}</h3>

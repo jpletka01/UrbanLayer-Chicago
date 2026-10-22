@@ -283,10 +283,15 @@ async def fetch_census_tract(
     owns = client is None
     if owns:
         client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+    from backend.data_health import live
+
     try:
+        if live.fault("source", "-", "census.reporter.acs"):
+            raise RuntimeError("forced by DATA_HEALTH_FAULT")
         resp = await client.get(url, params=params)
         resp.raise_for_status()
         payload = resp.json()
+        live.record("census.reporter.acs", True)
 
         tract_data = payload.get("data", {}).get(geo_id, {})
         if not tract_data:
@@ -406,6 +411,7 @@ async def fetch_census_tract(
         return result
     except Exception as exc:
         log.warning("Census Reporter fetch failed for tract %s: %s", tract_fips, exc)
+        live.record("census.reporter.acs", False)
         return None
     finally:
         if owns:
