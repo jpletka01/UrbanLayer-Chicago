@@ -24,7 +24,8 @@ import { buildScorecardCSV, downloadCSV, buildFilenameSlug } from "../lib/csvExp
 import { VerdictBand, VerdictMethodology, verdictDotClass } from "./VerdictBand";
 import { InfoTooltip } from "./InfoTooltip";
 import { computeVerdict, type CardId } from "../lib/scorecardVerdict";
-import { humanizeShoutyCase } from "../lib/format";
+import { formatDay, humanizeShoutyCase } from "../lib/format";
+import { dataDatePhrase } from "../lib/dataDates";
 import PageHeader from "./PageHeader";
 import { AddressInput } from "./AddressInput";
 import { ScorecardFeedback } from "./ScorecardFeedback";
@@ -323,6 +324,7 @@ type ModuleId = (typeof MODULE_IDS)[number];
 
 export default function ScorecardPage() {
   const { t } = useTranslation("pages");
+  const { t: tc } = useTranslation("common");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, checkAuth } = useAuthContext();
@@ -1237,10 +1239,15 @@ export default function ScorecardPage() {
                     <ScorecardFeedback key={data.resolved_pin ?? data.address ?? "none"} />
                     {data.context.data_as_of && (
                       <span className="text-micro text-text-muted">
-                        {t("scorecard.dataAsOf", { date: data.context.data_as_of })}
+                        {t("scorecard.dataAsOf", { date: formatDay(data.context.data_as_of) })}
                       </span>
                     )}
                   </div>
+                  {data.data_dates && data.data_dates.length > 0 && (
+                    <p className="text-micro text-text-muted leading-relaxed" data-testid="data-dates">
+                      {data.data_dates.map((d) => dataDatePhrase(d, tc)).join(" · ")}
+                    </p>
+                  )}
                   {verdict && <VerdictMethodology verdict={verdict} />}
                 </div>
               </div>

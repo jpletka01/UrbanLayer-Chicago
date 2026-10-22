@@ -1,4 +1,5 @@
 import i18n from "./i18n";
+import type { DataDate } from "./dataDates";
 import { parseSSE } from "./sse";
 import { flush, getVisitorId, track } from "./tracking";
 import type {
@@ -1008,6 +1009,8 @@ export interface ScorecardResponse {
   /** Where each fact came from and how current it is, keyed by fact id (zoning.district,
       zoning.far, overlay.<layer_type>, parcel.identity, ...). */
   provenance?: Record<string, Provenance>;
+  /** The dates behind this page, in reading order (backend/data_health/vintages.py). */
+  data_dates?: DataDate[];
   /** How the address became this parcel: method, every parcel at the address, disagreements. */
   resolution?: ParcelResolutionRecord;
   // True when the address-scoped violation lookup actually ran (parsed + queried).

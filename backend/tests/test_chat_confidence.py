@@ -193,17 +193,18 @@ def test_a_parcel_less_turn_gets_dated_area_entries_and_a_footer_that_says_perio
     footer = build_sources_footer(prov, [], "2026-03-18")
     assert footer.startswith("\n\n---\n**Sources for the data used**")
     lines = footer.splitlines()
-    tract_line = next(line for line in lines if "2020–2024" in line)
-    assert "Census Tract 8310" in tract_line and "margins of error at the 90% level" in tract_line
-    crime_line = next(line for line in lines if "data through 2026-10-14" in line)
-    assert "last 90 days" in crime_line
+    tract_line = next(line for line in lines if "Census Tract 8310" in line)
+    assert "margins of error at the 90% level" in tract_line
+    assert "last 90 days" in next(line for line in lines if "West Town" in line and "Crime" in line)
+    dates = next(line for line in lines if line.startswith("- **Data dates:**"))
+    assert "ACS (tract) 2020–2024" in dates and "Crime through Oct 14, 2026" in dates
     assert "poverty" not in footer.lower()  # nothing about a withheld figure
 
 
 def test_a_feed_with_no_publisher_date_says_when_we_asked():
     ctx = ContextObject(community_area=24, community_area_name="West Town", crime_last_90d=CrimeSummary(total=5, arrest_rate=0.1, by_type={}))
-    line = next(x for x in build_sources_footer(run(ctx), [], None).splitlines() if x.startswith("- **"))
-    assert "last 90 days" in line and "queried 20" in line and "data through" not in line
+    dates = next(x for x in build_sources_footer(run(ctx), [], None).splitlines() if x.startswith("- **Data dates:**"))
+    assert dates.startswith("- **Data dates:** Crime checked ") and "through" not in dates
 
 
 def test_a_parcel_answer_keeps_its_heading_and_gains_the_area_lines():

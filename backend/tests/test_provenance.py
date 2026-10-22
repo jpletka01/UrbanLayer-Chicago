@@ -152,6 +152,10 @@ async def test_scorecard_payload_carries_provenance_for_district_standards_and_o
     prov = out["provenance"]
     for key in ("zoning.district", "zoning.far", "zoning.max_height", "zoning.min_lot_area_per_unit", "overlay.special_district", "parcel.identity", "code.vintage"):
         assert key in prov and entry_is_dated(prov[key]), key
+    # WS6 M6: the same payload carries the dates behind the page, in reading order, for the Profile footer
+    dates = {d["key"]: d for d in out["data_dates"]}
+    assert list(dates)[:2] == ["zoning_map", "code_text"] and dates["code_text"]["kind"] == "through"
+    assert all(d["kind"] in ("record", "through", "period", "checked") for d in dates.values())
 
 
 # --- schema v2 (WS0 M2) -------------------------------------------------------------------------------

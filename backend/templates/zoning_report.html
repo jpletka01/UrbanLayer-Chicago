@@ -68,6 +68,11 @@ tr { page-break-inside: avoid; }
 }
 .cover .meta { margin-top: 40pt; font-size: 9pt; color: #6b7280; }
 .cover .meta div { margin-bottom: 4pt; }
+.cover .dates { text-align: left; margin-top: 10pt; padding: 6pt 9pt; border: 1pt solid #e5e7eb; border-radius: 4pt; font-size: 8pt; color: #374151; page-break-inside: avoid; }
+.cover .dates .dates-title { font-weight: 700; text-transform: uppercase; letter-spacing: 0.6pt; font-size: 7pt; color: #6b7280; margin-bottom: 3pt; }
+.cover .dates ul { list-style: none; margin: 0; padding: 0; column-count: 2; column-gap: 14pt; }
+.cover .dates li { margin: 0 0 2pt; break-inside: avoid; }
+.cover .dates .dates-missing { margin-top: 4pt; color: #b45309; }
 .cover .badge {
   display: inline-block;
   background: #2563eb;
@@ -440,7 +445,17 @@ a.glossary-link {
   <div class="meta">
     {% if prop and prop.pin14 %}<div><a href="#glossary-pin" class="glossary-link">{{ t("cover.pin") }}</a>: <a href="https://www.cookcountyassessor.com/pin/{{ prop.pin14 }}">{{ prop.pin14 }}</a></div>{% endif %}
     <div>{{ t("cover.coordinates") }}: {{ "%.5f"|format(report.lat) }}, {{ "%.5f"|format(report.lon) }}</div>
-    <div>{{ t("cover.report_date") }}: {{ report_date }}</div>
+    <div>{{ t("cover.generated_on") }}: {{ report_date }}</div>
+    {% set dd = data_dates() %}
+    {% if dd %}
+    <div class="dates" data-testid="data-dates">
+      <div class="dates-title">{{ t("cover.data_as_of") }}</div>
+      <ul>{% for d in dd %}<li>{{ d }}</li>{% endfor %}</ul>
+      {% if report.partial_failures %}<div class="dates-missing">{{ t("cover.not_checked") }} {{ report.partial_failures | join(", ") }}</div>{% endif %}
+    </div>
+    {% elif report.partial_failures %}
+    <div class="dates"><div class="dates-missing">{{ t("cover.not_checked") }} {{ report.partial_failures | join(", ") }}</div></div>
+    {% endif %}
     <div style="margin-top: 8pt; font-size: 8pt;">{{ t("cover.generated_by") }}</div>
   </div>
 </div>
