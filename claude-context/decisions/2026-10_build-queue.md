@@ -1075,7 +1075,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not measured:** the rendered amber box and the paid report's warning on prod (both tested offline and the box checked against a replayed payload; the report needs a purchase or an admin download). The 06:00 timer's own first run. `docker` is not available to `jack`, so any manual run needs `sudo systemctl start`.
 
-## Item 17: contracts and daily sentinels (2026-10-22)
+## Item 17: contracts and daily sentinels (#85, 2026-10-22)
 
 **The fields we read come from the code, by a scanner, and the list is committed.**
 - **Decision:** `contracts --scan` takes each Socrata source's reader modules, collects every lowercase word inside a string literal, and keeps the ones that are columns of the live dataset. The result (`fields_read.json`: 37 sources, 280 columns) merges into each source's `required_fields`; a column the publisher renames or drops is an `error` on the next run. A test fails if a listed column is no longer mentioned by its modules, and if a new Socrata source with named columns has no entry.
@@ -1115,4 +1115,15 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 - How often the key and the live overlay set legitimately drift (one run proves nothing about the alarm rate; the first 14 days are Sentry-quiet by design).
 - Contracts on ArcGIS layers beyond layer name, count band and the two value sets (no fields-read lists for layers; the overlay readers take attributes by name inside `regulatory/`).
 - The request count of the sentinels: they use production's own clients, so the checker's HTTP tally does not include them (about 13 × 15 City map calls).
+
+**Production** (2026-10-22, after the deploy of #85)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI, lint, test and deploy green; the served bundle carries the panel's new contract text ("Value sets: …") | `curl -s https://urbanlayerchicago.com/` → the `assets/index-*.js` it names, `grep "Value sets: "` |
+| `/health` | `ok`; `data_health.checker: ok`; 1 alarm (the stale local Discovery index, as before) | `curl https://urbanlayerchicago.com/health` |
+| Anonymous admin | `/api/admin/data-health` answers 401 | `curl -i https://urbanlayerchicago.com/api/admin/data-health` |
+| Profile | 6711 S Western Ave still resolves and matches `passed_not_on_map` by PIN | `curl "https://urbanlayerchicago.com/api/scorecard?address=6711+S+Western+Ave"` |
+
+**Not yet verified on prod:** the acceptance run (sentinels 13/13 and the contract results on the panel). It needs the checker started on the server, `sudo systemctl start data-health-check.service`, or the 05:37 UTC timer. After it runs, the admin panel's `internal.sentinels` row should read "13 of 13 sentinels match the answer key" and every Socrata row's contract cell should read "N fields …". Until then the only evidence is the local dry run in the Numbers block above, which hit the same services.
 
