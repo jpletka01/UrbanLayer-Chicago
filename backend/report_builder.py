@@ -721,6 +721,8 @@ async def _fetch_report_data(
     # Step 1: Base scorecard data
     base = await _fetch_scorecard_data(resolved_lat, resolved_lon, resolved_address, pin=pin)
     ctx = base["context"]
+    ctx.parcel_pin = pin
+    ctx.parcel_resolution = confidence if confidence in ("authoritative", "approximate") else None
     partial_failures: list[str] = list(base.get("partial_failures", []))
 
     # Step 2: v2 data retrievals in parallel
