@@ -1512,3 +1512,18 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - **The guide was not run end to end.** A real refresh needs a newer export than the one in hand. Every command's flags were checked against `--help`, and the steps come from items 4, 6, 7, 12 and 16's runs; the first refresh that follows it is the test, and should correct it.
 - `npm run build` and `npm run lint` were not run: no frontend file changed.
 - The first reminder email that points at the guide is the 1st of November.
+
+**Production** (2026-10-22, after the deploy of #102; docs PR #101 merged first)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | the CI / Deploy run on `main` finished with `test`, `lint`, `changes` and `deploy` all `success`. The run's own status still read `in_progress` more than an hour later while its four jobs were completed, so the job list, not the run status, is the evidence (the reverse of item 23's quirk) | `gh run view <id> --json status,jobs` |
+| Health | `/health` ok (`qdrant`, `db`, `ptaxsim` true); `data_health.checker` ok, last run 12.4 h old (so it predates the deploy), `alarms: 1` | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle is still `index-CDKwAX8y.js`, as expected: no frontend file changed | `curl -s https://urbanlayerchicago.com/ \| grep -o 'assets/index-[A-Za-z0-9_-]*\.js'` |
+| Endpoints, anonymous | `/api/admin/data-health` and `/api/report` both 401 | `curl -i` on each |
+| Profile payload | 1601 N Milwaukee Ave unchanged: B3-2, ordinance 17230, code through 2026-06-17, `code_currency` fresh with `{title17: 10, cited_other: 5}` since, `failed_sources: []`, 8 `data_dates`. 56 provenance entries against item 23's 57: the missing one is `property.comps.median_price_per_buildable_sqft`, and comps are known to differ between identical runs (item 14's follow-up); this change touches neither | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on prod:**
+- **The new source itself.** Nothing public reads `internal.amendment_review`, so no request from outside can show the new image running; the deploy job's success is the only evidence. To confirm: run the checker (`sudo systemctl start data-health-check.service`) or wait for the next daily run, then look at `/admin` > Data health. The row should read **warn**, naming O2026-0026243 (passed 2026-07-15) with 0 Title 17 and 4 other amendments unreviewed. If the row is missing after a checker run, the old image is still running. `/health`'s `alarms` should stay at 1: a warn does not count.
+- The reminder workflow's new wording (the 1st of November).
+- The landmark carry-over from item 16b is still open: `GET /api/scorecard?pin=25351000060000` has no `passed_landmark_designations` because the sync has not run since that deploy (`sudo systemctl start legislation-sync.service`).
