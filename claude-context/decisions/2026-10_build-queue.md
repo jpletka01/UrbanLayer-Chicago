@@ -1309,7 +1309,7 @@ On production the store supplies the sales and violations dates ("through"); loc
 
 **Not verified on prod:** the report PDF cover (needs an admin session: look for "Generated on", the "Data as of" box with the eight dates, and no "Report Date") and the chat footer's `Data dates:` line (the chat route spends the production key; ask any neighborhood or parcel question and look for it under the sources block).
 
-## Item 22: partial failures, shown honestly (2026-10-22)
+## Item 22: partial failures, shown honestly (#96, 2026-10-22)
 
 **The overlay half of M7 shipped in item 1; what was left turned out to be where the real silence was.** Overlays already said "couldn't check". The plan's list for the rest was module rows, a chat line, a report notice and live telemetry. Forcing the Assessor sales source to fail (the new fault flag, below) showed a worse gap: **the Profile lost its comps and its sales history and `partial_failures` stayed empty.** Reading why:
 - `get_assessments` and `get_sales` caught an error, **cached "none on file" for 24 hours** and returned empty;
@@ -1347,4 +1347,18 @@ So an outage of the Assessor's feed would read as "no sales, no comps" for up to
 - The chat footer line and the report sections are pinned by tests, not seen end to end on production (the chat route spends the key; the report needs an admin session).
 - About 70 `except Exception` blocks remain in the retrieval layer. I audited the ones that *cache* a failure, not each one that swallows an error and returns empty; flood, the incentive layers (QCT, OZ, NMTC), Walk Score and the parcel lookups are the next to read.
 - Spanish: the new Profile strings are English, listed in `_untranslated.json`; the report's new notice is English in `_UNTRANSLATED_ES`.
+
+**Production** (2026-10-22, after the deploy of #96; docs PR #95 merged first)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI, lint, test and deploy green; `/health` ok | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle carries the unchecked-row wording ("didn't answer when this page loaded") | `grep` on the `assets/index-*.js` the home page names |
+| Profile payload | `failed_sources` is present and empty for 1601 N Milwaukee (nothing failed); 1 sale and 1 comp still arrive; 8 `data_dates`; 57 provenance entries (the extra one is `property.comps.median_price_per_buildable_sqft`, which the live comps set now supports) | `curl "https://urbanlayerchicago.com/api/scorecard?pin=14313320180000"` |
+| Report endpoint, anonymous | still 401 | `curl -i "https://urbanlayerchicago.com/api/report?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on prod:**
+- The failure paths themselves: nothing has failed in production to show them, and the fault flag is (by design) ignored there. They were exercised locally with `DATA_HEALTH_FAULT`.
+- `data_health_live.db` should appear in `backend/data/` within an hour of the deploy and the next daily check should read it. To confirm, on the server: `ls -l /opt/urbanlayer/backend/data/data_health_live.db` (it lives on the `backend_data` volume; if the path differs, `docker compose ... run --rm backend ls -l backend/data`). If it is missing after two hours, the flush task did not start.
+- The chat `**Couldn't check today:**` line and the report's section notices (the chat route spends the key; the report needs an admin session).
 
