@@ -1266,7 +1266,7 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not verified on prod:** the backend's chat path. No read-only request reaches it (the chat route spends the production key, and OpenAPI is off), so the deploy job's success is the only evidence the new image is running. To check it: ask any neighborhood question in chat and look for a "Sources for the data used" block with a period and the 90% margin-of-error level, and, in the Data panel, the tract's `±` margins. A tract with a very wide margin (a small tract's vacancy rate) should show "Not shown: …". Rule 38's effect on the answer text is not measured anywhere yet (no `make kit`).
 
-## Item 21: data dates on every answer, report and Profile (2026-10-22)
+## Item 21: data dates on every answer, report and Profile (#94, 2026-10-22)
 
 **Most of M6 was already done; what was left is one builder and three places that show it.** WS0 had already taken the typed years out of the report wording (M1), renamed the Profile's "Data as of" to "Checked" (M1) and generated the sources table from the registry (M5). *Evidence:* the new lint finds no year range typed into `report_i18n.py`, the template, the locales, the footer or the prompts. What remained: a list of the headline dates, the chat line, the cover box, and the dates on the Profile.
 
@@ -1296,6 +1296,18 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not verified:** production (the report PDF needs an admin session, and the store-backed "through" dates for sales and violations only exist there); the Spanish pages beyond structure (new wording is English, listed in `_UNTRANSLATED_ES` and `_untranslated.json`); the chat footer end to end against the live model (no key used).
 
+**Production** (2026-10-22, after the deploy of #94)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI, lint, test and deploy green; `/health` ok | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle carries the data-dates wording ("later zoning amendment") | `grep` on the `assets/index-*.js` the home page names |
+| Profile payload | `data_dates` has 8 entries for 1601 N Milwaukee: zoning map record 2021-12-15, code text through 2026-06-17, Assessor values 2026, tax year 2024, **sales through 2026-08-12**, ACS (tract) 2020–2024, crime through 2026-10-15, **violations through 2026-10-20** | `curl "https://urbanlayerchicago.com/api/scorecard?pin=14313320180000"` |
+| Report endpoint, anonymous | still 401 | `curl -i "https://urbanlayerchicago.com/api/report?address=1601+N+Milwaukee+Ave"` |
+
+On production the store supplies the sales and violations dates ("through"); locally those read "checked", as expected.
+
+**Not verified on prod:** the report PDF cover (needs an admin session: look for "Generated on", the "Data as of" box with the eight dates, and no "Report Date") and the chat footer's `Data dates:` line (the chat route spends the production key; ask any neighborhood or parcel question and look for it under the sources block).
 
 ## Item 22: partial failures, shown honestly (2026-10-22)
 
@@ -1335,3 +1347,4 @@ So an outage of the Assessor's feed would read as "no sales, no comps" for up to
 - The chat footer line and the report sections are pinned by tests, not seen end to end on production (the chat route spends the key; the report needs an admin session).
 - About 70 `except Exception` blocks remain in the retrieval layer. I audited the ones that *cache* a failure, not each one that swallows an error and returns empty; flood, the incentive layers (QCT, OZ, NMTC), Walk Score and the parcel lookups are the next to read.
 - Spanish: the new Profile strings are English, listed in `_untranslated.json`; the report's new notice is English in `_UNTRANSLATED_ES`.
+
