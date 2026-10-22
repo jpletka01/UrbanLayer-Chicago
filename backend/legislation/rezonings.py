@@ -23,9 +23,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
-from typing import Any
 
 from backend.legislation import address_titles, currency
 from backend.legislation.address_titles import PARSER_VERSION, STREET_TYPES, parse_title
