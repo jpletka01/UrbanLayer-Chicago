@@ -769,6 +769,10 @@ _EN: dict[str, str] = {
     "reg.designation_map_unchecked": " The City's landmark map could not be checked when this report was generated, so the overlays above may be missing a review requirement.",
     "reg.designation_review": " Alterations, demolition and new construction on a designated Chicago Landmark need the Commission on Chicago Landmarks' written approval before a permit can issue (§2-120-740). Confirm with the Department of Planning and Development.",
     "data.unchecked_section_body": "{items} did not answer when this report was generated, so the figures that depend on it are missing or incomplete here. That is not the same as none on record.",
+    "pill.unchecked": "NOT CHECKED",
+    "tl.env_flood_unchecked": "FEMA flood zone could not be checked",
+    "reg.flood_unchecked": "Not checked: FEMA's flood map did not answer when this report was generated, so the flood zone is unknown. Look the parcel up on FEMA's Flood Map Service Center (msc.fema.gov) before relying on this section.",
+    "site.todo_flood_unchecked": "Check the FEMA flood zone (the lookup did not answer when this report was generated)",
 }
 
 _ES: dict[str, str] = {
@@ -1487,6 +1491,10 @@ _ES: dict[str, str] = {
     "reg.designation_map_unchecked": " The City's landmark map could not be checked when this report was generated, so the overlays above may be missing a review requirement.",
     "reg.designation_review": " Alterations, demolition and new construction on a designated Chicago Landmark need the Commission on Chicago Landmarks' written approval before a permit can issue (§2-120-740). Confirm with the Department of Planning and Development.",
     "data.unchecked_section_body": "{items} did not answer when this report was generated, so the figures that depend on it are missing or incomplete here. That is not the same as none on record.",
+    "pill.unchecked": "NOT CHECKED",
+    "tl.env_flood_unchecked": "FEMA flood zone could not be checked",
+    "reg.flood_unchecked": "Not checked: FEMA's flood map did not answer when this report was generated, so the flood zone is unknown. Look the parcel up on FEMA's Flood Map Service Center (msc.fema.gov) before relying on this section.",
+    "site.todo_flood_unchecked": "Check the FEMA flood zone (the lookup did not answer when this report was generated)",
 }
 
 # Spanish keys still carrying the English text, for WS7 to translate. The guard in
@@ -1588,6 +1596,10 @@ _UNTRANSLATED_ES: frozenset[str] = frozenset({
     "reg.designation_map_unchecked",
     "reg.designation_review",
     "data.unchecked_section_body",
+    "pill.unchecked",
+    "tl.env_flood_unchecked",
+    "reg.flood_unchecked",
+    "site.todo_flood_unchecked",
     "zoning.passed_not_on_map_heading",
     "zoning.passed_not_on_map",
     "oc.tod_street.signal",

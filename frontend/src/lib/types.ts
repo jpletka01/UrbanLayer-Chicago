@@ -278,7 +278,10 @@ export interface RegulatorySummary {
   ssa_name: string | null;
   flood_zone: string | null;
   flood_zone_subtype: string | null;
-  in_special_flood_hazard: boolean;
+  /** null = unknown: FEMA's flood map didn't answer (`flood_unchecked`). Never render it as "not in". */
+  in_special_flood_hazard: boolean | null;
+  /** FEMA's flood map didn't answer, so `flood_zone` is null because it is UNKNOWN, not because the parcel is clear. */
+  flood_unchecked?: boolean;
   brownfield_sites: Record<string, unknown>[];
   aro_housing: AROHousingSummary | null;
   /** Overlay layer types the City map couldn't answer for. Their in_* flags are

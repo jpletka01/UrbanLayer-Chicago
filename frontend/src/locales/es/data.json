@@ -170,6 +170,8 @@
       "title": "Couldn't check today",
       "body": "The City's zoning map didn't answer for: {{items}}. This isn't a \"no\" — try again later, or check the City's map.",
       "mapLink": "City zoning map ↗",
+      "flood": "FEMA flood zone",
+      "floodLink": "FEMA flood map ↗",
       "types": {
         "planned_development": "planned development",
         "lakefront_protection": "Lakefront Protection District",

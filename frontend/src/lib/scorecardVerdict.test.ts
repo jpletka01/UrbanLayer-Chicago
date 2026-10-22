@@ -31,6 +31,7 @@ type Mk = {
   pd?: boolean;
   lakefront?: boolean;
   flood?: string | null;
+  floodUnchecked?: boolean;
   tod?: boolean;
   todBenefits?: Record<string, unknown> | null;
   adu?: boolean;
@@ -108,7 +109,9 @@ function mk(o: Mk): ScorecardResponse {
       in_tod_area: !!o.tod,
       in_adu_area: !!o.adu,
       in_aro_zone: !!o.aro,
-      flood_zone: o.flood ?? "X",
+      flood_zone: o.floodUnchecked ? null : (o.flood ?? "X"),
+      in_special_flood_hazard: o.floodUnchecked ? null : false,
+      flood_unchecked: !!o.floodUnchecked,
       unchecked_overlays: o.unchecked ?? [],
       data_gaps: o.gaps ?? [],
     },
@@ -486,6 +489,40 @@ describe("ADU and landmark reasons (F7)", () => {
     expect(text).toContain("Commission on Chicago Landmarks");
     expect(text).toContain("in writing");
     expect(text.toLowerCase()).not.toContain("design review");
+  });
+});
+
+describe("scorecardVerdict — a flood zone FEMA couldn't answer for", () => {
+  const FLOOD = "FEMA flood zone";
+  const failed = [{ key: "flood", labels: [FLOOD] }];
+  const strong = { zone: "DS-5", far: 5.0, bldg: 1000, land: 970 } as const;
+
+  it("hedges: flood is a friction signal when known, so an unknown one can't read clean", () => {
+    const v = computeVerdict(mk({ ...strong, floodUnchecked: true, partial: [FLOOD], failed }), t);
+    expect(v.confidence).toBe("caveated");
+    expect(v.caveats).toContain("scorecard.verdict.caveat.floodUnchecked");
+    // said once, by the specific caveat, not repeated in the generic sources line
+    expect(v.caveats.some((c) => c.startsWith("scorecard.verdict.caveat.partial"))).toBe(false);
+  });
+
+  it("does not change the category: unknown is not 'constrained'", () => {
+    const unknown = computeVerdict(mk({ ...strong, floodUnchecked: true, partial: [FLOOD], failed }), t);
+    const clear = computeVerdict(mk({ ...strong }), t);
+    expect(unknown.category).toBe(clear.category);
+    expect(unknown.signals.frictionFlags).not.toContain("flood");
+    // and a known floodplain still is friction
+    expect(computeVerdict(mk({ ...strong, flood: "AE" }), t).signals.frictionFlags).toContain("flood");
+  });
+
+  it("other failed sources still get the generic line, without the flood label", () => {
+    const v = computeVerdict(mk({ ...strong, floodUnchecked: true, partial: [FLOOD, "crime statistics"], failed }), t);
+    const partial = v.caveats.find((c) => c.startsWith("scorecard.verdict.caveat.partial"));
+    expect(partial).toContain("crime statistics");
+    expect(partial).not.toContain(FLOOD);
+  });
+
+  it("a healthy flood lookup adds no caveat", () => {
+    expect(computeVerdict(mk({ ...strong }), t).caveats).not.toContain("scorecard.verdict.caveat.floodUnchecked");
   });
 });
 

@@ -2,11 +2,13 @@
 // disappearing: a missing figure reads as "nothing there", and that is not what happened.
 import { useTranslation } from "react-i18next";
 
-export function UncheckedRow({ labels, href, className = "" }: {
+export function UncheckedRow({ labels, href, linkLabel, className = "" }: {
   /** What didn't answer, in the backend's words ("property records", "comparable sales"). */
   labels: string[];
   /** Where to look it up yourself, when there is an official place to. */
   href?: string;
+  /** The link's words; the City zoning map's when omitted. */
+  linkLabel?: string;
   className?: string;
 }) {
   const { t } = useTranslation("pages");
@@ -21,7 +23,7 @@ export function UncheckedRow({ labels, href, className = "" }: {
           <>
             {" "}
             <a href={href} target="_blank" rel="noopener noreferrer" className="text-link underline">
-              {t("scorecard.unchecked.mapLink")}
+              {linkLabel ?? t("scorecard.unchecked.mapLink")}
             </a>
           </>
         )}

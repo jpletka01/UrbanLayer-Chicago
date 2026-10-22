@@ -5,6 +5,8 @@ import { CollapsibleCard } from "./CollapsibleCard";
 import { InfoTooltip } from "../InfoTooltip";
 import { humanizeShoutyCase, translateFloodSubtype } from "../../lib/format";
 import { getTermInfo } from "../../lib/termDefinitions";
+import { UncheckedRow } from "../scorecard/UncheckedRow";
+import { FEMA_FLOOD_MAP_URL } from "../../lib/failedSources";
 
 const ShieldIcon = (
   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -131,6 +133,13 @@ export function RegulatoryCard({ data }: { data: RegulatorySummary }) {
                 <p className="text-text-muted mt-0.5">{translateFloodSubtype(data.flood_zone_subtype)}</p>
               )}
             </div>
+          </div>
+        )}
+
+        {data.flood_unchecked && !data.flood_zone && (
+          <div className="space-y-1" data-testid="flood-unchecked">
+            <span className="text-micro text-text-muted uppercase tracking-wider">{t("regulatory.floodZone")}</span>
+            <UncheckedRow labels={[t("regulatory.unchecked.flood")]} href={FEMA_FLOOD_MAP_URL} linkLabel={t("regulatory.unchecked.floodLink")} />
           </div>
         )}
 
