@@ -87,6 +87,28 @@ function Counts({ counts }: { counts: DataHealth["counts"] }) {
   );
 }
 
+/** What a source's daily contract checks, in a few words ("12 fields · 1 value set · count band"). */
+function contractSummary(c: DataHealthSource["contract"]): string {
+  if (!c) return "—";
+  const parts = [
+    c.required_fields.length ? `${c.required_fields.length} fields` : null,
+    c.values?.length ? `${c.values.length} value set${c.values.length > 1 ? "s" : ""}` : null,
+    c.count_band ? "count band" : null,
+    c.layer_name ? "layer name" : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "checked";
+}
+
+function contractTitle(c: DataHealthSource["contract"]): string | undefined {
+  if (!c) return undefined;
+  return [
+    c.layer_name ? `Layer name: ${c.layer_name}` : null,
+    c.required_fields.length ? `Fields read: ${c.required_fields.join(", ")}` : null,
+    c.values?.length ? `Value sets: ${c.values.join(", ")}` : null,
+    c.count_band ? `Count band: ${c.count_band[0]}–${c.count_band[1]}` : null,
+  ].filter(Boolean).join("\n") || undefined;
+}
+
 export function DataHealthSection() {
   const [data, setData] = useState<DataHealth | null | undefined>(undefined);
   const [open, setOpen] = useState<string | null>(null);
@@ -166,7 +188,7 @@ function SourceRow({ s, open, onToggle }: { s: DataHealthSource; open: boolean; 
         </td>
         <td className="px-2 py-1 whitespace-nowrap text-text-secondary">{dateText(s)}</td>
         <td className="px-2 py-1 whitespace-nowrap text-text-secondary">{ageText(s)}</td>
-        <td className="px-2 py-1 whitespace-nowrap text-text-secondary">{s.contract ? "checked" : "—"}</td>
+        <td className="px-2 py-1 whitespace-nowrap text-text-secondary" title={contractTitle(s.contract)}>{contractSummary(s.contract)}</td>
         <td className="px-2 py-1 text-text-secondary" data-testid={`dh-ack-${s.id}`}>
           {s.ack ? (
             <span title={s.ack.reason}>

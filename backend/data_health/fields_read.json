@@ -1,0 +1,356 @@
+{
+ "chi.311": [
+  "community_area",
+  "created_date",
+  "latitude",
+  "longitude",
+  "owner_department",
+  "sr_number",
+  "sr_type",
+  "status"
+ ],
+ "chi.acs_community_area": [
+  "_125_000",
+  "_25_000_to_49_999",
+  "_50_000_to_74_999",
+  "_75_000_to_125_000",
+  "acs_year",
+  "community_area",
+  "total_population",
+  "under_25_000"
+ ],
+ "chi.aro_projects": [
+  "address",
+  "community_area_number",
+  "latitude",
+  "longitude",
+  "management_company",
+  "property_name",
+  "property_type",
+  "units"
+ ],
+ "chi.building_footprints": [
+  "bldg_sq_fo",
+  "bldg_statu",
+  "stories",
+  "the_geom",
+  "year_built"
+ ],
+ "chi.business_licenses": [
+  "business_activity",
+  "community_area",
+  "date_issued",
+  "license_description",
+  "license_status"
+ ],
+ "chi.city_owned_land": [
+  "address",
+  "application_deadline",
+  "application_url",
+  "location",
+  "pin",
+  "property_status",
+  "sales_status"
+ ],
+ "chi.crime": [
+  "arrest",
+  "community_area",
+  "date",
+  "primary_type",
+  "year"
+ ],
+ "chi.divvy": [
+  "docks_in_service",
+  "latitude",
+  "location",
+  "longitude",
+  "station_name",
+  "status",
+  "total_docks"
+ ],
+ "chi.energy_benchmarking": [
+  "chicago_energy_rating",
+  "data_year",
+  "energy_star_score",
+  "ghg_intensity_kg_co2e_sq_ft",
+  "gross_floor_area_buildings_sq_ft",
+  "latitude",
+  "location",
+  "longitude",
+  "primary_property_type",
+  "reporting_status",
+  "site_eui_kbtu_sq_ft",
+  "year_built"
+ ],
+ "chi.food_inspections": [
+  "dba_name",
+  "facility_type",
+  "inspection_date",
+  "latitude",
+  "longitude",
+  "results",
+  "risk",
+  "violations"
+ ],
+ "chi.nof_large": [
+  "community_area",
+  "completion_date",
+  "incentive_amount",
+  "project_description",
+  "project_name",
+  "property_type",
+  "total_project_cost"
+ ],
+ "chi.nof_small": [
+  "community_area",
+  "completion_date",
+  "incentive_amount",
+  "project_description",
+  "project_name",
+  "property_type",
+  "total_project_cost"
+ ],
+ "chi.permits": [
+  "community_area",
+  "contact_1_name",
+  "contact_1_type",
+  "contact_2_name",
+  "contact_2_type",
+  "contact_3_name",
+  "contact_3_type",
+  "issue_date",
+  "latitude",
+  "longitude",
+  "permit_",
+  "permit_type",
+  "reported_cost",
+  "street_direction",
+  "street_name",
+  "street_number",
+  "work_description"
+ ],
+ "chi.sbif": [
+  "community_area",
+  "completion_date",
+  "incentive_amount",
+  "project_description",
+  "project_name",
+  "property_type",
+  "tif_district",
+  "total_project_cost"
+ ],
+ "chi.scofflaw": [
+  "address",
+  "circuit_court_case_number",
+  "defendant_owner",
+  "location"
+ ],
+ "chi.str_prohibited": [
+  "location",
+  "pin"
+ ],
+ "chi.tif.boundaries": [
+  "approval_d",
+  "comm_area",
+  "expiration",
+  "name",
+  "ref",
+  "repealed_d",
+  "type"
+ ],
+ "chi.tif.fund_analysis": [
+  "report_year",
+  "tif_district"
+ ],
+ "chi.tif.projects": [
+  "report_year",
+  "tif_district"
+ ],
+ "chi.traffic": [
+  "direction",
+  "fromsegment",
+  "midpointlat",
+  "midpointlon",
+  "roadname",
+  "segmentid",
+  "timestamp",
+  "tosegment",
+  "vehiclecount"
+ ],
+ "chi.vacant_buildings": [
+  "current_amount_due",
+  "entity_or_person_s_",
+  "issued_date",
+  "issuing_department",
+  "latitude",
+  "longitude",
+  "property_address",
+  "violation_type"
+ ],
+ "chi.violations": [
+  "address",
+  "inspection_number",
+  "inspector_id",
+  "latitude",
+  "longitude",
+  "street_direction",
+  "street_name",
+  "street_number",
+  "violation_code",
+  "violation_date",
+  "violation_description",
+  "violation_status",
+  "violation_status_date"
+ ],
+ "chi.ward_offices": [
+  "alderman",
+  "email",
+  "ward",
+  "ward_phone",
+  "website"
+ ],
+ "chi.wards": [
+  "the_geom",
+  "ward"
+ ],
+ "cook.address_points": [
+  "add_number",
+  "addrnocom",
+  "cmpaddabrv",
+  "county",
+  "inc_muni",
+  "lat",
+  "long",
+  "pin",
+  "st_name",
+  "st_postyp",
+  "st_predir"
+ ],
+ "cook.assessor.appeals": [
+  "appeal_type",
+  "certified_bldg",
+  "certified_land",
+  "certified_tot",
+  "change",
+  "class",
+  "mailed_bldg",
+  "mailed_land",
+  "mailed_tot",
+  "pin",
+  "year"
+ ],
+ "cook.assessor.characteristics": [
+  "char_air",
+  "char_apts",
+  "char_beds",
+  "char_bldg_sf",
+  "char_bsmt",
+  "char_ext_wall",
+  "char_fbath",
+  "char_gar1_size",
+  "char_hbath",
+  "char_land_sf",
+  "char_ncu",
+  "char_roof_cnst",
+  "char_rooms",
+  "char_type_resd",
+  "char_use",
+  "char_yrblt",
+  "class",
+  "pin",
+  "year"
+ ],
+ "cook.assessor.commercial_valuation": [
+  "bldgsf",
+  "keypin",
+  "pins",
+  "stories",
+  "tot_units",
+  "year",
+  "yearbuilt"
+ ],
+ "cook.assessor.condo_characteristics": [
+  "char_bedrooms",
+  "char_building_sf",
+  "char_unit_sf",
+  "char_yrblt",
+  "class",
+  "pin",
+  "year"
+ ],
+ "cook.assessor.permits": [
+  "amount",
+  "assessable",
+  "date_issued",
+  "job_code_primary",
+  "pin",
+  "status",
+  "work_description",
+  "year"
+ ],
+ "cook.assessor.sales": [
+  "class",
+  "deed_type",
+  "is_multisale",
+  "pin",
+  "sale_date",
+  "sale_filter_deed_type",
+  "sale_filter_less_than_10k",
+  "sale_price",
+  "sale_type",
+  "year"
+ ],
+ "cook.assessor.values": [
+  "board_bldg",
+  "board_land",
+  "board_tot",
+  "certified_bldg",
+  "certified_land",
+  "certified_tot",
+  "class",
+  "mailed_bldg",
+  "mailed_land",
+  "mailed_tot",
+  "pin",
+  "year"
+ ],
+ "cook.bor.appeals": [
+  "appealtypedescription",
+  "assessor_totalvalue",
+  "bor_totalvalue",
+  "centroid_geom",
+  "class",
+  "lat",
+  "pin",
+  "result",
+  "tax_year"
+ ],
+ "cook.parcel_addresses": [
+  "pin",
+  "prop_address_city_name",
+  "prop_address_full",
+  "year"
+ ],
+ "cook.parcel_universe": [
+  "class",
+  "lat",
+  "lon",
+  "nbhd_code",
+  "pin",
+  "pin10",
+  "tax_code",
+  "township_name",
+  "zip_code"
+ ],
+ "cook.treasurer.scavenger_sale": [
+  "buyer",
+  "pin",
+  "sold_at_sale",
+  "tax_sale_year"
+ ],
+ "cook.treasurer.tax_sale": [
+  "pin",
+  "sold_at_sale",
+  "tax_sale_year"
+ ]
+}

@@ -180,12 +180,20 @@ def test_run_all_over_mocked_services_counts_requests_and_applies_the_fallback_c
     view = json.loads((fix / "socrata_view_crime.json").read_text())
     from backend.data_health.registry import BY_ID
 
+    def view_with(spec) -> dict:
+        """The crime view's shape, with the columns this source's contract says its module reads (M4)."""
+        cols = list(spec.contract.required_fields) if spec.contract else []
+        return {**view, "columns": [{"fieldName": c} for c in cols] or view["columns"]}
+
+    views = {"bbyy-e7gq": view_with(BY_ID["chi.divvy"]), "pabr-t5kh": view_with(BY_ID["cook.parcel_universe"])}
+
     def handle(req: httpx.Request) -> httpx.Response:
         url = str(req.url)
         if "cookVwrDynmc" in url:
             raise httpx.ConnectError("down", request=req)
         if "/api/views/" in url:
-            return httpx.Response(200, json=view)
+            dataset = url.split("/api/views/")[1].split(".json")[0]
+            return httpx.Response(200, json=views.get(dataset, view))
         return httpx.Response(404, json={"error": True, "message": "unrouted"})
 
     specs = (BY_ID["chi.divvy"], BY_ID["cook.parcel_universe"], BY_ID["cook.gis.parcels"])

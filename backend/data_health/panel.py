@@ -63,7 +63,8 @@ def _row(spec: SourceSpec | None, stored: sqlite3.Row | None, source_id: str) ->
         "frozen": spec.frozen.label if spec and spec.frozen else None,
         "contract": (
             {"layer_name": contract.layer_name, "required_fields": list(contract.required_fields),
-             "count_band": list(contract.count_band) if contract.count_band else None}
+             "count_band": list(contract.count_band) if contract.count_band else None,
+             "values": [v.field for v in contract.values]}
             if contract else None
         ),
         "ack": {"reason": ack.reason, "until": ack.until.isoformat(), "owner": ack.owner} if ack else None,

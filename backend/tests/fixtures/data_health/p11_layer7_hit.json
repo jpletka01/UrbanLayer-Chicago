@@ -1,0 +1,42 @@
+{
+ "recorded": "2026-10-22",
+ "note": "Layer 7 (CHRS orange/red survey, NOT designations) at the P11 sentinel point. Pre-fix code read this as a landmark building (F8, 2026-10-02).",
+ "point": [
+  41.94679263,
+  -87.64286609
+ ],
+ "attributes": [
+  {
+   "OBJECTID": 118961,
+   "LANDMARK_ID": 7788.0,
+   "LANDMARKNAME": " ",
+   "ADDRESSDESCRIPTION": " ",
+   "STARTYEAR": "0",
+   "ENDYEAR": "0",
+   "DECADE": 1920,
+   "YEARNOTES": " ",
+   "DESIGNATION_DATE": null,
+   "LOW_ADDR": 3500,
+   "HIGH_ADDR": 3508,
+   "DIRECTION": "N",
+   "STREET_NAME": "LAKE SHORE",
+   "STREET_TYPE": "DR",
+   "SECDIR": ".",
+   "COLOR_ID": 1,
+   "CLASS_ID": 1,
+   "FORM_NUMBER": 64601001.0,
+   "BLDG_ID": 851863,
+   "BLDG_F_ADDR": 3500,
+   "BLDG_T_ADDR": 3500,
+   "BLDG_PRE_DIR": "N",
+   "BLDG_ST_NAME": "LAKE SHORE",
+   "BLDG_ST_TYPE": "DR",
+   "BLDG_SUF_DIR": " ",
+   "Y_COORD": 1923954.83851,
+   "X_COORD": 1172086.14311,
+   "DELETED": "N",
+   "SHAPE.AREA": 11190.777743370201,
+   "SHAPE.LEN": 557.52400724805
+  }
+ ]
+}

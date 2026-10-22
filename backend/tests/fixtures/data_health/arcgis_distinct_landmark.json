@@ -1,0 +1,21 @@
+{
+ "displayFieldName": "NAME",
+ "fieldAliases": {
+  "LANDMARK": "LANDMARK"
+ },
+ "fields": [
+  {
+   "name": "LANDMARK",
+   "type": "esriFieldTypeString",
+   "alias": "LANDMARK",
+   "length": 1
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "LANDMARK": "Y"
+   }
+  }
+ ]
+}

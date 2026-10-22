@@ -127,9 +127,23 @@ Then resolve the two drill issues in Sentry by hand.
 
 `GET /api/admin/data-health` (admin only; no network) → `backend/data_health/panel.py`: the registry joined with `source_status`, read through the same read-only handle as `/health`. Response: `checker` (state ok|late at 36 h, last run, next run 05:37 UTC, last error, the last 10 runs), `counts` by state, `sources` sorted alarm, error, warn, unknown, acked, ok, frozen (critical first within a state). `?source=<id>` returns that source's 90-day history. A stored row with no registry entry (a fault drill's `drill.*`) is shown, never hidden. `frontend/src/components/admin/DataHealthSection.tsx` renders it; a row click shows the reason, publisher link and the history strip.
 
+## Contracts and sentinels (M4)
+
+Freshness says a source is current; contracts and sentinels say it still *means* what we think. Both run in the daily check and feed the same states and alarms.
+
+**Contracts** (`backend/data_health/contracts.py`, evaluated in `evaluate.contract_findings`):
+- **Fields we read.** `fields_read.json` lists, per Socrata source, the columns its owning module mentions (38 sources). The registry merges it into each `Contract.required_fields`; a column the publisher renames or drops is an `error` on the next run. Regenerate after changing a module's reads: `python -m backend.data_health.contracts --scan --write` (reads the committed modules and the public `/api/views` schemas; no model). A test fails if a listed column is no longer mentioned by its module, and if a new Socrata source with named columns has no entry. This is the check that would have flagged `t68z-cikk`.
+- **Value sets** (`ValueSpec`): layer 1 `ZONE_CLASS` must start with a known family (`ZONE_FAMILIES`; the layer has 1,526 distinct values, mostly `PD n`, and a few typos like `RM4-.5` that still start with a family), layer 6 `LANDMARK` is Y or N, Address Points `st_predir` is a compass word (Chicago rows). A value outside the set is an `alarm` naming it.
+- **Count bands**: wards 50, community areas 77 (exact), ward offices 45–55, plus the layer bands from M1. Socrata counts use `$select=count(*)`.
+
+**Sentinels** (`backend/data_health/sentinels.py`, source `internal.sentinels`, critical): each day the checker runs production's `lookup_zoning` and `query_overlays_checked` at the 12 kit parcels plus one positive control (5749 W Race Ave, a designated individual landmark; official list `tdab-kixi`, layer 5 covers it) and compares the district and the overlay set with `eval/kit/parcels.json`. Any difference is an `alarm` that names the field; a parcel the lookups could not answer (or with an overlay layer down) is a `warn`, never "overlay absent".
+- `sentinels.json` is generated from the kit (`python -m backend.data_health.sentinels --from-kit eval/kit/parcels.json --control "5749 W Race Ave" --write`) because `eval/` is not in the image; a test keeps it in sync with the key. Coordinates are the point the Profile resolves the address to (Address Points), or the Assessor centroid for a vacant lot (P2).
+- `UNCURATED_EXTRA` (`adu_area`, `tod_metra`): the key does not list these, so finding one is not a mismatch; a key-listed overlay still must be found.
+- **Never re-baselined automatically.** An alarm is either a City data change (review, re-key the kit, regenerate) or our code reading it wrongly (fix the code). Run one by hand: `python -m backend.data_health.sentinels --check`.
+- The F8 replay (`test_data_health_sentinels.py`): the pre-fix mapping (layer 7 as "landmark building") applied to a recorded layer-7 hit at P11 derives a landmark the key says is not there, and alarms.
+
 ## Not here yet
 
 | Milestone | Adds |
 |---|---|
-| M4 | value-set contracts, daily known-answer sentinels (FEMA and EPA known answers live here) |
 | M5 | metadata sidecars for committed artifacts (`transit_stations.json` is `unknown` until then), the weekly kit, CI artifact-age warnings |

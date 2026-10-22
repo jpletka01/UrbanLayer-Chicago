@@ -123,7 +123,7 @@ def test_every_named_probe_exists():
 def test_sources_with_no_probe_are_the_planned_placeholders():
     none = {s.id for s in SOURCES if probes.probe_for(s) is None}
     frozen_artifacts = {s.id for s in SOURCES if s.kind == "artifact" and s.frozen}
-    assert none - frozen_artifacts == {"artifact.transit_stations", "internal.sentinels", "eval.kit_weekly"}
+    assert none - frozen_artifacts == {"artifact.transit_stations", "eval.kit_weekly"}
 
 
 # --- probes over a mock transport ------------------------------------------------------------
@@ -172,6 +172,8 @@ def test_arcgis_probe_reads_layer_count_and_newest_edit():
     spec = BY_ID["chi.zoning.districts"]
 
     def handle(req: httpx.Request) -> httpx.Response:
+        if "returnDistinctValues" in str(req.url):  # the ZONE_CLASS value-set read (M4)
+            return httpx.Response(200, json={"features": [{"attributes": {"ZONE_CLASS": "B3-2"}}, {"attributes": {"ZONE_CLASS": "PD 835"}}]})
         if "returnCountOnly" in str(req.url):
             return httpx.Response(200, json=fx("arcgis_count.json"))
         if "orderByFields" in str(req.url):
@@ -179,7 +181,8 @@ def test_arcgis_probe_reads_layer_count_and_newest_edit():
         return httpx.Response(200, json=fx("arcgis_layer1.json"))
 
     res, n = _run(spec, handle)
-    assert n == 3 and res.layer_name == "Zoning Boundaries" and res.count > 14_000 and res.content.year == 2026
+    assert n == 4 and res.layer_name == "Zoning Boundaries" and res.count > 14_000 and res.content.year == 2026
+    assert res.values == {"ZONE_CLASS": ("B3-2", "PD 835")}
 
 
 def test_a_200_with_an_error_body_is_a_service_error():

@@ -16,8 +16,10 @@ an entry here fails CI, so a new source can't ship without a freshness rule.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, replace
 from datetime import date
+from pathlib import Path
 from typing import Literal
 
 Tier = Literal[
@@ -67,12 +69,26 @@ class Ack:
 
 
 @dataclass(frozen=True)
+class ValueSpec:
+    """A field's distinct values must stay inside a known set (WS6 M4). Exactly one of ``allowed``
+    (exact values) or ``prefixes`` (each value must start with one of them) is used. ``where`` narrows
+    the rows read (Address Points is county-wide, the contract is about Chicago)."""
+
+    field: str
+    allowed: tuple[str, ...] = ()
+    prefixes: tuple[str, ...] = ()
+    where: str | None = None
+
+
+@dataclass(frozen=True)
 class Contract:
-    """The cheap structural contract (M4 adds value sets and sentinels on top)."""
+    """What a source must keep being: fields we read, the layer's name, a feature-count band, and
+    value sets for fields whose meaning we derive facts from (WS6 plan §3.6)."""
 
     required_fields: tuple[str, ...] = ()
     layer_name: str | None = None
     count_band: tuple[int, int] | None = None
+    values: tuple[ValueSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -159,7 +175,7 @@ def _overlay(layer_id: int, kind: str, layer_name: str, count: int) -> SourceSpe
     )
 
 
-SOURCES: tuple[SourceSpec, ...] = (
+_BASE_SOURCES: tuple[SourceSpec, ...] = (
     # --- Regulatory: City Zoning MapServer -------------------------------------------------
     _layer(
         f"{ZONING_MAPSERVER}/1", "chi.zoning.districts", "Zoning districts (layer 1)", CITY_GIS,
@@ -559,15 +575,18 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     # --- Internal checks (their probes arrive with the milestone in ``note``) -----------------
     SourceSpec(
-        id="internal.sentinels", name="Daily known-answer sentinels", publisher="UrbanLayer", tier="internal",
-        kind="internal", locator="backend/data_health/sentinels.json", probe="none",
-        owner_modules=("backend/data_health/registry.py",), severity="critical",
-        note="Lands in WS6 M4.",
-    ),
-    SourceSpec(
         id="eval.kit_weekly", name="Weekly parcel kit against production", publisher="UrbanLayer", tier="internal",
         kind="internal", locator="github:kit-weekly", probe="none", owner_modules=("backend/data_health/registry.py",),
         severity="standard", note="Lands in WS6 M5.",
+    ),
+    SourceSpec(
+        id="internal.sentinels", name="Daily sentinels: the 12 kit parcels + a landmark control against the answer key",
+        publisher="UrbanLayer", tier="internal", kind="internal", locator="backend/data_health/sentinels.json",
+        probe="sentinels", owner_modules=("backend/data_health/sentinels.py",),
+        surfaces=("profile", "chat", "report"), severity="critical", availability_only=True,
+        note="Runs the production zoning and overlay lookups at each key parcel and compares the district and the "
+             "overlay set with eval/kit/parcels.json. A mismatch is either a data change to review (re-key) or a bug "
+             "(the F8 landmark misread). Cost: about 15 City map calls per parcel a day; no model.",
     ),
     SourceSpec(
         id="internal.checker", name="The data-health checker itself (dead-man)", publisher="UrbanLayer", tier="internal",
@@ -584,6 +603,50 @@ SOURCES: tuple[SourceSpec, ...] = (
              "(warn 30 h, alarm 36 h) is in the probe. Covers the on-box copy only; the off-box pull to the Mac is not seen here.",
     ),
 )
+
+# --- M4: contracts layered over the sources above -------------------------------------------------------
+
+# Zone-class families in the City's layer 1 (verified 2026-10-22 over all 1,526 distinct values: the layer
+# also holds typos like "RM4-.5", which still start with a known family). A value that starts with none of
+# these is a new kind of district the zoning table does not know.
+ZONE_FAMILIES = ("B1", "B2", "B3", "C1", "C2", "C3", "DC", "DR", "DS", "DX", "M1", "M2", "M3", "PD", "PMD", "POS", "RM", "RS", "RT", "T")
+
+_VALUE_CONTRACTS: dict[str, tuple[ValueSpec, ...]] = {
+    "chi.zoning.districts": (ValueSpec("ZONE_CLASS", prefixes=ZONE_FAMILIES),),
+    "chi.zoning.overlay.historic_district": (ValueSpec("LANDMARK", allowed=("Y", "N")),),
+    "cook.address_points": (ValueSpec("st_predir", allowed=("NORTH", "SOUTH", "EAST", "WEST"), where="inc_muni='Chicago'"),),
+}
+# Datasets whose row count is fixed by law or by the map: the wards (50), community areas (77), ward offices.
+_COUNT_BANDS: dict[str, tuple[int, int]] = {
+    "chi.wards": (50, 50), "chi.community_areas": (77, 77), "chi.ward_offices": (45, 55),
+}
+
+FIELDS_READ_PATH = Path(__file__).with_name("fields_read.json")
+
+
+def load_fields_read(path: Path | None = None) -> dict[str, tuple[str, ...]]:
+    """``{source_id: columns the owning module reads}`` (generated by ``contracts --scan``)."""
+    try:
+        raw = json.loads((path or FIELDS_READ_PATH).read_text())
+    except (OSError, ValueError):
+        return {}
+    return {k: tuple(v) for k, v in raw.items() if isinstance(v, list)}
+
+
+def _with_contracts(spec: SourceSpec, fields_read: dict[str, tuple[str, ...]]) -> SourceSpec:
+    c = spec.contract
+    fields = fields_read.get(spec.id, ())
+    values = _VALUE_CONTRACTS.get(spec.id, ())
+    band = _COUNT_BANDS.get(spec.id)
+    if not (fields or values or band):
+        return spec
+    c = c or Contract()
+    merged = tuple(dict.fromkeys((*c.required_fields, *fields)))
+    return replace(spec, contract=replace(c, required_fields=merged, values=(*c.values, *values),
+                                          count_band=c.count_band or band))
+
+
+SOURCES: tuple[SourceSpec, ...] = tuple(_with_contracts(s, load_fields_read()) for s in _BASE_SOURCES)
 
 BY_ID: dict[str, SourceSpec] = {s.id: s for s in SOURCES}
 

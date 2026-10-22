@@ -131,6 +131,38 @@ def parse_arcgis_newest(body: Any, column: str, what: str = "newest edit") -> da
     return _day(val, ms=True) if isinstance(val, (int, float)) else None
 
 
+def parse_socrata_count(body: Any, what: str = "count") -> int:
+    """The result of ``$select=count(*) as n``."""
+    _raise_if_error_body(body, what)
+    if not isinstance(body, list) or not body or not isinstance(body[0], dict) or body[0].get("n") is None:
+        raise ProbeError("service", f"{what}: no count in body")
+    return int(float(body[0]["n"]))
+
+
+def socrata_distinct_params(field: str, where: str | None) -> dict[str, str]:
+    params = {"$select": field, "$group": field, "$limit": "2000"}
+    if where:
+        params["$where"] = where
+    return params
+
+
+def parse_distinct(body: Any, field: str, what: str = "distinct") -> tuple[str, ...]:
+    """Distinct values of ``field`` from a Socrata ``$group`` result or an ArcGIS ``returnDistinctValues`` one.
+    A null value is left out (the contract is about the values that exist)."""
+    _raise_if_error_body(body, what)
+    if isinstance(body, dict) and "features" in body:
+        rows = [(f.get("attributes") or {}) for f in body["features"] if isinstance(f, dict)]
+    elif isinstance(body, list):
+        rows = [r for r in body if isinstance(r, dict)]
+    else:
+        raise ProbeError("service", f"{what}: unexpected body")
+    return tuple(sorted({str(r[field]) for r in rows if r.get(field) is not None}))
+
+
+def arcgis_distinct_params(field: str) -> dict[str, str]:
+    return {"where": "1=1", "outFields": field, "returnDistinctValues": "true", "returnGeometry": "false", "f": "json"}
+
+
 def parse_census_release(body: Any) -> tuple[str, str, int]:
     """(release id, years, end year) of the newest ACS release Census Reporter serves."""
     _raise_if_error_body(body, "census release")
@@ -263,10 +295,28 @@ async def probe_socrata(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
             f"{base}/resource/{ds}.json", params={"$select": f"max({c.column}) as m"}, headers=headers,
             what=f"{ds} max({c.column})",
         ))
+    # M4 contract reads: a fixed-size set's row count, and the distinct values of each value-set field.
+    contract = spec.contract
+    band = contract is not None and contract.count_band is not None
+    value_specs = contract.values if contract else ()
+    extra_at = len(calls)
+    if band:
+        calls.append(ctx.get_json(f"{base}/resource/{ds}.json", params={"$select": "count(*) as n"}, headers=headers,
+                                  what=f"{ds} count"))
+    for v in value_specs:
+        calls.append(ctx.get_json(f"{base}/resource/{ds}.json", params=socrata_distinct_params(v.field, v.where),
+                                  headers=headers, what=f"{ds} distinct {v.field}"))
     bodies = await asyncio.gather(*calls)
     published, fields = parse_socrata_view(bodies[0], f"{ds} view")
     res = ProbeResult(published=published, fields=fields)
-    if c is not None and len(bodies) > 1:
+    i = extra_at
+    if band:
+        res.count = parse_socrata_count(bodies[i], f"{ds} count")
+        i += 1
+    for v in value_specs:
+        res.values[v.field] = parse_distinct(bodies[i], v.field, f"{ds} distinct {v.field}")
+        i += 1
+    if c is not None and len(bodies) > 1 and c.kind in ("max_date", "max_year"):
         day = parse_socrata_max(bodies[1], c.kind, f"{ds} max({c.column})")
         if day is None:
             res.findings.append(Finding("warn", f"max({c.column}) returned no value"))
@@ -293,6 +343,9 @@ async def probe_arcgis(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
         calls.append(ctx.get_json(f"{url}/query", params=arcgis_count_params(), what="count"))
     if c is not None and c.kind == "newest_edit":
         calls.append(ctx.get_json(f"{url}/query", params=arcgis_newest_params(c.column), what="newest edit"))
+    value_specs = spec.contract.values if spec.contract else ()
+    for v in value_specs:
+        calls.append(ctx.get_json(f"{url}/query", params=arcgis_distinct_params(v.field), what=f"distinct {v.field}"))
     bodies = await asyncio.gather(*calls)
     info = parse_arcgis_layer(bodies[0])
     res = ProbeResult(published=info.edited, layer_name=info.name, fields=info.fields)
@@ -304,6 +357,13 @@ async def probe_arcgis(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
         res.content = parse_arcgis_newest(bodies[i], c.column)
         if res.content is None:
             res.findings.append(Finding("warn", f"no {c.column} on the newest feature"))
+        i += 1
+    for v in value_specs:
+        body = bodies[i]
+        res.values[v.field] = parse_distinct(body, v.field, f"distinct {v.field}")
+        if isinstance(body, dict) and body.get("exceededTransferLimit"):
+            res.findings.append(Finding("warn", f"{v.field}: more distinct values than one response holds; value set checked on a part"))
+        i += 1
     return res
 
 
@@ -537,6 +597,23 @@ async def probe_backup_status(spec: SourceSpec, ctx: ProbeContext) -> ProbeResul
     return ProbeResult(content=day, info=info, findings=findings)
 
 
+async def probe_sentinels(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Run the production zoning and overlay lookups at each key parcel and compare with the answer key
+    (WS6 M4). A mismatch is an ``alarm`` finding; a parcel the lookups could not answer is a ``warn``
+    (the next run asks again); no answer for any parcel is a transient probe error."""
+    from backend.data_health.sentinels import load_sentinels, run_sentinels
+
+    sentinels = load_sentinels()
+    run = await run_sentinels(sentinels)
+    if run.checked == 0:
+        raise ProbeError("transient", "no sentinel could be checked: " + "; ".join(run.unchecked[:3]))
+    res = ProbeResult(findings=list(run.findings))
+    for u in run.unchecked:
+        res.findings.append(Finding("warn", f"could not check {u}"))
+    res.info = f"{run.green} of {len(sentinels)} sentinels match the answer key"
+    return res
+
+
 async def probe_checker(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     """The checker's own last finished run (the external dead-man is /health; this colours the panel)."""
     from backend.data_health.store import last_run_finished, open_readonly
@@ -549,6 +626,7 @@ async def probe_checker(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
 
 
 PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] = {
+    "sentinels": probe_sentinels,
     "census_release": probe_census_release,
     "census_geocoder": probe_census_geocoder,
     "fcc_area": probe_fcc_area,
