@@ -153,6 +153,15 @@ Freshness says a source is current; contracts and sentinels say it still *means*
 - **Registry:** `eval.kit_weekly` reads the workflow's runs through the public Actions API (warn 9 days, alarm 16 days or a failed latest run; unknown before the first run). `artifact.transit_stations` is dated by its sidecar, with the CTA feed's Last-Modified as context.
 - The chat surface (about $1.20 a run, production credits) is a separate monthly production check, not run here.
 
+## Data dates on every surface (M6)
+
+`vintages.py` (`vintages_for(provenance, code_currency=None)`) is the one builder of "how current is what you are reading". It takes the provenance map (so source-level dates already came through `status.latest()` and the registry) and returns up to 14 `DatedSource`s in reading order: zoning map record edited, code text current (+ amendments since, from `code_currency`), Assessor values year, tax year, sales through, ACS tract / community area, then the area feeds (crime, 311, permits, violations, business, vacant, food). Each has a `kind`: `record` (a record's own edit date), `through` (a source's data runs through), `period` (a survey or tax year is the date), or `checked` (the source gave no date, so the day we asked; a date we don't have is never invented). The code text appears only when the answer rests on it, and the amendments count follows `code_currency`'s check state (fresh gives a count, aging a count "as of", unknown "couldn't check recently").
+- **Chat:** a `- **Data dates:** …` line in the sources footer, persisted in the message text like the rest of it (a shared link carries it). The code date is left out of it when cited code already prints the currency line. The area source lines carry the area, the window ("last 90 days") and the margin level, not dates.
+- **Report:** the cover's "Report Date" is "Generated on <date>" plus a "Data as of" box from `helpers()["data_dates"]`, and "Not checked in this report:" lists `partial_failures` (M7 makes those honest). The sources table was already generated from the registry (WS0 M5).
+- **Profile:** `/api/scorecard` carries `data_dates`; the page footer words them (`lib/dataDates.ts`, `dataDates.*` in `common`) beside "Checked <day>".
+- **Wording** lives in three catalogs that a test keeps equal: `dates.*` in `report_i18n.py` (chat and PDF), `dataDates.*` in the frontend locales. A lint forbids a typed year range (`2019–2023`) in the catalogs, the template, the footer and the prompts.
+- To date a new feed: give its fact an entry (WS0 guide §8), then add it to `_AREA_FEEDS` (or a headline in `vintages_for`), a noun in both catalogs, and the key in the frontend/backend parity test.
+
 ## Not here yet
 
-Nothing from the WS6 phase 1 plan. Phase 2 (M6 data dates on every answer, M7 partial failures shown, M8 fact snapshots, M9 "since then") is in the build queue.
+Phase 2 continues: M7 partial failures shown honestly, M8 fact snapshots and report originals, M9 "since then". The `displayed_label` field on a source (what we tell users, e.g. "ACS 2020–2024") is read only by the sources table; the probe-versus-label alarm the plan describes is not built, because no wording carries a typed vintage any more (the lint above guards that instead).

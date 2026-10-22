@@ -173,5 +173,32 @@
     "sourceHeading": "Source",
     "unavailable": "Couldn't be checked today",
     "ai": "AI"
+  },
+  "dataDates": {
+    "noun": {
+      "zoning_map": "Zoning map record",
+      "code_text": "Code text current",
+      "assessor": "Assessor values",
+      "tax_year": "Tax year",
+      "sales": "Sales",
+      "acs_tract": "ACS (tract)",
+      "acs_community_area": "ACS (community area)",
+      "crime": "Crime",
+      "c311": "Open 311 requests",
+      "permits": "Permits",
+      "violations": "Violations",
+      "business": "Business licenses",
+      "vacant": "Vacant buildings",
+      "food": "Food inspections"
+    },
+    "record": "{{noun}} edited {{v}}",
+    "through": "{{noun}} through {{v}}",
+    "period": "{{noun}} {{v}}",
+    "checked": "{{noun}} checked {{v}}",
+    "since_one": "(+{{count}} later zoning amendment)",
+    "since_other": "(+{{count}} later zoning amendments)",
+    "sinceAging_one": "(+{{count}} later zoning amendment as of {{d}})",
+    "sinceAging_other": "(+{{count}} later zoning amendments as of {{d}})",
+    "sinceUnknown": "(couldn't check recently for later amendments)"
   }
 }

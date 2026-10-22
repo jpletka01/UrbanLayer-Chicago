@@ -203,14 +203,10 @@ def _code_currency_line(code_currency: dict | None, cited_sections: list[str]) -
     return line
 
 
-_AREA_PERIOD_RANGE = re.compile(r"^\d{4}\s*[–-]\s*\d{4}$")
-_AS_OF_WORDS = ("period_end", "source_updated", "record_updated")
-
-
 def _area_lines(provenance: dict[str, dict]) -> list[str]:
-    """One dated line per area source the turn used (crime, 311, permits, census tract...), in words a
-    reader can check: the publisher's name, the area, the period or date the data runs through, and the
-    margin-of-error level when the source publishes one. Parcel-scoped sources have their own lines above."""
+    """One line per area source the turn used (crime, 311, permits, census tract...): the publisher's name,
+    the area, and the margin-of-error level when the source publishes one. The dates are not here: the
+    "Data dates" line says how current each is, in one place."""
     from backend.data_health.registry import BY_ID
 
     groups: dict[str, list[dict]] = {}
@@ -225,24 +221,29 @@ def _area_lines(provenance: dict[str, dict]) -> list[str]:
         if not shown:
             continue
         geos = list(dict.fromkeys(e["geography"] for e in shown if e.get("geography") and e.get("scope") not in ("city", "county")))
-        period = next((str(e["period"]) for e in shown if e.get("period")), None)
-        as_of = max((str(e["as_of"])[:10] for e in shown if e.get("as_of") and e.get("as_of_basis") in _AS_OF_WORDS), default=None)
         bits = []
         if geos:
             bits.append(geos[0])
-        if period:
-            bits.append(period.replace("-", "–") if _AREA_PERIOD_RANGE.match(period) else period)
-        is_survey = bool(period and _AREA_PERIOD_RANGE.match(period))  # "2020–2024": the period is the date
-        if as_of and not is_survey:
-            bits.append(f"data through {as_of}")
-        elif not as_of and not is_survey:
-            bits.append(f"queried {max(e.get('query_date') or '' for e in shown)}")
+        window = next((str(e["period"]) for e in shown if e.get("period") and not str(e["period"])[0].isdigit()), None)
+        if window:  # "last 90 days": the span the count covers (a survey or tax year is a date, in Data dates)
+            bits.append(window)
         if any((e.get("precision") or {}).get("moe") is not None for e in shown):
             bits.append("margins of error at the 90% level")
         if any("bracket_median" in (e.get("confidence_reasons") or []) for e in shown):
             bits.append("income median estimated from brackets, no margin of error published")
         lines.append(f"- **{name}**" + (f": {'; '.join(bits)}" if bits else ""))
     return lines
+
+
+def _data_dates_line(provenance: dict[str, dict], code_currency: dict | None, skip: set[str]) -> str | None:
+    """"**Data dates:** Zoning map record edited Oct 5, 2026 · Code text current through Mar 18, 2026 (+16 later
+    zoning amendments) · Assessor values 2025 · ..." from the same list the report cover and the Profile show."""
+    from backend.data_health.vintages import phrases, vintages_for
+    from backend.legislation.currency import fmt_day
+    from backend.report_i18n import make_plural, make_translator
+
+    items = phrases(vintages_for(provenance, code_currency=code_currency), make_translator("en"), make_plural("en"), fmt_day, skip)
+    return f"- **Data dates:** {' · '.join(items)}" if items else None
 
 
 def build_sources_footer(
@@ -284,11 +285,16 @@ def build_sources_footer(
         lines.append(f"- [{n}] Municipal Code §{chunk.section}{title}{thru}")
     if not lines:
         return ""
+    currency = None
     if bulk or cited_chunks:
         cited = [e["section"] for e in bulk if e.get("section")] + [c.section for _, c in cited_chunks]
         currency = _code_currency_line(code_currency, cited)
-        if currency:
-            lines.append(currency)
+    # the code's date is already in the currency line when the answer rests on cited code text
+    dates = _data_dates_line(provenance, code_currency, {"code_text"} if currency else set())
+    if dates:
+        lines.append(dates)
+    if currency:
+        lines.append(currency)
     # an area-only answer (crime, census tract) has no parcel data to speak of
     heading = "Sources for the data used" if area_lines and not parcel_lines and not cited_chunks else "Sources for the parcel data used"
     return f"\n\n---\n**{heading}**\n" + "\n".join(lines) + "\n"

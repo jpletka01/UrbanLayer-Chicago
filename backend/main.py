@@ -2140,6 +2140,10 @@ async def scorecard(
         comparables=data.get("comparables"),
         address_scoped_violations=True,
     )
+    # The dates behind this page, in reading order (the chat footer and the report cover show the same list).
+    from backend.data_health.vintages import as_dicts, vintages_for
+
+    data["data_dates"] = as_dicts(vintages_for(data["provenance"], code_currency=data["context"].code_currency))
     data["context"] = data["context"].model_dump(exclude_none=True)
     if data.get("comparables"):
         data["comparables"] = data["comparables"].model_dump(exclude_none=True)
@@ -2183,7 +2187,11 @@ def render_report_html(report_data, language: str = "en", report_date: str | Non
         # Confidence captions must never stop a paid report from rendering: without a map they stay quiet.
         log.warning("report provenance failed; rendering without confidence captions", exc_info=True)
         report_data.provenance = {}
-    env.globals.update(report_provenance.helpers(report_data.provenance, _t, language))
+    try:
+        code_currency = report_data.context.code_currency
+    except Exception:
+        code_currency = None
+    env.globals.update(report_provenance.helpers(report_data.provenance, _t, language, code_currency=code_currency))
     return env.get_template("zoning_report.html").render(
         report=report_data,
         report_date=report_date or report_i18n.format_report_date(date.today(), language),

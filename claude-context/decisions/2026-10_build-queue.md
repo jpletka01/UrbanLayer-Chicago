@@ -1266,3 +1266,33 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not verified on prod:** the backend's chat path. No read-only request reaches it (the chat route spends the production key, and OpenAPI is off), so the deploy job's success is the only evidence the new image is running. To check it: ask any neighborhood question in chat and look for a "Sources for the data used" block with a period and the 90% margin-of-error level, and, in the Data panel, the tract's `±` margins. A tract with a very wide margin (a small tract's vacancy rate) should show "Not shown: …". Rule 38's effect on the answer text is not measured anywhere yet (no `make kit`).
 
+## Item 21: data dates on every answer, report and Profile (2026-10-22)
+
+**Most of M6 was already done; what was left is one builder and three places that show it.** WS0 had already taken the typed years out of the report wording (M1), renamed the Profile's "Data as of" to "Checked" (M1) and generated the sources table from the registry (M5). *Evidence:* the new lint finds no year range typed into `report_i18n.py`, the template, the locales, the footer or the prompts. What remained: a list of the headline dates, the chat line, the cover box, and the dates on the Profile.
+
+**`vintages_for` reads the provenance map, not the context and the registry separately.** The plan had it combine record-level dates from the context with source-level dates from the registry status. *Alternative:* a second builder over the raw context. Rejected: WS0's provenance already resolves the precedence (the response's own date, then the data-health store, then the registry's frozen vintage), so a second builder would one day disagree with the captions. Run over the recorded 1601 N Milwaukee provenance it returns 8 dates; each equals its entry's date.
+
+**A source with no date says when we asked.** A figure whose source gave no date gets kind `checked` ("Sales checked Oct 22, 2026"), not silence and not the query date dressed as a data date. *Why:* silence reads as "current". *Seen locally:* with no data-health store, sales and violations read "checked"; on production the store supplies "through <date>" (the recorded production fixture has "through" dates for both).
+
+**The code's date is said once.** When the answer cites standards or code, the footer already prints the code-currency line ("Code text current through Jun 17, 2026 · 10 later zoning amendments"), so the Data dates line leaves it out; on a crime question the code date is not shown at all (it would be a date nobody asked for). The amendments count follows `code_currency`'s check state: fresh gives a count, aging a count with "as of", unknown "couldn't check recently", never a bare count.
+
+**The area source lines lost their dates.** In item 20 I put "data through" and the survey period on each area line; with one Data dates line they would say everything twice, so the lines now carry the area, the window ("last 90 days") and the margin level. The tests I wrote in item 20 changed with them.
+
+**The cover.** "Report Date" is now "Generated on <date>" plus a "Data as of" box (two columns, left-aligned). The cover already ran onto a second page (the map and the identifiers sit there), and the report is 24 pages before and after. "Not checked in this report:" lists the report's `partial_failures`, which are English labels today; M7 replaces them with per-source statuses.
+
+**The Profile footer** shows the same list in the reader's language (`lib/dataDates.ts`, `dataDates.*`), beside "Checked <day>", which now prints "Oct 22, 2026" rather than the raw ISO date that sat next to it. Three catalogs word the same dates (chat and PDF: `dates.*`; Profile: `dataDates.*`); `test_the_frontend_wording_matches_the_backend_catalog` keeps them equal and checks every noun the builder can emit has wording.
+
+**Not built, on purpose: the probe-versus-label alarm.** The WS6 plan said a mismatch between a source's `displayed_label` and what its probe reads would alarm until labels were registry-derived. No wording carries a typed vintage any more, so there is no label to compare; the lint guards that instead. *Revisit if:* a vintage is ever typed into a string again.
+
+**Numbers** (2026-10-22; public data, no model)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,070 → 2,085 (+15, `test_data_dates.py`) | `make test` |
+| Frontend tests | 485 → 512 (+4 for `dataDates`, +23 from the untranslated-keys guard, one per new `es` key); lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Mobile overflow audit | 40 of 40 (8 routes, 5 phones) with the new footer | `cd frontend && npm run test:mobile` |
+| Dates on the Profile and the cover, 1601 N Milwaukee | 8: zoning map record Dec 15, 2021; code text through Jun 17, 2026 (+10 later amendments); Assessor values 2026; tax year 2024; sales; ACS (tract) 2020–2024; crime through Oct 15, 2026; violations | `GET /api/scorecard?pin=14313320180000` (`data_dates`); render script over `_fetch_report_data` (scratch) |
+| Report length | 24 pages before and after | same render |
+
+**Not verified:** production (the report PDF needs an admin session, and the store-backed "through" dates for sales and violations only exist there); the Spanish pages beyond structure (new wording is English, listed in `_UNTRANSLATED_ES` and `_untranslated.json`); the chat footer end to end against the live model (no key used).
+

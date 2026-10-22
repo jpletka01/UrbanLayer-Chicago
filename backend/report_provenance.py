@@ -244,11 +244,16 @@ def state(e: dict | None) -> str:
     return (e or {}).get("confidence", "standard")
 
 
-def helpers(provenance: dict[str, dict] | None, t: T, lang: str) -> dict[str, Any]:
-    """Jinja globals bound to one report: ``conf_caption(fact)``, ``conf_state(fact)`` and the sources rows."""
+def helpers(provenance: dict[str, dict] | None, t: T, lang: str, code_currency: dict | None = None) -> dict[str, Any]:
+    """Jinja globals bound to one report: ``conf_caption(fact)``, ``conf_state(fact)``, the sources rows and
+    ``data_dates()``, the cover's "Data as of" list (the same dates the chat footer and the Profile show)."""
+    from backend.data_health.vintages import phrases, vintages_for
+
     prov = provenance or {}
+    tn = report_i18n.make_plural(lang)
     return {
         "conf_caption": lambda fact: caption(prov.get(fact), t, lang),
         "conf_state": lambda fact: state(prov.get(fact)),
         "sources_rows": lambda: sources_rows(prov, t, lang),
+        "data_dates": lambda: phrases(vintages_for(prov, code_currency=code_currency), t, tn, lambda iso: _fmt_date(iso, lang)),
     }
