@@ -1416,7 +1416,7 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 
 **Not verified on prod, and needs one step from Jack:** the flag itself. The production snapshot has no `designations` until the sync runs: the 06:00 Chicago timer does it tomorrow, or run it now on the server (needs sudo): `sudo systemctl start legislation-sync.service`, then `sudo journalctl -u legislation-sync.service -n 30 --no-pager` (the log has a line `landmark designations: ok passed=8 ... with_parcels=5`). Afterwards `curl "https://urbanlayerchicago.com/api/scorecard?pin=25351000060000"` should show one `passed_landmark_designations` entry (O2026-0027058, building, 13100 S Ellis Ave), and `pin=14054080110000` one district entry (O2026-0027059); `pin=14313320180000` (1601 N Milwaukee) and `pin=20044480440000` (4644 S Dearborn St, already a landmark on the map) none. The report's new notice and the prompt rule's effect were not seen on prod.
 
-## Item 23: fact snapshots, report originals, report cover (WS6 M8, 2026-10-22)
+## Item 23: fact snapshots, report originals, report cover (WS6 M8, #99, 2026-10-22)
 
 **The policy, as Jack approved it (option C):** a purchase keeps the first report it renders as its **original**, stored once, byte for byte; every later download is a live render with today's data, and its cover says "Updated copy of the report first generated on <date>". Free and unlimited for now. `GET /api/report?copy=original` returns the stored PDF; no `copy`, or `updated`, renders live.
 - **The first render is the original, whichever copy was asked for.** A purchase made before this shipped has no original; its next download becomes one, and Settings labels that honestly ("Original · <the day it was first kept>", not the purchase date). *Alternative:* back-fill by re-rendering old purchases. Rejected: that would invent an "original" that is today's data under yesterday's date.
@@ -1452,10 +1452,23 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 
 **Not verified:**
 - **Stripe test mode.** The plan's acceptance is a purchase through Stripe's test mode. I did not run a checkout (no webhook forwarding here, and prod's Stripe is still off): I seeded a completed purchase row for the local dev user and drove the real report route, which exercises everything after the webhook.
-- Production: nothing has been deployed with this yet. The first buyer download after deploy becomes that purchase's original; the server backup script change takes effect when the deploy pulls it, and the first run to confirm is `sudo /opt/urbanlayer/scripts/backup_db.sh` (look for "Report originals mirrored").
+- Production: see the block below. The first buyer download after deploy becomes that purchase's original; the server backup script change takes effect when the deploy pulls it, and the first run to confirm is `sudo /opt/urbanlayer/scripts/backup_db.sh` (look for "Report originals mirrored").
 - Spanish: the new cover line and Settings strings are English, listed as untranslated.
 - The off-box copy of the originals (above).
 
+**Production** (2026-10-22, after the deploy of #99; docs PR #100 merged first)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | the served bundle changed to `index-CDKwAX8y.js` and carries the new Settings wording; `/health` ok. GitHub's job list for the run still read "test in progress, deploy waiting" after the run itself showed `completed / success`, so the live bundle, not that list, is the evidence | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the bundle has "Original · {{date}}", "Updated copy" and "kept exactly as sold" | `curl -s https://urbanlayerchicago.com/assets/index-*.js \| grep -o -E "kept exactly as sold\|Updated copy"` (the bundle name comes from the home page) |
+| Profile payload | 1601 N Milwaukee Ave: B3-2, ordinance 17230, code through 2026-06-17, `failed_sources: []`, 57 provenance entries, `data_dates` present, no rezoning or designation flag: unchanged | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+| Report and purchases, anonymous | `/api/report` and `/api/me/purchases` both 401 | `curl -i` on each |
+| Health block | `data_health.alarms` reads 1 on the last checker run, 8.9 hours old, so it predates this deploy. Which source it is wasn't looked up here (it needs the admin panel) | `curl https://urbanlayerchicago.com/health` |
+
+**Not verified on prod:**
+- Everything behind a login: the Settings purchase row ("Original · date" and "Updated copy"), a real second download, and `copy=original`. Item 23's local run covered those against a scratch database; prod has no purchase to download yet (Stripe is off), so the first purchase will be the first live original.
+- The server backup change: `sudo /opt/urbanlayer/scripts/backup_db.sh` once a purchase exists, then look for "Report originals mirrored". The off-box pull on Jack's Mac still needs `./reports/` added.
 
 ## Item 24: the monthly routine and its nudge (WS1 M7, 2026-10-22)
 
