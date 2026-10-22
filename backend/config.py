@@ -185,6 +185,9 @@ class Settings(BaseSettings):
     # Written hourly by the APP (live failure counts per source, backend/data_health/live.py) and read by the
     # checker, so each container only ever writes its own file.
     data_health_live_db_path: Path = PROJECT_ROOT / "backend" / "data" / "data_health_live.db"
+    # The stored ORIGINAL of each purchased report (WS6 M8): backend/data/reports/<purchase_id>/<ms>.pdf, on the
+    # persistent volume. scripts/backup_db.sh archives it with the nightly database backup.
+    report_store_dir: Path = PROJECT_ROOT / "backend" / "data" / "reports"
     # Written by scripts/backup_db.sh (host, as root) after each backup, into the directory that holds
     # chicago.db, so the checker container can read it without mounting /opt/urbanlayer/backups.
     backup_status_path: Path = PROJECT_ROOT / "backend" / "data" / "backup_status.json"

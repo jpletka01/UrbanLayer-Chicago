@@ -9,6 +9,8 @@ volume) and tells Sentry about sources that turned red. It also checks the age o
 `data_health.checker` (`ok`, or `late` after 36 h without a finished run). Design and alarm rules:
 `claude-context/guides/data-health.md`.
 
+`scripts/backup_db.sh` also mirrors the stored report originals (`backend/data/reports/`, the PDFs buyers were sold) into `/opt/urbanlayer/backups/reports/`, append-only (`rsync --ignore-existing`, never deleting). The Mac-side off-box pull (`scripts/pull_backups.sh`) fetches only the database copies so far.
+
 The **app** writes a second file on the same volume, `backend/data/data_health_live.db`: hourly counts of its own
 calls to each source and how many failed (WS6 M7, `backend/data_health/live.py`). The checker reads the last 24 hours
 and turns a failure rate over 20% (50% = alarm) of at least 10 calls into `warn` (`alarm`) between two daily probes.

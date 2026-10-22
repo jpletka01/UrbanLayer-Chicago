@@ -452,6 +452,7 @@ a.glossary-link {
     {% if prop and prop.pin14 %}<div><a href="#glossary-pin" class="glossary-link">{{ t("cover.pin") }}</a>: <a href="https://www.cookcountyassessor.com/pin/{{ prop.pin14 }}">{{ prop.pin14 }}</a></div>{% endif %}
     <div>{{ t("cover.coordinates") }}: {{ "%.5f"|format(report.lat) }}, {{ "%.5f"|format(report.lon) }}</div>
     <div>{{ t("cover.generated_on") }}: {{ report_date }}</div>
+    {% if copy_of %}<div data-testid="updated-copy" style="font-weight: 600;">{{ t("cover.updated_copy", date=copy_of) }}</div>{% endif %}
     {% set dd = data_dates() %}
     {% if dd %}
     <div class="dates" data-testid="data-dates">

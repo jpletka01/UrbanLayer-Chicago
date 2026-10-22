@@ -2156,7 +2156,9 @@ async def scorecard(
     return data
 
 
-def render_report_html(report_data, language: str = "en", report_date: str | None = None) -> str:
+def render_report_html(
+    report_data, language: str = "en", report_date: str | None = None, copy_of: str | None = None,
+) -> str:
     """The report's HTML from its data (deterministic catalog, no LLM)."""
     from datetime import date
 
@@ -2203,6 +2205,8 @@ def render_report_html(report_data, language: str = "en", report_date: str | Non
     return env.get_template("zoning_report.html").render(
         report=report_data,
         report_date=report_date or report_i18n.format_report_date(date.today(), language),
+        # an updated copy of a report the buyer already has: the day the first one was generated (WS6 M8)
+        copy_of=report_i18n.format_report_date(date.fromisoformat(copy_of[:10]), language) if copy_of else None,
     )
 
 
@@ -2215,11 +2219,19 @@ async def report(
     pin: str | None = None,
     mock: bool = False,
     language: str = "en",
+    copy: str | None = None,
     user: dict = Depends(require_auth),
 ) -> Response:
-    """Generate a PDF development feasibility & site intelligence report."""
+    """Generate a PDF development feasibility & site intelligence report.
+
+    A purchase keeps the FIRST report it renders as its original (stored once, byte for byte). ``copy=original``
+    returns that stored PDF; every other download is a live render with today's data, labeled "Updated copy"
+    once an original exists (WS6 M8, Jack's policy: original plus an updated copy, free for now)."""
     import re
-    from datetime import date
+    from datetime import date, datetime, timezone
+
+    if copy not in (None, "original", "updated"):
+        raise HTTPException(status_code=400, detail="copy must be 'original' or 'updated'")
 
     from backend.auth import _TIER_ORDER
 
@@ -2242,6 +2254,28 @@ async def report(
                 status_code=403,
                 detail={"error": "report_purchase_required"},
             )
+
+    # The purchase this render belongs to, and its stored original if it has one. A mock render belongs to no
+    # purchase and is never recorded.
+    purchase_id = None if mock else await db.find_report_purchase(user["id"], resolved_lat, resolved_lon, pin=rl.pin)
+    original = await db.get_original_render(purchase_id) if purchase_id else None
+    if copy == "original":
+        if original is None:
+            raise HTTPException(status_code=404, detail={"error": "no_original"})
+        stored = db.read_original_pdf(original)
+        if stored is None:
+            log.error("Stored original for purchase %s is missing or fails its hash", purchase_id)
+            raise HTTPException(status_code=410, detail={"error": "original_unavailable"})
+        first = datetime.fromtimestamp(original["rendered_at"] / 1000, tz=timezone.utc).date().isoformat()
+        slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
+        return Response(
+            content=stored, media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{slug}_{first}_feasibility_report_original.pdf"',
+                     "X-Report-Copy": "original"},
+        )
+    copy_of = (
+        datetime.fromtimestamp(original["rendered_at"] / 1000, tz=timezone.utc).date().isoformat() if original else None
+    )
 
     # Bound concurrent report renders: _fetch_report_data through write_pdf is the
     # memory-heavy span (map rasters + WeasyPrint buffers). Holding _REPORT_SEM here
@@ -2302,7 +2336,7 @@ async def report(
         del basemap_bytes, basemap_wide_bytes
 
         # Render HTML template
-        html_content = render_report_html(report_data, language)
+        html_content = render_report_html(report_data, language, copy_of=copy_of)
 
         # Generate the PDF in an ISOLATED CHILD PROCESS. write_pdf() (cairo/pango
         # laying out 16–19 image-embedded pages) is the heaviest single step of a
@@ -2330,6 +2364,13 @@ async def report(
     slug = re.sub(r"[^a-z0-9]+", "_", (resolved_address or "property").lower()).strip("_")
     filename = f"{slug}_{date.today().isoformat()}_feasibility_report.pdf"
 
+    kind = "updated" if (original is not None or purchase_id is None) else "original"
+    if not mock:
+        kind = await _record_report_render(
+            user=user, purchase_id=purchase_id, kind=kind, report_data=report_data, rl=rl, language=language,
+            pdf_bytes=pdf_bytes,
+        )
+
     # Trim glibc free lists back to the OS *after* the response is sent, so the
     # request's matplotlib/HTML allocations don't ratchet the worker's RSS up.
     from starlette.background import BackgroundTask
@@ -2337,9 +2378,46 @@ async def report(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"', "X-Report-Copy": kind},
         background=BackgroundTask(_trim_malloc),
     )
+
+
+async def _record_report_render(
+    *, user: dict, purchase_id: int | None, kind: str, report_data, rl, language: str, pdf_bytes: bytes,
+) -> str:
+    """Keep what this render said (facts + data dates), and the PDF itself when it is a purchase's first.
+    Never fails the download: a bookkeeping error is logged and the buyer still gets their report. Returns the
+    kind actually recorded (a lost race for the original becomes an updated copy)."""
+    try:
+        from dataclasses import asdict
+
+        from backend.data_health import facts
+        from backend.data_health.vintages import as_dicts, vintages_for
+        from backend.retrieval.zoning_definitions import get_zone_definition
+
+        ctx = report_data.context
+        zone = asdict(get_zone_definition(ctx.parcel_zoning.zone_class)) if ctx.parcel_zoning is not None else None
+        try:
+            code_currency = ctx.code_currency
+        except Exception:
+            code_currency = None
+        prov = getattr(report_data, "provenance", None) or {}
+        snap = facts.snapshot(
+            ctx, provenance=prov, zone_definition=zone, lat=report_data.lat, lon=report_data.lon,
+            address=report_data.address, pin=rl.pin, unchecked=report_data.partial_failures,
+        )
+        vint = as_dicts(vintages_for(prov, code_currency=code_currency))
+        args = dict(user_id=user["id"], purchase_id=purchase_id, pin=rl.pin, lat=report_data.lat, lon=report_data.lon,
+                    facts=snap, vintages=vint, language=language)
+        try:
+            await db.record_render(kind=kind, pdf=pdf_bytes if kind == "original" else None, **args)
+        except db.OriginalExists:
+            kind = "updated"
+            await db.record_render(kind="updated", **args)
+    except Exception:
+        log.warning("Could not record the report render", exc_info=True)
+    return kind
 
 
 async def _scope_to_caller(req: ChatRequest, user: dict | None) -> ChatRequest:
@@ -2506,6 +2584,11 @@ async def voucher_redeem(request: Request, user: dict = Depends(require_auth)) -
 async def my_purchases(request: Request, user: dict = Depends(require_auth)) -> dict:
     """Completed report purchases for the current user (settings billing list)."""
     purchases = await db.get_user_report_purchases(user["id"])
+    originals = await db.get_purchase_originals(user["id"])
+    # `original`: the first report this purchase rendered, kept as sold (WS6 M8); None for a purchase made
+    # before originals were kept, until its next download becomes the original.
+    for p in purchases:
+        p["original"] = originals.get(p["id"])
     return {"purchases": purchases}
 
 

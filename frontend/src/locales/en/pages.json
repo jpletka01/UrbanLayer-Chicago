@@ -791,7 +791,11 @@
     "accessCodeAlreadyUsed": "You've already used this code.",
     "accessCodeExhausted": "This code has reached its redemption limit.",
     "accessCodeError": "Something went wrong — please try again.",
-    "compBlurb": "Early access — complimentary Pro features until {{date}}."
+    "compBlurb": "Early access — complimentary Pro features until {{date}}.",
+    "downloadOriginal": "Original · {{date}}",
+    "downloadUpdated": "Updated copy",
+    "originalNote": "The original is the first report generated for this purchase, kept exactly as sold. The updated copy is a new report with today's data.",
+    "originalMissing": "The stored original couldn't be found. An updated copy is available."
   },
   "notFound": {
     "title": "Page not found",
