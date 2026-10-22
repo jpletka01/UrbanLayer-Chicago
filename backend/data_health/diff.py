@@ -256,9 +256,7 @@ def compare(old: dict, cur: dict | None) -> dict:
         unchecked.append("everything")
         # The parts that need no lookup still hold: amendments, text refreshes, corrections.
         changes += _amendments(old) + _text_refresh(old)
-        cur_view: dict = {}
     else:
-        cur_view = cur
         checked = cur.get("checked") or {}
         old_zone, new_zone = (old.get("zoning") or {}), (cur.get("zoning") or {})
         if not checked.get("zoning", cur.get("zoning") is not None):
