@@ -1362,7 +1362,7 @@ So an outage of the Assessor's feed would read as "no sales, no comps" for up to
 - `data_health_live.db` should appear in `backend/data/` within an hour of the deploy and the next daily check should read it. To confirm, on the server: `ls -l /opt/urbanlayer/backend/data/data_health_live.db` (it lives on the `backend_data` volume; if the path differs, `docker compose ... run --rm backend ls -l backend/data`). If it is missing after two hours, the flush task did not start.
 - The chat `**Couldn't check today:**` line and the report's section notices (the chat route spends the key; the report needs an admin session).
 
-## Item 16b: landmark designations the map doesn't show yet (WS1 M5b, 2026-10-22)
+## Item 16b: landmark designations the map doesn't show yet (WS1 M5b, #98, 2026-10-22)
 
 **"Not yet on the map" is decided by the parcel's own overlay result, not by comparing names.** Item 16 declined this because the landmark layers carry a name, an address and a designation date as text and no ordinance number, so asking the rezoning question ("does a polygon carry this record number?") would have been a fuzzy match. The design that replaced it asks nothing of the map's text. A parcel is flagged when (1) a designation ordinance passed within `LOOKBACK_DAYS` has a title that lists this parcel's address or, for a district, a block it is on, **and** (2) the parcel's own landmark-layer result (the overlay query the Profile already ran, layers 5 and 6) does not already say landmark. If the map shows the parcel as a landmark or in a landmark district there is nothing to add; if it doesn't, the ordinance is news the map hasn't caught up to. *Alternative:* match the layer's name or address text to the title. Rejected for the reason above. *Evidence (live, 2026-10-22):* with the new snapshot rows, the three parcels whose designation is not on the map yet (13100 S Ellis Ave, 2 N Riverside Plz, a Bryn Mawr Ave parcel) are flagged by PIN, and the two already on the map (4644 S Dearborn St, 1926 N Halsted St) get nothing added and keep the existing "landmark" note.
 
@@ -1405,6 +1405,16 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - The prompt rule's effect on an answer (no model).
 - Spanish: new strings are English, listed as untranslated.
 
+**Production** (2026-10-22, after the deploy of #98; docs PR #97 merged first)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI, lint, test and deploy green; `/health` ok | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle carries the designation wording ("designation passed") | `grep` on the `assets/index-*.js` the home page names |
+| Profile payload | 1601 N Milwaukee Ave and 13100 S Ellis Ave return no `passed_landmark_designations` and `failed_sources: []`; their overlay flags are unchanged. This is the expected state until the daily sync writes `designations` into the production snapshot | `curl "https://urbanlayerchicago.com/api/scorecard?pin=25351000060000"` |
+| Report endpoint, anonymous | still 401 | `curl -i "https://urbanlayerchicago.com/api/report?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on prod, and needs one step from Jack:** the flag itself. The production snapshot has no `designations` until the sync runs: the 06:00 Chicago timer does it tomorrow, or run it now on the server (needs sudo): `sudo systemctl start legislation-sync.service`, then `sudo journalctl -u legislation-sync.service -n 30 --no-pager` (the log has a line `landmark designations: ok passed=8 ... with_parcels=5`). Afterwards `curl "https://urbanlayerchicago.com/api/scorecard?pin=25351000060000"` should show one `passed_landmark_designations` entry (O2026-0027058, building, 13100 S Ellis Ave), and `pin=14054080110000` one district entry (O2026-0027059); `pin=14313320180000` (1601 N Milwaukee) and `pin=20044480440000` (4644 S Dearborn St, already a landmark on the map) none. The report's new notice and the prompt rule's effect were not seen on prod.
 
 ## Item 23: fact snapshots, report originals, report cover (WS6 M8, 2026-10-22)
 
@@ -1445,3 +1455,4 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - Production: nothing has been deployed with this yet. The first buyer download after deploy becomes that purchase's original; the server backup script change takes effect when the deploy pulls it, and the first run to confirm is `sudo /opt/urbanlayer/scripts/backup_db.sh` (look for "Report originals mirrored").
 - Spanish: the new cover line and Settings strings are English, listed as untranslated.
 - The off-box copy of the originals (above).
+
