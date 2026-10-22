@@ -55,6 +55,7 @@ from backend.models import (
     ScorecardContext,
     TurnSummary,
 )
+from backend.provenance import withhold_low_evidence
 from backend.retrieval import buildings, business, crime, food_inspections, three11, vacant
 from backend.retrieval.geo import (
     COMMUNITY_AREAS,
@@ -768,11 +769,10 @@ def _scorecard_grounding_applies(
 
 
 def _provenance_for(context: ContextObject) -> dict[str, dict]:
-    """Dated sources for the parcel facts a chat turn was given (empty without a resolved district)."""
+    """Dated sources for the figures a chat turn was given: the parcel's, and the area feeds on a
+    parcel-less turn (crime, 311, permits, census tract...). Empty when the turn carried none."""
     from backend.provenance import build_provenance
 
-    if context.parcel_zoning is None:
-        return {}
     return build_provenance(
         context=context,
         zone_definition=context.zone_definition,
@@ -1426,6 +1426,14 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     except Exception:
         log.warning("Analytics computation failed", exc_info=True)
 
+    # WS0 M6: build the dated source of every figure once, withhold what the standard withholds (before
+    # the model or the sidebar sees it), and keep the map on the context: stored with the answer, sent to
+    # the sidebar, never to the model.
+    try:
+        withhold_low_evidence(context, _provenance_for(context))
+    except Exception:
+        log.warning("Provenance for the chat context failed", exc_info=True)
+
     yield _sse(ChatChunk(type="context", context=context, t_ms=elapsed_ms()))
 
     # Emit map data so the frontend doesn't need a separate fetch
@@ -1474,7 +1482,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
             yield _sse(ChatChunk(type="token", text=tail, t_ms=elapsed_ms()))
         if url_guard.dropped:
             log.warning("Dropped %d model-written URL(s) (%s): %s", len(url_guard.dropped), request_group, url_guard.dropped[:5])
-        provenance = _provenance_for(context)
+        provenance = context.provenance or {}
         from backend.code_vintage import get_code_vintage
 
         footer = build_sources_footer(
@@ -1502,7 +1510,7 @@ async def _event_stream(req: ChatRequest) -> AsyncIterator[str]:
     if answer_parts and not error_msg:
         citation_warnings = citation_problems(
             "".join(answer_parts), len(context.code_chunks), data_sources_present(context),
-            provenance_keys=frozenset(_provenance_for(context)),
+            provenance_keys=frozenset(context.provenance or {}),
         ) or None
         if citation_warnings:
             log.warning("Answer has unsupported citations (%s): %s", request_group, citation_warnings)

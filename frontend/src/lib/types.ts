@@ -1,3 +1,5 @@
+import type { Provenance } from "./api";
+
 export type Role = "user" | "assistant";
 
 // Parcel identity: pin/confidence are authoritative (backend-resolved only),
@@ -768,6 +770,17 @@ export interface ContextObject {
   requires_disclaimer: boolean;
   analytics?: AnalyticsSummary | null;
   partial_failures?: string[];
+  /** Where each figure came from and how far to trust it, keyed by fact id (backend/provenance.py).
+      Set once when the answer was assembled and stored with the message: a reopened answer keeps its dates. */
+  provenance?: Record<string, Provenance> | null;
+  /** Figures the data could not support (too few sales, too wide a margin). Their values are absent above. */
+  withheld_figures?: WithheldFigure[] | null;
+}
+
+export interface WithheldFigure {
+  fact_id: string;
+  figure: string;
+  reason: string;
 }
 
 export interface TurnSummary {

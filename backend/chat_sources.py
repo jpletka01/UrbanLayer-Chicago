@@ -203,6 +203,48 @@ def _code_currency_line(code_currency: dict | None, cited_sections: list[str]) -
     return line
 
 
+_AREA_PERIOD_RANGE = re.compile(r"^\d{4}\s*[–-]\s*\d{4}$")
+_AS_OF_WORDS = ("period_end", "source_updated", "record_updated")
+
+
+def _area_lines(provenance: dict[str, dict]) -> list[str]:
+    """One dated line per area source the turn used (crime, 311, permits, census tract...), in words a
+    reader can check: the publisher's name, the area, the period or date the data runs through, and the
+    margin-of-error level when the source publishes one. Parcel-scoped sources have their own lines above."""
+    from backend.data_health.registry import BY_ID
+
+    groups: dict[str, list[dict]] = {}
+    for key, e in provenance.items():
+        if key.startswith("area.") and not key.startswith("area.benchmarks") and e.get("source_id"):
+            groups.setdefault(e["source_id"], []).append(e)
+    lines = []
+    for sid, es in groups.items():
+        spec = BY_ID.get(sid)
+        name = (spec.displayed_label or spec.name) if spec else (es[0].get("source") or sid)
+        shown = [e for e in es if e.get("confidence") != "withheld"]
+        if not shown:
+            continue
+        geos = list(dict.fromkeys(e["geography"] for e in shown if e.get("geography") and e.get("scope") not in ("city", "county")))
+        period = next((str(e["period"]) for e in shown if e.get("period")), None)
+        as_of = max((str(e["as_of"])[:10] for e in shown if e.get("as_of") and e.get("as_of_basis") in _AS_OF_WORDS), default=None)
+        bits = []
+        if geos:
+            bits.append(geos[0])
+        if period:
+            bits.append(period.replace("-", "–") if _AREA_PERIOD_RANGE.match(period) else period)
+        is_survey = bool(period and _AREA_PERIOD_RANGE.match(period))  # "2020–2024": the period is the date
+        if as_of and not is_survey:
+            bits.append(f"data through {as_of}")
+        elif not as_of and not is_survey:
+            bits.append(f"queried {max(e.get('query_date') or '' for e in shown)}")
+        if any((e.get("precision") or {}).get("moe") is not None for e in shown):
+            bits.append("margins of error at the 90% level")
+        if any("bracket_median" in (e.get("confidence_reasons") or []) for e in shown):
+            bits.append("income median estimated from brackets, no margin of error published")
+        lines.append(f"- **{name}**" + (f": {'; '.join(bits)}" if bits else ""))
+    return lines
+
+
 def build_sources_footer(
     provenance: dict[str, dict], cited_chunks: list[tuple[int, Any]], code_through: str | None,
     code_currency: dict | None = None,
@@ -233,6 +275,9 @@ def build_sources_footer(
     for key in ("property.land_sqft", "property.bldg_sqft"):
         if key in provenance:
             lines.append(f"- **{provenance[key]['label']}**: {provenance[key]['source']}")
+    parcel_lines = len(lines)
+    area_lines = _area_lines(provenance)
+    lines.extend(area_lines)
     for n, chunk in cited_chunks:
         thru = f" (code current through {code_through})" if code_through else ""
         title = f" — {chunk.section_title}" if getattr(chunk, "section_title", None) else ""
@@ -244,7 +289,9 @@ def build_sources_footer(
         currency = _code_currency_line(code_currency, cited)
         if currency:
             lines.append(currency)
-    return "\n\n---\n**Sources for the parcel data used**\n" + "\n".join(lines) + "\n"
+    # an area-only answer (crime, census tract) has no parcel data to speak of
+    heading = "Sources for the data used" if area_lines and not parcel_lines and not cited_chunks else "Sources for the parcel data used"
+    return f"\n\n---\n**{heading}**\n" + "\n".join(lines) + "\n"
 
 
 def cited_chunks(answer: str, code_chunks: list[Any]) -> list[tuple[int, Any]]:

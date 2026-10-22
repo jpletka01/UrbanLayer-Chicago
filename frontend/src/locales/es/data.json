@@ -296,6 +296,7 @@
     "viewCensusReporter": "Ver perfil completo en Census Reporter",
     "tractDetail": "{{tract}} — detalle",
     "acsPeriod": "ACS {{period}}",
+    "marginNote": "± is the survey's 90% margin of error",
     "caCaption": "{{area}} · ACS {{period}} · income estimated from 5 brackets, no margin of error",
     "caCaptionNoPeriod": "{{area}} · ACS · income estimated from 5 brackets, no margin of error",
     "ageDistribution": "Distribución por edad",

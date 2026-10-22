@@ -9,6 +9,7 @@ import { ScorecardBridgeCard, buildScorecardHref } from "./ScorecardBridgeCard";
 import { PropertyCard } from "./PropertyCard";
 import { RegulatoryCard } from "./RegulatoryCard";
 import { IncentivesCard } from "./IncentivesCard";
+import { ProvenanceProvider } from "../../contexts/ProvenanceContext";
 import { NeighborhoodCard } from "./NeighborhoodCard";
 import { ViolationsCard } from "./ViolationsCard";
 import { BusinessCard } from "./BusinessCard";
@@ -130,6 +131,8 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
   const scorecardHref = buildScorecardHref(parcelPin, parcelAddress);
 
   return (
+    // The turn's provenance, so each card can caption its own figures (a message that predates it has none).
+    <ProvenanceProvider value={context?.provenance}>
     <div className="space-y-4">
       {(parcelPin || parcelAddress) && (
         <ScorecardBridgeCard pin={parcelPin} address={parcelAddress} />
@@ -186,5 +189,6 @@ export function DataView({ context, loading, mapData, filterMode }: Props) {
 
       {hasZoning && <ZoningCodesTable mapData={mapData!} />}
     </div>
+    </ProvenanceProvider>
   );
 }

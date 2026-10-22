@@ -34,6 +34,7 @@ once, in :func:`confidence_state`, and every surface reads it.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -44,6 +45,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from backend.code_vintage import get_code_vintage
 from backend.retrieval.regulatory.overlays import OVERLAY_LAYERS
 from backend.retrieval.zoning_definitions import _parse_zone_prefix
+
+log = logging.getLogger(__name__)
 
 ZONING_LAYER = "City of Chicago Zoning Districts, Zoning MapServer layer 1"
 CODE_SOURCE = "Municipal Code of Chicago, Title 17 (Zoning Ordinance)"
@@ -711,3 +714,110 @@ def entry_is_dated(entry: dict | None) -> bool:
     if not entry:
         return False
     return any(isinstance(entry.get(k), str) and _ISO.match(entry[k]) for k in ("as_of", "effective_date", "query_date"))
+
+
+# --- chat: what the model is not given, and how to name what it is (WS0 M6) -----------------------
+
+# Where a withheld figure lives on a ContextObject, by fact id: (container attribute, field(s) to clear).
+_COMPS_FIELDS = {
+    "property.comps.median_price": ("median_sale_price",),
+    "property.comps.median_price_per_land_sqft": ("median_price_per_land_sqft",),
+    "property.comps.median_price_per_bldg_sqft": ("median_price_per_bldg_sqft",),
+    "property.comps.median_price_per_buildable_sqft": (
+        "median_price_per_buildable_sqft", "buildable_median_basis", "buildable_median_n",
+    ),
+}
+_COMMUNITY_AREA_FIELDS = {
+    "area.community_area.population": "population",
+    "area.community_area.median_household_income": "median_household_income",
+}
+# A caption-bearing figure is told to the model only when it is an estimate of our own making or someone
+# else's (a low-confidence figure, our calculation, an AI reading, a private company's index). An ACS tract
+# figure is a standard official estimate: the prompt asks for its period and margin, which the summary carries.
+_NOTED_TIERS = {"our_calculation", "ai_extracted", "non_government"}
+_MAX_FIGURE_NOTES = 16
+_NOT_SHOWN = "Not shown: "
+
+
+def _own(context, attr: str):
+    """The context's ``attr`` as a copy this turn owns. Retrieval results are cached and shared between
+    requests; clearing a field on the shared object would withhold it from every later answer."""
+    obj = getattr(context, attr, None)
+    if obj is None:
+        return None
+    mine = obj.model_copy(deep=True)
+    setattr(context, attr, mine)
+    return mine
+
+
+def _clear_figure(context, fact_id: str) -> bool:
+    """Remove one withheld figure's value from ``context``. False when we do not know where it lives
+    (the caller still lists it as withheld, so the model is told not to state it)."""
+    if fact_id.startswith("area.tract."):
+        field = fact_id.rsplit(".", 1)[1]
+        hood = _own(context, "neighborhood")
+        ct = hood.census_tract if hood else None
+        if ct is None or field not in type(ct).model_fields:
+            return False
+        setattr(ct, field, None)
+        ct.moe.pop(field, None)
+        ct.cv.pop(field, None)
+        return True
+    if fact_id in _COMMUNITY_AREA_FIELDS:
+        hood = _own(context, "neighborhood")
+        dm = hood.demographics if hood else None
+        if dm is None:
+            return False
+        setattr(dm, _COMMUNITY_AREA_FIELDS[fact_id], None)
+        return True
+    if fact_id in _COMPS_FIELDS:
+        comps = _own(context, "comparables")
+        if comps is None:
+            return False
+        for field in _COMPS_FIELDS[fact_id]:
+            setattr(comps, field, None)
+        return True
+    return False
+
+
+def withhold_low_evidence(context, provenance: dict[str, dict]) -> dict[str, dict]:
+    """Apply the confidence standard to a chat turn's context (guide §3). ``provenance`` is the turn's
+    ``build_provenance`` map; returns it with each withheld figure's value dropped.
+
+    - a ``withheld`` figure's value is removed from ``context``, so the model cannot state it, and listed in
+      ``context.withheld_figures`` with the reason in plain words (the sidebar shows the same reason);
+    - an estimate, our calculation, AI reading or private index that survives is listed in
+      ``context.figure_notes`` so the model names it as such;
+    - ``context.provenance`` is set to the returned map (stored with the answer; the synthesizer excludes it).
+
+    The state comes from ``confidence_state`` through each entry's ``confidence``; nothing is recomputed here.
+    """
+    from backend.models import FigureNote, WithheldFigure
+    from backend.report_i18n import make_translator
+    from backend.report_provenance import _withheld_text, caption
+
+    t = make_translator("en")
+    out: dict[str, dict] = {}
+    withheld: list[dict] = []
+    notes: list[dict] = []
+    for fact_id, e in provenance.items():
+        if e.get("confidence") == "withheld":
+            if not _clear_figure(context, fact_id):
+                log.warning("withheld figure %s has no known place in the context; the model is told not to state it", fact_id)
+            reason = _withheld_text(e, t)
+            withheld.append({
+                "fact_id": fact_id, "figure": e.get("label") or fact_id,
+                "reason": (reason[len(_NOT_SHOWN):] if reason.startswith(_NOT_SHOWN) else reason).rstrip("."),
+            })
+            out[fact_id] = {k: v for k, v in e.items() if k != "value"}
+            continue
+        out[fact_id] = e
+        if len(notes) < _MAX_FIGURE_NOTES and (e.get("confidence") == "low" or e.get("tier") in _NOTED_TIERS):
+            c = caption(e, t, "en")
+            if c and not c["withheld"] and (c["lead"] or c["text"]):
+                notes.append({"fact_id": fact_id, "figure": e.get("label") or fact_id,
+                              "note": " · ".join(x for x in (c["lead"], c["text"]) if x)})
+    context.withheld_figures = [WithheldFigure(**w) for w in withheld] or None
+    context.figure_notes = [FigureNote(**n) for n in notes] or None
+    context.provenance = out
+    return out

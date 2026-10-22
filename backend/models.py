@@ -732,6 +732,24 @@ class ComparablesSummary(BaseModel):
     sales: list[ComparableSale] = Field(default_factory=list)
 
 
+class WithheldFigure(BaseModel):
+    """A figure the context would have carried but the confidence standard withholds
+    (too small a sample, too wide a margin). Its value is removed from the context before the model sees it."""
+
+    fact_id: str
+    figure: str  # the figure's label, in words the reader sees
+    reason: str  # plain words: "only 2 sales (needs 3)"
+
+
+class FigureNote(BaseModel):
+    """How to name a figure the answer states when it is an estimate, our own calculation, AI-read or from a
+    private company (the Profile's captions, in words). Present only for those figures."""
+
+    fact_id: str
+    figure: str
+    note: str
+
+
 class ContextObject(BaseModel):
     community_area: int | None = None
     community_area_name: str | None = None
@@ -776,6 +794,13 @@ class ContextObject(BaseModel):
     requires_disclaimer: bool = False
     analytics: AnalyticsSummary | None = None
     partial_failures: list[str] = Field(default_factory=list)
+    # WS0 M6, chat path only (None elsewhere, so the Profile's context payload is unchanged).
+    # `withheld_figures` and `figure_notes` ride to the model; `provenance` does NOT (the synthesizer
+    # excludes it): it is the dated source of every figure, set once when the answer is assembled,
+    # sent to the sidebar and stored with the message so a reopened answer keeps the dates it was given.
+    provenance: dict[str, dict] | None = Field(default=None, max_length=400)
+    withheld_figures: list[WithheldFigure] | None = None
+    figure_notes: list[FigureNote] | None = None
 
     # `property` is a field name in this class body, so spell the builtin out.
     @computed_field  # type: ignore[prop-decorator]

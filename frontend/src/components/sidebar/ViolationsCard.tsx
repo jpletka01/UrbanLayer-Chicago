@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ViolationSummary } from "../../lib/types";
+import { MethodCaption } from "../ui/Confidence";
 import { CollapsibleCard } from "./CollapsibleCard";
 
 const AlertIcon = (
@@ -48,6 +49,7 @@ export function ViolationsCard({ data, scopeLabel }: { data: ViolationSummary; s
         {categories.length > 0 && (
           <div className="space-y-0.5">
             <span className="text-micro text-text-muted uppercase tracking-wider">{t("violations.byCategory")}</span>
+            <MethodCaption method="keyword_grouping" size="micro" />
             {categories.map(([cat, count]) => (
               <KV key={cat} label={t(`violations.categoryLabels.${cat}`, { defaultValue: cat })} value={String(count)} />
             ))}

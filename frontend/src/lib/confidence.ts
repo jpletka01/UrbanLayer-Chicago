@@ -98,6 +98,11 @@ function fmtMoe(moe: number, unit: CaptionOpts["unit"]): string {
   return `±${fmtNumber(moe)}`;
 }
 
+/** "±$220" / "±2.5 pts" for a figure's published margin of error, or null when the source publishes none. */
+export function marginText(entry: Provenance | null | undefined, unit: CaptionOpts["unit"]): string | null {
+  return entry?.precision?.moe != null ? fmtMoe(entry.precision.moe, unit) : null;
+}
+
 const SOURCE_AGE_DAYS = 730;
 
 /** A year is enough for a source that is itself years old, or one dated by tax year or vintage;
