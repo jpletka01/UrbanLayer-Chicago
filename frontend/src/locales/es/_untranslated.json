@@ -37,6 +37,8 @@
     "scorecard.amendments.status.none",
     "scorecard.amendments.status.pending",
     "scorecard.coverage.notes.passed_not_on_map",
+    "scorecard.coverage.notes.passed_district",
+    "scorecard.zoningCard.passedDistrict",
     "scorecard.highRiskFlagsOurs",
     "scorecard.landmarkDesignation.building",
     "scorecard.landmarkDesignation.district",

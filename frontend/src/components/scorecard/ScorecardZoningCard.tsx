@@ -142,6 +142,11 @@ export function ScorecardZoningCard({ def, mapUrl, existingFar, allowedFar, ordi
             {t("scorecard.zoningCard.passedNotOnMap", { date: formatDay(hit.passed_on), record: hit.record })}
             {" "}
             <a href={hit.url} target="_blank" rel="noopener noreferrer" className="underline">{hit.record} ↗</a>
+            {hit.to_district && hit.from_district && (
+              <span className="block mt-1" data-testid="passed-district">
+                {t("scorecard.zoningCard.passedDistrict", { from: hit.from_district, to: hit.to_district })}
+              </span>
+            )}
           </p>
         ))}
 

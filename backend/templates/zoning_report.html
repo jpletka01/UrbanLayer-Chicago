@@ -704,6 +704,7 @@ a.glossary-link {
     <strong>{{ t("zoning.passed_not_on_map_heading") }}.</strong>
     {{ t("zoning.passed_not_on_map", segment=(hit.segment or t("common.na")), date=(hit.passed_on|rdate), record=hit.record) }}
     {% if hit.url %}<a href="{{ hit.url }}">{{ hit.record }}</a>{% endif %}
+    {% if hit.to_district and hit.from_district %}<br>{{ t("zoning.passed_district", from_district=hit.from_district, to_district=hit.to_district) }}{% endif %}
   </div>
   {% endfor %}
 

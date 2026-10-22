@@ -123,6 +123,15 @@ def build_coverage_notes(
             params={"date": hit["passed_on"], "record": hit["record"], "segment": hit.get("segment") or ""},
             link=hit.get("url"),
         ))
+        if hit.get("to_district") and hit.get("from_district"):
+            # WS1 M6: what the ordinance changes it to, read by AI and checked against the live map.
+            notes.append(_note(
+                "passed_district", "parcel",
+                f"The ordinance changes it from {hit['from_district']} to {hit['to_district']} (read by AI from the "
+                "scanned ordinance; check the PDF).",
+                params={"from": hit["from_district"], "to": hit["to_district"], "record": hit["record"]},
+                link=hit.get("url"),
+            ))
 
     # A landmark designation that lists this address passed but the City's landmark map doesn't show the parcel
     # yet (WS1 M5b). Says what we know (the ordinance lists this address or block), never that the parcel is a landmark.

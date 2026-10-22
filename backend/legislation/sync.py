@@ -31,7 +31,8 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from backend.legislation import currency, designations, rezonings
+from backend.config import get_settings
+from backend.legislation import currency, designations, ordinance_reader, rezonings
 from backend.legislation.amendments import live_record
 from backend.retrieval import clerk
 
@@ -65,13 +66,32 @@ async def _rezoning_part(previous: dict | None, now: datetime, client) -> tuple[
     try:
         matters = await clerk.passed_since(since, (clerk.ZONING_RECLASSIFICATIONS,), client=client)
         rows = await rezonings.build_rows(matters, prev_rows)
+        reader = await _reader_part(rows, matters, prev_rows, (previous or {}).get("rezoning_check") or {})
     except (clerk.ClerkUnavailable, clerk.ClerkQueryError, rezonings.MapCheckUnavailable) as exc:
         log.error("Rezoning check failed (previous rows kept): %s", exc)
         old = (previous or {}).get("rezoning_check") or {}
         return prev_rows, {**old, "status": "failed", "last_error": f"{type(exc).__name__}: {exc}"[:300],
                            "last_attempt_at": _iso(now)}
     return rows, {"status": "ok", "checked_at": _iso(now), "last_attempt_at": _iso(now), "last_error": None,
-                  "parser": rezonings.PARSER_VERSION, "counts": rezonings.summary(rows)}
+                  "parser": rezonings.PARSER_VERSION, "counts": rezonings.summary(rows), **reader}
+
+
+async def _reader_part(rows: list[dict], matters, prev_rows: list[dict], old_check: dict) -> dict:
+    """AI-read new districts (WS1 M6) and the running agreement log. Dormant unless enabled and keyed;
+    a failure here never costs the rezoning list (readings just stay absent)."""
+    log_ = old_check.get("agreement_log") or []
+    out: dict = {"agreement_log": log_, "agreement": ordinance_reader.agreement_counts(log_)}
+    settings = get_settings()
+    if not (settings.ordinance_reader_enabled and settings.anthropic_api_key):
+        return {**out, "reader": "off"}
+    try:
+        map_now = await ordinance_reader.map_districts_now(prev_rows, rows)
+        log_ = ordinance_reader.agreement_update(prev_rows, rows, map_now, log_)
+        calls = await ordinance_reader.attach_readings(rows, {m.record_number: m for m in matters}, prev_rows)
+    except Exception as exc:  # noqa: BLE001
+        log.error("Ordinance reader failed (rezoning rows kept without readings): %s", exc)
+        return {**out, "reader": "failed", "reader_error": f"{type(exc).__name__}: {exc}"[:200]}
+    return {"agreement_log": log_, "agreement": ordinance_reader.agreement_counts(log_), "reader": "ok", "reader_calls": calls}
 
 
 async def _designation_part(previous: dict | None, now: datetime, client) -> tuple[list[dict], dict]:

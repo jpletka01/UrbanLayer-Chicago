@@ -742,6 +742,11 @@ export interface PassedNotOnMap {
   segment: string | null;
   maps: string | null;
   matched_by: "pin" | "address";
+  /** WS1 M6: the district the ordinance changes it to, AI-read and validated against the live map; absent when not read. */
+  from_district?: string;
+  to_district?: string;
+  district_source?: "ai_read_ordinance";
+  agreement?: { n: number; agree: number };
 }
 
 /** A Chicago Landmark designation ordinance that lists this parcel's address (or, for a district, a block it

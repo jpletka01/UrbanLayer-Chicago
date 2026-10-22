@@ -139,7 +139,8 @@
         "map_lag": "The City's zoning map can lag a passed amendment by up to 90 days.",
         "code_vintage": "The Municipal Code text used here is current through {{date}}; a later Council amendment may not be reflected.",
         "official_letter": "This page is a screening tool, not a zoning determination. The City's Zoning Verification Letter confirms a parcel's zoning (${{fee}}, up to {{days}} days, as published by the Office of the Zoning Administrator, checked {{checked}}); a letter of opinion covers a specific project.",
-        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development."
+        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development.",
+        "passed_district": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
       }
     },
     "resolution": {
@@ -192,7 +193,8 @@
       "unitYieldCaveat": "Lot area per unit is one limit. FAR, height, parking and other standards can allow fewer units; exemptions can allow more.",
       "laterAmendments_one": "{{count}} later amendment",
       "laterAmendments_other": "{{count}} later amendments",
-      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows."
+      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
+      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
     },
     "verdict": {
       "inTif": "in {{name}} TIF",
