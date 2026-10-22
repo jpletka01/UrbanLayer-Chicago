@@ -1657,3 +1657,32 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - **The schema v16 migration on the production database** (no login to read it): it is covered by the v14 and v15 migration tests, and `/health` reports `db: true` after the restart.
 - **The Settings purchase line** (no purchase exists on production; Stripe is off).
 - **The cold-lookup time on the server.** FEMA fails there (see item 24 and the flood fix), but flood is not part of the comparison, so a note should not wait on it; not timed.
+
+## Item 26 (WS1 M6): the new district, read from the ordinance by AI
+
+**Decision: build the reader, ship it dormant.** Item 16 says a rezoning listing this address passed but is not on the map; M6 adds what it changes the parcel to. `backend/legislation/ordinance_reader.py` fetches the Legislation PDF that passed (the SO Final for a substitute, never the EDS), sends it to the model as a document block, and gets `[{map_no, from_district, to_district}]`. The daily sync (`sync._reader_part`) runs it for off-map rows that have parcels only when `ordinance_reader_enabled` is true and a key exists; both are off, so merging spends nothing. Its first live run is a production event (WS1 Q5; needs the production credits, open Q8).
+
+**The one check that makes a reading showable.** `from_district` must equal the zone class the live map shows (`zoning.lookup_zoning`) at one of up to 3 of the ordinance's parcels; otherwise the row is `unvalidated` and the Profile keeps the link only. Alternatives: trusting the model's JSON (no way to catch a misread district); validating the *to* district against the zoning table (it exists for any real class, so it catches nothing). Revisit if: parcels in one ordinance sit in different districts (a multi-change ordinance); then the check passes if any parcel matches and `district_for` narrows by the viewing parcel's own district, and says nothing when still ambiguous.
+
+**Failures are not "no district".** A PDF that won't fetch, a model error or an unparseable reply is stored as `failed` and retried the next run; a stored raw reading is re-validated against today's map without a new call, so a reading costs one model call per ordinance, not one per day. Reader version bumps re-read.
+
+**What shows.** Profile zoning card line, a `passed_district` coverage note (which chat restates under prompt rule 36), and a report line, each reading "The ordinance changes it from C2-2 to B2-5 (read by AI from the scanned ordinance; check the PDF)". Only for a validated reading; `RT-4 to RT-4` (an ordinance that changes nothing) shows nothing. `matches_for` also carries `agreement {n, agree}` from the running agreement log (each off-map ordinance with a validated reading that reaches the map is compared with the map's district once).
+
+**Left out:** a `ProvenanceEntry` for the AI-read district (the label is in the sentence; a new fact id touches the registry-completeness tests, and the figure is not a Profile number); the one-click "show standards for B2-5" (WS1 Q2 chose the banner); a fixture for 6711 S Western Ave (O2026-0028350, off the map) since the reader is exercised with fakes.
+
+**Backtest.** 30 ordinances already on the map, random from the last 365 days (seed 26; 272 of 352 passed were on the map), their PDFs fetched from the Clerk at 1 request/s. Truth = the zone class of the map polygon whose `CLERK_DOCNO` is that ordinance, at up to 5 of its parcels. **I read the 30 PDFs myself in this conversation** (no production key) and committed the districts as written in `backend/tests/fixtures/ordinances/readings_on_map.json`. Result: **30 of 30 name the map's district** (one ordinance, O2026-0027136, has two blocks, RS3 to RT4 and RS3 to RS3; the map showed RT-4). It also found a real defect: ordinances write `RT4`, `RM 4.5`, `RM- 4.5`, `Rt-4` (8 of 30 needed normalizing), which the first normalizer rejected; fixed and tested, and the prompt now asks for the hyphenated form.
+
+**Numbers** (2026-10-22)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | `test_ordinance_reader.py` 15 tests (reply parsing, validation, reuse, failure not cached, multi-change narrowing, agreement log, `matches_for`, dormant sync, the 30-ordinance backtest fixture) | `make test` |
+| Frontend | zoning-card test for the labeled district; lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Backtest | 30/30 agree with the map (gate 95%) | `python -m pytest backend/tests/test_ordinance_reader.py -k recorded` |
+
+**Not verified:**
+- **The production model.** The 30/30 is *my* reading of the PDFs, so it measures that the PDFs are readable and the validator and normalizer handle their spellings, not the production model's accuracy. The agreement log measures that, once the reader is switched on.
+- **Harder PDFs.** All 30 are one-page typed ordinances. Multi-page, scanned or handwritten ones (a planned-development amendment, a map attachment) were not sampled.
+- **The live sync path** (PDF fetch + model call + map lookup together): each piece has a fake in tests; the real run is the first production run.
+- **The page with a validated district**: the card line is vitest-covered, but no snapshot with a reading exists to load in a browser. `npm run test:mobile` was not run (one extra line inside the existing box).
+- **Spanish.** The new strings are English, listed in `_untranslated.json` and `_UNTRANSLATED_ES`.

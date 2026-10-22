@@ -153,3 +153,31 @@ def test_sync_part_is_dormant_without_the_flag_and_key(monkeypatch):
     monkeypatch.setattr(s, "ordinance_reader_enabled", True)
     monkeypatch.setattr(s, "anthropic_api_key", "")
     assert run(sync._reader_part([row()], [matter()], [], {}))["reader"] == "off"
+
+
+def test_recorded_readings_of_30_on_map_ordinances_agree_with_the_map():
+    """The backtest (WS1 M6): readings of 30 ordinances that are already on the City map, taken from their
+    PDFs (by Claude in-session, not the production model), run through the production normalizer and
+    validator, must name the district the map's polygon shows. Gate: >= 95%."""
+    import json
+    from pathlib import Path
+
+    doc = json.loads((Path(__file__).parent / "fixtures/ordinances/readings_on_map.json").read_text())
+    agree = 0
+    for o in doc["ordinances"]:
+        changes = [{"map_no": c["map_no"], "from_district": r.normalize_district(c["from_district"]),
+                    "to_district": r.normalize_district(c["to_district"])} for c in o["changes"]]
+        assert all(c["from_district"] and c["to_district"] for c in changes), o["record"]   # every district parses
+        agree += bool({c["to_district"] for c in changes} & set(o["map_districts"]))
+    assert len(doc["ordinances"]) == 30 and agree / len(doc["ordinances"]) >= 0.95
+    assert agree == 30
+
+
+def test_ordinance_spellings_normalize():
+    assert [r.normalize_district(x) for x in ("RT4", "RM 4.5", "RM- 4.5", "Rt-4", "B2-1.5", "DX-3")] == \
+        ["RT-4", "RM-4.5", "RM-4.5", "RT-4", "B2-1.5", "DX-3"]
+
+
+def test_a_no_change_ordinance_shows_no_district():
+    rw = {"ai_reading": {"status": "validated", "changes": [{"from_district": "RT-4", "to_district": "RT-4"}]}}
+    assert r.district_for(rw) is None

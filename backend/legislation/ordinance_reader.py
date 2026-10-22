@@ -40,7 +40,7 @@ PROMPT = (
     "This is a City of Chicago zoning reclassification ordinance. Reply with JSON only, no prose: "
     '{"common_address": <string or null>, "changes": [{"map_no": <string or null>, '
     '"from_district": <zone class being replaced, e.g. "C2-2">, "to_district": <zone class it becomes, '
-    'e.g. "B2-5">}]}. Use the zone class exactly as the ordinance writes it (letters, hyphen, number). '
+    'e.g. "B2-5">}]}. Write each zone class in its standard hyphenated form (the ordinance may print "RT4" or "RM 4.5"; give "RT-4", "RM-4.5"). '
     "One entry per map amendment in the ordinance. If you cannot read a value, use null; never guess."
 )
 
@@ -54,6 +54,8 @@ def normalize_district(value) -> str | None:
     if not isinstance(value, str):
         return None
     v = re.sub(r"\s+", " ", value.strip().upper().replace("–", "-").replace("—", "-"))
+    # Ordinances write "RT4", "RM 4.5", "RM- 4.5" for the residential classes; the map says "RT-4", "RM-4.5".
+    v = re.sub(r"^(RS|RT|RM)\s*-?\s*(\d(?:\.\d)?)$", r"\1-\2", v)
     return v if _DISTRICT_RE.match(v) else None
 
 
@@ -238,7 +240,7 @@ def district_for(row: dict, live_district: str | None = None) -> dict | None:
     changes = rd.get("changes") or []
     if live_district:
         changes = [c for c in changes if c["from_district"] == live_district.upper()]
-    tos = {(c["from_district"], c["to_district"]) for c in changes}
+    tos = {(c["from_district"], c["to_district"]) for c in changes if c["from_district"] != c["to_district"]}  # "RT-4 to RT-4" is no change
     if len(tos) != 1:
         return None
     frm, to = next(iter(tos))
