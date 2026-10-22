@@ -1686,3 +1686,16 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - **The live sync path** (PDF fetch + model call + map lookup together): each piece has a fake in tests; the real run is the first production run.
 - **The page with a validated district**: the card line is vitest-covered, but no snapshot with a reading exists to load in a browser. `npm run test:mobile` was not run (one extra line inside the existing box).
 - **Spanish.** The new strings are English, listed in `_untranslated.json` and `_UNTRANSLATED_ES`.
+
+**Production** (2026-10-22, after the deploy of #108, merge commit `69a58a8`)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI / Deploy on `69a58a8`: `test`, `changes`, `lint` and `deploy` all `success` | `gh run view 39850125751 --json jobs` |
+| Health | `/health` ok (`qdrant`, `db`, `ptaxsim` true); checker ok, last run 2.5 h old; `alarms: 1` (the known `fed.fema.nfhl`) | `curl https://urbanlayerchicago.com/health` |
+| Frontend | served bundle `index-Cc71gcWh.js` carries "read by AI from the scanned ordinance" | `curl -s https://urbanlayerchicago.com/assets/index-*.js \| grep -c "read by AI from the scanned ordinance"` |
+| Profile payload | 1601 N Milwaukee unchanged: B3-2, ordinance 17230, `passed_not_on_map` empty, 56 provenance entries | `curl "https://urbanlayerchicago.com/api/scorecard?address=1601+N+Milwaukee+Ave"` |
+
+**Not verified on production:**
+- **The reader itself.** It is off (`ordinance_reader_enabled` false, no key use); no snapshot row carries `ai_reading`, so no parcel can show a district. Turning it on is Jack's call and needs the production credits (open Q8); the first run's agreement log is the real accuracy measure.
+- **That the backend image runs the new code.** Item 26 adds no route, so nothing outside shows it; the sync step is dormant either way.
