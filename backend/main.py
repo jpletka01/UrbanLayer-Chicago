@@ -544,6 +544,18 @@ async def get_conversation(
     return conv
 
 
+@app.get("/api/conversations/{conv_id}/changes")
+async def conversation_changes_endpoint(
+    conv_id: str, user: dict = Depends(require_auth),
+) -> dict:
+    """What changed since each parcel answer in the owner's conversation was given (WS6 M9). Zero model calls."""
+    if await db.get_conversation(conv_id, _user_id(user)) is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    from backend.data_health.diff import conversation_changes
+
+    return await conversation_changes(conv_id)
+
+
 @app.delete("/api/conversations/{conv_id}")
 async def delete_conversation(
     conv_id: str, user: dict = Depends(require_auth),
@@ -651,6 +663,29 @@ async def get_shared_conversation(token: str) -> dict:
     if conv is None:
         raise HTTPException(status_code=404, detail="Shared conversation not found")
     return conv
+
+
+_share_changes_cache = TTLCache(ttl_seconds=600, maxsize=256, name="share_changes")
+
+
+@app.get("/api/share/{token}/changes")
+async def get_shared_changes(token: str, request: Request) -> dict:
+    """The same "since then" notes for a shared link, public like the link itself: per-IP limited, and kept
+    ten minutes per token on top of the per-parcel daily cache."""
+    from backend.rate_limit import check_changes_limit
+
+    check_changes_limit(request)
+    share = await db.get_share(token)
+    if not share:
+        raise HTTPException(status_code=404, detail="Shared conversation not found")
+    cached = _share_changes_cache.get(token)
+    if cached is not None:
+        return cached
+    from backend.data_health.diff import conversation_changes
+
+    result = await conversation_changes(share["conversation_id"])
+    _share_changes_cache.set(token, result)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -2597,6 +2632,17 @@ async def my_purchases(request: Request, user: dict = Depends(require_auth)) -> 
     # before originals were kept, until its next download becomes the original.
     for p in purchases:
         p["original"] = originals.get(p["id"])
+    # `changes`: the original's facts against today's, same rules as a reopened conversation (WS6 M9). A
+    # failure here never costs the list.
+    try:
+        from backend.data_health.diff import purchase_changes
+
+        changes = await purchase_changes(user["id"])
+    except Exception:
+        log.warning("Purchase change check failed", exc_info=True)
+        changes = {}
+    for p in purchases:
+        p["changes"] = changes.get(p["id"])
     return {"purchases": purchases}
 
 

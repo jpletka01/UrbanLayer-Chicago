@@ -6,9 +6,11 @@ import { useTranslation } from "react-i18next";
 import { fetchReport, type ReportPurchase } from "../../lib/api";
 import { buildFilenameSlug } from "../../lib/csvExport";
 import { formatDate } from "../../lib/format";
+import { describeChange } from "../../lib/sinceThen";
 
 export function PurchaseRow({ purchase, onDownloaded }: { purchase: ReportPurchase; onDownloaded?: () => void }) {
   const { t } = useTranslation("pages");
+  const { t: tc } = useTranslation("chat");
   const [downloading, setDownloading] = useState<"original" | "updated" | null>(null);
   const [failed, setFailed] = useState(false);
   const original = purchase.original ?? null;
@@ -54,6 +56,11 @@ export function PurchaseRow({ purchase, onDownloaded }: { purchase: ReportPurcha
             <span className="text-state-negative ml-2">{t("settings.downloadFailed")}</span>
           )}
         </p>
+        {purchase.changes?.status === "changes" && (
+          <p className="text-caption text-state-warning" data-testid="purchase-changes">
+            {t("settings.sinceReport", { what: purchase.changes.changes.map((c) => describeChange(c, tc).text.replace(/\.$/, "")).join("; ") })}
+          </p>
+        )}
         {original && (
           <p className="text-caption text-text-muted" data-testid="original-note">
             {original.available ? t("settings.originalNote") : t("settings.originalMissing")}

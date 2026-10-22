@@ -796,7 +796,9 @@
     "downloadOriginal": "Original · {{date}}",
     "downloadUpdated": "Updated copy",
     "originalNote": "The original is the first report generated for this purchase, kept exactly as sold. The updated copy is a new report with today's data.",
-    "originalMissing": "The stored original couldn't be found. An updated copy is available."
+    "originalMissing": "The stored original couldn't be found. An updated copy is available.",
+    "sinceReport": "Facts changed since your report: {{what}}",
+    "sinceReportPartial": "Couldn't re-check everything today."
   },
   "notFound": {
     "title": "Page not found",

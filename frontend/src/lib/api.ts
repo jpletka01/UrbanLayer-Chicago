@@ -27,6 +27,7 @@ import type {
   Message,
   RequestLogEntry,
   SelectedParcel,
+  SinceThenResult,
   TimeseriesBucket,
   UploadMeta,
 } from "./types";
@@ -302,6 +303,8 @@ export interface ReportPurchase {
   /** The first report this purchase rendered, kept as sold (WS6 M8). Null for a purchase made before originals
       were kept: its next download becomes one. `available` is false if the stored file has gone missing. */
   original?: { rendered_at: number; available: boolean } | null;
+  /** The original's facts against today's (WS6 M9). Null when there is no original to compare, or the check failed. */
+  changes?: SinceThenResult | null;
 }
 
 export async function fetchMyPurchases(): Promise<ReportPurchase[]> {
@@ -583,6 +586,28 @@ export async function getShareStatus(
   );
   if (!resp.ok) return { shared: false };
   return await resp.json();
+}
+
+/** "Since then" notes for each parcel answer of a conversation, keyed by message index. Never throws:
+    a failed check just means no note. */
+export async function getConversationChanges(id: string): Promise<Record<string, SinceThenResult>> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/conversations/${encodeURIComponent(id)}/changes`);
+    if (!resp.ok) return {};
+    return (await resp.json()).notes ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export async function getSharedChanges(token: string): Promise<Record<string, SinceThenResult>> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/share/${encodeURIComponent(token)}/changes`);
+    if (!resp.ok) return {};
+    return (await resp.json()).notes ?? {};
+  } catch {
+    return {};
+  }
 }
 
 export async function getSharedConversation(

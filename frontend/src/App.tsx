@@ -18,6 +18,8 @@ import {
   isNotCodified,
   getConversation,
   getSharedConversation,
+  getSharedChanges,
+  getConversationChanges,
   updateMessageMapData,
   uploadFiles,
 } from "./lib/api";
@@ -45,6 +47,7 @@ import type {
   MapData,
   RetrievalPlan,
   SidebarView,
+  SinceThenResult,
   SourceTag,
 } from "./lib/types";
 import { useChat } from "./lib/useChat";
@@ -103,6 +106,8 @@ export function App() {
   // on exit-to-home (reset) and on the first send.
   const [composing, setComposing] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false);
+  // "Since then" notes for a reopened or shared conversation, by message index (WS6 M9).
+  const [sinceThen, setSinceThen] = useState<Record<string, SinceThenResult>>({});
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const { isAuthenticated, authRequired, loading: authLoading, signIn } = useAuthContext();
   const planRef = useRef<RetrievalPlan | null>(null);
@@ -131,8 +136,13 @@ export function App() {
           plan: m.plan ?? undefined,
           mapData: m.map_data ?? undefined,
           mapFetchedAt: m.map_fetched_at ?? undefined,
+          createdAt: m.created_at ?? undefined,
         }));
         setMessages(loaded);
+        setSinceThen({});
+        void getConversationChanges(conversationIdFromUrl).then((notes) => {
+          if (conversationIdRef.current === conversationIdFromUrl) setSinceThen(notes);
+        });
         setConversationId(conversationIdFromUrl);
         conversationIdRef.current = conversationIdFromUrl;
         setHistoryOpen(false);
@@ -187,8 +197,11 @@ export function App() {
         plan: m.plan ?? undefined,
         mapData: m.map_data ?? undefined,
         mapFetchedAt: m.map_fetched_at ?? undefined,
+        createdAt: m.created_at ?? undefined,
       }));
       setMessages(loaded);
+      setSinceThen({});
+      void getSharedChanges(shareTokenFromUrl).then(setSinceThen);
       setIsSharedView(true);
       setHistoryOpen(false);
       clearTurnState();
@@ -1104,6 +1117,7 @@ export function App() {
                 onRemoveAttachment={handleRemoveAttachment}
                 activities={activities}
                 readOnly={isSharedView}
+                sinceThen={sinceThen}
                 propertyContext={groundedContext}
                 onPropertyStarterClick={sendPropertyStarter}
                 onOpenPanel={(assistantIndex, tab) => {

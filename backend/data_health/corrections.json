@@ -1,0 +1,32 @@
+{
+  "_readme": "Source corrections: things we showed that were wrong, and the date the fix went live (WS6 M9, plan §4.4). An answer or a report whose snapshot matches `applies_if` and was made BEFORE `date` is told so. Each entry was checked against git history. `applies_if` is a flat object of snapshot paths: a value alone is equality, {\"in\": [...]} is membership, {\"prefix\": \"M\"} is a string prefix. Not seeded because the snapshot can't express them: the 2026-07-06 tax-rate fix (commercial parcels; the snapshot keeps no building class) and the 2026-06-21 nearest-parcel identity fix (the snapshot keeps no resolution flag).",
+  "corrections": [
+    {
+      "id": "landmark-survey-layer",
+      "date": "2026-10-02",
+      "source_id": "chi.zoning.overlay.landmark_building",
+      "fact_keys": ["property.landmark_status"],
+      "summary": "Before Oct 2, 2026 this page called an orange- or red-rated building in the City's historic-resources survey an individual Chicago Landmark. That survey is not the list of designated landmarks. If the building is not designated, the Commission on Chicago Landmarks' approval rule did not apply; the survey rating carries a 90-day demolition delay instead.",
+      "commit": "a621ea1",
+      "applies_if": {"flags.is_landmark_building": true}
+    },
+    {
+      "id": "zoning-table-heights-2026-07",
+      "date": "2026-07-06",
+      "source_id": "code.municipal_text",
+      "fact_keys": ["zoning.max_height"],
+      "summary": "Before Jul 6, 2026 the building heights we showed for RM-4.5, RM-5.5, RM-6 and RM-6.5 did not match the Zoning Ordinance (RM-6 and RM-6.5 had a numeric cap the ordinance doesn't set). Standards for those districts were corrected that day.",
+      "commit": "04d2234",
+      "applies_if": {"zoning.zone_class": {"in": ["RM-4.5", "RM-5.5", "RM-6", "RM-6.5"]}}
+    },
+    {
+      "id": "zoning-table-heights-2026-07-manufacturing",
+      "date": "2026-07-06",
+      "source_id": "code.municipal_text",
+      "fact_keys": ["zoning.max_height"],
+      "summary": "Before Jul 6, 2026 the building heights we showed for the manufacturing districts did not match the Zoning Ordinance (they had a numeric cap the ordinance doesn't set). Standards for those districts were corrected that day.",
+      "commit": "04d2234",
+      "applies_if": {"zoning.zone_class": {"prefix": "M"}}
+    }
+  ]
+}

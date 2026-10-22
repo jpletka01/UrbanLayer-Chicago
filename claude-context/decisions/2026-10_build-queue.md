@@ -1602,3 +1602,42 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - **The live failure counts.** `data_health_live.db` flushes hourly (first flush about an hour after the container restarted, 19:55 UTC) and the checker reads it on its next daily run. With a failure rate near 100% the registry's live-rate rule (over 50% of at least 10 calls) should turn `fed.fema.nfhl` to alarm then; I have not seen it.
 - **The chat footer line and the report PDF** (unchanged from the local result: the chat route spends the production key, the report needs an admin session).
 - **The retry's real success rate** on production: it has no data except the six failures above.
+
+## Item 25: "since then" for conversations, shared links and purchases (WS6 M9, 2026-10-22)
+
+**What it does.** A reopened conversation, a shared link and a Settings purchase each compare what an answer or report said (the fact snapshot item 23 stores) with today's facts, and say what is *material*: `backend/data_health/diff.py` (`compare` is pure; `changes_for` fetches and caches), `corrections.json`, schema v16 `fact_checks`, `GET /api/conversations/{id}/changes` (owner), `GET /api/share/{token}/changes` (public), `changes` on `/api/me/purchases`, and `AnsweredOnNote` under each assistant bubble (Settings: an amber line on `PurchaseRow`). Zero model calls.
+
+**Today's facts come from the Profile's own lookups.** `current_facts` calls `lookup_zoning` and `regulatory_domain` at the snapshot's point (sharing their one-hour caches), builds a `ContextObject` and runs the same `facts.snapshot`, so both sides of a comparison are made by one function. *Alternative:* a second, lighter "current" reader (overlays only). Rejected: two readers drift, and the name normalization that stops "ADU  Area" reading as a change lives in one place. *Revisit if* the cold lookup (about 15 ArcGIS requests plus FEMA, which timed out locally) makes the first note slow: it loads after the conversation renders, so the cost is a late note, not a slow page.
+
+**Never "no change" for something we could not read.** A zoning lookup that fails makes no district claim; an overlay layer in `unchecked_overlays` today (or when the answer was made) is skipped both ways, so a layer the map failed to answer is never "removed" and one the old answer could not check is never "added". The result says `partial` ("no change in what we could read, couldn't re-check the district") or `unavailable`, never `none` (`test_a_failed_lookup_is_never_no_change`, `test_an_overlay_the_map_could_not_answer_makes_no_claim_either_way`). A check that could not read everything is **not cached**.
+
+**Old answers are rebuilt on read, and marked.** A message with no `facts_json`, or a stored snapshot from before this item (it kept no lat/lon), takes its point from `plan_json` and, if it has none, is rebuilt from `context_json` (`reconstruct`, `reconstructed: true`). **Found while testing:** `ContextObject.code_vintage` is computed from today's files, so a rebuilt snapshot claimed the *current* code text. `reconstruct` therefore sets the vintage to the text before the first recorded refresh whenever the answer predates that refresh's `applied_at`; an answer with no date is not rebuilt. `_facts_json` now also stores the point so new snapshots need no rebuilding.
+
+**What is compared** (plan §4.4): the district (normalized, with ordinance and Clerk link); overlays that carry a rule (13 layer types; special service areas are not one); a bulk standard of the *same* district; a Title 17 or cited-other amendment touching a section the answer cited, split into "after the answer" and "before the answer but not in its text"; a passed rezoning or landmark designation listing the parcel that the snapshot did not carry; a code text refresh that changed a cited section (`code_changes.json`); a recorded correction. Never crime, 311, permits, comps or Divvy.
+
+**Corrections log.** Three entries, each checked against git: the landmark survey layer (`a621ea1`, 2026-10-02: predicate `flags.is_landmark_building`), and the 2026-07-06 zoning table heights (`04d2234`: RM-4.5/5.5/6/6.5, and the M districts by prefix). **Two candidates in the plan were left out because the snapshot cannot express them:** the commercial tax rate fix (no building class is stored) and the nearest-parcel identity fix (no resolution flag is stored). Adding either means putting that field in the snapshot first. *Alternative:* flag every report with an estimated tax made before 2026-07-06. Rejected: most of those figures were right, and a banner that is usually wrong teaches people to ignore it.
+
+**Caps and cost.** At most 3 distinct parcels per conversation (newest answer first; the rest say only their date); today's facts kept per (parcel, UTC day) in `fact_checks`, a week of rows; answers under 24 hours old skip the check; the share endpoint adds a per-IP limit (20 a minute) and a 10-minute per-token cache on top, and is 404 once the share is revoked.
+
+**Left out, on purpose.**
+- **"Newer data available"** (a new tax year, assessment year or ACS release, plan §4.4's one quiet line): the current-facts side does not read property or ACS facts, and building that reader is a larger job than this item. The snapshot already stores the years, so it can follow.
+- **Standards compared from the unit yield**, and **flood**: the snapshot does not keep flood, and unit yield depends on the property record.
+- **The "Ask again" button re-sends the previous user message** as a normal chat turn (owner only). It does not carry a parcel pin, so a question that never named the address may route differently than when first asked.
+
+**Numbers** (2026-10-22; public data, no model, no production key)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,258 passed, 66 deselected (+36: `test_since_then.py` 35, one v15 to v16 migration test) | `make test` |
+| Frontend tests | 617 passed (+10: `AnsweredOnNote` 8, `PurchaseRow` 2); lint 67/67; build passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Real lookups, scratch database (`DB_PATH`, `REPORT_STORE_DIR` in the scratchpad), a seeded 4-message conversation at 1601 N Milwaukee | 2 parcel answers got notes (one stored snapshot, one rebuilt); the district, overlays, a 2026-05-20 amendment touching 17-3-0207 and the landmark correction all showed; second call 11 ms from `fact_checks` (one row, 1.5 KB) | seed script, then `curl localhost:8001/api/conversations/scratch1/changes` |
+| Browser, owner and shared view | both views show "Answered ..." then the amber callout with the ordinance link and "Open today's Property Profile"; the shared view has no "Ask again" | open `/c/scratch1` and `/s/<token>` on the dev server |
+
+**Not verified:**
+- **Production.** Nothing has run there yet; the check below needs a real conversation with a parcel answer.
+- **The Settings row in a browser.** Its logic is covered by `PurchaseRow` and endpoint tests (a seeded purchase with an original), but the page was not opened with a purchase.
+- **Mobile layout.** `npm run test:mobile` was not run; the note is inside the existing bubble footer, no new layout.
+- **The seeded examples were hand-built.** They show the plumbing and wording on real map data, not the false-positive rate on real conversations. Their overlay "changes" came from the seeded snapshot having none.
+- **Spanish.** The new strings are English, listed in `_untranslated.json`.
+- **The transcript PDF export** carries "Answered <date>" under each answer by code and type check only.
+- **Wording on a date near midnight.** The note shows the viewer's local date while `answered_on` is UTC; they can differ by a day.
