@@ -106,6 +106,19 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
     expect(box.querySelector("a")?.getAttribute("href")).toContain("chicityclerkelms.chicago.gov");
   });
 
+  it("adds the AI-read new district, labeled, only when the backend sends it (WS1 M6)", () => {
+    const hit = {
+      record: "O2026-0028350", passed_on: "2026-10-14", url: "https://chicityclerkelms.chicago.gov/Matter/?matterId=EBBB",
+      segment: "6701-6731 S Western Ave", maps: "16-H", matched_by: "pin" as const,
+    };
+    const { rerender } = render(<ScorecardZoningCard def={{ ...rm45, zone_class: "C2-2" }} passedNotOnMap={[hit]} />);
+    expect(screen.queryByTestId("passed-district")).toBeNull();
+    rerender(<ScorecardZoningCard def={{ ...rm45, zone_class: "C2-2" }} passedNotOnMap={[{ ...hit, from_district: "C2-2", to_district: "B2-5", district_source: "ai_read_ordinance" }]} />);
+    const text = screen.getByTestId("passed-district").textContent ?? "";
+    expect(text).toContain("changes it from C2-2 to B2-5");
+    expect(text).toContain("read by AI");
+  });
+
   it("shows nothing about it without a listing", () => {
     render(<ScorecardZoningCard def={rm45} passedNotOnMap={[]} />);
     expect(screen.queryByTestId("passed-not-on-map")).toBeNull();

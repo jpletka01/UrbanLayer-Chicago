@@ -241,6 +241,10 @@ class Settings(BaseSettings):
     nearby_construction_months: int = 12
     zoning_extract_model: str = "claude-haiku-4-5-20251001"
     zoning_extract_max_tokens: int = 1500
+    # WS1 M6: the daily sync reads the new district out of off-map rezoning ordinances (spends the
+    # production key; off until its first live run is approved).
+    ordinance_reader_enabled: bool = False
+    ordinance_reader_model: str = "claude-sonnet-4-6"
 
     # Max concurrent PDF report renders. The memory-heavy WeasyPrint span now runs
     # in an isolated child process (backend/report_render.py); measured peak is

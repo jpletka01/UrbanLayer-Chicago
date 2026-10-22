@@ -1,0 +1,430 @@
+{
+ "_readme": "WS1 M6 backtest. Districts as WRITTEN in each ordinance's Legislation PDF, read by Claude in this build conversation (2026-10-22), NOT by the production model. map_districts = the zone class the City map's polygon carrying that ordinance's CLERK_DOCNO shows at up to 5 of its parcels. 30 on-map ordinances sampled at random (seed 26) from the last 365 days.",
+ "ordinances": [
+  {
+   "record": "O2025-0020958",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "8-G",
+     "from_district": "RS3",
+     "to_district": "RT4"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0027398",
+   "passed_on": "2026-09-23",
+   "map_districts": [
+    "RM-4.5"
+   ],
+   "changes": [
+    {
+     "map_no": "6-F",
+     "from_district": "RS-3",
+     "to_district": "RM 4.5"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0024805",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "9-G",
+     "from_district": "RT-3.5",
+     "to_district": "RT-4"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0023190",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "C1-3"
+   ],
+   "changes": [
+    {
+     "map_no": "9-J",
+     "from_district": "C1-1",
+     "to_district": "C1-3"
+    }
+   ]
+  },
+  {
+   "record": "O2025-0020887",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "C1-5"
+   ],
+   "changes": [
+    {
+     "map_no": "3-G",
+     "from_district": "C3-5",
+     "to_district": "C1-5"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0022341",
+   "passed_on": "2026-02-18",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "1-J",
+     "from_district": "B3-1",
+     "to_district": "RT-4"
+    }
+   ]
+  },
+  {
+   "record": "O2025-0020891",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "B3-3"
+   ],
+   "changes": [
+    {
+     "map_no": "5-I",
+     "from_district": "C1-1",
+     "to_district": "B3-3"
+    }
+   ]
+  },
+  {
+   "record": "SO2023-0004765",
+   "passed_on": "2025-11-14",
+   "map_districts": [
+    "B2-3"
+   ],
+   "changes": [
+    {
+     "map_no": "6-H",
+     "from_district": "RS-3",
+     "to_district": "B2-3"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0022387",
+   "passed_on": "2026-02-18",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "5-K",
+     "from_district": "RS3",
+     "to_district": "RT-4"
+    }
+   ]
+  },
+  {
+   "record": "O2025-0020880",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "RM-5"
+   ],
+   "changes": [
+    {
+     "map_no": "7-G",
+     "from_district": "RT-4",
+     "to_district": "RM-5"
+    }
+   ]
+  },
+  {
+   "record": "SO2025-0020905",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "7-J",
+     "from_district": "RS-3",
+     "to_district": "RT-4"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0023282",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "B2-1.5"
+   ],
+   "changes": [
+    {
+     "map_no": "5-I",
+     "from_district": "RS3",
+     "to_district": "B2-1.5"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0027396",
+   "passed_on": "2026-09-23",
+   "map_districts": [
+    "C3-2"
+   ],
+   "changes": [
+    {
+     "map_no": "3-K",
+     "from_district": "M2-2",
+     "to_district": "C3-2"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0025335",
+   "passed_on": "2026-09-23",
+   "map_districts": [
+    "DX-3"
+   ],
+   "changes": [
+    {
+     "map_no": "1-G",
+     "from_district": "M2-3",
+     "to_district": "DX-3"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0023892",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "RS-3"
+   ],
+   "changes": [
+    {
+     "map_no": "9-K",
+     "from_district": "RS-2",
+     "to_district": "RS-3"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0024864",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "RM-4.5"
+   ],
+   "changes": [
+    {
+     "map_no": "1-G",
+     "from_district": "M2-2",
+     "to_district": "RM-4.5"
+    }
+   ]
+  },
+  {
+   "record": "O2025-0020911",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "RM-5"
+   ],
+   "changes": [
+    {
+     "map_no": "9-H",
+     "from_district": "M1-2",
+     "to_district": "RM-5"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0022513",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "RM-4.5"
+   ],
+   "changes": [
+    {
+     "map_no": "9-J",
+     "from_district": "RS-3",
+     "to_district": "RM- 4.5"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0023978",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "B2-3"
+   ],
+   "changes": [
+    {
+     "map_no": "3-I",
+     "from_district": "C1-2",
+     "to_district": "B2-3"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0023276",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "B2-3"
+   ],
+   "changes": [
+    {
+     "map_no": "3-I",
+     "from_district": "B3-1",
+     "to_district": "B2-3"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0023991",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "RM-4.5"
+   ],
+   "changes": [
+    {
+     "map_no": "11-H",
+     "from_district": "RS-3",
+     "to_district": "RM-4.5"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0027384",
+   "passed_on": "2026-09-23",
+   "map_districts": [
+    "RM-5"
+   ],
+   "changes": [
+    {
+     "map_no": "6-F",
+     "from_district": "M1-2",
+     "to_district": "RM-5"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0027136",
+   "passed_on": "2026-09-23",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "11-J",
+     "from_district": "RS3",
+     "to_district": "RT4"
+    },
+    {
+     "map_no": "11-J",
+     "from_district": "RS3",
+     "to_district": "RS3"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0023183",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "B2-3"
+   ],
+   "changes": [
+    {
+     "map_no": "9-I",
+     "from_district": "B3-1",
+     "to_district": "B2-3"
+    }
+   ]
+  },
+  {
+   "record": "SO2025-0020966",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "16-H",
+     "from_district": "RS-3",
+     "to_district": "RT-4"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0023984",
+   "passed_on": "2026-05-20",
+   "map_districts": [
+    "C1-3"
+   ],
+   "changes": [
+    {
+     "map_no": "1-I",
+     "from_district": "C1-2",
+     "to_district": "C1-3"
+    }
+   ]
+  },
+  {
+   "record": "O2025-0020970",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "RT-4"
+   ],
+   "changes": [
+    {
+     "map_no": "8-F",
+     "from_district": "RT-4",
+     "to_district": "Rt-4"
+    }
+   ]
+  },
+  {
+   "record": "O2026-0027402",
+   "passed_on": "2026-09-23",
+   "map_districts": [
+    "C1-3"
+   ],
+   "changes": [
+    {
+     "map_no": "13-K",
+     "from_district": "C1-1",
+     "to_district": "C1-3"
+    }
+   ]
+  },
+  {
+   "record": "SO2025-0020494",
+   "passed_on": "2025-12-10",
+   "map_districts": [
+    "B2-3"
+   ],
+   "changes": [
+    {
+     "map_no": "2-I",
+     "from_district": "RT-3.5",
+     "to_district": "B2-3"
+    }
+   ]
+  },
+  {
+   "record": "SO2026-0025322",
+   "passed_on": "2026-06-17",
+   "map_districts": [
+    "B2-2"
+   ],
+   "changes": [
+    {
+     "map_no": "9-K",
+     "from_district": "C1-1",
+     "to_district": "B2-2"
+    }
+   ]
+  }
+ ]
+}

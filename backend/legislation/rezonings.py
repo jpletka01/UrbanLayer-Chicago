@@ -26,7 +26,7 @@ import logging
 from datetime import date
 from pathlib import Path
 
-from backend.legislation import address_titles, currency
+from backend.legislation import address_titles, currency, ordinance_reader
 from backend.legislation.address_titles import PARSER_VERSION, STREET_TYPES, parse_title
 from backend.retrieval import clerk
 from backend.retrieval.property import address_points
@@ -209,7 +209,7 @@ def _segment_matches(seg: dict, number: int, direction: str, name: str, address:
 
 def matches_for(
     pin: str | None, address: str | None, live_ordinance: str | None, snapshot: dict | None = None,
-    today: date | None = None,
+    today: date | None = None, live_district: str | None = None,
 ) -> list[dict]:
     """The off-map rezonings that list this parcel, newest first. Empty unless the snapshot is
     usable (not failed/suspect, checked within 14 days): a stale list could name an ordinance
@@ -231,7 +231,12 @@ def matches_for(
             if seg:
                 hit, by = _describe(row, address, seg), "address"
         if hit:
-            out.append({**hit, "matched_by": by})
+            hit = {**hit, "matched_by": by}
+            # WS1 M6: the AI-read new district, only when the sync validated it against the live map
+            # (and, for a multi-change ordinance, only the change that starts from this parcel's district).
+            if (d := ordinance_reader.district_for(row, live_district)):
+                hit.update(d, agreement=(snapshot.get("rezoning_check") or {}).get("agreement") or {"n": 0, "agree": 0})
+            out.append(hit)
     return sorted(out, key=lambda r: r["passed_on"], reverse=True)
 
 

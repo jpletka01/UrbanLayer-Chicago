@@ -862,7 +862,10 @@ class ContextObject(BaseModel):
         from backend.legislation.rezonings import matches_for
 
         pin = None if self.parcel_resolution == "approximate" else self.parcel_pin
-        return matches_for(pin, self.resolved_address, self.parcel_zoning.ordinance_num) or None
+        return matches_for(
+            pin, self.resolved_address, self.parcel_zoning.ordinance_num,
+            live_district=getattr(self.parcel_zoning, "zone_class", None),
+        ) or None
 
     @computed_field  # type: ignore[prop-decorator]
     @builtins.property

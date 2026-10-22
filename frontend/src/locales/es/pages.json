@@ -139,7 +139,8 @@
         "map_lag": "El mapa de zonificación de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada.",
         "code_vintage": "El texto del Código Municipal usado aquí está vigente hasta {{date}}; una enmienda posterior del Concejo puede no estar reflejada.",
         "official_letter": "Esta página es una herramienta de evaluación preliminar, no una determinación de zonificación. La Carta de Verificación de Zonificación de la Ciudad confirma la zonificación de una parcela (${{fee}}, hasta {{days}} días, según publica la Oficina del Administrador de Zonificación, verificado {{checked}}); una carta de opinión cubre un proyecto específico.",
-        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development."
+        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development.",
+        "passed_district": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
       }
     },
     "resolution": {
@@ -192,7 +193,8 @@
       "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más.",
       "laterAmendments_one": "{{count}} later amendment",
       "laterAmendments_other": "{{count}} later amendments",
-      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows."
+      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
+      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
