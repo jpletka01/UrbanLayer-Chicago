@@ -1,0 +1,71 @@
+name: Weekly parcel kit
+
+# The correctness half of the data-health alarms (WS6 M5). Every Monday this runs the parcel kit's
+# Property Profile surface against production and scores it against the answer key
+# (eval/kit/parcels.json). The Profile is the anonymous, free /api/scorecard: no model, no secret,
+# no cost. The run fails, and GitHub emails whoever last edited this schedule, if
+#   - any parcel's district (field A) is not right,
+#   - any claim is confident-wrong, or
+#   - any score falls below the last accepted run (eval/kit/accepted_profile.json).
+# The daily checker reads this workflow's latest run through the public Actions API (registry
+# source eval.kit_weekly: warn at 9 days, alarm at 16 days or on a failed run), so the admin panel
+# shows it. The chat surface (about $1.20 a run, production credits) is a separate monthly
+# production check and is not run here.
+#
+# Drill: Actions > Weekly parcel kit > Run workflow, tick "inject_mismatch". The run must go red.
+
+on:
+  schedule:
+    - cron: "0 10 * * 1"   # Mondays 10:00 UTC: 05:00 Chicago (CDT) / 04:00 (CST)
+  workflow_dispatch:
+    inputs:
+      inject_mismatch:
+        description: "Drill: corrupt P1's district in the scored copy so this run must fail"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # The verdict sentences the Profile shows are computed by frontend/src/lib/scorecardVerdict.ts;
+      # the kit asks the real module (Node strips the TypeScript types).
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+
+      - name: Run the kit against production (Profile only)
+        run: |
+          PYTHONPATH=. python -m eval.parcel_kit --full https://urbanlayerchicago.com \
+            --surfaces profile --out-dir eval/results/weekly
+
+      - name: Keep the run
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parcel-kit-${{ github.run_id }}
+          path: eval/results/weekly
+          retention-days: 90
+
+      - name: Judge it against the accepted run
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          INJECT: ${{ github.event.inputs.inject_mismatch }}
+        run: |
+          flags=""
+          if [ "$INJECT" = "true" ]; then flags="--inject-mismatch"; fi
+          PYTHONPATH=. python -m eval.kit_gate eval/results/weekly/parcel_kit.json --sentry $flags

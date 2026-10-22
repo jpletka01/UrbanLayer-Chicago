@@ -20,13 +20,14 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from email.utils import parsedate_to_datetime
 from math import cos, hypot, radians
+from pathlib import Path
 from typing import Any, Awaitable, Callable
 
 import httpx
 
 from backend.config import get_settings
 from backend.data_health.evaluate import Finding, ProbeError, ProbeResult
-from backend.data_health.registry import PORTAL_HOSTS, SourceSpec, socrata_locator
+from backend.data_health.registry import BY_ID, PORTAL_HOSTS, SourceSpec, socrata_locator
 
 # No URL or parenthesised comment in the UA: the City GIS server answers 403 to a UA like
 # "name/1 (+https://site)" and 200 to "name/1" (measured 2026-10-21).
@@ -614,6 +615,65 @@ async def probe_sentinels(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     return res
 
 
+def parse_workflow_runs(body: Any, what: str = "workflow runs") -> tuple[date | None, str | None, str | None]:
+    """``(date of the newest successful run, conclusion of the newest completed run, its URL)`` from the
+    GitHub Actions ``runs`` listing. No completed run at all is ``(None, None, None)``."""
+    _raise_if_error_body(body, what)
+    if not isinstance(body, dict) or not isinstance(body.get("workflow_runs"), list):
+        raise ProbeError("service", f"{what}: no workflow_runs in body")
+    runs = [r for r in body["workflow_runs"] if isinstance(r, dict) and r.get("status") == "completed"]
+    runs.sort(key=lambda r: str(r.get("updated_at") or ""), reverse=True)
+    last_ok = next((r for r in runs if r.get("conclusion") == "success"), None)
+    ok_day = date.fromisoformat(str(last_ok["updated_at"])[:10]) if last_ok and last_ok.get("updated_at") else None
+    newest = runs[0] if runs else None
+    return ok_day, (newest or {}).get("conclusion"), (newest or {}).get("html_url")
+
+
+async def probe_kit_weekly(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Did the weekly Profile kit run, and did it pass? A failed newest run is an alarm; the age of the newest
+    success feeds the usual warn/alarm days. Before the first run the workflow may not be on the default
+    branch yet (404) or have no runs: that is unknown, never red."""
+    resp = await ctx.get(spec.locator, params={"per_page": "10", "status": "completed"},
+                         headers={"Accept": "application/vnd.github+json"})
+    if resp.status_code == 404:
+        return ProbeResult(info="kit-weekly.yml is not on the default branch yet")
+    if resp.status_code >= 400:  # a rate limit (403/429) or a GitHub outage: ask again tomorrow, never "the kit failed"
+        raise ProbeError("transient", f"GitHub Actions API: HTTP {resp.status_code}")
+    try:
+        body = resp.json()
+    except ValueError:
+        raise ProbeError("service", "GitHub Actions API: not JSON") from None
+    ok_day, conclusion, url = parse_workflow_runs(body)
+    res = ProbeResult(content=ok_day)
+    if conclusion is None:
+        res.info = "no completed run yet"
+    elif conclusion != "success":
+        res.findings.append(Finding("alarm", f"the latest weekly kit run ended {conclusion}: {url}"))
+    return res
+
+
+async def probe_artifact_sidecar(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """A committed artifact dated by its ``.meta.json`` sidecar (transit stations), plus the CTA feed's own
+    Last-Modified as context for "is a rebuild due"."""
+    root = Path(__file__).resolve().parents[2]
+    meta_path = (root / spec.locator).with_suffix(".meta.json")
+    try:
+        meta = json.loads(meta_path.read_text())
+        built = date.fromisoformat(str(meta["built_at"])[:10])
+    except (OSError, ValueError, KeyError):
+        return ProbeResult(findings=[Finding("warn", f"{meta_path.name} is missing or has no built_at date")])
+    res = ProbeResult(content=built, info=f"built {built}")
+    feed = BY_ID.get("chi.cta.gtfs")
+    if feed is not None:
+        try:
+            modified = parse_last_modified((await ctx.head(feed.locator)).headers)
+        except ProbeError:
+            modified = None
+        if modified and modified > built:
+            res.info += f"; the CTA feed was last modified {modified}"
+    return res
+
+
 async def probe_checker(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     """The checker's own last finished run (the external dead-man is /health; this colours the panel)."""
     from backend.data_health.store import last_run_finished, open_readonly
@@ -626,6 +686,8 @@ async def probe_checker(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
 
 
 PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] = {
+    "kit_weekly": probe_kit_weekly,
+    "artifact_sidecar": probe_artifact_sidecar,
     "sentinels": probe_sentinels,
     "census_release": probe_census_release,
     "census_geocoder": probe_census_geocoder,

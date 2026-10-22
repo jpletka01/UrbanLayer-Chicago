@@ -24,6 +24,7 @@ import logging
 import time
 
 from backend import zoning_cache
+from backend.code_vintage import get_code_vintage_record
 from backend.retrieval.zoning_definitions import ZONE_CLASS_DATA
 
 log = logging.getLogger(__name__)
@@ -84,6 +85,8 @@ async def _build(zone_classes: list[str]) -> dict:
         "config_version": zoning_cache.compute_config_version(),
         "corpus_fingerprint": zoning_cache.compute_corpus_fingerprint(load_manifest()),
         "built_at": int(time.time()),
+        # the code text this cache was built from (WS6 M5): CI and the daily checker compare it with code_vintage.json
+        "code_vintage": (get_code_vintage_record() or {}).get("current_through"),
         "zone_count": len(entries),
         "extraction_method": "full_section",
     }

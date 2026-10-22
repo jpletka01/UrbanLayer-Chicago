@@ -1127,3 +1127,35 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not yet verified on prod:** the acceptance run (sentinels 13/13 and the contract results on the panel). It needs the checker started on the server, `sudo systemctl start data-health-check.service`, or the 05:37 UTC timer. After it runs, the admin panel's `internal.sentinels` row should read "13 of 13 sentinels match the answer key" and every Socrata row's contract cell should read "N fields …". Until then the only evidence is the local dry run in the Numbers block above, which hit the same services.
 
+## Item 18: CI artifact ages and the weekly kit (2026-10-22)
+
+**Running the kit found a regression of mine from item 16.** The Profile kit run printed "Verdict text was unavailable (node missing?)" although node is installed. `eval/kit/verdict_text.mjs` loads `frontend/src/lib/scorecardVerdict.ts` in plain Node, and item 16 had added `import { formatDay } from "./format"` to it; `format.ts` imports i18n, which plain Node can't load. The eval test that checks the verdict script had started to *skip* ("this node cannot strip TypeScript types") in item 16, and I put that down to the node version instead of looking. The caveat now passes the ISO date to `t` (like the older "recently rezoned" caveat) and imports nothing heavy; the test runs again (eval tests 92 → 103 with the new gate tests). **Lesson:** a skipped test that appears in a PR is a finding; read the reason before explaining it.
+
+**The artifact-age check warns and never fails.** `artifacts --ci` annotates a PR with a `::warning` per stale artifact and always exits 0 in CI mode; the step is `continue-on-error` as well (a test asserts both, and that every annotation is a warning, never an error). *Alternative:* fail the job past the alarm age. Rejected (plan Q7): it would block a hotfix deploy because a code export is old. Outside CI the same command exits 1 on a red artifact, so a person running it by hand sees it.
+- Today it annotates one thing, the code text (126 days; warn 60, alarm 90), and its message says the data-health registry has acked it until 2026-12-15, so a PR author isn't left wondering whether it is news.
+- **The zoning cache** now records `_meta.code_vintage` (the builder writes it; the committed cache was edited by hand to `2026-06-17`, the vintage of the 2026-10-21 reviewed rebase recorded in `fingerprint_rebased`, no rebuild and no model). A cache whose recorded vintage differs from the code text's is an alarm.
+- **Transit stations get a sidecar.** `transit_stations.meta.json` (`built_at: 2026-06-01`, from the artifact's git history, and the build script now writes it on every rebuild). It is allowlisted in `.gitignore`, `.dockerignore` and the Dockerfile `COPY` (a test asserts all three), because the daily checker reads it on the box. The probe also notes the CTA feed's `Last-Modified` (2026-09-14), so "a rebuild may be due" is visible.
+
+**The weekly kit judges against an accepted run, not against 2.** Gate: field A is 2 for every parcel, no confident-wrong claim, no cell below the committed `eval/kit/accepted_profile.json`. The first accepted run is today's Profile kit on prod (117/122, 12/12 districts, 0 confident-wrong, verdict text included) after reading its table. *Alternative:* fail on any score under 2 (the key has legitimate 0/1/NP cells today: P8's use question scores 0 and several are "no claim"). Ranking: a claim that falls to silence is a regression, and so is silence becoming a wrong claim; improvements are reported so the file can be refreshed on purpose (`--update-accepted`, never to make a red run pass).
+- **The drill is in the workflow, not the data.** `workflow_dispatch` with `inject_mismatch` corrupts P1's district in the *scored copy*; the gate must fail (a test asserts three failures: A not 2, confident-wrong, fell from 2 to 0).
+- **The alarm path is GitHub's failed-run email**, plus one Sentry event when a `SENTRY_DSN` repo secret exists (without it the gate says so and carries on). No new service.
+- The kit run in the workflow is Profile only: `/api/scorecard` is free and anonymous. The chat surface (about $1.20 a run, production credits) stays the monthly production check.
+
+**The registry reads the workflow through the public Actions API.** `eval.kit_weekly`: warn at 9 days, alarm at 16 days or when the newest completed run failed. Before the first run (the workflow isn't on the default branch yet: HTTP 404) it reads *unknown*, never red; a GitHub rate limit or outage is a transient probe error, never "the kit failed". With both M5 placeholders filled, every registry source now has a probe or is a frozen artifact (a test asserts it).
+
+**Not verified here (needs the merge):** the workflow itself. I can't run a GitHub Actions workflow from my side before it is on the default branch. After the merge: dispatch it once normally (must pass), once with `inject_mismatch` (must fail and email).
+
+**Numbers** (2026-10-22; public sources only, no model)
+
+| Measure | Result | Reproduce |
+|---|---|---|
+| Backend tests | 2,013 → 2,033 (+20) | `make test` |
+| Eval tests | 92 → 103 (+11 gate tests; the verdict-script test runs again instead of skipping) | `python -m pytest eval/test_judge.py eval/tests -q` |
+| Frontend tests, lint, build | 471 / 67 of 67 warnings / passes | `cd frontend && npm test && npm run lint && npm run build` |
+| Profile kit on production | accuracy 117/122 (96%), coverage 61/64, confident-wrong 0, districts 12/12; 3 minutes | `PYTHONPATH=. python -m eval.parcel_kit --full https://urbanlayerchicago.com --surfaces profile` |
+| Same run before the verdict fix | 104/110 (95%), 55/64 coverage: the verdict-derived cells (B/E/F) were missing | same, at the first commit |
+| Artifact ages today | 1 annotation (code text, acked); the other five ok | `python -m backend.data_health.artifacts --ci` |
+| Daily dry run | 81 sources, 108 requests; no source without a probe; `eval.kit_weekly` unknown until the first run | `python -m backend.data_health.check --dry-run` |
+
+**Not measured:** a scheduled Monday run; the Sentry path (no `SENTRY_DSN` secret is set yet: Jack's call); how often the accepted baseline will need refreshing.
+

@@ -1,0 +1,10 @@
+{
+  "built_at": "2026-06-01",
+  "stations": 384,
+  "sources": {
+    "cta": "https://www.transitchicago.com/downloads/sch_data/google_transit.zip",
+    "metra": "https://schedules.metrarail.com/gtfs/schedule.zip"
+  },
+  "script": "ingestion/build_transit_stations.py",
+  "note": "built_at is the date the artifact was committed (git log), written when the sidecar was introduced (WS6 M5); a rebuild writes its own date."
+}
