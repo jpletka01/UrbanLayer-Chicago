@@ -28,16 +28,16 @@ import logging
 import os
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from backend.legislation import currency
+from backend.legislation import currency, rezonings
 from backend.legislation.amendments import live_record
 from backend.retrieval import clerk
 
 log = logging.getLogger(__name__)
 
-SCHEMA = 1
+SCHEMA = 2  # 2: adds ``rezonings`` and ``rezoning_check`` (WS1 M5); a schema-1 file reads as "no rezoning data"
 
 
 def _iso(dt: datetime) -> str:
@@ -55,6 +55,23 @@ def write_atomic(path: Path, data: dict) -> None:
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+async def _rezoning_part(previous: dict | None, now: datetime, client) -> tuple[list[dict], dict]:
+    """The rezonings Council passed that the City's map doesn't show yet. A failure here must not
+    cost the code-amendment check: the previous rows are kept and the failure is recorded."""
+    prev_rows = (previous or {}).get("rezonings") or []
+    since = (now.astimezone(clerk.CHICAGO).date()) - timedelta(days=rezonings.LOOKBACK_DAYS)
+    try:
+        matters = await clerk.passed_since(since, (clerk.ZONING_RECLASSIFICATIONS,), client=client)
+        rows = await rezonings.build_rows(matters, prev_rows)
+    except (clerk.ClerkUnavailable, clerk.ClerkQueryError, rezonings.MapCheckUnavailable) as exc:
+        log.error("Rezoning check failed (previous rows kept): %s", exc)
+        old = (previous or {}).get("rezoning_check") or {}
+        return prev_rows, {**old, "status": "failed", "last_error": f"{type(exc).__name__}: {exc}"[:300],
+                           "last_attempt_at": _iso(now)}
+    return rows, {"status": "ok", "checked_at": _iso(now), "last_attempt_at": _iso(now), "last_error": None,
+                  "parser": rezonings.PARSER_VERSION, "counts": rezonings.summary(rows)}
 
 
 async def build_snapshot(previous: dict | None, *, now: datetime | None = None, client=None) -> dict:
@@ -77,6 +94,7 @@ async def build_snapshot(previous: dict | None, *, now: datetime | None = None, 
         gone = [r["record"] for r in previous.get("code_amendments") or [] if r.get("record") not in now_records]
         problems += [f"{rec} was listed as passed on the last check and is gone now" for rec in gone]
 
+    rezoning_rows, rezoning_check = await _rezoning_part(previous, now, client)
     return {
         "schema": SCHEMA,
         "vintage": day.isoformat(),
@@ -92,7 +110,8 @@ async def build_snapshot(previous: dict | None, *, now: datetime | None = None, 
             "cited_other": sum(1 for r in rows if r["relevance"] == "cited_other"),
         },
         "code_amendments": kept,
-        "rezonings": [],  # WS1 M5
+        "rezonings": rezoning_rows,
+        "rezoning_check": rezoning_check,
     }
 
 
@@ -107,6 +126,7 @@ def failed_snapshot(previous: dict | None, error: str, *, now: datetime | None =
         "last_error": error[:500],
         "consecutive_failures": int(prev.get("consecutive_failures") or 0) + 1,
         "code_amendments": prev.get("code_amendments") or [],
+        "rezonings": prev.get("rezonings") or [],
     }
 
 
@@ -150,6 +170,11 @@ def main(argv: list[str] | None = None) -> int:
     c = snap.get("counts") or {}
     print(f"status={snap.get('status')} vintage={snap.get('vintage')} checked_at={snap.get('checked_at')} "
           f"passed={c.get('passed_code_amendments')} title17={c.get('title17')} cited_other={c.get('cited_other')}")
+    rc = snap.get("rezoning_check") or {}
+    if rc:
+        n = rc.get("counts") or {}
+        print(f"  rezonings: {rc.get('status')} passed={n.get('passed')} off_map={n.get('off_map')} flaggable={n.get('flaggable')} "
+              f"unparsed={len(n.get('unparsed') or [])} no_parcels={len(n.get('no_parcels') or [])}")
     for p in snap.get("contract_problems") or []:
         print(f"  problem: {p}")
     if snap.get("last_error"):

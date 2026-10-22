@@ -138,7 +138,8 @@
         "aldermanic": "Las enmiendas al mapa de zonificación, los Desarrollos Planificados, los usos especiales y los ajustes administrativos requieren aviso al concejal del distrito (§17-13-0100, §17-13-0300, §17-13-0600), y que un proyecto sea aprobado depende de aprobaciones discrecionales que esta página no puede evaluar.",
         "map_lag": "El mapa de zonificación de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada.",
         "code_vintage": "El texto del Código Municipal usado aquí está vigente hasta {{date}}; una enmienda posterior del Concejo puede no estar reflejada.",
-        "official_letter": "Esta página es una herramienta de evaluación preliminar, no una determinación de zonificación. La Carta de Verificación de Zonificación de la Ciudad confirma la zonificación de una parcela (${{fee}}, hasta {{days}} días, según publica la Oficina del Administrador de Zonificación, verificado {{checked}}); una carta de opinión cubre un proyecto específico."
+        "official_letter": "Esta página es una herramienta de evaluación preliminar, no una determinación de zonificación. La Carta de Verificación de Zonificación de la Ciudad confirma la zonificación de una parcela (${{fee}}, hasta {{days}} días, según publica la Oficina del Administrador de Zonificación, verificado {{checked}}); una carta de opinión cubre un proyecto específico.",
+        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development."
       }
     },
     "resolution": {
@@ -190,7 +191,8 @@
       "maxUnitsByLotArea": "Unidades máx. por área de lote",
       "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más.",
       "laterAmendments_one": "{{count}} later amendment",
-      "laterAmendments_other": "{{count}} later amendments"
+      "laterAmendments_other": "{{count}} later amendments",
+      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows."
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -246,7 +248,8 @@
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
         "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR.",
-        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review."
+        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
+        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date."
       },
       "next": {
         "strong": {

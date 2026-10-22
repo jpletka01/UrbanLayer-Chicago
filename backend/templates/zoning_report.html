@@ -662,6 +662,15 @@ a.glossary-link {
   <p class="section-note">{{ t("zoning.unavailable") }}</p>
   {% endif %}
 
+  {# A passed rezoning the City's map doesn't show yet (WS1 M5): the district above is the OLD one. #}
+  {% for hit in (ctx.passed_not_on_map or []) %}
+  <div style="margin: 6pt 0; padding: 5pt 8pt; background: #fffbeb; border-left: 4pt solid #d97706; border-radius: 2pt; font-size: 9pt;">
+    <strong>{{ t("zoning.passed_not_on_map_heading") }}.</strong>
+    {{ t("zoning.passed_not_on_map", segment=(hit.segment or t("common.na")), date=(hit.passed_on|rdate), record=hit.record) }}
+    {% if hit.url %}<a href="{{ hit.url }}">{{ hit.record }}</a>{% endif %}
+  </div>
+  {% endfor %}
+
   {# How current the law in this report is (WS1 M2): the code text's vintage plus what
      Council passed since, from the same code_currency the Profile shows. #}
   {% set cc = ctx.code_currency %}

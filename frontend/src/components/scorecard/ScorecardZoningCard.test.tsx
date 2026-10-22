@@ -88,6 +88,29 @@ describe("ScorecardZoningCard — the binding number (F3)", () => {
     expect(note.textContent).not.toContain("23082T1"); // the application number is never shown as the ordinance
   });
 
+  it("says a passed rezoning listing this address isn't on the City's map yet, with the ordinance linked (WS1 M5)", () => {
+    render(
+      <ScorecardZoningCard
+        def={{ ...rm45, zone_class: "B3-2" }}
+        passedNotOnMap={[{
+          record: "O2026-0028350", passed_on: "2026-10-14", url: "https://chicityclerkelms.chicago.gov/Matter/?matterId=EBBB",
+          segment: "6701-6731 S Western Ave", maps: "16-H", matched_by: "pin",
+        }]}
+      />,
+    );
+    const box = screen.getByTestId("passed-not-on-map");
+    expect(box.textContent).toContain("A rezoning listing this address passed Council on Oct 14, 2026 (O2026-0028350)");
+    expect(box.textContent).toContain("hasn't been updated for it yet");
+    expect(box.textContent).toContain("the district the map still shows");
+    expect(box.textContent).not.toMatch(/was rezoned|rezoned to/);
+    expect(box.querySelector("a")?.getAttribute("href")).toContain("chicityclerkelms.chicago.gov");
+  });
+
+  it("shows nothing about it without a listing", () => {
+    render(<ScorecardZoningCard def={rm45} passedNotOnMap={[]} />);
+    expect(screen.queryByTestId("passed-not-on-map")).toBeNull();
+  });
+
   it("shows no stamps when the API supplies none (older payloads)", () => {
     render(<ScorecardZoningCard def={rm45} />);
     expect(screen.queryByTestId("freshness-stamps")).toBeNull();

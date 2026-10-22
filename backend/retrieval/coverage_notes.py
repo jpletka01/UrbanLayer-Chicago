@@ -36,6 +36,7 @@ def build_coverage_notes(
     code_vintage: dict | None,
     code_currency: dict | None = None,
     address: str | None = None,
+    passed_not_on_map: list[dict] | None = None,
 ) -> list[dict]:
     """The ordered list of notes for one parcel. Every argument may be None."""
     notes: list[dict] = []
@@ -81,6 +82,21 @@ def build_coverage_notes(
             "amendment by up to 90 days, so confirm the current district with the Department of Planning and Development.",
             params={"date": zoning.ordinance_date, "ordinance": getattr(zoning, "ordinance_num", None) or ""},
             link=getattr(zoning, "clerk_url", None),
+        ))
+
+    # A rezoning that lists this address passed but the City's map hasn't been updated (WS1 M5):
+    # the district on this page is the old one. Says what we know (a listing), not what it changes.
+    for hit in passed_not_on_map or []:
+        from backend.legislation.currency import fmt_day
+
+        notes.append(_note(
+            "passed_not_on_map", "parcel",
+            f"A rezoning ordinance listing this address passed City Council on {fmt_day(hit['passed_on'])} "
+            f"({hit['record']}). The City's zoning map, which this page's district comes from, has not been updated "
+            "for it yet, so the standards on this page are for the district the map still shows. Confirm the current "
+            "district with the Department of Planning and Development.",
+            params={"date": hit["passed_on"], "record": hit["record"], "segment": hit.get("segment") or ""},
+            link=hit.get("url"),
         ))
 
     if adu and adu.get("status") == "allowed_with_limits" and adu.get("limits"):

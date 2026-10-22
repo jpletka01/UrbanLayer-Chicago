@@ -1102,6 +1102,7 @@ export default function ScorecardPage() {
                             codeCurrency={ctx.code_currency ?? null}
                             provenance={data.provenance ?? null}
                             coverageNotes={ctx.coverage_notes ?? null}
+                            passedNotOnMap={ctx.passed_not_on_map ?? null}
                           />
                         </div>
                       )}

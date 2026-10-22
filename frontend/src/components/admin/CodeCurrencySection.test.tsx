@@ -25,6 +25,37 @@ const base: AdminCodeCurrency = {
   amendments: [lawrence, tod],
 };
 
+describe("CodeCurrencySection — rezonings the City's map lacks (WS1 M5)", () => {
+  it("shows how many are waiting, how long, and the titles to map by hand", async () => {
+    vi.mocked(fetchAdminCodeCurrency).mockResolvedValue({
+      ...base,
+      map_lag: {
+        source_id: "chi.zoning.passed_not_on_map", passed_not_on_map: 80, oldest_days: 98, flaggable: 77, with_parcels: 54,
+        unparsed_titles: 3, unparsed: ["O2026-0026168"], no_parcels: ["a", "b"], check_status: "ok",
+        last_checked: "2026-10-21T11:00:00Z", last_error: null,
+      },
+    });
+    render(<CodeCurrencySection />);
+    await waitFor(() => expect(screen.getByTestId("map-lag")).toBeTruthy());
+    expect(screen.getByTestId("map-lag-count").textContent).toBe("80");
+    expect(screen.getByText("98 days")).toBeTruthy();
+    expect(screen.getByText(/Map by hand in rezoning_overrides.json: O2026-0026168/)).toBeTruthy();
+  });
+
+  it("says unknown, never zero, when the check has never run", async () => {
+    vi.mocked(fetchAdminCodeCurrency).mockResolvedValue({
+      ...base,
+      map_lag: {
+        source_id: "chi.zoning.passed_not_on_map", passed_not_on_map: null, oldest_days: null, flaggable: null, with_parcels: null,
+        unparsed_titles: null, unparsed: [], no_parcels: [], check_status: "missing", last_checked: null, last_error: null,
+      },
+    });
+    render(<CodeCurrencySection />);
+    await waitFor(() => expect(screen.getByTestId("map-lag-count")).toBeTruthy());
+    expect(screen.getByTestId("map-lag-count").textContent).toBe("unknown (never checked)");
+  });
+});
+
 describe("CodeCurrencySection — admin 'Code currency' card", () => {
   it("shows status, age, the Title 17 count and the unreviewed amendments", async () => {
     vi.mocked(fetchAdminCodeCurrency).mockResolvedValue(base);

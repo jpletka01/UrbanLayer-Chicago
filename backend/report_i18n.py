@@ -699,6 +699,8 @@ _EN: dict[str, str] = {
     "currency.footnote": "These amendments are not in the code text this report quotes. Read the ordinance (linked) before relying on a standard it touches.",
     "currency.law_heading": "Law passed since the code text, applied to this parcel",
     "currency.law_footnote": "Each item is an ordinance City Council passed after the code text this report quotes. It is applied here from the ordinance itself, not from the published code. Confirm with the Department of Planning and Development.",
+    "zoning.passed_not_on_map_heading": "A rezoning passed that the City's map does not show yet",
+    "zoning.passed_not_on_map": "A rezoning ordinance listing this address ({segment}) passed City Council on {date} ({record}). The City's zoning map, which this report's district comes from, has not been updated for it yet, so the standards in this report are for the district the map still shows. Confirm the current district with the Department of Planning and Development before relying on them.",
 }
 
 _ES: dict[str, str] = {
@@ -1347,12 +1349,16 @@ _ES: dict[str, str] = {
     "currency.footnote": "These amendments are not in the code text this report quotes. Read the ordinance (linked) before relying on a standard it touches.",
     "currency.law_heading": "Law passed since the code text, applied to this parcel",
     "currency.law_footnote": "Each item is an ordinance City Council passed after the code text this report quotes. It is applied here from the ordinance itself, not from the published code. Confirm with the Department of Planning and Development.",
+    "zoning.passed_not_on_map_heading": "A rezoning passed that the City's map does not show yet",
+    "zoning.passed_not_on_map": "A rezoning ordinance listing this address ({segment}) passed City Council on {date} ({record}). The City's zoning map, which this report's district comes from, has not been updated for it yet, so the standards in this report are for the district the map still shows. Confirm the current district with the Department of Planning and Development before relying on them.",
 }
 
 # Spanish keys still carrying the English text, for WS7 to translate. The guard in
 # test_report_i18n.py checks each exists in both catalogs and still equals the English
 # (so a translated key must also leave this set). Shared convention: WS0, WS1, WS6.
 _UNTRANSLATED_ES: frozenset[str] = frozenset({
+    "zoning.passed_not_on_map_heading",
+    "zoning.passed_not_on_map",
     "oc.tod_street.signal",
     "oc.tod_street.detail",
     "currency.law_heading",

@@ -1000,3 +1000,63 @@ Backend and types only. No visible change: nothing reads the new fields until M4
 
 **Not measured:** the live browser tool was unavailable for the post-deploy check, so the DOM and screenshots came from a local headless Chromium against the live site; the admin and signed-in views were not checked.
 
+## Item 16: passed, but not yet on the City map (2026-10-21)
+
+**The ordinance is matched on its record number, and "off the map" means no polygon carries it.**
+- **Decision:** a passed rezoning is *on the map* when at least one layer-1 polygon has its record number in `CLERK_DOCNO`. The check is one batched `IN (…)` query (40 records) with distinct values, and an unreachable or erroring map raises `MapCheckUnavailable` (never "everything is off the map").
+- **Alternatives:** also try the original record number and the number with the leading `S` removed (the plan's note about substitutes). **Evidence:** over all 352 passed rezonings of the last year the exact record number found 272 and the two variants added none, so they were dropped.
+- **Result:** 80 are off the map today (the plan counted 79 on 2026-10-20). 42 of them passed on **July 15**, 98 days ago: a whole Council meeting's batch is still unmapped, past the plan's 90th percentile of 114 days only for the oldest, but well past the 90 days the coverage note promises.
+
+**A title is parsed or it is listed. It is never repaired.**
+- **Decision:** `address_titles.parse_title` returns segments (direction, street, type, range, side) or flags the title `partial`/`unparsed` with the reason. A partial parse gets no parcel flag. `backend/rezoning_overrides.json` (empty at first) is where a reviewed hand mapping goes.
+- **Evidence:** 346 of the 352 recorded titles (98.3%) parse clean. The six that don't are the ones that should not be guessed: two reversed ranges ("1236-1230", "7600-7400"), two fused numbers ("34013551"), one typo ("75t St") and "W Fulton Market" (no street type). The test pins that exact list, so a new unreadable title is a decision, not a drift. Four formatting variants found while reading real titles are handled: `St- App No.`, no dash before `App No.`, no label (`- A-9059`), and a spelled-out type (`95th Street`).
+
+**The parity rule stays, and the backtest says why.**
+- **Decision:** both ends odd → odd side; both even → even; mixed or a single number → both.
+- **Alternative tried:** when the parity-filtered query finds nothing, retry on both sides. **Evidence:** for those segments only 7 of 60 resolved parcels (2 of 29 on narrow ranges) sat on a polygon carrying the ordinance. They are mostly across the street, so the retry would have flagged the wrong parcels.
+
+**Address Points is the resolver, and it only knows built addresses.**
+- **Evidence:** of 269 clean on-map ordinances, 207 (77.0%) resolve to at least one parcel. The rest name addresses with no point (vacant lots are not in the dataset), so a parcel on one of them is not flagged. On today's 80 off-map ordinances, 77 have clean titles, 54 resolve to parcels, 23 resolve to none, and 3 titles are unreadable.
+- **Revisit if:** the 23 matter. The Assessor's parcel-address dataset (`3723-97qp`, already used by `parcel_addresses.py`) carries vacant lots and would raise coverage; it needs its own backtest.
+
+**What the backtest measured, and its limit.**
+- 463 parcels (up to 8 per ordinance) from 207 on-map ordinances: **445 sit on a polygon carrying the ordinance: precision 96.1%** (gate 95%). Of the 18 misses, 4 are a newer ordinance on the same polygon (superseded); the other 14 are mostly polygons with no ordinance number at all. Excluding the superseded, 96.9%.
+- **Wrong street: 0 of 463**, checked independently by asking Address Points for each sampled PIN's own streets, not through the range query that found it.
+- **Limit:** the check is a point lookup at the parcel's address point, which can sit on a polygon edge, so some misses are the check's, not the resolver's. Per-parcel recall isn't measured (a polygon is not a parcel).
+
+**The match is on the PIN first and the address only when the PIN is withheld.**
+- **Decision:** `matches_for` flags a parcel whose PIN is in an off-map ordinance's set, unless the parcel's live map record already carries that ordinance. An approximate parcel (PIN withheld) is matched on the parsed address: direction, street, number in range, parity, and a street type that doesn't contradict. The snapshot must have been checked within 14 days, because a stale list could name an ordinance that has since reached the map.
+- **Where it lives:** `ContextObject.passed_not_on_map` (a computed field, like `code_currency`), not `ZoningSummary.passed_not_on_map` as the plan named it, because the match needs the address and the PIN, which `ZoningSummary` doesn't have. It reaches the Profile JSON, the chat context and the report through the same object. It is a list, not one record, because two ordinances can list an address.
+- **Wording, everywhere:** "a rezoning listing this address", never "rezoned", never to what. The chat rule says so, and tests assert the phrases.
+
+**A rezoning failure never costs the code-amendment check.** `_rezoning_part` keeps the previous rows and records `rezoning_check.status = failed`. The map check and the Clerk query both fail loudly. The snapshot grows from about 20 KB to 357 KB (the parcel lists).
+
+**Verified live, with no model call.** A real sync run (Clerk, the City's map and Address Points; 17 s) put 6711 S Western Ave (PIN 20193000320000) in O2026-0028350 (Oct 14, off the map), matched by PIN; 1218 W George St (on the map, rezoned in June) and 4000 N Western Ave get nothing.
+
+**Found along the way.**
+- The City's zoning server answers **403** to a custom `User-Agent` (it did not for the app's own shared client). The backtest uses that client.
+- The sync fixture in `test_legislation_currency.py` needed an autouse stub for the new Clerk call; the network guard caught it.
+
+**Not built: landmark designations (the accepted Q9 answer).** The plan folded "passed landmark designations not yet on the map" into this item at about half a day. It is not half a day. Designations are a different Clerk category (`HISTORICAL LANDMARKS | Designation`: 3 passed since July, one of them a district named by "900 through 1100 blocks of W Bryn Mawr Ave"), their titles use a different grammar, and the landmark map layers carry no ordinance number to check against (layer 5 has a name, address and designation date as text). So "not yet on the map" would be a fuzzy name match, which is the opposite of this item's rule. It needs its own design. Proposed as a follow-up item.
+
+**Numbers** (2026-10-21; public sources only, no model)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend tests | 1,926 → 1,979 (+53: parser 25, rezonings 28) | `make test` |
+| Frontend tests | 461 → 470 | `cd frontend && npm test` |
+| Lint warnings (cap 67) | 67 → 67, 0 errors; build passes | `cd frontend && npm run lint && npm run build` |
+| Titles that parse clean | 346 of 352 (98.3%); 6 listed | `PYTHONPATH=. python -m eval.rezoning_backtest` |
+| Backtest precision | 96.1% (445 of 463 parcels); 96.9% excluding superseded; wrong street 0 of 463 | same |
+| Clean on-map ordinances with at least one parcel | 207 of 269 (77.0%) | same |
+| Off the map today | 80 passed rezonings; 77 clean titles, 54 with parcels, 23 without, 3 unreadable; oldest waiting 341 days (one from Nov 2025), 42 from July 15 | `python -m backend.legislation.sync --print` |
+| Sync with rezonings (Clerk + map + Address Points) | 17 s for 352 ordinances; snapshot 357 KB | `python -m backend.legislation.sync --out <file>` |
+| Phone audit, Profile route | 5 of 5 devices, no overflow | `cd frontend && npx playwright test -g scorecard` (replay stub) |
+
+**Not measured:**
+- The first prod sync after deploy (the live snapshot has no rezonings until it runs).
+- Per-parcel recall.
+- How often a parcel the Profile flags is one the reader cares about (no usage yet).
+- The other seven phone-audit routes.
+- Spanish rendering (new strings are English, listed in `_untranslated.json`).
+

@@ -1,0 +1,4 @@
+{
+  "_comment": "Hand-mapped rezoning ordinances whose Clerk title the parser cannot read (backend/legislation/address_titles.py). Key = Clerk record number; value = {\"segments\": [{\"dir\": \"S\", \"name\": \"WESTERN\", \"type\": \"AVE\", \"lo\": 6701, \"hi\": 6717, \"side\": \"odd\", \"raw\": \"6701-6717\"}], \"note\": \"why\"}. Review each against the ordinance PDF. The daily sync lists unparsed off-map titles; an entry here makes one flaggable.",
+  "overrides": {}
+}
