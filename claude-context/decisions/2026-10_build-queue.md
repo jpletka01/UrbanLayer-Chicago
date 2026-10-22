@@ -1582,3 +1582,23 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 - **The chat footer line end to end and the report PDF.** Both are pinned by tests (the footer builder, the rendered report HTML), not seen on a running server: the chat route spends the production key, and the report needs an admin session. The prompt rule is a prompt: nothing but a test of its text proves a model obeys it.
 - **The Spanish UI** shows the new strings in English.
 - **Production.** The failure path shows on production only while FEMA is actually resetting connections, and the retry will hide most of them. The healthy path is the thing to check there: a Profile still carries `flood_zone` and the new `flood_unchecked: false`.
+
+**Production** (2026-10-22, after the deploy of #104, merge commit `69c2276`)
+
+| Check | Result | Reproduce |
+|---|---|---|
+| Deploy | CI / Deploy on `69c2276`: `changes`, `lint`, `test` and `deploy` all `success` (deploy finished 18:55 UTC, about 5 minutes after the merge) | `gh run view <id> --json jobs` |
+| Health | `/health` ok (`qdrant`, `db`, `ptaxsim` true); checker ok, last run 1.1 h old; `alarms: 1` (the same `fed.fema.nfhl` alarm as before) | `curl https://urbanlayerchicago.com/health` |
+| Frontend | the served bundle changed from `index-CDKwAX8y.js` to `index-DegLbUlP.js` and carries `floodUnchecked` and "FEMA flood zone" | `curl -s https://urbanlayerchicago.com/ \| grep -o 'assets/index-[A-Za-z0-9_-]*\.js'` |
+| Profile payload, before the deploy | 1601 N Milwaukee: `flood_zone: null`, `in_special_flood_hazard: false`, `failed_sources: []`, `partial_failures: []` (the silent failure, on production) | `curl "https://urbanlayerchicago.com/api/scorecard?pin=14313320180000"` |
+| Profile payload, after the deploy (3 requests about 20 s apart) | all three: `flood_zone: null`, `in_special_flood_hazard: null`, `flood_unchecked: true`, `failed_sources: [{key: flood, labels: [FEMA flood zone]}]`, `partial_failures: [FEMA flood zone]`. The rest of the flood subtree, `data_dates`, zone class and provenance keys are identical to before | same |
+| The live page, headless, desktop and 375 px (three loads) | the Environment card says "Couldn't check today ... FEMA flood zone didn't answer ... That isn't a "no"" with the FEMA flood map link; the verdict carries its own caveat; the hero line reads "Some data unavailable: FEMA flood zone"; the page never says "not in a flood zone"; document width equals viewport width at 1280 and 375 | Playwright against the live URL |
+| Anonymous `/api/report` | still 401 | `curl -i` |
+
+**What production showed that the local runs did not:** from the production server FEMA failed **every** lookup I made after the deploy (3 API requests and 3 page loads, so 6 of 6, each after the 4 attempts), where from a dev machine about a third of fresh connections get through. So the retry rescued none of them here, and the 13% to 20% residual-failure estimate above (computed from the dev-machine reset rate) does not describe production today. Until FEMA, or whatever drops the server's connections, recovers, every Profile says it couldn't check the flood zone. That is the honest behavior, and it is what the daily alarm (`fed.fema.nfhl`, ConnectError twice in a row) was already reporting. Why production fails more than a dev machine is **not established**: a block or throttle on the server's address range, FEMA failing from some networks, and plain bad luck over a small sample all fit, and I did not test any of them.
+
+**Not verified on production:**
+- **The healthy path.** No production lookup got an answer, so I did not see a live Profile with a flood zone and `flood_unchecked: false`. That path was checked locally (payload identical to `main` apart from the new key) and by tests.
+- **The live failure counts.** `data_health_live.db` flushes hourly (first flush about an hour after the container restarted, 19:55 UTC) and the checker reads it on its next daily run. With a failure rate near 100% the registry's live-rate rule (over 50% of at least 10 calls) should turn `fed.fema.nfhl` to alarm then; I have not seen it.
+- **The chat footer line and the report PDF** (unchanged from the local result: the chat route spends the production key, the report needs an admin session).
+- **The retry's real success rate** on production: it has no data except the six failures above.
