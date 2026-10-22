@@ -66,7 +66,12 @@ def _build_user_text(
     context: ContextObject,
     user_message: str,
 ) -> str:
-    ctx = context.model_dump(mode="json", exclude={"analytics"})
+    # `provenance` is the dated source of every figure, stored with the answer and shown in the sidebar: the
+    # model gets the two short lists distilled from it (`withheld_figures`, `figure_notes`), not the map.
+    ctx = context.model_dump(mode="json", exclude={"analytics", "provenance"})
+    for key in ("withheld_figures", "figure_notes"):
+        if not ctx.get(key):
+            ctx.pop(key, None)
     if ctx.get("code_currency"):
         from backend.legislation.currency import for_model
 
