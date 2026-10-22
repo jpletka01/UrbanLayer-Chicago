@@ -345,3 +345,71 @@ def test_the_default_client_retries_connection_errors():
         assert client._transport._pool._retries == probes.CONNECT_RETRIES   # httpx has no public accessor
     finally:
         asyncio.run(client.aclose())
+
+
+# --- is the monthly amendment review being done? (WS1 M7) -----------------------------------------------
+
+def _clerk_rows(*rows):
+    """A fresh Clerk snapshot (checked a day before 2026-10-21) listing these (record, passed_on, relevance)."""
+    return {
+        "status": "ok", "checked_at": "2026-10-20T12:00:00+00:00",
+        "code_amendments": [
+            {"record": r, "url": "u", "title": "t", "passed_on": d, "relevance": rel, "kind": "text", "sections": []}
+            for r, d, rel in rows
+        ],
+    }
+
+
+def _review_probe(monkeypatch, snapshot, reviews=None):
+    from backend.legislation import currency
+    monkeypatch.setattr(currency, "load_snapshot", lambda: snapshot)
+    monkeypatch.setattr(currency, "load_reviews", lambda: reviews or {})
+    return _probe("internal.amendment_review", None, None)
+
+
+@pytest.mark.parametrize("passed_on,level", [
+    ("2026-10-07", None),        # 14 days: still inside the window
+    ("2026-10-06", "warn"),      # 15
+    ("2026-09-06", "warn"),      # 45
+    ("2026-09-05", "alarm"),     # 46
+])
+def test_a_title_17_amendment_waits_14_days_then_warns_and_after_45_alarms(monkeypatch, passed_on, level):
+    res = _review_probe(monkeypatch, _clerk_rows(("O2026-1", passed_on, "title17")))
+    assert (res.findings[0].level if res.findings else None) == level
+    if level:
+        assert "O2026-1" in res.findings[0].text and passed_on in res.findings[0].text
+
+
+def test_a_reviewed_amendment_never_counts(monkeypatch):
+    rows = _clerk_rows(("O2026-1", "2026-08-01", "title17"))
+    res = _review_probe(monkeypatch, rows, {"O2026-1": {"review_status": "reviewed", "product_effect": "none", "codified": False}})
+    assert not res.findings and res.info.startswith("0 Title 17")
+
+
+def test_other_amendments_warn_after_45_days_and_never_alarm(monkeypatch):
+    assert not _review_probe(monkeypatch, _clerk_rows(("O2026-2", "2026-09-06", "cited_other"))).findings    # 45 days
+    res = _review_probe(monkeypatch, _clerk_rows(("O2026-2", "2025-12-01", "cited_other")))                  # a long time
+    assert [f.level for f in res.findings] == ["warn"] and "O2026-2" in res.findings[0].text
+
+
+def test_the_oldest_unreviewed_amendment_is_the_one_named(monkeypatch):
+    rows = _clerk_rows(("NEW", "2026-10-01", "title17"), ("OLD", "2026-08-15", "title17"))
+    res = _review_probe(monkeypatch, rows)
+    assert "OLD" in res.findings[0].text and "2 unreviewed in all" in res.findings[0].text
+
+
+def test_without_a_fresh_clerk_check_the_backlog_is_not_judged(monkeypatch):
+    stale = {**_clerk_rows(("O2026-1", "2026-08-01", "title17")), "checked_at": "2026-09-01T00:00:00+00:00"}
+    res = _review_probe(monkeypatch, stale)
+    assert not res.findings and "cannot be judged" in res.info
+    assert not _review_probe(monkeypatch, None).findings
+
+
+def test_the_review_alarm_is_not_swallowed_by_the_code_text_ack(monkeypatch):
+    """code.municipal_text is acked until its thresholds are re-decided; this source must not be, or its
+    alarm would show as 'acked' and never reach Sentry."""
+    from backend.data_health.evaluate import evaluate
+    assert BY_ID["code.municipal_text"].ack is not None and BY_ID["internal.amendment_review"].ack is None
+    res = _review_probe(monkeypatch, _clerk_rows(("O2026-1", "2026-08-01", "title17")))
+    assert evaluate(BY_ID["internal.amendment_review"], res, date(2026, 10, 21)).state == "alarm"
+    assert evaluate(BY_ID["internal.amendment_review"], _review_probe(monkeypatch, _clerk_rows()), date(2026, 10, 21)).state == "ok"

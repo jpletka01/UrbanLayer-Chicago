@@ -43,6 +43,9 @@ Multi-stage `backend/Dockerfile`: builder installs CPU-only PyTorch + deps + pre
 
 ## Seeding / updating the production code corpus (Qdrant)
 
+This section is the mechanics of the push. The whole refresh (the monthly review, the dry run and gates, the
+codification check, what to re-verify, when to drop old collections) is `guides/code-refresh.md`.
+
 There was no runbook for this until 2026-09-08; it is not obvious, because **the prod
 image cannot run the ingestion pipeline at all**. `backend/Dockerfile` copies `backend/`
 plus four `ingestion/data` artifacts — it does NOT copy `ingestion/*.py`, `chunks.jsonl`,

@@ -10,7 +10,7 @@
 
 | File | Job |
 |---|---|
-| `registry.py` | `SOURCES`: a tuple of `SourceSpec`, one per data source the product shows (81 on 2026-10-21). Who publishes it, its tier, which module reads it, how to read its date, how stale is too stale. |
+| `registry.py` | `SOURCES`: a tuple of `SourceSpec`, one per data source the product shows (82 on 2026-10-22). Who publishes it, its tier, which module reads it, how to read its date, how stale is too stale. |
 | `probes.py` | Reads each source's latest data date (and the cheap contract facts) over HTTP, or from a local file. Parsers are pure and tested on recorded responses. |
 | `evaluate.py` | Pure rules: probe result + spec + today → a status (`ok`, `warn`, `alarm`, `error`, `unknown`, `frozen_ok`, `acked`). |
 | `check.py` | The CLI and `check()`, one run: probe, evaluate, store, alert. `--dry-run` prints every source and writes nothing. |
@@ -103,6 +103,8 @@ What we last notified about is stored per source (`alerted_state`), not inferred
 **Backup age** (`internal.backups`, critical). `scripts/backup_db.sh` writes `backup_status.json` beside `chicago.db` (on the `backend_data` volume) after each successful backup; the checker container cannot see `/opt/urbanlayer/backups`, so it reads the status file instead of a mount. Warn after 30 h, alarm after 36 h (a missed night). With `BACKUP_STATUS_REQUIRED=true` (set in `docker-compose.prod.yml`) a missing file is an alarm; in dev it reads "not probed here". It sees the on-box copy only, not the off-box pull to the Mac.
 
 **Code vintage** (`code.municipal_text`, critical, WS1's thresholds 60/90 days). American Legal publishes about four months behind Council, so the newest export is already past the 90-day alarm the day it is ingested; the source is acked until 2026-12-15, and the nudge is `.github/workflows/code-export-reminder.yml`: on the 1st of each month it fails (and emails) while `backend/code_vintage.json:ingested_at` is more than 35 days old. When the ack expires, re-decide the thresholds against the publisher's real lag rather than extending it blindly. `code.hand_table.zoning_definitions` alarms when `VERIFIED_AGAINST` differs from the vintage.
+
+**Amendment review** (`internal.amendment_review`, WS1 M7). Is the monthly review of what Council passed being done? `probe_amendment_review` reads the Clerk snapshot and `backend/code_amendments.json` (offline, via `currency.review_backlog`) and judges how long each unreviewed amendment has waited since Council passed it: a Title 17 amendment warns after 14 days and **alarms after 45** (the only one that emails); any other passed amendment warns after 45 and never alarms. It is its own source because `code.municipal_text` is acked until 2026-12-15, and an ack turns every alarm on that source into `acked`. Without a fresh Clerk check (older than 14 days, or `suspect`) it judges nothing and says why; `chi.clerk.legislation` reports that. The routine it asks for is `guides/code-refresh.md`.
 
 **The alarm drill** (production, after install, then quarterly):
 

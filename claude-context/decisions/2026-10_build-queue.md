@@ -1469,3 +1469,46 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 **Not verified on prod:**
 - Everything behind a login: the Settings purchase row ("Original · date" and "Updated copy"), a real second download, and `copy=original`. Item 23's local run covered those against a scratch database; prod has no purchase to download yet (Stripe is off), so the first purchase will be the first live original.
 - The server backup change: `sudo /opt/urbanlayer/scripts/backup_db.sh` once a purchase exists, then look for "Report originals mirrored". The off-box pull on Jack's Mac still needs `./reports/` added.
+
+## Item 24: the monthly routine and its nudge (WS1 M7, 2026-10-22)
+
+**Most of M7 was already built by other items; what was missing was the checklist and a nudge for the review.** The daily sync and its timer (item 6), the registry entries `code.municipal_text` and `chi.clerk.legislation` reading WS1's callables (items 9 and 11), the CI artifact-age warning (item 18) and the monthly export reminder (item 11) all exist. So the interim `ci.yml` step the plan allowed for "if WS6's registry isn't live yet" was not needed. What this item adds: `claude-context/guides/code-refresh.md`, an alarm for an unreviewed amendment, and the removal of the module that the registry replaced.
+
+**The review nudge is its own registry source, `internal.amendment_review`, not a finding on `code.municipal_text`.**
+- **Decision:** a new source (kind `internal`, `availability_only`, no ack) whose probe reads the Clerk snapshot and `backend/code_amendments.json` through `currency.review_backlog(today)`.
+- **Alternatives:** a finding in the existing `probe_code_text` (the plan's §7.3 wording: "additional registry checks").
+- **Why:** `code.municipal_text` is acked until 2026-12-15 (its vintage is always over 90 days old), and `evaluate._finish` turns any warn/alarm/error on an acked source into `acked`, which never reaches Sentry. A finding added there would have been silent for 54 days, which is exactly the lapse it exists to catch. `test_the_review_alarm_is_not_swallowed_by_the_code_text_ack` pins it: the first source has an ack, the new one has none, and the same overdue amendment evaluates to `alarm`.
+- **Revisit if:** the ack on `code.municipal_text` goes away (then the two could merge, but the review would still be a different question from "how old is the text").
+
+**Thresholds: a Title 17 amendment warns after 14 days and alarms after 45; any other warns after 45 and never alarms.** The first pair is the plan's (§7.3, accepted with Q7). *I added the second:* `currency_check`, which this item deletes, warned on **any** amendment pending more than 30 days, so a Title 17-only rule would have dropped a warning that exists today. *Evidence:* the four non-Title-17 amendments awaiting review today are O2026-0026243 and SO2025-0017573 (passed July 15, 99 days), SO2026-0027165 (Sept 23, 29 days) and SO2026-0027237 (Oct 14, 8 days). The first two are over the 45-day line, so this source reads **warn on the day it deploys**. That is true (nobody has read them) and a warn emails no one; I did not review them in this item.
+- **Measured from passage, not from when we first saw it.** The Clerk may list an amendment days after Council passes it, so the clock starts before the sync can see it. *Not measured:* that lag. *Revisit if:* an amendment appears already near 14 days old.
+- **Not judged without a fresh Clerk check** (older than 14 days, missing or `suspect`): the list may be missing new amendments, and `chi.clerk.legislation` and `code.municipal_text` already report that. The probe says so in its info line and adds no finding.
+
+**`currency_check.py` is deleted.** Nothing but its own test called it. Its vintage-age warning (more than 90 days) is covered by `artifacts.py --ci` (60/90 days, in `ci.yml` since item 18), and its pending-review warning by the new source. *Alternative:* keep it. Rejected: two places saying the same thing drift, and the CI one only warned in a log nobody reads.
+
+**The guide is written from what the refreshes actually needed, not from the plan's one-time runbook.** It differs from plan §3 on purpose:
+- the prod Qdrant address is found with `ssh urbanlayer-prod 'ip -4 neigh show'` (item 7), not `docker inspect`, which needs sudo that `jack` doesn't have;
+- there is no `backend/tests/fixtures/code_sections/` step (item 4 dropped it: the 14 pinned sections are committed in place);
+- the zoning-cache step is `--check` and a fingerprint re-stamp when the builder's five sections are unchanged, and it says **not** to run the build, which spends the production key; the plan's step cost about $0.70;
+- the kit is the free Profile kit; the plan had `make kit` before and after, about $1 each;
+- it records the traps found on the way: a tripped gate can be a real repeal (read the editor's notes), titles overstate (read the diff), an omnibus can be partly codified, and the export's header can lag its contents (the "March 18" export already carried a May change).
+
+**Not built:** the plan's "a passed rezoning off the map for more than 180 days (warn)" check. `chi.zoning.passed_not_on_map` is not a registry source (its numbers live on the admin card via `map_lag_status()`), and registering it needs a probe and a decision about what red means when the City's own map is the slow party. The guide tells the reader to check it by hand. *Revisit if:* an ordinance sits off the map past the 180-day lookback unnoticed.
+
+**Numbers** (2026-10-22; local, public data, no model, no production key)
+
+| Measure | Before → after | Reproduce |
+|---|---|---|
+| Backend tests | 2,187 → 2,195 (+9 new in `test_data_health_probes.py`, −1 for the deleted module) | `make test` |
+| Eval scorer tests / frontend tests | 106 / 551, unchanged (no frontend file touched) | `make test` |
+| Registry sources | 81 → 82 | `python -m backend.data_health.check --dry-run` (last line of the table) |
+| `internal.amendment_review` on today's data | warn: 0 Title 17 and 4 other unreviewed, oldest 99 days | same dry run |
+| Same source with one scratch Title 17 amendment passed 50 days ago | alarm ("has waited 50 days for review (warn after 14, alarm after 45)"); "would alert" went 1 → 2 | `LEGISLATION_SNAPSHOT_PATH=<a copy of the snapshot with one row added> python -m backend.data_health.check --dry-run` |
+| `code.municipal_text` | still `acked` (until 2026-12-15) | same dry run |
+| Added / removed | `claude-context/guides/code-refresh.md` (85 lines); `currency_check.py` (50 lines) removed | `git diff --stat origin/main` |
+
+**Not verified:**
+- **Production.** The new source appears in the admin panel and `/health`'s alarm count only after the deploy and the next daily checker run (or a manual `sudo systemctl start data-health-check.service`). Expect `internal.amendment_review` at warn, naming the two July 15 amendments. I did not look at the panel in a browser (it needs an admin login); the row is a plain registry entry and the panel lists sources generically.
+- **The guide was not run end to end.** A real refresh needs a newer export than the one in hand. Every command's flags were checked against `--help`, and the steps come from items 4, 6, 7, 12 and 16's runs; the first refresh that follows it is the test, and should correct it.
+- `npm run build` and `npm run lint` were not run: no frontend file changed.
+- The first reminder email that points at the guide is the 1st of November.

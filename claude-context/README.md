@@ -20,6 +20,7 @@ reusable lesson, not the full narrative.
 - `guides/zoning-cache.md` — precomputed zoning-extraction cache (reranker is out of the report path); rebuild + limits.
 - `guides/source-confidence.md` — **the source confidence standard**: authority tiers, the five fields (source, date, coverage, precision, method), withhold/fade thresholds, caption rules, source ids, the "adding a figure" checklist. Read before adding or changing any displayed figure.
 - `guides/data-health.md` — **the data-source registry and checker** (`backend/data_health/`): one `SourceSpec` per source, how each date is read, statuses, acks, `check --dry-run`, how to add a source. Read before adding any data source.
+- `guides/code-refresh.md` — **the monthly municipal-code routine**: review what Council passed (`code_amendments.json`), when and how to ingest a new American Legal export, push the index to prod, what each red signal asks of you. Read when the reminder email arrives or before touching `ingestion/` or `backend/legislation/`.
 - `guides/parcel-resolution-truth-model.md` — the canonical address→PIN contract (who may write parcel identity; approximate/nearest-unverified rules).
 - `guides/scorecard-dashboard-model.md` — the Scorecard's dashboard+chat model and card architecture.
 - `guides/deployment.md` — server ops, `.env` template, deploy commands, monitoring, DB backups.
