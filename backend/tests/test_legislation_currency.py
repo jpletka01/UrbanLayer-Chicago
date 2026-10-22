@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 
 from backend.chat_sources import allowed_urls, build_sources_footer
 from backend.legislation import amendments as am
-from backend.legislation import codification_check, currency, currency_check, sync
+from backend.legislation import codification_check, currency, sync
 from backend.models import CodeChunk, ContextObject, OverlayDistrict, PropertySummary, RegulatorySummary, ZoningSummary
 from backend.retrieval import clerk
 
@@ -593,12 +593,3 @@ def test_codification_check_writes_codified_flags(tmp_path):
     assert absent == ["Z"]
     entries = json.loads(review.read_text())["amendments"]
     assert entries["A"]["codified"] is True and entries["B"]["codified"] is False
-
-
-def test_currency_check_warns_on_an_old_vintage_and_long_pending_reviews():
-    w = currency_check.warnings(date(2026, 10, 21))
-    assert w[0] == "Municipal Code text current through 2026-06-17 (126 days, > 90)"
-    assert any(x.startswith("O2026-0026243 (passed 2026-07-15) has been pending review") for x in w)
-    assert not any("SO2026-0024923" in x for x in w)  # reviewed in M4
-    assert not any("O2026-0025429" in x for x in w)  # every Title 17 item reviewed in M4b
-    assert not any("SO2026-0027237" in x for x in currency_check.warnings(date(2026, 10, 30)))  # 16 days pending

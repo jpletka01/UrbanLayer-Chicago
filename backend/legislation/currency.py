@@ -438,6 +438,23 @@ def code_currency_status(now: datetime | None = None) -> dict:
     }
 
 
+def review_backlog(today: date) -> dict[str, list[dict]]:
+    """Passed amendments nobody has reviewed yet, by how long each has waited since Council passed it
+    (oldest first), for the registry's ``internal.amendment_review``. ``title17`` are the ones the
+    Profile's rules rest on; ``cited_other`` touch sections the product cites. Offline."""
+    out: dict[str, list[dict]] = {scope: [] for scope in ALL_SCOPES}
+    for a in amendments_since_vintage(ALL_SCOPES):
+        if a.get("review_status") == "reviewed" or not a.get("passed_on") or a.get("relevance") not in out:
+            continue
+        out[a["relevance"]].append({
+            "record": a["record"], "passed_on": a["passed_on"],
+            "waiting_days": (today - date.fromisoformat(a["passed_on"])).days,
+        })
+    for rows in out.values():
+        rows.sort(key=lambda r: (r["passed_on"], r["record"]))
+    return out
+
+
 def clerk_source_status() -> dict:
     """Status of the Clerk feed for WS6's registry (``chi.clerk.legislation``)."""
     s = load_snapshot() or {}

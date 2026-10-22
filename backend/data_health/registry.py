@@ -517,7 +517,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         ack=Ack("American Legal publishes about four months behind Council: the newest export available (2026-10-21) is "
                 "current through 2026-06-17, already 126 days old, so the 90-day alarm would fire on day one and every "
                 "day until their next export. The monthly 'download a new export' reminder (.github/workflows/"
-                "code-export-reminder.yml) carries the nudge instead; WS1 M7's checklist says what to do. Re-decide the "
+                "code-export-reminder.yml) carries the nudge instead; claude-context/guides/code-refresh.md says what to do. Re-decide the "
                 "thresholds against the publisher's real lag when this expires.", date(2026, 12, 15), _OWNER),
         note="Content date = current_through. Thresholds are WS1's. Reports the amendments passed since.",
     ),
@@ -550,6 +550,15 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         owner_modules=("backend/retrieval/clerk.py", "backend/legislation/sync.py"), surfaces=("profile", "chat", "report"),
         fact_keys=("code.amendments",), severity="critical", cadence_days=1, warn_days=5, alarm_days=14,
         note="Content date = newest recordCreateDate (never introductionDate, which can be in the future).",
+    ),
+    SourceSpec(
+        id="internal.amendment_review", name="Review of passed amendments (age of the oldest unreviewed)",
+        publisher="UrbanLayer", tier="internal", kind="internal", locator="backend/code_amendments.json",
+        probe="amendment_review", owner_modules=("backend/legislation/currency.py",), availability_only=True,
+        note="Is the monthly review (claude-context/guides/code-refresh.md) being done? A Title 17 amendment unreviewed "
+             "14 days after Council passed it warns, 45 days alarms; any other passed amendment warns after 45. A "
+             "separate source because code.municipal_text is acked and would swallow the alarm. Reads the snapshot and "
+             "the review file only.",
     ),
     # --- Committed artifacts -----------------------------------------------------------------
     SourceSpec(

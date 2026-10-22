@@ -462,6 +462,41 @@ async def probe_code_text(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     return res
 
 
+# How long a passed amendment may wait for its review (days since Council passed it). Title 17 amendments
+# drive the Profile's rules, so they alarm; the others only touch sections the product cites, so they only warn.
+REVIEW_WARN_DAYS = 14
+REVIEW_ALARM_DAYS = 45
+REVIEW_OTHER_WARN_DAYS = 45
+
+
+async def probe_amendment_review(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Is the monthly review of what Council passed being done? Reads the snapshot and the review file only.
+    Its own source because ``code.municipal_text`` is acked: an alarm raised there would be swallowed."""
+    from backend.legislation.currency import check_state, load_snapshot, review_backlog
+
+    res = ProbeResult()
+    if check_state(load_snapshot(), datetime.combine(ctx.today, datetime.min.time(), tzinfo=timezone.utc)) == "unknown":
+        # Without a fresh Clerk check the list may be missing new amendments; chi.clerk.legislation and
+        # code.municipal_text report that, so this source does not guess.
+        res.info = "no fresh Clerk check, so the review backlog cannot be judged"
+        return res
+    backlog = review_backlog(ctx.today)
+    t17, other = backlog["title17"], backlog["cited_other"]
+    res.info = f"{len(t17)} Title 17 and {len(other)} other passed amendments unreviewed"
+    if t17 and t17[0]["waiting_days"] > REVIEW_WARN_DAYS:
+        oldest = t17[0]
+        level = "alarm" if oldest["waiting_days"] > REVIEW_ALARM_DAYS else "warn"
+        res.findings.append(Finding(level, (
+            f"Title 17 amendment {oldest['record']} (passed {oldest['passed_on']}) has waited {oldest['waiting_days']} days "
+            f"for review (warn after {REVIEW_WARN_DAYS}, alarm after {REVIEW_ALARM_DAYS}); {len(t17)} unreviewed in all")))
+    if other and other[0]["waiting_days"] > REVIEW_OTHER_WARN_DAYS:
+        oldest = other[0]
+        res.findings.append(Finding("warn", (
+            f"{oldest['record']} (passed {oldest['passed_on']}) touches a cited section and has waited "
+            f"{oldest['waiting_days']} days for review (warn after {REVIEW_OTHER_WARN_DAYS}); {len(other)} unreviewed in all")))
+    return res
+
+
 async def probe_qdrant(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     from backend.code_vintage import get_code_vintage_record
 
@@ -696,6 +731,7 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "gtfs_head": probe_gtfs_head,
     "clerk_latest": probe_clerk_latest,
     "code_text": probe_code_text,
+    "amendment_review": probe_amendment_review,
     "qdrant": probe_qdrant,
     "zoning_cache": probe_zoning_cache,
     "hand_table": probe_hand_table,
