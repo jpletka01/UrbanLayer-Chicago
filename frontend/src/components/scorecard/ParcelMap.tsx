@@ -19,14 +19,15 @@ import {
 } from "../../lib/mapColors";
 import { getTermInfo } from "../../lib/termDefinitions";
 import { fetchTransitStations } from "../../lib/api";
+import {
+  unavailableParcelMapSources,
+  type ParcelMapLayers,
+  type ParcelMapSource,
+  type ParcelMapVariant,
+} from "../../lib/parcelMap";
 import type { ComparableSale, TransitStation } from "../../lib/types";
 
-export interface ParcelMapLayers {
-  zoning: GeoJSON.FeatureCollection | null;
-  overlays: GeoJSON.FeatureCollection | null;
-  tif: GeoJSON.Feature | null;
-  ez: GeoJSON.Feature | null;
-}
+export type { ParcelMapLayers } from "../../lib/parcelMap";
 
 const ACCENT: [number, number, number, number] = [249, 164, 116, 255];
 
@@ -66,7 +67,7 @@ function ringCentroid(geom: GeoJSON.Geometry): [number, number] | null {
 }
 
 interface ParcelMapProps {
-  variant: "place" | "zoning" | "boundaries";
+  variant: ParcelMapVariant;
   lat: number;
   lon: number;
   parcelGeometry?: GeoJSON.Geometry | null;
@@ -97,10 +98,15 @@ export function ParcelMap(props: ParcelMapProps) {
   const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   if (!token) return null;
 
+  const unavailable = unavailableParcelMapSources(props.variant, props.layers?.availability);
+
   // Content gate: module maps render only when they have something to show.
-  if (props.variant === "zoning" && !(props.layers?.zoning?.features?.length)) return null;
+  if (props.variant === "zoning"
+    && !(props.layers?.zoning?.features?.length)
+    && unavailable.length === 0) return null;
   if (props.variant === "boundaries"
-    && !(props.layers?.overlays?.features?.length || props.layers?.tif || props.layers?.ez)) return null;
+    && !(props.layers?.overlays?.features?.length || props.layers?.tif || props.layers?.ez)
+    && unavailable.length === 0) return null;
 
   return (
     <div ref={sentinelRef} className={props.className}>
@@ -117,6 +123,8 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     : "mapbox://styles/mapbox/dark-v11";
   const [satellite, setSatellite] = useState(variant === "place");
   const [transit, setTransit] = useState<TransitStation[] | null>(null);
+  const unavailable = unavailableParcelMapSources(variant, layers?.availability);
+  const sourceLabel = (source: ParcelMapSource) => t(`scorecard.map.source.${source}`);
 
   const initialStyle = useMemo(
     () => (variant === "place" ? "mapbox://styles/mapbox/satellite-streets-v12" : themeStyle),
@@ -413,6 +421,16 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
   return (
     <div className="relative w-full h-full min-h-[16rem] rounded-lg overflow-hidden border border-dark-border">
       <div ref={containerRef} className="absolute inset-0" />
+      {unavailable.length > 0 && (
+        <div
+          role="status"
+          className="absolute z-10 top-2 left-2 max-w-[70%] rounded-md border border-state-warning/40 bg-dark-surface/95 px-2.5 py-1.5 text-micro text-text-secondary shadow-sm backdrop-blur"
+        >
+          {t("scorecard.map.layerUnavailable", {
+            layers: unavailable.map(sourceLabel).join(", "),
+          })}
+        </div>
+      )}
       {variant === "place" && (
         <div className="absolute top-2 left-2 flex rounded-md overflow-hidden border border-dark-border bg-dark-surface/90 backdrop-blur text-micro">
           <button

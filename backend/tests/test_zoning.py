@@ -3,7 +3,13 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from backend.retrieval.zoning import ZONING_MAP_URL, ZONING_QUERY_URL, lookup_zoning, zoning_polygons_for_map
+from backend.retrieval.zoning import (
+    ZONING_MAP_URL,
+    ZONING_QUERY_URL,
+    lookup_zoning,
+    zoning_polygons_for_map,
+    zoning_polygons_near,
+)
 
 
 def _mock_response(data: dict, status_code: int = 200) -> httpx.Response:
@@ -162,24 +168,22 @@ async def test_polygons_returns_geojson(mock_bounds):
 
 @pytest.mark.asyncio
 @patch("backend.retrieval.zoning.community_area_bounds", return_value=(41.91, -87.66, 41.95, -87.63))
-async def test_polygons_returns_empty_on_http_error(mock_bounds):
+async def test_polygons_raises_on_http_error(mock_bounds):
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = AsyncMock(return_value=_mock_response({}, status_code=500))
 
-    result = await zoning_polygons_for_map(7, client=client)
-    assert result["type"] == "FeatureCollection"
-    assert len(result["features"]) == 0
+    with pytest.raises(httpx.HTTPStatusError):
+        await zoning_polygons_for_map(7, client=client)
 
 
 @pytest.mark.asyncio
 @patch("backend.retrieval.zoning.community_area_bounds", return_value=(41.91, -87.66, 41.95, -87.63))
-async def test_polygons_returns_empty_on_connection_error(mock_bounds):
+async def test_polygons_raises_on_connection_error(mock_bounds):
     client = AsyncMock(spec=httpx.AsyncClient)
     client.get = AsyncMock(side_effect=httpx.ConnectError("connection refused"))
 
-    result = await zoning_polygons_for_map(7, client=client)
-    assert result["type"] == "FeatureCollection"
-    assert len(result["features"]) == 0
+    with pytest.raises(httpx.ConnectError):
+        await zoning_polygons_for_map(7, client=client)
 
 
 @pytest.mark.asyncio
@@ -201,6 +205,67 @@ async def test_polygons_passes_correct_envelope(mock_bounds):
     params = client.get.call_args.kwargs.get("params", {})
     assert params["geometry"] == "-87.66,41.91,-87.63,41.95"
     assert params["outSR"] == "4326"
+
+
+# --- zoning_polygons_near tests ---
+
+
+@pytest.mark.asyncio
+async def test_polygons_near_returns_and_caches_successful_geojson():
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(return_value=_mock_response(SAMPLE_GEOJSON))
+
+    first = await zoning_polygons_near(41.91086, -87.67778, client=client)
+    second = await zoning_polygons_near(41.91086, -87.67778, client=client)
+
+    assert first == SAMPLE_GEOJSON
+    assert second == SAMPLE_GEOJSON
+    assert client.get.await_count == 1
+    params = client.get.call_args.kwargs["params"]
+    assert params["geometryType"] == "esriGeometryEnvelope"
+    assert params["f"] == "geojson"
+
+
+@pytest.mark.asyncio
+async def test_polygons_near_caches_definitive_empty_result():
+    empty = {"type": "FeatureCollection", "features": []}
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(return_value=_mock_response(empty))
+
+    assert await zoning_polygons_near(41.91086, -87.67778, client=client) == empty
+    assert await zoning_polygons_near(41.91086, -87.67778, client=client) == empty
+    assert client.get.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_polygons_near_failure_raises_and_is_not_cached():
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(side_effect=[
+        _mock_response({}, status_code=500),
+        _mock_response(SAMPLE_GEOJSON),
+    ])
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await zoning_polygons_near(41.91086, -87.67778, client=client)
+
+    result = await zoning_polygons_near(41.91086, -87.67778, client=client)
+    assert result == SAMPLE_GEOJSON
+    assert client.get.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_polygons_near_arcgis_error_body_raises_and_is_not_cached():
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(side_effect=[
+        _mock_response({"error": {"code": 500, "message": "Unable to complete"}}),
+        _mock_response(SAMPLE_GEOJSON),
+    ])
+
+    with pytest.raises(RuntimeError, match="Unable to complete"):
+        await zoning_polygons_near(41.91086, -87.67778, client=client)
+
+    assert await zoning_polygons_near(41.91086, -87.67778, client=client) == SAMPLE_GEOJSON
+    assert client.get.await_count == 2
 
 
 # --- live integration tests (real Chicago ArcGIS Zoning service, free) ---

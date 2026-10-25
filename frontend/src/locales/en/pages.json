@@ -455,7 +455,14 @@
       "compsLegend_other": "{{count}} comparable sales",
       "keyParcel": "This parcel",
       "keyTransit": "Transit station",
-      "keyEz": "Enterprise Zone"
+      "keyEz": "Enterprise Zone",
+      "layerUnavailable": "Map data unavailable for: {{layers}}.",
+      "source": {
+        "zoning": "zoning",
+        "overlays": "special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      }
     },
     "crimeCurrent": "Current period",
     "crimePrior": "Prior year",

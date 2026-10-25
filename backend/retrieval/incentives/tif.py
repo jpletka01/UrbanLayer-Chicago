@@ -39,6 +39,8 @@ async def _load_tif_boundaries(
             resp = await client.get(url)
             resp.raise_for_status()
             fc = resp.json()
+            if not isinstance(fc, dict) or not isinstance(fc.get("features"), list):
+                raise RuntimeError("TIF boundary response has no GeoJSON feature list")
         finally:
             if owns:
                 await client.aclose()
@@ -92,12 +94,12 @@ async def tif_geojson_feature(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> dict | None:
-    """Return a GeoJSON Feature for the TIF district at a point, or None."""
-    try:
-        boundaries = await _load_tif_boundaries(client=client)
-    except Exception as exc:
-        log.warning("Failed to load TIF boundaries for geometry: %s", exc)
-        return None
+    """Return a GeoJSON Feature for the TIF district at a point, or None.
+
+    Boundary-load failures intentionally raise: ``None`` is reserved for a
+    successful lookup that found no active TIF district.
+    """
+    boundaries = await _load_tif_boundaries(client=client)
 
     point = Point(lon, lat)
     for name, props, poly, geom in boundaries:

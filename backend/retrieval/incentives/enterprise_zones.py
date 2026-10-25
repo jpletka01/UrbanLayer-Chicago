@@ -37,6 +37,8 @@ async def _load_ez_boundaries(
             resp = await client.get(url)
             resp.raise_for_status()
             fc = resp.json()
+            if not isinstance(fc, dict) or not isinstance(fc.get("features"), list):
+                raise RuntimeError("Enterprise Zone response has no GeoJSON feature list")
         finally:
             if owns:
                 await client.aclose()
@@ -93,12 +95,12 @@ async def ez_geojson_feature(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> dict | None:
-    """Return a GeoJSON Feature for the Enterprise Zone at a point, or None."""
-    try:
-        boundaries = await _load_ez_boundaries(client=client)
-    except Exception as exc:
-        log.warning("Failed to load EZ boundaries for geometry: %s", exc)
-        return None
+    """Return a GeoJSON Feature for the Enterprise Zone at a point, or None.
+
+    Boundary-load failures intentionally raise: ``None`` is reserved for a
+    successful lookup that found no Enterprise Zone.
+    """
+    boundaries = await _load_ez_boundaries(client=client)
 
     point = Point(lon, lat)
     for name, props, poly, geom in boundaries:

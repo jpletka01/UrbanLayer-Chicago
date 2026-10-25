@@ -308,7 +308,10 @@ def _bulk_prov() -> dict:
 
 
 def test_footer_says_how_current_the_code_is_and_which_amendments_touch_what_was_cited():
-    _write_snapshot()
+    # ContextObject calls code_currency with wall-clock time. Keep this fixture
+    # fresh relative to the test run instead of the suite's historical NOW,
+    # which crossed the three-day freshness threshold after 2026-10-24.
+    _write_snapshot(datetime.now(timezone.utc) - timedelta(hours=1))
     chunk = CodeChunk(text="x", source_document="x", section="17-3-0500", section_title="Pedestrian streets", score=1.0)
     ctx = ContextObject(code_chunks=[chunk])
     footer = build_sources_footer({}, [(1, chunk)], "2026-03-18", ctx.code_currency)
