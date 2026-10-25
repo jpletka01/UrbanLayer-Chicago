@@ -159,7 +159,11 @@ async def query_overlay_with_geometry(
     *,
     client: httpx.AsyncClient | None = None,
 ) -> dict | None:
-    """Query a single overlay layer at a point, returning GeoJSON with geometry."""
+    """Query a single overlay layer at a point, returning GeoJSON with geometry.
+
+    ``None`` means a successful lookup found no feature. Transport/service/body
+    failures raise so callers cannot cache or present them as a clear result.
+    """
     url = f"{ZONING_BASE_URL}/{layer_id}/query"
     params = {
         "geometry": f"{lon},{lat}",
@@ -177,13 +181,21 @@ async def query_overlay_with_geometry(
         resp = await client.get(url, params=params)
         resp.raise_for_status()
         data = resp.json()
-        features = data.get("features", [])
+        if not isinstance(data, dict) or data.get("error"):
+            raise OverlayLayerError(
+                f"layer {layer_id}: {data.get('error') if isinstance(data, dict) else data!r}"
+            )
+        features = data.get("features")
+        if not isinstance(features, list):
+            raise OverlayLayerError(f"layer {layer_id}: no 'features' in geometry response")
         if not features:
             return None
         return features[0]
     except Exception as exc:
         log.warning("Overlay geometry query layer %d failed for (%s, %s): %s", layer_id, lat, lon, exc)
-        return None
+        if isinstance(exc, OverlayLayerError):
+            raise
+        raise OverlayLayerError(str(exc)) from exc
 
 
 async def overlay_geojson_features(
@@ -215,16 +227,24 @@ async def overlay_geojson_features(
     ]
     results = await asyncio.gather(*coros, return_exceptions=True)
 
+    failures = [
+        (lid, result)
+        for lid, result in zip(layer_ids, results)
+        if isinstance(result, Exception)
+    ]
+    if failures:
+        failed_ids = ", ".join(str(lid) for lid, _ in failures)
+        raise OverlayLayerError(f"overlay geometry failed for layer(s) {failed_ids}") from failures[0][1]
+
     features = []
     for lid, result in zip(layer_ids, results):
-        if isinstance(result, Exception) or result is None:
+        if result is None:
             continue
         meta = OVERLAY_LAYERS.get(lid, {})
-        props = result.get("properties", {})
+        props = {**result.get("properties", {})}
         props["overlay_type"] = meta.get("type", f"layer_{lid}")
         props["overlay_name"] = meta.get("name", f"Layer {lid}")
-        result["properties"] = props
-        features.append(result)
+        features.append({**result, "properties": props})
 
     fc = {"type": "FeatureCollection", "features": features}
     _geojson_cache.set(key, fc)

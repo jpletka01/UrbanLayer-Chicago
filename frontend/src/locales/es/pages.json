@@ -455,7 +455,14 @@
       "compsLegend_other": "{{count}} ventas comparables",
       "keyParcel": "Esta parcela",
       "keyTransit": "Estación de transporte",
-      "keyEz": "Zona Empresarial"
+      "keyEz": "Zona Empresarial",
+      "layerUnavailable": "Map data unavailable for: {{layers}}.",
+      "source": {
+        "zoning": "zoning",
+        "overlays": "special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      }
     },
     "crimeCurrent": "Período actual",
     "crimePrior": "Año anterior",

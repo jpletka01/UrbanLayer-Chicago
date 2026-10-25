@@ -14,6 +14,7 @@ import httpx
 
 from backend.retrieval.cache import TTLCache
 from backend.retrieval.geo import community_area_bounds
+from backend.map_geometry import parcel_map_bounds
 
 log = logging.getLogger(__name__)
 
@@ -184,6 +185,21 @@ async def adjacent_parcel_zoning(
 _EMPTY_FC: dict = {"type": "FeatureCollection", "features": []}
 
 
+def _validated_feature_collection(data: object, *, context: str) -> dict:
+    """Validate an ArcGIS GeoJSON body before it can be cached as fact."""
+    if not isinstance(data, dict):
+        raise RuntimeError(f"ArcGIS zoning {context} returned a non-object response")
+    if isinstance(data.get("error"), dict):
+        raise RuntimeError(
+            f"ArcGIS zoning {context} error: {data['error'].get('message')}"
+        )
+    if data.get("exceededTransferLimit"):
+        raise RuntimeError(f"ArcGIS zoning {context} exceeded its transfer limit")
+    if not isinstance(data.get("features"), list):
+        raise RuntimeError(f"ArcGIS zoning {context} response has no feature list")
+    return data
+
+
 async def zoning_polygons_for_map(
     community_area: int,
     *,
@@ -220,14 +236,15 @@ async def zoning_polygons_for_map(
     try:
         resp = await client.get(ZONING_QUERY_URL, params=params)
         resp.raise_for_status()
-        data = resp.json()
-        if data.get("exceededTransferLimit"):
-            log.warning("Zoning query exceeded transfer limit for CA %s", community_area)
-        _polygon_cache.set(key, data)
-        return data
+        data = _validated_feature_collection(
+            resp.json(),
+            context=f"community-area {community_area} query",
+        )
     except Exception as exc:
         log.warning("Zoning polygon fetch failed for CA %s: %s", community_area, exc)
-        return _EMPTY_FC
+        raise
+    _polygon_cache.set(key, data)
+    return data
 
 
 async def zoning_polygons_near(
@@ -244,17 +261,18 @@ async def zoning_polygons_near(
     blocks around the parcel). Cache key rounds the point to ~100 m so nearby
     lookups share an entry.
     """
-    import math
-
     key = f"zoning_near:{lat:.3f},{lon:.3f}:{radius_mi}"
     cached = _polygon_cache.get(key)
     if cached is not None:
         return cached
 
-    dlat = radius_mi / 69.0
-    dlon = radius_mi / (69.0 * max(math.cos(math.radians(lat)), 0.2))
+    min_lon, min_lat, max_lon, max_lat = parcel_map_bounds(
+        lat,
+        lon,
+        radius_mi=radius_mi,
+    )
     params = {
-        "geometry": f"{lon - dlon},{lat - dlat},{lon + dlon},{lat + dlat}",
+        "geometry": f"{min_lon},{min_lat},{max_lon},{max_lat}",
         "geometryType": "esriGeometryEnvelope",
         "inSR": "4326",
         "spatialRel": "esriSpatialRelIntersects",
@@ -268,9 +286,14 @@ async def zoning_polygons_near(
     try:
         resp = await client.get(ZONING_QUERY_URL, params=params)
         resp.raise_for_status()
-        data = resp.json()
-        _polygon_cache.set(key, data)
-        return data
+        data = _validated_feature_collection(
+            resp.json(),
+            context=f"near ({lat}, {lon}) query",
+        )
     except Exception as exc:
         log.warning("Zoning polygon fetch failed near (%s, %s): %s", lat, lon, exc)
-        return _EMPTY_FC
+        raise
+    # Successful empty responses are definitive and may be cached. Failures
+    # raise above and never reach this write.
+    _polygon_cache.set(key, data)
+    return data

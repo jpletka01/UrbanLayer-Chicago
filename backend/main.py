@@ -1058,10 +1058,18 @@ async def _fetch_overlay_geojson(
     lat: float, lon: float,
 ) -> dict | None:
     """Get GeoJSON features for overlays that hit at this point."""
-    from backend.retrieval.regulatory.overlays import query_all_overlays, overlay_geojson_features
-    hits = await query_all_overlays(lat, lon)
+    from backend.retrieval.regulatory.overlays import (
+        OverlayLayerError,
+        overlay_geojson_features,
+        query_overlays_checked,
+    )
+    checked = await query_overlays_checked(lat, lon)
+    if checked.failed:
+        failed = ", ".join(str(layer_id) for layer_id in checked.failed)
+        raise OverlayLayerError(f"overlay point lookup failed for layer(s) {failed}")
+    hits = checked.hits
     if not hits:
-        return None
+        return {"type": "FeatureCollection", "features": []}
     layer_ids = [lid for lid, _ in hits]
     return await overlay_geojson_features(lat, lon, layer_ids)
 
@@ -1221,11 +1229,13 @@ def _build_map_response(
         if incentive_features else None
     )
 
+    from backend.map_geometry import simplify_zoning_coverage
+
     return MapDataResponse(
         crimes=crimes,
         requests_311=requests_311,
         building_permits=building_permits,
-        zoning=_simplify_geojson(map_rows.get("zoning")),
+        zoning=simplify_zoning_coverage(map_rows.get("zoning")),
         overlay_districts=_simplify_geojson(map_rows.get("overlay_geojson")),
         incentive_zones=_simplify_geojson(incentive_zones),
         queried_address=queried_address,
@@ -2030,8 +2040,8 @@ _parcel_map_cache = TTLCache(ttl_seconds=3600, maxsize=256, name="parcel_map")
 async def parcel_map(lat: float, lon: float) -> dict:
     """Geometry layers for the Property Profile's module maps: the zoning quilt
     around the parcel (Build module) and the overlay/TIF/EZ boundaries that hit
-    the point (Regulatory/Incentives module). Every layer degrades to None —
-    the maps render only the layers that arrive."""
+    the point (Regulatory/Incentives module). Availability distinguishes a
+    successful empty lookup from a source that could not be checked."""
     key = f"{lat:.4f},{lon:.4f}"
     cached = _parcel_map_cache.get(key)
     if cached is not None:
@@ -2048,24 +2058,32 @@ async def parcel_map(lat: float, lon: float) -> dict:
         _limited(ez_geojson_feature(lat, lon)),
         return_exceptions=True,
     )
-    zoning_fc, overlays_fc, tif_feat, ez_feat = (
-        None if isinstance(r, Exception) else r for r in results
-    )
+    layer_names = ("zoning", "overlays", "tif", "ez")
+    for name, result in zip(layer_names, results):
+        if isinstance(result, Exception):
+            log.warning("Parcel-map %s lookup failed: %s", name, result)
+    availability = {
+        name: "unavailable" if isinstance(result, Exception) else "available"
+        for name, result in zip(layer_names, results)
+    }
+    values = [None if isinstance(result, Exception) else result for result in results]
+    zoning_fc, overlays_fc, tif_feat, ez_feat = values
+
+    from backend.map_geometry import prepare_parcel_zoning, zoning_label_points
+
+    prepared_zoning = prepare_parcel_zoning(zoning_fc, lat=lat, lon=lon)
     payload = {
-        "zoning": _simplify_geojson(zoning_fc),
+        "zoning": prepared_zoning,
+        "zoning_labels": zoning_label_points(prepared_zoning),
         "overlays": _simplify_geojson(overlays_fc),
         "tif": tif_feat,
         "ez": ez_feat,
+        "availability": availability,
     }
-    # Cache only payloads with content: an all-empty result is a transient
-    # upstream failure more often than a real empty area (the zoning quilt has
-    # features anywhere in the city), and caching it blanked the maps for an
-    # hour after one ArcGIS hiccup (2026-07-07 audit D4).
-    def _feats(fc: Any) -> bool:
-        return bool(isinstance(fc, dict) and fc.get("features"))
-
-    if _feats(payload["zoning"]) or _feats(payload["overlays"]) \
-            or payload["tif"] or payload["ez"]:
+    # A complete successful empty response is definitive and may be cached.
+    # Any failed source keeps the whole response out of this aggregate cache so
+    # its unavailable state cannot mask a recovery for an hour.
+    if all(state == "available" for state in availability.values()):
         _parcel_map_cache.set(key, payload)
     return payload
 

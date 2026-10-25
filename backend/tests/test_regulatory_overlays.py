@@ -8,9 +8,11 @@ from backend.retrieval.regulatory.overlays import (
     OVERLAY_LAYERS,
     ZONING_BASE_URL,
     OverlayLayerError,
+    overlay_geojson_features,
     query_all_overlays,
     query_overlay,
     query_overlay_checked,
+    query_overlay_with_geometry,
     query_overlays_checked,
 )
 
@@ -135,6 +137,40 @@ async def test_query_all_overlays_skips_failed_layers():
     assert hits == []
     # Every layer once, plus one retry for the failing layer.
     assert call_count == len(OVERLAY_LAYERS) + 1
+
+
+@pytest.mark.asyncio
+async def test_overlay_geometry_failure_raises_instead_of_becoming_a_miss():
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(return_value=_mock_response({}, status_code=500))
+
+    with pytest.raises(OverlayLayerError):
+        await query_overlay_with_geometry(41.93, -87.65, 5, client=client)
+
+
+@pytest.mark.asyncio
+async def test_overlay_geometry_collection_failure_is_not_cached():
+    feature = {
+        "type": "Feature",
+        "properties": {"NAME": "Test district"},
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[-87.66, 41.92], [-87.64, 41.92], [-87.64, 41.94], [-87.66, 41.92]]],
+        },
+    }
+    client = AsyncMock(spec=httpx.AsyncClient)
+    client.get = AsyncMock(side_effect=[
+        _mock_response({"error": {"message": "temporary"}}),
+        _mock_response({"type": "FeatureCollection", "features": [feature]}),
+    ])
+
+    with pytest.raises(OverlayLayerError):
+        await overlay_geojson_features(41.93, -87.65, [5], client=client)
+    result = await overlay_geojson_features(41.93, -87.65, [5], client=client)
+
+    assert len(result["features"]) == 1
+    assert result["features"][0]["properties"]["overlay_type"] == "landmark_building"
+    assert client.get.await_count == 2
 
 
 # --- tri-state: hit / clear / failed (WS6 M7a) ---------------------------------

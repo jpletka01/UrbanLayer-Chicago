@@ -31,6 +31,7 @@ import type {
   TimeseriesBucket,
   UploadMeta,
 } from "./types";
+import type { ParcelMapLayers } from "./parcelMap";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8001";
 
@@ -1235,12 +1236,10 @@ export async function fetchAreaStats(ca: number): Promise<{
 
 /** Geometry layers for the Property Profile module maps (zoning quilt +
     overlay/TIF/EZ boundaries). Every layer degrades to null. */
-export async function fetchParcelMapLayers(lat: number, lon: number): Promise<{
-  zoning: GeoJSON.FeatureCollection | null;
-  overlays: GeoJSON.FeatureCollection | null;
-  tif: GeoJSON.Feature | null;
-  ez: GeoJSON.Feature | null;
-} | null> {
+export async function fetchParcelMapLayers(
+  lat: number,
+  lon: number,
+): Promise<ParcelMapLayers | null> {
   try {
     const resp = await authFetch(`${API_BASE}/api/parcel-map?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
     if (!resp.ok) return null;
