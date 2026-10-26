@@ -1825,16 +1825,18 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <Sub>Layer Stack</Sub>
           <P>
-            Layers render bottom-to-top. Polygon layers (zoning, overlays, incentive zones) render underneath
-            point layers (crime, 311, permits) so dots are always clickable.
+            Layers render bottom-to-top, but a thematic map is not one undifferentiated WebGL sheet. The Property
+            Profile inserts zoning fill below the basemap's road lines, then draws district outlines and labels above
+            the streets, with the orange subject parcel highest. Broad boundary polygons paint before narrow ones.
+            The chat map keeps polygon layers below point layers so crime, 311 and permit dots remain clickable.
           </P>
           <Table
             headers={["Layer", "Type", "Details"]}
             rows={[
-              ["Zoning Districts", "GeoJsonLayer", "Parcel boundaries, 16 zone prefix colors (residential=yellow, business=blue, etc.)"],
-              ["Overlay Districts", "GeoJsonLayer", "Regulatory overlays: landmarks, historic, TOD, ADU, SSA, lakefront"],
-              ["Incentive Zones", "GeoJsonLayer", "TIF boundaries, Enterprise Zones, hash-based color per district"],
-              ["Parcel Boundary", "GeoJsonLayer", "Queried parcel polygon outline from Cook County GIS"],
+              ["Zoning Districts", "GeoJsonLayer + TextLayer", "Coverage-safe exact classes, intensity steps, backend interior anchors"],
+              ["Overlay Districts", "GeoJsonLayer", "Fixed semantic colors for landmark, historic, TOD, ADU, SSA and lakefront boundaries"],
+              ["Incentive Zones", "GeoJsonLayer", "Restrained fixed TIF, Enterprise Zone and other incentive families"],
+              ["Parcel Boundary", "GeoJsonLayer / IconLayer", "Highest layer; approximate identity is half-alpha with a dashed outline"],
               ["Crime", "ScatterplotLayer", "30 named types with semantic colors (hot reds=violent, cool blues=non-violent)"],
               ["311", "ScatterplotLayer", "14 departments with distinct colors, hash-based fallback"],
               ["Permits", "ScatterplotLayer", "8 normalized types, radius scaled by estimated_cost"],
@@ -1842,6 +1844,17 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Address Pin", "ScatterplotLayer", "Blue dot with white stroke at queried address"],
             ]}
           />
+
+          <Sub>A zoning quilt is a coverage</Sub>
+          <P>
+            The first parcel map simplified every zoning polygon independently by roughly ten metres. Adjacent districts
+            chose different replacement edges, exposing false triangular gaps around Milwaukee, North and Damen. The map
+            service now clips the requested envelope and simplifies the polygons as one Shapely coverage at about one metre.
+            It accepts the result only when geometry, feature properties and the union are preserved; otherwise it sends the
+            clipped raw City geometry. Labels are also geometry facts: the backend emits one interior visual centre per exact
+            district class instead of asking the browser to average ring vertices. The recorded regression fixture came from
+            Chicago Zoning MapServer layer 1 on October 25, 2026.
+          </P>
 
           <Sub>Dynamic Filters</Sub>
           <P>
@@ -1857,17 +1870,20 @@ Consumers → Property Profile (renders pin + confidence badge)
 
           <Sub>Zoning Overlay</Sub>
           <P>
-            GeoJsonLayer with Chicago's standard zoning color scheme: residential=yellow, business=blue,
-            commercial=purple, manufacturing=magenta, planned development=gray, downtown=teal, parks=green.
-            "Zoning" and "Points" toggles allow viewing the zoning overlay alone. Click popup shows zone class,
-            definition, allowed uses, and link to the official zoning map.
+            The color key starts with Chicago's familiar zoning families, then the numeric dash suffix produces a bounded
+            intensity step inside that family: B1-1, B2-2 and B3-3 no longer collapse into one swatch. Planned developments
+            and suffix-free classes use stable fallbacks. The Profile puts the fill below road geometry while keeping exact
+            labels, outlines and the subject parcel above it; the shared chat map keeps compatible colors and tooltips.
           </P>
 
           <Sub>Map Legends</Sub>
           <P>
-            Dynamic legends render based on active layers: zoning category colors, overlay district types with
-            ordinance numbers, incentive zone labels (TIF district names, EZ/OZ designations). Legend items are
-            interactive — clicking focuses the map on that zone's bounds.
+            Property Profile legends are also control surfaces. Each logical source has keyboard-operable On, Dim and Off
+            radio choices; Dim stays pickable at 30% opacity, while Off removes fills, outlines, labels and hover targets.
+            Rows report exact displayed feature or district counts, plus a separate count for server-withheld geometry.
+            Low-confidence polygons use half-alpha fills and dashed outlines; withheld polygons are never rendered or picked.
+            Empty and unavailable are different answers. Desktop keeps this in a top-right card; phones use a Layers popover
+            that wraps long boundary names without horizontal overflow and stops above Mapbox's bottom-left attribution.
           </P>
 
           {/* ── 13. Sidebar & Data Cards ── */}

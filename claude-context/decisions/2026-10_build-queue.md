@@ -1714,7 +1714,7 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 
 **Compatibility and localization.** The response is additive. `fetchParcelMapLayers` and `ParcelMapLayers` carry the new fields; existing layer ids, hover behavior, colors, and the bottom-left Mapbox wordmark rule are unchanged. The new unavailable message is English in both catalogs and listed in `es/_untranslated.json`.
 
-**Not shipped / not yet visually verified:** this is M1 only. The exact-class palette, use of the new anchors in the rendered `TextLayer`, basemap road insertion, boundary palette, On/Dim/Off controls, counts, confidence styling, screenshot matrix, and mobile interaction review belong to M2/M3. Production verification must wait for the separately approved PR/merge/deploy sequence.
+**Production:** shipped in PR #111, merge commit `b04061e` (2026-10-25). The later M2/M3 deploys exercised this contract through the live `/api/parcel-map`: at 1601 N Milwaukee the deployed response reports all four sources available, 142 zoning features, 26 backend label anchors and 6 overlay features. The full visual and interaction verification is recorded under Items 28–29 and the WS3 archive pointer.
 
 ## Item 28 (WS3 Phase 1 M2): exact zoning intensity, basemap roads, and semantic boundaries (2026-10-25)
 
@@ -1730,4 +1730,37 @@ So the map takes more than 90 days for some (the Chicago Daily News Building, pa
 
 **Verification.** The focused suite passed 22 tests across `mapColors`, `mapLayerOrder`, `parcelMapModel`, recorded `MapView`, and existing parcel-map API compatibility. The complete frontend suite passed 61 files / 647 tests; lint passed within its pre-existing 67-warning budget; and `tsc -b` plus the Vite production build passed. The standard mobile Playwright gate could not execute in this local environment: all 40 cases stopped before page execution because the bundled WebKit process exited with macOS `Abort trap: 6`. This is recorded as an environment failure, not a passing mobile gate; the separate physical Chrome 500 px check above is the available visual evidence.
 
-**Not shipped:** M2 is local on `codex/ws3-map-fixes-m2`. M3 layer controls/counts/confidence rendering and Property Discovery remain out of scope. Push, PR creation, merge, and any push to main each require their own approval.
+**Production:** shipped in PR #112, merge commit `e2c9e6c` (2026-10-25 Chicago / 2026-10-26 UTC). Physical Chrome verified the exact palette, backend anchors, road insertion and boundary overlap in both themes before merge; M3 then completed the responsive interaction matrix. Property Discovery remains WS3 Phase 2 and was not changed.
+
+## Item 29 (WS3 Phase 1 M3): map controls expose render state without inventing data (2026-10-26)
+
+**One control per source, not one per feature.** Zoning has one On/Dim/Off radio group; the boundaries map has one each for special-purpose overlays, TIF and enterprise zones. Exact-class/type rows remain factual legend entries underneath. A feature-level toggle would turn a compact map key into a search/filter product and make long Chicago district lists unusable on phones. The subject parcel is not a source control and never turns off. Revisit if WS3 Phase 2 adds search or saved layer views; that needs a separate interaction model rather than more buttons here.
+
+**Radio semantics match the choice.** The three mutually exclusive states use accessible radiogroups with roving `tabIndex`, arrow keys, Home/End, visible focus and `aria-checked`; the phone trigger exposes `aria-expanded`/`aria-controls`, Escape closes and returns focus. Alternatives were three `aria-pressed` toggles (they falsely imply independent choices) and a select (compact, but hides state and weakens quick comparison). Each component instance uses `useId`, because three Profile maps can coexist and duplicate popover ids would break the accessible relationship.
+
+**The render model is the source of truth for counts and picking.** `parcelMapModel.ts` filters `withheld` geometry before Deck sees it, then derives exact visible and withheld counts from that same response. `parcelMapLayers.ts` turns state into layer presence: On = 1.0, Dim = 0.30 and pickable, Off = no fill/outline/label/picking layer. Low confidence halves the normal fill alpha and uses a dashed outline. Missing confidence on the existing authoritative City polygons defaults to standard; React never infers confidence from an address. Approximate parcel identity comes only from the Profile's backend resolution result. Revisit if the backend replaces the string confidence contract or begins supplying per-style confidence rather than per feature.
+
+**Empty, unavailable and loading are three states.** Controls do not mount until the parcel-map request has resolved, so a slow response cannot momentarily announce a truthful-empty result. A successful empty source says there are no districts; `unavailable` keeps its existing couldn't-check language and disables its radio group. Per-map state keys on the Profile's resolved PIN/address, not only coordinates, so selecting a new Profile resets controls even if two results share a display point.
+
+**The mobile surface is constrained by the map, not the viewport alone.** Desktop uses a scrollable top-right card. Below `md`, one Layers button opens a width-capped dialog with a height that reserves the bottom attribution band; long names wrap. The Playwright audit opens the real popover, checks viewport bounds and overlap against the Mapbox bottom-left control, then includes the open state in the overflow scan. The prior WebKit `Abort trap: 6` was a browser/runtime mismatch, not accepted as a waiver: Playwright 1.60's WebKit 26.4 runtime was installed and ran the iPhone projects successfully.
+
+**Localization follows the visible-debt rule.** Every new English key is copied verbatim to Spanish and listed in `es/_untranslated.json`; the existing parity and untranslated-ledger tests pin both key and interpolation-placeholder parity.
+
+**Numbers** (measured 2026-10-26)
+
+| Measure | Before | After | Reproduce |
+|---|---:|---:|---|
+| Logical source controls | 0 | 4 (zoning, overlays, TIF, EZ) | open the Profile's zoning and boundaries maps |
+| Legend count states | names only | exact visible count + withheld count per source | focused `parcelMapModel`/`ParcelMap` tests |
+| Frontend tests | 647 after M2 | 674 across 62 files | `cd frontend && npm run test` |
+| Focused M3 tests | 0 | 252 across 5 files | `npx vitest run src/components/scorecard/parcelMapModel.test.ts src/components/scorecard/ParcelMap.test.tsx src/lib/parcelMap.test.ts src/i18n.parity.test.ts src/locales/untranslated.test.ts` |
+| Backend / eval-unit tests | unchanged | 2,289 / 106 passed; 66 integration deselected | `make test` |
+| Automated phone audit | WebKit aborted before execution in M2 | 40/40 across 360–430 px, Chromium + WebKit, 2.0 min | `cd frontend && npm run test:mobile` with the local stack |
+| Production phone verification | not run | 5/5 Profile cases; popover open, no overflow or attribution overlap | `E2E_BASE_URL=https://urbanlayerchicago.com npm run test:mobile -- --grep scorecard` |
+| Live Milwaukee parcel map | n/a | 142 zoning features, 26 labels, 6 overlays; all four sources available | `curl https://urbanlayerchicago.com/api/parcel-map?lat=41.91086\&lon=-87.67778` |
+
+Physical Chrome also covered desktop and 360/390/430 px, light and dark, zoning and boundaries, long names, keyboard focus, Dim/Off, hover, truthful empty state and attribution clearance. The government regression fixture is Chicago Zoning MapServer layer 1, captured 2026-10-25 and clipped to the Milwaukee/North/Damen viewport; it contains no model-generated geometry.
+
+**Production** (PR #113, merge commit `ded3e35`, 2026-10-26): PR CI test/lint and both CodeQL languages passed. Main workflow `40286928406` passed test, lint and deploy. The live Profile resolved PIN `14313320180000` authoritatively at `41.91085876,-87.67777584`; the five-device production Profile audit passed. No chat, paid-model evaluation, judge, zoning-cache build or production cache build ran.
+
+**Not measured:** how frequently real production map features will carry `low` or `withheld` confidence (the current Milwaukee government polygons omit confidence and correctly default to standard), and user preference among On/Dim/Off. Those require observed server data or product analytics, not a fabricated fixture rate.
