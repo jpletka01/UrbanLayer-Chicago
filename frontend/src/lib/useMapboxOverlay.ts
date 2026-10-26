@@ -24,6 +24,10 @@ interface UseMapboxOverlayOptions {
   /** Disable scroll-zoom until the map is clicked (page-scroll trap guard for
       inline page maps; the chat/Discovery maps keep default behavior). */
   clickToActivate?: boolean;
+  /** Deck shares Mapbox's WebGL canvas by default. Discovery opts out because
+      a map initialized under display:none can leave the shared drawing buffer
+      pinned to Mapbox's 400×300 fallback after the pane is revealed. */
+  interleaved?: boolean;
 }
 
 /**
@@ -87,7 +91,7 @@ export function useMapboxOverlay(opts: UseMapboxOverlayOptions) {
     });
 
     const overlay = new MapboxOverlay({
-      interleaved: true,
+      interleaved: optsRef.current.interleaved ?? true,
       pickingRadius: optsRef.current.pickingRadius,
       getTooltip: (info: LayerPickInfo) => optsRef.current.getTooltip?.(info) ?? null,
       onClick: (info: LayerPickInfo) => optsRef.current.onClick?.(info),
