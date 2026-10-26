@@ -13,9 +13,8 @@ import { GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { useMapboxOverlay } from "../../lib/useMapboxOverlay";
 import { useThemeContext } from "../../contexts/ThemeContext";
 import {
-  zoneColor, zoneColorCSS, zonePrefix, zonePrefixLabel,
-  overlayColor, overlayColorCSS, overlayLabel,
-  incentiveZoneColor, incentiveZoneColorCSS,
+  zoneColor, zoneLineColor, zonePrefix, zonePrefixLabel,
+  overlayLabel,
 } from "../../lib/mapColors";
 import { getTermInfo } from "../../lib/termDefinitions";
 import { fetchTransitStations } from "../../lib/api";
@@ -26,6 +25,12 @@ import {
   type ParcelMapVariant,
 } from "../../lib/parcelMap";
 import type { ComparableSale, TransitStation } from "../../lib/types";
+import {
+  buildBoundaryRenderModel,
+  buildZoningMapModel,
+  zoneLabelsVisible,
+  type ZoningLabelModelEntry,
+} from "./parcelMapModel";
 
 export type { ParcelMapLayers } from "../../lib/parcelMap";
 
@@ -53,17 +58,6 @@ function fmtPrice(n: number | null | undefined): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
   return `$${Math.round(n)}`;
-}
-
-/** Rough polygon label point: mean of the outer ring. */
-function ringCentroid(geom: GeoJSON.Geometry): [number, number] | null {
-  const ring = geom.type === "Polygon" ? geom.coordinates[0]
-    : geom.type === "MultiPolygon" ? geom.coordinates[0]?.[0]
-    : null;
-  if (!ring || ring.length === 0) return null;
-  let x = 0, y = 0;
-  for (const [px, py] of ring as [number, number][]) { x += px; y += py; }
-  return [x / ring.length, y / ring.length];
 }
 
 interface ParcelMapProps {
@@ -121,6 +115,7 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
   const themeStyle = resolvedTheme === "light"
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
+  const mapTheme = resolvedTheme === "light" ? "light" : "dark";
   const [satellite, setSatellite] = useState(variant === "place");
   const [transit, setTransit] = useState<TransitStation[] | null>(null);
   const unavailable = unavailableParcelMapSources(variant, layers?.availability);
@@ -135,6 +130,15 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
   // Zoning and boundaries share a scale so the two Build-module maps read as
   // one pair (Jack, 2026-07-07); the place map is parcel-tight.
   const zoom = variant === "place" ? 16.8 : 15.2;
+  const [mapZoom, setMapZoom] = useState(zoom);
+  const zoningModel = useMemo(
+    () => buildZoningMapModel(layers?.zoning, layers?.zoning_labels, mapTheme),
+    [layers?.zoning, layers?.zoning_labels, mapTheme],
+  );
+  const boundaryModel = useMemo(
+    () => buildBoundaryRenderModel(layers, mapTheme),
+    [layers, mapTheme],
+  );
 
   // The place map only shows what its opening viewport can contain — comps or
   // stations beyond it would exist solely as legend entries nobody can see.
@@ -156,7 +160,15 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
   // where several boundary layers stack.
   const overlayBoxRef = useRef<import("@deck.gl/mapbox").MapboxOverlay | null>(null);
 
-  const { containerRef, mapRef, overlayRef, mapReady, contextRestored } = useMapboxOverlay({
+  const {
+    containerRef,
+    mapRef,
+    overlayRef,
+    mapReady,
+    contextRestored,
+    roadInsertionId,
+    styleRevision,
+  } = useMapboxOverlay({
     center: [lon, lat],
     zoom,
     interactive: true,
@@ -235,6 +247,17 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
   }, [satellite, themeStyle, mapReady, mapRef]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const onZoom = () => setMapZoom(map.getZoom());
+    onZoom();
+    map.on("zoomend", onZoom);
+    return () => {
+      map.off("zoomend", onZoom);
+    };
+  }, [mapReady, mapRef]);
+
+  useEffect(() => {
     if (variant === "place" && showTransit) {
       fetchTransitStations()
         .then((all) => setTransit(all.filter((st) => milesFrom(st.lat, st.lon) <= VIEW_RADIUS_MI)))
@@ -252,60 +275,53 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
       layerList.push(new GeoJsonLayer({
         id: "zoning",
         data: layers.zoning as unknown as GeoJSON.FeatureCollection,
+        beforeId: roadInsertionId ?? undefined,
+        filled: true,
+        stroked: false,
         getFillColor: (f: GeoJSON.Feature) => {
-          const c = zoneColor(String(f.properties?.ZONE_CLASS ?? ""));
-          return [c[0], c[1], c[2], 70];
+          return zoneColor(String(f.properties?.ZONE_CLASS ?? ""), mapTheme);
         },
-        getLineColor: (f: GeoJSON.Feature) => {
-          const c = zoneColor(String(f.properties?.ZONE_CLASS ?? ""));
-          return [c[0], c[1], c[2], 200];
-        },
-        lineWidthMinPixels: 1,
         pickable: true,
       }));
-      const labels = (layers.zoning.features ?? [])
-        .map((f) => {
-          const pos = f.geometry ? ringCentroid(f.geometry) : null;
-          return pos ? { pos, label: String(f.properties?.ZONE_CLASS ?? "") } : null;
-        })
-        .filter((d): d is { pos: [number, number]; label: string } => !!d && !!d.label);
-      layerList.push(new TextLayer({
-        id: "pm-zone-labels",
-        data: labels,
-        getPosition: (d: { pos: [number, number] }) => d.pos,
-        getText: (d: { label: string }) => d.label,
-        getSize: 11,
-        getColor: resolvedTheme === "light" ? [26, 26, 26, 220] : [255, 255, 255, 220],
-        fontFamily: "JetBrains Mono, monospace",
+      layerList.push(new GeoJsonLayer({
+        id: "pm-zoning-outline",
+        data: layers.zoning as unknown as GeoJSON.FeatureCollection,
+        filled: false,
+        stroked: true,
+        getLineColor: (f: GeoJSON.Feature) => {
+          return zoneLineColor(String(f.properties?.ZONE_CLASS ?? ""), mapTheme);
+        },
+        lineWidthMinPixels: 1.25,
+        pickable: false,
       }));
+      if (zoneLabelsVisible(mapZoom)) {
+        layerList.push(new TextLayer<ZoningLabelModelEntry>({
+          id: "pm-zone-labels",
+          data: zoningModel.labels,
+          getPosition: (d) => d.position,
+          getText: (d) => d.zoneClass,
+          getSize: 12,
+          sizeUnits: "pixels",
+          getColor: mapTheme === "light" ? [20, 20, 20, 245] : [255, 255, 255, 245],
+          outlineColor: mapTheme === "light" ? [255, 255, 255, 245] : [8, 8, 8, 245],
+          outlineWidth: 0.18,
+          fontFamily: "JetBrains Mono, monospace",
+          fontSettings: { sdf: true, fontSize: 64, buffer: 8 },
+          billboard: true,
+          pickable: false,
+        }));
+      }
     }
 
     if (variant === "boundaries" && layers) {
-      // Same color encodings as the chat map (overlayColor by type,
-      // incentiveZoneColor by name) — distinct hues per boundary; overlap
-      // stays readable because fills are faint washes and identity rides the
-      // 2px strokes + the legend.
-      (layers.overlays?.features ?? []).forEach((f, i) => {
-        const type = String(f.properties?.overlay_type ?? f.properties?.layer_type ?? "overlay");
-        const c = overlayColor(type);
+      // The model sorts degree-squared area descending, so city-scale TIF/EZ
+      // polygons paint first and narrower special-purpose overlays stay clear.
+      for (const entry of boundaryModel) {
         layerList.push(new GeoJsonLayer({
-          id: `overlay-districts-${i}`,
-          data: [f],
-          getFillColor: [c[0], c[1], c[2], 35],
-          getLineColor: [c[0], c[1], c[2], 230],
-          lineWidthMinPixels: 2,
-          pickable: true,
-        }));
-      });
-      for (const [feat, kind] of [[layers.tif, "TIF"], [layers.ez, "Enterprise Zone"]] as const) {
-        if (!feat) continue;
-        const name = String(feat.properties?.name ?? kind);
-        const c = incentiveZoneColor(name);
-        layerList.push(new GeoJsonLayer({
-          id: `incentive-zones-${kind}`,
-          data: [{ ...feat, properties: { ...feat.properties, __kind: kind, name } }],
-          getFillColor: [c[0], c[1], c[2], 25],
-          getLineColor: [c[0], c[1], c[2], 230],
+          id: entry.id,
+          data: [entry.feature],
+          getFillColor: entry.fillColor,
+          getLineColor: entry.lineColor,
           lineWidthMinPixels: 2,
           pickable: true,
         }));
@@ -373,7 +389,11 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     // Attach tooltips for comps/transit via object augmentation at pick time.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     overlay.setProps({ layers: layerList as any });
-  }, [variant, layers, compsInView, transit, parcelGeometry, mapReady, contextRestored, satellite, resolvedTheme, lat, lon, overlayRef]);
+  }, [
+    variant, layers, zoningModel, boundaryModel, compsInView, transit,
+    parcelGeometry, mapReady, contextRestored, satellite, mapTheme, mapZoom,
+    roadInsertionId, styleRevision, lat, lon, overlayRef,
+  ]);
 
   // Map key (top-RIGHT — the Mapbox wordmark owns the bottom-left corner, so
   // that space stays empty on every map): one row per encoding on the map.
@@ -388,33 +408,33 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
     }
     if (transit?.length) legend.push({ key: "transit", swatchCSS: "#ffffff", label: t("scorecard.map.keyTransit"), kind: "dot" });
   } else if (variant === "zoning" && layers?.zoning) {
-    const seen = new Map<string, string>();
-    for (const f of layers.zoning.features ?? []) {
-      const zc = String(f.properties?.ZONE_CLASS ?? "");
-      const pfx = zonePrefix(zc);
-      if (pfx && !seen.has(pfx)) seen.set(pfx, zoneColorCSS(zc));
-    }
-    for (const [pfx, css] of [...seen.entries()].slice(0, 6)) {
-      legend.push({ key: `z-${pfx}`, swatchCSS: css, label: zonePrefixLabel(pfx) || pfx, kind: "fill" });
-    }
-  } else if (variant === "boundaries" && layers) {
-    const seenTypes = new Set<string>();
-    for (const f of layers.overlays?.features ?? []) {
-      const type = String(f.properties?.overlay_type ?? f.properties?.layer_type ?? "");
-      if (!type || seenTypes.has(type)) continue;
-      seenTypes.add(type);
+    for (const entry of zoningModel.legend) {
       legend.push({
-        key: `ov-${type}`, swatchCSS: overlayColorCSS(type),
-        label: overlayLabel(type) || type.replace(/_/g, " "), kind: "fill",
+        key: `z-${entry.zoneClass}`,
+        swatchCSS: entry.swatchCSS,
+        label: entry.zoneClass,
+        kind: "fill",
       });
     }
-    if (layers.tif) {
-      const name = String(layers.tif.properties?.name ?? "TIF");
-      legend.push({ key: "tif", swatchCSS: incentiveZoneColorCSS(name), label: `TIF — ${name}`, kind: "fill" });
-    }
-    if (layers.ez) {
-      const name = String(layers.ez.properties?.name ?? "Enterprise Zone");
-      legend.push({ key: "ez", swatchCSS: incentiveZoneColorCSS(name), label: t("scorecard.map.keyEz"), kind: "fill" });
+  } else if (variant === "boundaries" && layers) {
+    const seenBoundaries = new Set<string>();
+    for (const entry of boundaryModel) {
+      const key = `${entry.family}|${entry.label}|${entry.name}`;
+      if (seenBoundaries.has(key)) continue;
+      seenBoundaries.add(key);
+      const label = entry.family === "tif"
+        ? `TIF${entry.name ? ` — ${entry.name}` : ""}`
+        : entry.family === "enterprise_zone"
+          ? t("scorecard.map.keyEz")
+          : entry.name && entry.name !== entry.label
+            ? `${entry.label} — ${entry.name}`
+            : entry.label;
+      legend.push({
+        key: `boundary-${key}`,
+        swatchCSS: entry.swatchCSS,
+        label,
+        kind: "fill",
+      });
     }
   }
 
@@ -450,7 +470,7 @@ function ParcelMapInner({ variant, lat, lon, parcelGeometry, comps, layers, show
         </div>
       )}
       {legend.length > 0 && (
-        <div className="absolute top-2 right-2 max-w-[55%] rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
+        <div className="absolute top-2 right-2 max-w-[55%] max-h-[calc(100%-1rem)] overflow-y-auto rounded-md bg-dark-surface/90 backdrop-blur border border-dark-border px-2 py-1.5 space-y-0.5">
           {legend.map((row) => (
             <div key={row.key} className="flex items-center gap-1.5 text-micro text-text-secondary leading-tight">
               {row.kind === "dot" ? (
