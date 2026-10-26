@@ -246,10 +246,40 @@ for (const pageDef of PAGES) {
     });
     await page.waitForTimeout(800);
     const bottomAudit = await auditOverflow(page);
+    let popoverAudit: AuditResult | null = null;
+
+    // M3 parcel-map control: audit the responsive Layers surface while it is
+    // actually open, including the Mapbox-owned bottom-left attribution area.
+    if (pageDef.id === "scorecard") {
+      const layersButton = page.getByTestId("parcel-map-layers-button").first();
+      await expect(layersButton).toBeVisible();
+      await layersButton.scrollIntoViewIfNeeded();
+      await layersButton.click();
+      const popover = page.getByTestId("parcel-map-controls-mobile").first();
+      await expect(popover).toBeVisible();
+      const popoverBox = await popover.boundingBox();
+      expect(popoverBox).not.toBeNull();
+      expect(popoverBox!.x).toBeGreaterThanOrEqual(0);
+      expect(popoverBox!.x + popoverBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+
+      const attributionBox = await layersButton.locator("xpath=..").locator(".mapboxgl-ctrl-bottom-left").boundingBox();
+      if (attributionBox) {
+        const overlapsAttribution = !(
+          popoverBox!.x + popoverBox!.width <= attributionBox.x
+          || attributionBox.x + attributionBox.width <= popoverBox!.x
+          || popoverBox!.y + popoverBox!.height <= attributionBox.y
+          || attributionBox.y + attributionBox.height <= popoverBox!.y
+        );
+        expect(overlapsAttribution, "Layers popover must not cover Mapbox attribution").toBe(false);
+      }
+      popoverAudit = await auditOverflow(page);
+    }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(400);
 
-    const result = mergeAudits(topAudit, bottomAudit);
+    const result = popoverAudit
+      ? mergeAudits(mergeAudits(topAudit, bottomAudit), popoverAudit)
+      : mergeAudits(topAudit, bottomAudit);
     await saveArtifacts(page, testInfo, pageDef.id, result);
 
     const scrollingOffenders = result.offenders.filter((o) => !o.fixed);

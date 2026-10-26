@@ -1034,6 +1034,8 @@ export default function ScorecardPage() {
                   lat={data.resolved_lat ?? data.lat}
                   lon={data.resolved_lon ?? data.lon}
                   parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                  profileKey={data.resolved_pin ?? data.address}
+                  parcelConfidence={data.resolved_confidence}
                   comps={data.comparables?.sales}
                   showTransit
                   className="h-full"
@@ -1129,6 +1131,8 @@ export default function ScorecardPage() {
                         lat={data.resolved_lat ?? data.lat}
                         lon={data.resolved_lon ?? data.lon}
                         parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                        profileKey={data.resolved_pin ?? data.address}
+                        parcelConfidence={data.resolved_confidence}
                         layers={mapLayers}
                         className="min-h-[16rem]"
                       />
@@ -1144,6 +1148,8 @@ export default function ScorecardPage() {
                           lat={data.resolved_lat ?? data.lat}
                           lon={data.resolved_lon ?? data.lon}
                           parcelGeometry={(ctx.property?.parcel_geometry as GeoJSON.Geometry | null) ?? null}
+                          profileKey={data.resolved_pin ?? data.address}
+                          parcelConfidence={data.resolved_confidence}
                           layers={mapLayers}
                           className="min-h-[16rem]"
                         />
