@@ -7,13 +7,21 @@ import {
   type BoundaryFamily,
   type MapTheme,
 } from "../../lib/mapColors";
-import type { ParcelMapLayers, ZoningLabelPoint } from "../../lib/parcelMap";
+import {
+  mapFeatureConfidence,
+  type MapFeatureConfidence,
+  type ParcelMapLayers,
+  type ParcelMapSource,
+  type ZoningLabelPoint,
+} from "../../lib/parcelMap";
 
 export const ZONE_LABEL_MIN_ZOOM = 14.25;
 
 export interface ZoningLegendModelEntry {
   zoneClass: string;
   swatchCSS: string;
+  count: number;
+  lowConfidenceCount: number;
   /** Untouched government properties from the first feature in this class. */
   properties: GeoJSON.GeoJsonProperties;
 }
@@ -26,8 +34,12 @@ export interface ZoningLabelModelEntry {
 }
 
 export interface ZoningMapModel {
+  /** Renderable and pickable features only; withheld features never cross this seam. */
+  featureCollection: GeoJSON.FeatureCollection;
   legend: ZoningLegendModelEntry[];
   labels: ZoningLabelModelEntry[];
+  visibleCount: number;
+  withheldCount: number;
 }
 
 function exactZoneClass(properties: GeoJSON.GeoJsonProperties): string {
@@ -44,31 +56,62 @@ export function buildZoningMapModel(
   anchors: readonly ZoningLabelPoint[] | null | undefined,
   theme: MapTheme,
 ): ZoningMapModel {
-  const byClass = new Map<string, GeoJSON.GeoJsonProperties>();
+  const visibleFeatures: GeoJSON.Feature[] = [];
+  let withheldCount = 0;
+  const byClass = new Map<string, {
+    properties: GeoJSON.GeoJsonProperties;
+    count: number;
+    lowConfidenceCount: number;
+  }>();
   for (const feature of zoning?.features ?? []) {
+    const confidence = mapFeatureConfidence(feature);
+    if (confidence === "withheld") {
+      withheldCount += 1;
+      continue;
+    }
+    visibleFeatures.push(feature);
     const zoneClass = exactZoneClass(feature.properties);
-    if (zoneClass && !byClass.has(zoneClass)) byClass.set(zoneClass, feature.properties);
+    if (!zoneClass) continue;
+    const existing = byClass.get(zoneClass);
+    if (existing) {
+      existing.count += 1;
+      if (confidence === "low") existing.lowConfidenceCount += 1;
+    } else {
+      byClass.set(zoneClass, {
+        properties: feature.properties,
+        count: 1,
+        lowConfidenceCount: confidence === "low" ? 1 : 0,
+      });
+    }
   }
 
-  const legend = [...byClass.entries()].map(([zoneClass, properties]) => ({
+  const legend = [...byClass.entries()].map(([zoneClass, entry]) => ({
     zoneClass,
     swatchCSS: zoneColorCSS(zoneClass, theme),
-    properties,
+    count: entry.count,
+    lowConfidenceCount: entry.lowConfidenceCount,
+    properties: entry.properties,
   }));
 
   const seenLabels = new Set<string>();
   const labels: ZoningLabelModelEntry[] = [];
   for (const anchor of anchors ?? []) {
     const zoneClass = String(anchor.zone_class ?? "").trim();
-    const properties = byClass.get(zoneClass);
-    if (!zoneClass || !properties || seenLabels.has(zoneClass)) continue;
+    const entry = byClass.get(zoneClass);
+    if (!zoneClass || !entry || seenLabels.has(zoneClass)) continue;
     if (!Array.isArray(anchor.position) || anchor.position.length !== 2
       || !anchor.position.every(Number.isFinite)) continue;
     seenLabels.add(zoneClass);
-    labels.push({ zoneClass, position: anchor.position, properties });
+    labels.push({ zoneClass, position: anchor.position, properties: entry.properties });
   }
 
-  return { legend, labels };
+  return {
+    featureCollection: { type: "FeatureCollection", features: visibleFeatures },
+    legend,
+    labels,
+    visibleCount: visibleFeatures.length,
+    withheldCount,
+  };
 }
 
 export function zoneLabelsVisible(zoom: number): boolean {
@@ -77,8 +120,10 @@ export function zoneLabelsVisible(zoom: number): boolean {
 
 export interface BoundaryRenderModelEntry {
   id: string;
+  source: Exclude<ParcelMapSource, "zoning">;
   family: BoundaryFamily;
   feature: GeoJSON.Feature;
+  confidence: MapFeatureConfidence;
   fillColor: [number, number, number, number];
   lineColor: [number, number, number, number];
   swatchCSS: string;
@@ -86,6 +131,28 @@ export interface BoundaryRenderModelEntry {
   name: string;
   area: number;
   ordinal: number;
+}
+
+export interface BoundaryLegendModelEntry {
+  key: string;
+  source: Exclude<ParcelMapSource, "zoning">;
+  family: BoundaryFamily;
+  swatchCSS: string;
+  label: string;
+  name: string;
+  count: number;
+  lowConfidenceCount: number;
+}
+
+export interface BoundarySourceCount {
+  visible: number;
+  withheld: number;
+}
+
+export interface BoundaryMapModel {
+  entries: BoundaryRenderModelEntry[];
+  legend: BoundaryLegendModelEntry[];
+  counts: Record<Exclude<ParcelMapSource, "zoning">, BoundarySourceCount>;
 }
 
 function ringArea(ring: GeoJSON.Position[]): number {
@@ -117,6 +184,7 @@ export function approximateFeatureArea(feature: GeoJSON.Feature): number {
 
 function boundaryEntry(
   id: string,
+  source: Exclude<ParcelMapSource, "zoning">,
   family: BoundaryFamily,
   feature: GeoJSON.Feature,
   label: string,
@@ -126,8 +194,10 @@ function boundaryEntry(
 ): BoundaryRenderModelEntry {
   return {
     id,
+    source,
     family,
     feature,
+    confidence: mapFeatureConfidence(feature),
     fillColor: boundaryFillColor(family, theme),
     lineColor: boundaryLineColor(family, theme),
     swatchCSS: boundaryColorCSS(family, theme),
@@ -139,20 +209,32 @@ function boundaryEntry(
 }
 
 /** Broad boundaries paint first; narrow special-purpose overlays remain legible. */
-export function buildBoundaryRenderModel(
+export function buildBoundaryMapModel(
   layers: Pick<ParcelMapLayers, "overlays" | "tif" | "ez"> | null | undefined,
   theme: MapTheme,
-): BoundaryRenderModelEntry[] {
-  if (!layers) return [];
+): BoundaryMapModel {
+  const counts: BoundaryMapModel["counts"] = {
+    overlays: { visible: 0, withheld: 0 },
+    tif: { visible: 0, withheld: 0 },
+    ez: { visible: 0, withheld: 0 },
+  };
+  if (!layers) return { entries: [], legend: [], counts };
   const entries: BoundaryRenderModelEntry[] = [];
   let ordinal = 0;
 
   for (const [index, feature] of (layers.overlays?.features ?? []).entries()) {
+    const confidence = mapFeatureConfidence(feature);
+    if (confidence === "withheld") {
+      counts.overlays.withheld += 1;
+      continue;
+    }
+    counts.overlays.visible += 1;
     const properties = feature.properties ?? {};
     const type = String(properties.overlay_type ?? properties.layer_type ?? "overlay");
     const name = String(properties.NAME ?? properties.DIST_NAME ?? properties.PD_NAME ?? properties.name ?? "");
     entries.push(boundaryEntry(
       `overlay-districts-${index}`,
+      "overlays",
       "overlay",
       feature,
       overlayLabel(type) || type.replace(/_/g, " "),
@@ -168,15 +250,21 @@ export function buildBoundaryRenderModel(
       ...layers.tif,
       properties: { ...layers.tif.properties, __kind: "TIF", name, zone_type: "tif" },
     } as GeoJSON.Feature;
-    entries.push(boundaryEntry(
-      "incentive-zones-tif",
-      "tif",
-      feature,
-      "TIF",
-      name,
-      theme,
-      ordinal++,
-    ));
+    if (mapFeatureConfidence(feature) === "withheld") {
+      counts.tif.withheld += 1;
+    } else {
+      counts.tif.visible += 1;
+      entries.push(boundaryEntry(
+        "incentive-zones-tif",
+        "tif",
+        "tif",
+        feature,
+        "TIF",
+        name,
+        theme,
+        ordinal++,
+      ));
+    }
   }
 
   if (layers.ez) {
@@ -185,16 +273,52 @@ export function buildBoundaryRenderModel(
       ...layers.ez,
       properties: { ...layers.ez.properties, __kind: "Enterprise Zone", name, zone_type: "enterprise_zone" },
     } as GeoJSON.Feature;
-    entries.push(boundaryEntry(
-      "incentive-zones-enterprise-zone",
-      "enterprise_zone",
-      feature,
-      "Enterprise Zone",
-      name,
-      theme,
-      ordinal,
-    ));
+    if (mapFeatureConfidence(feature) === "withheld") {
+      counts.ez.withheld += 1;
+    } else {
+      counts.ez.visible += 1;
+      entries.push(boundaryEntry(
+        "incentive-zones-enterprise-zone",
+        "ez",
+        "enterprise_zone",
+        feature,
+        "Enterprise Zone",
+        name,
+        theme,
+        ordinal,
+      ));
+    }
   }
 
-  return entries.sort((a, b) => (b.area - a.area) || (a.ordinal - b.ordinal));
+  entries.sort((a, b) => (b.area - a.area) || (a.ordinal - b.ordinal));
+  const legendByKey = new Map<string, BoundaryLegendModelEntry>();
+  for (const entry of entries) {
+    const key = `${entry.source}|${entry.label}|${entry.name}`;
+    const existing = legendByKey.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (entry.confidence === "low") existing.lowConfidenceCount += 1;
+    } else {
+      legendByKey.set(key, {
+        key,
+        source: entry.source,
+        family: entry.family,
+        swatchCSS: entry.swatchCSS,
+        label: entry.label,
+        name: entry.name,
+        count: 1,
+        lowConfidenceCount: entry.confidence === "low" ? 1 : 0,
+      });
+    }
+  }
+
+  return { entries, legend: [...legendByKey.values()], counts };
+}
+
+/** Compatibility export retained for the M2 model seam and its callers. */
+export function buildBoundaryRenderModel(
+  layers: Pick<ParcelMapLayers, "overlays" | "tif" | "ez"> | null | undefined,
+  theme: MapTheme,
+): BoundaryRenderModelEntry[] {
+  return buildBoundaryMapModel(layers, theme).entries;
 }

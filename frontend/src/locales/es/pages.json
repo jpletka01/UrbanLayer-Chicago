@@ -456,7 +456,30 @@
       "keyParcel": "Esta parcela",
       "keyTransit": "Estación de transporte",
       "keyEz": "Zona Empresarial",
+      "layers": "Layers",
+      "controlAria": "{{source}} visibility",
+      "control": {
+        "on": "On",
+        "dim": "Dim",
+        "off": "Off"
+      },
+      "count": {
+        "district_one": "{{count}} district",
+        "district_other": "{{count}} districts",
+        "feature_one": "{{count}} feature",
+        "feature_other": "{{count}} features"
+      },
+      "withheldCount_one": "{{count}} feature not shown",
+      "withheldCount_other": "{{count}} features not shown",
+      "sourceUnavailable": "Unavailable",
+      "sourceEmpty": "No features at this parcel.",
       "layerUnavailable": "Map data unavailable for: {{layers}}.",
+      "sourceControl": {
+        "zoning": "Zoning",
+        "overlays": "Special-purpose boundaries",
+        "tif": "TIF districts",
+        "ez": "Enterprise Zones"
+      },
       "source": {
         "zoning": "zoning",
         "overlays": "special-purpose boundaries",
