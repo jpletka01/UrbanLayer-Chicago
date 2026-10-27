@@ -10,7 +10,7 @@
 
 | File | Job |
 |---|---|
-| `registry.py` | `SOURCES`: a tuple of `SourceSpec`, one per data source the product shows (82 on 2026-10-22). Who publishes it, its tier, which module reads it, how to read its date, how stale is too stale. |
+| `registry.py` | `SOURCES`: a tuple of `SourceSpec`, one per data source the product shows (83 after WS2 PR 1). Who publishes it, its tier, which module reads it, how to read its date, how stale is too stale. |
 | `probes.py` | Reads each source's latest data date (and the cheap contract facts) over HTTP, or from a local file. Parsers are pure and tested on recorded responses. |
 | `evaluate.py` | Pure rules: probe result + spec + today → a status (`ok`, `warn`, `alarm`, `error`, `unknown`, `frozen_ok`, `acked`). |
 | `check.py` | The CLI and `check()`, one run: probe, evaluate, store, alert. `--dry-run` prints every source and writes nothing. |
@@ -39,6 +39,7 @@ Judge freshness on **content** where it can be read; the publisher touching a da
 | Census Reporter | | the newest release's end year |
 | GTFS | `HEAD` → `Last-Modified` (the 68 MB zip is never downloaded) | |
 | Clerk eLMS | | newest `recordCreateDate` (never `introductionDate`, which can be future-dated) |
+| Pending legislation snapshot | | last successful atomic refresh in `pending_legislation.db`; the latest failed/suspect attempt is a separate finding and never erases the date/counts |
 | ptaxsim | the database's `created_at` | the last tax year in `metadata`, plus a `HEAD` for a newer upstream release |
 | Code text | | `current_through` via `legislation.currency.code_currency_status()` (WS1's thresholds: warn 60, alarm 90) |
 
@@ -105,6 +106,8 @@ What we last notified about is stored per source (`alerted_state`), not inferred
 **Code vintage** (`code.municipal_text`, critical, WS1's thresholds 60/90 days). American Legal publishes about four months behind Council, so the newest export is already past the 90-day alarm the day it is ingested; the source is acked until 2026-12-15, and the nudge is `.github/workflows/code-export-reminder.yml`: on the 1st of each month it fails (and emails) while `backend/code_vintage.json:ingested_at` is more than 35 days old. When the ack expires, re-decide the thresholds against the publisher's real lag rather than extending it blindly. `code.hand_table.zoning_definitions` alarms when `VERIFIED_AGAINST` differs from the vintage.
 
 **Amendment review** (`internal.amendment_review`, WS1 M7). Is the monthly review of what Council passed being done? `probe_amendment_review` reads the Clerk snapshot and `backend/code_amendments.json` (offline, via `currency.review_backlog`) and judges how long each unreviewed amendment has waited since Council passed it: a Title 17 amendment warns after 14 days and **alarms after 45** (the only one that emails); any other passed amendment warns after 45 and never alarms. It is its own source because `code.municipal_text` is acked until 2026-12-15, and an ack turns every alarm on that source into `acked`. Without a fresh Clerk check (older than 14 days, or `suspect`) it judges nothing and says why; `chi.clerk.legislation` reports that. The routine it asks for is `guides/code-refresh.md`.
+
+**Pending legislation snapshot** (`internal.pending_legislation`, WS2 PR 1). The existing daily legislation sync writes `backend/data/pending_legislation.db`; the checker only reads it. Freshness is the last successful atomic refresh (warn after 3 days, alarm after 14). A failed latest attempt is a warning while last-good counts remain; lifecycle/status contract drift is an immediate error. The row reports candidate/detail/current counts, zoning and Title-17 subsets, title-parser coverage, lifecycle collapses, and excluded attachment metadata. The City Clerk API remains the official fact source; this row measures the derived local artifact. It is dark until WS2 PR 2.
 
 **The alarm drill** (production, after install, then quarterly):
 

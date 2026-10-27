@@ -97,6 +97,7 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 | Walk Score | API key (free, 5K/day) | Walk/Transit/Bike scores (0-100). 48h TTL cache |
 | CTA GTFS (static) | None | Parsed at startup → transit station locations |
 | Metra GTFS (static) | None | Parsed at startup → station locations |
+| City Clerk eLMS | None (public BETA) | Passed-law currency plus WS2's daily pending zoning/text snapshot. Sync-only: explicit non-final states, full matter detail, lifecycle relations/actions, and allowlisted non-EDS attachment metadata. Never called on the request path. |
 
 ## Local Data
 
@@ -104,6 +105,7 @@ GET {base}/{layer_id}/query?geometry={lon},{lat}&geometryType=esriGeometryPoint
 |--------|----------|-----|
 | Municipal Code | Qdrant (14,535 chunks from 8,615 sections) | Vector search for legal questions |
 | PTAXSIM | `backend/data/ptaxsim.db` (9.4GB SQLite) | Property tax estimation by PIN (`tax_estimate.py`, incl. per-PIN `exe_*` exemption columns — EAV deductions, not dollars) **AND parcel polygons**: `pin_geometry_raw` (WKT per pin10, indexed PK) powers on-demand land area + parcel outline (`parcel_geometry.py`). **Seeded on prod 2026-07-03** (runbook: guides/ptaxsim-prod-seeding.md — note the multi-stream bz2 + named-volume gotchas); `/health` reports `ptaxsim` |
+| Pending legislation | `backend/data/pending_legislation.db` | WS2 PR 1 dark, rebuildable Clerk snapshot. One-transaction replacement; failures retain the last-good matters and append sync status. No Profile reader until PR 2. |
 | Transit Stations | Parsed from GTFS at startup | Nearest station proximity |
 | Community Area Polygons | `ingestion/data/community_areas.geojson` | Point-in-polygon resolution |
 

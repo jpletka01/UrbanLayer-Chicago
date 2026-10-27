@@ -108,6 +108,24 @@ def _no_legislation_snapshot(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_pending_legislation_store(tmp_path, monkeypatch):
+    """The WS2 poller is sync-only and its local DB must never leak into a unit test.
+
+    Existing legislation-sync tests exercise the passed-law branches, so their default
+    pending world is a successful empty recorded feed. Focused pending tests inject their
+    own search/detail callables and are unaffected.
+    """
+    from backend.config import get_settings
+    from backend.legislation import pending
+
+    async def empty(*, client=None):
+        return []
+
+    monkeypatch.setattr(get_settings(), "pending_legislation_path", tmp_path / "pending_legislation.db", raising=False)
+    monkeypatch.setattr(pending, "search_pending", empty)
+
+
+@pytest.fixture(autouse=True)
 def _no_data_health_store(tmp_path, monkeypatch):
     """Provenance reads source dates from the data-health store, which differs per machine
     (absent in CI, whatever the last check wrote locally). Point it at a missing file; a test

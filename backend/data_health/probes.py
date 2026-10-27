@@ -448,6 +448,40 @@ async def probe_clerk_latest(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult
     return res
 
 
+async def probe_pending_legislation(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Freshness and last-attempt state of WS2's local, last-good snapshot."""
+    from backend.config import get_settings
+    from backend.legislation.pending_store import read_status
+
+    try:
+        status = read_status(get_settings().pending_legislation_path)
+    except Exception as exc:  # a corrupt local artifact is a service error, not "no matters"
+        raise ProbeError("service", _clean(f"{type(exc).__name__}: {exc}")) from exc
+    if status is None:
+        return ProbeResult(skipped="pending legislation sync has not produced a store yet")
+
+    counts = status.counts
+    res = ProbeResult(
+        content=status.checked_at.date() if status.checked_at else None,
+        info=(
+            f"last attempt {status.latest_status}; candidates={counts.get('candidates')}, "
+            f"details={counts.get('details')}, pending={counts.get('pending')}, "
+            f"zoning={counts.get('zoning')}, title17={counts.get('title17')}, "
+            f"placement-ready={counts.get('placement_ready')}, "
+            f"partial-titles={counts.get('partial_titles')}, unparsed-titles={counts.get('unparsed_titles')}, "
+            f"lifecycle collapses={counts.get('lifecycle_collapses')}, "
+            f"excluded non-pending={counts.get('excluded_non_pending')}, "
+            f"excluded attachments={counts.get('excluded_attachments')}"
+        ),
+    )
+    if status.latest_status == "suspect":
+        problems = "; ".join(status.contract_problems) or status.last_error or "contract drift"
+        res.findings.append(Finding("error", "pending snapshot contract drift: " + problems))
+    elif status.latest_status == "failed":
+        res.findings.append(Finding("warn", "latest pending refresh failed: " + (status.last_error or "unknown error")))
+    return res
+
+
 async def probe_code_text(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     from backend.legislation.currency import code_currency_status
 
@@ -730,6 +764,7 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "walkscore": probe_walkscore,
     "gtfs_head": probe_gtfs_head,
     "clerk_latest": probe_clerk_latest,
+    "pending_legislation": probe_pending_legislation,
     "code_text": probe_code_text,
     "amendment_review": probe_amendment_review,
     "qdrant": probe_qdrant,

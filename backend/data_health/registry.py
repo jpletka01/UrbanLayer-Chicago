@@ -555,6 +555,14 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         note="Content date = newest recordCreateDate (never introductionDate, which can be in the future).",
     ),
     SourceSpec(
+        id="internal.pending_legislation", name="Pending zoning legislation snapshot", publisher="UrbanLayer from City Clerk",
+        tier="internal", kind="local_db", locator="backend/data/pending_legislation.db",
+        probe="pending_legislation", owner_modules=("backend/legislation/pending.py", "backend/legislation/pending_store.py"),
+        cadence_days=1, warn_days=3, alarm_days=14,
+        note=("Dark WS2 sync artifact: last successful atomic refresh, candidate/detail counts, lifecycle collapses, "
+              "title parsing and excluded attachment metadata. The City Clerk remains the fact source."),
+    ),
+    SourceSpec(
         id="internal.amendment_review", name="Review of passed amendments (age of the oldest unreviewed)",
         publisher="UrbanLayer", tier="internal", kind="internal", locator="backend/code_amendments.json",
         probe="amendment_review", owner_modules=("backend/legislation/currency.py",), availability_only=True,
