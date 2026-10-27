@@ -1543,6 +1543,22 @@ Consumers → Property Profile (renders pin + confidence badge)
             routes: <Mono>/search</Mono> (rows), <Mono>/search/pins</Mono> (the full coordinate set for the map), and{" "}
             <Mono>/search/export</Mono> (premium CSV).
           </P>
+          <Sub>One query, two windows, one truth</Sub>
+          <P>
+            The list is the canonical paginated window; the map is a separate full-coordinate window, never a reconstruction
+            from the rows currently loaded. Each issued search starts both requests together, and only the latest request may
+            commit. Map points are accepted only when their data version, total and expected cardinality agree with the list;
+            otherwise the valid list remains visible and the map says it could not be checked. A 5,000-point display cap,
+            missing-coordinate count and true result total are reported separately, so "not plotted" never means "not found."
+          </P>
+          <P>
+            The map key is derived from the exact points passed to deck.gl: free users get named Property Use counts and
+            view-only dots; Pro users get Redevelopment Upside bins plus hover and click. Row hover or keyboard focus marks the
+            same parcel with an orange ring without replacing its data color. A Pro map hover may scroll only a result row that
+            is already loaded — it never fetches or mutates the list. Phones expose the counted key through a keyboard-operable
+            disclosure kept clear of Mapbox controls; desktop keeps it visible. Theme changes swap the Mapbox style while
+            preserving camera state and rebuilding the deck.gl layers after <Mono>style.load</Mono>.
+          </P>
           <Sub>The prospecting index</Sub>
           <P>
             Filtering ~949k parcels interactively requires a precomputed index with derived fields:{" "}
@@ -1837,6 +1853,7 @@ Consumers → Property Profile (renders pin + confidence badge)
               ["Overlay Districts", "GeoJsonLayer", "Fixed semantic colors for landmark, historic, TOD, ADU, SSA and lakefront boundaries"],
               ["Incentive Zones", "GeoJsonLayer", "Restrained fixed TIF, Enterprise Zone and other incentive families"],
               ["Parcel Boundary", "GeoJsonLayer / IconLayer", "Highest layer; approximate identity is half-alpha with a dashed outline"],
+              ["Discovery Parcels", "ScatterplotLayer", "Up to 5,000 query-consistent points; counted Property Use or Upside key"],
               ["Crime", "ScatterplotLayer", "30 named types with semantic colors (hot reds=violent, cool blues=non-violent)"],
               ["311", "ScatterplotLayer", "14 departments with distinct colors, hash-based fallback"],
               ["Permits", "ScatterplotLayer", "8 normalized types, radius scaled by estimated_cost"],
@@ -1884,6 +1901,9 @@ Consumers → Property Profile (renders pin + confidence badge)
             Low-confidence polygons use half-alpha fills and dashed outlines; withheld polygons are never rendered or picked.
             Empty and unavailable are different answers. Desktop keeps this in a top-right card; phones use a Layers popover
             that wraps long boundary names without horizontal overflow and stops above Mapbox's bottom-left attribution.
+            Discovery uses the same physical clearance rule for its compact counted key, but not the same controls: its key
+            describes query results rather than toggling government polygon sources. Both keys derive counts from the same
+            filtered render model that supplies deck.gl, so a displayed count cannot drift from the marks on the map.
           </P>
 
           {/* ── 13. Sidebar & Data Cards ── */}
