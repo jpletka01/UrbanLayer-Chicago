@@ -1764,3 +1764,49 @@ Physical Chrome also covered desktop and 360/390/430 px, light and dark, zoning 
 **Production** (PR #113, merge commit `ded3e35`, 2026-10-26): PR CI test/lint and both CodeQL languages passed. Main workflow `40286928406` passed test, lint and deploy. The live Profile resolved PIN `14313320180000` authoritatively at `41.91085876,-87.67777584`; the five-device production Profile audit passed. No chat, paid-model evaluation, judge, zoning-cache build or production cache build ran.
 
 **Not measured:** how frequently real production map features will carry `low` or `withheld` confidence (the current Milwaukee government polygons omit confidence and correctly default to standard), and user preference among On/Dim/Off. Those require observed server data or product analytics, not a fabricated fixture rate.
+
+## Item 30 (WS3 Phase 2 M1): the result list is canonical; the map must prove it belongs to that search (2026-10-27)
+
+**Decision: list and map are two windows over one issued query, not two independent successes.** `DiscoveryPage` assigns every search an increasing request id, clears stale map state at issue time, and commits only the latest result. The paginated `/search` response is canonical. `/search/pins` is accepted only when its `dataVersion`, total and expected cardinality agree with that response; a failed or mismatched pins request makes only the map unavailable and leaves the valid list intact. Alternatives were letting each promise update its own surface (a slow old request can overwrite a new one) and rebuilding the map from loaded rows (silently turns the current page into the claimed full result set). Revisit if both windows move into one atomic backend response or acquire a server-issued query id.
+
+**The map names every omission.** `discoveryMapModel.ts` starts from the full pins response, filters invalid coordinates once, and derives Deck data plus returned, unlocated and cap-omitted counts from that same array. Empty, loading, unavailable, partial-coordinate and 5,000-point-cap states are separate. At tablet widths (768 and 1024 px) List/Map is one active pane, like phone; only `xl` keeps the three-column workbench. Discovery keeps Deck in overlaid mode (`interleaved: false`); the shared Profile/chat helper and its interleaved behavior were not changed.
+
+**Numbers** (measured 2026-10-26/27)
+
+| Measure | Before | After | Reproduce |
+|---|---:|---:|---|
+| Frontend tests | 704 before the final guard | 705 across 65 files on exact commit `667958d` | `cd frontend && npm test` |
+| Lint | existing budget 67 warnings | 66 warnings, 0 errors | `npm run lint` |
+| Production build | n/a | passed; existing large-chunk warning only | `npm run build` |
+| Production free search | map/list race not probed | 5,005 matches; 10 free rows; 5,000 plotted; 0 unlocated; 5 cap-omitted | live `/discovery` search and `/api/discovery/search{,/pins}` |
+| Production phone map audit | n/a | 5/5 agreed devices; responsive matrix passed | `E2E_BASE_URL=https://urbanlayerchicago.com` Playwright Discovery Map audit |
+
+**Production:** PR #115, merge commit `eec05be` (2026-10-27). Main workflow `40457614471` passed and deployed. The live free result list remained canonical while the Map tab reported the exact 5,000/5 cap split. No chat, paid model, judge, zoning-cache build or production-cache build ran.
+
+**Not measured:** request latency distribution under real multi-user load and how often production pins requests fail or mismatch. The work makes those cases truthful; it does not claim a frequency.
+
+## Item 31 (WS3 Phase 2 M2): one render model owns colors, counts and linkage (2026-10-27)
+
+**Decision: the legend is output from the render model, never a parallel tally.** `discoveryMapModel.ts` assigns every valid point its semantic color key and RGBA value, then counts those exact keys. Land use has one named entry for each renderable value (`vacant`, `residential`, `multi_family`, `commercial`, `industrial`, `mixed_use`, `institutional`, `exempt`) plus unknown/null as No data; Upside has 80+, 50–79, below 50 and No data. Zero-count rows stay out of the compact key. Alternatives were counting raw API rows (includes unplotted coordinates) or duplicating threshold logic in React (can drift from Deck). Revisit if the backend begins supplying an authoritative classification key rather than raw values.
+
+**Data color and interaction color are separate layers.** Row mouse hover and keyboard focus select the matching pin for free and Pro users. A second, non-pickable orange ring layer carries selection, so highlight never washes out the land-use/Upside fill. Free base dots have no pick or click handlers. Pro map hover may scroll only a row already present in the loaded window; an unloaded point causes no fetch and no list mutation. Pro click-to-Property-Profile is unchanged.
+
+**Theme replacement is a state transition, not a new map.** Discovery selects `dark-v11` or `light-v11` locally, captures camera state before `setStyle`, restores it on `style.load`, and increments a style revision so Deck layers are reapplied. This stayed local because changing the shared helper would risk the Profile/chat insertion-order contract. Desktop keeps the counted key visible at top-right; phone uses a keyboard-operable Map key disclosure at top-left. Both cap height and reserve Mapbox's bottom-left attribution and bottom-right navigation controls.
+
+**Production verification exposed a test-boundary mistake.** The dedicated local browser fixture mocked `/api/auth/me` only. That works with dev CSRF behavior but production correctly rejected the synthetic session's POSTs with `403 CSRF token mismatch`; its first post-deploy failure was therefore not an app regression. The valid production probe used a real anonymous search (both POSTs 200), then replayed those read-only responses behind intercepted admin UI requests to exercise Pro presentation without a production login or paid call. Revisit the E2E fixture if it is promoted to a routine production gate: intercept the search POSTs too, or obtain a legitimate short-lived session.
+
+**Numbers** (measured 2026-10-27)
+
+| Measure | Before | After | Reproduce |
+|---|---:|---:|---|
+| Frontend tests | 705 after M1 | 717 across 65 files | `cd frontend && npm test` |
+| Lint | existing budget 67 warnings | 66 warnings, 0 errors | `npm run lint` |
+| Production build | n/a | passed; existing large-chunk warning only | `npm run build` |
+| Local mobile/browser gate | no counted-key coverage | 43 passed, 12 intentional project skips; all 40 route/device overflow cells clean | `npm run test:mobile && npm run test:mobile:report` |
+| Live free map | no counted key | 5,005 matches; 5,000 points; Property Use key = Vacant land 5,000 | anonymous production Playwright probe |
+| Live Pro presentation | no counted key/ring/theme probe | Upside 80+ 502; 50–79 1,079; below 50 199; No data 3,220; row ring, light-style swap, canvas and key persisted | production bundle with real anonymous responses replayed behind intercepted admin UI |
+| Production phone layout | n/a | 5/5 Discovery Map cases passed; no overflow or Mapbox-control overlap | targeted production Playwright audit |
+
+**Production:** PR #116, merge commit `4c1aae97` (2026-10-27). Main workflow `40463596236` passed changes, lint, the full backend/frontend test-and-build gate, and deploy. The served bundle `index-D9LlCD1G.js` contains the M2 key implementation. No backend API, evaluator, index, tier, cap, chat, paid-model, judge or cache behavior changed.
+
+**Not measured:** user comprehension of the two color modes, hover frequency, or the value of auto-scrolling a loaded Pro row. Those need product analytics or observation. The Pro production probe validated client presentation with intercepted auth/data; it did not validate a real paid/admin session or Pro export.

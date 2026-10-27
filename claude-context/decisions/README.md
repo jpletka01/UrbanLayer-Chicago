@@ -13,4 +13,4 @@ Why the code looks the way it does: the choices made while building, the options
 - Public repo: no server addresses, credentials, or private notes. Local-only plan files may be named but not linked.
 
 ## Files
-- `2026-10_build-queue.md`: the confidence standard (WS0), code refresh (WS1), data health (WS6), and Property Profile map repairs (WS3 Phase 1), from 2026-10-20.
+- `2026-10_build-queue.md`: the confidence standard (WS0), code refresh (WS1), data health (WS6), Property Profile map repairs (WS3 Phase 1), and the truthful Property Discovery map (WS3 Phase 2), from 2026-10-20.
