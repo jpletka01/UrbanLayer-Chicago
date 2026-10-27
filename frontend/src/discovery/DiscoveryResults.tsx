@@ -47,6 +47,7 @@ interface ResultsProps {
   onRelax: (filterId: string) => void;
   onOpenParcel: (pin: string) => void;
   hoveredPin?: string | null; // bidirectional hover sync with the map
+  scrollToPin?: string | null; // Pro map-origin hover; loaded rows only
   onHoverPin?: (pin: string | null) => void;
   onExport?: () => void; // full-match-set CSV (server-side, premium)
   exportLocked?: boolean; // free tier — show the Export button as a Pro conversion lever
@@ -66,6 +67,7 @@ export function DiscoveryResults({
   onRelax,
   onOpenParcel,
   hoveredPin = null,
+  scrollToPin = null,
   onHoverPin,
   onExport,
   exportLocked = false,
@@ -159,6 +161,7 @@ export function DiscoveryResults({
             row={row}
             activeSortKey={activeSortKey}
             hovered={hoveredPin === row.pin}
+            scrollRequested={scrollToPin === row.pin}
             onHoverPin={onHoverPin}
             onOpenParcel={onOpenParcel}
           />
@@ -366,16 +369,23 @@ function ResultCard({
   row,
   activeSortKey,
   hovered,
+  scrollRequested,
   onHoverPin,
   onOpenParcel,
 }: {
   row: ResultRow;
   activeSortKey: string;
   hovered: boolean;
+  scrollRequested: boolean;
   onHoverPin?: (pin: string | null) => void;
   onOpenParcel: (pin: string) => void;
 }) {
   const { t } = useTranslation("pages");
+  const rowRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (scrollRequested) rowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [scrollRequested]);
   // A "~" prefix marks an approximate (nearest) address — shown as "near <addr>".
   const title = row.address
     ? row.address.startsWith("~")
@@ -421,10 +431,17 @@ function ResultCard({
 
   return (
     <button
+      ref={rowRef}
       type="button"
+      data-testid="discovery-result-row"
+      data-pin={row.pin}
       onClick={() => onOpenParcel(row.pin)}
       onMouseEnter={() => onHoverPin?.(row.pin)}
-      onMouseLeave={() => onHoverPin?.(null)}
+      onMouseLeave={(event) => {
+        if (event.currentTarget !== document.activeElement) onHoverPin?.(null);
+      }}
+      onFocus={() => onHoverPin?.(row.pin)}
+      onBlur={() => onHoverPin?.(null)}
       className={`relative block w-full border-b border-dark-border px-4 py-2.5 text-left transition-colors ${
         hovered ? "bg-dark-hover" : "hover:bg-dark-hover"
       }`}

@@ -254,6 +254,34 @@ for (const pageDef of PAGES) {
           Math.abs(containerBox.height - canvasBox.height) <= 1
         );
       }, { message: "Discovery Mapbox canvas and backing store must fill its revealed container" }).toBe(true);
+
+      const keyButton = page.getByTestId("discovery-map-key-button");
+      await expect(keyButton).toBeVisible();
+      await keyButton.click();
+      const keyPanel = page.getByTestId("discovery-map-legend");
+      await expect(keyPanel).toBeVisible();
+      const keyBox = await keyPanel.boundingBox();
+      expect(keyBox).not.toBeNull();
+      expect(keyBox!.x).toBeGreaterThanOrEqual(0);
+      expect(keyBox!.x + keyBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+      expect(keyBox!.y).toBeGreaterThanOrEqual(0);
+      expect(keyBox!.y + keyBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+
+      const controls = [
+        mapPane.locator(".mapboxgl-ctrl-bottom-left"),
+        mapPane.locator(".mapboxgl-ctrl-bottom-right"),
+      ];
+      for (const control of controls) {
+        const controlBox = await control.boundingBox();
+        if (!controlBox) continue;
+        const overlapsControl = !(
+          keyBox!.x + keyBox!.width <= controlBox.x
+          || controlBox.x + controlBox.width <= keyBox!.x
+          || keyBox!.y + keyBox!.height <= controlBox.y
+          || controlBox.y + controlBox.height <= keyBox!.y
+        );
+        expect(overlapsControl, "Discovery Map key must not cover Mapbox controls").toBe(false);
+      }
     }
 
     const topAudit = await auditOverflow(page);

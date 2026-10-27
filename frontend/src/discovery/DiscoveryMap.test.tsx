@@ -1,16 +1,28 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DiscoveryMap } from "./DiscoveryMap";
 import type { PinPoint } from "./types";
 
 const mapMocks = vi.hoisted(() => ({
-  map: { resize: vi.fn(), fitBounds: vi.fn() },
+  resolvedTheme: "dark" as "dark" | "light",
+  styleRevision: 0,
+  styleLoad: null as (() => void) | null,
+  hookOptions: null as { style?: string; interleaved?: boolean } | null,
+  map: {
+    resize: vi.fn(),
+    fitBounds: vi.fn(),
+    getCenter: vi.fn(() => ({ lng: -87.7, lat: 41.9 })),
+    getZoom: vi.fn(() => 12),
+    getBearing: vi.fn(() => 5),
+    getPitch: vi.fn(() => 10),
+    jumpTo: vi.fn(),
+    setStyle: vi.fn(),
+    once: vi.fn((_event: string, callback: () => void) => { mapMocks.styleLoad = callback; }),
+    off: vi.fn(),
+  },
   overlay: { setProps: vi.fn() },
   containerRef: { current: null as HTMLDivElement | null },
-  mapRef: { current: null as {
-    resize: ReturnType<typeof vi.fn>;
-    fitBounds: ReturnType<typeof vi.fn>;
-  } | null },
+  mapRef: { current: null as Record<string, ReturnType<typeof vi.fn>> | null },
   overlayRef: { current: null as { setProps: ReturnType<typeof vi.fn> } | null },
 }));
 
@@ -18,11 +30,23 @@ mapMocks.mapRef.current = mapMocks.map;
 mapMocks.overlayRef.current = mapMocks.overlay;
 
 vi.mock("../lib/useMapboxOverlay", () => ({
-  useMapboxOverlay: () => ({
-    containerRef: mapMocks.containerRef,
-    mapRef: mapMocks.mapRef,
-    overlayRef: mapMocks.overlayRef,
-    mapReady: true,
+  useMapboxOverlay: (options: { style?: string; interleaved?: boolean }) => {
+    mapMocks.hookOptions = options;
+    return {
+      containerRef: mapMocks.containerRef,
+      mapRef: mapMocks.mapRef,
+      overlayRef: mapMocks.overlayRef,
+      mapReady: true,
+      styleRevision: mapMocks.styleRevision,
+    };
+  },
+}));
+
+vi.mock("../contexts/ThemeContext", () => ({
+  useThemeContext: () => ({
+    resolvedTheme: mapMocks.resolvedTheme,
+    theme: mapMocks.resolvedTheme,
+    setTheme: vi.fn(),
   }),
 }));
 
@@ -60,8 +84,16 @@ function props(over: Partial<React.ComponentProps<typeof DiscoveryMap>> = {}) {
 beforeEach(() => {
   mapMocks.map.resize.mockReset();
   mapMocks.map.fitBounds.mockReset();
+  mapMocks.map.jumpTo.mockReset();
+  mapMocks.map.setStyle.mockReset();
+  mapMocks.map.once.mockClear();
+  mapMocks.map.off.mockReset();
   mapMocks.overlay.setProps.mockReset();
   mapMocks.containerRef.current = null;
+  mapMocks.resolvedTheme = "dark";
+  mapMocks.styleRevision = 0;
+  mapMocks.styleLoad = null;
+  mapMocks.hookOptions = null;
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
     callback(0);
     return 1;
@@ -123,5 +155,74 @@ describe("DiscoveryMap request states and sizing", () => {
     expect(mapMocks.map.resize.mock.invocationCallOrder[0]).toBeLessThan(
       mapMocks.map.fitBounds.mock.invocationCallOrder[0],
     );
+  });
+
+  it("keeps free dots non-pickable while row focus renders a separate accent ring", async () => {
+    render(<DiscoveryMap {...props({ hoveredPin: "one", interactive: false })} />);
+    await waitFor(() => expect(mapMocks.overlay.setProps).toHaveBeenCalled());
+    const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as {
+      layers: Array<{ props: Record<string, unknown> }>;
+    };
+    const base = latest.layers.find((layer) => layer.props.id === "discovery-pins")!;
+    const ring = latest.layers.find((layer) => layer.props.id === "discovery-pin-highlight")!;
+
+    expect(base.props.pickable).toBe(false);
+    expect(base.props.onHover).toBeUndefined();
+    expect(base.props.onClick).toBeUndefined();
+    expect(base.props.autoHighlight).toBe(false);
+    expect(ring.props.pickable).toBe(false);
+    expect(ring.props.filled).toBe(false);
+    expect(ring.props.stroked).toBe(true);
+    const datum = (base.props.data as Array<{ fillColor: number[] }>)[0];
+    expect((base.props.getFillColor as (entry: typeof datum) => number[])(datum)).toEqual(datum.fillColor);
+  });
+
+  it("preserves Pro map hover and click handlers", async () => {
+    const onHoverPin = vi.fn();
+    const onOpenParcel = vi.fn();
+    render(<DiscoveryMap {...props({ interactive: true, onHoverPin, onOpenParcel })} />);
+    await waitFor(() => expect(mapMocks.overlay.setProps).toHaveBeenCalled());
+    const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as {
+      layers: Array<{ props: Record<string, unknown> }>;
+    };
+    const base = latest.layers.find((layer) => layer.props.id === "discovery-pins")!;
+    expect(base.props.pickable).toBe(true);
+    (base.props.onHover as (info: { object: PinPoint | null }) => void)({ object: props().points[0] });
+    (base.props.onClick as (info: { object: PinPoint | null }) => void)({ object: props().points[0] });
+    expect(onHoverPin).toHaveBeenCalledWith("one");
+    expect(onOpenParcel).toHaveBeenCalledWith("one");
+  });
+
+  it("switches theme style, restores the camera, and reapplies layers after style.load", async () => {
+    const stableProps = props();
+    const { rerender } = render(<DiscoveryMap {...stableProps} />);
+    expect(mapMocks.hookOptions?.style).toBe("mapbox://styles/mapbox/dark-v11");
+    mapMocks.resolvedTheme = "light";
+    rerender(<DiscoveryMap {...stableProps} />);
+    expect(mapMocks.map.setStyle).toHaveBeenCalledWith("mapbox://styles/mapbox/light-v11");
+    expect(mapMocks.styleLoad).not.toBeNull();
+    mapMocks.styleLoad?.();
+    expect(mapMocks.map.jumpTo).toHaveBeenCalledWith({
+      center: { lng: -87.7, lat: 41.9 }, zoom: 12, bearing: 5, pitch: 10,
+    });
+
+    const callsBeforeRevision = mapMocks.overlay.setProps.mock.calls.length;
+    mapMocks.styleRevision += 1;
+    rerender(<DiscoveryMap {...stableProps} />);
+    await waitFor(() => expect(mapMocks.overlay.setProps.mock.calls.length).toBeGreaterThan(callsBeforeRevision));
+  });
+
+  it("exposes a keyboard-operable counted Map key", () => {
+    render(<DiscoveryMap {...props({ points: [
+      point("one", 41.9, -87.7),
+      point("two", 41.91, -87.71),
+    ] })} />);
+    const button = screen.getByRole("button", { name: "Map key" });
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(button);
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    const key = screen.getByTestId("discovery-map-legend");
+    expect(within(key).getByText("Commercial")).toBeTruthy();
+    expect(within(key).getByText("2")).toBeTruthy();
   });
 });

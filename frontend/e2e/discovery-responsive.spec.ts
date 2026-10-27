@@ -40,6 +40,17 @@ test("Discovery keeps usable panes across phone, tablet, and desktop widths", as
     const mapBox = await mapPane.boundingBox();
     expect(mapBox).not.toBeNull();
     expect(mapBox!.width).toBeGreaterThanOrEqual(minMapWidth);
+    const keyButton = page.getByTestId("discovery-map-key-button");
+    const keyPanel = page.getByTestId("discovery-map-legend");
+    if (width < 768) {
+      await expect(keyButton).toBeVisible();
+      await expect(keyPanel).toBeHidden();
+      await keyButton.click();
+      await expect(keyPanel).toBeVisible();
+    } else {
+      await expect(keyButton).toBeHidden();
+      await expect(keyPanel).toBeVisible();
+    }
     await page.screenshot({ path: testInfo.outputPath(`discovery-${width}.png`) });
   }
 });
