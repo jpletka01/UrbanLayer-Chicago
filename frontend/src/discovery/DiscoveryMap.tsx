@@ -6,9 +6,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScatterplotLayer } from "@deck.gl/layers";
+import { useThemeContext } from "../contexts/ThemeContext";
 import { useMapboxOverlay } from "../lib/useMapboxOverlay";
-import { buildDiscoveryMapModel } from "./discoveryMapModel";
-import { landUseColor, LAND_USE_LEGEND, upsideColor, UPSIDE_LEGEND } from "./upsideColor";
+import { buildDiscoveryMapModel, type DiscoveryMapRenderPoint } from "./discoveryMapModel";
 import type { PinPoint } from "./types";
 
 interface DiscoveryMapProps {
@@ -25,7 +25,9 @@ interface DiscoveryMapProps {
   visible: boolean;
 }
 
-const HIGHLIGHT: [number, number, number, number] = [238, 238, 238, 255];
+const HIGHLIGHT_RING: [number, number, number, number] = [249, 164, 116, 255];
+const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
+const LIGHT_STYLE = "mapbox://styles/mapbox/light-v11";
 
 export function DiscoveryMap({
   points,
@@ -40,41 +42,55 @@ export function DiscoveryMap({
   visible,
 }: DiscoveryMapProps) {
   const { t } = useTranslation("pages");
-  const { containerRef, mapRef, overlayRef, mapReady } = useMapboxOverlay({
+  const { resolvedTheme } = useThemeContext();
+  const themeStyle = resolvedTheme === "light" ? LIGHT_STYLE : DARK_STYLE;
+  const [initialStyle] = useState(themeStyle);
+  const {
+    containerRef,
+    mapRef,
+    overlayRef,
+    mapReady,
+    styleRevision,
+  } = useMapboxOverlay({
     center: [-87.6298, 41.8781],
     zoom: 10,
     interleaved: false,
+    style: initialStyle,
   });
 
   const model = useMemo(
-    () => buildDiscoveryMapModel(points, total, truncated),
-    [points, total, truncated],
+    () => buildDiscoveryMapModel(points, total, truncated, colorBy),
+    [points, total, truncated, colorBy],
   );
-  const { mappable } = model;
+  const { renderPoints } = model;
+  const visibleLegendRows = useMemo(
+    () => model.legendRows.filter((row) => row.count > 0),
+    [model.legendRows],
+  );
   const [sizeRevision, setSizeRevision] = useState(0);
+  const [keyOpen, setKeyOpen] = useState(false);
   const lastSizeRef = useRef({ width: -1, height: -1 });
+  const appliedStyleRef = useRef(initialStyle);
 
-  // Row → dot highlight only when interactive (Pro); free is view-only.
-  const highlightedIndex = useMemo(
-    () => (interactive && hoveredPin ? mappable.findIndex((p) => p.pin === hoveredPin) : -1),
-    [mappable, hoveredPin, interactive],
+  // Row hover/focus highlights the corresponding dot for both tiers. The ring
+  // is a separate non-pickable layer, so the encoded data fill never changes.
+  const highlightedPoint = useMemo(
+    () => hoveredPin ? renderPoints.find((point) => point.pin === hoveredPin) ?? null : null,
+    [renderPoints, hoveredPin],
   );
 
-  const layer = useMemo(() => {
-    if (!mappable.length) return null;
-    return new ScatterplotLayer({
+  const layers = useMemo(() => {
+    if (!renderPoints.length) return [];
+    const pointsLayer = new ScatterplotLayer<DiscoveryMapRenderPoint>({
       id: "discovery-pins",
-      data: mappable,
-      getPosition: (d: PinPoint) => [d.lon as number, d.lat as number],
-      getFillColor: (d: PinPoint) =>
-        colorBy === "upside" ? upsideColor(d.upside) : landUseColor(d.landUse),
+      data: renderPoints,
+      getPosition: (d) => [d.lon as number, d.lat as number],
+      getFillColor: (d) => d.fillColor,
       getRadius: 8,
       radiusMinPixels: 2,
       radiusMaxPixels: 9,
       pickable: interactive,
-      autoHighlight: interactive,
-      highlightColor: HIGHLIGHT,
-      highlightedObjectIndex: highlightedIndex,
+      autoHighlight: false,
       onHover: interactive
         ? (info) => onHoverPin(info.object ? (info.object as PinPoint).pin : null)
         : undefined,
@@ -85,15 +101,29 @@ export function DiscoveryMap({
         : undefined,
       updateTriggers: { getFillColor: [colorBy] },
     });
-  }, [mappable, highlightedIndex, colorBy, interactive, onHoverPin, onOpenParcel]);
+    if (!highlightedPoint) return [pointsLayer];
+    const highlightLayer = new ScatterplotLayer<DiscoveryMapRenderPoint>({
+      id: "discovery-pin-highlight",
+      data: [highlightedPoint],
+      getPosition: (d) => [d.lon as number, d.lat as number],
+      getRadius: 12,
+      radiusUnits: "pixels",
+      filled: false,
+      stroked: true,
+      getLineColor: HIGHLIGHT_RING,
+      getLineWidth: 2.5,
+      lineWidthUnits: "pixels",
+      pickable: false,
+    });
+    return [pointsLayer, highlightLayer];
+  }, [renderPoints, highlightedPoint, colorBy, interactive, onHoverPin, onOpenParcel]);
 
-  const legend = colorBy === "upside" ? UPSIDE_LEGEND : LAND_USE_LEGEND;
   const legendTitle = colorBy === "upside" ? t("discovery.legendUpside") : t("discovery.legendLandUse");
 
   useEffect(() => {
     if (!overlayRef.current) return;
     overlayRef.current.setProps({
-      layers: layer ? [layer] : [],
+      layers,
       // Hover identity on the map itself — the list window may not contain this pin.
       getTooltip: interactive
         ? ({ object }: { object?: PinPoint }) =>
@@ -107,7 +137,31 @@ export function DiscoveryMap({
               : null
         : undefined,
     });
-  }, [layer, overlayRef, interactive, t]);
+  }, [layers, overlayRef, interactive, styleRevision, t]);
+
+  // Theme changes swap only the Discovery basemap. Mapbox keeps its camera
+  // through setStyle(); capture/restore it explicitly and rebuild the Deck
+  // layers on the resulting style.load revision for a deterministic contract.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || appliedStyleRef.current === themeStyle) return;
+    const camera = {
+      center: map.getCenter(),
+      zoom: map.getZoom(),
+      bearing: map.getBearing(),
+      pitch: map.getPitch(),
+    };
+    const restoreCamera = () => {
+      map.jumpTo(camera);
+      map.resize();
+    };
+    map.once("style.load", restoreCamera);
+    appliedStyleRef.current = themeStyle;
+    map.setStyle(themeStyle);
+    return () => {
+      map.off("style.load", restoreCamera);
+    };
+  }, [mapReady, mapRef, themeStyle]);
 
   // Mapbox can initialize while this pane is display:none. Resize it when the
   // pane is revealed and whenever its real container changes size, then let the
@@ -144,10 +198,10 @@ export function DiscoveryMap({
 
   // Fit to the mapped points' bounds when they change.
   useEffect(() => {
-    if (!mapRef.current || !mapReady || !visible || mappable.length === 0) return;
+    if (!mapRef.current || !mapReady || !visible || renderPoints.length === 0) return;
     mapRef.current.resize();
     let minLat = 90, minLon = 180, maxLat = -90, maxLon = -180;
-    for (const p of mappable) {
+    for (const p of renderPoints) {
       minLat = Math.min(minLat, p.lat as number);
       maxLat = Math.max(maxLat, p.lat as number);
       minLon = Math.min(minLon, p.lon as number);
@@ -157,7 +211,7 @@ export function DiscoveryMap({
       [[minLon, minLat], [maxLon, maxLat]],
       { padding: 48, duration: 800, maxZoom: 15 },
     );
-  }, [mappable, mapReady, mapRef, sizeRevision, visible]);
+  }, [renderPoints, mapReady, mapRef, sizeRevision, visible]);
 
   const stateMessage =
     status === "idle"
@@ -168,12 +222,12 @@ export function DiscoveryMap({
           ? t("discovery.mapUnavailable")
           : total === 0
             ? t("discovery.mapEmpty")
-            : mappable.length === 0
+            : renderPoints.length === 0
               ? t("discovery.mapNoCoordinates", { count: model.returnedCount })
               : null;
 
   const summary = t("discovery.mapSummary", {
-    plotted: mappable.length.toLocaleString(),
+    plotted: renderPoints.length.toLocaleString(),
     unlocated: model.unlocatedCount.toLocaleString(),
     omitted: model.omittedByCapCount.toLocaleString(),
   });
@@ -199,22 +253,38 @@ export function DiscoveryMap({
         </div>
       )}
 
-      {/* Legend — upside (Pro) or land use (free), each named */}
-      {mappable.length > 0 && (
+      {/* Phones disclose the counted key from the top-left, away from Mapbox's
+          bottom attribution/wordmark and bottom-right navigation controls. */}
+      {renderPoints.length > 0 && (
+        <button
+          type="button"
+          aria-expanded={keyOpen}
+          aria-controls="discovery-map-key"
+          onClick={() => setKeyOpen((open) => !open)}
+          className="absolute left-3 top-3 z-20 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-caption text-text-secondary shadow-card md:hidden"
+          data-testid="discovery-map-key-button"
+        >
+          {t("discovery.mapKey")}
+        </button>
+      )}
+
+      {renderPoints.length > 0 && (
         <div
-          className="absolute right-3 top-3 z-10 space-y-1 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2"
+          id="discovery-map-key"
+          className={`${keyOpen ? "block" : "hidden"} absolute left-3 top-14 z-20 max-h-[calc(100%-7rem)] min-w-44 overflow-y-auto rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 shadow-card md:left-auto md:right-3 md:top-3 md:block`}
           data-testid="discovery-map-legend"
         >
           <div className="mb-1 text-overline uppercase text-text-muted">
             {legendTitle}
           </div>
-          {legend.map((item) => (
-            <div key={item.i18nKey} className="flex items-center gap-2 text-micro text-text-secondary">
+          {visibleLegendRows.map((item) => (
+            <div key={item.key} className="flex items-center gap-2 text-micro text-text-secondary">
               <span
                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              {t(`discovery.${item.i18nKey}`, item.label)}
+              <span className="min-w-0 flex-1">{t(`discovery.${item.i18nKey}`, item.label)}</span>
+              <span className="tabular-nums text-text-muted">{item.count.toLocaleString()}</span>
             </div>
           ))}
         </div>
@@ -224,7 +294,7 @@ export function DiscoveryMap({
         <div className="absolute bottom-8 left-3 z-10 max-w-[calc(100%-5rem)] space-y-1 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-micro text-text-secondary">
           <p>{t("discovery.mapPlotted", {
             count: model.returnedCount,
-            plotted: mappable.length.toLocaleString(),
+            plotted: renderPoints.length.toLocaleString(),
             returned: model.returnedCount.toLocaleString(),
           })}</p>
           {model.unlocatedCount > 0 && (

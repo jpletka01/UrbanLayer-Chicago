@@ -41,6 +41,13 @@ function resp(filters: CQS["filters"], over: Partial<SearchResponse> = {}): Sear
 
 const noop = () => {};
 const baseProps = { loading: false, loadingMore: false, hasMore: false, onLoadMore: noop, onOpenParcel: noop };
+const rowFixture: ResultRow = {
+  pin: "17-06-426-013-0000", lat: 41.9, lon: -87.67, address: "1840 W Erie St",
+  community_area: 24, land_use: "multi_family", class: "3-13", lot_sqft: 3125,
+  bldg_sqft: 6800, year_built: 1901, units: 6, assessed_value: 118400, price_per_sf: 174,
+  last_sale_price: null, last_sale_date: null, improvement_ratio: null,
+  value_percentile: 8, upside_score: 86, is_teardown_candidate: false, sortValue: 118400,
+};
 
 describe("DiscoveryResults zero states (PR4-aware)", () => {
   it("(1) NULL-backed: a filter on an unpopulated field explains the 0", () => {
@@ -83,19 +90,12 @@ describe("DiscoveryResults zero states (PR4-aware)", () => {
 
 describe("DiscoveryResults row-cards", () => {
   it("renders address-first with the PIN demoted", () => {
-    const row: ResultRow = {
-      pin: "17-06-426-013-0000", lat: 41.9, lon: -87.67, address: "1840 W Erie St",
-      community_area: 24, land_use: "multi_family", class: "3-13", lot_sqft: 3125,
-      bldg_sqft: 6800, year_built: 1901, units: 6, assessed_value: 118400, price_per_sf: 174,
-      last_sale_price: null, last_sale_date: null, improvement_ratio: null,
-      value_percentile: 8, upside_score: 86, is_teardown_candidate: false, sortValue: 118400,
-    };
     const response = resp(
       { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
-      { result: { rows: [row], total: 1, nextOffset: null } },
+      { result: { rows: [rowFixture], total: 1, nextOffset: null } },
     );
     render(
-      <DiscoveryResults {...baseProps} registry={reg()} rows={[row]} response={response} onRelax={noop} />,
+      <DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />,
     );
     expect(screen.getByText("1840 W Erie St")).toBeTruthy();
     expect(screen.getByText("17-06-426-013-0000")).toBeTruthy(); // PIN still present, demoted
@@ -123,6 +123,47 @@ describe("DiscoveryResults row-cards", () => {
       <DiscoveryResults {...baseProps} registry={reg({ populatedFields: ["land_use"] })} rows={[]} response={response} onRelax={noop} onExport={() => {}} />,
     );
     expect(screen.queryByText(/Export CSV/)).toBeNull();
+  });
+
+  it("highlights the matching pin from both pointer hover and keyboard focus", () => {
+    const response = resp({}, { result: { rows: [rowFixture], total: 1, nextOffset: null } });
+    const onHoverPin = vi.fn();
+    render(
+      <DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} onHoverPin={onHoverPin} />,
+    );
+    const row = screen.getByRole("button", { name: /1840 W Erie St/i });
+    fireEvent.mouseEnter(row);
+    expect(onHoverPin).toHaveBeenLastCalledWith(rowFixture.pin);
+    fireEvent.mouseLeave(row);
+    expect(onHoverPin).toHaveBeenLastCalledWith(null);
+    fireEvent.focus(row);
+    expect(onHoverPin).toHaveBeenLastCalledWith(rowFixture.pin);
+    fireEvent.blur(row);
+    expect(onHoverPin).toHaveBeenLastCalledWith(null);
+  });
+
+  it("scrolls only an already-loaded row requested by a Pro map hover", () => {
+    const scrollIntoView = vi.fn();
+    const original = HTMLElement.prototype.scrollIntoView;
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: scrollIntoView });
+    const response = resp({}, { result: { rows: [rowFixture], total: 2, nextOffset: 1 } });
+
+    const { rerender } = render(
+      <DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} scrollToPin="unloaded" />,
+    );
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.getAllByRole("button", { name: /1840 W Erie St/i })).toHaveLength(1);
+
+    rerender(
+      <DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} scrollToPin={rowFixture.pin} />,
+    );
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+
+    if (original) {
+      Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: original });
+    } else {
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   });
 });
 

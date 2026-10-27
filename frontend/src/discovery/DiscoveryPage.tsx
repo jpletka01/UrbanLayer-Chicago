@@ -58,6 +58,9 @@ export default function DiscoveryPage() {
   const [mapStatus, setMapStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
   const [searchUnavailable, setSearchUnavailable] = useState(false);
   const [hoveredPin, setHoveredPin] = useState<string | null>(null);
+  // Kept separate from row-origin hover/focus so only a Pro map hover may ask
+  // an already-loaded result row to scroll into view.
+  const [mapHoveredPin, setMapHoveredPin] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -108,6 +111,7 @@ export default function DiscoveryPage() {
       setRows([]);
       setNextOffset(null);
       setHoveredPin(null);
+      setMapHoveredPin(null);
       setMapStatus("loading");
       setMapPoints([]);
       setMapTruncated(false);
@@ -263,6 +267,16 @@ export default function DiscoveryPage() {
 
   const onUpgrade = useCallback(() => setShowUpgrade(true), []);
 
+  const onRowHoverPin = useCallback((pin: string | null) => {
+    setMapHoveredPin(null);
+    setHoveredPin(pin);
+  }, []);
+
+  const onMapHoverPin = useCallback((pin: string | null) => {
+    setHoveredPin(pin);
+    setMapHoveredPin(pin);
+  }, []);
+
   // Discovery→chat seam (#6): hand the result set to the analyst as an UNGROUNDED
   // pre-filled question (area + filter intent as prose). No pin, no payload — the
   // chat's native area retrieval answers it; App.tsx clears grounding on open.
@@ -411,7 +425,8 @@ export default function DiscoveryPage() {
                 onRelax={onRelax}
                 onOpenParcel={onOpenParcel}
                 hoveredPin={hoveredPin}
-                onHoverPin={setHoveredPin}
+                scrollToPin={isPro ? mapHoveredPin : null}
+                onHoverPin={onRowHoverPin}
                 onExport={onExport}
                 exportLocked={!isPro}
                 onUpgrade={onUpgrade}
@@ -432,7 +447,7 @@ export default function DiscoveryPage() {
             truncated={mapTruncated}
             total={mapTotal}
             hoveredPin={hoveredPin}
-            onHoverPin={setHoveredPin}
+            onHoverPin={onMapHoverPin}
             onOpenParcel={onOpenParcel}
             colorBy={isPro ? "upside" : "land_use"}
             interactive={isPro}
