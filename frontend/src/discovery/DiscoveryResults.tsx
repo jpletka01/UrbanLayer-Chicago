@@ -40,6 +40,7 @@ interface ResultsProps {
   rows: ResultRow[]; // accumulated window (page 0 + appended), deduped by pin
   registry: Registry;
   loading: boolean; // initial search
+  unavailable?: boolean;
   loadingMore: boolean; // appending a later page
   hasMore: boolean;
   onLoadMore: () => void;
@@ -58,6 +59,7 @@ export function DiscoveryResults({
   rows,
   registry,
   loading,
+  unavailable = false,
   loadingMore,
   hasMore,
   onLoadMore,
@@ -73,6 +75,9 @@ export function DiscoveryResults({
   const { t } = useTranslation("pages");
   if (loading) {
     return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
+  }
+  if (unavailable) {
+    return <p className="p-4 text-body text-text-muted" role="status">{t("discovery.searchUnavailable")}</p>;
   }
   if (!response) {
     return <p className="p-4 text-body text-text-muted">{t("discovery.setFilters")}</p>;

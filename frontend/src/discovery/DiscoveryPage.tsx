@@ -55,17 +55,23 @@ export default function DiscoveryPage() {
   const [mapPoints, setMapPoints] = useState<PinPoint[]>([]);
   const [mapTruncated, setMapTruncated] = useState(false);
   const [mapTotal, setMapTotal] = useState(0);
+  const [mapStatus, setMapStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
+  const [searchUnavailable, setSearchUnavailable] = useState(false);
   const [hoveredPin, setHoveredPin] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  // Mobile (below md): single column with a List|Map toggle (map stays mounted) + a
-  // bottom-sheet filter drawer. No effect on the desktop split.
+  // Below xl: one List|Map content pane (map stays mounted). Phones also get the
+  // bottom-sheet filter drawer; tablet widths retain the inline filter rail.
   const [mobileTab, setMobileTab] = useState<"list" | "map">("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
   // The inputs of the *issued* search, so loadMore re-issues the same query (later page) —
   // independent of any edits the user makes to the panel before scrolling.
   const lastInputs = useRef<SearchInputs | null>(null);
+  const requestIdRef = useRef(0);
+  const [wideLayout, setWideLayout] = useState(
+    () => typeof window !== "undefined" && window.matchMedia?.("(min-width: 1280px)").matches === true,
+  );
 
   useEffect(() => {
     loadRegistry().then((reg) => {
@@ -74,48 +80,109 @@ export default function DiscoveryPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const query = window.matchMedia("(min-width: 1280px)");
+    const update = () => setWideLayout(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => () => {
+    requestIdRef.current += 1;
+  }, []);
+
   const runWith = useCallback(
     async (state: PanelState, txt: string, srt: SortSpec | null, tid: string | null = null) => {
       if (!registry) return;
       // PR9: free users RUN the search and hit the teaser (top 10 + wall), not a pre-search
       // wall. The server enforces the cap; the FE renders the teaser from result.gated.
       const inputs: SearchInputs = { panelState: state, text: txt, sort: srt, topicId: tid };
+      const requestId = ++requestIdRef.current;
       lastInputs.current = inputs;
       setLoading(true);
+      setLoadingMore(false);
+      setSearchUnavailable(false);
+      setResponse(null);
+      setRows([]);
+      setNextOffset(null);
+      setHoveredPin(null);
+      setMapStatus("loading");
+      setMapPoints([]);
+      setMapTruncated(false);
+      setMapTotal(0);
       // List + map fetched in parallel: list is the paginated window; map is the full
       // ordered coord set. They share the same request envelope → sequence-consistent.
-      const [resp, pins] = await Promise.all([runSearch(inputs, registry), runPins(inputs, registry)]);
-      track("discovery_search", {
-        topic_id: tid,
-        has_text: !!txt,
-        total: resp?.result.total ?? null,
-        gated: resp?.result.gated ?? null,
-      });
-      setResponse(resp);
-      setRows(resp?.result.rows ?? []);
-      setNextOffset(resp?.result.nextOffset ?? null);
-      setMapPoints(pins?.points ?? []);
-      setMapTruncated(pins?.truncated ?? false);
-      setMapTotal(pins?.total ?? 0);
-      setLoading(false);
+      try {
+        const [searchResult, pinsResult] = await Promise.allSettled([
+          runSearch(inputs, registry),
+          runPins(inputs, registry),
+        ]);
+        if (requestId !== requestIdRef.current) return;
+        const resp = searchResult.status === "fulfilled" ? searchResult.value : null;
+        const pins = pinsResult.status === "fulfilled" ? pinsResult.value : null;
+        track("discovery_search", {
+          topic_id: tid,
+          has_text: !!txt,
+          total: resp?.result.total ?? null,
+          gated: resp?.result.gated ?? null,
+        });
+        if (!resp) {
+          setSearchUnavailable(true);
+          setMapStatus("unavailable");
+          return;
+        }
+
+        setResponse(resp);
+        setRows(resp.result.rows);
+        setNextOffset(resp.result.nextOffset);
+        const pinsCardinalityMatches = pins && (
+          pins.truncated
+            ? pins.points.length <= pins.total
+            : pins.points.length === pins.total
+        );
+        if (
+          !pins ||
+          pins.dataVersion !== resp.dataVersion ||
+          pins.total !== resp.result.total ||
+          !pinsCardinalityMatches
+        ) {
+          setMapStatus("unavailable");
+          return;
+        }
+        setMapPoints(pins.points);
+        setMapTruncated(pins.truncated);
+        setMapTotal(resp.result.total);
+        setMapStatus("ready");
+      } catch {
+        if (requestId !== requestIdRef.current) return;
+        setSearchUnavailable(true);
+        setMapStatus("unavailable");
+      } finally {
+        if (requestId === requestIdRef.current) setLoading(false);
+      }
     },
-    [registry, isPro],
+    [registry],
   );
 
   // Infinite scroll: fetch the next window, append + dedupe by pin, advance the cursor.
   const loadMore = useCallback(async () => {
     if (!registry || nextOffset == null || loadingMore || !lastInputs.current) return;
+    const requestId = requestIdRef.current;
+    const dataVersion = response?.dataVersion;
+    const inputs = lastInputs.current;
     setLoadingMore(true);
-    const resp = await runSearch({ ...lastInputs.current, offset: nextOffset }, registry);
-    if (resp) {
+    const resp = await runSearch({ ...inputs, offset: nextOffset }, registry);
+    if (requestId === requestIdRef.current && resp && resp.dataVersion === dataVersion) {
       setRows((prev) => {
         const seen = new Set(prev.map((r) => r.pin));
         return [...prev, ...resp.result.rows.filter((r) => !seen.has(r.pin))];
       });
       setNextOffset(resp.result.nextOffset);
     }
-    setLoadingMore(false);
-  }, [registry, nextOffset, loadingMore]);
+    if (requestId === requestIdRef.current) setLoadingMore(false);
+  }, [registry, nextOffset, loadingMore, response?.dataVersion]);
 
   // Any manual panel edit means the query is no longer "the recipe" → drop the telemetry id.
   const onPanelChange = useCallback((id: string, predicate: Predicate | null) => {
@@ -217,7 +284,7 @@ export default function DiscoveryPage() {
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         {/* Inputs column (desktop left rail; mobile top controls) */}
-        <div className="flex w-full flex-shrink-0 flex-col overflow-hidden border-r border-dark-border md:w-[420px] lg:w-[460px]">
+        <div className="flex w-full flex-shrink-0 flex-col overflow-hidden border-r border-dark-border md:w-[360px] lg:w-[400px] xl:w-[420px] 2xl:w-[460px]">
           <div className="flex-shrink-0 space-y-3 border-b border-dark-border p-4">
             <div>
               <h1 className="text-section">{t("discovery.title")}</h1>
@@ -252,13 +319,14 @@ export default function DiscoveryPage() {
                 <SortControl registry={registry} sort={sort} onChange={setSort} />
               )}
             </div>
-            {/* Mobile-only: List|Map toggle + Edit-filters (opens the bottom sheet) */}
-            <div className="flex items-center gap-2 md:hidden">
+            {/* List|Map stays available until xl. Edit-filters is phone-only because
+                tablet widths retain the inline filter rail. */}
+            <div className="flex items-center gap-2 xl:hidden">
               <MobileTabToggle value={mobileTab} onChange={setMobileTab} />
               <button
                 type="button"
                 onClick={() => setFiltersOpen(true)}
-                className="ml-auto rounded-lg border border-dark-border px-3 py-1.5 text-caption text-text-secondary transition-colors hover:border-dark-border-strong"
+                className="ml-auto rounded-lg border border-dark-border px-3 py-1.5 text-caption text-text-secondary transition-colors hover:border-dark-border-strong md:hidden"
               >
                 {t("discovery.editFilters")}
                 {Object.keys(panelState).length > 0 && (
@@ -304,11 +372,12 @@ export default function DiscoveryPage() {
           </div>
         </div>
 
-        {/* Results column: desktop always; mobile only when the List tab is active */}
+        {/* Results column: always at xl; otherwise only when List is active. */}
         <div
           className={`${
             mobileTab === "list" ? "flex" : "hidden"
-          } min-w-0 flex-1 flex-col overflow-hidden border-r border-dark-border md:flex md:w-[500px] md:flex-1 md:flex-shrink-0 lg:w-[560px]`}
+          } min-w-0 flex-1 flex-col overflow-hidden border-r border-dark-border xl:flex xl:w-[430px] xl:flex-none 2xl:w-[560px]`}
+          data-testid="discovery-list-pane"
         >
           {response && registry && (
             <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
@@ -335,6 +404,7 @@ export default function DiscoveryPage() {
                 rows={rows}
                 registry={registry}
                 loading={loading}
+                unavailable={searchUnavailable}
                 loadingMore={loadingMore}
                 hasMore={nextOffset != null}
                 onLoadMore={loadMore}
@@ -351,10 +421,12 @@ export default function DiscoveryPage() {
           </div>
         </div>
 
-        {/* Map column: desktop always; mobile only when the Map tab is active. A SINGLE
-            instance — hidden via CSS (not unmounted) when on List, so the GL context is
-            preserved across toggles (mirrors MobileSidebarSheet's kept-mounted map). */}
-        <div className={`${mobileTab === "map" ? "block" : "hidden"} min-w-0 flex-1 md:block`}>
+        {/* Map column: always at xl; otherwise only when Map is active. A SINGLE instance
+            stays mounted behind List so toggles preserve the GL context. */}
+        <div
+          className={`${mobileTab === "map" ? "block" : "hidden"} min-w-0 flex-1 xl:block`}
+          data-testid="discovery-map-pane"
+        >
           <DiscoveryMap
             points={mapPoints}
             truncated={mapTruncated}
@@ -364,6 +436,8 @@ export default function DiscoveryPage() {
             onOpenParcel={onOpenParcel}
             colorBy={isPro ? "upside" : "land_use"}
             interactive={isPro}
+            status={mapStatus}
+            visible={mobileTab === "map" || wideLayout}
           />
         </div>
       </div>

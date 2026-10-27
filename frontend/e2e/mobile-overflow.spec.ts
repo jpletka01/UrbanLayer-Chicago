@@ -228,6 +228,34 @@ for (const pageDef of PAGES) {
     await page.evaluate(() => document.fonts.ready).catch(() => {});
     await page.waitForTimeout(pageDef.settle ?? 1200);
 
+    // Discovery keeps one Mapbox instance mounted behind the List tab. Reveal it
+    // before auditing so the phone gate catches the hidden-init 400×300 fallback.
+    if (pageDef.id === "discovery") {
+      await page.getByRole("button", { name: "Map", exact: true }).click();
+      const mapPane = page.getByTestId("discovery-map-pane");
+      const mapContainer = page.getByTestId("discovery-map-container");
+      const canvas = mapPane.locator("canvas.mapboxgl-canvas");
+      await expect(mapPane).toBeVisible();
+      await expect(canvas).toBeVisible();
+      await expect.poll(async () => {
+        const containerBox = await mapContainer.boundingBox();
+        const canvasBox = await canvas.boundingBox();
+        if (!containerBox || !canvasBox) return false;
+        const backingStoreMatches = await canvas.evaluate((element) => {
+          const pixelRatio = window.devicePixelRatio;
+          const rect = element.getBoundingClientRect();
+          return (
+            Math.abs(element.width - Math.ceil(rect.width) * pixelRatio) <= pixelRatio &&
+            Math.abs(element.height - Math.ceil(rect.height) * pixelRatio) <= pixelRatio
+          );
+        });
+        return backingStoreMatches && (
+          Math.abs(containerBox.width - canvasBox.width) <= 1 &&
+          Math.abs(containerBox.height - canvasBox.height) <= 1
+        );
+      }, { message: "Discovery Mapbox canvas and backing store must fill its revealed container" }).toBe(true);
+    }
+
     const topAudit = await auditOverflow(page);
 
     // Sticky strips and lazy sections can introduce overflow further down.
