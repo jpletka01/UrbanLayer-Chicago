@@ -68,7 +68,9 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   exact intensity and semantic boundary colors; road-aware ordering; accessible On/Dim/Off, exact/withheld
   counts, confidence styling, and responsive Layers UI],
   **`2026-10-27_ws3-discovery-map`** [canonical list/map consistency; truthful unavailable/unlocated/capped
-  states; render-derived Property Use/Upside keys; free/Pro linkage, theme-safe layers, and responsive key UI]).
+  states; render-derived Property Use/Upside keys; free/Pro linkage, theme-safe layers, and responsive key UI],
+  **`2026-10-28_ws2-upcoming-zoning`** [pending Clerk snapshot; free Upcoming Zoning list; reviewed pending
+  Title 17 text impacts beside current law; WS2 PR4 extraction intentionally not built]).
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,
