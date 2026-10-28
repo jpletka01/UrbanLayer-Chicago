@@ -23,7 +23,7 @@ liveAreas**, `populatedFields` + `recipeCounts` serving; Discovery is **nav-link
 
 **Suburban parcels dropped from the index build (2026-10-28, branch `codex/discovery-index-drop-suburbs`,
 NOT yet on prod).** The builder fetches each community area by bounding box, and a point inside the box
-but inside no community-area polygon (Cicero, Proviso, ...) used to be tagged to the box's Chicago area
+but inside no community-area polygon (border suburbs such as Forest Park) used to be tagged to the box's Chicago area
 (`community_area_by_point(...) or ca`). A read-only audit of the 2026-10-01 prod index found 66,658 of
 949,014 rows (7.0%) outside every polygon. `_assemble_ca` now drops those points before the joins, and
 `build_index` prunes their PINs from an existing index, so a `--refresh` heals it. `assemble_parcel` is
