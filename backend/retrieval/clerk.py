@@ -12,7 +12,8 @@ limit, so the client:
   the way to the UI. A 400 means our filter is wrong: :class:`ClerkQueryError`, never
   retried.
 - **is gentle.** It makes serial requests, pauses 1 s between pages, and tries 3 times
-  with 1/2/4 s backoff.
+  with 1/2 s backoff. A public-API 429 honors ``Retry-After`` when it is a bounded
+  number of seconds, otherwise it waits 60 s before retrying.
 
 Facts the code depends on (checked against the live API 2026-10-21):
 
@@ -67,6 +68,18 @@ USER_AGENT = "UrbanLayer/1 (+https://urbanlayerchicago.com)"
 CODE_AMENDMENTS = "MUNICIPAL CODE AMENDMENTS"
 ZONING_RECLASSIFICATIONS = "ZONING RECLASSIFICATIONS"
 FINAL = "90-Final"
+# Explicit non-final states observed in the recorded 2026-10-18 response and in the
+# complete zoning/code pending query checked 2026-10-27.  The pending sync queries
+# ``status ne 90-Final`` and then rejects any value outside this set: a new workflow
+# state is contract drift, not permission to guess that the matter is still live.
+KNOWN_PENDING_STATUSES = frozenset({
+    "2-Submitted to Clerk", "3-Council Introduction", "4-In Committee", "5-Council Consideration",
+})
+KNOWN_PENDING_SUBSTATUSES = frozenset({
+    "Accepted", "Council Introduction", "Direct Introduction", "Held in Committee",
+    "Re-Referred", "Referred", "Deferred and Published", "Recommended to Pass",
+    "Recommended for Re-Referral",
+})
 # Final outcomes that mean Council enacted the matter. Ordinances end "Passed",
 # "Passed as Substitute" or "Signed"; resolutions and orders end "Adopted"/"Approved".
 PASSED = frozenset({"Passed", "Passed as Substitute", "Signed", "Adopted", "Approved", "Approved as Substitute"})
@@ -84,6 +97,7 @@ _TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _ATTEMPTS = 3
 _BACKOFF_S = (1.0, 2.0, 4.0)
 _PAGE_PAUSE_S = 1.0
+_RATE_LIMIT_BACKOFF_S = 60.0
 
 _cache = TTLCache(ttl_seconds=6 * 3600, maxsize=256, name="clerk")
 # (client, the event loop it was made on): a client can't outlive its loop, and scripts
@@ -94,6 +108,10 @@ _sleep = asyncio.sleep  # tests replace it so retries and page pauses don't wait
 
 class ClerkUnavailable(Exception):
     """Couldn't check: network, 5xx, timeouts after retries, or a contract violation."""
+
+
+class ClerkContractError(ClerkUnavailable):
+    """The API answered, but a vocabulary or relationship contract changed."""
 
 
 class ClerkQueryError(Exception):
@@ -280,6 +298,21 @@ async def _get(path: str, params: dict[str, Any] | None = None, *, client: httpx
                     return resp.json()
                 except ValueError as exc:
                     raise ClerkUnavailable(f"{path}: response is not JSON") from exc
+            if resp.status_code == 429:
+                last = ClerkUnavailable(f"{path}: HTTP 429")
+                if attempt + 1 < _ATTEMPTS:
+                    retry_after = resp.headers.get("Retry-After", "")
+                    try:
+                        delay = float(retry_after)
+                    except ValueError:
+                        delay = _RATE_LIMIT_BACKOFF_S
+                    # A bad/malicious header must not turn a daily sync into an
+                    # unbounded sleep. The fallback is deliberately conservative.
+                    if delay < 0 or delay > 300:
+                        delay = _RATE_LIMIT_BACKOFF_S
+                    await _sleep(delay)
+                    continue
+                break
             if resp.status_code < 500:
                 raise ClerkUnavailable(f"{path}: HTTP {resp.status_code}")
             last = ClerkUnavailable(f"{path}: HTTP {resp.status_code}")
@@ -395,6 +428,35 @@ async def final_since(
     out = [m async for m in iter_matters(flt, client=client)]
     out.sort(key=lambda m: (m.final_action_at or datetime.min.replace(tzinfo=timezone.utc), m.record_number))
     return out
+
+
+async def pending_zoning_matters(*, client: httpx.AsyncClient | None = None) -> list[ClerkMatter]:
+    """Current non-final map amendments and Title 17-looking code amendments.
+
+    The server-side query deliberately asks for *every* non-final value in the two
+    categories.  We then validate the status/sub-status vocabulary before selecting
+    zoning map matters and text matters whose official title names Title 17.  That
+    makes a new Clerk workflow state loud instead of silently dropping it.
+
+    This is a sync-only call.  Detail rows are fetched by ``legislation.pending``;
+    list rows have null actions, attachments and relations.
+    """
+    flt = f"status ne {odata_str(FINAL)} and {category_filter((ZONING_RECLASSIFICATIONS, CODE_AMENDMENTS))}"
+    rows = [m async for m in iter_matters(flt, client=client)]
+    unknown_statuses = sorted({m.status for m in rows if m.status not in KNOWN_PENDING_STATUSES})
+    unknown_substatuses = sorted({m.sub_status for m in rows if m.sub_status not in KNOWN_PENDING_SUBSTATUSES})
+    problems = []
+    if unknown_statuses:
+        problems.append("unknown pending status(es): " + ", ".join(repr(s) for s in unknown_statuses))
+    if unknown_substatuses:
+        problems.append("unknown pending subStatus(es): " + ", ".join(repr(s) for s in unknown_substatuses))
+    if problems:
+        raise ClerkContractError("; ".join(problems))
+    return [
+        m for m in rows
+        if m.category.startswith(ZONING_RECLASSIFICATIONS)
+        or (m.category.startswith(CODE_AMENDMENTS) and touches_title17(m.title))
+    ]
 
 
 async def passed_title17_amendments(since: date, *, client: httpx.AsyncClient | None = None) -> list[Title17Amendment]:

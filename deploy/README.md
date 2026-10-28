@@ -43,12 +43,15 @@ The GitHub workflows `data-health-deadman.yml` (daily, fails if `/health` shows 
 `code-export-reminder.yml` (monthly, fails while the code text was ingested over 35 days ago) email a
 failure to whoever last edited their schedule.
 
-## Legislation sync — daily (WS1 M2)
+## Legislation sync — daily (WS1 M2 + WS2 PR 1)
 
 `backend.legislation.sync` asks the City Clerk's API what Municipal Code amendments passed
 after the code text's vintage and writes `backend/data/legislation_snapshot.json` (persistent
-volume). The app only reads that file (no Clerk call on the request path) and reloads it when it
-changes. Without a check in the last 72 h the Profile, chat and report stop giving a count; after
+volume). It also refreshes the dark WS2 store `backend/data/pending_legislation.db`: pending zoning
+map filings and Title-17-looking text matters, their actions, lifecycle links, and non-EDS attachment
+metadata. Both keep last-good data on failure. The app only reads local artifacts (no Clerk call on
+the request path); the pending store has no request-path reader until WS2 PR 2. Without a passed-law
+check in the last 72 h the Profile, chat and report stop giving a count; after
 14 days they say "we couldn't check" (the committed `backend/code_amendments.json` still lists the
 reviewed ones).
 
@@ -70,12 +73,16 @@ systemctl list-timers legislation-sync.timer                # next run 06:00 Chi
 journalctl -u legislation-sync.service -n 20 --no-pager     # status=ok ... title17=16 ...
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
   python -c "from backend.legislation.currency import code_currency_status as s; print(s())"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
+  python -c "from backend.config import get_settings; from backend.legislation.pending_store import read_status; print(read_status(get_settings().pending_legislation_path))"
 ```
 
-Exit codes: `1` = the Clerk was unreachable (the last good rows and `checked_at` are kept, so the
-product ages out gracefully); `2` = contract drift (a final `subStatus` never seen before, or a
-previously passed record vanished), snapshot marked `suspect` and treated as unchecked. Both
-report to Sentry. Admins see the same data at `GET /api/admin/code-currency`.
+Exit codes: `1` = the Clerk or a local store failed (last-good rows and their successful check date
+are kept, so consumers age out gracefully); `2` = contract drift (an unknown final/pending state,
+a previously passed record vanished, or one lifecycle has two current matters). The affected
+artifact is marked failed/suspect without poisoning the other one. Both report to Sentry. Passed-law
+status appears at `GET /api/admin/code-currency`; the generic Data Health panel reports
+`internal.pending_legislation`.
 
 
 ## Property Discovery — monthly index rebuild

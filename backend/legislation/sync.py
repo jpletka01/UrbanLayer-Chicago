@@ -1,8 +1,9 @@
 """Daily legislation sync: what City Council passed since the code text's vintage.
 
 Runs on prod as a oneshot (``deploy/legislation-sync.timer``, 06:00 Chicago) in its own
-container, and writes the snapshot that ``currency`` reads. It is the only caller of
-the Clerk API in the serving stack; the request path never makes a Clerk call.
+container, and writes the snapshot that ``currency`` reads plus WS2's separate pending
+SQLite store. It is the only caller of the Clerk API in the serving stack; the request
+path never makes a Clerk call.
 
 - **ok:** the passed Municipal Code amendments after the vintage, classified (Title 17,
   other cited titles; the rest are counted, not stored), with ``checked_at``.
@@ -26,14 +27,16 @@ import asyncio
 import json
 import logging
 import os
+import sqlite3
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from backend.config import get_settings
-from backend.legislation import currency, designations, ordinance_reader, rezonings
+from backend.legislation import currency, designations, ordinance_reader, pending, rezonings
 from backend.legislation.amendments import live_record
+from backend.legislation.pending_store import Store as PendingStore
 from backend.retrieval import clerk
 
 log = logging.getLogger(__name__)
@@ -171,19 +174,62 @@ def failed_snapshot(previous: dict | None, error: str, *, now: datetime | None =
     }
 
 
-async def run(path: Path | None = None, *, write: bool = True) -> tuple[int, dict]:
+async def _pending_part(path: Path, now: datetime, client, *, write: bool) -> tuple[int, dict]:
+    """Refresh WS2's store without changing the passed-law snapshot's truth state."""
+    try:
+        snapshot = await pending.refresh(path, write=write, now=now, client=client)
+    except (pending.PendingContractError, clerk.ClerkContractError) as exc:
+        log.error("Pending legislation snapshot is suspect (last good rows kept): %s", exc)
+        return 2, {"status": "suspect", "last_attempt_at": _iso(now), "last_error": str(exc)[:300]}
+    except (clerk.ClerkUnavailable, clerk.ClerkQueryError, sqlite3.Error, OSError) as exc:
+        log.error("Pending legislation refresh failed (last good rows kept): %s", exc)
+        _report(exc)
+        return 1, {"status": "failed", "last_attempt_at": _iso(now),
+                   "last_error": f"{type(exc).__name__}: {exc}"[:300]}
+    return 0, {"status": "ok", "checked_at": _iso(now), "last_attempt_at": _iso(now),
+               "last_error": None, "counts": snapshot.counts}
+
+
+def _record_pending_source_failure(path: Path, now: datetime, error: str) -> None:
+    """The primary Clerk query failed, so do not make a second doomed source call."""
+    try:
+        with PendingStore(path) as store:
+            store.record_problem(now, status="failed", error=error)
+    except (sqlite3.Error, OSError) as exc:
+        log.error("Could not record pending-source failure at %s: %s", path, exc)
+
+
+async def run(
+    path: Path | None = None,
+    *,
+    pending_path: Path | None = None,
+    write: bool = True,
+) -> tuple[int, dict]:
     path = path or currency.snapshot_path()
+    pending_path = pending_path or get_settings().pending_legislation_path
     previous = currency._read_json(path)
     previous = previous if isinstance(previous, dict) else None
+    now = datetime.now(timezone.utc)
     try:
-        snap = await build_snapshot(previous)
+        snap = await build_snapshot(previous, now=now)
         code = 0 if snap["status"] == "ok" else 2
         if snap["status"] == "suspect":
             log.error("Legislation snapshot is suspect: %s", "; ".join(snap["contract_problems"]))
     except (clerk.ClerkUnavailable, clerk.ClerkQueryError) as exc:
         log.error("Clerk check failed: %s", exc)
-        snap, code = failed_snapshot(previous, f"{type(exc).__name__}: {exc}"), 1
+        error = f"{type(exc).__name__}: {exc}"
+        snap, code = failed_snapshot(previous, error, now=now), 1
+        if write:
+            _record_pending_source_failure(pending_path, now, error)
+        snap["pending_check"] = {"status": "failed", "last_attempt_at": _iso(now), "last_error": error[:300]}
         _report(exc)
+    else:
+        pending_code, pending_check = await _pending_part(pending_path, now, None, write=write)
+        snap["pending_check"] = pending_check
+        if pending_code == 1:
+            code = 1
+        elif pending_code == 2 and code == 0:
+            code = 2
     if write:
         write_atomic(path, snap)
     return code, snap
@@ -221,12 +267,22 @@ def main(argv: list[str] | None = None) -> int:
         n = dc.get("counts") or {}
         print(f"  landmark designations: {dc.get('status')} passed={n.get('passed')} flaggable={n.get('flaggable')} "
               f"with_parcels={n.get('with_parcels')} unparsed={len(n.get('unparsed') or [])} no_parcels={len(n.get('no_parcels') or [])}")
+    pc = snap.get("pending_check") or {}
+    if pc:
+        n = pc.get("counts") or {}
+        print(f"  pending zoning: {pc.get('status')} pending={n.get('pending')} zoning={n.get('zoning')} "
+              f"title17={n.get('title17')} placement_ready={n.get('placement_ready')} "
+              f"lifecycle_collapses={n.get('lifecycle_collapses')}")
     for p in snap.get("contract_problems") or []:
         print(f"  problem: {p}")
     if snap.get("last_error"):
         print(f"  error: {snap['last_error']}")
     if code == 2:
-        _report(RuntimeError("legislation snapshot suspect: " + "; ".join(snap.get("contract_problems") or [])))
+        problems = list(snap.get("contract_problems") or [])
+        pc = snap.get("pending_check") or {}
+        if pc.get("status") == "suspect":
+            problems.append("pending snapshot: " + (pc.get("last_error") or "contract drift"))
+        _report(RuntimeError("legislation snapshot suspect: " + "; ".join(problems)))
     return code
 
 

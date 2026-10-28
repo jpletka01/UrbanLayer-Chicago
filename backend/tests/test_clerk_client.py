@@ -212,6 +212,38 @@ async def test_a_failed_page_mid_pagination_raises_instead_of_returning_part():
         await clerk.passed_since(date(2026, 3, 18), client=_paged(rows, page=3, fail_at=3).client())
 
 
+async def test_rate_limit_is_retried_and_honors_bounded_retry_after(monkeypatch):
+    waits: list[float] = []
+
+    async def record_wait(seconds: float):
+        waits.append(seconds)
+
+    monkeypatch.setattr(clerk, "_sleep", record_wait)
+
+    def respond(_request, n):
+        if n == 1:
+            return httpx.Response(429, headers={"Retry-After": "7"})
+        return httpx.Response(200, json={"data": [_row()], "meta": {"count": 1}})
+
+    rec = Recorder(respond)
+    rows, count = await clerk.search_matters("x", client=rec.client())
+    assert count == 1 and len(rows) == 1
+    assert len(rec.requests) == 2 and waits == [7.0]
+
+
+async def test_rate_limit_with_unbounded_retry_after_uses_safe_fallback(monkeypatch):
+    waits: list[float] = []
+
+    async def record_wait(seconds: float):
+        waits.append(seconds)
+
+    monkeypatch.setattr(clerk, "_sleep", record_wait)
+    rec = _serve("busy", status=429)
+    with pytest.raises(clerk.ClerkUnavailable, match="failed after 3 attempts"):
+        await clerk.search_matters("x", client=rec.client())
+    assert waits == [clerk._RATE_LIMIT_BACKOFF_S, clerk._RATE_LIMIT_BACKOFF_S]
+
+
 async def test_a_short_page_raises():
     rows = [_row(recordNumber=f"O2026-{i:07d}") for i in range(7)]
     with pytest.raises(clerk.ClerkUnavailable):
