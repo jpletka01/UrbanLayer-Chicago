@@ -1883,6 +1883,10 @@ PR1 is a method proof. It serves nothing, changes no threshold in `provenance.py
 
 ## Item 34 (WS4 PR2): current official rent on the Profile and in chat (2026-10-28)
 
+**Status (2026-10-28):** [PR #123](https://github.com/jpletka01/UrbanLayer-Chicago/pull/123) open against `main`, all CI checks green (test, lint, CodeQL; deploy skipped on a PR), mergeable; merge awaits Jack's approval because a merge deploys production. After the merge, verify `/api/scorecard` on the live site carries `neighborhood.rent` and the `area.rent.*` provenance entries, not just git HEAD. Next: PR3 (the Assessor's modeled rent as its own series), then PR4 trends and PR5 HUD SAFMR plus a revenue line (neither approved).
+
+**Open decisions carried forward:** B25063's design factor (1.5 until Jack permits the Census file download); free vs gated Assessor series; display of an Assessor coverage above 100% (recommended: "not comparable", withheld with the reason); HUD SAFMR token or file; no listing-based asking rents.
+
 PR2 serves Item 33's findings. The Profile's Neighborhood module gains a **Rent** block (free, no gate) and chat carries the same figures under the confidence standard. Nothing from a listing, no revenue line, no Assessor series, no trend; the $25 report shows no rent and does not list rent sources.
 
 **Decision 1: three figures, never blended.** (a) the community area's overall median, from a committed artifact; (b) the parcel's tract overall median (already fetched, newly shown); (c) the Census's published median for 1, 2 and 3 bedrooms for the parcel's tract, else its PUMA. *Alternatives:* a community-area figure by bedroom count (rejected in Item 33, the table tops out at "$1,500 or more"); a PUMA-first display (a wider area when the tract has its own figure); showing the studio and 4+ bedroom cells (only 1-3 were proved at PUMA level, 20 of 20). *Why:* each figure names its own geography and release, so a reader can see which published series they are looking at.
