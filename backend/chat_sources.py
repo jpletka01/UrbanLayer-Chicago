@@ -229,6 +229,8 @@ def _area_lines(provenance: dict[str, dict]) -> list[str]:
             bits.append(window)
         if any((e.get("precision") or {}).get("moe") is not None for e in shown):
             bits.append("margins of error at the 90% level")
+        if any((e.get("precision") or {}).get("moe_method") == "acs_handbook_median" for e in shown):
+            bits.append("overall rent rebuilt from Census bracket counts, margin by the ACS Handbook method")
         if any("bracket_median" in (e.get("confidence_reasons") or []) for e in shown):
             bits.append("income median estimated from brackets, no margin of error published")
         lines.append(f"- **{name}**" + (f": {'; '.join(bits)}" if bits else ""))

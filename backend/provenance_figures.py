@@ -343,6 +343,8 @@ def _neighborhood(hood, put, qd: str, ca_name: str | None) -> None:
                 url=ct.census_reporter_url, precision=precision,
                 note=f"ACS {ct.acs_period} 5-year{f' ({ct.acs_release})' if ct.acs_release else ''}"
                      f"{'; margin of error is in percentage points' if field.endswith(('_pct', '_rate')) else ''}.")
+    if getattr(hood, "rent", None) is not None:
+        _rent_figures(hood.rent, put, qd, ca_name)
     dm = hood.demographics
     if dm is not None:
         end = _period_end(dm.acs_period, qd)
@@ -355,6 +357,34 @@ def _neighborhood(hood, put, qd: str, ca_name: str | None) -> None:
                 dates={"as_of": end, "as_of_basis": "period_end"},
                 inputs=["chi.acs_community_area"],
                 note="Interpolated from five income brackets; the top bracket is capped. No margin of error is published.")
+
+
+_FALLBACK_NOTE = {
+    "suppressed": "The Census publishes no median for the parcel's tract, so this is the PUMA's.",
+    "low_confidence": "The parcel's tract median is too uncertain to show, so this is the PUMA's.",
+}
+
+
+def _rent_figures(rent, put, qd: str, ca_name: str | None) -> None:
+    """Current official rent (WS4 PR2). A cell the Census suppresses (no estimate) is not a figure and gets
+    no entry; the Profile says so from the ``rent`` block itself."""
+    end = _period_end(rent.acs_period, qd)
+    ca = rent.community_area
+    if ca is not None and ca.median is not None:
+        put("area.rent.community_area", ca.median, geography=ca_name, period=ca.acs_period,
+            dates={"as_of": _period_end(ca.acs_period, qd), "as_of_basis": "period_end"},
+            precision=({"moe": ca.moe, "moe_level": 0.9, "moe_method": ca.moe_method,
+                        **({"cv": ca.cv} if ca.cv is not None else {})} if ca.moe is not None else None),
+            inputs=["census.reporter.acs"], basis_tier="official_estimate",
+            note=(f"Rebuilt from the rent brackets of {ca.households:,} renter households with cash rent (ACS {ca.acs_period}); "
+                  f"the margin is the ACS Handbook's for an interpolated median (design factor {ca.design_factor})."))
+    for b in rent.bedrooms:
+        if b.estimate is None:
+            continue
+        put(f"area.rent.{b.bedrooms}", b.estimate, scope=b.scope, geography=b.geography, period=rent.acs_period,
+            dates={"as_of": end, "as_of_basis": "period_end"},
+            precision={"moe": b.moe, "moe_level": 0.9, **({"cv": b.cv} if b.cv is not None else {})} if b.moe is not None else None,
+            note=_FALLBACK_NOTE.get(b.tract_fallback or "") or f"ACS {rent.acs_period} 5-year{f' ({rent.acs_release})' if rent.acs_release else ''}.")
 
 
 _TRACT_ORDER = (
@@ -530,6 +560,12 @@ def expected_fact_ids(payload: dict) -> set[str]:
         want.add("neighborhood.transit")
     for field in _TRACT_ORDER:
         add_if(f"area.tract.{field}", p(f"neighborhood.census_tract.{field}") if p(f"neighborhood.census_tract.{field}") is not None else None)
+    rent = p("neighborhood.rent") or {}
+    if (rent.get("community_area") or {}).get("median") is not None:
+        want.add("area.rent.community_area")
+    for b in rent.get("bedrooms") or []:
+        if b.get("estimate") is not None:
+            want.add(f"area.rent.{b['bedrooms']}")
     if (p("violations") or {}).get("by_category"):
         pass  # profile violations are address-scoped; the category grouping is an area-feed fact
     comps = payload.get("comparables") or {}

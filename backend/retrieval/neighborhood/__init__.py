@@ -14,12 +14,14 @@ from backend.models import (
     CensusTractDemographics,
     DivvyAccess,
     NeighborhoodSummary,
+    RentEvidence,
     WalkScoreSummary,
     WardInfo,
 )
 from backend.retrieval.geo import resolve_census_tract
 from backend.retrieval.neighborhood.census_tract import fetch_census_tract
 from backend.retrieval.neighborhood.demographics import fetch_demographics
+from backend.retrieval.neighborhood.rent import rent_evidence
 from backend.retrieval.neighborhood.wards import ward_by_point
 from backend.retrieval.neighborhood.transit import (
     build_transit_access,
@@ -94,6 +96,16 @@ async def neighborhood_domain(
         # layer — the political unit for any rezoning/variance conversation.
         ward_info = ward_by_point(lat, lon) if has_coords else None
 
+        # Official rent (WS4 PR2) needs the tract's own bedroom cells to decide whether the PUMA's are
+        # wanted, so it runs after the tract request; its failures are named, never hidden.
+        rent = None
+        census_tract = results.get("census_tract")
+        if community_area is not None or census_tract is not None:
+            try:
+                rent = await rent_evidence(community_area, census_tract, client=client)
+            except Exception as exc:  # noqa: BLE001 — rent must never take the rest of the area down
+                log.warning("Neighborhood rent failed: %s", exc)
+
         return _build_summary(
             results.get("demographics"),
             results.get("census_tract"),
@@ -103,6 +115,7 @@ async def neighborhood_domain(
             ward_info,
             results.get("traffic"),
             results.get("divvy"),
+            rent,
         )
     finally:
         if owns:
@@ -130,6 +143,7 @@ def _build_summary(
     ward_info: dict | None = None,
     traffic_result: dict | None = None,
     divvy_result: DivvyAccess | None = None,
+    rent: RentEvidence | None = None,
 ) -> NeighborhoodSummary:
     from backend.models import TrafficSummary
 
@@ -144,4 +158,5 @@ def _build_summary(
         ward=ward,
         traffic=traffic,
         divvy=divvy_result,
+        rent=rent,
     )

@@ -143,7 +143,9 @@
       "chi_energy_benchmarking": "City energy benchmarking (owner-reported)",
       "cook_assessor_commercial_valuation": "Assessor commercial valuation",
       "cook_assessor_condo_characteristics": "Assessor condominium record",
-      "cook_ptaxsim": "Cook County PTAXSIM model"
+      "cook_ptaxsim": "Cook County PTAXSIM model",
+      "artifact_rent_by_area": "Census rent brackets summed by community area (our aggregation)",
+      "census_reporter_acs": "Census Bureau ACS 5-year (via Census Reporter)"
     },
     "basis": {
       "source_updated": "source last updated",
@@ -172,7 +174,10 @@
     },
     "sourceHeading": "Source",
     "unavailable": "Couldn't be checked today",
-    "ai": "AI"
+    "ai": "AI",
+    "moeMethod": {
+      "acs_handbook_median": "Summed from Census rent brackets"
+    }
   },
   "dataDates": {
     "noun": {

@@ -6,14 +6,20 @@ import math
 import httpx
 
 from backend.config import get_settings
-from backend.models import CensusTractDemographics, DistributionBucket
+from backend.models import CensusTractDemographics, DistributionBucket, RentCell
 from backend.retrieval.cache import TTLCache
 
 log = logging.getLogger(__name__)
 
 _cache = TTLCache(ttl_seconds=86400, maxsize=256, name="census_tract_demographics")
 
-TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B23025,B25077,B05002,B25064,B25003,B25002"
+TABLE_IDS = "B01001,B02001,B03003,B15003,B19001,B19013,B19301,B08301,B17001,B23025,B25077,B05002,B25064,B25003,B25002,B25031"
+
+# B25031 columns after the total (001), by the names ``neighborhood.rent.BEDROOM_GROUPS`` uses.
+B25031_COLUMNS = {
+    "no_bedroom": "B25031002", "1_bedroom": "B25031003", "2_bedrooms": "B25031004",
+    "3_bedrooms": "B25031005", "4_bedrooms": "B25031006", "5_plus_bedrooms": "B25031007",
+}
 
 # Chicago (place) and Cook County geo IDs for comparison medians
 CHICAGO_GEO = "16000US1714000"
@@ -101,6 +107,20 @@ def _cv(estimate: float | None, moe: float | None) -> float | None:
     if estimate is None or moe is None or estimate <= 0:
         return None
     return round(moe / MOE_Z / estimate, 3)
+
+
+def rent_cells(data: dict) -> dict[str, RentCell]:
+    """The B25031 median gross rents by bedroom count in one geography's Census Reporter data.
+    Only columns the response carries are returned; a suppressed estimate is a cell with ``estimate`` None."""
+    if not data.get("B25031"):
+        return {}
+    cells = {}
+    for name, col in B25031_COLUMNS.items():
+        est = _safe_int(_est(data, "B25031", col))
+        moe = _err(data, "B25031", col)
+        cells[name] = RentCell(estimate=est, moe=None if moe is None else round(moe, 1),
+                               cv=_cv(est, moe))
+    return cells
 
 
 def _parse_age(data: dict) -> tuple[list[DistributionBucket], float | None]:
@@ -375,6 +395,7 @@ async def fetch_census_tract(
             "city_median_income": city_median, "county_median_income": county_median,
         }
         cv = {k: c for k, m in moe.items() if (c := _cv(estimates.get(k), m)) is not None}
+        rent_by_bedroom = rent_cells(tract_data)
         release = payload.get("release") or {}
         years = release.get("years")
         acs_period = years.replace("-", "–") if isinstance(years, str) and years else None
@@ -399,6 +420,7 @@ async def fetch_census_tract(
             acs_release=release.get("id") if isinstance(release.get("id"), str) else None,
             moe=moe,
             cv=cv,
+            rent_by_bedroom=rent_by_bedroom,
             age_distribution=age_dist,
             income_distribution=income_dist,
             race_distribution=race_dist,

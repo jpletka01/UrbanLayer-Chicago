@@ -32,7 +32,7 @@ Each provenance entry answers five questions. The schema fields marked **new** a
 |---|---|---|
 | 1. Who published it? | `tier`, `source_id`, `source` (publisher + dataset) | `source_id` is the join key into the data-health registry (§5) |
 | 2. How old is it? | `as_of`, **`as_of_basis`**, **`period`**, `effective_date`, `query_date`, **`age_days`** | `as_of_basis` says what the date means (below) |
-| 3. How much does it cover? | **`scope`**, **`geography`**, **`coverage`** `{n, share, universe, unit}` | `scope` ∈ `parcel` · `address` · `radius` · `tract` · `community_area` · `city` · `county`. `coverage: null` on a parcel record means "not applicable", not "unknown" |
+| 3. How much does it cover? | **`scope`**, **`geography`**, **`coverage`** `{n, share, universe, unit}` | `scope` ∈ `parcel` · `address` · `radius` · `tract` · `puma` · `community_area` · `city` · `county`. `coverage: null` on a parcel record means "not applicable", not "unknown" |
 | 4. How precise is it? | **`precision`** `{moe, moe_level: 0.90, cv}`, or for AI readings `{agreement: {n, agree}}` | `null` means none is published, and the page says so |
 | 5. How was it made? | **`method_key`**, **`method_params`**, **`method`** (English fallback) | Same id/params/text pattern as coverage notes, so the UI translates by key |
 | Derived | **`confidence`** ∈ `standard` · `low` · `withheld`, plus **`confidence_reasons`** | Computed once in `provenance.py`. Every surface reads it; none recomputes it |
@@ -79,6 +79,7 @@ The vocabulary is fixed. New keys go through a WS0 review.
 - SE = MOE ÷ 1.645; CV = SE ÷ estimate. Proportions use the Census ratio formula from the ACS Handbook, unit-tested against its published examples.
 - A top-coded median (B19013's $250,001) is shown as "$250,000+" with no CV.
 - Keep the release id and MOE the API returns. Never discard them.
+- **An aggregated median with a margin we derived** (community-area rent, WS4 PR2) carries `precision` with `moe_method: acs_handbook_median` (the Handbook's standard error of an interpolated median, design factor 1.5 until B25063's published factor is looked up) and goes through the CV rules like any ACS figure; the bracket-median method rule (`low`) applies only when no margin can be derived. A `puma` scope names a PUMA, a union of tracts that does not nest in community areas; it is never labeled as a community area's figure.
 
 ### Example entries
 ```jsonc
@@ -213,3 +214,5 @@ The standard is adopted now; the code catches up in order:
 Community-area poverty, unemployment, income and rent come back only through a tract → community-area aggregation with MOE (the rents/market workstream). Until then the Profile shows no demographics.
 
 **WS4 PR1 (2026-10-28):** the tract -> community-area aggregation was tested (`eval/rent_method.py`, decision Item 33): overall community-area rent can be rebuilt from summed bracket counts with a derived margin (75 of 77 areas `standard`); rent by bedroom cannot (the table tops out at "$1,500 or more"), so bedrooms come only from the Census's published tract and PUMA medians. Nothing is served yet.
+
+**WS4 PR2 (2026-10-28):** current official rent is served: the community-area overall median (a bracket median with a derived Handbook margin, `moe_method: acs_handbook_median`, CV rules) and Census-published bedroom medians for the parcel's tract, else its PUMA (scope `puma`). Facts `area.rent.*`; the Profile, chat and sources footer say period and margin; the report shows none. See decision Item 34.

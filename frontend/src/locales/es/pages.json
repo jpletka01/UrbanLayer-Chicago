@@ -505,7 +505,10 @@
       "compsTile": "Precio mediano de ventas de mercado de parcelas de clase similar en ¼ de milla durante los últimos 3 años.",
       "walkScore": "Walk Score (0–100) califica qué tan caminables son las diligencias diarias en esta ubicación. 90+ significa que rara vez se necesita auto.",
       "divvy": "Divvy es el sistema de bicicletas compartidas de Chicago. {{count}} estación(es) en servicio a menos de {{radius}} mi de esta parcela; los anclajes fuera de servicio no se cuentan.",
-      "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación."
+      "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación.",
+      "rentArea": "Median monthly gross rent (rent plus utilities) of the community area's renter households, summed from Census rent brackets for each tract in the area. A survey estimate, not a count; there is no area figure by bedroom count.",
+      "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
+      "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods."
     },
     "walkDesc": {
       "walker_s_paradise": "Paraíso del peatón",
@@ -551,6 +554,26 @@
       "mapChecked": "The City's landmark map didn't show this parcel as a landmark when checked, so the overlays on this page may be missing a review requirement.",
       "mapUnchecked": "The City's landmark map couldn't be checked today, so the overlays on this page may be missing a review requirement.",
       "review": "A designated Chicago Landmark needs the Commission on Chicago Landmarks' written approval before a permit to alter, demolish or build can issue (§2-120-740)."
+    },
+    "rent": {
+      "title": "Rent",
+      "scope": "Census ACS {{period}} 5-year estimates, not listing prices",
+      "scopeNoPeriod": "Census ACS 5-year estimates, not listing prices",
+      "perMonth": "/mo",
+      "communityArea": "Area median",
+      "tract": "Tract median",
+      "1_bedroom": "1 bedroom",
+      "2_bedrooms": "2 bedrooms",
+      "3_bedrooms": "3 bedrooms",
+      "tractSub": "This census tract",
+      "pumaSub": "A wider area (a PUMA), not this tract",
+      "notPublished": "The Census publishes no usable median for this tract or its PUMA",
+      "pumaUnchecked": "Couldn't check the PUMA's figure today",
+      "areaUnchecked": "Couldn't check today",
+      "fallback": {
+        "suppressed": "The Census publishes no median for this tract, so this is the PUMA's.",
+        "low_confidence": "This tract's median is too uncertain to show, so this is the PUMA's."
+      }
     }
   },
   "discovery": {

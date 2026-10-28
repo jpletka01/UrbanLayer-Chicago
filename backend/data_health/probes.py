@@ -771,8 +771,8 @@ async def probe_kit_weekly(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
 
 
 async def probe_artifact_sidecar(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
-    """A committed artifact dated by its ``.meta.json`` sidecar (transit stations), plus the CTA feed's own
-    Last-Modified as context for "is a rebuild due"."""
+    """A committed artifact dated by its ``.meta.json`` sidecar (transit stations, rent by community area); for
+    transit, the CTA feed's own Last-Modified as context for "is a rebuild due"."""
     root = Path(__file__).resolve().parents[2]
     meta_path = (root / spec.locator).with_suffix(".meta.json")
     try:
@@ -781,7 +781,7 @@ async def probe_artifact_sidecar(spec: SourceSpec, ctx: ProbeContext) -> ProbeRe
     except (OSError, ValueError, KeyError):
         return ProbeResult(findings=[Finding("warn", f"{meta_path.name} is missing or has no built_at date")])
     res = ProbeResult(content=built, info=f"built {built}")
-    feed = BY_ID.get("chi.cta.gtfs")
+    feed = BY_ID.get("chi.cta.gtfs") if spec.id == "artifact.transit_stations" else None
     if feed is not None:
         try:
             modified = parse_last_modified((await ctx.head(feed.locator)).headers)

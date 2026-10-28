@@ -466,7 +466,8 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="census.reporter.acs", name="ACS 5-year tract data (via Census Reporter)", publisher="US Census Bureau",
         tier="official_estimate", kind="api", locator="https://api.censusreporter.org/1.0", probe="census_release",
         owner_modules=("backend/retrieval/neighborhood/census_tract.py",), surfaces=("profile", "chat", "report"),
-        fact_keys=("area.tract",), severity="standard", cadence_days=365,
+        fact_keys=("area.tract", "area.rent.1_bedroom", "area.rent.2_bedrooms", "area.rent.3_bedrooms"),
+        severity="standard", cadence_days=365,
         content=Content("release_year"), warn_days=800, alarm_days=1200,
         note="Content date = the end year of the newest release. The page's period label is read from the data.",
     ),
@@ -592,6 +593,15 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         fact_keys=("neighborhood.transit",), cadence_days=180, warn_days=180, alarm_days=365,
         note="Build date from transit_stations.meta.json (written by the build script). The probe also notes when the "
              "CTA feed was last modified, so a rebuild is visible as due.",
+    ),
+    SourceSpec(
+        id="artifact.rent_by_area", name="Overall rent by community area (committed)", publisher="UrbanLayer from US Census Bureau ACS",
+        tier="official_estimate", kind="artifact", locator="ingestion/data/rent_by_area.json", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/neighborhood/rent.py", "ingestion/build_rent_artifact.py"),
+        surfaces=("profile", "chat", "report"), fact_keys=("area.rent.community_area",),
+        cadence_days=365, warn_days=400, alarm_days=730,
+        note="Median gross rent (B25063) rebuilt from summed tract bracket counts, with the ACS Handbook margin. Build date "
+             "from rent_by_area.meta.json; a new ACS 5-year release each December makes a rebuild due.",
     ),
     SourceSpec(
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",

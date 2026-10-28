@@ -53,6 +53,8 @@ def entries_for_report(report, ai_meta: dict | None = None, query_date: str | No
         context=ctx, zone_definition=zd, resolved_pin=report.resolved_pin,
         resolved_confidence=report.resolved_confidence, query_date=qd, comparables=report.comparables,
     )
+    # The report shows no rent (WS4 PR2 is Profile and chat only), so it must not list rent sources as used.
+    out = {k: v for k, v in out.items() if not k.startswith("area.rent.")}
     s = report.zoning_standards
     if s is None or ai_meta is None or s.extraction_confidence not in ("high", "medium"):
         return out

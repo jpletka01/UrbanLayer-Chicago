@@ -1880,3 +1880,41 @@ PR1 is a method proof. It serves nothing, changes no threshold in `provenance.py
 | Eval tests | 81 to 92 | `python -m pytest eval/tests -q` |
 
 **Not measured:** the Census's published design factor for B25063; any cross-check of a community-area figure against an independent publisher (for example CMAP's community snapshots); the 2015-2019 trend and the 2010-to-2020 tract change; HUD SAFMR; the Assessor-sales price trend; how much of the Profile's parcels fall in a tract with a `standard` bedroom median (it is a tract count, not a parcel-weighted share); production behaviour (nothing deployed).
+
+## Item 34 (WS4 PR2): current official rent on the Profile and in chat (2026-10-28)
+
+**Status (2026-10-28):** [PR #123](https://github.com/jpletka01/UrbanLayer-Chicago/pull/123) open against `main`, all CI checks green (test, lint, CodeQL; deploy skipped on a PR), mergeable; merge awaits Jack's approval because a merge deploys production. After the merge, verify `/api/scorecard` on the live site carries `neighborhood.rent` and the `area.rent.*` provenance entries, not just git HEAD. Next: PR3 (the Assessor's modeled rent as its own series), then PR4 trends and PR5 HUD SAFMR plus a revenue line (neither approved).
+
+**Open decisions carried forward:** B25063's design factor (1.5 until Jack permits the Census file download); free vs gated Assessor series; display of an Assessor coverage above 100% (recommended: "not comparable", withheld with the reason); HUD SAFMR token or file; no listing-based asking rents.
+
+PR2 serves Item 33's findings. The Profile's Neighborhood module gains a **Rent** block (free, no gate) and chat carries the same figures under the confidence standard. Nothing from a listing, no revenue line, no Assessor series, no trend; the $25 report shows no rent and does not list rent sources.
+
+**Decision 1: three figures, never blended.** (a) the community area's overall median, from a committed artifact; (b) the parcel's tract overall median (already fetched, newly shown); (c) the Census's published median for 1, 2 and 3 bedrooms for the parcel's tract, else its PUMA. *Alternatives:* a community-area figure by bedroom count (rejected in Item 33, the table tops out at "$1,500 or more"); a PUMA-first display (a wider area when the tract has its own figure); showing the studio and 4+ bedroom cells (only 1-3 were proved at PUMA level, 20 of 20). *Why:* each figure names its own geography and release, so a reader can see which published series they are looking at.
+
+**Decision 2: the committed artifact (`ingestion/data/rent_by_area.json`, 26 KB, `ingestion.build_rent_artifact`).** 77 community-area medians with the Handbook margin (design factor 1.5) plus a tract-to-PUMA lookup for 790 tracts. Production never needs the Census API key. *Alternative:* build at request time from 790 tract rows (a key in production, a 1-minute fetch). Needs `.gitignore`, `.dockerignore`, a Dockerfile `COPY` for the file and its `.meta.json` sidecar, a data-health entry (`artifact.rent_by_area`, sidecar probe) and an age check (warn 400 days, alarm 730; ACS 5-year releases arrive each December). A missing or unreadable artifact raises and is named "couldn't check"; it is never cached or shown as "no rent".
+
+**Decision 3: tract else PUMA, decided by the same CV rule that decides display.** A tract bedroom cell is used when it is `standard`; otherwise the PUMA's, and the Profile says which and why ("The Census publishes no median for this tract" / "too uncertain to show"). A PUMA request names the 5-year release: Census Reporter's `latest` answers a PUMA from the **2024 1-year** release (probe: `79500US1703159`, 1-year margin ±$89 vs 5-year ±$35 on the total), so a response from any other release is an error. A cell neither geography can support shows "—" and says nobody publishes a usable figure; a PUMA request that failed says "couldn't check the PUMA's figure today", never "none". *Alternative:* derive the PUMA from the parcel at request time via Parcel Universe (a Socrata call per parcel); the committed tract lookup needs none.
+
+**Decision 4 (WS0 change, approved by Jack in the PR2 plan): a derived margin follows the CV rules.** An aggregated median with a margin we derived carries `precision.moe_method = acs_handbook_median` and goes through the ordinary CV thresholds (fade above 30%, withhold above 50%); a median with no derivable margin stays `low` under the bracket-median rule. The method key stays `bracket_median`; tier is `our_calculation` on a basis of `official_estimate`. New scope `puma` (a union of tracts that does not nest in community areas, never labeled a community area). The caption says "Summed from Census rent brackets", not "estimated from income brackets". Guide updated.
+
+**Decision 5: design factor 1.5, not yet looked up.** B25063's published design factor needs a file download (not permitted without Jack's say-so), so the cautious end of Item 33's measured range is used. *Revisit when* the factor is read from the Census's design-factor file: a lower factor un-fades areas 12, 54 and 55; the artifact is rebuilt with the one constant.
+
+**Decision 6: chat gating.** `provenance._clear_figure` removes a withheld rent figure from the context on a copy (retrieval results are cached); `withheld_figures` carries the reason; prompt rule 38 names a PUMA as a PUMA, forbids a community-area rent by bedroom count, and says a null bedroom estimate means the Census publishes none. The sources footer names the rent sources and the derived margin.
+
+**Revisit if** the 66% fallback rate (below) makes the PUMA the usual source and the tract figure the exception, which would argue for leading with the PUMA; the Census adds brackets above $1,500; or HUD SAFMR (PR3 or later) gives a second official series that should sit beside these.
+
+**Numbers** (measured 2026-10-28, ACS 2020-2024, Parcel Universe 2026)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Artifact: community areas / tracts / PUMAs | 77 / 790 / 20 | `PYTHONPATH=. python -m ingestion.build_rent_artifact` (needs `CENSUS_API_KEY`) |
+| Overall rent by area at design factor 1.5, `standard` / `low` / `withheld` | 72 / 3 / 2 (areas 12, 54, 55 low; 37, 47 withheld) | `provenance.confidence_state` over `rent_by_area.json` |
+| Tracts where 1, 2 and 3 bedrooms are all `standard` | 271 of 790 (34%) | per-tract B25031 judged by the CV rule |
+| Tracts needing the PUMA for at least one bedroom count | 519 of 790 (66%): 307 for one count, 161 for two, 51 for all three | same |
+| PUMAs with a `standard` 5-year median, 1 / 2 / 3 bedrooms | 20 / 20 / 20 | same |
+| Profile check, 1601 N Milwaukee (tract 8310, West Town) | area $2,054 ±$159; tract $2,435 ±$220; 1/2/3 BR $2,336 / $2,373 / $3,273, all tract, all `standard` | `/api/scorecard?address=...` |
+| Profile check, 6565 N Glenwood (tract 105.03, Rogers Park) | area $1,338 ±$102; 1 BR from the PUMA $1,296 ±$26 (tract too uncertain); 2 and 3 BR tract | same, `?pin=11323180030000` |
+| Backend tests (not integration) / eval tests / vitest | 2,389 / 117 / 797 | `make test` parts |
+| Phone overflow audit | 43 passed, 12 skipped, 0 failed | `npm run test:mobile` |
+
+**Not measured:** a parcel-weighted share (the 66% is a tract count); the B25063 design factor; a cross-check of an area figure against CMAP's community snapshots; a real chat answer (production credits; nothing here calls a model); production behaviour (nothing deployed).

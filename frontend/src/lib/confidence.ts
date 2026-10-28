@@ -191,7 +191,7 @@ export function captionParts(entry: Provenance | null | undefined, t: TFunction,
 
   // Where: an area figure says which area.
   if (!opts.omit?.includes("scope") && entry.geography && entry.scope
-    && ["tract", "community_area", "city", "county"].includes(entry.scope)) {
+    && ["tract", "puma", "community_area", "city", "county"].includes(entry.scope)) {
     parts.push(entry.geography);
   }
 
@@ -205,13 +205,23 @@ export function captionParts(entry: Provenance | null | undefined, t: TFunction,
     parts.unshift(entry.source);
   } else if (entry.method_key && !SILENT_METHODS.has(entry.method_key)
     && !(entry.method_key === "calculation" && parts.length > 0)) {
-    parts.unshift(t(`confidence.method.${entry.method_key}`, { defaultValue: entry.method ?? "" }));
+    parts.unshift(methodText(entry, t));
   }
 
   if (ai && reasons.includes("ai_unverified")) parts.push(t("confidence.notVerified"));
   const lowReasonsOnlyAi = reasons.every((r) => r === "ai_unverified" || r === "old_source");
   const lead = state === "low" && !(ai && lowReasonsOnlyAi) ? t("confidence.state.low") : null;
   return { state, visible: true, ai, lead, withheld: null, parts };
+}
+
+/** The method in words. A margin we derived ourselves names how (`precision.moe_method`): a rent median
+    summed from Census rent brackets is not "estimated from income brackets". */
+function methodText(entry: Provenance, t: TFunction): string {
+  const derived = entry.precision?.moe_method;
+  if (entry.method_key === "bracket_median" && derived) {
+    return t(`confidence.moeMethod.${derived}`, { defaultValue: entry.method ?? "" });
+  }
+  return t(`confidence.method.${entry.method_key}`, { defaultValue: entry.method ?? "" });
 }
 
 export interface SourceBullet { field: string; text: string }
@@ -262,7 +272,7 @@ export function sourceBullets(entry: Provenance | null | undefined, t: TFunction
 
   if (entry.method_key) {
     out.push(t("confidence.field.method", {
-      value: t(`confidence.method.${entry.method_key}`, { defaultValue: entry.method ?? "" }),
+      value: methodText(entry, t),
     }));
   }
   return out;
