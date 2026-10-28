@@ -110,11 +110,11 @@ The vocabulary is fixed. New keys go through a WS0 review.
 
 | State | Rule | Display |
 |---|---|---|
-| `withheld` | coverage share < **10%**, or n < **30**, or CV > **50%** | The value is replaced by "—" and a sentence saying why. It is never silently dropped. It is also removed before it reaches the chat model or the PDF |
+| `withheld` | coverage share < **10%**, or coverage share > **100%** (`not_comparable`), or n < **30**, or CV > **50%** | The value is replaced by "—" and a sentence saying why. It is never silently dropped. It is also removed before it reaches the chat model or the PDF |
 | `low` | coverage share < **25%**, or CV > **30%**, or a method rule below | The value is faded, and its caption starts with "Low confidence ·". Bars and fills are hatched |
 | `standard` | otherwise | Normal |
 
-The constants live in one place, `provenance.py`: `HIDE_COVERAGE_BELOW = 0.10`, `FADE_COVERAGE_BELOW = 0.25`, `FADE_CV_ABOVE = 0.30`, `HIDE_CV_ABOVE = 0.50`, `HIDE_N_BELOW = 30`. Boundary tests pin them.
+The constants live in one place, `provenance.py`: `HIDE_COVERAGE_BELOW = 0.10`, `FADE_COVERAGE_BELOW = 0.25`, `FADE_CV_ABOVE = 0.30`, `HIDE_CV_ABOVE = 0.50`, `HIDE_N_BELOW = 30`, `HIDE_COVERAGE_ABOVE = 1.0`. Boundary tests pin them.
 
 **Where each rule applies:**
 - **n < 30 applies only to sample-based area statistics:** Assessor modeled rents, Discovery benchmarks, any "median of a sample". It never applies to lists where every record is shown.
@@ -125,7 +125,7 @@ The constants live in one place, `provenance.py`: `HIDE_COVERAGE_BELOW = 0.10`, 
   - An AI-read value is `low` (reason `ai_unverified`) until it is corroborated, either by a deterministic check that agrees or by a measured agreement of **≥ 95% on ≥ 30** hand-checked items. This covers report setbacks today and ordinance districts and filings later. The report keeps the envelope map, with its caption.
 - **Stricter existing gates stay.** The area benchmark already requires n ≥ 50.
 
-Reason codes (for `confidence_reasons`): `low_coverage`, `small_sample`, `high_cv`, `bracket_median`, `ai_unverified`, `old_source` (dataset more than 24 months old), `stale` (data health reports the source `warn`/`alarm`).
+Reason codes (for `confidence_reasons`): `low_coverage`, `not_comparable` (a share above `HIDE_COVERAGE_ABOVE` = 100%: the source's universe is not the one it is measured against; WS4 PR3), `small_sample`, `high_cv`, `bracket_median`, `ai_unverified`, `old_source` (dataset more than 24 months old), `stale` (data health reports the source `warn`/`alarm`).
 
 ## 4. Display rules
 
@@ -216,3 +216,5 @@ Community-area poverty, unemployment, income and rent come back only through a t
 **WS4 PR1 (2026-10-28):** the tract -> community-area aggregation was tested (`eval/rent_method.py`, decision Item 33): overall community-area rent can be rebuilt from summed bracket counts with a derived margin (75 of 77 areas `standard`); rent by bedroom cannot (the table tops out at "$1,500 or more"), so bedrooms come only from the Census's published tract and PUMA medians. Nothing is served yet.
 
 **WS4 PR2 (2026-10-28):** current official rent is served: the community-area overall median (a bracket median with a derived Handbook margin, `moe_method: acs_handbook_median`, CV rules) and Census-published bedroom medians for the parcel's tract, else its PUMA (scope `puma`). Facts `area.rent.*`; the Profile, chat and sources footer say period and margin; the report shows none. See decision Item 34.
+
+**WS4 PR3 (2026-10-28):** the Assessor's modeled apartment income is served as its own series, `area.rent.assessor_model` (tier C, `government_model`, scope `community_area`, coverage = modeled units over ACS renter households with cash rent, n = buildings, `area_sample`). It is never merged with the ACS rents and has no bedroom figure. It adds the one threshold above: coverage above 100% is withheld as `not_comparable`. See decision Item 35.

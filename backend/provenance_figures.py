@@ -378,6 +378,19 @@ def _rent_figures(rent, put, qd: str, ca_name: str | None) -> None:
             inputs=["census.reporter.acs"], basis_tier="official_estimate",
             note=(f"Rebuilt from the rent brackets of {ca.households:,} renter households with cash rent (ACS {ca.acs_period}); "
                   f"the margin is the ACS Handbook's for an interpolated median (design factor {ca.design_factor})."))
+    am = rent.assessor_model
+    if am is not None and am.median_per_unit_month is not None:
+        # The Assessor's model is its own series (a government model, not a Census survey): the entry names the
+        # dataset and the reassessment year, never an ACS period, and its coverage is the modeled units' share of
+        # the area's renter households (n = the buildings the median rests on, read by the n < 30 rule).
+        put("area.rent.assessor_model", am.median_per_unit_month, geography=ca_name, period=f"{am.year} {am.cycle}",
+            dates={"as_of": am.as_of, "as_of_basis": "tax_year"},
+            coverage={"n": am.priced, "share": am.coverage, "universe": "renter households with cash rent",
+                      "unit": "buildings", "sample": "area_sample"},
+            method_params={"year": am.year, "dataset": am.dataset},
+            note=(f"The Assessor's model of potential gross income (before vacancy) per unit per month, median of "
+                  f"{am.priced:,} apartment buildings ({am.units:,} units) in the {am.year} {am.cycle}. "
+                  "Not an asking or achieved rent."))
     for b in rent.bedrooms:
         if b.estimate is None:
             continue
@@ -563,6 +576,8 @@ def expected_fact_ids(payload: dict) -> set[str]:
     rent = p("neighborhood.rent") or {}
     if (rent.get("community_area") or {}).get("median") is not None:
         want.add("area.rent.community_area")
+    if (rent.get("assessor_model") or {}).get("median_per_unit_month") is not None:
+        want.add("area.rent.assessor_model")
     for b in rent.get("bedrooms") or []:
         if b.get("estimate") is not None:
             want.add(f"area.rent.{b['bedrooms']}")

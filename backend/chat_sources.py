@@ -231,6 +231,9 @@ def _area_lines(provenance: dict[str, dict]) -> list[str]:
             bits.append("margins of error at the 90% level")
         if any((e.get("precision") or {}).get("moe_method") == "acs_handbook_median" for e in shown):
             bits.append("overall rent rebuilt from Census bracket counts, margin by the ACS Handbook method")
+        if any(e.get("method_key") == "government_model" for e in shown):
+            year = next((str((e.get("method_params") or {}).get("year")) for e in shown if (e.get("method_params") or {}).get("year")), None)
+            bits.append(f"the Assessor's modeled income{f' from its {year} city reassessment' if year else ''}, not a market rent")
         if any("bracket_median" in (e.get("confidence_reasons") or []) for e in shown):
             bits.append("income median estimated from brackets, no margin of error published")
         lines.append(f"- **{name}**" + (f": {'; '.join(bits)}" if bits else ""))

@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { RentBlock } from "./RentBlock";
 import { ProvenanceProvider } from "../../contexts/ProvenanceContext";
 import type { Provenance } from "../../lib/api";
-import type { BedroomRent, NeighborhoodSummary, RentEvidence } from "../../lib/types";
+import type { AssessorModelRent, BedroomRent, NeighborhoodSummary, RentEvidence } from "../../lib/types";
 
 afterEach(cleanup);
 
@@ -115,5 +115,68 @@ describe("RentBlock", () => {
     render(<RentBlock data={hood(rent())} />);
     expect(screen.getByTestId("rent-tile-community-area").textContent).toContain("$2,054");
     expect(screen.queryAllByTestId("confidence-caption").length).toBe(0);
+  });
+
+  describe("the Assessor model (a separate series)", () => {
+    const model = (over: Partial<AssessorModelRent> = {}): AssessorModelRent => ({
+      community_area: 24, buildings: 427, priced: 412, units: 14210, households: 25407, coverage: 0.559,
+      median_per_unit_month: 2300, year: "2024", cycle: "city reassessment", as_of: "2024-12-31", dataset: "csik-bsws", ...over,
+    });
+    const modelEntry = (over: Partial<Provenance> = {}) => entry({
+      tier: "official_estimate", method_key: "government_model", method: "A government agency's model", scope: "community_area",
+      geography: "West Town", period: "2024 city reassessment", as_of: "2024-12-31", as_of_basis: "tax_year", age_days: 667,
+      precision: undefined, source_id: "artifact.assessor_model_by_area",
+      coverage: { n: 412, share: 0.559, universe: "renter households with cash rent", unit: "buildings", sample: "area_sample" }, ...over,
+    });
+    const withModel = (m: AssessorModelRent | null, extra: Partial<RentEvidence> = {}) => rent({ assessor_model: m, ...extra });
+
+    it("sits in its own section, named and dated, apart from the Census tiles", () => {
+      renderBlock(hood(withModel(model())), { ...prov, "area.rent.assessor_model": modelEntry() });
+      const acs = within(screen.getByTestId("rent-acs"));
+      const sec = within(screen.getByTestId("rent-assessor"));
+      expect(sec.getByText("Assessor model")).toBeTruthy();
+      expect(sec.getByText(/2024 city reassessment model of apartment income, a separate series from the Census rents above\. Not an asking or achieved rent\./)).toBeTruthy();
+      const tile = within(screen.getByTestId("rent-tile-assessor-model"));
+      expect(tile.getByText(/\$2,300/)).toBeTruthy();
+      expect(tile.getByText("Median of 412 apartment buildings, before vacancy")).toBeTruthy();
+      const cap = tile.getByTestId("confidence-caption").textContent!;
+      expect(cap).toContain("Government model");
+      expect(cap).toContain("2024 city reassessment");
+      expect(cap).toContain("56%");
+      expect(cap).not.toMatch(/±|Census/);
+      // the Census section never contains the Assessor tile, and has no bedroom-style Assessor figure
+      expect(acs.queryByTestId("rent-tile-assessor-model")).toBeNull();
+      expect(screen.getAllByTestId(/^rent-tile-/).filter((n) => /assessor/.test(n.getAttribute("data-testid")!)).length).toBe(1);
+    });
+
+    it("withholds an over-100% coverage as 'not comparable', with the reason, never silently", () => {
+      const e = modelEntry({ confidence: "withheld", confidence_reasons: ["not_comparable"], coverage: { n: 67, share: 1.24, universe: "renter households with cash rent", unit: "buildings", sample: "area_sample" } });
+      renderBlock(hood(withModel(model({ coverage: 1.24, priced: 67, median_per_unit_month: 2471 }))), { ...prov, "area.rent.assessor_model": e });
+      const tile = within(screen.getByTestId("rent-tile-assessor-model"));
+      expect(tile.queryByText(/\$2,471/)).toBeNull();
+      expect(tile.getByText("—")).toBeTruthy();
+      expect(tile.queryByText(/Median of/)).toBeNull();   // no description of a figure we are not showing
+      expect(tile.getByText("Not shown: the model counts 124% of this area's renter households, so it is not a comparable set of homes.")).toBeTruthy();
+    });
+
+    it("says a small sample is withheld in buildings", () => {
+      const e = modelEntry({ confidence: "withheld", confidence_reasons: ["small_sample"], coverage: { n: 12, share: 0.5, unit: "buildings", sample: "area_sample" } });
+      renderBlock(hood(withModel(model({ priced: 12 }))), { ...prov, "area.rent.assessor_model": e });
+      expect(screen.getByText("Not shown: only 12 buildings (needs 30).")).toBeTruthy();
+    });
+
+    it("says an area with no modeled apartments has none, and a failed read was not checked", () => {
+      renderBlock(hood(withModel(model({ buildings: 0, priced: 0, units: 0, coverage: 0, median_per_unit_month: null }))));
+      expect(within(screen.getByTestId("rent-tile-assessor-model")).getByText("The Assessor's model includes no apartment buildings in this area")).toBeTruthy();
+      cleanup();
+      renderBlock(hood(withModel(null, { unchecked: ["assessor_model"] })));
+      expect(within(screen.getByTestId("rent-tile-assessor-model")).getByText("Couldn't check today")).toBeTruthy();
+    });
+
+    it("shows nothing for the series when the response has none (an older stored answer)", () => {
+      renderBlock(hood(withModel(null)));
+      expect(screen.queryByTestId("rent-assessor")).toBeNull();
+      expect(screen.getByTestId("rent-acs")).toBeTruthy();
+    });
   });
 });

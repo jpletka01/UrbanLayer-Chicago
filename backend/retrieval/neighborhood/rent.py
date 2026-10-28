@@ -9,6 +9,9 @@ Three figures, each from the Census Bureau's ACS 5-year release, none combined w
 * when the tract's figure for a bedroom count is suppressed or too uncertain, the parcel's **PUMA** median for
   that count (B25031, one more Census Reporter request), named as the PUMA.
 
+The Assessor's modeled apartment income (``assessor_model``, from ``assessor_model_by_area.json``) is a separate
+series with its own coverage; it is never combined with the ACS figures above.
+
 There is no community-area figure by bedroom count: the only table that crosses bedrooms with rent brackets
 tops out at "$1,500 or more" (decision Item 33). Whether a figure is shown, faded or withheld is decided by
 ``provenance.confidence_state``; this module only uses the same rule to pick tract over PUMA.
@@ -24,13 +27,14 @@ from pathlib import Path
 import httpx
 
 from backend.config import get_settings
-from backend.models import BedroomRent, CensusTractDemographics, CommunityAreaRent, RentCell, RentEvidence
+from backend.models import AssessorModelRent, BedroomRent, CensusTractDemographics, CommunityAreaRent, RentCell, RentEvidence
 from backend.retrieval.cache import TTLCache
 from backend.retrieval.neighborhood.census_tract import _cv, rent_cells
 
 log = logging.getLogger(__name__)
 
 ARTIFACT_FILENAME = "rent_by_area.json"
+ASSESSOR_FILENAME = "assessor_model_by_area.json"
 # What the Profile shows. The studio and 4+ bedroom cells are published too, but the method proof only
 # measured these three at PUMA level (20 of 20 standard).
 BEDROOM_GROUPS = ("1_bedroom", "2_bedrooms", "3_bedrooms")
@@ -38,6 +42,7 @@ BEDROOM_GROUPS = ("1_bedroom", "2_bedrooms", "3_bedrooms")
 _puma_cache = TTLCache(ttl_seconds=86400, maxsize=64, name="census_puma_rent")
 _lock = threading.Lock()
 _artifact: dict | None = None
+_assessor: dict | None = None
 
 
 class RentArtifactError(RuntimeError):
@@ -63,11 +68,27 @@ def load_artifact() -> dict:
         return _artifact
 
 
-def reset_artifact() -> None:
-    """Forget the loaded artifact (tests)."""
-    global _artifact
+def load_assessor_artifact() -> dict:
+    """The Assessor-model artifact, read once per process. Raises ``RentArtifactError``; caches nothing on failure."""
+    global _assessor
     with _lock:
-        _artifact = None
+        if _assessor is None:
+            path = get_settings().data_dir / ASSESSOR_FILENAME
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(data.get("community_areas"), dict) or not (data.get("assessor") or {}).get("year"):
+                    raise ValueError("missing community_areas / assessor.year")
+            except (OSError, ValueError) as exc:
+                raise RentArtifactError(f"{ASSESSOR_FILENAME} is unreadable: {exc}") from exc
+            _assessor = data
+        return _assessor
+
+
+def reset_artifact() -> None:
+    """Forget the loaded artifacts (tests)."""
+    global _artifact, _assessor
+    with _lock:
+        _artifact = _assessor = None
 
 
 def community_area_rent(community_area: int) -> CommunityAreaRent | None:
@@ -83,6 +104,31 @@ def community_area_rent(community_area: int) -> CommunityAreaRent | None:
         cv=_cv(median, moe), top_coded=bool(row.get("top_coded")),
         moe_method=method.get("key") or "acs_handbook_median", design_factor=method.get("design_factor"),
         acs_period=acs.get("period"), acs_release=acs.get("release"), period_end=acs.get("period_end"),
+    )
+
+
+def assessor_model_rent(community_area: int) -> AssessorModelRent | None:
+    """The Assessor's modeled apartment income for a community area (its own series, never merged with the ACS).
+
+    The artifact lists every area the Assessor models apartments in; an area with a household count but no row
+    (Fuller Park) is a real finding and comes back with zero buildings. None only for an area neither artifact knows."""
+    art = load_assessor_artifact()
+    meta = art["assessor"]
+    row = art["community_areas"].get(str(community_area))
+    if row is None:
+        if str(community_area) not in load_artifact()["community_areas"]:
+            return None
+        row = {}
+    households = row.get("households")
+    if households is None:
+        households = (load_artifact()["community_areas"].get(str(community_area)) or {}).get("households")
+    units = int(row.get("units") or 0)
+    return AssessorModelRent(
+        community_area=community_area, buildings=int(row.get("buildings") or 0), priced=int(row.get("priced") or 0),
+        units=units, households=households, coverage=round(units / households, 4) if households else None,
+        median_per_unit_month=row.get("median_pgi_per_unit_month"), year=str(meta["year"]),
+        cycle=meta.get("cycle") or "city reassessment", as_of=meta.get("as_of") or f"{meta['year']}-12-31",
+        dataset=meta.get("dataset") or "csik-bsws",
     )
 
 
@@ -184,6 +230,11 @@ async def rent_evidence(
         ev.unchecked.append("community_area_rent")
     if ev.community_area is not None:
         ev.acs_period, ev.acs_release = ev.community_area.acs_period, ev.community_area.acs_release
+    try:
+        ev.assessor_model = assessor_model_rent(community_area) if community_area is not None else None
+    except RentArtifactError as exc:
+        log.error("%s", exc)
+        ev.unchecked.append("assessor_model")
 
     if tract is None:
         ev.unchecked.append("tract_rent")

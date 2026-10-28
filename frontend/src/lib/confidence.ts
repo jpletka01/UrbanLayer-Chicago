@@ -48,7 +48,7 @@ function sourceLabel(entry: Provenance, t: TFunction): string {
 /** Methods that need no words when the figure is a plain record or published text. */
 const SILENT_METHODS: ReadonlySet<string> = new Set(["recorded", "published_text", "code_table"]);
 
-const WITHHOLD_REASONS = ["small_sample", "low_coverage", "high_cv"] as const;
+const WITHHOLD_REASONS = ["not_comparable", "small_sample", "low_coverage", "high_cv"] as const;
 
 export interface CaptionOpts {
   /** How to print a margin of error: dollars, percentage points, or a bare count. */
@@ -128,6 +128,9 @@ function withheldSentence(entry: Provenance, t: TFunction): string {
   if (reason === "small_sample") {
     const min = cov.sample === "comps" ? DISPLAY_THRESHOLDS.compsHideNBelow : DISPLAY_THRESHOLDS.hideNBelow;
     return t("confidence.withheld.small_sample", { n: cov.n ?? 0, unit, min });
+  }
+  if (reason === "not_comparable") {
+    return t("confidence.withheld.not_comparable", { pct: Math.round((cov.share ?? 0) * 100) });
   }
   if (reason === "low_coverage") {
     return t("confidence.withheld.low_coverage", {

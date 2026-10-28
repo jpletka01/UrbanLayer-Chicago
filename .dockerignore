@@ -12,6 +12,8 @@ ingestion/data/
 !ingestion/data/chrs_orange_red.json.gz
 !ingestion/data/rent_by_area.json
 !ingestion/data/rent_by_area.meta.json
+!ingestion/data/assessor_model_by_area.json
+!ingestion/data/assessor_model_by_area.meta.json
 chicago-il-*.html
 eval/
 test-results/

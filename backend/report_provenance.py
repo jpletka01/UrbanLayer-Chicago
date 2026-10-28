@@ -128,6 +128,8 @@ def _withheld_text(e: dict, t: T) -> str:
     unit = _unit(t, cov.get("unit"), cov.get("n", 0))
     if "small_sample" in reasons:
         return t("conf.withheld.small_sample", n=cov.get("n", 0), unit=unit, min=3 if cov.get("sample") == "comps" else 30)
+    if "not_comparable" in reasons:
+        return t("conf.withheld.not_comparable", pct=round((cov.get("share") or 0) * 100))
     if "low_coverage" in reasons:
         return t("conf.withheld.low_coverage", pct=round((cov.get("share") or 0) * 100), min=10)
     if "high_cv" in reasons:

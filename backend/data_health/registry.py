@@ -604,6 +604,17 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "from rent_by_area.meta.json; a new ACS 5-year release each December makes a rebuild due.",
     ),
     SourceSpec(
+        id="artifact.assessor_model_by_area", name="Assessor's apartment income model by community area (committed)",
+        publisher="UrbanLayer from the Cook County Assessor (Commercial Valuation, csik-bsws)",
+        tier="official_estimate", kind="artifact", locator="ingestion/data/assessor_model_by_area.json", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/neighborhood/rent.py", "ingestion/build_assessor_model_artifact.py"),
+        surfaces=("profile", "chat"), fact_keys=("area.rent.assessor_model",),
+        cadence_days=1095, warn_days=1185, alarm_days=1460,
+        note="Median modeled potential gross income per unit per month over apartment buildings (Multifamily-* types) "
+             "of the latest city-wide reassessment (2024; the next is 2027). Build date from the sidecar; the "
+             "artifact check also warns when the Assessor year is three years old, since a new city reassessment is due.",
+    ),
+    SourceSpec(
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",
         tier="official_record", kind="artifact", locator="ingestion/data/chrs_orange_red.json.gz", probe="none",
         owner_modules=("backend/retrieval/property/chrs.py", "ingestion/build_chrs_artifact.py"), surfaces=("profile",),

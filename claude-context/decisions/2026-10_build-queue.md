@@ -1918,3 +1918,48 @@ PR2 serves Item 33's findings. The Profile's Neighborhood module gains a **Rent*
 | Phone overflow audit | 43 passed, 12 skipped, 0 failed | `npm run test:mobile` |
 
 **Not measured:** a parcel-weighted share (the 66% is a tract count); the B25063 design factor; a cross-check of an area figure against CMAP's community snapshots; a real chat answer (production credits; nothing here calls a model); production behaviour (nothing deployed).
+
+## Item 35 (WS4 PR3): the Assessor's modeled apartment income as its own series (2026-10-28)
+
+**Status (2026-10-28):** built on `codex/ws4-assessor-model-pr3`, stacked on PR2's branch (PR #123 was still open); committed locally, not pushed. Rebase onto `main` once #123 merges, then open PR3 for Jack's approval. After a merge, verify the live `/api/scorecard?address=1601+N+Milwaukee+Ave` carries `neighborhood.rent.assessor_model` and the `area.rent.assessor_model` provenance entry.
+
+PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's **model** of what apartments in a community area earn, from its valuation of buildings with 7 or more units (Commercial Valuation, `csik-bsws`). It is shown free on the Profile and carried in chat. It is never merged with the ACS figures, never called a rent, and has no bedroom breakdown. The report shows none.
+
+**Decision 1: the figure is "modeled potential gross income per unit per month", the median over apartment buildings of `pgi / tot_units / 12`.** It is before vacancy and is the Assessor's model, not an asking or achieved rent. *Alternatives:* a per-bedroom rent from the unit mix (rejected in Item 33: the mix is counts only, so a rent per bedroom would be our inference); effective gross income (after the Assessor's vacancy assumption, a second modeled step); a unit-weighted median (a building of 300 units would outvote 30 small ones; the Profile states "median of N buildings", which a building median answers literally). *Why:* the least-processed number the source states.
+
+**Decision 2: only `Multifamily-*` property types count (new, not in the PR3 prompt).** The 2024 rows with units include 300 hotel, motel and care-home rows carrying 66,325 "units" (rooms and beds) and no income model. Left in, they inflate coverage (the Loop 231%, area 8 136%) without adding income. Restricting to the Assessor's own `property_type_use` removes them: areas over 100% fall from 3 to 1 (the Loop, 124%) and area 8 becomes ordinary. Excluding "Primarily Commercial" mixed-use buildings was tested and moves no area materially, so it is not filtered. *Revisit if* the Assessor adds apartment types that do not start with `Multifamily`.
+
+**Decision 3: coverage is modeled units over ACS renter households with cash rent, read from `rent_by_area.json`.** PR1 measured against all renter households (626,797); the artifact's cash-rent households (609,515) are the right comparator for a rent model and need no Census call. Only buildings with a positive income count toward `units`, so coverage and the median describe the same buildings.
+
+**Decision 4 (WS0 change, approved in the PR3 plan): coverage above 100% is withheld as "not comparable".** A share above 1.0 means the modeled universe is not the renter universe; `provenance.HIDE_COVERAGE_ABOVE = 1.0` withholds it with reason `not_comparable` ("the model counts 124% of this area's renter households, so it is not a comparable set of homes"). Exactly 100% is not past the line. The reason replaces `low_coverage` (it cannot be both). It applies to any figure with a share, but only this series has one above 1. *Alternative:* hide silently (not allowed by the standard, which says a withheld figure is never silent).
+
+**Decision 5: a committed artifact, not a live query.** `ingestion/data/assessor_model_by_area.json` (8 KB, `ingestion.build_assessor_model_artifact`) holds 76 areas: buildings, priced buildings (the n the sample rule reads), units, households, the median, and the assessment year. The pull is 11,016 rows plus a PIN-to-area join of about 30 requests, too heavy for the request path; the artifact needs no Census key to build. Area 37 has no modeled apartments, which the code reports as zero buildings (a finding), never an error. `.gitignore`, `.dockerignore` and the Dockerfile carry it; a missing or unreadable file raises and the Profile says "couldn't check today".
+
+**Decision 6: staleness is two rules.** (a) The entry's `as_of` is the assessment year's end (2024-12-31, basis `tax_year`), so the existing 24-month rule adds `old_source` from January 2027, as the next city reassessment (2027) falls due. (b) `check_assessor_model` in the CI artifact check and the registry entry `artifact.assessor_model_by_area` warn at 1,185 days from the build, alarm at 1,460, and warn once the calendar reaches the assessment year plus 3. The year, "city reassessment", and the dataset id ride in `method_params`.
+
+**Decision 7: provenance.** Fact `area.rent.assessor_model`: tier `official_estimate`, method `government_model`, scope `community_area`, source `artifact.assessor_model_by_area`, `coverage {n: priced buildings, share, universe: "renter households with cash rent", unit: "buildings", sample: area_sample}`, no precision (the Assessor publishes no margin). Tier C follows the guide's own example ("Assessor modeled rents"); the per-building division and median are our arithmetic, which would argue for tier D on a C input. *Revisit if* WS0 rules a median over a government model's records is a calculation.
+
+**Decision 8: chat.** `_clear_figure` clears the median; `withheld_figures` carries the reason; the sources footer says "the Assessor's modeled income from its 2024 city reassessment, not a market rent". Prompt rule 38 names it "the Assessor's model" with its year, forbids averaging, blending or reconciling it with the ACS rents and forbids a bedroom figure, and explains `priced`, `coverage` and a null median. A standard tier-C figure gets no `figure_notes` entry (the existing rule); the prompt carries the naming.
+
+**Decision 9: Profile.** A separate "Assessor model" section under the Census tiles, with its own scope line ("... a separate series from the Census rents above. Not an asking or achieved rent."), one tile ("Modeled income per unit", "/mo per unit", "Median of N apartment buildings, before vacancy") and the confidence caption ("Government model · 2024 city reassessment · 420 buildings · 31% coverage · West Town"). A withheld figure shows "—" and the reason and no median description; an area with no modeled apartments says so; a failed read says "couldn't check today".
+
+**Left alone on purpose:** HUD SAFMR, listing-based asking rents, the B25063 design factor (still 1.5), the report, sales-price trends.
+
+**Revisit if** the Assessor publishes a rent per bedroom or a margin; the 2027 reassessment changes the model's structure; or the 21 withheld areas are the ones users ask about (a wider geography, as PR2 does with PUMAs, would be a separate decision).
+
+**Numbers** (measured 2026-10-28, Assessor 2024 city reassessment, ACS 2020-2024)
+
+| Measure | Result | Reproduce |
+|---|---:|---|
+| Chicago rows with units, 2024 / 2021 / 2025 | 11,016 / 2,321 / 1,376 | `csik-bsws`, count by year (`ingestion.build_assessor_model_artifact`) |
+| Apartment buildings kept (`Multifamily-*`) / non-apartment rows dropped | 10,716 / 300 (66,325 "units", no income) | same |
+| Artifact: community areas / apartment buildings placed / unplaced | 76 / 10,690 / 26 | `PYTHONPATH=. python -m ingestion.build_assessor_model_artifact` |
+| Citywide median modeled income | about $1,302 per unit per month | same pull |
+| Areas judged: standard / low / withheld / no figure | 44 / 11 / 21 / 1 | `PYTHONPATH=. python -m eval.assessor_model_states` |
+| Withhold reasons: under 30 buildings / coverage under 10% / not comparable | 18 / (with the above) / 1 (the Loop, 124%) | same |
+| Profile check, 1601 N Milwaukee (West Town) | $2,300 per unit per month, 420 buildings, 31% coverage, `standard` | `/api/scorecard?address=...` |
+| Profile check, 100 N LaSalle (Loop) | withheld, `not_comparable`, 124% | same |
+| Backend tests (not integration) / eval tests / vitest | 2,428 / 117 / 816 | `make test` parts |
+| Phone overflow audit | 43 passed, 12 skipped, 0 failed | `npm run test:mobile` |
+
+**Not measured:** how the model's income compares with achieved rents (no source here observes one); a bedroom mix check beyond Item 33's 98%; a real chat answer (production credits; nothing here calls a model); production behaviour (nothing deployed).

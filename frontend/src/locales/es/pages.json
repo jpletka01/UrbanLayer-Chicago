@@ -508,6 +508,7 @@
       "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación.",
       "rentArea": "Median monthly gross rent (rent plus utilities) of the community area's renter households, summed from Census rent brackets for each tract in the area. A survey estimate, not a count; there is no area figure by bedroom count.",
       "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
+      "rentAssessor": "The Assessor's model of what apartments in this community area earn: potential gross income per unit per month, before vacancy, taken from its valuation of buildings with 7 or more units in the latest city-wide reassessment. A model, not a rent anyone asked or paid, and not comparable with the Census figures. There is no figure by bedroom count.",
       "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods."
     },
     "walkDesc": {
@@ -573,6 +574,16 @@
       "fallback": {
         "suppressed": "The Census publishes no median for this tract, so this is the PUMA's.",
         "low_confidence": "This tract's median is too uncertain to show, so this is the PUMA's."
+      },
+      "assessor": {
+        "title": "Assessor model",
+        "scope": "The County Assessor's {{year}} {{cycle}} model of apartment income, a separate series from the Census rents above. Not an asking or achieved rent.",
+        "label": "Modeled income per unit",
+        "perUnit": "/mo per unit",
+        "sub": "Median of {{buildings}} apartment buildings, before vacancy",
+        "none": "The Assessor's model includes no apartment buildings in this area",
+        "noFigure": "The model has no usable income figure for this area",
+        "unchecked": "Couldn't check today"
       }
     }
   },
