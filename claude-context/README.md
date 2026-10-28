@@ -36,7 +36,7 @@ reusable lesson, not the full narrative.
 
 ## Property Discovery — filter/search workbench (SHIPPED, full citywide, nav-linked)
 - `property-discovery/` — engineering spec (`00`–`09`, normative) + implementation record. **Start with
-  `10-implementation-status.md`.** Live on prod across all 77 community areas (~949k parcels). Impl:
+  `10-implementation-status.md`.** Live on prod across all 77 community areas (~882k in-city parcels; the 2026-10-01 build also held ~67k suburban strays, fixed in PR #128 pending a rebuild; WS8 Phase 0 audit: decision Item 36). Impl:
   `backend/discovery/` + `frontend/src/discovery/`. Strategy/why: `strategy/property-discovery-filters.md`.
   (Spec drift to know: `03` says 29 filters — live is 32; wire is `{rows,total,nextOffset,gated}` + `/search/pins` + `/search/export`.)
 
@@ -54,7 +54,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 - `strategy/2026-07-02_data-expansion-candidates.md` — **live backlog** of available-but-unintegrated data, ranked (Tier 0–2; items 1–2 + appeals/ward shipped in the lot-info arc; CPS/Divvy tail remains).
 
 ## Archive & Audits (pointers — full stories on the About page)
-- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Current: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3; Items 1–35). Append when an item merges.
+- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Current: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phase 0 coverage audit; Items 1–36) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
 - `archive/*` — one-paragraph markers for each shipped feature/incident (deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
