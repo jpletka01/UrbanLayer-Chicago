@@ -132,6 +132,9 @@ _KIND_BY_TIER = {"official_record": "official_record", "official_publication": "
 
 # Thresholds (guide §3). Boundary tests pin them: a value exactly at a constant is not past it.
 HIDE_COVERAGE_BELOW = 0.10
+# A coverage share above 100% means the source's universe is not the one it is measured against (the Assessor
+# models more apartments in the Loop than the Census counts renter households), so the two are not comparable.
+HIDE_COVERAGE_ABOVE = 1.0
 FADE_COVERAGE_BELOW = 0.25
 FADE_CV_ABOVE = 0.30
 HIDE_CV_ABOVE = 0.50
@@ -412,6 +415,11 @@ FACTS.update({
     # WS4 PR2: current official rent. The community-area figure is our aggregation of the Census's bracket
     # counts (tier D on a C input); the bedroom figures are the Census's own published medians, for the
     # parcel's tract or, where that is suppressed or too uncertain, its PUMA (the entry's scope says which).
+    # WS4 PR3: the Assessor's modeled apartment income, its OWN series (a government model, not a Census survey and
+    # not a rent): potential gross income per unit per month, median over apartment buildings in the community area.
+    "area.rent.assessor_model": FactSpec(
+        "Assessor-modeled apartment income per unit", "artifact.assessor_model_by_area", "government_model",
+        "community_area", "official_estimate"),
     "area.rent.community_area": FactSpec(
         "Community-area median gross rent", "artifact.rent_by_area", "bracket_median", "community_area", "our_calculation"),
     **{
@@ -505,7 +513,9 @@ def confidence_state(entry: ProvenanceEntry | dict) -> tuple[str, list[str]]:
     fade: list[str] = []
 
     if share is not None:
-        if share < HIDE_COVERAGE_BELOW:
+        if share > HIDE_COVERAGE_ABOVE:
+            hide.append("not_comparable")
+        elif share < HIDE_COVERAGE_BELOW:
             hide.append("low_coverage")
         elif share < FADE_COVERAGE_BELOW:
             fade.append("low_coverage")
@@ -820,6 +830,13 @@ def _clear_figure(context, fact_id: str) -> bool:
         setattr(ct, field, None)
         ct.moe.pop(field, None)
         ct.cv.pop(field, None)
+        return True
+    if fact_id == "area.rent.assessor_model":
+        hood = _own(context, "neighborhood")
+        am = hood.rent.assessor_model if hood and hood.rent else None
+        if am is None:
+            return False
+        am.median_per_unit_month = None
         return True
     if fact_id == "area.rent.community_area":
         hood = _own(context, "neighborhood")
