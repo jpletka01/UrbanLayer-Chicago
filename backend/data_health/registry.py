@@ -594,6 +594,14 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "CTA feed was last modified, so a rebuild is visible as due.",
     ),
     SourceSpec(
+        id="artifact.rent_by_area", name="Overall rent by community area (committed)", publisher="UrbanLayer from US Census Bureau ACS",
+        tier="official_estimate", kind="artifact", locator="ingestion/data/rent_by_area.json", probe="artifact_sidecar",
+        owner_modules=("backend/retrieval/neighborhood/rent.py", "ingestion/build_rent_artifact.py"),
+        surfaces=("profile", "chat", "report"), fact_keys=(), cadence_days=365, warn_days=400, alarm_days=730,
+        note="Median gross rent (B25063) rebuilt from summed tract bracket counts, with the ACS Handbook margin. Build date "
+             "from rent_by_area.meta.json; a new ACS 5-year release each December makes a rebuild due.",
+    ),
+    SourceSpec(
         id="artifact.chrs", name="Chicago Historic Resources Survey, orange/red (committed)", publisher="City of Chicago",
         tier="official_record", kind="artifact", locator="ingestion/data/chrs_orange_red.json.gz", probe="none",
         owner_modules=("backend/retrieval/property/chrs.py", "ingestion/build_chrs_artifact.py"), surfaces=("profile",),

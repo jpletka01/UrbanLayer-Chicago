@@ -550,6 +550,14 @@ class DistributionBucket(BaseModel):
     value: float
 
 
+class RentCell(BaseModel):
+    """One published median gross rent with its 90% margin of error and coefficient of variation."""
+
+    estimate: int | None = None
+    moe: float | None = None
+    cv: float | None = None
+
+
 class CensusTractDemographics(BaseModel):
     tract_fips: str
     tract_name: str | None = None
@@ -573,6 +581,10 @@ class CensusTractDemographics(BaseModel):
     # and coefficients of variation (SE / estimate), keyed by the field name above.
     moe: dict[str, float] = Field(default_factory=dict)
     cv: dict[str, float] = Field(default_factory=dict)
+    # The Census's published median gross rent by bedroom count (B25031) for this tract, keyed by
+    # ``backend.retrieval.neighborhood.rent.BEDROOM_GROUPS``. An absent key or a null estimate is a
+    # suppressed cell, not a zero.
+    rent_by_bedroom: dict[str, RentCell] = Field(default_factory=dict)
 
     age_distribution: list[DistributionBucket] = Field(default_factory=list)
     income_distribution: list[DistributionBucket] = Field(default_factory=list)
@@ -637,9 +649,59 @@ class TrafficSummary(BaseModel):
     as_of: str | None = None
 
 
+class CommunityAreaRent(BaseModel):
+    """Overall median gross rent of a community area, rebuilt from summed tract bracket counts
+    (``ingestion/build_rent_artifact.py``). ``moe`` is the ACS Handbook's margin for an interpolated
+    median (``moe_method``), 90% level; ``median`` is None when it falls in the open-ended top bracket."""
+
+    community_area: int
+    households: int
+    median: int | None = None
+    moe: int | None = None
+    cv: float | None = None
+    top_coded: bool = False
+    moe_method: str = "acs_handbook_median"
+    design_factor: float | None = None
+    acs_period: str | None = None
+    acs_release: str | None = None
+    period_end: str | None = None
+
+
+class BedroomRent(BaseModel):
+    """Median gross rent for one bedroom count, from the parcel's tract when the Census's figure
+    passes the confidence rules, otherwise from its PUMA. ``scope`` says which; a PUMA is never
+    presented as a community area."""
+
+    bedrooms: str  # one of rent.BEDROOM_GROUPS
+    scope: str  # "tract" | "puma"
+    geography: str | None = None
+    geoid: str | None = None
+    estimate: int | None = None
+    moe: float | None = None
+    cv: float | None = None
+    # why the tract's own figure was not used ("suppressed" | "low_confidence"); None when it was used
+    tract_fallback: str | None = None
+
+
+class RentEvidence(BaseModel):
+    """Current official rent for a parcel's area (WS4 PR2): the community area's overall median, and the
+    published bedroom medians for its tract (else PUMA). ``unchecked`` names the parts that could not be
+    fetched, which is never the same as 'the Census publishes none'."""
+
+    community_area: CommunityAreaRent | None = None
+    bedrooms: list[BedroomRent] = Field(default_factory=list)
+    acs_period: str | None = None
+    acs_release: str | None = None
+    tract_name: str | None = None
+    puma_geoid: str | None = None
+    puma_name: str | None = None
+    unchecked: list[str] = Field(default_factory=list)
+
+
 class NeighborhoodSummary(BaseModel):
     demographics: DemographicsSummary | None = None
     census_tract: CensusTractDemographics | None = None
+    rent: RentEvidence | None = None
     transit: TransitAccess | None = None
     walkscore: WalkScoreSummary | None = None
     ward: WardInfo | None = None
