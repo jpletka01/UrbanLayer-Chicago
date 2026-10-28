@@ -667,6 +667,27 @@ class CommunityAreaRent(BaseModel):
     period_end: str | None = None
 
 
+class AssessorModelRent(BaseModel):
+    """The Cook County Assessor's modeled apartment income for a community area (WS4 PR3), its OWN series:
+    not an ACS rent, not an asking or achieved rent, and never by bedroom count. ``median_per_unit_month`` is
+    the median over apartment buildings of the model's potential gross income (before vacancy) per unit per
+    month. ``coverage`` is the modeled units' share of the area's ACS renter households with cash rent (None
+    when no household count exists); ``priced`` is the sample size the n rule reads. A row with no
+    buildings is an area the Assessor models none in, which is a finding, not an error."""
+
+    community_area: int
+    buildings: int = 0
+    priced: int = 0
+    units: int = 0
+    households: int | None = None
+    coverage: float | None = None
+    median_per_unit_month: int | None = None
+    year: str
+    cycle: str = "city reassessment"
+    as_of: str
+    dataset: str = "csik-bsws"
+
+
 class BedroomRent(BaseModel):
     """Median gross rent for one bedroom count, from the parcel's tract when the Census's figure
     passes the confidence rules, otherwise from its PUMA. ``scope`` says which; a PUMA is never
@@ -689,6 +710,7 @@ class RentEvidence(BaseModel):
     fetched, which is never the same as 'the Census publishes none'."""
 
     community_area: CommunityAreaRent | None = None
+    assessor_model: AssessorModelRent | None = None
     bedrooms: list[BedroomRent] = Field(default_factory=list)
     acs_period: str | None = None
     acs_release: str | None = None

@@ -1,0 +1,8 @@
+{
+ "assessor_year": "2024",
+ "builder": "ingestion/build_assessor_model_artifact.py",
+ "buildings": 10690,
+ "built_at": "2026-10-28",
+ "community_areas": 76,
+ "unmatched_to_community_area": 26
+}
