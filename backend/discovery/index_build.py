@@ -666,8 +666,8 @@ def _split_by_community_area(spine: list[dict]) -> tuple[list[tuple[dict, int]],
     """Partition a bbox-fetched spine by true community-area membership.
 
     A CA is fetched by bounding box, so the box also catches neighbor-CA parcels (kept, tagged to
-    their real CA) and suburban parcels that sit in no community-area polygon at all (Cicero,
-    Proviso, ...). Those suburban points are dropped, never tagged to the box's CA. Returns
+    their real CA) and suburban parcels that sit in no community-area polygon at all (border
+    suburbs such as Forest Park). Those suburban points are dropped, never tagged to the box's CA. Returns
     (kept as (spine row, real CA), dropped PINs).
     """
     kept: list[tuple[dict, int]] = []
