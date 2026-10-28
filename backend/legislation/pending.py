@@ -19,6 +19,7 @@ import sqlite3
 import sys
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypeAlias
@@ -30,12 +31,16 @@ from backend.legislation import address_titles
 from backend.legislation.pending_store import (
     ActionRow,
     AttachmentRow,
+    LocationRow,
     MatterRow,
     RelationRow,
+    SegmentRow,
     Snapshot,
     Store,
 )
 from backend.retrieval import clerk
+from backend.retrieval.property import address_points
+from backend.retrieval.socrata import SocrataError
 
 
 log = logging.getLogger(__name__)
@@ -269,6 +274,20 @@ def _normalize(details: dict[str, clerk.ClerkMatter], *, now: datetime, candidat
             actions=tuple(ActionRow(a.date, a.body, a.name, a.text, a.meeting_id) for a in current.actions),
             attachments=kept_attachments,
             relations=_relations(group, current),
+            segments=tuple(
+                SegmentRow(
+                    direction=segment.dir,
+                    street_name=segment.name,
+                    street_type=segment.type,
+                    lo=segment.lo,
+                    hi=segment.hi,
+                    side=segment.side,
+                    raw=segment.raw,
+                    maps=parsed.maps,
+                    parser_version=address_titles.PARSER_VERSION,
+                )
+                for segment in (parsed.segments if parsed and parsed.status == "clean" else [])
+            ),
         ))
 
     rows.sort(key=lambda row: (row.category, row.introduced_at or datetime.min.replace(tzinfo=timezone.utc), row.record_number))
@@ -284,6 +303,52 @@ def _normalize(details: dict[str, clerk.ClerkMatter], *, now: datetime, candidat
         partial_title_count=partial_titles,
         unparsed_title_count=unparsed_titles,
     )
+
+
+async def resolve_placements(
+    snapshot: Snapshot,
+    *,
+    client: httpx.AsyncClient | None = None,
+    resolver=address_points.pins_in_range,
+) -> Snapshot:
+    """Resolve clean title ranges to parcel locations during the daily sync.
+
+    A resolver error fails the refresh, so a partial new placement set never
+    replaces the last-good snapshot. A successful zero-match remains explicit:
+    the serving summary will report partial placement instead of a false zero.
+    """
+    matters: list[MatterRow] = []
+    for matter in snapshot.matters:
+        locations: list[LocationRow] = []
+        for position, segment in enumerate(matter.segments):
+            types = [
+                value for value in (
+                    segment.street_type,
+                    address_titles.STREET_TYPES.get(segment.street_type or ""),
+                ) if value
+            ]
+            rows = await resolver(
+                direction=segment.direction,
+                names=address_titles.name_candidates(segment.street_name),
+                types=types,
+                lo=segment.lo,
+                hi=segment.hi,
+                side=segment.side,
+                client=client,
+            )
+            locations.extend(
+                LocationRow(
+                    segment_position=position,
+                    pin=row["pin"],
+                    lat=row.get("lat"),
+                    lon=row.get("lon"),
+                    address_number=row.get("number"),
+                    address_name=row.get("name"),
+                )
+                for row in rows
+            )
+        matters.append(replace(matter, locations=tuple(locations)))
+    return replace(snapshot, matters=tuple(matters))
 
 
 async def build_snapshot(
@@ -322,8 +387,10 @@ async def refresh(
 ) -> Snapshot:
     """Build the snapshot and, when requested, atomically replace the store."""
     now = now or datetime.now(timezone.utc)
+    placement_resolver = build_kwargs.pop("placement_resolver", address_points.pins_in_range)
     try:
         snapshot = await build_snapshot(now=now, client=client, **build_kwargs)
+        snapshot = await resolve_placements(snapshot, client=client, resolver=placement_resolver)
         if write:
             with Store(path) as store:
                 store.replace(snapshot)
@@ -334,7 +401,7 @@ async def refresh(
                 problems = exc.problems if isinstance(exc, PendingContractError) else (str(exc),)
                 store.record_problem(now, status="suspect", error=str(exc), contract_problems=tuple(problems))
         raise
-    except (clerk.ClerkUnavailable, clerk.ClerkQueryError, sqlite3.Error) as exc:
+    except (clerk.ClerkUnavailable, clerk.ClerkQueryError, SocrataError, sqlite3.Error) as exc:
         if write:
             with Store(path) as store:
                 store.record_problem(now, status="failed", error=f"{type(exc).__name__}: {exc}")
@@ -346,7 +413,8 @@ def summary(snapshot: Snapshot) -> str:
     return (
         f"candidates={c['candidates']} details={c['details']} pending={c['pending']} "
         f"zoning={c['zoning']} title17={c['title17']} "
-        f"placement_ready={c['placement_ready']} partial={c['partial_titles']} "
+        f"placement_ready={c['placement_ready']} placed={c['placed_matters']} "
+        f"unplaced={c['unplaced_matters']} locations={c['locations']} partial={c['partial_titles']} "
         f"unparsed={c['unparsed_titles']} lifecycle_collapses={c['lifecycle_collapses']} "
         f"excluded_non_pending={c['excluded_non_pending']} excluded_attachments={c['excluded_attachments']}"
     )

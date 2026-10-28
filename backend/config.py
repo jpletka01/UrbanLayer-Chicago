@@ -178,8 +178,8 @@ class Settings(BaseSettings):
     # Written daily by `python -m backend.legislation.sync` (prod timer) on the same volume;
     # the app only reads it, reloading when its mtime changes.
     legislation_snapshot_path: Path = PROJECT_ROOT / "backend" / "data" / "legislation_snapshot.json"
-    # WS2 PR 1: rebuildable pending-matter snapshot. The daily legislation sync is its
-    # only writer; the serving app remains unaware of it until the Profile reader in PR 2.
+    # WS2: rebuildable pending-matter + placement snapshot. The daily legislation sync is
+    # its only writer; the Profile reader opens it read-only and never calls Clerk.
     pending_legislation_path: Path = PROJECT_ROOT / "backend" / "data" / "pending_legislation.db"
 
     # Written by the daily checker (`python -m backend.data_health.check --write`) on the same volume;

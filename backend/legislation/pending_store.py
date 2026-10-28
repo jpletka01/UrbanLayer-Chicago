@@ -1,7 +1,7 @@
 """Durable, rebuildable snapshot of pending City Clerk zoning matters.
 
-The daily legislation sync is the only writer.  The serving app will be a read-only
-consumer in WS2 PR 2; PR 1 intentionally exposes no request-path API.
+The daily legislation sync is the only writer.  The serving app is a read-only
+consumer: it never calls Clerk or Address Points while serving a Profile.
 
 Successful refreshes replace every current matter and its children in one SQLite
 transaction.  A failed or suspect refresh appends only a ``sync_runs`` row, leaving the
@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS sync_runs (
@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS sync_runs (
     code_count INTEGER,
     title17_count INTEGER,
     placement_ready_count INTEGER,
+    placed_matter_count INTEGER,
+    unplaced_matter_count INTEGER,
+    location_count INTEGER,
     partial_title_count INTEGER,
     unparsed_title_count INTEGER,
     lifecycle_collapses INTEGER,
@@ -91,6 +94,35 @@ CREATE TABLE IF NOT EXISTS relations (
     relation_type TEXT NOT NULL,
     PRIMARY KEY (matter_id, related_record_number, relation_type)
 );
+
+CREATE TABLE IF NOT EXISTS segments (
+    matter_id TEXT NOT NULL REFERENCES matters(matter_id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    direction TEXT NOT NULL,
+    street_name TEXT NOT NULL,
+    street_type TEXT,
+    lo INTEGER NOT NULL,
+    hi INTEGER NOT NULL,
+    side TEXT NOT NULL,
+    raw TEXT NOT NULL,
+    maps TEXT,
+    parser_version INTEGER NOT NULL,
+    PRIMARY KEY (matter_id, position)
+);
+
+CREATE TABLE IF NOT EXISTS locations (
+    matter_id TEXT NOT NULL REFERENCES matters(matter_id) ON DELETE CASCADE,
+    segment_position INTEGER NOT NULL,
+    pin TEXT NOT NULL,
+    lat REAL,
+    lon REAL,
+    address_number INTEGER,
+    address_name TEXT,
+    method TEXT NOT NULL CHECK (method = 'address_points_range'),
+    PRIMARY KEY (matter_id, segment_position, pin)
+);
+CREATE INDEX IF NOT EXISTS idx_pending_locations_pin ON locations (pin);
+CREATE INDEX IF NOT EXISTS idx_pending_locations_lat_lon ON locations (lat, lon);
 """
 
 
@@ -127,6 +159,30 @@ class RelationRow:
 
 
 @dataclass(frozen=True)
+class SegmentRow:
+    direction: str
+    street_name: str
+    street_type: str | None
+    lo: int
+    hi: int
+    side: str
+    raw: str
+    maps: str | None
+    parser_version: int
+
+
+@dataclass(frozen=True)
+class LocationRow:
+    segment_position: int
+    pin: str
+    lat: float | None
+    lon: float | None
+    address_number: int | None
+    address_name: str | None
+    method: str = "address_points_range"
+
+
+@dataclass(frozen=True)
 class MatterRow:
     matter_id: str
     lifecycle_id: str
@@ -148,6 +204,8 @@ class MatterRow:
     actions: tuple[ActionRow, ...] = ()
     attachments: tuple[AttachmentRow, ...] = ()
     relations: tuple[RelationRow, ...] = ()
+    segments: tuple[SegmentRow, ...] = ()
+    locations: tuple[LocationRow, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -165,14 +223,18 @@ class Snapshot:
 
     @property
     def counts(self) -> dict[str, int]:
+        zoning = [m for m in self.matters if m.category.startswith("ZONING RECLASSIFICATIONS")]
         return {
             "candidates": self.candidate_count,
             "details": self.detail_count,
             "pending": len(self.matters),
-            "zoning": sum(1 for m in self.matters if m.category.startswith("ZONING RECLASSIFICATIONS")),
+            "zoning": len(zoning),
             "code": sum(1 for m in self.matters if m.category.startswith("MUNICIPAL CODE AMENDMENTS")),
             "title17": sum(1 for m in self.matters if m.touches_title17),
             "placement_ready": self.placement_ready_count,
+            "placed_matters": sum(1 for m in zoning if m.locations),
+            "unplaced_matters": sum(1 for m in zoning if not m.locations),
+            "locations": sum(len(m.locations) for m in zoning),
             "partial_titles": self.partial_title_count,
             "unparsed_titles": self.unparsed_title_count,
             "lifecycle_collapses": self.lifecycle_collapses,
@@ -196,12 +258,16 @@ def _configure(con: sqlite3.Connection) -> None:
     con.execute("PRAGMA foreign_keys=ON")
     con.execute("PRAGMA journal_mode=DELETE")
     version = int(con.execute("PRAGMA user_version").fetchone()[0])
-    if version not in (0, SCHEMA_VERSION):
+    if version not in (0, 1, SCHEMA_VERSION):
         raise sqlite3.DatabaseError(
             f"pending legislation schema {version} is not supported (expected {SCHEMA_VERSION})"
         )
     con.executescript(_SCHEMA)
-    if version == 0:
+    if version == 1:
+        con.execute("ALTER TABLE sync_runs ADD COLUMN placed_matter_count INTEGER")
+        con.execute("ALTER TABLE sync_runs ADD COLUMN unplaced_matter_count INTEGER")
+        con.execute("ALTER TABLE sync_runs ADD COLUMN location_count INTEGER")
+    if version < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
         con.commit()
 
@@ -263,18 +329,40 @@ class Store:
                         for r in matter.relations
                     ],
                 )
+                self.con.executemany(
+                    "INSERT INTO segments VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    [
+                        (
+                            matter.matter_id, i, s.direction, s.street_name, s.street_type,
+                            s.lo, s.hi, s.side, s.raw, s.maps, s.parser_version,
+                        )
+                        for i, s in enumerate(matter.segments)
+                    ],
+                )
+                self.con.executemany(
+                    "INSERT INTO locations VALUES (?,?,?,?,?,?,?,?)",
+                    [
+                        (
+                            matter.matter_id, loc.segment_position, loc.pin, loc.lat, loc.lon,
+                            loc.address_number, loc.address_name, loc.method,
+                        )
+                        for loc in matter.locations
+                    ],
+                )
             self.con.execute(
                 """INSERT INTO sync_runs (
                        attempted_at, checked_at, status, candidate_count, detail_count, pending_count,
                        zoning_count, code_count, title17_count, placement_ready_count,
+                       placed_matter_count, unplaced_matter_count, location_count,
                        partial_title_count, unparsed_title_count, lifecycle_collapses,
                        excluded_non_pending, excluded_attachments
-                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     iso(snapshot.checked_at), iso(snapshot.checked_at), "ok", counts["candidates"],
                     counts["details"], counts["pending"], counts["zoning"], counts["code"],
-                    counts["title17"], counts["placement_ready"], counts["partial_titles"],
-                    counts["unparsed_titles"], counts["lifecycle_collapses"],
+                    counts["title17"], counts["placement_ready"],
+                    counts["placed_matters"], counts["unplaced_matters"], counts["locations"],
+                    counts["partial_titles"], counts["unparsed_titles"], counts["lifecycle_collapses"],
                     counts["excluded_non_pending"], counts["excluded_attachments"],
                 ),
             )
@@ -321,6 +409,9 @@ def read_status(path: Path | str) -> StoreStatus | None:
         "code": "code_count",
         "title17": "title17_count",
         "placement_ready": "placement_ready_count",
+        "placed_matters": "placed_matter_count",
+        "unplaced_matters": "unplaced_matter_count",
+        "locations": "location_count",
         "partial_titles": "partial_title_count",
         "unparsed_titles": "unparsed_title_count",
         "lifecycle_collapses": "lifecycle_collapses",
@@ -334,5 +425,8 @@ def read_status(path: Path | str) -> StoreStatus | None:
         checked_at=parse_iso(success["checked_at"]) if success else None,
         last_error=latest["last_error"],
         contract_problems=tuple(str(p) for p in raw_problems),
-        counts={key: success[column] if success else None for key, column in count_columns.items()},
+        counts={
+            key: success[column] if success is not None and column in success.keys() else None
+            for key, column in count_columns.items()
+        },
     )

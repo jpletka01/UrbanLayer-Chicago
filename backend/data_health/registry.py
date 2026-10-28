@@ -222,7 +222,8 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
     ),
     _socrata(
         COOK, "78yw-iddh", "cook.address_points", "Cook County Address Points", "Cook County GIS",
-        "backend/retrieval/property/address_points.py", surfaces=_PROP, fact_keys=("parcel.identity",),
+        "backend/retrieval/property/address_points.py", surfaces=_PROP,
+        fact_keys=("parcel.identity", "regulatory.upcoming_zoning.placement"),
         severity="critical", warn_days=365, alarm_days=730,
         ack=Ack("Rows last updated 2024-04-08 ('as needed'). Mitigated by Parcel Addresses 3723-97qp, the second "
                 "authoritative address-to-PIN source consulted when Address Points has no confident match.",
@@ -551,7 +552,8 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="chi.clerk.legislation", name="City Clerk eLMS API (legislation)", publisher="City Clerk", tier="official_record",
         kind="api", locator="https://api.chicityclerkelms.chicago.gov", probe="clerk_latest",
         owner_modules=("backend/retrieval/clerk.py", "backend/legislation/sync.py"), surfaces=("profile", "chat", "report"),
-        fact_keys=("code.amendments",), severity="critical", cadence_days=1, warn_days=5, alarm_days=14,
+        fact_keys=("code.amendments", "regulatory.upcoming_zoning.records", "regulatory.upcoming_zoning.placement"),
+        severity="critical", cadence_days=1, warn_days=5, alarm_days=14,
         note="Content date = newest recordCreateDate (never introductionDate, which can be in the future).",
     ),
     SourceSpec(
@@ -559,8 +561,9 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         tier="internal", kind="local_db", locator="backend/data/pending_legislation.db",
         probe="pending_legislation", owner_modules=("backend/legislation/pending.py", "backend/legislation/pending_store.py"),
         cadence_days=1, warn_days=3, alarm_days=14,
-        note=("Dark WS2 sync artifact: last successful atomic refresh, candidate/detail counts, lifecycle collapses, "
-              "title parsing and excluded attachment metadata. The City Clerk remains the fact source."),
+        surfaces=("profile",), fact_keys=("regulatory.upcoming_zoning.placement",),
+        note=("WS2 last-successful atomic snapshot: candidate/detail counts, lifecycle collapses, title parsing, "
+              "Address Points placement, and excluded attachment metadata. City Clerk remains the fact source."),
     ),
     SourceSpec(
         id="internal.amendment_review", name="Review of passed amendments (age of the oldest unreviewed)",

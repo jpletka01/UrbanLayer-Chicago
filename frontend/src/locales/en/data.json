@@ -128,6 +128,20 @@
     "status": "Status",
     "noOverlays": "No regulatory overlays apply to this location.",
     "source": "Read the source ↗",
+    "upcoming": {
+      "title": "Upcoming zoning",
+      "disclaimer": "Applicant filings are proposals, not approvals. Current zoning remains in effect unless City Council acts and the official zoning map changes.",
+      "checked": "Checked {{date}}",
+      "subject": "Lists this property",
+      "subjectMatch": "subject match",
+      "nearby": "Nearby within {{radius}} mi",
+      "distance": "{{distance}} mi away",
+      "updated": "Updated {{date}}",
+      "empty": "No placeable current zoning filings found for this property or within {{radius}} mi.",
+      "stale": "The latest refresh did not complete. Showing the last successful check; verify the Clerk record before relying on it.",
+      "unavailable": "Upcoming zoning filings couldn't be checked right now. This is not a finding of none.",
+      "partial": "Placement is partial: {{count}} current filing(s) could not be placed from the official title. The list below may be incomplete."
+    },
     "adu": {
       "allowed_by_right": "Coach houses and conversion units permitted by right",
       "not_allowed": "Coach houses and conversion units not permitted here",

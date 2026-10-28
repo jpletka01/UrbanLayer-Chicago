@@ -766,9 +766,45 @@ export interface PassedLandmarkDesignation {
   matched_by: "pin" | "address";
 }
 
+export interface UpcomingZoningFiling {
+  record_number: string;
+  title: string;
+  status: string;
+  sub_status: string;
+  introduced_at?: string | null;
+  latest_action_at?: string | null;
+  url: string;
+  application_number?: string | null;
+  segment?: string | null;
+  match_kind: "subject_pin" | "subject_range" | "nearby";
+  distance_mi?: number | null;
+}
+
+export interface UpcomingZoningProvenance {
+  source_id: string;
+  as_of?: string | null;
+  method: string;
+  confidence: "standard" | "low";
+}
+
+export interface UpcomingZoningSummary {
+  status: "ready" | "stale" | "unavailable";
+  placement_status: "complete" | "partial";
+  checked_at?: string | null;
+  radius_mi: number;
+  subject_filings: UpcomingZoningFiling[];
+  nearby_filings: UpcomingZoningFiling[];
+  placed_count: number;
+  unplaced_count: number;
+  placement_coverage?: number | null;
+  record_provenance: UpcomingZoningProvenance;
+  placement_provenance: UpcomingZoningProvenance;
+}
+
 export interface ContextObject {
   passed_landmark_designations?: PassedLandmarkDesignation[] | null;
   passed_not_on_map?: PassedNotOnMap[] | null;
+  upcoming_zoning?: UpcomingZoningSummary | null;
   coverage_notes?: CoverageNote[] | null;
   adu?: AduStatus | null;
   code_vintage?: CodeVintage | null;

@@ -2158,6 +2158,20 @@ async def scorecard(
     # PIN first) sees the reconciled PIN rather than the address alone.
     data["context"].parcel_pin = resolved_pin
     data["context"].parcel_resolution = resolved_confidence
+    # WS2: a read-only local snapshot lookup after identity reconciliation. This
+    # never calls Clerk or Address Points on the request path; missing/stale data
+    # is returned as an explicit state rather than being confused with zero filings.
+    from backend.legislation.upcoming import summary_for as upcoming_zoning_for
+
+    data["context"].upcoming_zoning = await asyncio.to_thread(
+        upcoming_zoning_for,
+        get_settings().pending_legislation_path,
+        lat=rl.lat,
+        lon=rl.lon,
+        pin=resolved_pin,
+        address=rl.address,
+        authoritative_pin=resolved_confidence == "authoritative",
+    )
     data["nearest_parcel_unverified"] = nearest_parcel_unverified
     data["resolved_lat"] = rl.lat
     data["resolved_lon"] = rl.lon

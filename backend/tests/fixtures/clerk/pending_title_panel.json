@@ -1,0 +1,29 @@
+{
+  "recorded_at": "2026-10-27",
+  "source": "City Clerk eLMS current non-final zoning docket",
+  "label_rule": "safe_to_place only when every listed range has an unambiguous direction, street name, street type, and non-reversed number range",
+  "measured_contract": {"panel_size": 21, "safe_titles": 16, "placement_coverage": 0.7619, "precision_floor": 0.95, "wrong_street_max": 0},
+  "rows": [
+    {"record": "O2026-0029359", "title": "Zoning Reclassification Map No. 4-F at 466 W Cermak Rd and 2106-2124 S Canal St - App No. 23180", "safe_to_place": true, "streets": ["W Cermak RD", "S Canal ST"]},
+    {"record": "O2026-0029403", "title": "Zoning Reclassification Map No. 13-G at 4940-4942 N Sheridan Rd - App No. 23196T1", "safe_to_place": true, "streets": ["N Sheridan RD"]},
+    {"record": "O2026-0029378", "title": "Zoning Reclassification Map No. 7-I at 2525 N Milwaukee Ave - App No. 23189T1", "safe_to_place": true, "streets": ["N Milwaukee AVE"]},
+    {"record": "O2026-0029422", "title": "Zoning Reclassification Map No. 5-H at 2343-2349 N Damen Ave - App No. 23201T1", "safe_to_place": true, "streets": ["N Damen AVE"]},
+    {"record": "O2026-0029379", "title": "Zoning Reclassification Map No. 12-E at 4901-4959 S Indiana Ave, 201-233 E 49th St and 4900-4928 S Prairie Ave - App No. 23190", "safe_to_place": true, "streets": ["S Indiana AVE", "E 49TH ST", "S Prairie AVE"]},
+    {"record": "O2026-0029362", "title": "Zoning Reclassification Map No. 4-G at 826-908 W 18th St, 1600-1730 S Newberry Ave, 829-909 W 16th St, 1600-1728 S Peoria St and 1601-1729 S Peoria St - App No. 23182", "safe_to_place": true, "streets": ["W 18TH ST", "S Newberry AVE", "W 16TH ST", "S Peoria ST", "S Peoria ST"]},
+    {"record": "O2026-0029371", "title": "Zoning Reclassification Map No. 7-F at 3127-3139 N Halsted St/749-759 W Briar Pl - App No. 23185T1", "safe_to_place": true, "streets": ["N Halsted ST", "W Briar PL"]},
+    {"record": "O2026-0029375", "title": "Zoning Reclassification Map No. 3-J at 3724 W Le Moyne St - App No. 23187T1", "safe_to_place": true, "streets": ["W Le Moyne ST"]},
+    {"record": "O2026-0029435", "title": "Zoning Reclassification Map No. 1-L at 4901 W Ferdinand St - App No. 23203T1", "safe_to_place": true, "streets": ["W Ferdinand ST"]},
+    {"record": "O2026-0029387", "title": "Zoning Reclassification Map No. 11-G at 4525-4531 N Clark St - App No. 23192T1", "safe_to_place": true, "streets": ["N Clark ST"]},
+    {"record": "O2026-0029377", "title": "Zoning Reclassification Map No. 14-J at 5948 S Kedzie Ave - App No. 23188", "safe_to_place": true, "streets": ["S Kedzie AVE"]},
+    {"record": "O2026-0029405", "title": "Zoning Reclassification Map No. 1-J at 746-748 N Trumbull Ave - App No. 23198T1", "safe_to_place": true, "streets": ["N Trumbull AVE"]},
+    {"record": "O2026-0029414", "title": "Zoning Reclassification Map No. 18-F at 7215 S Union Ave - App No. 23199", "safe_to_place": true, "streets": ["S Union AVE"]},
+    {"record": "O2026-0029386", "title": "Zoning Reclassification Map No. 2-I at 507-509 S California Ave - App No. 23191T1", "safe_to_place": true, "streets": ["S California AVE"]},
+    {"record": "O2026-0029398", "title": "Zoning Reclassification Map No. 3-F at 864-868 N Orleans St - App No. 23195T1", "safe_to_place": true, "streets": ["N Orleans ST"]},
+    {"record": "O2026-0029394", "title": "Zoning Reclassification Map No. 4-F at 2125-2127 S Archer Ave - App No. 23193T1", "safe_to_place": true, "streets": ["S Archer AVE"]},
+    {"record": "O2026-0029358", "title": "Zoning Reclassification Map No. 28-F at 11300 S Wentworth Ave - App No. TBD", "safe_to_place": false, "streets": []},
+    {"record": "O2026-0029400", "title": "Zoning Reclassification Map No. 16-D at - 6401-6557 S Woodlawn Ave, 6400-6554 S Kimbark Ave, 6401-6557 S Kimbark Ave, 6420-6556 S Kenwood Ave, 6409-6557 S Kenwood Ave, 6400-6538 S Dorchester Ave", "safe_to_place": false, "streets": []},
+    {"record": "O2026-0028754", "title": "Zoning Reclassification Map No. 3-F at 1119-1137 N Halsted St/1134-1178 N Kingsbury St/1157-1167 Ogden Ave - App No. 23179", "safe_to_place": false, "streets": []},
+    {"record": "O2026-0028489", "title": "Zoning Reclassification Map No. 15-J at 6306-6346 N Kedzie and 3201-3515 W Devon Ave", "safe_to_place": false, "streets": []},
+    {"record": "O2026-0028686", "title": "Zoning Reclassification Map No. 10-E at 4200 S Dr Martin Luther King, Jr. - App No. 23158T1", "safe_to_place": false, "streets": []}
+  ]
+}

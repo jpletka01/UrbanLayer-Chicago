@@ -296,6 +296,13 @@ FACTS: dict[str, FactSpec] = {
         "Municipal Code vintage", "code.municipal_text", "published_text", "city", "official_publication",
         input_source_ids=("code.qdrant_index",),  # the index we answer from must be the same vintage
     ),
+    "regulatory.upcoming_zoning.records": FactSpec(
+        "Current zoning filings", "chi.clerk.legislation", "recorded", "radius", "official_record",
+    ),
+    "regulatory.upcoming_zoning.placement": FactSpec(
+        "Upcoming zoning placement", "cook.address_points", "calculation", "radius", "our_calculation",
+        input_source_ids=("chi.clerk.legislation", "internal.pending_legislation"),
+    ),
 }
 
 
@@ -649,6 +656,37 @@ def build_provenance(
             record_id=ov.ordinance or ov.name,
             url=ov.link,
             value=_scalar(ov.name or layer_name),
+        )
+
+    upcoming = getattr(context, "upcoming_zoning", None)
+    if upcoming is not None and upcoming.checked_at:
+        as_of = upcoming.checked_at[:10]
+        shown = len(upcoming.subject_filings) + len(upcoming.nearby_filings)
+        out["regulatory.upcoming_zoning.records"] = make_entry(
+            "regulatory.upcoming_zoning.records", query_date=qd,
+            source="City Clerk eLMS current non-final zoning docket",
+            record_id=f"{shown} placed filing(s)",
+            as_of=as_of, as_of_basis="queried",
+            note="Applicant filings are proposals, not approvals.",
+            value=_scalar(shown),
+        )
+        out["regulatory.upcoming_zoning.placement"] = make_entry(
+            "regulatory.upcoming_zoning.placement", query_date=qd,
+            source="UrbanLayer placement using Cook County Address Points",
+            record_id=f"{upcoming.radius_mi:g} mile radius",
+            as_of=as_of, as_of_basis="queried",
+            note=(
+                f"{upcoming.unplaced_count} current zoning filing(s) could not be placed."
+                if upcoming.placement_status == "partial" else None
+            ),
+            coverage={
+                "n": upcoming.placed_count,
+                "share": upcoming.placement_coverage,
+                "universe": "current zoning filings citywide",
+                "unit": "filings",
+            },
+            inputs=["chi.clerk.legislation", "cook.address_points"],
+            value=_scalar(upcoming.placement_status),
         )
 
     if resolved_pin:

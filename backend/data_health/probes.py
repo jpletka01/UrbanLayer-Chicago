@@ -468,6 +468,8 @@ async def probe_pending_legislation(spec: SourceSpec, ctx: ProbeContext) -> Prob
             f"details={counts.get('details')}, pending={counts.get('pending')}, "
             f"zoning={counts.get('zoning')}, title17={counts.get('title17')}, "
             f"placement-ready={counts.get('placement_ready')}, "
+            f"placed={counts.get('placed_matters')}, unplaced={counts.get('unplaced_matters')}, "
+            f"locations={counts.get('locations')}, "
             f"partial-titles={counts.get('partial_titles')}, unparsed-titles={counts.get('unparsed_titles')}, "
             f"lifecycle collapses={counts.get('lifecycle_collapses')}, "
             f"excluded non-pending={counts.get('excluded_non_pending')}, "
