@@ -303,6 +303,13 @@ FACTS: dict[str, FactSpec] = {
         "Upcoming zoning placement", "cook.address_points", "calculation", "radius", "our_calculation",
         input_source_ids=("chi.clerk.legislation", "internal.pending_legislation"),
     ),
+    "regulatory.upcoming_zoning.text_impacts": FactSpec(
+        "Pending Title 17 amendments", "chi.clerk.legislation", "recorded", "city", "official_record",
+    ),
+    "regulatory.upcoming_zoning.relevance": FactSpec(
+        "Pending amendment relevance to this parcel", "internal.pending_impact_review", "calculation", "parcel",
+        "our_calculation", input_source_ids=("chi.clerk.legislation", "internal.pending_legislation"),
+    ),
 }
 
 
@@ -859,3 +866,41 @@ def withhold_low_evidence(context, provenance: dict[str, dict]) -> dict[str, dic
     context.figure_notes = [FigureNote(**n) for n in notes] or None
     context.provenance = out
     return out
+
+
+def text_impact_entries(upcoming, query_date: str) -> dict[str, dict]:
+    """Provenance for the pending Title 17 text-impact block: the Clerk's record, and UrbanLayer's
+    reviewed relevance mapping (never restated as the government's opinion). Built after the
+    impacts are computed because the parcel's own fact ids decide them."""
+    review = getattr(upcoming, "text_review", None)
+    if upcoming is None or review is None or not upcoming.checked_at or review.status == "unavailable":
+        return {}
+    as_of = upcoming.checked_at[:10]
+    shown = len(upcoming.text_impacts)
+    note = None
+    if review.status == "incomplete":
+        note = f"{len(review.unreviewed)} pending Title 17 proposal(s) have no current review for relevance to this parcel."
+    return {
+        "regulatory.upcoming_zoning.text_impacts": make_entry(
+            "regulatory.upcoming_zoning.text_impacts", query_date=query_date,
+            source="City Clerk eLMS pending Title 17 text amendments",
+            record_id=f"{review.pending_count} pending proposal(s)",
+            as_of=as_of, as_of_basis="queried",
+            note="Pending proposals are not law and are shown beside, never in place of, current law.",
+            value=_scalar(review.pending_count),
+        ),
+        "regulatory.upcoming_zoning.relevance": make_entry(
+            "regulatory.upcoming_zoning.relevance", query_date=query_date,
+            source="UrbanLayer reviewed mapping of pending proposals to Profile rules (backend/pending_impacts.json)",
+            record_id=f"{review.reviewed_count} of {review.pending_count} reviewed",
+            as_of=as_of, as_of_basis="queried",
+            method="A person-supervised reading of each pending ordinance's text, applied to this parcel's district, overlays and shown facts",
+            note=note,
+            coverage={
+                "n": review.reviewed_count, "share": (review.reviewed_count / review.pending_count) if review.pending_count else 1.0,
+                "universe": "pending Title 17 text proposals", "unit": "proposals",
+            },
+            inputs=["chi.clerk.legislation", "internal.pending_legislation"],
+            value=_scalar(shown),
+        ),
+    }

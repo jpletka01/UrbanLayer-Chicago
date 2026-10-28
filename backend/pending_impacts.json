@@ -1,0 +1,1087 @@
+{
+ "_readme": "Hand-reviewed meaning of each PENDING Title 17 text amendment (WS2 PR3). The Clerk is authoritative for what is pending and its status; this file is authoritative for which Profile rule or fact a pending proposal COULD change. Keyed by lifecycle id (the original O-number); reviewed_record is the exact record whose text was read, and a different current record (a new substitute) is unreviewed until re-read. basis 'ordinance' = the Legislation PDF was read (never an Economic Disclosure Statement); only that basis may carry impacts. basis 'title' = reviewed from the title alone: it can only say 'no Profile fact', never a relevance. impacts[]: sections = the Title 17 sections the proposal edits; fact_ids = the Profile facts it could change (backend/provenance.py FACTS, plus note.* for coverage notes); applies_when = deterministic conditions on this parcel (zone_patterns: regexes searched in the upper-case zone class; overlays_any / overlays_none: overlay layer types; facts_all: Profile facts that must be shown; address_ranges: street segments matched by address); reach 'untested' = the parcel cannot be tested for the proposal's geographic or building-level condition, so the Profile says so rather than claim reach. Nothing here changes a current-law answer. Written by reading in a Claude Code session; no model call in the product.",
+ "reviews": {
+  "O2023-0001196": {
+   "reviewed_record": "O2023-0001196",
+   "title": "Amendment of Municipal Code Section 17-9-0129 by allowing placement of adult use cannabis dispensaries within 500 ft. of any school within Central Business District",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=89D3CA38-880F-EE11-8F6C-001DD806D641",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Cannabis dispensaries near schools in the Central Business District (17-9-0129); a use rule the Profile does not state."
+  },
+  "O2023-0001213": {
+   "reviewed_record": "O2023-0001213",
+   "title": "Amendment of Municipal Code Section 17-13-0103-A regarding separate Special Use zoning application fees for certain for-profit and other applicant types",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=A608A6F7-3810-EE11-8F6C-001DD806D3F2",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Special use application fees (17-13-0103-A); no Profile fact."
+  },
+  "O2023-0001237": {
+   "reviewed_record": "O2023-0001237",
+   "title": "Amendment of Municipal Code Title 17 by modifying Sections 17-9-0200 and 17-17-0200 regarding prohibition, application and definition of Cluster Mailboxes",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=4D6DEC40-4B10-EE11-8F6C-001DD806D641",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Cluster mailboxes (17-9-0200, 17-17-0200); no Profile fact."
+  },
+  "O2023-0004211": {
+   "reviewed_record": "O2023-0004211",
+   "title": "Amendment of Municipal Code Chapters 17-10 and 17-13 regarding Type 1 zoning adjustment and rezoning requirements, applications and administrative adjustments",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=AE9CE456-1753-EE11-BE6E-001DD8097F18",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Type 1 zoning adjustment and rezoning requirements (17-10, 17-13); procedures the Profile does not state."
+  },
+  "O2023-0004736": {
+   "reviewed_record": "O2023-0004736",
+   "title": "Amendment of Municipal Code Title 17 by modifying various chapters to add Smoke Shop as Special Use Category",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=D3842557-195E-EE11-BE6E-001DD8306AD0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Smoke shop special use category; a use rule the Profile does not state."
+  },
+  "O2023-0004818": {
+   "reviewed_record": "O2023-0004818",
+   "title": "Amendment of Municipal Code Title 17 by modifying various chapters requiring that cannabis business establishments be permitted by-right or as Planned Development Type 1 classification",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=9209E1CD-FD5E-EE11-BE6E-001DD8306AD0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Cannabis business establishment approvals; a use rule the Profile does not state."
+  },
+  "O2023-0005667": {
+   "reviewed_record": "O2023-0005667",
+   "title": "Amendment of Municipal Code Section 17-4-0404 by modifying subsection 17-4-0404-B regarding minimum lot area per unit reductions for certain area districts",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=A3280052-5B77-EE11-9AE5-001DD804D430",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "W27 - 17-4-0400 amendment.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Would remove the 30 percent cap on the lot-area-per-unit reduction that downtown floor area bonus projects may use (17-4-0404-B) in -16 districts.",
+   "impacts": [
+    {
+     "id": "d16-mla-cap",
+     "sections": [
+      "17-4-0404-B"
+     ],
+     "fact_ids": [
+      "zoning.min_lot_area_per_unit"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^D[CXRS]-16$"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "how far the minimum lot area per unit can be reduced for a downtown floor-area bonus project in this -16 district (the 30 percent cap would not apply). The Profile shows the base standard"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2023-2075": {
+   "reviewed_record": "O2023-2075",
+   "title": "Amendment of Municipal Code Chapter 17-7 by adding modifying Sections 17-7-0571 and 17-7-0572",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=5FC81717-4305-EE11-8F6D-001DD806E1D0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "O2023-2075.pdf",
+   "pages_read": "1-3 of 3",
+   "summary": "Would replace the five mapped Additional Dwelling Unit-Allowed Areas (17-7-0572, Figure 17-7-0570) with \"Additional Dwelling Units are allowed in all RS2, RS3, RM and RT districts outside the Central Business District\".",
+   "impacts": [
+    {
+     "id": "adu-citywide",
+     "sections": [
+      "17-7-0572"
+     ],
+     "fact_ids": [
+      "zoning.adu",
+      "overlay.adu_area"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RS-[23]$"
+      ],
+      "overlays_none": [
+       "adu_area"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": "The Central Business District boundary (9-4-010) is not tested against this parcel.",
+     "could_change": "whether coach houses and conversion units are allowed here: the proposal would allow them in every RS2 and RS3 district outside the Central Business District, not only inside a mapped ADU area"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2023-2076": {
+   "reviewed_record": "O2023-2076",
+   "title": "Amendment of Municipal Code Section 17-9-0112 by modifying location distance between Personal Services facilities",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=60C81717-4305-EE11-8F6D-001DD806E1D0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Distance between personal services facilities (17-9-0112); a use rule the Profile does not state."
+  },
+  "O2023-2187": {
+   "reviewed_record": "O2023-2187",
+   "title": "Amendment of Municipal Code Chapters 17-12 and 17-17 by modifying Sections 17-12-1200 and 17-17-0200 regarding City digital signs and general terms",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=01595215-4305-EE11-8F6D-001DD806EC60",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "City digital signs and general terms (17-12-1200, 17-17-0200); no Profile fact."
+  },
+  "O2024-0007319": {
+   "reviewed_record": "O2024-0007319",
+   "title": "Amendment of Municipal Code Section 17-5-0207 by requiring planned development approval for mining/excavation use within M3 Zoning Districts",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=C79FF025-32BA-EE11-A568-001DD8069864",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Planned development approval for mining/excavation in M3 (17-5-0207); a use rule the Profile does not state."
+  },
+  "O2024-0007691": {
+   "reviewed_record": "O2024-0007691",
+   "title": "Amendment of Municipal Code Section 17-6-0403-F by prohibiting permits for intensive manufacturing within Planned Manufacturing District Nos. 8 and 11",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=FE88A7F4-9ECA-EE11-9078-001DD806E542",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Prohibits intensive manufacturing in Planned Manufacturing Districts 8 and 11 (17-6-0403-F); a use rule the Profile does not state."
+  },
+  "O2024-0009658": {
+   "reviewed_record": "O2024-0009658",
+   "title": "Amendment of Municipal Code Section 17-6-0403-F by requiring special use permits for sports and recreation participants in Planned Manufacturing District 4A",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=CE53F4F5-6018-EF11-9F89-001DD80972A9",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Special use for sports and recreation in Planned Manufacturing District 4A (17-6-0403-F); a use rule the Profile does not state."
+  },
+  "O2024-0013134": {
+   "reviewed_record": "O2024-0013134",
+   "title": "Amendment of Municipal Code Title 17 authorizing zoning administrator to approve administrative adjustment to parking location standards for new construction projects in B and C Districts near rail station entrance, exit and not along pedestrian street",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=61AE4A8A-5286-EF11-AC21-001DD8306DF0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Administrative adjustment to parking location standards (17-10); the Profile states no parking location rule."
+  },
+  "O2024-0014002": {
+   "reviewed_record": "O2024-0014002",
+   "title": "Amendment of Municipal Code Chapter 17-13 regarding zoning administrator approval on special use applications",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=9CE3A7B8-34A8-EF11-8A6A-001DD8306DF0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Zoning administrator approval of special use applications (17-13); a procedure the Profile does not state."
+  },
+  "O2024-0014096": {
+   "reviewed_record": "O2024-0014096",
+   "title": "Amendment of Municipal Code Section 17-7-0572 by extending additional dwelling unit-allowed area boundaries of Northwest Zone",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=7B2CCD2C-2AAC-EF11-B8E9-001DD8306DF0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "1stward_adu.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Redraws the Northwest Zone boundary of the Additional Dwelling Unit-Allowed Areas (17-7-0572): drops Fullerton and adds Diversey, the Kennedy Expressway, Western, North, Division, Milwaukee, Noble, Chestnut, Greenview, Chicago, Armour, Erie, Racine, Ogden, Hubbard, Ada, Kinzie, Grand and Ashland segments, and amends Figure 17-7-0570 and the City's GIS files to match.",
+   "impacts": [
+    {
+     "id": "adu-nw-boundary",
+     "sections": [
+      "17-7-0572"
+     ],
+     "fact_ids": [
+      "zoning.adu",
+      "overlay.adu_area"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RS-"
+      ],
+      "overlays_none": [
+       "adu_area"
+      ]
+     },
+     "reach": "untested",
+     "reach_note": "Whether the new boundary reaches this parcel needs the City's map geometry, which this page does not test.",
+     "could_change": "where coach houses and conversion units are allowed, by moving a boundary of the Northwest ADU zone"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2024-0014404": {
+   "reviewed_record": "SO2024-0014404",
+   "title": "Amendment of Municipal Code Chapters 17-12 and 17-17 by modifying Sections 17-12-1200 and 17-17-0200 regarding City digital signs and general terms",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=D52FBA5D-3AB7-EF11-B8E9-001DD804C7AB",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "City digital signs and general terms (17-12-1200, 17-17-0200); no Profile fact."
+  },
+  "O2025-0014900": {
+   "reviewed_record": "O2025-0014900",
+   "title": "Amendment of Municipal Code Title 17 by modifying various sections and adding new Section 17-17-016-F regulating operation and location of intoxicating hemp retailers",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=6E91F2D6-63D3-EF11-8EEA-001DD804AA64",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Operation and location of intoxicating hemp retailers (17-17-016-F); a use rule the Profile does not state."
+  },
+  "O2025-0016007": {
+   "reviewed_record": "O2025-0016007",
+   "title": "Amendment of Municipal Code Section 17-3-0500 designating N Milwaukee Ave, from N Rockwell/Francis to Central Park as pedestrian streets",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=5F7177FE-54FF-EF11-9340-001DD8049D51",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w35 - O16007.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Extends the N Milwaukee Ave pedestrian street from Rockwell/Francis to Central Park (17-3-0503-D); the added block is the sponsor's common address 2912-2957 N Milwaukee.",
+   "impacts": [
+    {
+     "id": "ped-street-milwaukee",
+     "sections": [
+      "17-3-0503-D"
+     ],
+     "fact_ids": [
+      "note.pedestrian_street"
+     ],
+     "applies_when": {
+      "address_ranges": [
+       {
+        "direction": "N",
+        "street": "MILWAUKEE",
+        "suffix": "AVE",
+        "from": 2912,
+        "to": 2957
+       }
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether this address is on a pedestrian street, which carries the pedestrian-street standards of 17-3-0504"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2025-0016695": {
+   "reviewed_record": "O2025-0016695",
+   "title": "Amendment of Municipal Code Sections 4-4-315 and 17-12-1000 restricting obstruction of public-facing window spaces of any business by signs to no more than twenty-five percent",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=85533BBE-351A-F011-9989-001DD830951E",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Window signage limits (4-4-315, 17-12-1000); no Profile fact."
+  },
+  "O2025-0016697": {
+   "reviewed_record": "SO2025-0016697",
+   "title": "Amendment of Municipal Code Chapter 2-31 and Title 17 regarding environmental cumulative impacts of pollution on historically disadvantaged areas (Hazel Johnson Cumulative Impacts Ordinance)",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=D3BEFA0C-371A-F011-9989-001DD830951E",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Cumulative-impacts review process for certain industrial uses; a process rule the Profile does not state."
+  },
+  "O2025-0016750": {
+   "reviewed_record": "O2025-0016750",
+   "title": "Amendment of Municipal Code Title 17 to require special use or by-right permits for rear dwelling and conversion units and to establish exceptions for ground level rear dwelling and conversion units in certain B and C zoning districts",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=5416290C-EC1A-F011-9989-001DD830A299",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w44 - o16750.pdf",
+   "pages_read": "1-3 of 3",
+   "summary": "Adds rear dwelling units to the B and C use table (17-3-0207, 17-3-0307.4) and changes conversion units: in B2 they stay permitted by right; in B1, B3, C1 and C2 they would be by right below the second floor only when at least 40 percent of the ground floor fronting the public way is commercial, and otherwise a special use (17-3-0309, 17-9-0131, 17-17-0240.6).",
+   "impacts": [
+    {
+     "id": "bc-conversion-units",
+     "sections": [
+      "17-3-0207",
+      "17-3-0307",
+      "17-3-0309",
+      "17-9-0131"
+     ],
+     "fact_ids": [
+      "zoning.adu"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^(B1|B3|C1|C2)-"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether coach houses and conversion units are permitted by right in this district: in B1, B3, C1 and C2 they would be by right only with 40 percent ground-floor commercial use, and otherwise need a special use"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2025-0017141": {
+   "reviewed_record": "O2025-0017141",
+   "title": "Amendment of Municipal Code Chapter 17-13 regarding contents of Type 1 rezoning applications",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=5F71BE12-9B2A-F011-8C4D-001DD806A987",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Contents of Type 1 rezoning applications (17-13); a procedure the Profile does not state."
+  },
+  "O2025-0017545": {
+   "reviewed_record": "O2025-0017545",
+   "title": "Amendment of Municipal Code Section 17-10-1002 requiring all off-street parking areas and driveways be improved with compacted base of 4-inch, all-weather dustless material",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=751C8BD1-5836-F011-8C4D-001DD8309E73",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Surface material for off-street parking areas and driveways (17-10-1002); the Profile states no parking surface rule."
+  },
+  "O2025-0017560": {
+   "reviewed_record": "O2025-0017560",
+   "title": "Amendment of Municipal Code Titles 2 and 17 by adding new sections to Chapter 2-31 establishing environmental justice advisory board and modifying various sections of Title 17 changing requirements for industrial uses",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=0020AA34-6336-F011-8C4D-001DD80501AC",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Environmental justice board and requirements for industrial uses. Pages 1-4 of 14 (Chapter 2-31) were read; the Title 17 industrial-use changes were not. The Profile states only district-level use summaries."
+  },
+  "O2025-0018209": {
+   "reviewed_record": "O2025-0018209",
+   "title": "Amendment of Municipal Code Sections 10-32-220 and 17-11-0103 modifying standards for parkway trees",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=6FE686BD-DB4D-F011-8779-001DD80993EF",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Parkway trees (10-32-220, 17-11-0103); no Profile fact."
+  },
+  "O2025-0018765": {
+   "reviewed_record": "O2025-0018765",
+   "title": "Amendment of Municipal Code Section 17-17-0400-B to strike various streets from Bus Line Corridor Roadway Segments",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=F7CE3449-5E62-F011-BEC1-001DD8305CC6",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Strikes streets from the bus corridor table (17-17-0400-B). The Profile's transit-served status comes from the City's TOD map layers, not that table."
+  },
+  "O2025-0020510": {
+   "reviewed_record": "O2025-0020510",
+   "title": "Amendment of Municipal Code Section 17-6-0403-F to require by right permits for Residential Storage Warehouses in Planned Manufacturing District 4B",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=0E89101A-A7AA-F011-BBD2-001DD80B7FF7",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "By-right permit for residential storage warehouses in Planned Manufacturing District 4B; a use rule the Profile does not state."
+  },
+  "O2025-0021921": {
+   "reviewed_record": "O2025-0021921",
+   "title": "Amendment of Municipal Code Titles 1, 3, 4, 7, 9, 10, 11, 14A, 14X and 17 (2026 Revenue Ordinance)",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=3B6C4739-17DD-F011-8543-001DD802FB0D",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "2026 Revenue Ordinance_12_19_25 _v2.pdf",
+   "pages_read": "Title 17 passages of 71",
+   "summary": "Annual revenue ordinance. Its Title 17 passages (found by text search) edit the casino definition (17-17-0234) and strike an exception for casino text amendments (17-13-0205).",
+   "impacts": [],
+   "no_impact_reason": "Casino definitions and procedure; no Profile fact."
+  },
+  "O2026-0025428": {
+   "reviewed_record": "O2026-0025428",
+   "title": "Amendment of Municipal Code Chapter 17-6 by adding new Section 17-6-0500 to establish new I, Institutional zoning district",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=C96DFDF7-6454-F111-BEC5-001DD801AB0F",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Creates a new Institutional district (17-6-0500); no existing parcel is zoned in it, so no current Profile fact can change."
+  },
+  "O2026-0025612": {
+   "reviewed_record": "O2026-0025612",
+   "title": "Amendment of Municipal Code Section 17-17-0103 including electrical substations to public and civic use group use categories",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=90A44B86-3B59-F111-BEC5-001DD80C4FA2",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Use category for electrical substations; no Profile fact."
+  },
+  "O2026-0026237": {
+   "reviewed_record": "O2026-0026237",
+   "title": "Designation of segment of W Lawrence Ave right-of-way on Map Nos. 11-H, 11-G, 13-H, and 13-G as Transient Oriented Development (TOD) Street and amendment of Municipal Code Section 17-3-0602-F designating portion of W Lawrence Ave as Transient Oriented Development (TOD) Street",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=A93BFA28-B069-F111-A823-001DD80F48C2",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "TOD Street -  Lawrence Avenue - Western to Clark.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Designates W Lawrence Ave, Clark to Western (1500-2400 W), as a TOD street by adding it to 17-3-0602-F.",
+   "impacts": [
+    {
+     "id": "tod-street-lawrence",
+     "sections": [
+      "17-3-0602-F"
+     ],
+     "fact_ids": [
+      "note.tod_street"
+     ],
+     "applies_when": {
+      "address_ranges": [
+       {
+        "direction": "W",
+        "street": "LAWRENCE",
+        "suffix": "AVE",
+        "from": 1500,
+        "to": 2400
+       }
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether this address is on a TOD street, which carries use prohibitions and rezoning rules for abutting lots (17-3-0602 to 17-3-0604)"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0026239": {
+   "reviewed_record": "O2026-0026239",
+   "title": "Designation of segment of N Ravenswood Ave right-of-way on Map No. 11-H as Transient Oriented Development (TOD) Street and amendment of Municipal Code Section 17-3-0602-F designating portion of N Ravenswood Ave as Transient Oriented Development Street",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=3034801B-B169-F111-A823-001DD80F48C2",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "TOD Street -  Ravenswood Avenue - Irving Park to Lawrence.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Designates N Ravenswood Ave, Irving Park to Lawrence (4001-4799 N), as a TOD street by adding it to 17-3-0602-F.",
+   "impacts": [
+    {
+     "id": "tod-street-ravenswood",
+     "sections": [
+      "17-3-0602-F"
+     ],
+     "fact_ids": [
+      "note.tod_street"
+     ],
+     "applies_when": {
+      "address_ranges": [
+       {
+        "direction": "N",
+        "street": "RAVENSWOOD",
+        "suffix": "AVE",
+        "from": 4001,
+        "to": 4799
+       }
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether this address is on a TOD street, which carries use prohibitions and rezoning rules for abutting lots (17-3-0602 to 17-3-0604)"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0026261": {
+   "reviewed_record": "O2026-0026261",
+   "title": "Designation of segment of N Western Ave right-of-way on Map Nos. 9-H, 9-I, 11-H, 11-I, 13-H, and 13-I as Transient Oriented Development (TOD) Street and amendment of Municipal Code Section 17-3-0602-F designating portion of N Western Ave as Transient Oriented Development (TOD) Street",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=D0344915-C469-F111-A823-001DD80F48C2",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "TOD Street - Western Avenue - Addison to Ainslie (1).pdf",
+   "pages_read": "1 of 1",
+   "summary": "Designates N Western Ave, Addison to Ainslie (3600-4859 N), as a TOD street by adding it to 17-3-0602-F.",
+   "impacts": [
+    {
+     "id": "tod-street-western",
+     "sections": [
+      "17-3-0602-F"
+     ],
+     "fact_ids": [
+      "note.tod_street"
+     ],
+     "applies_when": {
+      "address_ranges": [
+       {
+        "direction": "N",
+        "street": "WESTERN",
+        "suffix": "AVE",
+        "from": 3600,
+        "to": 4859
+       }
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether this address is on a TOD street, which carries use prohibitions and rezoning rules for abutting lots (17-3-0602 to 17-3-0604)"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0026265": {
+   "reviewed_record": "O2026-0026265",
+   "title": "Amendment of Municipal Code Title 17 (Chicago Zoning Ordinance) regarding parking requirements in transit-served locations",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=D35BC327-526A-F111-A823-001DD8019941",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "O2026-0026265 Ordinance.pdf",
+   "pages_read": "1-6 of 25",
+   "summary": "Would change how transit-served locations are defined across Title 17 (a rail \"transit station\" rather than a CTA or Metra station entrance or exit; boat or ferry terminals and bus-stop clusters added; the bus corridor table moves from 17-17-0400-B to 17-17-0400-A) and, in 17-10-0102-B, replace \"minimum off-street automobile parking ratios may be reduced by up to 100 percent\" (50 percent in D districts) with an exemption from the minimum ratios. It edits the same definition in the dash-3 B/C and D transit-served increases (17-3-0402-B, 17-3-0403-B, 17-3-0408-B, 17-4-0404-C, 17-4-0405-C), the efficiency-unit limits and the two-flat rules in community preservation areas. Pages 1-6 of 25 were read; pages 7-25 were not.",
+   "impacts": [
+    {
+     "id": "transit-parking",
+     "sections": [
+      "17-10-0102-B"
+     ],
+     "fact_ids": [
+      "zoning.tod_benefits"
+     ],
+     "applies_when": {
+      "facts_all": [
+       "zoning.tod_benefits"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": "Only pages 1-6 of the 25-page ordinance were read.",
+     "could_change": "how transit-served locations are defined and the parking relief they get: the proposal would replace \"reduced by up to 100 percent\" (50 percent in D districts) with an exemption from the minimum parking ratios"
+    },
+    {
+     "id": "transit-increases",
+     "sections": [
+      "17-3-0402-B",
+      "17-3-0403-B",
+      "17-3-0408-B",
+      "17-4-0404-C",
+      "17-4-0405-C"
+     ],
+     "fact_ids": [
+      "zoning.tod_benefits"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^[BC]\\d-3$",
+       "^D[CXRS]-3$"
+      ],
+      "facts_all": [
+       "zoning.tod_benefits"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": "Only pages 1-6 of the 25-page ordinance were read.",
+     "could_change": "the definition of a transit-served location used for dash-3 floor area, height and lot-area-per-unit increases (those increases still need a Type 1 map amendment, Planned Development or ARO entitlement in the text read)"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0026329": {
+   "reviewed_record": "O2026-0026329",
+   "title": "Amendment of Municipal Code Section 17-2-0303-B exempting properties located within additional dwelling unit-allowed RS area boundaries from minimum lot area per dwelling unit restrictions",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=9403AD39-756A-F111-A823-001DD80F48AE",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w47 - o26329.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Adds an exemption to 17-2-0303-B.1: in the RS3 district the minimum lot area per dwelling unit may be reduced to 1,500 square feet, for a two-unit building only, when the property is within an Additional Dwelling Unit-Allowed RS Area (17-7-0574).",
+   "impacts": [
+    {
+     "id": "rs3-adu-mla",
+     "sections": [
+      "17-2-0303-B"
+     ],
+     "fact_ids": [
+      "zoning.min_lot_area_per_unit",
+      "zoning.unit_yield"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RS-3$"
+      ],
+      "overlays_any": [
+       "adu_area"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "the minimum lot area per dwelling unit for a two-unit building in this RS3 lot, from 2,500 to 1,500 square feet, because the lot is in an ADU-Allowed RS Area"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0026908": {
+   "reviewed_record": "O2026-0026908",
+   "title": "Amendment of Municipal Code Title 17 by modifying various sections requiring by-right permitting for electric vehicle charging stations in certain zoning districts and by adding new Sections 17-9-0134 and 17-17-0104-DD.8 establishing regulations for electric vehicle charging stations",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=4DAA16F9-BA7B-F111-AB0D-001DD806636B",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Use permissions and standards for electric vehicle charging stations; no Profile fact."
+  },
+  "O2026-0027193": {
+   "reviewed_record": "O2026-0027193",
+   "title": "Amendment of Municipal Code Section 17-17-0103-K including electrical substations over 0.5 acres and located within 100 feet of residential building or outdoor equipment yard as use categories for public and civic use group",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=04C38E76-6E80-F111-AB0E-001DD80216AA",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Use category for electrical substations; no Profile fact."
+  },
+  "O2026-0027579": {
+   "reviewed_record": "O2026-0027579",
+   "title": "Amendment of Municipal Code Section 17-2-0207 requiring special use permits for single room occupancy residential development in RT4 through RT6.5 zoning districts",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=E301C7D3-FF97-F111-AB0E-001DD8066D23",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "SRO permitted to special use in residential zoning 081426.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Changes single-room occupancy in RT4 through RM6.5 from permitted-or-special to special use only (17-2-0207).",
+   "impacts": [],
+   "no_impact_reason": "A use-table permission for one use type; the Profile's residential use summaries do not name single-room occupancy."
+  },
+  "O2026-0028432": {
+   "reviewed_record": "O2026-0028432",
+   "title": "Amendment of Municipal Code Title 17 by modifying various sections and adding new sections regarding permit types, planned development approval, and requirements for Electronic Data Storage Centers",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=0E3D1224-BAB2-F111-AAAC-001DD80B58E5",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Permit types and planned-development approval for data storage centers; a use rule, not a standard the Profile states."
+  },
+  "O2026-0028836": {
+   "reviewed_record": "O2026-0028836",
+   "title": "Amendment of Municipal Code Chapter 17-17 establishing allowances for certain bay windows when calculating floor area ratio",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=71764E09-6EB7-F111-AAAC-001DD80B58E5",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w44 - o28836.pdf",
+   "pages_read": "1-2 of 2",
+   "summary": "Adds 17-17-0305-D: for the floor area ratio, the floor area of a front bay window that projects no more than three feet and extends to grade would not count, for residential buildings of four units or fewer on zoning lots no wider than 30 feet; and cross-references it in the 17-17-0309 setback-encroachment table.",
+   "impacts": [
+    {
+     "id": "bay-window-far",
+     "sections": [
+      "17-17-0305-D",
+      "17-17-0309"
+     ],
+     "fact_ids": [
+      "zoning.far"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RS-",
+       "^RT-",
+       "^RM-",
+       "^[BC]\\d-",
+       "^D[CXRS]-"
+      ]
+     },
+     "reach": "untested",
+     "reach_note": "Depends on the building's unit count and the lot's width, which this page does not test.",
+     "could_change": "how floor area is counted toward the floor area ratio limit for small residential buildings (four units or fewer on lots no wider than 30 feet): a front bay window that extends to grade would not count"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0028842": {
+   "reviewed_record": "O2026-0028842",
+   "title": "Amendment of Municipal Code Title 17 by modifying various sections regarding minimum lot area",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=905A1F21-70B7-F111-AAAC-001DD80B58E5",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w27,44 - o28842.pdf",
+   "pages_read": "1-8 of 8",
+   "summary": "Would eliminate the minimum lot area and lot-area-per-unit standards in RT3.5 through RM6.5 (17-2-0301-A, 17-2-0303-A), in all B and C districts (17-3-0402-A) and in all D districts (17-4-0404-A); reserve the transit-served and downtown-bonus lot-area-per-unit reductions (17-3-0402-B, 17-4-0404-B, 17-4-0404-C) and the RM6/RM6.5 floor area premium (17-2-0304-C); and exclude family-sized units (three or more sleeping rooms) from floor area for the floor area ratio in RT/RM, B/C and D districts and the North Branch Corridor (17-2-0304-E, 17-3-0403-D, 17-4-0405-E, 17-7-0415). RS1 through RS3 standards are unchanged.",
+   "impacts": [
+    {
+     "id": "mla-rt-rm",
+     "sections": [
+      "17-2-0301-A",
+      "17-2-0303-A"
+     ],
+     "fact_ids": [
+      "zoning.min_lot_area_per_unit",
+      "zoning.unit_yield"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RT-",
+       "^RM-"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "the minimum lot area and minimum lot area per dwelling unit for this district, which the proposal would eliminate (the unit-yield estimate rests on that standard)"
+    },
+    {
+     "id": "mla-bc",
+     "sections": [
+      "17-3-0402-A"
+     ],
+     "fact_ids": [
+      "zoning.min_lot_area_per_unit",
+      "zoning.unit_yield"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^[BC]\\d-"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "the minimum lot area per dwelling unit in B and C districts, which the proposal would eliminate (the unit-yield estimate rests on that standard)"
+    },
+    {
+     "id": "mla-d",
+     "sections": [
+      "17-4-0404-A"
+     ],
+     "fact_ids": [
+      "zoning.min_lot_area_per_unit",
+      "zoning.unit_yield"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^D[CXRS]-"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "the minimum lot area per dwelling unit in D districts, which the proposal would eliminate (the unit-yield estimate rests on that standard)"
+    },
+    {
+     "id": "far-family-units",
+     "sections": [
+      "17-2-0304-E",
+      "17-3-0403-D",
+      "17-4-0405-E",
+      "17-7-0415"
+     ],
+     "fact_ids": [
+      "zoning.far"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RT-",
+       "^RM-",
+       "^[BC]\\d-",
+       "^D[CXRS]-"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "how floor area is counted toward the floor area ratio limit: family-sized units (three or more sleeping rooms) would not count. The limit itself is not changed"
+    },
+    {
+     "id": "far-premium-rm6",
+     "sections": [
+      "17-2-0304-C"
+     ],
+     "fact_ids": [
+      "zoning.far"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^RM-6(\\.5)?$"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "the floor area premium for RM6 and RM6.5 lots that permit 50 or more units, which the proposal would eliminate"
+    },
+    {
+     "id": "transit-mla-reduction",
+     "sections": [
+      "17-3-0402-B",
+      "17-4-0404-C"
+     ],
+     "fact_ids": [
+      "zoning.tod_benefits"
+     ],
+     "applies_when": {
+      "zone_patterns": [
+       "^[BC]\\d-3$",
+       "^D[CXRS]-3$"
+      ],
+      "facts_all": [
+       "zoning.tod_benefits"
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "the transit-served lot-area-per-unit reduction available in dash-3 districts, which the proposal would reserve (remove)"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0029431": {
+   "reviewed_record": "O2026-0029431",
+   "title": "Designation of segments of W Diversey Pkwy right-of-way on Map No. 7-G as pedestrian street and amendment of Municipal Code Section 17-3-0503-D modifying pedestrian streets on portions of W Diversey Pkwy",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=3D489FCE-E3C7-F111-AAAE-001DD80FDAD3",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w43-44 - o29431.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Designates W Diversey Pkwy, Lincoln to Wilton (916-1164 W, both sides), as a pedestrian street by adding it to 17-3-0503-D.",
+   "impacts": [
+    {
+     "id": "ped-street-diversey",
+     "sections": [
+      "17-3-0503-D"
+     ],
+     "fact_ids": [
+      "note.pedestrian_street"
+     ],
+     "applies_when": {
+      "address_ranges": [
+       {
+        "direction": "W",
+        "street": "DIVERSEY",
+        "suffix": "PKWY",
+        "from": 916,
+        "to": 1164
+       }
+      ]
+     },
+     "reach": "parcel",
+     "reach_note": null,
+     "could_change": "whether this address is on a pedestrian street, which carries the pedestrian-street standards of 17-3-0504"
+    }
+   ],
+   "no_impact_reason": null
+  },
+  "O2026-0029459": {
+   "reviewed_record": "O2026-0029459",
+   "title": "Amendment of Municipal Code Title 17 by modifying permitting requirements for single-room occupancy, temporary overnight shelters, and transitional shelters in various zoning districts",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=1C27793A-EAC7-F111-AAAE-001DD803847B",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w35others - o29459.pdf",
+   "pages_read": "1-5 of 5",
+   "summary": "Changes who may be a household (17-17-0270) and the use-table permissions for single-room occupancy, temporary overnight shelters and transitional residences and shelters in B/C (17-3-0207) and D (17-4-0207) districts.",
+   "impacts": [],
+   "no_impact_reason": "Use-table permissions for individual use types; the Profile states only district-level use summaries, none of which names these uses."
+  },
+  "O2026-0029476": {
+   "reviewed_record": "O2026-0029476",
+   "title": "Amendment of Municipal Code Section 17-17-0104-Y to include Animal Services, Sales and Grooming in Residential Support Services",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=3780EBFA-F2C7-F111-AAAE-001DD80FDA55",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "w46 - o29476.pdf",
+   "pages_read": "1 of 1",
+   "summary": "Adds Animal Services, Sales and Grooming to the residential support services definition (17-17-0104-Y).",
+   "impacts": [],
+   "no_impact_reason": "A use definition; the Profile does not state residential support services."
+  },
+  "O2026-0029477": {
+   "reviewed_record": "O2026-0029477",
+   "title": "Amendment of Municipal Code Title 17 by modifying permitting requirements for specified Residential Use Group Living subcategories in various zoning districts and modifying use standards for community homes, transitional residences and transitional shelters",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=E87CA417-F5C7-F111-AAAE-001DD80FDA55",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Use-table permissions and use standards for group-living subcategories; same kind as O2026-0029459, whose text was read. The Profile states only district-level use summaries."
+  },
+  "O2026-0029644": {
+   "reviewed_record": "O2026-0029644",
+   "title": "Amendment of Municipal Code Titles 2, 4, 6, 7, 8, 9, 10, 11, 14A, 15, 17 regarding management, structure, powers and functions of various departments and agencies (2027 Municipal Code Management Ordinance)",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=EE54BD28-AFCC-F111-A05C-001DD80B58E5",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "ordinance",
+   "source_attachment": "O2026-0029644 Management Ordinance.pdf",
+   "pages_read": "Title 17 passages of 77",
+   "summary": "Annual management ordinance across many titles. Its Title 17 passages (found by text search of the PDF, not read page by page) insert Commissioner of Transportation wording and a cross-reference into the pedestrian-street and D-district driveway sections (17-3-0504-G, 17-4-0504-G, 17-4-0704), gas-station access (17-9-0109-K), Type 1 rezoning application contents (17-13-0303-C) and administrative adjustment/variation cross-references.",
+   "impacts": [],
+   "no_impact_reason": "The Title 17 passages read are cross-reference and agency-name clean-up; no standard the Profile states changes."
+  },
+  "SO2022-3989": {
+   "reviewed_record": "SO2022-3989",
+   "title": "Amendment of Municipal Code Chapters 4-8 and 17-9 regarding licensing of urban farms and community gardens, and modifying Section 7-38-142 concerning produce merchants",
+   "url": "https://chicityclerkelms.chicago.gov/Matter/?matterId=77502766-23F4-ED11-A7C6-001DD806ACE0",
+   "review_status": "reviewed",
+   "reviewed_on": "2026-10-28",
+   "reviewed_by": "claude (read in session, 2026-10-28); Jack approves in the WS2 PR3 PR",
+   "basis": "title",
+   "source_attachment": null,
+   "pages_read": null,
+   "summary": null,
+   "impacts": [],
+   "no_impact_reason": "Licensing of urban farms and community gardens (4-8, 17-9); a use rule the Profile does not state."
+  }
+ }
+}

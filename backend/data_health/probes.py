@@ -17,7 +17,7 @@ import re
 import sqlite3
 import time
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from math import cos, hypot, radians
 from pathlib import Path
@@ -533,6 +533,53 @@ async def probe_amendment_review(spec: SourceSpec, ctx: ProbeContext) -> ProbeRe
     return res
 
 
+PENDING_REVIEW_WARN_DAYS = 14
+PENDING_REVIEW_ALARM_DAYS = 45
+_PENDING_SNAPSHOT_MAX_AGE = timedelta(days=14)
+
+
+async def probe_pending_impact_review(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
+    """Is each pending Title 17 text proposal read and mapped? Reads the pending snapshot and the
+    committed review file only. Judges nothing without a fresh snapshot (the pending-snapshot and
+    Clerk sources report that), the same stance as ``internal.amendment_review``."""
+    from backend.config import get_settings
+    from backend.legislation import impacts
+    from backend.legislation.pending_store import read_status
+
+    res = ProbeResult()
+    try:
+        status = read_status(get_settings().pending_legislation_path)
+        matters = impacts.read_text_matters(get_settings().pending_legislation_path) if status else []
+    except Exception as exc:
+        raise ProbeError("service", _clean(f"{type(exc).__name__}: {exc}")) from exc
+    now = datetime.combine(ctx.today, datetime.min.time(), tzinfo=timezone.utc)
+    if status is None or status.checked_at is None or now - status.checked_at.astimezone(timezone.utc) > _PENDING_SNAPSHOT_MAX_AGE:
+        res.info = "no fresh pending snapshot, so the pending-amendment review backlog cannot be judged"
+        return res
+    reviews = impacts.load_reviews()
+    waiting = impacts.backlog(matters, reviews, ctx.today)
+    invalid = [
+        lid for lid, review in (impacts.currency._read_json(impacts.REVIEW_FILE) or {}).get("reviews", {}).items()
+        if impacts.validate_review(lid, review)
+    ]
+    res.info = (
+        f"{len(matters)} pending Title 17 text proposals, {len(matters) - len(waiting)} reviewed, "
+        f"{len(waiting)} unreviewed or outdated"
+    )
+    if invalid:
+        res.findings.append(Finding("alarm", f"{len(invalid)} review entr{'y is' if len(invalid) == 1 else 'ies are'} invalid "
+                                              f"and ignored: {', '.join(sorted(invalid)[:5])}"))
+    aged = [r for r in waiting if r["waiting_days"] is not None]
+    if aged and aged[0]["waiting_days"] > PENDING_REVIEW_WARN_DAYS:
+        oldest = aged[0]
+        level = "alarm" if oldest["waiting_days"] > PENDING_REVIEW_ALARM_DAYS else "warn"
+        res.findings.append(Finding(level, (
+            f"Pending Title 17 proposal {oldest['record']} ({oldest['reason']}) has waited {oldest['waiting_days']} days "
+            f"since introduction for review (warn after {PENDING_REVIEW_WARN_DAYS}, alarm after {PENDING_REVIEW_ALARM_DAYS}); "
+            f"{len(waiting)} unreviewed or outdated in all")))
+    return res
+
+
 async def probe_qdrant(spec: SourceSpec, ctx: ProbeContext) -> ProbeResult:
     from backend.code_vintage import get_code_vintage_record
 
@@ -767,6 +814,7 @@ PROBES: dict[str, Callable[[SourceSpec, ProbeContext], Awaitable[ProbeResult]]] 
     "gtfs_head": probe_gtfs_head,
     "clerk_latest": probe_clerk_latest,
     "pending_legislation": probe_pending_legislation,
+    "pending_impact_review": probe_pending_impact_review,
     "code_text": probe_code_text,
     "amendment_review": probe_amendment_review,
     "qdrant": probe_qdrant,

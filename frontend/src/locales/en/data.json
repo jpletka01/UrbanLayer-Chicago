@@ -202,6 +202,33 @@
         "aro_zone": "ARO zone",
         "ssa": "Special Service Area"
       }
+    },
+    "pendingText": {
+      "title": "Pending zoning-code changes",
+      "disclaimer": "These are proposals before City Council, not adopted law. Current law and the figures on this page are unchanged unless Council passes one and the code is amended.",
+      "checked": "Checked {{date}}",
+      "unavailable": "Pending zoning-code changes couldn't be checked right now. This is not a finding of none.",
+      "stale": "The latest refresh did not complete. Showing the last successful check; verify the Clerk record before relying on it.",
+      "incomplete_one": "{{count}} pending Title 17 proposal hasn't been reviewed for relevance to this property, so this list may be incomplete.",
+      "incomplete_other": "{{count}} pending Title 17 proposals haven't been reviewed for relevance to this property, so this list may be incomplete.",
+      "unreviewedHeading": "Not yet reviewed",
+      "reasonUnreviewed": "Not yet reviewed",
+      "reasonOutdated": "A newer version replaced the one we reviewed",
+      "waiting": "introduced {{days}} days ago",
+      "emptyNone": "No pending Title 17 text proposals are on the Clerk's docket.",
+      "empty_one": "The {{count}} pending Title 17 proposal we reviewed does not map to this property's district, overlays or figures.",
+      "empty_other": "None of the {{count}} pending Title 17 proposals we reviewed maps to this property's district, overlays or figures.",
+      "pending": "Pending · {{status}}",
+      "introduced": "Introduced {{date}}",
+      "updated": "Updated {{date}}",
+      "reviewed": "Read from the ordinance text · reviewed {{date}}",
+      "couldChange": "Proposed — could change",
+      "today": "Today · current law, unchanged",
+      "sections": "Sections",
+      "untested": "Can't be tested for this property",
+      "summaryToggle": "What the proposal says",
+      "official": "Official record ↗",
+      "valueOf": "{{label}}: {{value}}"
     }
   },
   "incentives": {

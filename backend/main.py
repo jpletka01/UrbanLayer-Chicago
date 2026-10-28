@@ -2219,6 +2219,35 @@ async def scorecard(
         comparables=data.get("comparables"),
         address_scoped_violations=True,
     )
+    # WS2 PR3: pending Title 17 text amendments a committed review maps to THIS parcel's district,
+    # overlays and shown facts. Computed after provenance because the facts the Profile actually
+    # shows decide relevance; a pending proposal never alters any current-law figure above.
+    from datetime import datetime, timezone
+
+    from backend.legislation import impacts as pending_impacts
+    from backend.provenance import text_impact_entries
+
+    upcoming = data["context"].upcoming_zoning
+    if upcoming is not None:
+        zoning_now = data["context"].parcel_zoning
+        regulatory_now = data["context"].regulatory
+        facts = {k: v for k, v in data["provenance"].items() if not k.startswith("regulatory.upcoming_zoning.")}
+        upcoming.text_impacts, upcoming.text_review = await asyncio.to_thread(
+            pending_impacts.for_parcel,
+            get_settings().pending_legislation_path,
+            summary_status=upcoming.status,
+            checked_at=upcoming.checked_at,
+            parcel=pending_impacts.ParcelFacts(
+                zone_class=zoning_now.zone_class if zoning_now else None,
+                overlay_types=tuple(o.layer_type for o in (regulatory_now.overlays if regulatory_now else [])),
+                address=rl.address,
+                fact_ids=frozenset(facts),
+                entries=facts,
+            ),
+        )
+        data["provenance"].update(
+            text_impact_entries(upcoming, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        )
     # The dates behind this page, in reading order (the chat footer and the report cover show the same list).
     from backend.data_health.vintages import as_dicts, vintages_for
 

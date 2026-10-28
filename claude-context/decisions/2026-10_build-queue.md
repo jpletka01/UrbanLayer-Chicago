@@ -1810,3 +1810,32 @@ Physical Chrome also covered desktop and 360/390/430 px, light and dark, zoning 
 **Production:** PR #116, merge commit `4c1aae97` (2026-10-27). Main workflow `40463596236` passed changes, lint, the full backend/frontend test-and-build gate, and deploy. The served bundle `index-D9LlCD1G.js` contains the M2 key implementation. No backend API, evaluator, index, tier, cap, chat, paid-model, judge or cache behavior changed.
 
 **Not measured:** user comprehension of the two color modes, hover frequency, or the value of auto-scrolling a loaded Pro row. Those need product analytics or observation. The Pro production probe validated client presentation with intercepted auth/data; it did not validate a real paid/admin session or Pro export.
+
+## Item 32 (WS2 PR3): pending Title 17 text impacts through a reviewed mapping (2026-10-28)
+
+**Decision: relevance is a committed human review applied to the parcel's own facts, never a title.** `backend/pending_impacts.json` maps each pending Title 17 text matter (keyed by lifecycle id, tied to the exact `reviewed_record` read) to Title 17 sections, Profile fact ids and deterministic conditions (zone regexes, overlays, facts the Profile shows, address ranges). Relevance additionally requires that the Profile actually shows a mapped fact (the facts come from the provenance map, so a fallback zone table cannot match).
+
+**Alternatives.** (1) Keyword-match titles to Profile topics. Rejected by the invariant, and the population shows why: "various sections regarding minimum lot area" (O2026-0028842) is a 19-section bill that touches lot area, FAR counting, transit definitions and RM6 premiums, none visible from the title. (2) Extract with a model or OCR in the product. Out of scope (PR4, separately gated). (3) Map only to `parcel_cited_sections`, as passed amendments do. Rejected as too coarse: it cannot say "RT/RM only", "dash-3 only" or "in an ADU area".
+
+**Why: the evidence.** 48 non-final Title-17-looking text matters were recorded from the Clerk (2026-10-28). 20 Legislation PDFs (7.6 MB, no EDS) were downloaded with Jack's approval and read in the session: most are scanned images with no text layer, so they were read visually; the two omnibus ordinances (O2026-0029644, O2025-0021921) have text layers and only their Title 17 passages were read, and O2026-0026265 (25 pages) was read through page 6 only, each recorded in `pages_read`. 13 matters carry impacts; 6 more were read and have no Profile fact; 29 are reviewed from the title alone, which may only say "no Profile fact" (a test enforces that a title-basis review cannot carry an impact). Those 29 are flagged for the outside reviewer.
+
+**Untestable is said, not guessed.** An ADU boundary change (O2024-0014096) needs map geometry and the bay-window FAR change (O2026-0028836) needs lot width and unit count; both are `reach: untested` with the reason shown, so the Profile neither claims nor hides them. Street designations match by address range with the existing `map_effect_matches`.
+
+**Review state is a first-class contract.** `text_review` is `complete | incomplete | unavailable`; only `complete` may say none map. A new matter, a review of a superseded record, an invalid entry and an unreadable store are all non-complete. Data Health `internal.pending_impact_review` uses the passed-amendment clock (14 days warn, 45 alarm, from introduction) as its own source for the reason `internal.amendment_review` is its own source.
+
+**Left alone on purpose.** PR2's lifecycle and placement rules are unchanged: the two pairs with the same title (O2023-2187 and SO2024-0014404) remain separate lifecycles because the Clerk links the substitute to a different original.
+
+**Revisit if** the monthly review takes more than about an hour (a Pro extraction or a diff-assisted reader may be warranted, PR4), a reviewed impact is found wrong on a live parcel (fix the entry and add the case to the fixed matrix), or the `touches_title17` title filter proves to miss Title 17 amendments whose title never says "17".
+
+**Numbers** (measured 2026-10-28)
+
+| Measure | Before | After | Reproduce |
+|---|---:|---:|---|
+| Pending Title 17 text matters with a current review | 0 | 48 of 48 (13 with impacts) | `python -m pytest backend/tests/test_pending_impacts.py` |
+| Backend non-integration tests | 2,311 | 2,352 | `python -m pytest backend/tests/ -q -m "not integration"` |
+| Frontend tests | 757 across 66 files | 769 across 67 files | `cd frontend && npm test` |
+| Lint | 66 warnings (budget 67) | 66 warnings, 0 errors | `npm run lint` |
+| Local mobile gate | n/a | 43 passed, 12 intentional skips | `npm run test:mobile` |
+| Local Profile matches (fixture store) | n/a | M1-2 with CTA overlay: 1 proposal; RT-4: 3; RS-3 in an ADU area: 3; M3-3 control: none | `GET /api/scorecard?address=...` against a local store built from the recorded population |
+
+**Not measured:** how many live parcels match at least one proposal, user comprehension of "could change" next to current law, and the reading time for the 20 PDFs. The Profile kit was not re-run (no model, no cache change); no production request has been made.
