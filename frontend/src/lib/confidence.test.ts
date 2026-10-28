@@ -169,6 +169,14 @@ describe("withheld figures say why", () => {
     expect(captionParts(e, t).withheld).toBe("Not shown: the data covers 5% here (needs 10%).");
   });
 
+  it("a model that counts more homes than the area has is not comparable, and that wins over a low share", () => {
+    const e = entry({
+      tier: "official_estimate", confidence: "withheld", confidence_reasons: ["not_comparable"],
+      coverage: { n: 67, share: 1.24, unit: "buildings", sample: "area_sample" },
+    });
+    expect(captionParts(e, t).withheld).toBe("Not shown: the model counts 124% of this area's renter households, so it is not a comparable set of homes.");
+  });
+
   it("an error as large as the estimate", () => {
     const e = acs({ confidence: "withheld", confidence_reasons: ["high_cv"], precision: { cv: 0.72 } });
     expect(captionParts(e, t).withheld).toBe("Not shown: the margin of error is 72% of the estimate.");

@@ -598,6 +598,24 @@ export interface CommunityAreaRent {
   period_end?: string | null;
 }
 
+/** The Cook County Assessor's modeled apartment income for a community area: its OWN series, not an ACS rent and
+    never by bedroom (backend `AssessorModelRent`). `median_per_unit_month` is potential gross income before vacancy. */
+export interface AssessorModelRent {
+  community_area: number;
+  buildings: number;
+  /** Buildings the median rests on (the sample the n rule reads). */
+  priced: number;
+  units: number;
+  households?: number | null;
+  /** Modeled units over ACS renter households with cash rent; above 1 the two are not comparable. */
+  coverage?: number | null;
+  median_per_unit_month?: number | null;
+  year: string;
+  cycle: string;
+  as_of: string;
+  dataset: string;
+}
+
 /** The Census's published median gross rent for one bedroom count: the parcel's tract, else its PUMA. */
 export interface BedroomRent {
   bedrooms: "1_bedroom" | "2_bedrooms" | "3_bedrooms";
@@ -615,13 +633,14 @@ export interface BedroomRent {
 /** The API omits null fields, so each is optional. Current official rent for the parcel's area (WS4 PR2). `unchecked` = parts that could not be fetched today. */
 export interface RentEvidence {
   community_area?: CommunityAreaRent | null;
+  assessor_model?: AssessorModelRent | null;
   bedrooms: BedroomRent[];
   acs_period?: string | null;
   acs_release?: string | null;
   tract_name?: string | null;
   puma_geoid?: string | null;
   puma_name?: string | null;
-  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent">;
+  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent" | "assessor_model">;
 }
 
 export interface NeighborhoodSummary {

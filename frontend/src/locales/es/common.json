@@ -109,7 +109,9 @@
       "units_one": "unit",
       "units_other": "units",
       "records_one": "record",
-      "records_other": "records"
+      "records_other": "records",
+      "buildings_one": "building",
+      "buildings_other": "buildings"
     },
     "tier": {
       "official_record": "Official record",
@@ -145,6 +147,7 @@
       "cook_assessor_condo_characteristics": "Assessor condominium record",
       "cook_ptaxsim": "Cook County PTAXSIM model",
       "artifact_rent_by_area": "Census rent brackets summed by community area (our aggregation)",
+      "artifact_assessor_model_by_area": "Assessor's apartment income model, by community area",
       "census_reporter_acs": "Census Bureau ACS 5-year (via Census Reporter)"
     },
     "basis": {
@@ -158,6 +161,7 @@
     "withheld": {
       "small_sample": "Not shown: only {{n}} {{unit}} (needs {{min}}).",
       "low_coverage": "Not shown: the data covers {{pct}}% here (needs {{min}}%).",
+      "not_comparable": "Not shown: the model counts {{pct}}% of this area's renter households, so it is not a comparable set of homes.",
       "high_cv": "Not shown: the margin of error is {{cv}}% of the estimate.",
       "generic": "Not shown: too little data."
     },
