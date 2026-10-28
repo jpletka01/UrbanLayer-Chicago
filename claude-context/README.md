@@ -54,7 +54,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 - `strategy/2026-07-02_data-expansion-candidates.md` — **live backlog** of available-but-unintegrated data, ranked (Tier 0–2; items 1–2 + appeals/ward shipped in the lot-info arc; CPS/Divvy tail remains).
 
 ## Archive & Audits (pointers — full stories on the About page)
-- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Current: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2). Append when an item merges.
+- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Current: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3; Items 1–35). Append when an item merges.
 - `archive/*` — one-paragraph markers for each shipped feature/incident (deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
@@ -70,7 +70,10 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   **`2026-10-27_ws3-discovery-map`** [canonical list/map consistency; truthful unavailable/unlocated/capped
   states; render-derived Property Use/Upside keys; free/Pro linkage, theme-safe layers, and responsive key UI],
   **`2026-10-28_ws2-upcoming-zoning`** [pending Clerk snapshot; free Upcoming Zoning list; reviewed pending
-  Title 17 text impacts beside current law; WS2 PR4 extraction intentionally not built]).
+  Title 17 text impacts beside current law; WS2 PR4 extraction intentionally not built],
+  **`2026-10-28_ws4-official-rent`** [PR1–3: Census rent by community area/tract/bedroom (tract else PUMA) and the
+  Assessor's modeled apartment income as a separate series, both committed artifacts; PR4 trends and PR5 HUD
+  SAFMR still active and unapproved]).
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,

@@ -1883,9 +1883,9 @@ PR1 is a method proof. It serves nothing, changes no threshold in `provenance.py
 
 ## Item 34 (WS4 PR2): current official rent on the Profile and in chat (2026-10-28)
 
-**Status (2026-10-28):** [PR #123](https://github.com/jpletka01/UrbanLayer-Chicago/pull/123) open against `main`, all CI checks green (test, lint, CodeQL; deploy skipped on a PR), mergeable; merge awaits Jack's approval because a merge deploys production. After the merge, verify `/api/scorecard` on the live site carries `neighborhood.rent` and the `area.rent.*` provenance entries, not just git HEAD. Next: PR3 (the Assessor's modeled rent as its own series), then PR4 trends and PR5 HUD SAFMR plus a revenue line (neither approved).
+**Status (2026-10-28): MERGED and LIVE.** [PR #123](https://github.com/jpletka01/UrbanLayer-Chicago/pull/123), merge commit `db9fd29`; all CI checks were green. Live-verified through `/api/scorecard?address=1601+N+Milwaukee+Ave` (`context.neighborhood.rent` and the `area.rent.*` entries; West Town area median $2,054 `standard`). The PR3 series (Item 35) shipped the same day.
 
-**Open decisions carried forward:** B25063's design factor (1.5 until Jack permits the Census file download); free vs gated Assessor series; display of an Assessor coverage above 100% (recommended: "not comparable", withheld with the reason); HUD SAFMR token or file; no listing-based asking rents.
+**Open decisions, as resolved:** the free-vs-gated question (free, as the Profile's other rent figures); display of a coverage above 100% (decided in Item 35: withheld as "not comparable"); HUD SAFMR (not in PR3, still needs a token or file); no listing-based asking rents (confirmed). **Still open:** B25063's design factor stays 1.5 until Jack permits the Census file download.
 
 PR2 serves Item 33's findings. The Profile's Neighborhood module gains a **Rent** block (free, no gate) and chat carries the same figures under the confidence standard. Nothing from a listing, no revenue line, no Assessor series, no trend; the $25 report shows no rent and does not list rent sources.
 
@@ -1921,7 +1921,7 @@ PR2 serves Item 33's findings. The Profile's Neighborhood module gains a **Rent*
 
 ## Item 35 (WS4 PR3): the Assessor's modeled apartment income as its own series (2026-10-28)
 
-**Status (2026-10-28):** built on `codex/ws4-assessor-model-pr3`, stacked on PR2's branch (PR #123 was still open); committed locally, not pushed. Rebase onto `main` once #123 merges, then open PR3 for Jack's approval. After a merge, verify the live `/api/scorecard?address=1601+N+Milwaukee+Ave` carries `neighborhood.rent.assessor_model` and the `area.rent.assessor_model` provenance entry.
+**Status (2026-10-28): MERGED and LIVE.** [PR #124](https://github.com/jpletka01/UrbanLayer-Chicago/pull/124), merge commit `208a3e1`, opened stacked on #123's branch and retargeted to `main` after #123 merged (`main` merged into the branch, no force push); CI green. Live-verified through `/api/scorecard`: 1601 N Milwaukee shows $2,300 per unit per month, 420 buildings, 31% coverage, `standard`; 100 N LaSalle (the Loop) is `withheld` with reason `not_comparable` (124%); the ACS area medians were unchanged. The live Profile API still carries a withheld median inside `rent.assessor_model` (the UI withholds by the entry's confidence and chat clears it; same pattern as the ACS figures).
 
 PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's **model** of what apartments in a community area earn, from its valuation of buildings with 7 or more units (Commercial Valuation, `csik-bsws`). It is shown free on the Profile and carried in chat. It is never merged with the ACS figures, never called a rent, and has no bedroom breakdown. The report shows none.
 
@@ -1962,4 +1962,4 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 | Backend tests (not integration) / eval tests / vitest | 2,428 / 117 / 816 | `make test` parts |
 | Phone overflow audit | 43 passed, 12 skipped, 0 failed | `npm run test:mobile` |
 
-**Not measured:** how the model's income compares with achieved rents (no source here observes one); a bedroom mix check beyond Item 33's 98%; a real chat answer (production credits; nothing here calls a model); production behaviour (nothing deployed).
+**Not measured:** how the model's income compares with achieved rents (no source here observes one); a bedroom mix check beyond Item 33's 98%; a real chat answer under prompt rule 38 (production credits; nothing here calls a model). Production behaviour was verified through the live API (West Town, the Loop) on 2026-10-28. The phone audit against production (`E2E_BASE_URL=https://urbanlayerchicago.com`) gave 41 passed, 12 skipped and 2 failed: both failures are Galaxy S24 Discovery-map tests (`discovery-map-m2.spec.ts`, the map key button and legend not found) that pass on local dev servers and touch no code in this change; the cause is not yet determined.
