@@ -21,7 +21,19 @@
     "regulatory.unchecked.types.special_district",
     "regulatory.unchecked.types.ssa",
     "regulatory.unchecked.types.tod_cta",
-    "regulatory.unchecked.types.tod_metra"
+    "regulatory.unchecked.types.tod_metra",
+    "regulatory.upcoming.checked",
+    "regulatory.upcoming.disclaimer",
+    "regulatory.upcoming.distance",
+    "regulatory.upcoming.empty",
+    "regulatory.upcoming.nearby",
+    "regulatory.upcoming.partial",
+    "regulatory.upcoming.stale",
+    "regulatory.upcoming.subject",
+    "regulatory.upcoming.subjectMatch",
+    "regulatory.upcoming.title",
+    "regulatory.upcoming.unavailable",
+    "regulatory.upcoming.updated"
   ],
   "pages": [
     "discovery.legendLandUseNoData",

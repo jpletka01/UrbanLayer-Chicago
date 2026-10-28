@@ -755,6 +755,49 @@ class FigureNote(BaseModel):
     note: str
 
 
+class UpcomingZoningFiling(BaseModel):
+    """One current applicant filing from the Clerk's non-final zoning docket."""
+
+    record_number: str
+    title: str
+    status: str
+    sub_status: str
+    introduced_at: str | None = None
+    latest_action_at: str | None = None
+    url: str
+    application_number: str | None = None
+    segment: str | None = None
+    match_kind: Literal["subject_pin", "subject_range", "nearby"]
+    distance_mi: float | None = None
+
+
+class UpcomingZoningProvenance(BaseModel):
+    source_id: str
+    as_of: str | None = None
+    method: str
+    confidence: Literal["standard", "low"]
+
+
+class UpcomingZoningSummary(BaseModel):
+    """Conservative parcel placement of current zoning filings.
+
+    ``ready`` with empty lists is a checked zero. ``stale`` preserves the last-good
+    evidence with a warning. ``unavailable`` never claims a zero.
+    """
+
+    status: Literal["ready", "stale", "unavailable"]
+    placement_status: Literal["complete", "partial"]
+    checked_at: str | None = None
+    radius_mi: float = 0.5
+    subject_filings: list[UpcomingZoningFiling] = Field(default_factory=list)
+    nearby_filings: list[UpcomingZoningFiling] = Field(default_factory=list)
+    placed_count: int = 0
+    unplaced_count: int = 0
+    placement_coverage: float | None = None
+    record_provenance: UpcomingZoningProvenance
+    placement_provenance: UpcomingZoningProvenance
+
+
 class ContextObject(BaseModel):
     community_area: int | None = None
     community_area_name: str | None = None
@@ -778,6 +821,9 @@ class ContextObject(BaseModel):
     code_chunks: list[CodeChunk] = Field(default_factory=list)
     parcel_zoning: ZoningSummary | None = None
     regulatory: RegulatorySummary | None = None
+    # Profile-only. Built from the daily Clerk/Address Points snapshot after
+    # parcel identity is reconciled; never fetched from Clerk on the request path.
+    upcoming_zoning: UpcomingZoningSummary | None = None
     property: PropertySummary | None = None
     incentives: IncentivesSummary | None = None
     neighborhood: NeighborhoodSummary | None = None

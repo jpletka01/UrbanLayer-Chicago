@@ -12,6 +12,7 @@ import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
 import { ScorecardComparablesCard } from "./scorecard/ScorecardComparablesCard";
 import { ScorecardRegulatoryCard } from "./scorecard/ScorecardRegulatoryCard";
+import { UpcomingZoningCard } from "./scorecard/UpcomingZoningCard";
 import { ParcelResolution } from "./scorecard/ParcelResolution";
 import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
 import { ScorecardIncentivesCard } from "./scorecard/ScorecardIncentivesCard";
@@ -715,7 +716,7 @@ export default function ScorecardPage() {
     record: failedIn(failed, "record").filter((f) => f.key !== "flood").flatMap((f) => f.labels),
     area: failedLabels(failed, "area"),
   };
-  const hasBuild = !!(zdef || ctx?.regulatory) || unchecked.build.length > 0;
+  const hasBuild = !!(zdef || ctx?.regulatory || ctx?.upcoming_zoning) || unchecked.build.length > 0;
   const hasEconomics = !!(ctx?.property || ctx?.incentives) || unchecked.economics.length > 0;
   const hasMarket = !!(data?.comparables && data.comparables.sales.length > 0) || unchecked.market.length > 0;
   const hasRecord = !!(ctx && (ctx.violations || data?.violations_checked || ctx.regulatory?.flood_zone
@@ -1106,6 +1107,7 @@ export default function ScorecardPage() {
                       : `What are the development restrictions from regulatory overlays at ${addr}?`)}
                   >
                     {unchecked.build.length > 0 && <UncheckedRow labels={unchecked.build} href={ZONING_MAP_URL} className="mb-6" />}
+                    {ctx.upcoming_zoning && <UpcomingZoningCard data={ctx.upcoming_zoning} />}
                     <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch">
                       {zdef && (
                         <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col">

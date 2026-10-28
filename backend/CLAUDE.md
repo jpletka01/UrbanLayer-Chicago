@@ -34,11 +34,13 @@
 | `config.py` | Settings via pydantic-settings: API keys, model IDs, query limits, assembler caps |
 | `vision.py` | Image/PDF processing for Claude Vision uploads |
 
-### WS2 pending-legislation dark store (PR 1)
+### WS2 upcoming-zoning snapshot and Profile signal (PRs 1–2)
 
 `legislation/pending.py` is the pending half of the existing daily `legislation.sync` oneshot; there is still only one Clerk caller in the serving stack. It asks for every non-final zoning/code matter, validates explicit Clerk states 2–5, retains zoning reclassifications plus Title-17-looking text matters, fetches full detail serially, follows original/substitute/supersession links, and refuses to choose between two current matters in one lifecycle. It never downloads a PDF or calls a model. Attachment metadata is allowlisted and EDS is rejected by type and filename before persistence.
 
-`legislation/pending_store.py` owns `backend/data/pending_legislation.db` (schema v1): `sync_runs`, current `matters`, `actions`, permitted `attachments`, and `relations`. A successful refresh replaces the current rows in one SQLite transaction; failed/suspect checks append their attempt while preserving the last good rows. `internal.pending_legislation` exposes the last successful date, counts, parse coverage, lifecycle collapses, exclusions, and latest failure in Data Health. The artifact is deliberately dark until PR 2: no Profile, chat, report, or request-path reader exists yet. Tests: `test_pending_legislation.py`; sanitized recorded detail: `tests/fixtures/clerk/pending_matter_O2026-0029359.json`.
+`legislation/pending_store.py` owns `backend/data/pending_legislation.db` (schema v2; v1 migrates in place): `sync_runs`, current `matters`, `actions`, permitted `attachments`, `relations`, parsed `segments`, and Address-Points `locations`. The daily sync resolves every clean title range before the one-transaction replacement; a source failure appends the attempt and preserves the last-good rows. `internal.pending_legislation` exposes actual placed/unplaced matter and location counts as well as parse coverage, lifecycle collapses, exclusions, and the latest failure in Data Health.
+
+`legislation/upcoming.py` is the **request-path read-only reader** used only by `/api/scorecard` after parcel identity is reconciled. It opens SQLite `mode=ro`, never calls Clerk or Address Points, pins exact PIN/range matches first, then uses a SQLite 0.5-mile bounding box plus haversine filtering for nearby matters. `UpcomingZoningSummary` separates `ready | stale | unavailable` freshness from `complete | partial` placement; a ready/complete empty list is the only healthy zero. After 14 days it returns unavailable and no filings. The Profile shows current map filings as applicant proposals (never approvals); chat/report/maps/text impacts remain out of scope. Provenance facts split the Clerk record from UrbanLayer's Address Points placement. Tests: `test_pending_legislation.py`; the 21-title hand-labeled panel records 76.19% conservative coverage, 100% precision, zero wrong-street matches at `tests/fixtures/clerk/pending_title_panel.json`.
 
 ## Retrieval Layer
 

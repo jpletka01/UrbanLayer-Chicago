@@ -6,7 +6,7 @@ import asyncio
 import json
 import sqlite3
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
@@ -17,7 +17,8 @@ import pytest
 from backend.config import get_settings
 from backend.data_health import probes
 from backend.data_health.registry import BY_ID
-from backend.legislation import pending, sync
+from backend.legislation import pending, sync, upcoming
+from backend.legislation import address_titles
 from backend.legislation.pending_store import Snapshot, Store, read_status
 from backend.retrieval import clerk
 
@@ -139,6 +140,9 @@ async def test_recorded_pending_detail_is_parseable_and_contains_no_eds_metadata
         "code": 0,
         "title17": 0,
         "placement_ready": 1,
+        "placed_matters": 0,
+        "unplaced_matters": 1,
+        "locations": 0,
         "partial_titles": 0,
         "unparsed_titles": 0,
         "lifecycle_collapses": 0,
@@ -147,6 +151,34 @@ async def test_recorded_pending_detail_is_parseable_and_contains_no_eds_metadata
     }
     assert len(snapshot.matters[0].attachments) == 3
     assert snapshot.matters[0].application_number == "23180"
+
+
+def test_hand_labeled_pending_title_panel_meets_precision_floor_with_no_wrong_streets():
+    panel = json.loads((FIX / "pending_title_panel.json").read_text())
+    rows = panel["rows"]
+    safe = 0
+    placed = 0
+    correct = 0
+    wrong_streets: list[str] = []
+    for row in rows:
+        parsed = address_titles.parse_title(row["title"])
+        predicted = parsed.status == "clean"
+        safe += int(row["safe_to_place"])
+        placed += int(predicted)
+        actual = [f"{s.dir} {s.name} {s.type}".upper() for s in parsed.segments] if predicted else []
+        expected = [value.upper() for value in row["streets"]]
+        if predicted and actual != expected:
+            wrong_streets.append(row["record"])
+        if predicted and row["safe_to_place"] and actual == expected:
+            correct += 1
+
+    precision = correct / placed
+    coverage = placed / len(rows)
+    contract = panel["measured_contract"]
+    assert len(rows) == contract["panel_size"] and safe == contract["safe_titles"]
+    assert precision >= contract["precision_floor"]
+    assert wrong_streets == []
+    assert coverage == pytest.approx(contract["placement_coverage"], abs=0.0001)
 
 
 async def test_eds_unknown_types_and_non_https_urls_are_rejected_before_the_store():
@@ -259,6 +291,53 @@ async def test_store_replacement_rolls_back_entire_snapshot_on_constraint_failur
         assert con.execute("SELECT COUNT(*) FROM sync_runs").fetchone()[0] == 1
 
 
+def test_schema_v1_store_migrates_in_place_to_placement_schema(tmp_path):
+    path = tmp_path / "pending-v1.db"
+    with sqlite3.connect(path) as con:
+        con.executescript("""
+            CREATE TABLE sync_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, attempted_at TEXT NOT NULL, checked_at TEXT,
+                status TEXT NOT NULL, last_error TEXT, contract_problems TEXT NOT NULL DEFAULT '[]',
+                candidate_count INTEGER, detail_count INTEGER, pending_count INTEGER, zoning_count INTEGER,
+                code_count INTEGER, title17_count INTEGER, placement_ready_count INTEGER,
+                partial_title_count INTEGER, unparsed_title_count INTEGER, lifecycle_collapses INTEGER,
+                excluded_non_pending INTEGER, excluded_attachments INTEGER
+            );
+            PRAGMA user_version=1;
+        """)
+    with Store(path):
+        pass
+    with sqlite3.connect(path) as con:
+        columns = {row[1] for row in con.execute("PRAGMA table_info(sync_runs)")}
+        assert con.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert {"placed_matter_count", "unplaced_matter_count", "location_count"} <= columns
+        assert {"segments", "locations"} <= {
+            row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+
+
+def test_schema_v1_status_is_readable_before_the_daily_writer_migrates_it(tmp_path):
+    path = tmp_path / "pending-v1-readonly.db"
+    with sqlite3.connect(path) as con:
+        con.executescript("""
+            CREATE TABLE sync_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, attempted_at TEXT NOT NULL, checked_at TEXT,
+                status TEXT NOT NULL, last_error TEXT, contract_problems TEXT NOT NULL DEFAULT '[]',
+                candidate_count INTEGER, detail_count INTEGER, pending_count INTEGER, zoning_count INTEGER,
+                code_count INTEGER, title17_count INTEGER, placement_ready_count INTEGER,
+                partial_title_count INTEGER, unparsed_title_count INTEGER, lifecycle_collapses INTEGER,
+                excluded_non_pending INTEGER, excluded_attachments INTEGER
+            );
+            INSERT INTO sync_runs (
+                attempted_at, checked_at, status, candidate_count, pending_count, zoning_count
+            ) VALUES ('2026-10-27T18:00:00+00:00', '2026-10-27T18:00:00+00:00', 'ok', 4, 3, 2);
+            PRAGMA user_version=1;
+        """)
+    status = read_status(path)
+    assert status is not None and status.counts["zoning"] == 2
+    assert status.counts["placed_matters"] is None and status.counts["locations"] is None
+
+
 async def test_data_health_probe_reports_last_failure_without_losing_last_good_date(tmp_path, monkeypatch):
     path = tmp_path / "pending.db"
     snapshot = await _snapshot_for(_matter())
@@ -277,6 +356,97 @@ def test_pending_summary_cli_has_the_review_counts():
     snapshot = asyncio.run(_snapshot_for(_matter()))
     text = pending.summary(snapshot)
     assert "pending=1" in text and "placement_ready=1" in text and "excluded_attachments=0" in text
+
+
+async def test_daily_placement_drives_exact_then_nearby_profile_summary(tmp_path):
+    exact = _matter(
+        "O2026-0000010",
+        title="Zoning Reclassification Map No. 1-A at 10 N State St - App No. 23010",
+    )
+    nearby = _matter(
+        "O2026-0000100",
+        title="Zoning Reclassification Map No. 1-A at 100 N State St - App No. 23100",
+    )
+    snapshot = await _snapshot_for(exact, nearby)
+
+    async def resolver(*, lo, **_kwargs):
+        if lo == 10:
+            return [{"pin": "17000000000001", "lat": 41.8800, "lon": -87.6278, "number": 10, "name": "STATE"}]
+        return [{"pin": "17000000000002", "lat": 41.8840, "lon": -87.6278, "number": 100, "name": "STATE"}]
+
+    snapshot = await pending.resolve_placements(snapshot, resolver=resolver)
+    path = tmp_path / "pending.db"
+    with Store(path) as store:
+        store.replace(snapshot)
+
+    result = upcoming.summary_for(
+        path,
+        lat=41.8800,
+        lon=-87.6278,
+        pin="17000000000001",
+        address="10 N State St",
+        authoritative_pin=True,
+        now=NOW + timedelta(hours=1),
+    )
+    assert result.status == "ready" and result.placement_status == "complete"
+    assert [row.record_number for row in result.subject_filings] == ["O2026-0000010"]
+    assert result.subject_filings[0].match_kind == "subject_pin"
+    assert [row.record_number for row in result.nearby_filings] == ["O2026-0000100"]
+    assert result.nearby_filings[0].distance_mi is not None
+
+
+async def test_unplaced_title_makes_a_checked_zero_partial_not_healthy_empty(tmp_path):
+    snapshot = await _snapshot_for(_matter(title="Applicant requests a zoning change near State Street"))
+    path = tmp_path / "pending.db"
+    with Store(path) as store:
+        store.replace(snapshot)
+    result = upcoming.summary_for(
+        path, lat=41.88, lon=-87.63, pin=None, address="10 N State St",
+        authoritative_pin=False, now=NOW + timedelta(hours=1),
+    )
+    assert result.status == "ready" and result.placement_status == "partial"
+    assert result.unplaced_count == 1
+    assert result.subject_filings == [] and result.nearby_filings == []
+
+
+async def test_failed_refresh_preserves_last_good_rows_but_summary_is_stale(tmp_path):
+    snapshot = await _snapshot_for()
+    path = tmp_path / "pending.db"
+    with Store(path) as store:
+        store.replace(snapshot)
+        store.record_problem(NOW + timedelta(hours=1), status="failed", error="Address Points unavailable")
+    result = upcoming.summary_for(
+        path, lat=41.88, lon=-87.63, pin=None, address=None,
+        authoritative_pin=False, now=NOW + timedelta(hours=2),
+    )
+    assert result.status == "stale"
+    assert result.checked_at == NOW.isoformat(timespec="seconds")
+
+
+def test_missing_or_too_old_snapshot_is_unavailable_not_empty(tmp_path):
+    missing = upcoming.summary_for(
+        tmp_path / "missing.db", lat=41.88, lon=-87.63, pin=None, address=None,
+        authoritative_pin=False, now=NOW,
+    )
+    assert missing.status == "unavailable" and missing.placement_status == "partial"
+
+    corrupt_path = tmp_path / "corrupt.db"
+    corrupt_path.write_text("not sqlite")
+    corrupt = upcoming.summary_for(
+        corrupt_path, lat=41.88, lon=-87.63, pin=None, address=None,
+        authoritative_pin=False, now=NOW,
+    )
+    assert corrupt.status == "unavailable"
+
+    path = tmp_path / "old.db"
+    snapshot = asyncio.run(_snapshot_for())
+    with Store(path) as store:
+        store.replace(snapshot)
+    old = upcoming.summary_for(
+        path, lat=41.88, lon=-87.63, pin=None, address=None,
+        authoritative_pin=False, now=NOW + timedelta(days=15),
+    )
+    assert old.status == "unavailable" and old.subject_filings == []
 
 
 def test_daily_sync_keeps_the_passed_snapshot_truth_when_pending_refresh_fails(monkeypatch, tmp_path):
