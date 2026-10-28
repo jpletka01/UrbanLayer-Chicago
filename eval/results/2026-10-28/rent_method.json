@@ -1,0 +1,5370 @@
+{
+ "A_overall_by_community_area": {
+  "cells": 77,
+  "states": {
+   "state_handbook_df1.0": {
+    "low": 1,
+    "standard": 75,
+    "withheld": 1
+   },
+   "state_handbook_df1.5": {
+    "low": 3,
+    "standard": 72,
+    "withheld": 2
+   },
+   "state_sim": {
+    "low": 1,
+    "standard": 76
+   }
+  },
+  "top_coded_areas": 0
+ },
+ "B_bedroom_by_community_area": {
+  "1_bedroom": {
+   "cells": 77,
+   "states": {
+    "state_handbook_df1.0": {
+     "low": 11,
+     "no_moe": 5,
+     "standard": 49,
+     "unavailable": 8,
+     "withheld": 4
+    },
+    "state_handbook_df1.5": {
+     "low": 15,
+     "no_moe": 12,
+     "standard": 32,
+     "unavailable": 8,
+     "withheld": 10
+    },
+    "state_sim": {
+     "low": 2,
+     "no_moe": 3,
+     "standard": 64,
+     "unavailable": 8
+    }
+   },
+   "top_coded_areas": 8
+  },
+  "2_bedrooms": {
+   "cells": 77,
+   "states": {
+    "state_handbook_df1.0": {
+     "low": 1,
+     "no_moe": 11,
+     "standard": 45,
+     "unavailable": 20
+    },
+    "state_handbook_df1.5": {
+     "low": 2,
+     "no_moe": 20,
+     "standard": 34,
+     "unavailable": 20,
+     "withheld": 1
+    },
+    "state_sim": {
+     "no_moe": 9,
+     "standard": 48,
+     "unavailable": 20
+    }
+   },
+   "top_coded_areas": 20
+  },
+  "3_plus_bedrooms": {
+   "cells": 77,
+   "states": {
+    "state_handbook_df1.0": {
+     "no_moe": 13,
+     "standard": 11,
+     "unavailable": 53
+    },
+    "state_handbook_df1.5": {
+     "no_moe": 18,
+     "standard": 5,
+     "unavailable": 53,
+     "withheld": 1
+    },
+    "state_sim": {
+     "no_moe": 9,
+     "standard": 15,
+     "unavailable": 53
+    }
+   },
+   "top_coded_areas": 53
+  },
+  "no_bedroom": {
+   "cells": 77,
+   "states": {
+    "state_handbook_df1.0": {
+     "low": 10,
+     "no_moe": 23,
+     "standard": 25,
+     "unavailable": 13,
+     "withheld": 6
+    },
+    "state_handbook_df1.5": {
+     "low": 6,
+     "no_moe": 36,
+     "standard": 13,
+     "unavailable": 13,
+     "withheld": 9
+    },
+    "state_sim": {
+     "low": 5,
+     "no_moe": 3,
+     "standard": 55,
+     "unavailable": 13,
+     "withheld": 1
+    }
+   },
+   "top_coded_areas": 8
+  }
+ },
+ "C_tract_published_B25031": {
+  "1_bedroom": {
+   "low": 61,
+   "no_moe": 3,
+   "standard": 480,
+   "unavailable": 232,
+   "withheld": 14
+  },
+  "2_bedrooms": {
+   "low": 42,
+   "no_moe": 10,
+   "standard": 635,
+   "unavailable": 95,
+   "withheld": 8
+  },
+  "3_bedrooms": {
+   "low": 64,
+   "no_moe": 21,
+   "standard": 473,
+   "unavailable": 219,
+   "withheld": 13
+  },
+  "4_bedrooms": {
+   "low": 6,
+   "no_moe": 13,
+   "standard": 50,
+   "unavailable": 717,
+   "withheld": 4
+  },
+  "5_plus_bedrooms": {
+   "low": 4,
+   "standard": 3,
+   "unavailable": 783
+  },
+  "no_bedroom": {
+   "low": 21,
+   "no_moe": 2,
+   "standard": 193,
+   "unavailable": 570,
+   "withheld": 4
+  }
+ },
+ "D_puma_published_B25031": {
+  "cells": {
+   "1_bedroom": {
+    "standard": 20
+   },
+   "2_bedrooms": {
+    "standard": 20
+   },
+   "3_bedrooms": {
+    "standard": 20
+   },
+   "4_bedrooms": {
+    "no_moe": 1,
+    "standard": 19
+   },
+   "5_plus_bedrooms": {
+    "low": 7,
+    "no_moe": 1,
+    "standard": 10,
+    "unavailable": 2
+   },
+   "no_bedroom": {
+    "low": 1,
+    "standard": 19
+   }
+  },
+  "puma_to_community_areas": {
+   "1703109": {
+    "10": 176,
+    "76": 20
+   },
+   "1703114": {
+    "74": 1,
+    "75": 9
+   },
+   "1703151": {
+    "10": 13497,
+    "12": 7064,
+    "13": 4231,
+    "14": 8666,
+    "76": 3938,
+    "9": 4453
+   },
+   "1703152": {
+    "2": 16614,
+    "4": 10571,
+    "5": 10884
+   },
+   "1703153": {
+    "1": 10899,
+    "3": 15335,
+    "77": 16418
+   },
+   "1703154": {
+    "6": 34356,
+    "7": 25704
+   },
+   "1703155": {
+    "16": 12912,
+    "21": 8073,
+    "22": 17505,
+    "24": 706
+   },
+   "1703156": {
+    "11": 8001,
+    "15": 15484,
+    "17": 13862
+   },
+   "1703157": {
+    "18": 3229,
+    "19": 13318,
+    "20": 3813,
+    "23": 9297
+   },
+   "1703158": {
+    "25": 18170,
+    "26": 2893,
+    "27": 3704,
+    "29": 5654
+   },
+   "1703159": {
+    "24": 26846,
+    "28": 27394
+   },
+   "1703160": {
+    "32": 21784,
+    "33": 21142,
+    "8": 57815
+   },
+   "1703161": {
+    "35": 3668,
+    "38": 5036,
+    "39": 4184,
+    "40": 1680,
+    "41": 5676,
+    "42": 4476
+   },
+   "1703162": {
+    "31": 5599,
+    "34": 3190,
+    "37": 8,
+    "59": 3727,
+    "60": 8328,
+    "61": 8131
+   },
+   "1703163": {
+    "30": 8977,
+    "58": 7505,
+    "63": 6695
+   },
+   "1703164": {
+    "56": 11603,
+    "57": 2879,
+    "62": 4562,
+    "64": 7576,
+    "65": 8202,
+    "70": 12565
+   },
+   "1703165": {
+    "66": 10564,
+    "67": 8215,
+    "68": 5485,
+    "69": 6789
+   },
+   "1703166": {
+    "71": 11497,
+    "72": 7287,
+    "73": 8735,
+    "74": 6957,
+    "75": 7878
+   },
+   "1703167": {
+    "44": 7851,
+    "45": 3565,
+    "48": 5161,
+    "49": 12768,
+    "50": 2053,
+    "53": 9466
+   },
+   "1703168": {
+    "43": 8910,
+    "46": 6930,
+    "51": 4718,
+    "52": 6119,
+    "55": 3319
+   }
+  },
+  "pumas": 20
+ },
+ "E_assessor_model": {
+  "areas_over_100pct": 3,
+  "areas_under_30_buildings": 17,
+  "areas_with_no_model_rows": 1,
+  "buildings": 11016,
+  "by_area": {
+   "1": {
+    "bedroom_mix_complete_share": 0.973,
+    "buildings": 546,
+    "coverage": 0.94,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1339,
+    "modeled_units": 17676,
+    "renter_households": 18814,
+    "small_sample": false
+   },
+   "10": {
+    "bedroom_mix_complete_share": 0.932,
+    "buildings": 59,
+    "coverage": 0.473,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1159,
+    "modeled_units": 1444,
+    "renter_households": 3056,
+    "small_sample": false
+   },
+   "11": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 43,
+    "coverage": 0.194,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1300,
+    "modeled_units": 719,
+    "renter_households": 3704,
+    "small_sample": false
+   },
+   "12": {
+    "bedroom_mix_complete_share": 0.929,
+    "buildings": 14,
+    "coverage": 0.276,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1050,
+    "modeled_units": 233,
+    "renter_households": 845,
+    "small_sample": true
+   },
+   "13": {
+    "bedroom_mix_complete_share": 0.933,
+    "buildings": 60,
+    "coverage": 0.333,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1201,
+    "modeled_units": 1179,
+    "renter_households": 3542,
+    "small_sample": false
+   },
+   "14": {
+    "bedroom_mix_complete_share": 0.989,
+    "buildings": 283,
+    "coverage": 0.588,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1300,
+    "modeled_units": 5773,
+    "renter_households": 9811,
+    "small_sample": false
+   },
+   "15": {
+    "bedroom_mix_complete_share": 0.989,
+    "buildings": 178,
+    "coverage": 0.394,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1300,
+    "modeled_units": 3648,
+    "renter_households": 9267,
+    "small_sample": false
+   },
+   "16": {
+    "bedroom_mix_complete_share": 0.993,
+    "buildings": 279,
+    "coverage": 0.459,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1300,
+    "modeled_units": 4965,
+    "renter_households": 10816,
+    "small_sample": false
+   },
+   "17": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 45,
+    "coverage": 0.191,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1194,
+    "modeled_units": 634,
+    "renter_households": 3326,
+    "small_sample": false
+   },
+   "18": {
+    "bedroom_mix_complete_share": 0.972,
+    "buildings": 36,
+    "coverage": 0.428,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1162,
+    "modeled_units": 947,
+    "renter_households": 2213,
+    "small_sample": false
+   },
+   "19": {
+    "bedroom_mix_complete_share": 0.995,
+    "buildings": 199,
+    "coverage": 0.26,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1200,
+    "modeled_units": 2794,
+    "renter_households": 10766,
+    "small_sample": false
+   },
+   "2": {
+    "bedroom_mix_complete_share": 0.963,
+    "buildings": 356,
+    "coverage": 0.546,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1300,
+    "modeled_units": 7168,
+    "renter_households": 13137,
+    "small_sample": false
+   },
+   "20": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 79,
+    "coverage": 0.259,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1500,
+    "modeled_units": 1006,
+    "renter_households": 3879,
+    "small_sample": false
+   },
+   "21": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 139,
+    "coverage": 0.242,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1612,
+    "modeled_units": 2038,
+    "renter_households": 8425,
+    "small_sample": false
+   },
+   "22": {
+    "bedroom_mix_complete_share": 0.975,
+    "buildings": 363,
+    "coverage": 0.416,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1591,
+    "modeled_units": 8337,
+    "renter_households": 20049,
+    "small_sample": false
+   },
+   "23": {
+    "bedroom_mix_complete_share": 0.979,
+    "buildings": 145,
+    "coverage": 0.224,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1200,
+    "modeled_units": 2541,
+    "renter_households": 11369,
+    "small_sample": false
+   },
+   "24": {
+    "bedroom_mix_complete_share": 0.956,
+    "buildings": 427,
+    "coverage": 0.329,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 2300,
+    "modeled_units": 8425,
+    "renter_households": 25644,
+    "small_sample": false
+   },
+   "25": {
+    "bedroom_mix_complete_share": 0.969,
+    "buildings": 485,
+    "coverage": 0.478,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 978,
+    "modeled_units": 9786,
+    "renter_households": 20466,
+    "small_sample": false
+   },
+   "26": {
+    "bedroom_mix_complete_share": 0.983,
+    "buildings": 60,
+    "coverage": 0.358,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1000,
+    "modeled_units": 1442,
+    "renter_households": 4033,
+    "small_sample": false
+   },
+   "27": {
+    "bedroom_mix_complete_share": 0.982,
+    "buildings": 111,
+    "coverage": 0.36,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1000,
+    "modeled_units": 1927,
+    "renter_households": 5349,
+    "small_sample": false
+   },
+   "28": {
+    "bedroom_mix_complete_share": 0.91,
+    "buildings": 244,
+    "coverage": 0.954,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 2547,
+    "modeled_units": 22678,
+    "renter_households": 23774,
+    "small_sample": false
+   },
+   "29": {
+    "bedroom_mix_complete_share": 0.965,
+    "buildings": 171,
+    "coverage": 0.369,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 950,
+    "modeled_units": 3330,
+    "renter_households": 9030,
+    "small_sample": false
+   },
+   "3": {
+    "bedroom_mix_complete_share": 0.971,
+    "buildings": 442,
+    "coverage": 0.869,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1563,
+    "modeled_units": 20223,
+    "renter_households": 23263,
+    "small_sample": false
+   },
+   "30": {
+    "bedroom_mix_complete_share": 0.942,
+    "buildings": 69,
+    "coverage": 0.137,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1150,
+    "modeled_units": 1526,
+    "renter_households": 11127,
+    "small_sample": false
+   },
+   "31": {
+    "bedroom_mix_complete_share": 0.985,
+    "buildings": 132,
+    "coverage": 0.159,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1682,
+    "modeled_units": 1589,
+    "renter_households": 10006,
+    "small_sample": false
+   },
+   "32": {
+    "bedroom_mix_complete_share": 0.598,
+    "buildings": 112,
+    "coverage": 2.296,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 2471,
+    "modeled_units": 38838,
+    "renter_households": 16913,
+    "small_sample": false
+   },
+   "33": {
+    "bedroom_mix_complete_share": 0.927,
+    "buildings": 41,
+    "coverage": 0.881,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 2393,
+    "modeled_units": 7567,
+    "renter_households": 8587,
+    "small_sample": false
+   },
+   "34": {
+    "bedroom_mix_complete_share": 0.87,
+    "buildings": 23,
+    "coverage": 0.267,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1877,
+    "modeled_units": 837,
+    "renter_households": 3134,
+    "small_sample": true
+   },
+   "35": {
+    "bedroom_mix_complete_share": 0.886,
+    "buildings": 35,
+    "coverage": 0.916,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1693,
+    "modeled_units": 7114,
+    "renter_households": 7768,
+    "small_sample": false
+   },
+   "36": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 25,
+    "coverage": 0.74,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1588,
+    "modeled_units": 1780,
+    "renter_households": 2404,
+    "small_sample": true
+   },
+   "38": {
+    "bedroom_mix_complete_share": 0.987,
+    "buildings": 231,
+    "coverage": 0.684,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1475,
+    "modeled_units": 5774,
+    "renter_households": 8441,
+    "small_sample": false
+   },
+   "39": {
+    "bedroom_mix_complete_share": 0.977,
+    "buildings": 87,
+    "coverage": 0.937,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1348,
+    "modeled_units": 5809,
+    "renter_households": 6198,
+    "small_sample": false
+   },
+   "4": {
+    "bedroom_mix_complete_share": 0.981,
+    "buildings": 363,
+    "coverage": 0.737,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1450,
+    "modeled_units": 8676,
+    "renter_households": 11779,
+    "small_sample": false
+   },
+   "40": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 145,
+    "coverage": 0.615,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1416,
+    "modeled_units": 2849,
+    "renter_households": 4630,
+    "small_sample": false
+   },
+   "41": {
+    "bedroom_mix_complete_share": 0.991,
+    "buildings": 219,
+    "coverage": 1.005,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1452,
+    "modeled_units": 9899,
+    "renter_households": 9845,
+    "small_sample": false
+   },
+   "42": {
+    "bedroom_mix_complete_share": 0.983,
+    "buildings": 177,
+    "coverage": 0.712,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1200,
+    "modeled_units": 5424,
+    "renter_households": 7621,
+    "small_sample": false
+   },
+   "43": {
+    "bedroom_mix_complete_share": 0.991,
+    "buildings": 554,
+    "coverage": 0.815,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1080,
+    "modeled_units": 16282,
+    "renter_households": 19967,
+    "small_sample": false
+   },
+   "44": {
+    "bedroom_mix_complete_share": 0.991,
+    "buildings": 332,
+    "coverage": 0.585,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 900,
+    "modeled_units": 5325,
+    "renter_households": 9095,
+    "small_sample": false
+   },
+   "45": {
+    "bedroom_mix_complete_share": 0.97,
+    "buildings": 33,
+    "coverage": 0.573,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1021,
+    "modeled_units": 763,
+    "renter_households": 1332,
+    "small_sample": false
+   },
+   "46": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 110,
+    "coverage": 0.321,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 899,
+    "modeled_units": 2005,
+    "renter_households": 6248,
+    "small_sample": false
+   },
+   "47": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 2,
+    "coverage": 0.045,
+    "coverage_state": "withheld",
+    "median_modeled_pgi_per_unit_month": 750,
+    "modeled_units": 22,
+    "renter_households": 485,
+    "small_sample": true
+   },
+   "48": {
+    "bedroom_mix_complete_share": 0.909,
+    "buildings": 22,
+    "coverage": 0.259,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1010,
+    "modeled_units": 417,
+    "renter_households": 1610,
+    "small_sample": true
+   },
+   "49": {
+    "bedroom_mix_complete_share": 0.972,
+    "buildings": 72,
+    "coverage": 0.405,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 806,
+    "modeled_units": 2575,
+    "renter_households": 6363,
+    "small_sample": false
+   },
+   "5": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 126,
+    "coverage": 0.396,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1880,
+    "modeled_units": 2540,
+    "renter_households": 6413,
+    "small_sample": false
+   },
+   "50": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 4,
+    "coverage": 0.2,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 981,
+    "modeled_units": 263,
+    "renter_households": 1318,
+    "small_sample": true
+   },
+   "51": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 2,
+    "coverage": 0.064,
+    "coverage_state": "withheld",
+    "median_modeled_pgi_per_unit_month": 1055,
+    "modeled_units": 158,
+    "renter_households": 2480,
+    "small_sample": true
+   },
+   "52": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 14,
+    "coverage": 0.042,
+    "coverage_state": "withheld",
+    "median_modeled_pgi_per_unit_month": 1002,
+    "modeled_units": 109,
+    "renter_households": 2589,
+    "small_sample": true
+   },
+   "53": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 28,
+    "coverage": 0.192,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 871,
+    "modeled_units": 694,
+    "renter_households": 3617,
+    "small_sample": true
+   },
+   "54": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 3,
+    "coverage": 0.222,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 918,
+    "modeled_units": 566,
+    "renter_households": 2548,
+    "small_sample": true
+   },
+   "55": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 4,
+    "coverage": 0.484,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 696,
+    "modeled_units": 580,
+    "renter_households": 1199,
+    "small_sample": true
+   },
+   "56": {
+    "bedroom_mix_complete_share": 0.889,
+    "buildings": 36,
+    "coverage": 0.499,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 850,
+    "modeled_units": 1053,
+    "renter_households": 2109,
+    "small_sample": false
+   },
+   "57": {
+    "bedroom_mix_complete_share": 0.909,
+    "buildings": 11,
+    "coverage": 0.107,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1000,
+    "modeled_units": 172,
+    "renter_households": 1606,
+    "small_sample": true
+   },
+   "58": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 24,
+    "coverage": 0.05,
+    "coverage_state": "withheld",
+    "median_modeled_pgi_per_unit_month": 1089,
+    "modeled_units": 293,
+    "renter_households": 5919,
+    "small_sample": true
+   },
+   "59": {
+    "bedroom_mix_complete_share": 0.955,
+    "buildings": 22,
+    "coverage": 0.133,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1300,
+    "modeled_units": 225,
+    "renter_households": 1697,
+    "small_sample": true
+   },
+   "6": {
+    "bedroom_mix_complete_share": 0.984,
+    "buildings": 704,
+    "coverage": 0.704,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1817,
+    "modeled_units": 25663,
+    "renter_households": 36478,
+    "small_sample": false
+   },
+   "60": {
+    "bedroom_mix_complete_share": 0.98,
+    "buildings": 51,
+    "coverage": 0.086,
+    "coverage_state": "withheld",
+    "median_modeled_pgi_per_unit_month": 1643,
+    "modeled_units": 605,
+    "renter_households": 7010,
+    "small_sample": false
+   },
+   "61": {
+    "bedroom_mix_complete_share": 0.941,
+    "buildings": 34,
+    "coverage": 0.102,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1175,
+    "modeled_units": 855,
+    "renter_households": 8403,
+    "small_sample": false
+   },
+   "62": {
+    "bedroom_mix_complete_share": 0.8,
+    "buildings": 10,
+    "coverage": 0.285,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1000,
+    "modeled_units": 451,
+    "renter_households": 1580,
+    "small_sample": true
+   },
+   "63": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 62,
+    "coverage": 0.164,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 850,
+    "modeled_units": 720,
+    "renter_households": 4393,
+    "small_sample": false
+   },
+   "64": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 63,
+    "coverage": 0.277,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 850,
+    "modeled_units": 667,
+    "renter_households": 2405,
+    "small_sample": false
+   },
+   "65": {
+    "bedroom_mix_complete_share": 0.92,
+    "buildings": 25,
+    "coverage": 0.267,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 911,
+    "modeled_units": 604,
+    "renter_households": 2262,
+    "small_sample": true
+   },
+   "66": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 255,
+    "coverage": 0.441,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 950,
+    "modeled_units": 3626,
+    "renter_households": 8224,
+    "small_sample": false
+   },
+   "67": {
+    "bedroom_mix_complete_share": 0.966,
+    "buildings": 58,
+    "coverage": 0.157,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 900,
+    "modeled_units": 744,
+    "renter_households": 4734,
+    "small_sample": false
+   },
+   "68": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 113,
+    "coverage": 0.389,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 900,
+    "modeled_units": 2503,
+    "renter_households": 6432,
+    "small_sample": false
+   },
+   "69": {
+    "bedroom_mix_complete_share": 0.984,
+    "buildings": 243,
+    "coverage": 0.619,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 950,
+    "modeled_units": 5068,
+    "renter_households": 8187,
+    "small_sample": false
+   },
+   "7": {
+    "bedroom_mix_complete_share": 0.974,
+    "buildings": 307,
+    "coverage": 0.636,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 2138,
+    "modeled_units": 11864,
+    "renter_households": 18655,
+    "small_sample": false
+   },
+   "70": {
+    "bedroom_mix_complete_share": 0.892,
+    "buildings": 37,
+    "coverage": 0.536,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 890,
+    "modeled_units": 1097,
+    "renter_households": 2047,
+    "small_sample": false
+   },
+   "71": {
+    "bedroom_mix_complete_share": 0.99,
+    "buildings": 291,
+    "coverage": 0.539,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 900,
+    "modeled_units": 4695,
+    "renter_households": 8718,
+    "small_sample": false
+   },
+   "72": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 47,
+    "coverage": 0.721,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 988,
+    "modeled_units": 826,
+    "renter_households": 1146,
+    "small_sample": false
+   },
+   "73": {
+    "bedroom_mix_complete_share": 0.897,
+    "buildings": 58,
+    "coverage": 0.51,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 810,
+    "modeled_units": 1304,
+    "renter_households": 2555,
+    "small_sample": false
+   },
+   "74": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 8,
+    "coverage": 0.523,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1046,
+    "modeled_units": 596,
+    "renter_households": 1139,
+    "small_sample": true
+   },
+   "75": {
+    "bedroom_mix_complete_share": 0.971,
+    "buildings": 35,
+    "coverage": 0.208,
+    "coverage_state": "low",
+    "median_modeled_pgi_per_unit_month": 1018,
+    "modeled_units": 747,
+    "renter_households": 3586,
+    "small_sample": false
+   },
+   "76": {
+    "bedroom_mix_complete_share": 0.935,
+    "buildings": 31,
+    "coverage": 0.52,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1175,
+    "modeled_units": 2271,
+    "renter_households": 4364,
+    "small_sample": false
+   },
+   "77": {
+    "bedroom_mix_complete_share": 0.982,
+    "buildings": 384,
+    "coverage": 0.817,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1550,
+    "modeled_units": 15597,
+    "renter_households": 19089,
+    "small_sample": false
+   },
+   "8": {
+    "bedroom_mix_complete_share": 0.758,
+    "buildings": 318,
+    "coverage": 1.359,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 3017,
+    "modeled_units": 59987,
+    "renter_households": 44142,
+    "small_sample": false
+   },
+   "9": {
+    "bedroom_mix_complete_share": 1.0,
+    "buildings": 32,
+    "coverage": 0.403,
+    "coverage_state": "standard",
+    "median_modeled_pgi_per_unit_month": 1273,
+    "modeled_units": 355,
+    "renter_households": 880,
+    "small_sample": false
+   }
+  },
+  "classes": {
+   "3-14": 1281,
+   "3-15": 4873,
+   "3-15, 3-15": 223,
+   "3-18": 1430,
+   "3-91": 749,
+   "3-91, 3-91": 162,
+   "5-17": 316,
+   "9-15": 166
+  },
+  "coverage_states": {
+   "low": 15,
+   "standard": 56,
+   "withheld": 5
+  },
+  "rows_with_units_by_year": {
+   "2021": 2321,
+   "2024": 11016
+  },
+  "unmatched_to_community_area": 28,
+  "year": "2024"
+ },
+ "acs_year": 2024,
+ "citywide_check": {
+  "published_median": 1440.0,
+  "published_moe": 10.0,
+  "rebuilt_median": 1441,
+  "rebuilt_moe_handbook_df1.0": 18,
+  "rebuilt_moe_sim": 10
+ },
+ "crosswalk": {
+  "community_areas": 77,
+  "renter_households": 626797,
+  "spill_renter_households": 1439,
+  "spill_share": 0.0023,
+  "tracts": 790,
+  "tracts_dominant_share_below_0.75": 1,
+  "tracts_dominant_share_below_0.90": 3
+ },
+ "detail": {
+  "bedroom": {
+   "1_bedroom": {
+    "1": {
+     "handbook_moe_df1.0": 79,
+     "handbook_moe_df1.5": 119,
+     "households": 7241,
+     "median": 1226,
+     "sim_moe": 35,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "10": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 616,
+     "median": 1339,
+     "sim_moe": 108,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "11": {
+     "handbook_moe_df1.0": 166,
+     "handbook_moe_df1.5": 248,
+     "households": 1206,
+     "median": 1179,
+     "sim_moe": 62,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "12": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 59,
+     "median": 1172,
+     "sim_moe": 256,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "13": {
+     "handbook_moe_df1.0": 380,
+     "handbook_moe_df1.5": 580,
+     "households": 1450,
+     "median": 952,
+     "sim_moe": 209,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "14": {
+     "handbook_moe_df1.0": 148,
+     "handbook_moe_df1.5": 223,
+     "households": 2328,
+     "median": 1149,
+     "sim_moe": 47,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "15": {
+     "handbook_moe_df1.0": 145,
+     "handbook_moe_df1.5": 217,
+     "households": 2495,
+     "median": 1149,
+     "sim_moe": 60,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "16": {
+     "handbook_moe_df1.0": 137,
+     "handbook_moe_df1.5": 206,
+     "households": 2711,
+     "median": 1266,
+     "sim_moe": 46,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "17": {
+     "handbook_moe_df1.0": 297,
+     "handbook_moe_df1.5": 433,
+     "households": 938,
+     "median": 1097,
+     "sim_moe": 151,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "18": {
+     "handbook_moe_df1.0": 324,
+     "handbook_moe_df1.5": 545,
+     "households": 745,
+     "median": 918,
+     "sim_moe": 206,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "19": {
+     "handbook_moe_df1.0": 155,
+     "handbook_moe_df1.5": 229,
+     "households": 2562,
+     "median": 1086,
+     "sim_moe": 76,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "2": {
+     "handbook_moe_df1.0": 101,
+     "handbook_moe_df1.5": 152,
+     "households": 3678,
+     "median": 1229,
+     "sim_moe": 32,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "20": {
+     "handbook_moe_df1.0": 300,
+     "handbook_moe_df1.5": 440,
+     "households": 752,
+     "median": 1102,
+     "sim_moe": 116,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "21": {
+     "handbook_moe_df1.0": 233,
+     "handbook_moe_df1.5": null,
+     "households": 1347,
+     "median": 1329,
+     "sim_moe": 69,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "22": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5307,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "23": {
+     "handbook_moe_df1.0": 301,
+     "handbook_moe_df1.5": 437,
+     "households": 1719,
+     "median": 1122,
+     "sim_moe": 129,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "24": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5913,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "25": {
+     "handbook_moe_df1.0": 90,
+     "handbook_moe_df1.5": 143,
+     "households": 4802,
+     "median": 932,
+     "sim_moe": 50,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "26": {
+     "handbook_moe_df1.0": 427,
+     "handbook_moe_df1.5": 638,
+     "households": 719,
+     "median": 781,
+     "sim_moe": 139,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "27": {
+     "handbook_moe_df1.0": 622,
+     "handbook_moe_df1.5": 835,
+     "households": 961,
+     "median": 685,
+     "sim_moe": 258,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "28": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 9254,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "29": {
+     "handbook_moe_df1.0": 216,
+     "handbook_moe_df1.5": 354,
+     "households": 1180,
+     "median": 828,
+     "sim_moe": 82,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "3": {
+     "handbook_moe_df1.0": 102,
+     "handbook_moe_df1.5": 152,
+     "households": 9791,
+     "median": 1309,
+     "sim_moe": 45,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "30": {
+     "handbook_moe_df1.0": 101,
+     "handbook_moe_df1.5": 167,
+     "households": 1833,
+     "median": 916,
+     "sim_moe": 48,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "31": {
+     "handbook_moe_df1.0": 180,
+     "handbook_moe_df1.5": 271,
+     "households": 2375,
+     "median": 1193,
+     "sim_moe": 68,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "32": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 6875,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "33": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3033,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "34": {
+     "handbook_moe_df1.0": 345,
+     "handbook_moe_df1.5": 627,
+     "households": 1087,
+     "median": 431,
+     "sim_moe": 189,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "35": {
+     "handbook_moe_df1.0": 176,
+     "handbook_moe_df1.5": 279,
+     "households": 3092,
+     "median": 1146,
+     "sim_moe": 87,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "36": {
+     "handbook_moe_df1.0": 396,
+     "handbook_moe_df1.5": 582,
+     "households": 951,
+     "median": 686,
+     "sim_moe": 178,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "37": {
+     "handbook_moe_df1.0": 258,
+     "handbook_moe_df1.5": 462,
+     "households": 366,
+     "median": 235,
+     "sim_moe": 73,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "38": {
+     "handbook_moe_df1.0": 265,
+     "handbook_moe_df1.5": 398,
+     "households": 2699,
+     "median": 608,
+     "sim_moe": 149,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "39": {
+     "handbook_moe_df1.0": 273,
+     "handbook_moe_df1.5": 417,
+     "households": 2546,
+     "median": 1237,
+     "sim_moe": 121,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "4": {
+     "handbook_moe_df1.0": 89,
+     "handbook_moe_df1.5": 134,
+     "households": 4241,
+     "median": 1327,
+     "sim_moe": 24,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "40": {
+     "handbook_moe_df1.0": 332,
+     "handbook_moe_df1.5": 563,
+     "households": 991,
+     "median": 833,
+     "sim_moe": 136,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "41": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3169,
+     "median": 1486,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "42": {
+     "handbook_moe_df1.0": 285,
+     "handbook_moe_df1.5": 417,
+     "households": 1985,
+     "median": 794,
+     "sim_moe": 103,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "43": {
+     "handbook_moe_df1.0": 104,
+     "handbook_moe_df1.5": 153,
+     "households": 6291,
+     "median": 1031,
+     "sim_moe": 63,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "44": {
+     "handbook_moe_df1.0": 70,
+     "handbook_moe_df1.5": 104,
+     "households": 2969,
+     "median": 920,
+     "sim_moe": 31,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "45": {
+     "handbook_moe_df1.0": 248,
+     "handbook_moe_df1.5": 845,
+     "households": 361,
+     "median": 868,
+     "sim_moe": 138,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "46": {
+     "handbook_moe_df1.0": 291,
+     "handbook_moe_df1.5": 372,
+     "households": 1907,
+     "median": 742,
+     "sim_moe": 166,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "47": {
+     "handbook_moe_df1.0": 294,
+     "handbook_moe_df1.5": 820,
+     "households": 223,
+     "median": 437,
+     "sim_moe": 83,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "48": {
+     "handbook_moe_df1.0": 447,
+     "handbook_moe_df1.5": 826,
+     "households": 381,
+     "median": 734,
+     "sim_moe": 171,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "49": {
+     "handbook_moe_df1.0": 176,
+     "handbook_moe_df1.5": 290,
+     "households": 973,
+     "median": 829,
+     "sim_moe": 79,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "5": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1875,
+     "median": 1462,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "50": {
+     "handbook_moe_df1.0": 646,
+     "handbook_moe_df1.5": 924,
+     "households": 258,
+     "median": 917,
+     "sim_moe": 183,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "51": {
+     "handbook_moe_df1.0": 784,
+     "handbook_moe_df1.5": 1073,
+     "households": 312,
+     "median": 658,
+     "sim_moe": 346,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "52": {
+     "handbook_moe_df1.0": 557,
+     "handbook_moe_df1.5": null,
+     "households": 208,
+     "median": 800,
+     "sim_moe": 167,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "53": {
+     "handbook_moe_df1.0": 214,
+     "handbook_moe_df1.5": 456,
+     "households": 539,
+     "median": 858,
+     "sim_moe": 80,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "54": {
+     "handbook_moe_df1.0": 609,
+     "handbook_moe_df1.5": 900,
+     "households": 546,
+     "median": 594,
+     "sim_moe": 301,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "55": {
+     "handbook_moe_df1.0": 662,
+     "handbook_moe_df1.5": null,
+     "households": 179,
+     "median": 978,
+     "sim_moe": 249,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "56": {
+     "handbook_moe_df1.0": 271,
+     "handbook_moe_df1.5": 404,
+     "households": 545,
+     "median": 1010,
+     "sim_moe": 93,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "57": {
+     "handbook_moe_df1.0": 288,
+     "handbook_moe_df1.5": 549,
+     "households": 301,
+     "median": 922,
+     "sim_moe": 90,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "58": {
+     "handbook_moe_df1.0": 290,
+     "handbook_moe_df1.5": 431,
+     "households": 650,
+     "median": 1062,
+     "sim_moe": 105,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "59": {
+     "handbook_moe_df1.0": 639,
+     "handbook_moe_df1.5": null,
+     "households": 163,
+     "median": 953,
+     "sim_moe": 194,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "6": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 15317,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "60": {
+     "handbook_moe_df1.0": 220,
+     "handbook_moe_df1.5": 330,
+     "households": 1273,
+     "median": 1236,
+     "sim_moe": 91,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "61": {
+     "handbook_moe_df1.0": 380,
+     "handbook_moe_df1.5": 565,
+     "households": 568,
+     "median": 1026,
+     "sim_moe": 123,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "62": {
+     "handbook_moe_df1.0": 479,
+     "handbook_moe_df1.5": null,
+     "households": 151,
+     "median": 947,
+     "sim_moe": 123,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "63": {
+     "handbook_moe_df1.0": 275,
+     "handbook_moe_df1.5": 447,
+     "households": 1024,
+     "median": 839,
+     "sim_moe": 176,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "64": {
+     "handbook_moe_df1.0": 283,
+     "handbook_moe_df1.5": 421,
+     "households": 565,
+     "median": 1021,
+     "sim_moe": 103,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "65": {
+     "handbook_moe_df1.0": 350,
+     "handbook_moe_df1.5": 714,
+     "households": 318,
+     "median": 1157,
+     "sim_moe": 141,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "66": {
+     "handbook_moe_df1.0": 196,
+     "handbook_moe_df1.5": 304,
+     "households": 1886,
+     "median": 973,
+     "sim_moe": 109,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "67": {
+     "handbook_moe_df1.0": 185,
+     "handbook_moe_df1.5": 373,
+     "households": 809,
+     "median": 852,
+     "sim_moe": 69,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "68": {
+     "handbook_moe_df1.0": 362,
+     "handbook_moe_df1.5": 496,
+     "households": 1357,
+     "median": 633,
+     "sim_moe": 165,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "69": {
+     "handbook_moe_df1.0": 216,
+     "handbook_moe_df1.5": 324,
+     "households": 1529,
+     "median": 1008,
+     "sim_moe": 88,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "7": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 6517,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "70": {
+     "handbook_moe_df1.0": 445,
+     "handbook_moe_df1.5": null,
+     "households": 282,
+     "median": 1109,
+     "sim_moe": 205,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "71": {
+     "handbook_moe_df1.0": 95,
+     "handbook_moe_df1.5": 142,
+     "households": 2185,
+     "median": 846,
+     "sim_moe": 42,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "72": {
+     "handbook_moe_df1.0": 341,
+     "handbook_moe_df1.5": 504,
+     "households": 398,
+     "median": 1032,
+     "sim_moe": 118,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "73": {
+     "handbook_moe_df1.0": 227,
+     "handbook_moe_df1.5": 457,
+     "households": 363,
+     "median": 914,
+     "sim_moe": 68,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "74": {
+     "handbook_moe_df1.0": 412,
+     "handbook_moe_df1.5": 688,
+     "households": 370,
+     "median": 1076,
+     "sim_moe": 192,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "75": {
+     "handbook_moe_df1.0": 533,
+     "handbook_moe_df1.5": null,
+     "households": 498,
+     "median": 1168,
+     "sim_moe": 234,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "76": {
+     "handbook_moe_df1.0": 167,
+     "handbook_moe_df1.5": 251,
+     "households": 1684,
+     "median": 1344,
+     "sim_moe": 93,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "77": {
+     "handbook_moe_df1.0": 98,
+     "handbook_moe_df1.5": 147,
+     "households": 8132,
+     "median": 1321,
+     "sim_moe": 41,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "8": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 21303,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "9": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 368,
+     "median": 1383,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    }
+   },
+   "2_bedrooms": {
+    "1": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5756,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "10": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 961,
+     "median": 1457,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "11": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1720,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "12": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 411,
+     "median": 1455,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "13": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1163,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "14": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4495,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "15": {
+     "handbook_moe_df1.0": 131,
+     "handbook_moe_df1.5": null,
+     "households": 3894,
+     "median": 1414,
+     "sim_moe": 64,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "16": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5037,
+     "median": 1488,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "17": {
+     "handbook_moe_df1.0": 170,
+     "handbook_moe_df1.5": 254,
+     "households": 1470,
+     "median": 1327,
+     "sim_moe": 53,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "18": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 807,
+     "median": 1464,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "19": {
+     "handbook_moe_df1.0": 98,
+     "handbook_moe_df1.5": 147,
+     "households": 4876,
+     "median": 1284,
+     "sim_moe": 34,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "2": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5119,
+     "median": 1436,
+     "sim_moe": 61,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "20": {
+     "handbook_moe_df1.0": 150,
+     "handbook_moe_df1.5": 224,
+     "households": 1892,
+     "median": 1321,
+     "sim_moe": 53,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "21": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4351,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "22": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 8499,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "23": {
+     "handbook_moe_df1.0": 135,
+     "handbook_moe_df1.5": 202,
+     "households": 4173,
+     "median": 1284,
+     "sim_moe": 61,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "24": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 12525,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "25": {
+     "handbook_moe_df1.0": 80,
+     "handbook_moe_df1.5": 120,
+     "households": 7606,
+     "median": 1198,
+     "sim_moe": 36,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "26": {
+     "handbook_moe_df1.0": 160,
+     "handbook_moe_df1.5": 240,
+     "households": 1273,
+     "median": 1247,
+     "sim_moe": 34,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "27": {
+     "handbook_moe_df1.0": 195,
+     "handbook_moe_df1.5": 293,
+     "households": 1437,
+     "median": 1212,
+     "sim_moe": 61,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "28": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 6938,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "29": {
+     "handbook_moe_df1.0": 152,
+     "handbook_moe_df1.5": 229,
+     "households": 3166,
+     "median": 1171,
+     "sim_moe": 67,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "3": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5767,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "30": {
+     "handbook_moe_df1.0": 126,
+     "handbook_moe_df1.5": 188,
+     "households": 4746,
+     "median": 1114,
+     "sim_moe": 59,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "31": {
+     "handbook_moe_df1.0": 160,
+     "handbook_moe_df1.5": 240,
+     "households": 4429,
+     "median": 1350,
+     "sim_moe": 65,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "32": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4135,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "33": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3163,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "34": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 824,
+     "median": 1413,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "35": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1885,
+     "median": 1482,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "36": {
+     "handbook_moe_df1.0": 336,
+     "handbook_moe_df1.5": 651,
+     "households": 765,
+     "median": 920,
+     "sim_moe": 106,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "37": {
+     "handbook_moe_df1.0": 730,
+     "handbook_moe_df1.5": null,
+     "households": 129,
+     "median": 1146,
+     "sim_moe": 272,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "38": {
+     "handbook_moe_df1.0": 191,
+     "handbook_moe_df1.5": 286,
+     "households": 2493,
+     "median": 1319,
+     "sim_moe": 80,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "39": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2228,
+     "median": 1375,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "4": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4306,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "40": {
+     "handbook_moe_df1.0": 205,
+     "handbook_moe_df1.5": 308,
+     "households": 1661,
+     "median": 1208,
+     "sim_moe": 87,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "41": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3003,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "42": {
+     "handbook_moe_df1.0": 282,
+     "handbook_moe_df1.5": null,
+     "households": 1726,
+     "median": 1306,
+     "sim_moe": 101,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "43": {
+     "handbook_moe_df1.0": 84,
+     "handbook_moe_df1.5": 126,
+     "households": 6330,
+     "median": 1209,
+     "sim_moe": 32,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "44": {
+     "handbook_moe_df1.0": 124,
+     "handbook_moe_df1.5": 186,
+     "households": 3576,
+     "median": 1153,
+     "sim_moe": 56,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "45": {
+     "handbook_moe_df1.0": 260,
+     "handbook_moe_df1.5": 412,
+     "households": 507,
+     "median": 1208,
+     "sim_moe": 97,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "46": {
+     "handbook_moe_df1.0": 195,
+     "handbook_moe_df1.5": 311,
+     "households": 1891,
+     "median": 1094,
+     "sim_moe": 94,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "47": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 85,
+     "median": 875,
+     "sim_moe": 267,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "48": {
+     "handbook_moe_df1.0": 289,
+     "handbook_moe_df1.5": 468,
+     "households": 581,
+     "median": 1228,
+     "sim_moe": 96,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "49": {
+     "handbook_moe_df1.0": 176,
+     "handbook_moe_df1.5": 264,
+     "households": 2450,
+     "median": 1217,
+     "sim_moe": 69,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "5": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2985,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "50": {
+     "handbook_moe_df1.0": 250,
+     "handbook_moe_df1.5": 374,
+     "households": 537,
+     "median": 1234,
+     "sim_moe": 53,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "51": {
+     "handbook_moe_df1.0": 409,
+     "handbook_moe_df1.5": 766,
+     "households": 972,
+     "median": 1023,
+     "sim_moe": 211,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "52": {
+     "handbook_moe_df1.0": 301,
+     "handbook_moe_df1.5": 453,
+     "households": 938,
+     "median": 974,
+     "sim_moe": 130,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "53": {
+     "handbook_moe_df1.0": 383,
+     "handbook_moe_df1.5": null,
+     "households": 886,
+     "median": 1203,
+     "sim_moe": 161,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "54": {
+     "handbook_moe_df1.0": 440,
+     "handbook_moe_df1.5": 796,
+     "households": 836,
+     "median": 924,
+     "sim_moe": 212,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "55": {
+     "handbook_moe_df1.0": 247,
+     "handbook_moe_df1.5": 371,
+     "households": 273,
+     "median": 758,
+     "sim_moe": 115,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "56": {
+     "handbook_moe_df1.0": 257,
+     "handbook_moe_df1.5": null,
+     "households": 506,
+     "median": 1318,
+     "sim_moe": 84,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "57": {
+     "handbook_moe_df1.0": 235,
+     "handbook_moe_df1.5": 365,
+     "households": 878,
+     "median": 983,
+     "sim_moe": 130,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "58": {
+     "handbook_moe_df1.0": 140,
+     "handbook_moe_df1.5": 209,
+     "households": 3232,
+     "median": 1107,
+     "sim_moe": 76,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "59": {
+     "handbook_moe_df1.0": 306,
+     "handbook_moe_df1.5": null,
+     "households": 916,
+     "median": 1228,
+     "sim_moe": 126,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "6": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 9722,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "60": {
+     "handbook_moe_df1.0": 129,
+     "handbook_moe_df1.5": 193,
+     "households": 2904,
+     "median": 1291,
+     "sim_moe": 49,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "61": {
+     "handbook_moe_df1.0": 123,
+     "handbook_moe_df1.5": 184,
+     "households": 3991,
+     "median": 1005,
+     "sim_moe": 73,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "62": {
+     "handbook_moe_df1.0": 180,
+     "handbook_moe_df1.5": 270,
+     "households": 913,
+     "median": 1225,
+     "sim_moe": 58,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "63": {
+     "handbook_moe_df1.0": 165,
+     "handbook_moe_df1.5": 244,
+     "households": 1947,
+     "median": 1038,
+     "sim_moe": 84,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "64": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1096,
+     "median": 1404,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "65": {
+     "handbook_moe_df1.0": 197,
+     "handbook_moe_df1.5": 296,
+     "households": 1180,
+     "median": 1211,
+     "sim_moe": 85,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "66": {
+     "handbook_moe_df1.0": 100,
+     "handbook_moe_df1.5": 149,
+     "households": 4030,
+     "median": 1184,
+     "sim_moe": 50,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "67": {
+     "handbook_moe_df1.0": 199,
+     "handbook_moe_df1.5": 304,
+     "households": 1571,
+     "median": 1167,
+     "sim_moe": 72,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "68": {
+     "handbook_moe_df1.0": 164,
+     "handbook_moe_df1.5": 261,
+     "households": 1899,
+     "median": 1106,
+     "sim_moe": 77,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "69": {
+     "handbook_moe_df1.0": 170,
+     "handbook_moe_df1.5": 256,
+     "households": 3119,
+     "median": 1050,
+     "sim_moe": 85,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "7": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4837,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "70": {
+     "handbook_moe_df1.0": 316,
+     "handbook_moe_df1.5": null,
+     "households": 759,
+     "median": 1261,
+     "sim_moe": 203,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "71": {
+     "handbook_moe_df1.0": 115,
+     "handbook_moe_df1.5": 172,
+     "households": 2837,
+     "median": 1181,
+     "sim_moe": 44,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "72": {
+     "handbook_moe_df1.0": 228,
+     "handbook_moe_df1.5": null,
+     "households": 493,
+     "median": 1309,
+     "sim_moe": 46,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "73": {
+     "handbook_moe_df1.0": 468,
+     "handbook_moe_df1.5": null,
+     "households": 798,
+     "median": 1028,
+     "sim_moe": 204,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "74": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 291,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "75": {
+     "handbook_moe_df1.0": 161,
+     "handbook_moe_df1.5": 242,
+     "households": 1734,
+     "median": 1240,
+     "sim_moe": 51,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "76": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1669,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "77": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3981,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "8": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 9124,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "9": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 339,
+     "median": 1448,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    }
+   },
+   "3_plus_bedrooms": {
+    "1": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2023,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "10": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 966,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "11": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 643,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "12": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 223,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "13": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 660,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "14": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2110,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "15": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2115,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "16": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2028,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "17": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 614,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "18": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 374,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "19": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2373,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "2": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3346,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "20": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 832,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "21": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2497,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "22": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4477,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "23": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4639,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "24": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5239,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "25": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 5779,
+     "median": 1425,
+     "sim_moe": 72,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "26": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1549,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "27": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2104,
+     "median": 1485,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "28": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3062,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "29": {
+     "handbook_moe_df1.0": 175,
+     "handbook_moe_df1.5": null,
+     "households": 4230,
+     "median": 1375,
+     "sim_moe": 96,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "3": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1993,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "30": {
+     "handbook_moe_df1.0": 148,
+     "handbook_moe_df1.5": 221,
+     "households": 3173,
+     "median": 1189,
+     "sim_moe": 70,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "31": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2419,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "32": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 947,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "33": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 527,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "34": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 893,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "35": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1003,
+     "median": 1348,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "36": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 521,
+     "median": 1252,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "37": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 204,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "38": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2319,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "39": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 503,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "4": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1652,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "40": {
+     "handbook_moe_df1.0": 285,
+     "handbook_moe_df1.5": null,
+     "households": 1654,
+     "median": 1321,
+     "sim_moe": 106,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "41": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1571,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "42": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 3261,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "43": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4293,
+     "median": 1463,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "44": {
+     "handbook_moe_df1.0": 159,
+     "handbook_moe_df1.5": 238,
+     "households": 1866,
+     "median": 1295,
+     "sim_moe": 62,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "45": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 342,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "46": {
+     "handbook_moe_df1.0": 213,
+     "handbook_moe_df1.5": 320,
+     "households": 1831,
+     "median": 1213,
+     "sim_moe": 101,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "47": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 135,
+     "median": 1250,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "48": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 499,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "49": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2272,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "5": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1237,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "50": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 464,
+     "median": 1400,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "51": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1083,
+     "median": 1358,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "52": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1085,
+     "median": 1342,
+     "sim_moe": 128,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "53": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1736,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "54": {
+     "handbook_moe_df1.0": 251,
+     "handbook_moe_df1.5": 504,
+     "households": 932,
+     "median": 573,
+     "sim_moe": 100,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "55": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 545,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "56": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 725,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "57": {
+     "handbook_moe_df1.0": 422,
+     "handbook_moe_df1.5": null,
+     "households": 401,
+     "median": 1215,
+     "sim_moe": 166,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "58": {
+     "handbook_moe_df1.0": 153,
+     "handbook_moe_df1.5": 229,
+     "households": 1672,
+     "median": 1270,
+     "sim_moe": 51,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "59": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 497,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "6": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4183,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "60": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2255,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "61": {
+     "handbook_moe_df1.0": 135,
+     "handbook_moe_df1.5": 202,
+     "households": 3025,
+     "median": 1208,
+     "sim_moe": 52,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "62": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 492,
+     "median": 1443,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "63": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 862,
+     "median": 1361,
+     "sim_moe": 107,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "64": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 636,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "65": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 686,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "66": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2063,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "67": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1950,
+     "median": 1372,
+     "sim_moe": 93,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "68": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2226,
+     "median": 1447,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "69": {
+     "handbook_moe_df1.0": 208,
+     "handbook_moe_df1.5": null,
+     "households": 2597,
+     "median": 1329,
+     "sim_moe": 90,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "7": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 2824,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "70": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 917,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "71": {
+     "handbook_moe_df1.0": 179,
+     "handbook_moe_df1.5": null,
+     "households": 2493,
+     "median": 1358,
+     "sim_moe": 74,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "72": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 203,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "73": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1257,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "74": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 420,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "75": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1051,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "76": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 360,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "77": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1680,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "8": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1991,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "9": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 153,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    }
+   },
+   "no_bedroom": {
+    "1": {
+     "handbook_moe_df1.0": 135,
+     "handbook_moe_df1.5": 197,
+     "households": 3457,
+     "median": 1051,
+     "sim_moe": 67,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "10": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 216,
+     "median": 1021,
+     "sim_moe": 224,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "11": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 84,
+     "median": 672,
+     "sim_moe": 161,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "12": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 19,
+     "median": 1250,
+     "sim_moe": 367,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "13": {
+     "handbook_moe_df1.0": 958,
+     "handbook_moe_df1.5": null,
+     "households": 147,
+     "median": 1101,
+     "sim_moe": 308,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "14": {
+     "handbook_moe_df1.0": 123,
+     "handbook_moe_df1.5": 264,
+     "households": 753,
+     "median": 908,
+     "sim_moe": 38,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "15": {
+     "handbook_moe_df1.0": 305,
+     "handbook_moe_df1.5": 533,
+     "households": 554,
+     "median": 802,
+     "sim_moe": 112,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "16": {
+     "handbook_moe_df1.0": 310,
+     "handbook_moe_df1.5": 465,
+     "households": 742,
+     "median": 1071,
+     "sim_moe": 114,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "17": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 23,
+     "median": 1250,
+     "sim_moe": 222,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "18": {
+     "handbook_moe_df1.0": 532,
+     "handbook_moe_df1.5": null,
+     "households": 194,
+     "median": 985,
+     "sim_moe": 199,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "19": {
+     "handbook_moe_df1.0": 396,
+     "handbook_moe_df1.5": 665,
+     "households": 490,
+     "median": 894,
+     "sim_moe": 88,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "2": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 350,
+     "median": 1178,
+     "sim_moe": 152,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "20": {
+     "handbook_moe_df1.0": 368,
+     "handbook_moe_df1.5": null,
+     "households": 210,
+     "median": 934,
+     "sim_moe": 93,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "21": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 201,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "22": {
+     "handbook_moe_df1.0": 228,
+     "handbook_moe_df1.5": null,
+     "households": 1329,
+     "median": 1305,
+     "sim_moe": 64,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "23": {
+     "handbook_moe_df1.0": 432,
+     "handbook_moe_df1.5": 605,
+     "households": 545,
+     "median": 945,
+     "sim_moe": 164,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "24": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1730,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "25": {
+     "handbook_moe_df1.0": 155,
+     "handbook_moe_df1.5": 266,
+     "households": 1340,
+     "median": 936,
+     "sim_moe": 68,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "26": {
+     "handbook_moe_df1.0": 421,
+     "handbook_moe_df1.5": 697,
+     "households": 304,
+     "median": 691,
+     "sim_moe": 102,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "27": {
+     "handbook_moe_df1.0": 780,
+     "handbook_moe_df1.5": 965,
+     "households": 564,
+     "median": 1004,
+     "sim_moe": 313,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "28": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4070,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "29": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 271,
+     "median": 1104,
+     "sim_moe": 231,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "3": {
+     "handbook_moe_df1.0": 119,
+     "handbook_moe_df1.5": 179,
+     "households": 5479,
+     "median": 1132,
+     "sim_moe": 58,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "30": {
+     "handbook_moe_df1.0": 228,
+     "handbook_moe_df1.5": 345,
+     "households": 1024,
+     "median": 991,
+     "sim_moe": 108,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "31": {
+     "handbook_moe_df1.0": 392,
+     "handbook_moe_df1.5": 720,
+     "households": 584,
+     "median": 958,
+     "sim_moe": 124,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "32": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4844,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "33": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 1646,
+     "median": 1409,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "34": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 203,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "35": {
+     "handbook_moe_df1.0": 145,
+     "handbook_moe_df1.5": 218,
+     "households": 1732,
+     "median": 1197,
+     "sim_moe": 46,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "36": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 47,
+     "median": 645,
+     "sim_moe": 273,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "37": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 28,
+     "median": 221,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "38": {
+     "handbook_moe_df1.0": 312,
+     "handbook_moe_df1.5": 526,
+     "households": 575,
+     "median": 761,
+     "sim_moe": 102,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "39": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 893,
+     "median": 1458,
+     "sim_moe": null,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "no_moe",
+     "top_coded": false
+    },
+    "4": {
+     "handbook_moe_df1.0": 182,
+     "handbook_moe_df1.5": 273,
+     "households": 1339,
+     "median": 1282,
+     "sim_moe": 59,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "40": {
+     "handbook_moe_df1.0": 902,
+     "handbook_moe_df1.5": null,
+     "households": 134,
+     "median": 481,
+     "sim_moe": 350,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "41": {
+     "handbook_moe_df1.0": 188,
+     "handbook_moe_df1.5": 282,
+     "households": 2048,
+     "median": 1177,
+     "sim_moe": 79,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "42": {
+     "handbook_moe_df1.0": 754,
+     "handbook_moe_df1.5": 1052,
+     "households": 434,
+     "median": 858,
+     "sim_moe": 257,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "43": {
+     "handbook_moe_df1.0": 92,
+     "handbook_moe_df1.5": 139,
+     "households": 2578,
+     "median": 862,
+     "sim_moe": 51,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "44": {
+     "handbook_moe_df1.0": 173,
+     "handbook_moe_df1.5": 397,
+     "households": 431,
+     "median": 905,
+     "sim_moe": 72,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "45": {
+     "handbook_moe_df1.0": 604,
+     "handbook_moe_df1.5": null,
+     "households": 104,
+     "median": 569,
+     "sim_moe": 216,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "46": {
+     "handbook_moe_df1.0": 504,
+     "handbook_moe_df1.5": null,
+     "households": 345,
+     "median": 840,
+     "sim_moe": 162,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "47": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 0,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": false
+    },
+    "48": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 0,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": false
+    },
+    "49": {
+     "handbook_moe_df1.0": 423,
+     "handbook_moe_df1.5": 749,
+     "households": 383,
+     "median": 643,
+     "sim_moe": 122,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "5": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 172,
+     "median": 1145,
+     "sim_moe": 185,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "50": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 15,
+     "median": 1250,
+     "sim_moe": 390,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "51": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 48,
+     "median": 400,
+     "sim_moe": 244,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "52": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 58,
+     "median": 625,
+     "sim_moe": 164,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "53": {
+     "handbook_moe_df1.0": 568,
+     "handbook_moe_df1.5": null,
+     "households": 216,
+     "median": 777,
+     "sim_moe": 198,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "54": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 91,
+     "median": 835,
+     "sim_moe": 442,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "55": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 0,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": false
+    },
+    "56": {
+     "handbook_moe_df1.0": 511,
+     "handbook_moe_df1.5": null,
+     "households": 137,
+     "median": 1174,
+     "sim_moe": 200,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "57": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 12,
+     "median": 875,
+     "sim_moe": 266,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "58": {
+     "handbook_moe_df1.0": 316,
+     "handbook_moe_df1.5": null,
+     "households": 218,
+     "median": 1285,
+     "sim_moe": 116,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "59": {
+     "handbook_moe_df1.0": 771,
+     "handbook_moe_df1.5": null,
+     "households": 110,
+     "median": 1138,
+     "sim_moe": 236,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "6": {
+     "handbook_moe_df1.0": 91,
+     "handbook_moe_df1.5": 137,
+     "households": 6763,
+     "median": 1335,
+     "sim_moe": 32,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "60": {
+     "handbook_moe_df1.0": 595,
+     "handbook_moe_df1.5": null,
+     "households": 253,
+     "median": 1104,
+     "sim_moe": 189,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "61": {
+     "handbook_moe_df1.0": 438,
+     "handbook_moe_df1.5": 663,
+     "households": 476,
+     "median": 1008,
+     "sim_moe": 139,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "low",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "62": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 12,
+     "median": 400,
+     "sim_moe": 331,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "withheld",
+     "top_coded": false
+    },
+    "63": {
+     "handbook_moe_df1.0": 766,
+     "handbook_moe_df1.5": 989,
+     "households": 416,
+     "median": 961,
+     "sim_moe": 186,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "64": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 45,
+     "median": 875,
+     "sim_moe": 146,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "65": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 0,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": false
+    },
+    "66": {
+     "handbook_moe_df1.0": 446,
+     "handbook_moe_df1.5": 811,
+     "households": 227,
+     "median": 967,
+     "sim_moe": 139,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "67": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 88,
+     "median": 414,
+     "sim_moe": 164,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "68": {
+     "handbook_moe_df1.0": 476,
+     "handbook_moe_df1.5": 775,
+     "households": 607,
+     "median": 366,
+     "sim_moe": 255,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "69": {
+     "handbook_moe_df1.0": 473,
+     "handbook_moe_df1.5": 675,
+     "households": 477,
+     "median": 789,
+     "sim_moe": 208,
+     "state_handbook_df1.0": "low",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "7": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 4211,
+     "median": 1416,
+     "sim_moe": 71,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "70": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 32,
+     "median": 1250,
+     "sim_moe": 260,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "71": {
+     "handbook_moe_df1.0": 361,
+     "handbook_moe_df1.5": 610,
+     "households": 745,
+     "median": 334,
+     "sim_moe": 192,
+     "state_handbook_df1.0": "withheld",
+     "state_handbook_df1.5": "withheld",
+     "state_sim": "low",
+     "top_coded": false
+    },
+    "72": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 0,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": false
+    },
+    "73": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 50,
+     "median": 456,
+     "sim_moe": 207,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "74": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 28,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "75": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 29,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "76": {
+     "handbook_moe_df1.0": 284,
+     "handbook_moe_df1.5": null,
+     "households": 424,
+     "median": 1242,
+     "sim_moe": 102,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "77": {
+     "handbook_moe_df1.0": 134,
+     "handbook_moe_df1.5": 200,
+     "households": 5019,
+     "median": 1131,
+     "sim_moe": 56,
+     "state_handbook_df1.0": "standard",
+     "state_handbook_df1.5": "standard",
+     "state_sim": "standard",
+     "top_coded": false
+    },
+    "8": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 10573,
+     "median": null,
+     "sim_moe": null,
+     "state_handbook_df1.0": "unavailable",
+     "state_handbook_df1.5": "unavailable",
+     "state_sim": "unavailable",
+     "top_coded": true
+    },
+    "9": {
+     "handbook_moe_df1.0": null,
+     "handbook_moe_df1.5": null,
+     "households": 20,
+     "median": 1250,
+     "sim_moe": 400,
+     "state_handbook_df1.0": "no_moe",
+     "state_handbook_df1.5": "no_moe",
+     "state_sim": "standard",
+     "top_coded": false
+    }
+   }
+  },
+  "overall": {
+   "1": {
+    "handbook_moe_df1.0": 68,
+    "handbook_moe_df1.5": 102,
+    "households": 18477,
+    "median": 1338,
+    "sim_moe": 39,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "10": {
+    "handbook_moe_df1.0": 345,
+    "handbook_moe_df1.5": 521,
+    "households": 2759,
+    "median": 1689,
+    "sim_moe": 172,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "11": {
+    "handbook_moe_df1.0": 150,
+    "handbook_moe_df1.5": 240,
+    "households": 3653,
+    "median": 1398,
+    "sim_moe": 83,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "12": {
+    "handbook_moe_df1.0": 471,
+    "handbook_moe_df1.5": 837,
+    "households": 712,
+    "median": 1459,
+    "sim_moe": 157,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "low",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "13": {
+    "handbook_moe_df1.0": 224,
+    "handbook_moe_df1.5": 337,
+    "households": 3420,
+    "median": 1299,
+    "sim_moe": 119,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "14": {
+    "handbook_moe_df1.0": 110,
+    "handbook_moe_df1.5": 170,
+    "households": 9686,
+    "median": 1416,
+    "sim_moe": 49,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "15": {
+    "handbook_moe_df1.0": 92,
+    "handbook_moe_df1.5": 139,
+    "households": 9058,
+    "median": 1343,
+    "sim_moe": 49,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "16": {
+    "handbook_moe_df1.0": 94,
+    "handbook_moe_df1.5": 142,
+    "households": 10518,
+    "median": 1401,
+    "sim_moe": 44,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "17": {
+    "handbook_moe_df1.0": 154,
+    "handbook_moe_df1.5": 238,
+    "households": 3045,
+    "median": 1365,
+    "sim_moe": 92,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "18": {
+    "handbook_moe_df1.0": 239,
+    "handbook_moe_df1.5": 372,
+    "households": 2120,
+    "median": 1311,
+    "sim_moe": 152,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "19": {
+    "handbook_moe_df1.0": 72,
+    "handbook_moe_df1.5": 113,
+    "households": 10301,
+    "median": 1228,
+    "sim_moe": 33,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "2": {
+    "handbook_moe_df1.0": 69,
+    "handbook_moe_df1.5": 103,
+    "households": 12493,
+    "median": 1437,
+    "sim_moe": 38,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "20": {
+    "handbook_moe_df1.0": 124,
+    "handbook_moe_df1.5": 191,
+    "households": 3686,
+    "median": 1316,
+    "sim_moe": 57,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "21": {
+    "handbook_moe_df1.0": 129,
+    "handbook_moe_df1.5": 194,
+    "households": 8396,
+    "median": 1670,
+    "sim_moe": 57,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "22": {
+    "handbook_moe_df1.0": 103,
+    "handbook_moe_df1.5": 155,
+    "households": 19612,
+    "median": 1795,
+    "sim_moe": 46,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "23": {
+    "handbook_moe_df1.0": 121,
+    "handbook_moe_df1.5": 176,
+    "households": 11076,
+    "median": 1308,
+    "sim_moe": 64,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "24": {
+    "handbook_moe_df1.0": 106,
+    "handbook_moe_df1.5": 159,
+    "households": 25407,
+    "median": 2054,
+    "sim_moe": 52,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "25": {
+    "handbook_moe_df1.0": 58,
+    "handbook_moe_df1.5": 87,
+    "households": 19527,
+    "median": 1159,
+    "sim_moe": 36,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "26": {
+    "handbook_moe_df1.0": 155,
+    "handbook_moe_df1.5": 233,
+    "households": 3845,
+    "median": 1231,
+    "sim_moe": 60,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "27": {
+    "handbook_moe_df1.0": 153,
+    "handbook_moe_df1.5": 231,
+    "households": 5066,
+    "median": 1222,
+    "sim_moe": 66,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "28": {
+    "handbook_moe_df1.0": 100,
+    "handbook_moe_df1.5": 151,
+    "households": 23324,
+    "median": 2149,
+    "sim_moe": 55,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "29": {
+    "handbook_moe_df1.0": 111,
+    "handbook_moe_df1.5": 169,
+    "households": 8847,
+    "median": 1204,
+    "sim_moe": 62,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "3": {
+    "handbook_moe_df1.0": 93,
+    "handbook_moe_df1.5": 139,
+    "households": 23030,
+    "median": 1363,
+    "sim_moe": 55,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "30": {
+    "handbook_moe_df1.0": 66,
+    "handbook_moe_df1.5": 99,
+    "households": 10776,
+    "median": 1062,
+    "sim_moe": 41,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "31": {
+    "handbook_moe_df1.0": 112,
+    "handbook_moe_df1.5": 167,
+    "households": 9807,
+    "median": 1335,
+    "sim_moe": 55,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "32": {
+    "handbook_moe_df1.0": 96,
+    "handbook_moe_df1.5": 151,
+    "households": 16801,
+    "median": 2430,
+    "sim_moe": 63,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "33": {
+    "handbook_moe_df1.0": 210,
+    "handbook_moe_df1.5": 308,
+    "households": 8369,
+    "median": 2389,
+    "sim_moe": 180,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "34": {
+    "handbook_moe_df1.0": 416,
+    "handbook_moe_df1.5": 592,
+    "households": 3007,
+    "median": 1228,
+    "sim_moe": 223,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "35": {
+    "handbook_moe_df1.0": 114,
+    "handbook_moe_df1.5": 171,
+    "households": 7712,
+    "median": 1234,
+    "sim_moe": 62,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "36": {
+    "handbook_moe_df1.0": 200,
+    "handbook_moe_df1.5": 315,
+    "households": 2284,
+    "median": 923,
+    "sim_moe": 90,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "37": {
+    "handbook_moe_df1.0": 829,
+    "handbook_moe_df1.5": 943,
+    "households": 727,
+    "median": 590,
+    "sim_moe": 317,
+    "state_handbook_df1.0": "withheld",
+    "state_handbook_df1.5": "withheld",
+    "state_sim": "low",
+    "top_coded": false
+   },
+   "38": {
+    "handbook_moe_df1.0": 167,
+    "handbook_moe_df1.5": 255,
+    "households": 8086,
+    "median": 1182,
+    "sim_moe": 88,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "39": {
+    "handbook_moe_df1.0": 193,
+    "handbook_moe_df1.5": 296,
+    "households": 6170,
+    "median": 1341,
+    "sim_moe": 111,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "4": {
+    "handbook_moe_df1.0": 116,
+    "handbook_moe_df1.5": 166,
+    "households": 11538,
+    "median": 1555,
+    "sim_moe": 53,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "40": {
+    "handbook_moe_df1.0": 122,
+    "handbook_moe_df1.5": 182,
+    "households": 4440,
+    "median": 1118,
+    "sim_moe": 59,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "41": {
+    "handbook_moe_df1.0": 163,
+    "handbook_moe_df1.5": 242,
+    "households": 9791,
+    "median": 1604,
+    "sim_moe": 79,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "42": {
+    "handbook_moe_df1.0": 192,
+    "handbook_moe_df1.5": 287,
+    "households": 7406,
+    "median": 1180,
+    "sim_moe": 98,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "43": {
+    "handbook_moe_df1.0": 53,
+    "handbook_moe_df1.5": 80,
+    "households": 19492,
+    "median": 1123,
+    "sim_moe": 31,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "44": {
+    "handbook_moe_df1.0": 72,
+    "handbook_moe_df1.5": 107,
+    "households": 8842,
+    "median": 1061,
+    "sim_moe": 42,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "45": {
+    "handbook_moe_df1.0": 177,
+    "handbook_moe_df1.5": 263,
+    "households": 1314,
+    "median": 1068,
+    "sim_moe": 93,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "46": {
+    "handbook_moe_df1.0": 80,
+    "handbook_moe_df1.5": 130,
+    "households": 5974,
+    "median": 966,
+    "sim_moe": 42,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "47": {
+    "handbook_moe_df1.0": 526,
+    "handbook_moe_df1.5": 789,
+    "households": 443,
+    "median": 678,
+    "sim_moe": 243,
+    "state_handbook_df1.0": "low",
+    "state_handbook_df1.5": "withheld",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "48": {
+    "handbook_moe_df1.0": 252,
+    "handbook_moe_df1.5": 399,
+    "households": 1461,
+    "median": 1178,
+    "sim_moe": 109,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "49": {
+    "handbook_moe_df1.0": 132,
+    "handbook_moe_df1.5": 199,
+    "households": 6078,
+    "median": 1226,
+    "sim_moe": 62,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "5": {
+    "handbook_moe_df1.0": 154,
+    "handbook_moe_df1.5": 231,
+    "households": 6269,
+    "median": 1830,
+    "sim_moe": 65,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "50": {
+    "handbook_moe_df1.0": 147,
+    "handbook_moe_df1.5": 268,
+    "households": 1274,
+    "median": 1167,
+    "sim_moe": 56,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "51": {
+    "handbook_moe_df1.0": 217,
+    "handbook_moe_df1.5": 359,
+    "households": 2415,
+    "median": 1192,
+    "sim_moe": 143,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "52": {
+    "handbook_moe_df1.0": 196,
+    "handbook_moe_df1.5": 306,
+    "households": 2289,
+    "median": 1092,
+    "sim_moe": 89,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "53": {
+    "handbook_moe_df1.0": 282,
+    "handbook_moe_df1.5": 416,
+    "households": 3377,
+    "median": 1229,
+    "sim_moe": 125,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "54": {
+    "handbook_moe_df1.0": 248,
+    "handbook_moe_df1.5": 394,
+    "households": 2405,
+    "median": 642,
+    "sim_moe": 123,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "low",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "55": {
+    "handbook_moe_df1.0": 564,
+    "handbook_moe_df1.5": 728,
+    "households": 997,
+    "median": 1240,
+    "sim_moe": 335,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "low",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "56": {
+    "handbook_moe_df1.0": 220,
+    "handbook_moe_df1.5": 338,
+    "households": 1913,
+    "median": 1238,
+    "sim_moe": 62,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "57": {
+    "handbook_moe_df1.0": 206,
+    "handbook_moe_df1.5": 309,
+    "households": 1592,
+    "median": 996,
+    "sim_moe": 94,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "58": {
+    "handbook_moe_df1.0": 77,
+    "handbook_moe_df1.5": 116,
+    "households": 5772,
+    "median": 1137,
+    "sim_moe": 37,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "59": {
+    "handbook_moe_df1.0": 225,
+    "handbook_moe_df1.5": 345,
+    "households": 1686,
+    "median": 1225,
+    "sim_moe": 75,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "6": {
+    "handbook_moe_df1.0": 71,
+    "handbook_moe_df1.5": 107,
+    "households": 35985,
+    "median": 1843,
+    "sim_moe": 32,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "60": {
+    "handbook_moe_df1.0": 128,
+    "handbook_moe_df1.5": 191,
+    "households": 6685,
+    "median": 1361,
+    "sim_moe": 74,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "61": {
+    "handbook_moe_df1.0": 66,
+    "handbook_moe_df1.5": 100,
+    "households": 8060,
+    "median": 1065,
+    "sim_moe": 38,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "62": {
+    "handbook_moe_df1.0": 163,
+    "handbook_moe_df1.5": 244,
+    "households": 1568,
+    "median": 1252,
+    "sim_moe": 90,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "63": {
+    "handbook_moe_df1.0": 107,
+    "handbook_moe_df1.5": 157,
+    "households": 4249,
+    "median": 1049,
+    "sim_moe": 57,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "64": {
+    "handbook_moe_df1.0": 215,
+    "handbook_moe_df1.5": 339,
+    "households": 2342,
+    "median": 1380,
+    "sim_moe": 120,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "65": {
+    "handbook_moe_df1.0": 144,
+    "handbook_moe_df1.5": 235,
+    "households": 2184,
+    "median": 1212,
+    "sim_moe": 60,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "66": {
+    "handbook_moe_df1.0": 78,
+    "handbook_moe_df1.5": 117,
+    "households": 8206,
+    "median": 1176,
+    "sim_moe": 51,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "67": {
+    "handbook_moe_df1.0": 138,
+    "handbook_moe_df1.5": 216,
+    "households": 4418,
+    "median": 1162,
+    "sim_moe": 62,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "68": {
+    "handbook_moe_df1.0": 106,
+    "handbook_moe_df1.5": 177,
+    "households": 6089,
+    "median": 1066,
+    "sim_moe": 64,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "69": {
+    "handbook_moe_df1.0": 90,
+    "handbook_moe_df1.5": 135,
+    "households": 7722,
+    "median": 1094,
+    "sim_moe": 44,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "7": {
+    "handbook_moe_df1.0": 161,
+    "handbook_moe_df1.5": 237,
+    "households": 18389,
+    "median": 2051,
+    "sim_moe": 70,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "70": {
+    "handbook_moe_df1.0": 251,
+    "handbook_moe_df1.5": 373,
+    "households": 1990,
+    "median": 1373,
+    "sim_moe": 137,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "71": {
+    "handbook_moe_df1.0": 89,
+    "handbook_moe_df1.5": 133,
+    "households": 8260,
+    "median": 1077,
+    "sim_moe": 47,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "72": {
+    "handbook_moe_df1.0": 229,
+    "handbook_moe_df1.5": 343,
+    "households": 1094,
+    "median": 1284,
+    "sim_moe": 92,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "73": {
+    "handbook_moe_df1.0": 397,
+    "handbook_moe_df1.5": 572,
+    "households": 2468,
+    "median": 1343,
+    "sim_moe": 204,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "74": {
+    "handbook_moe_df1.0": 438,
+    "handbook_moe_df1.5": 710,
+    "households": 1109,
+    "median": 1477,
+    "sim_moe": 243,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "75": {
+    "handbook_moe_df1.0": 201,
+    "handbook_moe_df1.5": 306,
+    "households": 3312,
+    "median": 1336,
+    "sim_moe": 93,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "76": {
+    "handbook_moe_df1.0": 134,
+    "handbook_moe_df1.5": 215,
+    "households": 4137,
+    "median": 1446,
+    "sim_moe": 76,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "77": {
+    "handbook_moe_df1.0": 82,
+    "handbook_moe_df1.5": 124,
+    "households": 18812,
+    "median": 1384,
+    "sim_moe": 35,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "8": {
+    "handbook_moe_df1.0": 83,
+    "handbook_moe_df1.5": 125,
+    "households": 42991,
+    "median": 2387,
+    "sim_moe": 54,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   },
+   "9": {
+    "handbook_moe_df1.0": 393,
+    "handbook_moe_df1.5": 577,
+    "households": 880,
+    "median": 1485,
+    "sim_moe": 153,
+    "state_handbook_df1.0": "standard",
+    "state_handbook_df1.5": "standard",
+    "state_sim": "standard",
+    "top_coded": false
+   }
+  }
+ },
+ "parcel_universe_year": "2026"
+}
