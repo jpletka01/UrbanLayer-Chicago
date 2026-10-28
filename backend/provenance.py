@@ -114,7 +114,8 @@ MethodKey = Literal[
 AsOfBasis = Literal[
     "source_updated", "record_updated", "current_through", "period_end", "vintage", "tax_year", "queried",
 ]
-Scope = Literal["parcel", "address", "radius", "tract", "community_area", "city", "county"]
+# ``puma`` (WS4 PR2): a Public Use Microdata Area, a union of tracts that does not nest in community areas.
+Scope = Literal["parcel", "address", "radius", "tract", "puma", "community_area", "city", "county"]
 Confidence = Literal["standard", "low", "withheld"]
 # What kind of n a coverage figure counts, which decides which n rule applies (guide §3):
 # ``area_sample`` = a median/rate from a sample of records; ``comps`` = a comparable-sales set.
@@ -180,6 +181,9 @@ class Precision(BaseModel):
     moe: float | None = None
     moe_level: float | None = None
     cv: float | None = None
+    # How a margin we derived ourselves was derived (``acs_handbook_median``: the ACS Handbook's standard
+    # error of an interpolated median). Absent when the publisher states the margin.
+    moe_method: str | None = None
     agreement: Agreement | None = None
 
 
@@ -404,6 +408,15 @@ FACTS.update({
                                     "city" if k == "city_median_income" else "county" if k == "county_median_income" else "tract",
                                     "official_estimate")
         for k, label in _TRACT_FIELDS.items()
+    },
+    # WS4 PR2: current official rent. The community-area figure is our aggregation of the Census's bracket
+    # counts (tier D on a C input); the bedroom figures are the Census's own published medians, for the
+    # parcel's tract or, where that is suppressed or too uncertain, its PUMA (the entry's scope says which).
+    "area.rent.community_area": FactSpec(
+        "Community-area median gross rent", "artifact.rent_by_area", "bracket_median", "community_area", "our_calculation"),
+    **{
+        f"area.rent.{g}": FactSpec(f"Median gross rent, {label}", "census.reporter.acs", "survey_estimate", "tract", "official_estimate")
+        for g, label in (("1_bedroom", "1 bedroom"), ("2_bedrooms", "2 bedrooms"), ("3_bedrooms", "3 bedrooms"))
     },
     "area.community_area.population": FactSpec("Community-area population", "chi.acs_community_area", "survey_estimate", "community_area", "official_estimate"),
     "area.community_area.median_household_income": _calc("Community-area median household income", "chi.acs_community_area", "community_area", "bracket_median"),
@@ -808,6 +821,20 @@ def _clear_figure(context, fact_id: str) -> bool:
         ct.moe.pop(field, None)
         ct.cv.pop(field, None)
         return True
+    if fact_id == "area.rent.community_area":
+        hood = _own(context, "neighborhood")
+        ca = hood.rent.community_area if hood and hood.rent else None
+        if ca is None:
+            return False
+        ca.median = ca.moe = ca.cv = None
+        return True
+    if fact_id.startswith("area.rent."):
+        hood = _own(context, "neighborhood")
+        group = fact_id.rsplit(".", 1)[1]
+        cells = [b for b in (hood.rent.bedrooms if hood and hood.rent else []) if b.bedrooms == group]
+        for b in cells:
+            b.estimate = b.moe = b.cv = None
+        return bool(cells)
     if fact_id in _COMMUNITY_AREA_FIELDS:
         hood = _own(context, "neighborhood")
         dm = hood.demographics if hood else None

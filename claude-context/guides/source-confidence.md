@@ -32,7 +32,7 @@ Each provenance entry answers five questions. The schema fields marked **new** a
 |---|---|---|
 | 1. Who published it? | `tier`, `source_id`, `source` (publisher + dataset) | `source_id` is the join key into the data-health registry (§5) |
 | 2. How old is it? | `as_of`, **`as_of_basis`**, **`period`**, `effective_date`, `query_date`, **`age_days`** | `as_of_basis` says what the date means (below) |
-| 3. How much does it cover? | **`scope`**, **`geography`**, **`coverage`** `{n, share, universe, unit}` | `scope` ∈ `parcel` · `address` · `radius` · `tract` · `community_area` · `city` · `county`. `coverage: null` on a parcel record means "not applicable", not "unknown" |
+| 3. How much does it cover? | **`scope`**, **`geography`**, **`coverage`** `{n, share, universe, unit}` | `scope` ∈ `parcel` · `address` · `radius` · `tract` · `puma` · `community_area` · `city` · `county`. `coverage: null` on a parcel record means "not applicable", not "unknown" |
 | 4. How precise is it? | **`precision`** `{moe, moe_level: 0.90, cv}`, or for AI readings `{agreement: {n, agree}}` | `null` means none is published, and the page says so |
 | 5. How was it made? | **`method_key`**, **`method_params`**, **`method`** (English fallback) | Same id/params/text pattern as coverage notes, so the UI translates by key |
 | Derived | **`confidence`** ∈ `standard` · `low` · `withheld`, plus **`confidence_reasons`** | Computed once in `provenance.py`. Every surface reads it; none recomputes it |
@@ -79,6 +79,7 @@ The vocabulary is fixed. New keys go through a WS0 review.
 - SE = MOE ÷ 1.645; CV = SE ÷ estimate. Proportions use the Census ratio formula from the ACS Handbook, unit-tested against its published examples.
 - A top-coded median (B19013's $250,001) is shown as "$250,000+" with no CV.
 - Keep the release id and MOE the API returns. Never discard them.
+- **An aggregated median with a margin we derived** (community-area rent, WS4 PR2) carries `precision` with `moe_method: acs_handbook_median` (the Handbook's standard error of an interpolated median, design factor 1.5 until B25063's published factor is looked up) and goes through the CV rules like any ACS figure; the bracket-median method rule (`low`) applies only when no margin can be derived. A `puma` scope names a PUMA, a union of tracts that does not nest in community areas; it is never labeled as a community area's figure.
 
 ### Example entries
 ```jsonc
