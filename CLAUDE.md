@@ -29,9 +29,9 @@ kill $(lsof -ti:8001) 2>/dev/null; uvicorn backend.main:app --reload --port 8001
 kill $(lsof -ti:5173) 2>/dev/null; cd frontend && npm run dev
 
 make setup / make test / make lint / make check     # see Makefile; `make test` = backend + eval scorers + vitest
-python -m pytest backend/tests/ -q                # ~1,290 tests (61 integration); a conftest guard fails unit tests that touch the network
+python -m pytest backend/tests/ -q                # ~2,490 tests (66 integration); a conftest guard fails unit tests that touch the network
 cd frontend && npx tsc --noEmit                   # quick type check — NOT the CI gate
-cd frontend && npm run test                       # vitest (207 tests / 24 files). Runs in CI;
+cd frontend && npm run test                       # vitest (816 tests / 68 files). Runs in CI;
                                                   # a failure here blocks the deploy, same as the build.
 cd frontend && npm run build                      # ⚠️ CI-PARITY GATE (run before pushing to main): tsc -b + vite build.
                                                   # CI's `test` job runs this; deploy has `needs: test`, so a build
