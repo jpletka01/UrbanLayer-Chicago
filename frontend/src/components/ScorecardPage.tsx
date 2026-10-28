@@ -37,6 +37,7 @@ import { ProvenanceProvider } from "../contexts/ProvenanceContext";
 import type { Provenance } from "../lib/api";
 import { displayState, wantsCaption } from "../lib/confidence";
 import { ConfidenceCaption, SourceTooltip } from "./ui/Confidence";
+import { RentBlock } from "./scorecard/RentBlock";
 import { useFact } from "../lib/provenanceContext";
 import { MiniChatDock, type DockSignal } from "./MiniChatDock";
 import { ParcelMap, type ParcelMapLayers } from "./scorecard/ParcelMap";
@@ -154,10 +155,10 @@ function CrimeYoYBlock({ data }: { data: ScorecardResponse }) {
   );
 }
 
-/** Designed area-context block: access as a stat row, ward representation as a
-    line. Every number here describes the area — the module header carries the
-    scope label. No demographics: the Profile's fetch skips them, and they return
-    with tract aggregation and margins of error (WS0 Q6). */
+/** Designed area-context block: access as a stat row, official rent (WS4 PR2), ward
+    representation as a line. Every number here describes the area — the module header
+    carries the scope label. The only demographics are rents: the rest return with tract
+    aggregation and margins of error (WS0 Q6). */
 function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
   const { t } = useTranslation("pages");
   const ws = data.walkscore;
@@ -199,7 +200,7 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
       tip: t("scorecard.tips.divvy", { count: dv.stations_within_radius, radius: dv.radius_mi }),
     });
   }
-  if (stats.length === 0 && !data.ward) return null;
+  if (stats.length === 0 && !data.ward && !data.rent) return null;
   return (
     <div className="space-y-4">
       {stats.length > 0 && (
@@ -222,6 +223,7 @@ function NeighborhoodBlock({ data }: { data: NeighborhoodSummary }) {
           ))}
         </div>
       )}
+      <RentBlock data={data} />
       {data.ward?.ward && (
         <p className="text-caption text-text-secondary">
           {t("scorecard.wardLabel", { ward: data.ward.ward })}

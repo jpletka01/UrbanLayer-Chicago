@@ -214,3 +214,5 @@ The standard is adopted now; the code catches up in order:
 Community-area poverty, unemployment, income and rent come back only through a tract → community-area aggregation with MOE (the rents/market workstream). Until then the Profile shows no demographics.
 
 **WS4 PR1 (2026-10-28):** the tract -> community-area aggregation was tested (`eval/rent_method.py`, decision Item 33): overall community-area rent can be rebuilt from summed bracket counts with a derived margin (75 of 77 areas `standard`); rent by bedroom cannot (the table tops out at "$1,500 or more"), so bedrooms come only from the Census's published tract and PUMA medians. Nothing is served yet.
+
+**WS4 PR2 (2026-10-28):** current official rent is served: the community-area overall median (a bracket median with a derived Handbook margin, `moe_method: acs_handbook_median`, CV rules) and Census-published bedroom medians for the parcel's tract, else its PUMA (scope `puma`). Facts `area.rent.*`; the Profile, chat and sources footer say period and margin; the report shows none. See decision Item 34.

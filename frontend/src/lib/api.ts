@@ -1010,7 +1010,7 @@ export type ProvenanceTier =
   | "our_calculation" | "ai_extracted" | "non_government";
 export type ProvenanceAsOfBasis =
   | "source_updated" | "record_updated" | "current_through" | "period_end" | "vintage" | "tax_year" | "queried";
-export type ProvenanceScope = "parcel" | "address" | "radius" | "tract" | "community_area" | "city" | "county";
+export type ProvenanceScope = "parcel" | "address" | "radius" | "tract" | "puma" | "community_area" | "city" | "county";
 export type ProvenanceConfidence = "standard" | "low" | "withheld";
 export type ProvenanceMethodKey =
   | "recorded" | "published_text" | "code_table" | "hand_reviewed"
@@ -1030,6 +1030,8 @@ export interface ProvenancePrecision {
   moe?: number | null;
   moe_level?: number | null;
   cv?: number | null;
+  /** How a margin we derived ourselves was derived (`acs_handbook_median`); absent when the publisher states it. */
+  moe_method?: string | null;
   agreement?: { n: number; agree: number } | null;
 }
 

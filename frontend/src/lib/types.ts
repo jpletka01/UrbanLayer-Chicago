@@ -583,9 +583,51 @@ export interface DivvyAccess {
   radius_mi: number;
 }
 
+/** Overall median gross rent of a community area, summed from Census tract bracket counts (backend `CommunityAreaRent`). */
+export interface CommunityAreaRent {
+  community_area: number;
+  households: number;
+  median?: number | null;
+  moe?: number | null;
+  cv?: number | null;
+  top_coded?: boolean;
+  moe_method: string;
+  design_factor?: number | null;
+  acs_period?: string | null;
+  acs_release?: string | null;
+  period_end?: string | null;
+}
+
+/** The Census's published median gross rent for one bedroom count: the parcel's tract, else its PUMA. */
+export interface BedroomRent {
+  bedrooms: "1_bedroom" | "2_bedrooms" | "3_bedrooms";
+  scope: "tract" | "puma";
+  geography?: string | null;
+  geoid?: string | null;
+  /** Null = the Census publishes no usable median here. */
+  estimate?: number | null;
+  moe?: number | null;
+  cv?: number | null;
+  /** Why the tract's own figure was not used. */
+  tract_fallback?: "suppressed" | "low_confidence" | null;
+}
+
+/** The API omits null fields, so each is optional. Current official rent for the parcel's area (WS4 PR2). `unchecked` = parts that could not be fetched today. */
+export interface RentEvidence {
+  community_area?: CommunityAreaRent | null;
+  bedrooms: BedroomRent[];
+  acs_period?: string | null;
+  acs_release?: string | null;
+  tract_name?: string | null;
+  puma_geoid?: string | null;
+  puma_name?: string | null;
+  unchecked: Array<"community_area_rent" | "tract_rent" | "puma_rent">;
+}
+
 export interface NeighborhoodSummary {
   demographics: DemographicsSummary | null;
   census_tract: CensusTractDemographics | null;
+  rent?: RentEvidence | null;
   transit: TransitAccess | null;
   walkscore: WalkScoreSummary | null;
   ward?: WardInfo | null;
