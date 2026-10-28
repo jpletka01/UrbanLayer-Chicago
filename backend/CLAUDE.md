@@ -102,7 +102,7 @@ retrieval/
 ## Property Discovery (`discovery/`)
 
 Deterministic parcel **filter + single-key sort** engine (no scoring) → a goal-first, map-backed
-prospecting **workbench**. **LIVE on prod — full citywide (all 77 CAs / ~949k parcels), nav-linked,
+prospecting **workbench**. **LIVE on prod — full citywide (all 77 CAs / ~882k in-city parcels; the 2026-10-01 prod build also held ~67k suburban strays (949k rows in all); the builder fix is PR #128, and prod keeps them until the next off-box rebuild), nav-linked,
 premium-gated full experience + free top-10 teaser.** Spec + decisions:
 `claude-context/property-discovery/` — **read `10-implementation-status.md` first**, esp. the
 "result.rows workbench (PR1–PR10)" section.
@@ -155,10 +155,10 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
 - **Tests:** `backend/tests/test_discovery_*.py` (**193**). Mock Socrata + polygon layers;
   premium/free gating via FastAPI `dependency_overrides` (the `Depends` callable is captured at
   decoration, so monkeypatching the module attr does NOT work — override the dependency).
-- **LIVE ON PROD — FULL CITYWIDE (2026-06-15) — coverage `all`, ALL 77 CAs / ~949k parcels**,
+- **LIVE ON PROD — FULL CITYWIDE (2026-06-15) — coverage `all`, ALL 77 CAs, 949,014 rows at the time (~882k in-city; see the strays note above)**,
   nav-linked. Reached via measured off-box batches (25→37→57→77); runtime **2.98 GB RSS (39% of the
   8 GB box)** at ~2.37 KB/parcel — the "~1.8M won't fit" worry was a unit error (that's Cook County +
-  suburbs; Chicago = ~949k). Index persists on `backend/data` volume; monthly `--refresh` timer
+  suburbs; Chicago = ~882k, not ~949k: the first full build also kept ~67k suburban rows, which the 2026-10-28 audit found and PR #128 drops). Index persists on `backend/data` volume; monthly `--refresh` timer
   (`deploy/`, `run --rm`, off-box) auto-follows all 77. **Remaining:** deferred index fields (each a
   `data_version` bump, no evaluator change — OZ/ward/overlay/adu/aro/flood/brownfield/rollups + a real
   `units` source). `/explore` **retired 2026-06-14** (Discovery is a strict superset; redirects to

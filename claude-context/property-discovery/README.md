@@ -3,7 +3,7 @@
 This folder is the **engineering handoff spec** for the Property Discovery (filter/search) system.
 Design is locked. Docs 00–09 are normative; code from them directly.
 
-> **Status (2026-06-15): LIVE ON PRODUCTION — FULL CITYWIDE** (all 77 CAs / ~949k parcels, coverage
+> **Status (2026-06-15): LIVE ON PRODUCTION — FULL CITYWIDE** (all 77 CAs / ~882k in-city parcels, plus ~67k suburban strays in the 2026-10-01 build that PR #128 drops after the next rebuild; coverage
 > `all`, nav-linked). Three waves shipped (`f192d57` → `8c279c6` → `78294d8`+`8d3ae07`+`731aca6`),
 > then expanded to full city in off-box batches (25→37→57→77). No longer dormant; the prod index is
 > built and persistent. See **`10-implementation-status.md`** for what was built, the in-build

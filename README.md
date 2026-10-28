@@ -26,7 +26,7 @@ Development Feasibility Report (PDF) is built; online purchase is coming soon.
   [Sample](https://urbanlayerchicago.com/sample-report.pdf). Checkout runs on
   Stripe; until keys are configured the site shows "purchases coming soon"
   (driven by `/api/payments/status`).
-- **Property Discovery** (`/discovery`). Filter and rank all ~949k Chicago
+- **Property Discovery** (`/discovery`). Filter and rank all ~880k Chicago
   parcels (vacant land near transit, teardown candidates, underused commercial
   in a TIF) with a map and CSV export.
 - English and Spanish throughout.
