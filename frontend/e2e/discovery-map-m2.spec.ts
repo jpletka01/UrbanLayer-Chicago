@@ -5,7 +5,13 @@ test.skip(
   "Run the free/Pro Discovery map fixtures once in Chromium",
 );
 
-async function useTier(page: Page, tier: "free" | "admin") {
+async function useTier(page: Page, baseURL: string | undefined, tier: "free" | "admin") {
+  // The mocked /api/auth/me below can't issue the double-submit cookie a real
+  // one would. Dev backends skip the CSRF check; production enforces it, so
+  // without this every Discovery POST 403s and the map reads "unavailable".
+  await page.context().addCookies([
+    { name: "csrf_token", value: "e2e-fixture", url: baseURL ?? "http://localhost:5173" },
+  ]);
   await page.route("**/api/auth/me", async (route) => {
     await route.fulfill({
       status: 200,
@@ -35,9 +41,9 @@ async function openDiscovery(page: Page, expectDesktopKey = true) {
   if (expectDesktopKey) await expect(page.getByTestId("discovery-map-legend")).toBeVisible();
 }
 
-test("free fixture keeps a counted land-use key and row-focus map linkage", async ({ page }, testInfo) => {
+test("free fixture keeps a counted land-use key and row-focus map linkage", async ({ page, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await useTier(page, "free");
+  await useTier(page, baseURL, "free");
   await openDiscovery(page, false);
 
   await page.getByRole("button", { name: "Map", exact: true }).click();
@@ -62,9 +68,9 @@ test("free fixture keeps a counted land-use key and row-focus map linkage", asyn
   await page.screenshot({ path: testInfo.outputPath("discovery-free-row-focus.png") });
 });
 
-test("Pro fixture keeps upside interaction and survives a live system-theme swap", async ({ page }, testInfo) => {
+test("Pro fixture keeps upside interaction and survives a live system-theme swap", async ({ page, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await useTier(page, "admin");
+  await useTier(page, baseURL, "admin");
   await page.emulateMedia({ colorScheme: "dark" });
   await page.addInitScript(() => localStorage.setItem("urbanlayer-theme", "system"));
   await openDiscovery(page);
