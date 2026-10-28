@@ -21,6 +21,7 @@ All on the Data health row of `/admin` (and `GET /api/admin/data-health`); the C
 | Source id | Goes red when | What to do |
 |---|---|---|
 | `internal.amendment_review` | a **Title 17** amendment has waited more than 14 days since Council passed it without a review (warn), more than 45 (**alarm, Sentry email**); any other passed amendment waits more than 45 (warn only) | Do the monthly review (below). It is its own source because `code.municipal_text` is acked; an alarm there would show "acked" and never email |
+| `internal.pending_impact_review` | a **pending** Title 17 text proposal (still in committee) has no current review in `backend/pending_impacts.json` more than 14 days after Council introduced it (warn), more than 45 (**alarm**); or its review is of an older record than the live substitute ("outdated"); an invalid review entry alarms | Do the pending-amendment review (below) |
 | `code.municipal_text` | the code text is older than 60 days (warn) or 90 (alarm); also warns when there is no fresh Clerk check | **Acked until 2026-12-15** because the newest export is always more than 90 days old. When the ack expires, re-decide the thresholds against the publisher's real lag (`registry.py`, `Ack`), don't extend it blindly |
 | `chi.clerk.legislation` | the newest Clerk record is more than 5 days old (warn) or 14 (alarm), or the sync saw the response shape change | See "When something is red" |
 | `code.qdrant_index` | the served alias doesn't point at the collection `code_vintage.json` names, or its point count differs | The index and the image disagree: see "Rollback and skew" |
@@ -41,6 +42,15 @@ Council meets roughly monthly (2026: May 20, June 17, July 15, Sept 23, Oct 14),
 4. **Map titles the parser could not read** (listed on the card, and by `sync --print`) go in `backend/rezoning_overrides.json`, each checked against the ordinance PDF. A partial parse never flags a parcel; an override makes one flaggable.
 5. **Check American Legal's "current through" date** at `codelibrary.amlegal.com` (Chicago). If it has moved past at least one Council meeting since our vintage, download the export and run the refresh below.
 6. **If any zoning fact changed,** run the free Profile kit: `PYTHONPATH=. python -m eval.parcel_kit --full https://urbanlayerchicago.com --surfaces profile --out-dir eval/results/$(date +%F)`. **Never the chat kit for this**: it spends the production Anthropic key (about $1.20). The monthly chat accuracy run is a separate production check that Jack approves.
+
+### The pending-amendment review (WS2 PR3; same meeting, a different file)
+
+The Profile's "Pending zoning-code changes" block names a proposal only through `backend/pending_impacts.json`. Each Council meeting adds a handful of Title 17 text proposals to the Clerk's committee docket, and until each is reviewed every Profile says "N pending proposals haven't been reviewed" (and `internal.pending_impact_review` warns after 14 days).
+
+1. **Look.** `python -m backend.legislation.pending --print` (reads the Clerk, writes nothing) or `/admin` → Data health. A record in the store with no entry under its lifecycle id is unreviewed; an entry whose `reviewed_record` differs from the live record (a new substitute) is outdated.
+2. **Read the Legislation PDF** (the matter link; **never the Economic Disclosure Statement**; scanned PDFs are read in the session). Add an entry keyed by lifecycle id: `reviewed_record`, `basis: ordinance` plus `summary` (what it would change, from the text) and `impacts[]`; or `impacts: []` with a `no_impact_reason`. Say which pages were read (`pages_read`). A title-only entry (`basis: title`) may only say "no Profile fact"; never use it to claim an effect.
+3. **Map each impact** to Title 17 `sections`, the Profile `fact_ids` it could change, and the deterministic `applies_when` (zone regexes, overlays, `facts_all`, `address_ranges`). The Profile must actually show the fact. Use `reach: untested` with a `reach_note` when the effect depends on something the Profile can't test (a map boundary, lot width). Word `could_change` with "would"/"could", never as adopted.
+4. **Test, then commit** the review file with `backend/tests/fixtures/clerk/pending_title17_text_<date>.json` (re-record the population: the tests require every recorded pending matter to have a current review) in one PR. When a proposal passes it leaves the pending store and enters the passed-amendment review above.
 
 Commit the review file with its tests in one PR. A pure review (no export) changes only data and tests, so it deploys the new `code_amendments.json` and nothing else.
 

@@ -12,6 +12,7 @@ import { setAddress as setTrackingAddress, track } from "../lib/tracking";
 import { ScorecardPropertyCard } from "./scorecard/ScorecardPropertyCard";
 import { ScorecardComparablesCard } from "./scorecard/ScorecardComparablesCard";
 import { ScorecardRegulatoryCard } from "./scorecard/ScorecardRegulatoryCard";
+import { PendingTextImpactsCard } from "./scorecard/PendingTextImpactsCard";
 import { UpcomingZoningCard } from "./scorecard/UpcomingZoningCard";
 import { ParcelResolution } from "./scorecard/ParcelResolution";
 import { ScorecardZoningCard } from "./scorecard/ScorecardZoningCard";
@@ -1108,6 +1109,7 @@ export default function ScorecardPage() {
                   >
                     {unchecked.build.length > 0 && <UncheckedRow labels={unchecked.build} href={ZONING_MAP_URL} className="mb-6" />}
                     {ctx.upcoming_zoning && <UpcomingZoningCard data={ctx.upcoming_zoning} />}
+                    {ctx.upcoming_zoning?.text_review && <PendingTextImpactsCard data={ctx.upcoming_zoning} />}
                     <div className="grid md:grid-cols-2 gap-x-10 gap-y-8 md:items-stretch">
                       {zdef && (
                         <div id="scorecard-card-zoning" className="scroll-mt-28 flex flex-col">

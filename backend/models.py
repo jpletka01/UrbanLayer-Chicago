@@ -778,6 +778,70 @@ class UpcomingZoningProvenance(BaseModel):
     confidence: Literal["standard", "low"]
 
 
+class PendingTextAffectedFact(BaseModel):
+    """A current Profile fact a pending proposal could change, as the Profile states it today."""
+
+    fact_id: str
+    label: str
+    current_value: str | int | float | bool | None = None
+    section: str | None = None
+    current_law: str | None = None
+
+
+class PendingTextEffect(BaseModel):
+    """One reviewed way a pending Title 17 amendment could change a rule this Profile uses."""
+
+    id: str
+    sections: list[str]
+    could_change: str
+    reach: Literal["parcel", "untested"]
+    reach_note: str | None = None
+    affected: list[PendingTextAffectedFact] = Field(default_factory=list)
+
+
+class PendingTextImpact(BaseModel):
+    """A pending (not adopted) Title 17 amendment a committed review maps to this Profile."""
+
+    record_number: str
+    lifecycle_id: str
+    title: str
+    status: str
+    sub_status: str
+    introduced_at: str | None = None
+    latest_action_at: str | None = None
+    url: str
+    reviewed_on: str
+    reviewed_by: str
+    basis: Literal["ordinance"]
+    summary: str | None = None
+    effects: list[PendingTextEffect]
+
+
+class PendingTextUnreviewed(BaseModel):
+    record_number: str
+    title: str
+    url: str
+    introduced_at: str | None = None
+    reason: Literal["unreviewed", "outdated"]
+    waiting_days: int | None = None
+
+
+class PendingTextReview(BaseModel):
+    """Whether every pending Title 17 text proposal has a current committed review.
+
+    ``complete`` is the only state that lets the Profile say none of the reviewed
+    proposals maps to it; ``incomplete`` and ``unavailable`` never read as "none".
+    """
+
+    status: Literal["complete", "incomplete", "unavailable"]
+    pending_count: int = 0
+    reviewed_count: int = 0
+    unreviewed: list[PendingTextUnreviewed] = Field(default_factory=list)
+    oldest_unreviewed_days: int | None = None
+    overdue: bool = False
+    review_provenance: UpcomingZoningProvenance | None = None
+
+
 class UpcomingZoningSummary(BaseModel):
     """Conservative parcel placement of current zoning filings.
 
@@ -796,6 +860,10 @@ class UpcomingZoningSummary(BaseModel):
     placement_coverage: float | None = None
     record_provenance: UpcomingZoningProvenance
     placement_provenance: UpcomingZoningProvenance
+    # Pending Title 17 text amendments that a committed review maps to this Profile
+    # (WS2 PR3). Pending proposals never change a current-law answer; they only sit beside it.
+    text_impacts: list[PendingTextImpact] = Field(default_factory=list)
+    text_review: PendingTextReview | None = None
 
 
 class ContextObject(BaseModel):

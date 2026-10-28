@@ -552,7 +552,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         id="chi.clerk.legislation", name="City Clerk eLMS API (legislation)", publisher="City Clerk", tier="official_record",
         kind="api", locator="https://api.chicityclerkelms.chicago.gov", probe="clerk_latest",
         owner_modules=("backend/retrieval/clerk.py", "backend/legislation/sync.py"), surfaces=("profile", "chat", "report"),
-        fact_keys=("code.amendments", "regulatory.upcoming_zoning.records", "regulatory.upcoming_zoning.placement"),
+        fact_keys=("code.amendments", "regulatory.upcoming_zoning.records", "regulatory.upcoming_zoning.placement", "regulatory.upcoming_zoning.text_impacts", "regulatory.upcoming_zoning.relevance"),
         severity="critical", cadence_days=1, warn_days=5, alarm_days=14,
         note="Content date = newest recordCreateDate (never introductionDate, which can be in the future).",
     ),
@@ -561,7 +561,7 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
         tier="internal", kind="local_db", locator="backend/data/pending_legislation.db",
         probe="pending_legislation", owner_modules=("backend/legislation/pending.py", "backend/legislation/pending_store.py"),
         cadence_days=1, warn_days=3, alarm_days=14,
-        surfaces=("profile",), fact_keys=("regulatory.upcoming_zoning.placement",),
+        surfaces=("profile",), fact_keys=("regulatory.upcoming_zoning.placement", "regulatory.upcoming_zoning.relevance"),
         note=("WS2 last-successful atomic snapshot: candidate/detail counts, lifecycle collapses, title parsing, "
               "Address Points placement, and excluded attachment metadata. City Clerk remains the fact source."),
     ),
@@ -573,6 +573,16 @@ _BASE_SOURCES: tuple[SourceSpec, ...] = (
              "14 days after Council passed it warns, 45 days alarms; any other passed amendment warns after 45. A "
              "separate source because code.municipal_text is acked and would swallow the alarm. Reads the snapshot and "
              "the review file only.",
+    ),
+    SourceSpec(
+        id="internal.pending_impact_review", name="Review of pending Title 17 amendments (age of the oldest unreviewed)",
+        publisher="UrbanLayer", tier="internal", kind="internal", locator="backend/pending_impacts.json",
+        probe="pending_impact_review", owner_modules=("backend/legislation/impacts.py",), availability_only=True,
+        surfaces=("profile",), fact_keys=("regulatory.upcoming_zoning.relevance",),
+        note="Is every pending Title 17 text proposal read and mapped to the Profile rules it could change? One "
+             "unreviewed (or reviewed-but-since-replaced by a newer substitute) 14 days after Council introduced it warns, "
+             "45 days alarms. A separate source so the Profile's 'not yet reviewed' state is also an operator signal. "
+             "Reads the pending snapshot and the review file only; no judgement without a fresh snapshot.",
     ),
     # --- Committed artifacts -----------------------------------------------------------------
     SourceSpec(

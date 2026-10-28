@@ -787,6 +787,58 @@ export interface UpcomingZoningProvenance {
   confidence: "standard" | "low";
 }
 
+export interface PendingTextAffectedFact {
+  fact_id: string;
+  label: string;
+  current_value?: string | number | boolean | null;
+  section?: string | null;
+  current_law?: string | null;
+}
+
+export interface PendingTextEffect {
+  id: string;
+  sections: string[];
+  could_change: string;
+  reach: "parcel" | "untested";
+  reach_note?: string | null;
+  affected: PendingTextAffectedFact[];
+}
+
+export interface PendingTextImpact {
+  record_number: string;
+  lifecycle_id: string;
+  title: string;
+  status: string;
+  sub_status: string;
+  introduced_at?: string | null;
+  latest_action_at?: string | null;
+  url: string;
+  reviewed_on: string;
+  reviewed_by: string;
+  basis: "ordinance";
+  summary?: string | null;
+  effects: PendingTextEffect[];
+}
+
+export interface PendingTextUnreviewed {
+  record_number: string;
+  title: string;
+  url: string;
+  introduced_at?: string | null;
+  reason: "unreviewed" | "outdated";
+  waiting_days?: number | null;
+}
+
+export interface PendingTextReview {
+  status: "complete" | "incomplete" | "unavailable";
+  pending_count: number;
+  reviewed_count: number;
+  unreviewed: PendingTextUnreviewed[];
+  oldest_unreviewed_days?: number | null;
+  overdue: boolean;
+  review_provenance?: UpcomingZoningProvenance | null;
+}
+
 export interface UpcomingZoningSummary {
   status: "ready" | "stale" | "unavailable";
   placement_status: "complete" | "partial";
@@ -799,6 +851,8 @@ export interface UpcomingZoningSummary {
   placement_coverage?: number | null;
   record_provenance: UpcomingZoningProvenance;
   placement_provenance: UpcomingZoningProvenance;
+  text_impacts?: PendingTextImpact[];
+  text_review?: PendingTextReview | null;
 }
 
 export interface ContextObject {
