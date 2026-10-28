@@ -1,0 +1,2029 @@
+{
+ "areas": {
+  "1": {
+   "all": {
+    "certain": true,
+    "high": 0.7092,
+    "low": 0.6857,
+    "point": 0.6976,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5452,
+   "now_verdict": "standard",
+   "polygons": 4457,
+   "standard": {
+    "certain": true,
+    "high": 0.6827,
+    "low": 0.6649,
+    "point": 0.6737,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "10": {
+   "all": {
+    "certain": true,
+    "high": 0.9385,
+    "low": 0.9356,
+    "point": 0.937,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.9164,
+   "now_verdict": "standard",
+   "polygons": 13186,
+   "standard": {
+    "certain": true,
+    "high": 0.9362,
+    "low": 0.9335,
+    "point": 0.9348,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "11": {
+   "all": {
+    "certain": true,
+    "high": 0.8895,
+    "low": 0.8841,
+    "point": 0.8868,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8529,
+   "now_verdict": "standard",
+   "polygons": 7953,
+   "standard": {
+    "certain": true,
+    "high": 0.8847,
+    "low": 0.88,
+    "point": 0.8823,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "12": {
+   "all": {
+    "certain": true,
+    "high": 0.8887,
+    "low": 0.8858,
+    "point": 0.8872,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8682,
+   "now_verdict": "standard",
+   "polygons": 7482,
+   "standard": {
+    "certain": true,
+    "high": 0.8868,
+    "low": 0.8841,
+    "point": 0.8854,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "13": {
+   "all": {
+    "certain": true,
+    "high": 0.8326,
+    "low": 0.8252,
+    "point": 0.8289,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7794,
+   "now_verdict": "standard",
+   "polygons": 3998,
+   "standard": {
+    "certain": true,
+    "high": 0.8263,
+    "low": 0.8199,
+    "point": 0.823,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "14": {
+   "all": {
+    "certain": true,
+    "high": 0.8782,
+    "low": 0.8689,
+    "point": 0.8736,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8094,
+   "now_verdict": "standard",
+   "polygons": 7135,
+   "standard": {
+    "certain": true,
+    "high": 0.8698,
+    "low": 0.8619,
+    "point": 0.8658,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "15": {
+   "all": {
+    "certain": true,
+    "high": 0.919,
+    "low": 0.9142,
+    "point": 0.9165,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8813,
+   "now_verdict": "standard",
+   "polygons": 15371,
+   "standard": {
+    "certain": true,
+    "high": 0.9153,
+    "low": 0.9109,
+    "point": 0.9131,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "16": {
+   "all": {
+    "certain": true,
+    "high": 0.8367,
+    "low": 0.8285,
+    "point": 0.8325,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7769,
+   "now_verdict": "standard",
+   "polygons": 11087,
+   "standard": {
+    "certain": true,
+    "high": 0.8291,
+    "low": 0.8221,
+    "point": 0.8255,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "17": {
+   "all": {
+    "certain": true,
+    "high": 0.9421,
+    "low": 0.9393,
+    "point": 0.9407,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.9227,
+   "now_verdict": "standard",
+   "polygons": 12633,
+   "standard": {
+    "certain": true,
+    "high": 0.9394,
+    "low": 0.9371,
+    "point": 0.9382,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "18": {
+   "all": {
+    "certain": true,
+    "high": 0.9168,
+    "low": 0.9112,
+    "point": 0.9139,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8776,
+   "now_verdict": "standard",
+   "polygons": 3179,
+   "standard": {
+    "certain": true,
+    "high": 0.912,
+    "low": 0.9072,
+    "point": 0.9095,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "19": {
+   "all": {
+    "certain": true,
+    "high": 0.89,
+    "low": 0.883,
+    "point": 0.8865,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8362,
+   "now_verdict": "standard",
+   "polygons": 14655,
+   "standard": {
+    "certain": true,
+    "high": 0.8858,
+    "low": 0.8791,
+    "point": 0.8824,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "2": {
+   "all": {
+    "certain": true,
+    "high": 0.8302,
+    "low": 0.8201,
+    "point": 0.8251,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7606,
+   "now_verdict": "standard",
+   "polygons": 11149,
+   "standard": {
+    "certain": true,
+    "high": 0.8181,
+    "low": 0.8105,
+    "point": 0.8141,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "20": {
+   "all": {
+    "certain": true,
+    "high": 0.8684,
+    "low": 0.862,
+    "point": 0.8651,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8182,
+   "now_verdict": "standard",
+   "polygons": 4262,
+   "standard": {
+    "certain": true,
+    "high": 0.8648,
+    "low": 0.8586,
+    "point": 0.8616,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "21": {
+   "all": {
+    "certain": true,
+    "high": 0.8314,
+    "low": 0.823,
+    "point": 0.8271,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7734,
+   "now_verdict": "standard",
+   "polygons": 7236,
+   "standard": {
+    "certain": true,
+    "high": 0.8237,
+    "low": 0.8167,
+    "point": 0.8201,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "22": {
+   "all": {
+    "certain": true,
+    "high": 0.8058,
+    "low": 0.7952,
+    "point": 0.8004,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7406,
+   "now_verdict": "standard",
+   "polygons": 13719,
+   "standard": {
+    "certain": true,
+    "high": 0.7926,
+    "low": 0.7848,
+    "point": 0.7885,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "23": {
+   "all": {
+    "certain": true,
+    "high": 0.7518,
+    "low": 0.7448,
+    "point": 0.7482,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7044,
+   "now_verdict": "standard",
+   "polygons": 11916,
+   "standard": {
+    "certain": true,
+    "high": 0.7477,
+    "low": 0.741,
+    "point": 0.7442,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "24": {
+   "all": {
+    "certain": true,
+    "high": 0.6554,
+    "low": 0.6397,
+    "point": 0.6472,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5711,
+   "now_verdict": "standard",
+   "polygons": 17697,
+   "standard": {
+    "certain": true,
+    "high": 0.6265,
+    "low": 0.618,
+    "point": 0.6218,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "25": {
+   "all": {
+    "certain": true,
+    "high": 0.8002,
+    "low": 0.7939,
+    "point": 0.797,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7531,
+   "now_verdict": "standard",
+   "polygons": 21827,
+   "standard": {
+    "certain": true,
+    "high": 0.797,
+    "low": 0.7908,
+    "point": 0.7939,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "26": {
+   "all": {
+    "certain": true,
+    "high": 0.5282,
+    "low": 0.5228,
+    "point": 0.5254,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.4917,
+   "now_verdict": "standard",
+   "polygons": 5190,
+   "standard": {
+    "certain": true,
+    "high": 0.5251,
+    "low": 0.52,
+    "point": 0.5224,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "27": {
+   "all": {
+    "certain": true,
+    "high": 0.4236,
+    "low": 0.417,
+    "point": 0.4202,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.3803,
+   "now_verdict": "standard",
+   "polygons": 6829,
+   "standard": {
+    "certain": true,
+    "high": 0.4172,
+    "low": 0.4118,
+    "point": 0.4143,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "28": {
+   "all": {
+    "certain": false,
+    "high": 0.2579,
+    "low": 0.2473,
+    "point": 0.2525,
+    "range": [
+     "low",
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.1919,
+   "now_verdict": "low",
+   "polygons": 12312,
+   "standard": {
+    "certain": true,
+    "high": 0.2449,
+    "low": 0.237,
+    "point": 0.2408,
+    "range": [
+     "low"
+    ],
+    "verdict": "low"
+   }
+  },
+  "29": {
+   "all": {
+    "certain": true,
+    "high": 0.5405,
+    "low": 0.5339,
+    "point": 0.5371,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.4981,
+   "now_verdict": "standard",
+   "polygons": 9786,
+   "standard": {
+    "certain": true,
+    "high": 0.537,
+    "low": 0.5307,
+    "point": 0.5337,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "3": {
+   "all": {
+    "certain": true,
+    "high": 0.6113,
+    "low": 0.5805,
+    "point": 0.5958,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.4378,
+   "now_verdict": "standard",
+   "polygons": 3824,
+   "standard": {
+    "certain": true,
+    "high": 0.5699,
+    "low": 0.5489,
+    "point": 0.559,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "30": {
+   "all": {
+    "certain": true,
+    "high": 0.8182,
+    "low": 0.8121,
+    "point": 0.815,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.774,
+   "now_verdict": "standard",
+   "polygons": 11031,
+   "standard": {
+    "certain": true,
+    "high": 0.8149,
+    "low": 0.809,
+    "point": 0.8118,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "31": {
+   "all": {
+    "certain": true,
+    "high": 0.7109,
+    "low": 0.7015,
+    "point": 0.706,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6453,
+   "now_verdict": "standard",
+   "polygons": 7067,
+   "standard": {
+    "certain": true,
+    "high": 0.7037,
+    "low": 0.6952,
+    "point": 0.6993,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "32": {
+   "all": {
+    "certain": true,
+    "high": 0.2987,
+    "low": 0.2532,
+    "point": 0.276,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.0042,
+   "now_verdict": "withheld",
+   "polygons": 2632,
+   "standard": {
+    "certain": false,
+    "high": 0.2709,
+    "low": 0.2274,
+    "point": 0.2488,
+    "range": [
+     "low",
+     "standard"
+    ],
+    "verdict": "low"
+   }
+  },
+  "33": {
+   "all": {
+    "certain": true,
+    "high": 0.2012,
+    "low": 0.1899,
+    "point": 0.1955,
+    "range": [
+     "low"
+    ],
+    "verdict": "low"
+   },
+   "now": 0.1192,
+   "now_verdict": "low",
+   "polygons": 2667,
+   "standard": {
+    "certain": true,
+    "high": 0.1881,
+    "low": 0.1791,
+    "point": 0.1835,
+    "range": [
+     "low"
+    ],
+    "verdict": "low"
+   }
+  },
+  "34": {
+   "all": {
+    "certain": true,
+    "high": 0.4234,
+    "low": 0.4183,
+    "point": 0.4208,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.3927,
+   "now_verdict": "standard",
+   "polygons": 3226,
+   "standard": {
+    "certain": true,
+    "high": 0.416,
+    "low": 0.4125,
+    "point": 0.4141,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "35": {
+   "all": {
+    "certain": true,
+    "high": 0.3909,
+    "low": 0.3822,
+    "point": 0.3864,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.3409,
+   "now_verdict": "standard",
+   "polygons": 2655,
+   "standard": {
+    "certain": true,
+    "high": 0.3825,
+    "low": 0.3754,
+    "point": 0.3787,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "36": {
+   "all": {
+    "certain": true,
+    "high": 0.3186,
+    "low": 0.313,
+    "point": 0.3157,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.2907,
+   "now_verdict": "standard",
+   "polygons": 1166,
+   "standard": {
+    "certain": true,
+    "high": 0.3101,
+    "low": 0.3067,
+    "point": 0.3082,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "37": {
+   "all": {
+    "certain": true,
+    "high": 0.2916,
+    "low": 0.2885,
+    "point": 0.2899,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.2693,
+   "now_verdict": "standard",
+   "polygons": 2016,
+   "standard": {
+    "certain": true,
+    "high": 0.2895,
+    "low": 0.2867,
+    "point": 0.288,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "38": {
+   "all": {
+    "certain": true,
+    "high": 0.4817,
+    "low": 0.4686,
+    "point": 0.475,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.4137,
+   "now_verdict": "standard",
+   "polygons": 5124,
+   "standard": {
+    "certain": true,
+    "high": 0.4664,
+    "low": 0.4568,
+    "point": 0.4613,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "39": {
+   "all": {
+    "certain": true,
+    "high": 0.5998,
+    "low": 0.5868,
+    "point": 0.5932,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5282,
+   "now_verdict": "standard",
+   "polygons": 2213,
+   "standard": {
+    "certain": true,
+    "high": 0.5847,
+    "low": 0.5752,
+    "point": 0.5797,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "4": {
+   "all": {
+    "certain": true,
+    "high": 0.8211,
+    "low": 0.8073,
+    "point": 0.8142,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7298,
+   "now_verdict": "standard",
+   "polygons": 6591,
+   "standard": {
+    "certain": true,
+    "high": 0.8033,
+    "low": 0.7934,
+    "point": 0.7982,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "40": {
+   "all": {
+    "certain": true,
+    "high": 0.3529,
+    "low": 0.337,
+    "point": 0.345,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.2711,
+   "now_verdict": "standard",
+   "polygons": 2501,
+   "standard": {
+    "certain": true,
+    "high": 0.342,
+    "low": 0.328,
+    "point": 0.3349,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "41": {
+   "all": {
+    "certain": true,
+    "high": 0.6226,
+    "low": 0.6084,
+    "point": 0.6155,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5277,
+   "now_verdict": "standard",
+   "polygons": 2566,
+   "standard": {
+    "certain": true,
+    "high": 0.6048,
+    "low": 0.5948,
+    "point": 0.5996,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "42": {
+   "all": {
+    "certain": true,
+    "high": 0.612,
+    "low": 0.6033,
+    "point": 0.6076,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5573,
+   "now_verdict": "standard",
+   "polygons": 4845,
+   "standard": {
+    "certain": true,
+    "high": 0.6023,
+    "low": 0.5956,
+    "point": 0.5988,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "43": {
+   "all": {
+    "certain": true,
+    "high": 0.7693,
+    "low": 0.7577,
+    "point": 0.7635,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6822,
+   "now_verdict": "standard",
+   "polygons": 8429,
+   "standard": {
+    "certain": true,
+    "high": 0.7616,
+    "low": 0.7511,
+    "point": 0.7563,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "44": {
+   "all": {
+    "certain": true,
+    "high": 0.824,
+    "low": 0.8169,
+    "point": 0.8205,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7659,
+   "now_verdict": "standard",
+   "polygons": 8858,
+   "standard": {
+    "certain": true,
+    "high": 0.8209,
+    "low": 0.8139,
+    "point": 0.8174,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "45": {
+   "all": {
+    "certain": true,
+    "high": 0.8178,
+    "low": 0.8132,
+    "point": 0.8155,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7813,
+   "now_verdict": "standard",
+   "polygons": 4239,
+   "standard": {
+    "certain": true,
+    "high": 0.8153,
+    "low": 0.8108,
+    "point": 0.8129,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "46": {
+   "all": {
+    "certain": true,
+    "high": 0.7314,
+    "low": 0.7267,
+    "point": 0.7289,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6966,
+   "now_verdict": "standard",
+   "polygons": 9164,
+   "standard": {
+    "certain": true,
+    "high": 0.729,
+    "low": 0.7244,
+    "point": 0.7266,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "47": {
+   "all": {
+    "certain": true,
+    "high": 0.7023,
+    "low": 0.6979,
+    "point": 0.6999,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6713,
+   "now_verdict": "standard",
+   "polygons": 1214,
+   "standard": {
+    "certain": true,
+    "high": 0.6999,
+    "low": 0.6956,
+    "point": 0.6975,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "48": {
+   "all": {
+    "certain": true,
+    "high": 0.858,
+    "low": 0.8545,
+    "point": 0.8562,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8323,
+   "now_verdict": "standard",
+   "polygons": 6023,
+   "standard": {
+    "certain": true,
+    "high": 0.856,
+    "low": 0.8527,
+    "point": 0.8542,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "49": {
+   "all": {
+    "certain": true,
+    "high": 0.7803,
+    "low": 0.7773,
+    "point": 0.7787,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.759,
+   "now_verdict": "standard",
+   "polygons": 16178,
+   "standard": {
+    "certain": true,
+    "high": 0.7789,
+    "low": 0.7759,
+    "point": 0.7773,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "5": {
+   "all": {
+    "certain": true,
+    "high": 0.8473,
+    "low": 0.8381,
+    "point": 0.8426,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7908,
+   "now_verdict": "standard",
+   "polygons": 7773,
+   "standard": {
+    "certain": true,
+    "high": 0.8322,
+    "low": 0.8264,
+    "point": 0.8291,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "50": {
+   "all": {
+    "certain": true,
+    "high": 0.8431,
+    "low": 0.8388,
+    "point": 0.8409,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.818,
+   "now_verdict": "standard",
+   "polygons": 2456,
+   "standard": {
+    "certain": true,
+    "high": 0.8411,
+    "low": 0.8368,
+    "point": 0.8389,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "51": {
+   "all": {
+    "certain": true,
+    "high": 0.5714,
+    "low": 0.5693,
+    "point": 0.5702,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5569,
+   "now_verdict": "standard",
+   "polygons": 8065,
+   "standard": {
+    "certain": true,
+    "high": 0.5702,
+    "low": 0.5681,
+    "point": 0.569,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "52": {
+   "all": {
+    "certain": true,
+    "high": 0.8215,
+    "low": 0.8183,
+    "point": 0.8197,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8006,
+   "now_verdict": "standard",
+   "polygons": 7193,
+   "standard": {
+    "certain": true,
+    "high": 0.8199,
+    "low": 0.8168,
+    "point": 0.8181,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "53": {
+   "all": {
+    "certain": true,
+    "high": 0.7422,
+    "low": 0.7397,
+    "point": 0.7408,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7276,
+   "now_verdict": "standard",
+   "polygons": 12105,
+   "standard": {
+    "certain": true,
+    "high": 0.741,
+    "low": 0.7387,
+    "point": 0.7397,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "54": {
+   "all": {
+    "certain": true,
+    "high": 0.4457,
+    "low": 0.4411,
+    "point": 0.4433,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.4091,
+   "now_verdict": "standard",
+   "polygons": 1183,
+   "standard": {
+    "certain": true,
+    "high": 0.4429,
+    "low": 0.4384,
+    "point": 0.4405,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "55": {
+   "all": {
+    "certain": true,
+    "high": 0.727,
+    "low": 0.7226,
+    "point": 0.7245,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7017,
+   "now_verdict": "standard",
+   "polygons": 4318,
+   "standard": {
+    "certain": true,
+    "high": 0.7249,
+    "low": 0.7208,
+    "point": 0.7225,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "56": {
+   "all": {
+    "certain": true,
+    "high": 0.9074,
+    "low": 0.9033,
+    "point": 0.9053,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8759,
+   "now_verdict": "standard",
+   "polygons": 12589,
+   "standard": {
+    "certain": true,
+    "high": 0.9047,
+    "low": 0.9008,
+    "point": 0.9027,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "57": {
+   "all": {
+    "certain": true,
+    "high": 0.85,
+    "low": 0.8384,
+    "point": 0.8441,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7742,
+   "now_verdict": "standard",
+   "polygons": 3454,
+   "standard": {
+    "certain": true,
+    "high": 0.8441,
+    "low": 0.8327,
+    "point": 0.8382,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "58": {
+   "all": {
+    "certain": true,
+    "high": 0.8532,
+    "low": 0.8466,
+    "point": 0.8497,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8057,
+   "now_verdict": "standard",
+   "polygons": 8846,
+   "standard": {
+    "certain": true,
+    "high": 0.8493,
+    "low": 0.8429,
+    "point": 0.8459,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "59": {
+   "all": {
+    "certain": true,
+    "high": 0.7932,
+    "low": 0.7873,
+    "point": 0.7901,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7486,
+   "now_verdict": "standard",
+   "polygons": 4339,
+   "standard": {
+    "certain": true,
+    "high": 0.7892,
+    "low": 0.7836,
+    "point": 0.7862,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "6": {
+   "all": {
+    "certain": true,
+    "high": 0.7236,
+    "low": 0.7045,
+    "point": 0.7138,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6112,
+   "now_verdict": "standard",
+   "polygons": 10586,
+   "standard": {
+    "certain": true,
+    "high": 0.6898,
+    "low": 0.6791,
+    "point": 0.6841,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "60": {
+   "all": {
+    "certain": true,
+    "high": 0.7867,
+    "low": 0.782,
+    "point": 0.7842,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7549,
+   "now_verdict": "standard",
+   "polygons": 8928,
+   "standard": {
+    "certain": true,
+    "high": 0.7832,
+    "low": 0.7789,
+    "point": 0.7809,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "61": {
+   "all": {
+    "certain": true,
+    "high": 0.6041,
+    "low": 0.5992,
+    "point": 0.6015,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5691,
+   "now_verdict": "standard",
+   "polygons": 12824,
+   "standard": {
+    "certain": true,
+    "high": 0.6014,
+    "low": 0.5966,
+    "point": 0.5988,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "62": {
+   "all": {
+    "certain": true,
+    "high": 0.9163,
+    "low": 0.9133,
+    "point": 0.9147,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8944,
+   "now_verdict": "standard",
+   "polygons": 4698,
+   "standard": {
+    "certain": true,
+    "high": 0.914,
+    "low": 0.9113,
+    "point": 0.9125,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "63": {
+   "all": {
+    "certain": true,
+    "high": 0.8731,
+    "low": 0.8674,
+    "point": 0.8701,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8302,
+   "now_verdict": "standard",
+   "polygons": 7672,
+   "standard": {
+    "certain": true,
+    "high": 0.87,
+    "low": 0.8645,
+    "point": 0.8671,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "64": {
+   "all": {
+    "certain": true,
+    "high": 0.8714,
+    "low": 0.8659,
+    "point": 0.8686,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8298,
+   "now_verdict": "standard",
+   "polygons": 7657,
+   "standard": {
+    "certain": true,
+    "high": 0.8668,
+    "low": 0.862,
+    "point": 0.8643,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "65": {
+   "all": {
+    "certain": true,
+    "high": 0.9268,
+    "low": 0.9228,
+    "point": 0.9248,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8972,
+   "now_verdict": "standard",
+   "polygons": 8217,
+   "standard": {
+    "certain": true,
+    "high": 0.9244,
+    "low": 0.9205,
+    "point": 0.9224,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "66": {
+   "all": {
+    "certain": true,
+    "high": 0.8796,
+    "low": 0.8736,
+    "point": 0.8766,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8308,
+   "now_verdict": "standard",
+   "polygons": 12072,
+   "standard": {
+    "certain": true,
+    "high": 0.8768,
+    "low": 0.8708,
+    "point": 0.8738,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "67": {
+   "all": {
+    "certain": true,
+    "high": 0.6114,
+    "low": 0.6086,
+    "point": 0.6099,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.5905,
+   "now_verdict": "standard",
+   "polygons": 13293,
+   "standard": {
+    "certain": true,
+    "high": 0.6099,
+    "low": 0.6072,
+    "point": 0.6084,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "68": {
+   "all": {
+    "certain": true,
+    "high": 0.4605,
+    "low": 0.4573,
+    "point": 0.4588,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.437,
+   "now_verdict": "standard",
+   "polygons": 11495,
+   "standard": {
+    "certain": true,
+    "high": 0.459,
+    "low": 0.4559,
+    "point": 0.4574,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "69": {
+   "all": {
+    "certain": true,
+    "high": 0.7143,
+    "low": 0.7082,
+    "point": 0.7112,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6663,
+   "now_verdict": "standard",
+   "polygons": 9340,
+   "standard": {
+    "certain": true,
+    "high": 0.7115,
+    "low": 0.7056,
+    "point": 0.7085,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "7": {
+   "all": {
+    "certain": true,
+    "high": 0.6539,
+    "low": 0.6403,
+    "point": 0.6469,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.579,
+   "now_verdict": "standard",
+   "polygons": 9821,
+   "standard": {
+    "certain": true,
+    "high": 0.6274,
+    "low": 0.6205,
+    "point": 0.6236,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "70": {
+   "all": {
+    "certain": true,
+    "high": 0.921,
+    "low": 0.9181,
+    "point": 0.9195,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.898,
+   "now_verdict": "standard",
+   "polygons": 13651,
+   "standard": {
+    "certain": true,
+    "high": 0.9191,
+    "low": 0.9163,
+    "point": 0.9177,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "71": {
+   "all": {
+    "certain": true,
+    "high": 0.8224,
+    "low": 0.8168,
+    "point": 0.8196,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7772,
+   "now_verdict": "standard",
+   "polygons": 13913,
+   "standard": {
+    "certain": true,
+    "high": 0.8198,
+    "low": 0.8142,
+    "point": 0.817,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "72": {
+   "all": {
+    "certain": true,
+    "high": 0.8834,
+    "low": 0.8788,
+    "point": 0.881,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8497,
+   "now_verdict": "standard",
+   "polygons": 7945,
+   "standard": {
+    "certain": true,
+    "high": 0.8805,
+    "low": 0.8761,
+    "point": 0.8782,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "73": {
+   "all": {
+    "certain": true,
+    "high": 0.8368,
+    "low": 0.8334,
+    "point": 0.835,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8121,
+   "now_verdict": "standard",
+   "polygons": 10328,
+   "standard": {
+    "certain": true,
+    "high": 0.8351,
+    "low": 0.8317,
+    "point": 0.8333,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "74": {
+   "all": {
+    "certain": true,
+    "high": 0.9302,
+    "low": 0.9277,
+    "point": 0.9288,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.9123,
+   "now_verdict": "standard",
+   "polygons": 7117,
+   "standard": {
+    "certain": true,
+    "high": 0.9285,
+    "low": 0.9261,
+    "point": 0.9272,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "75": {
+   "all": {
+    "certain": true,
+    "high": 0.7891,
+    "low": 0.7857,
+    "point": 0.7873,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.7662,
+   "now_verdict": "standard",
+   "polygons": 9264,
+   "standard": {
+    "certain": true,
+    "high": 0.7871,
+    "low": 0.7839,
+    "point": 0.7854,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "76": {
+   "all": {
+    "certain": true,
+    "high": 0.7094,
+    "low": 0.7022,
+    "point": 0.7057,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6706,
+   "now_verdict": "standard",
+   "polygons": 1533,
+   "standard": {
+    "certain": true,
+    "high": 0.6946,
+    "low": 0.6913,
+    "point": 0.6928,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "77": {
+   "all": {
+    "certain": true,
+    "high": 0.7716,
+    "low": 0.7542,
+    "point": 0.7629,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.6559,
+   "now_verdict": "standard",
+   "polygons": 5214,
+   "standard": {
+    "certain": true,
+    "high": 0.7502,
+    "low": 0.7376,
+    "point": 0.7437,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "8": {
+   "all": {
+    "certain": true,
+    "high": 0.3181,
+    "low": 0.2966,
+    "point": 0.3072,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.1754,
+   "now_verdict": "low",
+   "polygons": 5911,
+   "standard": {
+    "certain": true,
+    "high": 0.2932,
+    "low": 0.2765,
+    "point": 0.2845,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  },
+  "9": {
+   "all": {
+    "certain": true,
+    "high": 0.9108,
+    "low": 0.906,
+    "point": 0.9082,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   },
+   "now": 0.8786,
+   "now_verdict": "standard",
+   "polygons": 3986,
+   "standard": {
+    "certain": true,
+    "high": 0.9061,
+    "low": 0.9022,
+    "point": 0.904,
+    "range": [
+     "standard"
+    ],
+    "verdict": "standard"
+   }
+  }
+ },
+ "rates": {
+  "all": {
+   "condo_building": {
+    "hi": 0.1913,
+    "k": 98,
+    "lo": 0.1332,
+    "n": 612,
+    "rate": 0.16013071895424835
+   },
+   "unknown_gfa_by_class_group": {
+    "2": {
+     "hi": 0.0179,
+     "k": 2,
+     "lo": 0.0014,
+     "n": 403,
+     "rate": 0.004962779156327543
+    },
+    "3": {
+     "hi": 0.8078,
+     "k": 262,
+     "lo": 0.7184,
+     "n": 342,
+     "rate": 0.7660818713450293
+    },
+    "5": {
+     "hi": 0.4741,
+     "k": 512,
+     "lo": 0.4167,
+     "n": 1150,
+     "rate": 0.44521739130434784
+    },
+    "other": {
+     "hi": 0.6977,
+     "k": 16,
+     "lo": 0.3614,
+     "n": 30,
+     "rate": 0.5333333333333333
+    }
+   }
+  },
+  "standard": {
+   "condo_building": {
+    "hi": 0.0062,
+    "k": 0,
+    "lo": 0.0,
+    "n": 612,
+    "rate": 0.0
+   },
+   "unknown_gfa_by_class_group": {
+    "2": {
+     "hi": 0.0139,
+     "k": 1,
+     "lo": 0.0004,
+     "n": 403,
+     "rate": 0.0024813895781637717
+    },
+    "3": {
+     "hi": 0.7889,
+     "k": 255,
+     "lo": 0.6969,
+     "n": 342,
+     "rate": 0.7456140350877193
+    },
+    "5": {
+     "hi": 0.4374,
+     "k": 470,
+     "lo": 0.3806,
+     "n": 1150,
+     "rate": 0.40869565217391307
+    },
+    "other": {
+     "hi": 0.6386,
+     "k": 14,
+     "lo": 0.3023,
+     "n": 30,
+     "rate": 0.4666666666666667
+    }
+   }
+  }
+ },
+ "summary": {
+  "all": {
+   "low": 1,
+   "standard": 76
+  },
+  "now": {
+   "low": 3,
+   "standard": 73,
+   "withheld": 1
+  },
+  "standard": {
+   "low": 3,
+   "standard": 74
+  }
+ },
+ "uncertain_under_standard": [
+  "32"
+ ]
+}
