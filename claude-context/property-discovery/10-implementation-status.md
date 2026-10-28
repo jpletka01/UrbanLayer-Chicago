@@ -21,6 +21,16 @@ liveAreas**, `populatedFields` + `recipeCounts` serving; Discovery is **nav-link
 `run --rm`, auto-follows all 77). The index persists on the `backend/data` volume across deploys.
 **Remaining:** deferred index fields only (OZ/ward/overlay/adu/aro/flood/units — each a `data_version` bump).
 
+**Suburban parcels dropped from the index build (2026-10-28, branch `codex/discovery-index-drop-suburbs`,
+NOT yet on prod).** The builder fetches each community area by bounding box, and a point inside the box
+but inside no community-area polygon (Cicero, Proviso, ...) used to be tagged to the box's Chicago area
+(`community_area_by_point(...) or ca`). A read-only audit of the 2026-10-01 prod index found 66,658 of
+949,014 rows (7.0%) outside every polygon. `_assemble_ca` now drops those points before the joins, and
+`build_index` prunes their PINs from an existing index, so a `--refresh` heals it. `assemble_parcel` is
+unchanged and pure. No `data_version` contract change (the string is still `idx-<date>-<ts>-<n>p`; it
+changes on every build). **Prod keeps the old rows until the next off-box rebuild, which needs Jack's
+separate production approval.** Decision: `claude-context/decisions/2026-10_discovery-index.md`.
+
 **Geometry land fill (2026-07-07, `feat/property-profile`):** the builder now fills `land_sqft`
 from the local ptaxsim `pin_geometry_raw` polygons (`_load_geometry_land`, same source/math as the
 profile's `parcel_geometry.py`) where CCAO chars leaves it NULL — **base parcels only (PIN suffix
@@ -206,7 +216,9 @@ vacant_mf_transit 548, fresh_comps 197, underused_commercial_tif 153, undervalue
 - **`units` is dormant** — `char_apts` is empty across these CAs, so the `units` filter + `adu_2flats`
   recipe stay honest NEEDS-DATA.
 - **bbox spillover** — a CA build by bounding box also indexes some neighbor-CA parcels (tagged to
-  their true CA), so `coverage.liveAreas` under-claims (safe under-claim). The `data_version` string
+  their true CA), so `coverage.liveAreas` under-claims (safe under-claim). Points in NO polygon
+  (suburbs) were tagged to the box's CA until 2026-10-28; they are now dropped (see the status note at
+  the top). The `data_version` string
   counts pre-dedup rows (cosmetic; e.g. "584602p" for 481,873 unique).
 
 ---
