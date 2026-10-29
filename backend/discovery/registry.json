@@ -1,5 +1,5 @@
 {
-  "version": "2026-06-14.2",
+  "version": "2026-10-29.1",
   "broadMinFilters": 2,
   "defaultSort": { "key": "assessed_value", "dir": "asc" },
   "sortKeys": [
@@ -15,8 +15,8 @@
     { "key": "upside_score", "field": "upside_score" }
   ],
   "topics": [
-    { "id": "vacant_mf_transit", "label": "Vacant land, MF-zoned, near transit",
-      "description": "Empty lots in RM/RT multifamily zoning within ½ mile of an L stop.",
+    { "id": "vacant_mf_transit", "label": "Vacant land in residential zoning near transit",
+      "description": "Empty lots in residential zoning districts (RS, RT and RM) within ½ mile of an L stop.",
       "presets": {
         "vacancy": { "kind": "flag", "value": true },
         "zoning_group": { "kind": "enum", "values": ["residential"] },

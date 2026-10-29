@@ -15,6 +15,7 @@ import { CoverageBanner } from "./CoverageBanner";
 import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
 import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
+import { IndexAsOf } from "./IndexAsOf";
 import { RecipeShelf } from "./RecipeShelf";
 import { missingFieldsFor } from "./coverage";
 import { loadRegistry } from "./registryClient";
@@ -129,6 +130,7 @@ export default function DiscoveryPage() {
                 {t("discovery.subtitle")}
               </p>
             </div>
+            {registry && <IndexAsOf registry={registry} />}
             {/* Coverage scope lives in the rail (a full-width banner collided with the
                 floating nav). Renders nothing when coverage is citywide (prod). */}
             {registry && <CoverageBanner registry={registry} />}

@@ -600,7 +600,10 @@
     "exportPro": "Exportar (Pro)",
     "title": "Descubrimiento de propiedades",
     "subtitle": "Empieza con un objetivo o describe lo que buscas — luego refina.",
-    "searchPlaceholder": "Describe lo que buscas — p. ej. \"multifamiliar vacante cerca del L, construida después de 1990\"",
+    "searchPlaceholder": "Describa lo que busca — p. ej. \"multifamiliar construido antes de 1950 con TIF\"",
+    "indexAsOf": "Índice generado el {{date}} · {{areas}}",
+    "indexAreasAll": "las {{count}} áreas comunitarias",
+    "indexAreasSome": "{{count}} áreas comunitarias",
     "searchAria": "Describe lo que buscas",
     "searching": "Buscando…",
     "search": "Buscar",
@@ -782,8 +785,8 @@
     },
     "topic": {
       "vacant_mf_transit": {
-        "label": "Terreno baldío, zonificado MF, cerca del transporte",
-        "description": "Lotes vacíos en zonificación multifamiliar RM/RT a ½ milla de una parada del L."
+        "label": "Terreno baldío en zonificación residencial cerca del transporte",
+        "description": "Lotes vacíos en distritos de zonificación residencial (RS, RT y RM) a ½ milla de una parada del L."
       },
       "teardown": {
         "label": "Candidatas a demolición",

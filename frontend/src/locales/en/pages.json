@@ -600,7 +600,10 @@
     "exportPro": "Export (Pro)",
     "title": "Property Discovery",
     "subtitle": "Start with a goal or describe what you're looking for — then refine.",
-    "searchPlaceholder": "Describe what you want — e.g. \"vacant multifamily near the L, built after 1990\"",
+    "searchPlaceholder": "Describe what you want — e.g. \"multifamily built before 1950 with a TIF\"",
+    "indexAsOf": "Index built {{date}} · {{areas}}",
+    "indexAreasAll": "all {{count}} community areas",
+    "indexAreasSome": "{{count}} community areas",
     "searchAria": "Describe what you're looking for",
     "searching": "Searching…",
     "search": "Search",
@@ -782,8 +785,8 @@
     },
     "topic": {
       "vacant_mf_transit": {
-        "label": "Vacant land, MF-zoned, near transit",
-        "description": "Empty lots in RM/RT multifamily zoning within ½ mile of an L stop."
+        "label": "Vacant land in residential zoning near transit",
+        "description": "Empty lots in residential zoning districts (RS, RT and RM) within ½ mile of an L stop."
       },
       "teardown": {
         "label": "Teardown candidates",
