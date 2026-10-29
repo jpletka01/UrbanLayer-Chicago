@@ -201,3 +201,20 @@ Phase 3 of the plan replaces the permanent 32-control rail with a "Your search" 
 - **Playwright:** the new `discovery-phone` spec (collapsed layout and numbers, touch sizes and hit tests, the sheet's Show results, Spanish fit, light-theme screenshots) runs on all five devices, 25 of 25; `discovery-responsive` and `discovery-map-m2` 5 of 5; `npm run test:mobile` 75 passed, 20 skipped (the once-only specs on the other devices), every overflow cell clean.
 - **Not measured:** real touch hardware (Playwright emulates the pointer and the viewport); VoiceOver or TalkBack with the collapsed header; production; how often users open the collapsed header.
 - **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; with a local backend on an index copy and `VITE_API_BASE=http://localhost:<port> npm run dev`: `npx playwright test e2e/discovery-phone.spec.ts`, `npx playwright test e2e/discovery-responsive.spec.ts e2e/discovery-map-m2.spec.ts --project="Galaxy S24"`, and `npm run test:mobile`.
+
+---
+
+## Item 8: the Spanish pass on Discovery (Mexican Spanish, formal *usted*), before the redesign reaches `main` (2026-10-29)
+
+**Decision:** every Discovery string in `es/pages.json` is Mexican Spanish in the formal *usted* register, and the 16 map and search messages that still showed English are translated. Jack's rule is "Mexican Spanish" (2026-10-29); he did not choose a register. *Usted* is the author's choice for Discovery, because the audience is construction and real-estate professionals and the Discovery strings the build sessions wrote were already *usted*.
+
+- **Register fixed in Discovery only.** Eight strings used *tú* (`subtitle`, `searchAria`, `teaserCount`, `teaserUnlock`, `mapTruncated`, `setFilters`, `scrollMore`, `zeroTooTight`) and two new ones did (`chipPendingTitle`, `restoreFilterTitle`). *Alternative:* switch the whole app to one register now. Not done: `common`, `chat`, `landing`, and `pages` outside Discovery (settings, not-found) have about 17 *tú* strings and the choice affects the whole product voice, so it is Jack's call. Until then the app mixes both.
+- **Vocabulary.** *Agregar* for *añadir* (3 strings), *terreno* for *suelo*, *subutilizada* for *infrautilizada*, *zona inundable* for *llanura de inundación*, *solicitudes 311* for *denuncios 311*, *índice de delincuencia* for *criminalidad*, *intente* for *pruebe a*. The start panel's neighborhood and parcel words follow the app glossary (*vecindario* 14 uses, *parcela* 75) rather than the *colonia* and *predio* the build session introduced.
+- **Left as is, flagged:** *subvenciones* (grants, 2 uses app-wide; *apoyos* or *subsidios* may read more naturally in Mexico), *llanura de inundación* in other namespaces, *criminalidad* in 2 non-Discovery strings.
+- **The 16 untranslated keys** (`mapAria`, `mapIdle`, `mapLoading`, `mapUnavailable`, `mapEmpty`, `map*_one/_other`, `mapSummary`, `legendLandUseNoData`, `searchUnavailable`) are translated and removed from `es/_untranslated.json`, which the guard test requires.
+
+**Numbers**
+- **Before:** 16 Discovery keys rendered in English in Spanish mode; 10 strings in *tú*.
+- **After:** 0 and 0 inside Discovery. Frontend 987 passed in 76 files (the earlier 1,003 included 16 guard tests, one per key that was still listed as untranslated); `npm run lint` 66 warnings, 0 errors; `npm run build` passes. Playwright `discovery-phone` and `discovery-responsive` on five emulated devices against a local backend serving a pruned copy of the real index: 27 passed, 8 skipped (desktop-only cases), including "in Spanish nothing in the header or the sheet overflows or clips".
+- **Not measured:** review by a native Mexican-Spanish reader (the author is not one; about 140 strings changed or added, so a read-through is a short job); the rest of the app's Spanish; real devices.
+- **Revisit if:** Jack picks *tú* for the product (then flip Discovery and the chat prompt together); a reader flags a term (*vecindario* versus *colonia* is the likeliest).
