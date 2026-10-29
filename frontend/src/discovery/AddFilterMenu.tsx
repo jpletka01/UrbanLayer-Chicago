@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Chip } from "../components/ui/Chip";
-import { Control } from "./DiscoveryFilterPanel";
+import { Control } from "./FilterControl";
 import { FILTER_POPOVER_ANCHOR, HEURISTIC_FILTERS, menuGroups } from "./filterMenu";
 import type { FilterDef, FilterId, Predicate, Registry } from "./types";
 

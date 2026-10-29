@@ -570,3 +570,48 @@ describe("useDiscoverySearch: discard changes", () => {
     expect(hook.result.current.draft.text).toBe("");
   });
 });
+
+
+describe("useDiscoverySearch: start over", () => {
+  it("drops everything on screen, empties the draft, and goes back to nothing evaluated", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    act(() => hook.result.current.setText("leftover"));
+    act(() => hook.result.current.startOver());
+    expect(hook.result.current.applied).toBeNull();
+    expect(hook.result.current.rows).toEqual([]);
+    expect(hook.result.current.map).toMatchObject({ points: [], status: "idle", total: 0 });
+    expect(hook.result.current.draft).toMatchObject({ panelState: {}, text: "", topicId: null, sort: REG.defaultSort });
+    expect(hook.result.current.chips).toEqual([]);
+    expect(hook.result.current.pendingCount).toBe(0);
+    expect(hook.result.current.loading).toBe(false);
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+  });
+
+  it("abandons a search in flight: its late response must not bring the old results back", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    const slow = deferred<SearchResponse | null>();
+    mocks.runSearch.mockImplementationOnce(() => slow.promise);
+    act(() => hook.result.current.removeFilter("tif"));
+    act(() => hook.result.current.apply());
+    const signal = mocks.runSearch.mock.calls[0][2] as AbortSignal;
+    act(() => hook.result.current.startOver());
+    expect(signal.aborted).toBe(true);
+    expect(hook.result.current.loading).toBe(false);
+    await act(async () => slow.resolve(combined("v2", "late")));
+    expect(hook.result.current.applied).toBeNull();
+    expect(hook.result.current.rows).toEqual([]);
+  });
+
+  it("clears a failure state so the Start panel is not shown beside an error", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValueOnce(null);
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.unavailable).toBe(true));
+    act(() => hook.result.current.startOver());
+    expect(hook.result.current.unavailable).toBe(false);
+    expect(hook.result.current.refreshFailed).toBe(false);
+  });
+});

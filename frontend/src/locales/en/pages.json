@@ -612,6 +612,7 @@
       "understood": "From “{{text}}” I understood: {{filters}}.",
       "understoodNothing": "I couldn't turn “{{text}}” into filters; the search used only the other filters."
     },
+    "newSearch": "New search",
     "addFilter": {
       "button": "Add filter",
       "menuAria": "Add a filter",

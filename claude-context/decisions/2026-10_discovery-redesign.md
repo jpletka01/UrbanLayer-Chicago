@@ -136,3 +136,32 @@ Phase 3 of the plan replaces the permanent 32-control rail with a "Your search" 
 - Tests: frontend 944 passed in 76 files, run three times (no flake; one pre-existing flake in the earlier text-gate test was found and fixed on that branch); lint 66 warnings, 0 errors; `npm run build` passes; backend 2,440 passed (registry tier tests included).
 - **Not measured:** the Playwright specs and `npm run test:mobile` (the rail is unchanged in 3a); the light theme; Spanish fit at 360 px; which filters users actually pick.
 - **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; `python -m pytest backend/tests/test_discovery_registry.py -q`; for the browser pass run a local backend on an index copy, `VITE_API_BASE=http://localhost:<port> npm run dev`, search, then use "+ Add filter".
+
+---
+
+## Item 6: Phase 3b, the filter rail is removed; the page is a results column with a search header, and the map (2026-10-29)
+
+**Decision: the permanent left rail is gone.** Before, every first-time visitor met a 32-control rail beside the results; Phases 2 and 3a gave every job the rail did a better home, so 3b removes it. The page is two regions: a **results column** (460 px at xl, 580 at 2xl) and the **map**, which takes the freed width (about 560 px before, 980 px at a 1440 px viewport after). Before the first search the column is the Start panel; after it, the column is a **search header** over the list.
+
+**The header, top to bottom:** the describe box and Search (plus the `TextFeedback` line under it); "New search" (and, below xl, the List|Map toggle); the chips strip with "+ Add filter", then "Update results (n)" and "Discard changes" when something is pending; the evaluated summary sentence with **Sort beside it** (it used to sit beside Search, far from the list it orders), then "Ask the analyst" and the index-as-of line. The page title is the Start panel's `h1` before a search and a screen-reader-only `h1` after (the plan's "title collapses once a search is active"); there is always exactly one.
+
+**Decision: below xl the header stays above both tabs.** The old rail was the only thing visible on the phone Map tab, and the page duplicated the Update button into it to cope. Now the results column always holds the header; on the Map tab only the list under it is hidden. Update results exists once on every tab, and the old duplicate and its test are gone.
+
+**Decision: "New search" is the way back to recipes.** With the rail's recipe shelf gone, nothing else leads back to the Start panel. `startOver` abandons anything in flight (a late response is ignored), clears the results, map and draft, and returns to the panel, where the search just run is offered again as Resume (the page re-reads the saved search; the first version of this read it only at mount, which a test caught). It requests nothing. This amends Item 3's "the panel does not come back": it comes back only on this explicit action.
+
+**Deleted:** the filter-panel accordion (`DiscoveryFilterPanel`), `RecipeShelf` (the Start panel lists recipes; the shared badge logic stays in `recipeStatus.ts`), the phone "Edit filters" sheet, "Clear all" on the page, and the rail's category strings are now unused. `Control` moved to `FilterControl.tsx` unchanged and its accessibility tests were re-pointed at it; the accordion stays in git history, not behind a flag, so this is reversible. The hook still has `clearAll` (hook tests use it) though no screen calls it.
+
+**The Start panel gained what the rail's top held:** the page title and subtitle, the describe box (the plan's "Describe it"), `TextFeedback`, and the partial-coverage notice.
+
+**Playwright was run this time, and the specs had to change.** `discovery-responsive` and `discovery-map-m2` still assumed the page auto-ran a recipe (a Phase 2 change that I had not run them against); they now click the first recipe on the Start panel. `mobile-overflow` audits the Start panel as its own route (`discovery-start`) and `discovery` after one search.
+
+**Not done (Phase 4 territory):** the header is tall on a phone (about 325 px at xl; the plan's "first result within about one screen" and a collapsing header are Phase 4), the phone sheet's "Show results" apply, "Zoom to results" is unchanged, and the light theme and Spanish fit were not checked.
+
+**Revisit if** users cannot find their way back to recipes (watch `discovery_start_choice` and how often "New search" is used; there is no event for it yet), or the header's height crowds the list on short screens.
+
+**Numbers** (2026-10-29, local, this branch's backend with the 949,014-row production index copy)
+- Layout at 1440x900 after a search: results column 460 px, header 325 px tall, list 519 px, map 980 px wide; no rail element; one `h1`; sort inside the header; the List|Map toggle hidden at xl.
+- Tests: frontend 948 passed in 75 files, run three times with no flake (944 in 76 before: two test files removed with the deleted components, new header, New search and hook tests added); lint 66 warnings, 0 errors; `npm run build` passes.
+- **Playwright:** `discovery-responsive` and `discovery-map-m2` 5 of 5 passed (Galaxy S24 project; they run once in Chromium by design); `npm run test:mobile` 50 passed, 20 skipped (the same once-only specs on the other four devices): all 45 route-by-device overflow cells clean, including the new Start panel route, on Chromium and WebKit.
+- **Not measured:** the light theme, Spanish at 360 px, a real Pro session, and how the header reads on a short phone screen.
+- **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; run a local backend on an index copy, `VITE_API_BASE=http://localhost:<port> npm run dev`, then `npx playwright test e2e/discovery-responsive.spec.ts e2e/discovery-map-m2.spec.ts --project="Galaxy S24"` and `npm run test:mobile`.

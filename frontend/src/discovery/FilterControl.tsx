@@ -1,9 +1,9 @@
-// Registry-driven filter panel (08). Renders one control per FilterDef, grouped by
-// category. Emits a Predicate (or null to clear) per filter id; the page holds the
-// PanelState. Region filters: only `neighborhood` is wired to data today (community-area
-// multiselect); `ward`/`radius` are shown disabled until the index populates them.
+// One filter's control, by kind (flag / enum / range / region). Emits a Predicate (or null to
+// clear) for its filter id; the caller holds the draft. Used by the "+ Add filter" editor, which
+// is the only place filters are edited now that the permanent rail is gone (Phase 3b). A filter
+// whose field has no data in the index reads "coming", never a live control that returns nothing.
+// Region filters: only `neighborhood` is wired to data (a community-area multiselect).
 
-import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Chip } from "../components/ui/Chip";
 import {
@@ -11,103 +11,12 @@ import {
   NEIGHBORHOOD_PREFIX,
   SORTED_CAS,
 } from "./communityAreas";
-import { isPopulated } from "./coverage";
 import { RangeSlider } from "./RangeSlider";
 import { formatRangeValue } from "./rangeFormat";
-import type { FilterCategory, FilterDef, PanelState, Predicate, Registry } from "./types";
-
-const CATEGORY_ORDER: FilterCategory[] = [
-  "location", "property_use", "zoning_dev", "incentives", "financial", "condition_risk",
-];
-
-const CATEGORY_LABELS: Record<FilterCategory, string> = {
-  location: "Location",
-  property_use: "Property & use",
-  zoning_dev: "Zoning & development",
-  incentives: "Incentives",
-  financial: "Financial",
-  condition_risk: "Condition & risk",
-};
+import type { FilterDef, Predicate } from "./types";
 
 function humanize(s: string): string {
   return s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
-}
-
-interface PanelProps {
-  registry: Registry;
-  state: PanelState;
-  onChange: (filterId: string, predicate: Predicate | null) => void;
-}
-
-export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) {
-  const { t } = useTranslation("pages");
-  const byCategory = useMemo(() => {
-    const map = new Map<FilterCategory, FilterDef[]>();
-    for (const f of registry.filters) {
-      (map.get(f.category) ?? map.set(f.category, []).get(f.category)!).push(f);
-    }
-    return map;
-  }, [registry]);
-
-  // PR8 IA: categories collapse by default (refinement drawer, not the front door). A
-  // category auto-expands when it holds an active filter — so a recipe's set fields are
-  // visible — and the user can toggle any category open/closed.
-  const [openCats, setOpenCats] = useState<Set<FilterCategory>>(new Set());
-  const toggle = (cat: FilterCategory) =>
-    setOpenCats((prev) => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
-
-  return (
-    <div className="space-y-3">
-      {CATEGORY_ORDER.map((cat) => {
-        const defs = byCategory.get(cat);
-        if (!defs?.length) return null;
-        const activeCount = defs.filter((d) => state[d.id]).length;
-        const expanded = activeCount > 0 || openCats.has(cat);
-        return (
-          <div key={cat}>
-            <button
-              type="button"
-              onClick={() => toggle(cat)}
-              aria-expanded={expanded}
-              className="-mx-2 flex w-[calc(100%+1rem)] items-center justify-between rounded-lg px-2 py-1.5 text-overline uppercase text-text-muted transition-colors hover:bg-dark-elevated hover:text-text-secondary"
-            >
-              <span className="flex items-center gap-1.5">
-                {t(`discovery.category.${cat}`, CATEGORY_LABELS[cat])}
-                {activeCount > 0 && (
-                  <span className="rounded bg-accent/15 px-1.5 py-px text-micro normal-case text-accent">{activeCount}</span>
-                )}
-              </span>
-              <svg
-                aria-hidden
-                className={`h-3 w-3 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            {expanded && (
-              <div className="mt-2 space-y-3">
-                {defs.map((def) => (
-                  <Control
-                    key={def.id}
-                    def={def}
-                    value={state[def.id]}
-                    populated={isPopulated(registry, def.id)}
-                    onChange={onChange}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 export function Control({

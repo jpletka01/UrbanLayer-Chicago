@@ -37,6 +37,8 @@ async function openDiscovery(page: Page, expectDesktopKey = true) {
     { timeout: 90_000 },
   );
   await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+  // Nothing runs on arrival now: the Start panel offers the first recipe as one explicit search.
+  await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
   await searchWait;
   if (expectDesktopKey) await expect(page.getByTestId("discovery-map-legend")).toBeVisible();
 }

@@ -373,6 +373,36 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     [updateDraft],
   );
 
+  /** Back to the Start panel: drop what is on screen, abandon anything in flight, empty the draft.
+   *  The last evaluated search stays saved in this browser (Resume offers it again). */
+  const startOver = useCallback(() => {
+    requestIdRef.current += 1; // a response still on its way is now stale
+    controllerRef.current?.abort();
+    moreControllerRef.current?.abort();
+    applySeqRef.current += 1;
+    issuedSigRef.current = null;
+    setIssuedSig(null);
+    appliedRef.current = null;
+    committedInputsRef.current = null;
+    commitRef.current += 1;
+    loadingMoreRef.current = false;
+    setApplied(null);
+    setRows([]);
+    setNextOffset(null);
+    setMapPoints([]);
+    setMapTruncated(false);
+    setMapTotal(0);
+    setMapStatus("idle");
+    setLoading(false);
+    setLoadingMore(false);
+    setRefreshFailed(false);
+    setUnavailable(false);
+    setTextNotice(null);
+    const next: DiscoveryDraft = { ...EMPTY_DRAFT, sort: registry?.defaultSort ?? null };
+    draftRef.current = next;
+    setDraft(next);
+  }, [registry]);
+
   /** Put the draft back to the evaluated query (a draft-only change: nothing is requested). */
   const discardChanges = useCallback(() => {
     const current = appliedRef.current;
@@ -455,6 +485,7 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     restoreFilter,
     clearAll,
     discardChanges,
+    startOver,
     loadMore,
     exportApplied,
   };

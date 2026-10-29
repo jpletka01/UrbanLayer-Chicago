@@ -13,11 +13,10 @@ import UpgradePrompt from "./../components/UpgradePrompt";
 import { AddFilterMenu, type FilterPopoverView } from "./AddFilterMenu";
 import { Chips } from "./chips";
 import { CoverageBanner } from "./CoverageBanner";
-import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
+import { DescribeBox } from "./DescribeBox";
 import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { IndexAsOf } from "./IndexAsOf";
-import { RecipeShelf } from "./RecipeShelf";
 import { draftFilters } from "./draftModel";
 import { FILTER_POPOVER_ANCHOR } from "./filterMenu";
 import { StartPanel, type StartChoice } from "./StartPanel";
@@ -63,7 +62,6 @@ export default function DiscoveryPage() {
   // Below xl: one List|Map content pane (map stays mounted). Phones also get the
   // bottom-sheet filter drawer; tablet widths retain the inline filter rail.
   const [mobileTab, setMobileTab] = useState<"list" | "map">("list");
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [wideLayout, setWideLayout] = useState(
     () => typeof window !== "undefined" && window.matchMedia?.("(min-width: 1280px)").matches === true,
   );
@@ -118,6 +116,13 @@ export default function DiscoveryPage() {
     },
     [search, resumable],
   );
+  // Back to the Start panel. What was just searched was saved as it committed, so offer it again.
+  const { startOver } = search;
+  const onNewSearch = useCallback(() => {
+    startOver();
+    setPopover(null);
+    setResumable(loadLastSearch());
+  }, [startOver]);
   const onForgetResume = useCallback(() => {
     clearLastSearch();
     setResumable(null);
@@ -150,135 +155,68 @@ export default function DiscoveryPage() {
 
   const showUpdate = pendingCount > 0 && !draftIsInFlight;
 
-  const activeFilterCount = Object.keys(draft.panelState).length;
+  const textFeedback = registry ? (
+    <TextFeedback
+      registry={registry}
+      notice={search.textNotice}
+      applied={response ? { cqs: response.cqs, text: search.appliedText } : null}
+    />
+  ) : null;
 
   return (
     <div className="flex h-screen flex-col bg-dark-bg text-text-primary">
       <PageHeader sticky={false} maxWidthClass="max-w-[1920px]" />
 
-      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-        {/* Inputs column (desktop left rail; mobile top controls) */}
-        <div className="flex w-full flex-shrink-0 flex-col overflow-hidden border-r border-dark-border md:w-[360px] lg:w-[400px] xl:w-[420px] 2xl:w-[460px]">
-          <div className="flex-shrink-0 space-y-3 border-b border-dark-border p-4">
-            <div>
-              <h1 className="text-section">{t("discovery.title")}</h1>
-              <p className="text-caption text-text-muted">
-                {t("discovery.subtitle")}
-              </p>
-            </div>
-            {/* The Start panel carries its own copy of this line until the first search. */}
-            {registry && !showStart && <IndexAsOf registry={registry} />}
-            {/* Coverage scope lives in the rail (a full-width banner collided with the
-                floating nav). Renders nothing when coverage is citywide (prod). */}
-            {registry && <CoverageBanner registry={registry} />}
-            <input
-              type="text"
-              value={draft.text}
-              onChange={(e) => search.setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") search.apply();
-              }}
-              placeholder={t("discovery.searchPlaceholder")}
-              aria-label={t("discovery.searchAria")}
-              className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+      {/* Two regions (Phase 3b; the 420 px filter rail is gone). The results column is the Start
+          panel before the first search and the search header over the results after it; the map
+          takes the rest. Below xl the header stays on top and a List|Map toggle picks the pane. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:flex-row">
+        <div
+          data-testid="discovery-results-column"
+          className={`flex min-h-0 min-w-0 flex-col border-dark-border xl:w-[460px] xl:flex-none xl:border-r 2xl:w-[580px] ${
+            !showStart && mobileTab === "map" ? "flex-none" : "flex-1"
+          }`}
+        >
+          {showStart && registry && (
+            <StartPanel
+              registry={registry}
+              resumable={resumable}
+              onChoose={onStartChoice}
+              onForgetResume={onForgetResume}
+              text={draft.text}
+              onTextChange={search.setText}
+              onSubmitText={search.apply}
+              textFeedback={textFeedback}
             />
-            {registry && (
-              <TextFeedback
-                registry={registry}
-                notice={search.textNotice}
-                applied={response ? { cqs: response.cqs, text: search.appliedText } : null}
-              />
-            )}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={search.apply}
-                disabled={!registry}
-                className="rounded-lg bg-action px-4 py-2 text-title text-text-on-accent transition-colors hover:bg-action-hover disabled:opacity-50"
-              >
-                {t("discovery.search")}
-              </button>
-              {registry && draft.sort && (
-                <SortControl registry={registry} sort={draft.sort} onChange={search.setSort} />
-              )}
-            </div>
-            {/* The strip with Update results lives in the List pane; on the phone Map tab
-                that pane is hidden, so the same button is offered here. */}
-            {showUpdate && mobileTab === "map" && (
-              <UpdateResultsButton count={pendingCount} onClick={search.apply} className="xl:hidden" />
-            )}
-            {/* List|Map stays available until xl. Edit-filters is phone-only because
-                tablet widths retain the inline filter rail. */}
-            <div className="flex items-center gap-2 xl:hidden">
-              <MobileTabToggle value={mobileTab} onChange={setMobileTab} />
-              <button
-                type="button"
-                onClick={() => setFiltersOpen(true)}
-                className="ml-auto rounded-lg border border-dark-border px-3 py-1.5 text-caption text-text-secondary transition-colors hover:border-dark-border-strong md:hidden"
-              >
-                {t("discovery.editFilters")}
-                {activeFilterCount > 0 && (
-                  <span className="ml-1 text-accent">({activeFilterCount})</span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile-only: recipes as a horizontal scroll-snap row */}
-          {registry && !showStart && (
-            <div className="flex-shrink-0 border-b border-dark-border p-3 md:hidden">
-              <RecipeShelf registry={registry} onPick={search.pickRecipe} horizontal />
-            </div>
+          )}
+          {showStart && !registry && (
+            <p className="p-4 text-body text-text-muted">{t("discovery.loadingFilters")}</p>
           )}
 
-          {/* Desktop-only: recipe shelf + the inline refinement drawer */}
-          <div className="hidden flex-1 space-y-5 overflow-y-auto p-4 md:block">
-            {registry ? (
-              <>
-                {!showStart && <RecipeShelf registry={registry} onPick={search.pickRecipe} />}
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-overline uppercase text-text-muted">
-                      {t("discovery.refine")}
-                    </h3>
-                    {activeFilterCount > 0 && (
-                      <button
-                        type="button"
-                        onClick={search.clearAll}
-                        className="text-micro text-text-muted transition-colors hover:text-accent"
-                      >
-                        {t("discovery.clearAll", { count: activeFilterCount })}
-                      </button>
-                    )}
-                  </div>
-                  <DiscoveryFilterPanel registry={registry} state={draft.panelState} onChange={search.editPanel} />
-                </div>
-              </>
-            ) : (
-              <p className="text-body text-text-muted">{t("discovery.loadingFilters")}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Results column: always at xl; otherwise only when List is active. */}
-        <div
-          className={`${
-            mobileTab === "list" ? "flex" : "hidden"
-          } min-w-0 flex-1 flex-col overflow-hidden border-r border-dark-border xl:flex xl:w-[430px] xl:flex-none 2xl:w-[560px]`}
-          data-testid="discovery-list-pane"
-        >
-          {registry && !showStart && (
-            <div className="relative flex-shrink-0 space-y-2 border-b border-dark-border p-4">
-              {/* Evaluated sentence (INV-4): dims with the rest of the previous results. */}
-              {response && (
-                <p
-                  className={`text-body text-text-secondary transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
-                  aria-busy={refreshing}
-                  data-testid="discovery-summary"
+          {!showStart && registry && (
+            <div
+              data-testid="discovery-header"
+              className="relative flex-shrink-0 space-y-2 border-b border-dark-border p-4"
+            >
+              <h1 className="sr-only">{t("discovery.title")}</h1>
+              <CoverageBanner registry={registry} />
+              <DescribeBox value={draft.text} onChange={search.setText} onSubmit={search.apply} />
+              {textFeedback}
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={onNewSearch}
+                  data-testid="discovery-new-search"
+                  className="text-caption text-text-muted transition-colors hover:text-accent"
                 >
-                  {summarize(response.cqs, registry)}
-                </p>
-              )}
+                  <span aria-hidden>← </span>{t("discovery.newSearch")}
+                </button>
+                <div className="xl:hidden">
+                  <MobileTabToggle value={mobileTab} onChange={setMobileTab} />
+                </div>
+              </div>
+
+              {/* The strip: chips from the DRAFT (control surface), "+ Add filter", then Update. */}
               <Chips
                 items={chips}
                 registry={registry}
@@ -323,9 +261,22 @@ export default function DiscoveryPage() {
                   onClose={closePopover}
                 />
               )}
-              {/* Quiet seam — subordinate to the ranked list (the page's primary
-                  job); the chat door is secondary to it. Always available (incl.
-                  premium / pre-wall), not gated behind the teaser. */}
+
+              {/* Evaluated sentence (INV-4): dims with the rest of the previous results. Sort sits
+                  here, next to the list it orders. */}
+              {response && (
+                <div className="flex items-start justify-between gap-3">
+                  <p
+                    className={`min-w-0 text-body text-text-secondary transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
+                    aria-busy={refreshing}
+                    data-testid="discovery-summary"
+                  >
+                    {summarize(response.cqs, registry)}
+                  </p>
+                  {draft.sort && <SortControl registry={registry} sort={draft.sort} onChange={search.setSort} />}
+                </div>
+              )}
+              {/* Quiet seam — subordinate to the ranked list; the chat door is secondary to it. */}
               {response && response.result.total > 0 && !refreshing && (
                 <button
                   type="button"
@@ -335,47 +286,48 @@ export default function DiscoveryPage() {
                   {t("discovery.askAnalystArea")} <span aria-hidden>→</span>
                 </button>
               )}
+              <IndexAsOf registry={registry} />
             </div>
           )}
-          <div className="min-h-0 flex-1">
-            {registry && showStart && (
-              <StartPanel
-                registry={registry}
-                resumable={resumable}
-                onChoose={onStartChoice}
-                onForgetResume={onForgetResume}
-              />
-            )}
-            {registry && !showStart && (
-              <DiscoveryResults
-                response={response}
-                rows={rows}
-                registry={registry}
-                loading={loading}
-                unavailable={unavailable}
-                refreshFailed={refreshFailed}
-                onRetry={search.apply}
-                loadingMore={loadingMore}
-                hasMore={nextOffset != null}
-                onLoadMore={search.loadMore}
-                onRelax={search.removeFilter}
-                onOpenParcel={onOpenParcel}
-                hoveredPin={hoveredPin}
-                scrollToPin={isPro ? mapHoveredPin : null}
-                onHoverPin={onRowHoverPin}
-                onExport={search.exportApplied}
-                exportLocked={!isPro}
-                onUpgrade={onUpgrade}
-                onAskArea={onAskArea}
-              />
-            )}
-          </div>
+
+          {!showStart && (
+            <div
+              data-testid="discovery-list-pane"
+              className={`${mobileTab === "list" ? "flex" : "hidden"} min-h-0 flex-1 flex-col xl:flex`}
+            >
+              <div className="min-h-0 flex-1">
+                {registry && (
+                  <DiscoveryResults
+                    response={response}
+                    rows={rows}
+                    registry={registry}
+                    loading={loading}
+                    unavailable={unavailable}
+                    refreshFailed={refreshFailed}
+                    onRetry={search.apply}
+                    loadingMore={loadingMore}
+                    hasMore={nextOffset != null}
+                    onLoadMore={search.loadMore}
+                    onRelax={search.removeFilter}
+                    onOpenParcel={onOpenParcel}
+                    hoveredPin={hoveredPin}
+                    scrollToPin={isPro ? mapHoveredPin : null}
+                    onHoverPin={onRowHoverPin}
+                    onExport={search.exportApplied}
+                    exportLocked={!isPro}
+                    onUpgrade={onUpgrade}
+                    onAskArea={onAskArea}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Map column: always at xl; otherwise only when Map is active. A SINGLE instance
-            stays mounted behind List so toggles preserve the GL context. */}
+        {/* Map: always at xl; below xl only on the Map tab and never on the Start panel. A SINGLE
+            instance stays mounted behind List so toggles preserve the GL context. */}
         <div
-          className={`${mobileTab === "map" ? "block" : "hidden"} min-w-0 flex-1 xl:block`}
+          className={`${!showStart && mobileTab === "map" ? "block" : "hidden"} min-h-0 min-w-0 flex-1 xl:block`}
           data-testid="discovery-map-pane"
         >
           <DiscoveryMap
@@ -389,39 +341,10 @@ export default function DiscoveryPage() {
             interactive={isPro}
             status={map.status}
             stale={refreshing}
-            visible={mobileTab === "map" || wideLayout}
+            visible={(!showStart && mobileTab === "map") || wideLayout}
           />
         </div>
       </div>
-
-      {/* Mobile filter bottom sheet (full-height refinement drawer) */}
-      {filtersOpen && registry && (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label={t("discovery.filtersAria")}>
-          <div className="absolute inset-0 bg-black/50" onClick={() => setFiltersOpen(false)} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-xl border-t border-dark-border bg-dark-surface p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-title">{t("discovery.filtersHeading")}</h3>
-              {activeFilterCount > 0 && (
-                <button
-                  type="button"
-                  onClick={search.clearAll}
-                  className="ml-auto mr-3 text-micro text-text-muted transition-colors hover:text-accent"
-                >
-                  {t("discovery.clearAll", { count: activeFilterCount })}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setFiltersOpen(false)}
-                className="rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover"
-              >
-                {t("common:done")}
-              </button>
-            </div>
-            <DiscoveryFilterPanel registry={registry} state={draft.panelState} onChange={search.editPanel} />
-          </div>
-        </div>
-      )}
 
       {showUpgrade && (
         <UpgradePrompt feature={t("discovery.title")} onClose={() => setShowUpgrade(false)} />

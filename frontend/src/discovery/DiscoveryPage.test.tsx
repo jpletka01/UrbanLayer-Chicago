@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DescribeBox } from "./DescribeBox";
 import DiscoveryPage from "./DiscoveryPage";
 import { REG } from "./_fixtures";
 import type { Diagnostics, PinsResponse, SearchResponse } from "./types";
@@ -66,25 +67,20 @@ vi.mock("./AddFilterMenu", () => ({
   ),
 }));
 vi.mock("./CoverageBanner", () => ({ CoverageBanner: () => null }));
-vi.mock("./DiscoveryFilterPanel", () => ({
-  DiscoveryFilterPanel: ({ state, onChange }: {
-    state: Record<string, unknown>;
-    onChange: (id: string, predicate: unknown) => void;
-  }) => (
-    <div data-testid="panel" data-keys={Object.keys(state).sort().join(",")}>
-      <button type="button" onClick={() => onChange("tif", { kind: "flag", value: true })}>panel-add-tif</button>
-    </div>
-  ),
-}));
-vi.mock("./RecipeShelf", () => ({ RecipeShelf: () => <div data-testid="recipe-shelf" /> }));
 // The Start panel has its own tests; here it is a stub that lets a test make each choice.
 vi.mock("./StartPanel", () => ({
-  StartPanel: ({ resumable, onChoose, onForgetResume }: {
+  StartPanel: ({ resumable, onChoose, onForgetResume, text, onTextChange, onSubmitText, textFeedback }: {
     resumable: { sentence: string } | null;
     onChoose: (c: unknown) => void;
     onForgetResume: () => void;
+    text: string;
+    onTextChange: (t: string) => void;
+    onSubmitText: () => void;
+    textFeedback?: React.ReactNode;
   }) => (
     <div data-testid="start-panel">
+      <DescribeBox value={text} onChange={onTextChange} onSubmit={onSubmitText} />
+      {textFeedback}
       <button type="button" onClick={() => onChoose({ kind: "recipe", topic: { id: "vacant_mf", presets: {} } })}>start-recipe</button>
       <button type="button" onClick={() => onChoose({ kind: "neighborhood", areaId: 24 })}>start-area</button>
       <button type="button" onClick={() => onChoose({ kind: "all" })}>start-all</button>
@@ -175,13 +171,17 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+// The describe box and Search button exist twice over a page's life (Start panel, then the results
+// header), so tests look them up when they need them instead of holding an element across the swap.
+const searchButton = () => screen.getByRole("button", { name: "Search" }) as HTMLButtonElement;
+const describeInput = () => screen.getByRole("textbox", { name: "Describe what you're looking for" });
+
 async function readyPage() {
   render(<DiscoveryPage />);
-  const button = screen.getByRole("button", { name: "Search" }) as HTMLButtonElement;
-  await waitFor(() => expect(button.disabled).toBe(false));
+  await waitFor(() => expect(searchButton().disabled).toBe(false));
   return {
-    button,
-    input: screen.getByRole("textbox", { name: "Describe what you're looking for" }),
+    get button() { return searchButton(); },
+    get input() { return describeInput(); },
   };
 }
 
@@ -202,15 +202,15 @@ describe("DiscoveryPage issued-query pairing", () => {
     const firstSearch = deferred<SearchResponse | null>();
     const secondSearch = deferred<SearchResponse | null>();
     mocks.runSearch.mockImplementationOnce(() => firstSearch.promise).mockImplementationOnce(() => secondSearch.promise);
-    const { button, input } = await readyPage();
+    const ready = await readyPage();
 
     // The text check runs before each search, so let the first search start (its request is in
     // flight, unresolved) before the second is issued; the second must then supersede it.
-    fireEvent.change(input, { target: { value: "first" } });
-    fireEvent.click(button);
+    fireEvent.change(ready.input, { target: { value: "first" } });
+    fireEvent.click(ready.button);
     await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(1));
-    fireEvent.change(input, { target: { value: "second" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.change(ready.input, { target: { value: "second" } });
+    fireEvent.keyDown(ready.input, { key: "Enter" });
     await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(2));
 
     secondSearch.resolve(combined("v2", "new"));
@@ -226,8 +226,8 @@ describe("DiscoveryPage issued-query pairing", () => {
   it("keeps the canonical list but makes the map unavailable on a pins version mismatch", async () => {
     mocks.runSearch.mockResolvedValue(response("canonical", "one"));
     mocks.runPins.mockResolvedValue(pins("other", "wrong"));
-    const { button } = await readyPage();
-    fireEvent.click(button);
+    const ready = await readyPage();
+    fireEvent.click(ready.button);
 
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("canonical:1"));
     expect(screen.getByTestId("map-state").textContent).toContain("unavailable:0");
@@ -236,8 +236,8 @@ describe("DiscoveryPage issued-query pairing", () => {
   it("rejects a non-truncated pins projection with missing entries", async () => {
     mocks.runSearch.mockResolvedValue(response("canonical", "one"));
     mocks.runPins.mockResolvedValue({ ...pins("canonical", "one"), points: [] });
-    const { button } = await readyPage();
-    fireEvent.click(button);
+    const ready = await readyPage();
+    fireEvent.click(ready.button);
 
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("canonical:1"));
     expect(screen.getByTestId("map-state").textContent).toContain("unavailable:0");
@@ -246,8 +246,8 @@ describe("DiscoveryPage issued-query pairing", () => {
   it("keeps the canonical list when the pins request rejects", async () => {
     mocks.runSearch.mockResolvedValue(response("canonical", "one"));
     mocks.runPins.mockRejectedValue(new Error("map request failed"));
-    const { button } = await readyPage();
-    fireEvent.click(button);
+    const ready = await readyPage();
+    fireEvent.click(ready.button);
 
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("canonical:1"));
     expect(screen.getByTestId("map-state").textContent).toContain("unavailable:0");
@@ -256,8 +256,8 @@ describe("DiscoveryPage issued-query pairing", () => {
   it("commits neither projection as successful when the canonical search fails", async () => {
     mocks.runSearch.mockResolvedValue(null);
     mocks.runPins.mockResolvedValue(pins("orphan", "wrong"));
-    const { button } = await readyPage();
-    fireEvent.click(button);
+    const ready = await readyPage();
+    fireEvent.click(ready.button);
 
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("unavailable"));
     expect(screen.getByTestId("map-state").textContent).toContain("unavailable:0");
@@ -266,19 +266,37 @@ describe("DiscoveryPage issued-query pairing", () => {
   it("keeps a successful zero-result query distinct from map failure", async () => {
     mocks.runSearch.mockResolvedValue(response("empty", "none", 0));
     mocks.runPins.mockResolvedValue(pins("empty", "none", 0));
-    const { button } = await readyPage();
-    fireEvent.click(button);
+    const ready = await readyPage();
+    fireEvent.click(ready.button);
 
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("empty:0"));
     expect(screen.getByTestId("map-state").textContent).toContain("ready:0");
   });
 
-  it("uses one content pane below xl and restores both panes at xl", async () => {
-    await readyPage();
-    expect(screen.getByTestId("discovery-list-pane").className).toContain("xl:flex");
-    expect(screen.getByTestId("discovery-list-pane").className).not.toContain("md:flex");
+  it("uses one content pane below xl and restores both panes at xl; the header stays on both tabs", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    const ready = await readyPage();
+    // Start panel: no header, and the map is not offered below xl
+    expect(screen.queryByTestId("discovery-header")).toBeNull();
+    expect(screen.getByTestId("discovery-map-pane").className).toContain("hidden");
     expect(screen.getByTestId("discovery-map-pane").className).toContain("xl:block");
-    expect(screen.getByTestId("discovery-map-pane").className).not.toContain("md:block");
+    fireEvent.click(ready.button);
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+
+    const list = () => screen.getByTestId("discovery-list-pane");
+    const map = () => screen.getByTestId("discovery-map-pane");
+    expect(list().className).toContain("flex");
+    expect(list().className).toContain("xl:flex");
+    expect(list().className).not.toContain("md:flex");
+    expect(map().className).toContain("hidden");
+    expect(map().className).toContain("xl:block");
+    expect(map().className).not.toContain("md:block");
+
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
+    expect(list().className).toContain("hidden");
+    expect(list().className).toContain("xl:flex"); // both panes again at xl
+    expect(map().className).toContain("block");
+    expect(screen.getByTestId("discovery-header")).toBeTruthy(); // the strip is not lost on the Map tab
   });
 });
 
@@ -300,7 +318,7 @@ async function pageWithResults() {
 
 describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
   it("never blanks the page while chips are removed, requests nothing, then sends one request", async () => {
-    const { button } = await pageWithResults();
+    const ready = await pageWithResults();
     const summaryBefore = screen.getByTestId("discovery-summary").textContent;
 
     fireEvent.click(screen.getByText("remove-land_use"));
@@ -315,7 +333,7 @@ describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
     expect(screen.getByTestId("discovery-summary").textContent).toBe(summaryBefore);
     expect(mocks.runSearch).not.toHaveBeenCalled();
     expect(mocks.runPins).not.toHaveBeenCalled();
-    expect(button.disabled).toBe(false);
+    expect(ready.button.disabled).toBe(false);
 
     mocks.runSearch.mockResolvedValueOnce(combined("v1", "two"));
     fireEvent.click(screen.getByTestId("discovery-update-results"));
@@ -335,28 +353,29 @@ describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
     expect(screen.queryByTestId("discovery-update-results")).toBeNull();
   });
 
-  it("shows a pending count for panel edits and Clear all, and applies them with Enter or Search", async () => {
-    const { button, input } = await pageWithResults();
-    fireEvent.click(screen.getByText("panel-add-tif")); // already there: no change
-    expect(screen.queryByTestId("discovery-update-results")).toBeNull();
-    fireEvent.click(screen.getByText(/Clear all/));
+  it("shows a pending count for chip edits, and applies them with Enter or Search", async () => {
+    const ready = await pageWithResults();
+    fireEvent.click(screen.getByText("remove-tif"));
+    fireEvent.click(screen.getByText("remove-land_use"));
+    fireEvent.click(screen.getByText("remove-lot_size"));
     expect(screen.getByTestId("discovery-update-results").textContent).toBe("Update results (3)");
-    expect(screen.getByTestId("panel").getAttribute("data-keys")).toBe("");
     expect(mocks.runSearch).not.toHaveBeenCalled();
 
     mocks.runSearch.mockResolvedValue(response("v2", "all"));
     mocks.runPins.mockResolvedValue(pins("v2", "all"));
-    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.keyDown(ready.input, { key: "Enter" });
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v2:1"));
     expect(mocks.runSearch).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByText("panel-add-tif"));
-    fireEvent.click(button);
+    // another edit (through the Add filter menu), applied with the Search button this time
+    fireEvent.click(screen.getByTestId("discovery-add-filter"));
+    fireEvent.click(screen.getByText("pop-add-tif"));
+    fireEvent.click(ready.button);
     expect(mocks.runSearch).toHaveBeenCalledTimes(2);
   });
 
   it("keeps the previous results, summary and dots dimmed while the refresh runs; Search stays enabled", async () => {
-    const { button } = await pageWithResults();
+    const ready = await pageWithResults();
     const nextSearch = deferred<SearchResponse | null>();
     const nextPins = deferred<PinsResponse | null>();
     mocks.runSearch.mockImplementationOnce(() => nextSearch.promise);
@@ -372,7 +391,7 @@ describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
     expect(screen.getByTestId("discovery-summary").textContent).toBe(summaryBefore);
     expect(screen.getByTestId("discovery-summary").getAttribute("aria-busy")).toBe("true");
     expect(screen.getByTestId("discovery-summary").className).toContain("opacity-[0.55]");
-    expect(button.disabled).toBe(false);
+    expect(ready.button.disabled).toBe(false);
     // chips stay clickable mid-refresh, and the in-flight draft needs no second button
     expect(screen.getByTestId("chip-land_use")).toBeTruthy();
     expect(screen.queryByTestId("discovery-update-results")).toBeNull();
@@ -405,12 +424,12 @@ describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
     expect(mocks.runSearch).toHaveBeenCalledTimes(2);
   });
 
-  it("offers Update results on the phone Map tab too, where the strip is hidden", async () => {
+  it("offers Update results once, and it is still there on the phone Map tab (the header does not hide)", async () => {
     await pageWithResults();
     fireEvent.click(screen.getByText("remove-tif"));
     expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
-    expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(2);
+    expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(1);
   });
 });
 
@@ -431,7 +450,7 @@ describe("DiscoveryPage Start panel", () => {
     expect(mocks.runSearch).not.toHaveBeenCalled();
     expect(mocks.runPins).not.toHaveBeenCalled();
     expect(screen.queryByTestId("results-state")).toBeNull(); // no results area, so no result to mistake for one
-    expect(screen.queryByTestId("recipe-shelf")).toBeNull(); // the recipes are in the Start panel, not twice
+    expect(screen.queryByTestId("discovery-header")).toBeNull(); // no results header, no rail: just the Start panel
   });
 
   it("shows the index-as-of line once: in the Start panel before a search, in the rail after it", async () => {
@@ -460,7 +479,7 @@ describe("DiscoveryPage Start panel", () => {
     expect(mocks.track).toHaveBeenCalledWith("discovery_start_choice", { kind: "recipe", id: "vacant_mf" });
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
     expect(screen.queryByTestId("start-panel")).toBeNull();
-    expect(screen.getAllByTestId("recipe-shelf").length).toBeGreaterThan(0); // the rail shelf takes over after the first search
+    expect(screen.getByTestId("discovery-header")).toBeTruthy(); // the results header takes over after the first search
   });
 
   it("a neighborhood is a search for that one community area and nothing else", async () => {
@@ -529,9 +548,9 @@ describe("DiscoveryPage Start panel", () => {
 describe("DiscoveryPage text box feedback", () => {
   it("does not search, and says why, when the compiler understood none of the phrase", async () => {
     mocks.previewText.mockResolvedValue({ understood: [], residual: ["teardown", "logan", "square"], droppedInvalid: [] });
-    const { input } = await readyPage();
-    fireEvent.change(input, { target: { value: "teardown in logan square" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    const ready = await readyPage();
+    fireEvent.change(ready.input, { target: { value: "teardown in logan square" } });
+    fireEvent.keyDown(ready.input, { key: "Enter" });
     const note = await screen.findByTestId("discovery-text-feedback");
     expect(note.getAttribute("data-kind")).toBe("none");
     expect(note.textContent).toContain("no search was run");
@@ -541,11 +560,11 @@ describe("DiscoveryPage text box feedback", () => {
 
   it("clears the notice when the text is edited", async () => {
     mocks.previewText.mockResolvedValue({ understood: [], residual: ["xyz"], droppedInvalid: [] });
-    const { input } = await readyPage();
-    fireEvent.change(input, { target: { value: "xyz" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    const ready = await readyPage();
+    fireEvent.change(ready.input, { target: { value: "xyz" } });
+    fireEvent.keyDown(ready.input, { key: "Enter" });
     await screen.findByTestId("discovery-text-feedback");
-    fireEvent.change(input, { target: { value: "xyz tif" } });
+    fireEvent.change(ready.input, { target: { value: "xyz tif" } });
     expect(screen.queryByTestId("discovery-text-feedback")).toBeNull();
   });
 
@@ -557,9 +576,9 @@ describe("DiscoveryPage text box feedback", () => {
         sort: REG.defaultSort, scope: { mode: "all" }, meta: { rawText: "tif near the L", textResidual: ["l"] },
       },
     });
-    const { input } = await readyPage();
-    fireEvent.change(input, { target: { value: "tif near the L" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    const ready = await readyPage();
+    fireEvent.change(ready.input, { target: { value: "tif near the L" } });
+    fireEvent.keyDown(ready.input, { key: "Enter" });
     await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(1));
     expect(mocks.runSearch.mock.calls[0][0].text).toBe("tif near the L");
     const note = await screen.findByTestId("discovery-text-feedback");
@@ -635,5 +654,56 @@ describe("DiscoveryPage Add filter and Discard changes", () => {
     expect(screen.queryByTestId("discovery-update-results")).toBeNull();
     expect(screen.queryByTestId("discovery-discard-changes")).toBeNull();
     expect(mocks.runSearch).not.toHaveBeenCalled();
+  });
+});
+
+
+// --- Phase 3b: no rail; a results header; New search; sort next to the list ---
+
+describe("DiscoveryPage results header (the rail is gone)", () => {
+  async function searched() {
+    mocks.runSearch.mockResolvedValueOnce({ ...response("v1", "one", 1, { tif: { predicate: { kind: "flag", value: true }, source: "user" } }), pins: pins("v1", "one") });
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    mocks.runSearch.mockClear();
+  }
+
+  it("has no filter rail: no accordion, no 'Refine', no 'Edit filters' sheet button", async () => {
+    await searched();
+    expect(screen.queryByText("Refine")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Edit filters/ })).toBeNull();
+    expect(screen.queryByText(/Clear all/)).toBeNull();
+  });
+
+  it("keeps one h1 for the page after the Start panel (the title collapses to screen readers)", async () => {
+    await searched();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  it("puts sort in the header beside the evaluated sentence; changing it is a draft edit, not a request", async () => {
+    await searched();
+    const header = screen.getByTestId("discovery-header");
+    const sort = header.querySelector("select") as HTMLSelectElement;
+    expect(sort).toBeTruthy();
+    expect(header.contains(screen.getByTestId("discovery-summary"))).toBe(true);
+    fireEvent.change(sort, { target: { value: "lot_size" } });
+    expect(screen.getByTestId("discovery-update-results").textContent).toBe("Update results (1)");
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+  });
+
+  it("'New search' goes back to the Start panel, drops the results, and requests nothing", async () => {
+    await searched();
+    fireEvent.click(screen.getByTestId("discovery-new-search"));
+    await screen.findByTestId("start-panel");
+    expect(screen.queryByTestId("discovery-header")).toBeNull();
+    expect(screen.queryByTestId("results-state")).toBeNull();
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+  });
+
+  it("after 'New search' the last evaluated search is offered again as Resume", async () => {
+    await searched();
+    fireEvent.click(screen.getByTestId("discovery-new-search"));
+    await screen.findByText(/^start-resume:/);
   });
 });

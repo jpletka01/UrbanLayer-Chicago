@@ -4,10 +4,12 @@
 // the words cannot drift from the filters), one neighborhood, every parcel, or the user's own
 // last search (re-run, never replayed as a result). It renders no result of any kind.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Chip } from "../components/ui/Chip";
 import { chipLabel } from "./chips";
+import { CoverageBanner } from "./CoverageBanner";
+import { DescribeBox } from "./DescribeBox";
 import { SORTED_CAS } from "./communityAreas";
 import { coverageOf } from "./coverage";
 import { IndexAsOf } from "./IndexAsOf";
@@ -26,9 +28,17 @@ interface Props {
   resumable: SavedSearch | null;
   onChoose: (choice: StartChoice) => void;
   onForgetResume: () => void;
+  /** The free-text draft: "Describe it" is the fifth way in, beside recipes, neighborhoods, all and resume. */
+  text: string;
+  onTextChange: (text: string) => void;
+  onSubmitText: () => void;
+  /** What the text compiler made of the phrase (TextFeedback), rendered under the box. */
+  textFeedback?: ReactNode;
 }
 
-export function StartPanel({ registry, resumable, onChoose, onForgetResume }: Props) {
+export function StartPanel({
+  registry, resumable, onChoose, onForgetResume, text, onTextChange, onSubmitText, textFeedback,
+}: Props) {
   const { t } = useTranslation("pages");
   const [query, setQuery] = useState("");
 
@@ -49,8 +59,16 @@ export function StartPanel({ registry, resumable, onChoose, onForgetResume }: Pr
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-5" data-testid="discovery-start-panel">
-      <h2 className="text-section">{t("discovery.start.heading")}</h2>
+      <h1 className="text-section">{t("discovery.title")}</h1>
+      <p className="text-caption text-text-muted">{t("discovery.subtitle")}</p>
       <IndexAsOf registry={registry} className="mt-1" />
+      <div className="mt-2"><CoverageBanner registry={registry} /></div>
+
+      <h2 className="mt-5 text-title">{t("discovery.start.heading")}</h2>
+      <div className="mt-2">
+        <DescribeBox value={text} onChange={onTextChange} onSubmit={onSubmitText} />
+        {textFeedback && <div className="mt-2">{textFeedback}</div>}
+      </div>
 
       {resumable && (
         <section className="mt-4 rounded-lg border border-dark-border bg-dark-elevated/40 p-3" data-testid="discovery-start-resume">

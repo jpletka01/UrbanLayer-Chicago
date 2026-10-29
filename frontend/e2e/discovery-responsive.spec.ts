@@ -20,6 +20,8 @@ test("Discovery keeps usable panes across phone, tablet, and desktop widths", as
       { timeout: 90_000 },
     ).catch(() => null);
     await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+    // The Start panel (nothing runs on arrival): pick the first recipe, one explicit search.
+    await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
     await searchWait;
 
     const toggle = page.getByRole("group", { name: "View" });
@@ -68,6 +70,7 @@ test("Discovery keeps previous results on screen, dimmed, while an applied edit 
       await route.continue();
     });
     await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
     const body = page.getByTestId("discovery-results-body");
     await expect(body).toHaveAttribute("data-stale", "false", { timeout: 90_000 });
     const rowsBefore = await page.getByTestId("discovery-result-row").count();
