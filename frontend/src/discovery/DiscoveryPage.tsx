@@ -158,7 +158,8 @@ export default function DiscoveryPage() {
                 {t("discovery.subtitle")}
               </p>
             </div>
-            {registry && <IndexAsOf registry={registry} />}
+            {/* The Start panel carries its own copy of this line until the first search. */}
+            {registry && !showStart && <IndexAsOf registry={registry} />}
             {/* Coverage scope lives in the rail (a full-width banner collided with the
                 floating nav). Renders nothing when coverage is citywide (prod). */}
             {registry && <CoverageBanner registry={registry} />}

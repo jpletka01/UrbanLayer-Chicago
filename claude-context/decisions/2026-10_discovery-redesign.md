@@ -56,3 +56,36 @@ The redesign of the Property Discovery page (`/discovery`), phase by phase. Form
 - **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; for the browser check, run the PR #131 backend on a local port with an index copy, `VITE_API_BASE=http://localhost:<port> npm run dev`, press Update results and read the requests.
 
 **Revisit if** the backend adds a server-issued query id (then the cardinality checks could be replaced by it), or the combined request's failure coupling proves annoying (then a separate map retry could be added).
+
+---
+
+## Item 3: Phase 2, a Start panel instead of a silent auto-run, and the first-screen honesty fixes (2026-10-29)
+
+**Decision: nothing runs on arrival. Until the first search the page shows a Start panel, and every way in from it is one explicit "search this".** This replaces the 2026-07-01 auto-run of the first live recipe (the plan's Q1, decided 2026-10-29). The auto-run existed so the page never opened dead; its cost was a search nobody asked for, with four filters applied and never explained. The panel offers a recipe, one neighborhood, every parcel, or this browser's last search. It renders no result of any kind, so there is nothing to mistake for one. It shows only while `!response && !loading && !unavailable`: it goes away the moment a search starts and does not come back, and a failed first search shows the old "Search unavailable" state, not the panel. *Alternatives:* keep the auto-run and label it (kept the unexplained search); open on an empty map and an empty list (a dead page, the original objection).
+
+**Decision: a recipe card says what it filters by reading its own presets, not by a hand-written line.** The plan called for a registry `why` string per recipe. A line built from the preset predicates (`chipLabel` over `topic.presets`, for example "Filters: Vacant · Zoning group: Residential (R) · Near transit ≤ 0.5 mi · Lot size ≥ 3000 sqft") cannot drift from what the recipe does and needs no backend or registry-schema change. **What it does not do is give a reason.** The reason for the 3,000 sq ft lot minimum is still undocumented (plan Q5: the owner writes it); nothing here invents one. A reason line can be added later as copy without touching this structure. *Alternative rejected:* write plausible rationales for five recipes (unsupported claims, source-confidence).
+
+**Decision: the first recipe now says what it filters.** `vacant_mf_transit` compiles to `zoning_group = residential`, which is every R district (`index_build._zoning_group`: first letter R), but was labeled "MF-zoned" and "RM/RT multifamily zoning". It now reads "Vacant land in residential zoning near transit" / "(RS, RT and RM)". The id is unchanged (telemetry), the registry version is bumped to `2026-10-29.1`, and `test_discovery_copy_honesty.py` fails any recipe on the residential group whose label or description says MF, RM/RT or multifamily zoning. A real RM/RT filter needs an index field and is out of scope (index work, decision Item 36).
+
+**Decision: the text box's example must parse completely.** The old placeholder ("vacant multifamily near the L, built after 1990") silently dropped "L". The new one ("multifamily built before 1950 with a TIF") compiles to three filters with an empty residual, and a cross-tree test reads the placeholder from `en/pages.json` and runs the backend compiler on it. **Not done in this slice:** showing "Understood: … / Ignored: …" after a text search, and not searching when nothing was understood ("teardown in logan square" compiles to no filters and, today, searches everything). That needs either a cheap backend compile-only call (a new endpoint) or accepting the search and refusing to commit it afterwards; it is a contract decision, held for the owner.
+
+**Decision: "Index built <date> · all N community areas" comes only from `registry.coverage`.** `asOf` and `liveAreas` are the only things the registry carries; there is no parcel count, so none is shown (the plan's "882,322 parcels" would have been a hard-coded number). It renders nothing without an index or a build date, formats a calendar date in UTC so a viewer's time zone cannot move it, and shows once (in the Start panel before a search, in the rail after).
+
+**Decision: Resume keeps inputs and the evaluated sentence, in this browser only, and re-runs the inputs.** `localStorage` key `ul_discovery_last`, versioned, 30 days, every access guarded (private windows and blocked storage must not break the page). What is displayed on Resume is the sentence the server's cqs produced when it was saved; the results are evaluated fresh when the user clicks, never replayed (INV-4). *Alternative rejected:* store the result rows (stale data shown as current).
+
+**Decision: a neighborhood start is a search for that one region and nothing else** (`neighborhood: ["neighborhood:<id>"]`, no recipe, default sort), offered only for indexed areas when coverage is partial. The user then adds filters to it in the rail (the "+ Add filter" strip is Phase 3).
+
+**Telemetry:** `discovery_start_choice` `{kind: recipe | neighborhood | all | resume, id}`, added to the backend allowlist. It is the first measurement of which door people use; there was none before.
+
+**Spanish is deferred** (owner, 2026-10-29): the new `es` strings are a first draft in Mexican Spanish, usted, for the pre-merge pass.
+
+**Revisit if** Resume is rarely used or the panel is skipped immediately (the events will say), the Start panel's recipe list should be the "needs data" recipes quieter or last (they are listed in registry order today), or an index change makes a real RM/RT recipe possible.
+
+**Numbers** (2026-10-29, local, this branch's backend with the 949,014-row production index copy, in-app browser)
+- Load: 1 discovery request (`/registry`), no search, no results area; the Start panel with 6 recipes (5 live: 5,005 / 1,122 / 46 / 312 / 457; one "Needs data") and 77 neighborhoods.
+- A neighborhood pick sent one search with exactly `{neighborhood: {kind: "region", regions: ["neighborhood:22"]}}` and no recipe; this backend predates `includePins`, so the page fell back to the separate pins request, as designed.
+- After a reload, Resume showed the saved sentence with zero search requests before the click, then ran it (50 rows).
+- Phone width (360): no horizontal overflow; the Start panel begins about 320 px down, where the first result row was about 1,370 px down (plan section 0, measured on the old page).
+- Tests: frontend 896 passed in 73 files (895 before the as-of dedupe test; 869 on the includePins branch); lint 66 warnings, 0 errors; `npm run build` passes. Backend: discovery tests 201 (199 plus the two copy-honesty tests; this branch does not contain the Phase 1 backend), full suite 2,429 passed.
+- **Not measured:** how often each door is used; Playwright (`discovery-responsive`, `discovery-map-m2`, `npm run test:mobile`) was not run for this slice; Spanish fit at 360 px; the light theme; a real Pro session.
+- **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; `python -m pytest backend/tests/test_discovery_*.py -q`; for the browser pass run a local backend with an index copy and `VITE_API_BASE=http://localhost:<port> npm run dev`, open `/discovery`, and read the requests.

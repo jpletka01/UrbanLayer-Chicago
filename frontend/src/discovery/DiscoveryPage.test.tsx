@@ -404,6 +404,20 @@ describe("DiscoveryPage Start panel", () => {
     expect(screen.queryByTestId("recipe-shelf")).toBeNull(); // the recipes are in the Start panel, not twice
   });
 
+  it("shows the index-as-of line once: in the Start panel before a search, in the rail after it", async () => {
+    mocks.loadRegistry.mockResolvedValue({
+      ...REG,
+      coverage: { mode: "all", liveAreas: Array.from({ length: 77 }, (_, i) => i + 1), asOf: "2026-10-01" },
+    });
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    await screen.findByTestId("start-panel");
+    expect(screen.queryByTestId("discovery-index-as-of")).toBeNull(); // the (stubbed) panel owns it
+    fireEvent.click(screen.getByText("start-all"));
+    await screen.findByTestId("discovery-index-as-of");
+    expect(screen.getAllByTestId("discovery-index-as-of")).toHaveLength(1);
+  });
+
   it("a recipe is one explicit search with its presets, and the panel goes away", async () => {
     mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
     render(<DiscoveryPage />);
