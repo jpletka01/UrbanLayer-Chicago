@@ -16,6 +16,13 @@ Storage is an immutable tuple of PIN strings, which are the same string objects 
 already hold (8 bytes per match, ~7.6 MB for a 949k-match result). The cache is an LRU
 bounded by entry count and by the total number of PINs held; a result larger than the whole
 budget is returned but not stored. A failed evaluation raises and stores nothing.
+
+Cache misses are protected, too. Identical queries that are in flight at the same time are
+coalesced: one caller evaluates, the others wait for its result (or its exception). The
+evaluation is pure Python, so threads share the GIL and extra parallelism buys nothing;
+concurrent *distinct* evaluations are capped (`MAX_CONCURRENT_EVALS`) so a burst of edits
+queues instead of multiplying the work in progress on a small box. A request that waits is
+served by the entry its predecessor stored when that happens to be its own query.
 """
 
 from __future__ import annotations
@@ -31,6 +38,7 @@ from backend.discovery.evaluator import evaluate
 # ~48 MB of pointers at most (6M PINs x 8 bytes) on a box whose index alone is ~3 GB.
 MAX_ENTRIES = 32
 MAX_TOTAL_PINS = 6_000_000
+MAX_CONCURRENT_EVALS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,10 +53,24 @@ class CachedResult:
 
 _Key = tuple[str, int, str]
 
+
+class _Flight:
+    """One in-flight evaluation that identical concurrent requests wait on."""
+
+    __slots__ = ("done", "result", "error")
+
+    def __init__(self) -> None:
+        self.done = threading.Event()
+        self.result: CachedResult | None = None
+        self.error: BaseException | None = None
+
+
 _lock = threading.Lock()
+_inflight: dict[_Key, _Flight] = {}
+_eval_slots = threading.BoundedSemaphore(MAX_CONCURRENT_EVALS)
 _entries: OrderedDict[_Key, CachedResult] = OrderedDict()
 _total_pins = 0
-_stats = {"hits": 0, "misses": 0}
+_stats = {"hits": 0, "misses": 0, "coalesced": 0}
 
 
 def stats() -> dict[str, int]:
@@ -61,7 +83,7 @@ def clear() -> None:
     with _lock:
         _entries.clear()
         _total_pins = 0
-        _stats["hits"] = _stats["misses"] = 0
+        _stats["hits"] = _stats["misses"] = _stats["coalesced"] = 0
 
 
 def _store(key: _Key, value: CachedResult) -> None:
@@ -89,16 +111,41 @@ def cached_evaluate(cqs: CQS, data_version: str) -> CachedResult:
             _entries.move_to_end(key)
             _stats["hits"] += 1
             return hit
-        _stats["misses"] += 1
-    fresh = evaluate(cqs, data_version)
-    value = CachedResult(
-        dataVersion=fresh.dataVersion,
-        pins=tuple(fresh.pins),
-        total=fresh.total,
-        excludedUnknown=dict(fresh.excludedUnknown),
-    )
-    # Store only if the snapshot is still the one this key names (a replaced snapshot would
-    # otherwise be filed under the old generation).
-    if parcel_mod.default_source.generation(data_version) == generation:
-        _store(key, value)
-    return value
+        flight = _inflight.get(key)
+        if flight is not None:
+            _stats["coalesced"] += 1
+            leader = False
+        else:
+            flight = _inflight[key] = _Flight()
+            _stats["misses"] += 1
+            leader = True
+
+    if not leader:
+        flight.done.wait()
+        if flight.error is not None:
+            raise flight.error
+        assert flight.result is not None
+        return flight.result
+
+    try:
+        with _eval_slots:
+            fresh = evaluate(cqs, data_version)
+        value = CachedResult(
+            dataVersion=fresh.dataVersion,
+            pins=tuple(fresh.pins),
+            total=fresh.total,
+            excludedUnknown=dict(fresh.excludedUnknown),
+        )
+        # Store only if the snapshot is still the one this key names (a replaced snapshot
+        # would otherwise be filed under the old generation).
+        if parcel_mod.default_source.generation(data_version) == generation:
+            _store(key, value)
+        flight.result = value
+        return value
+    except BaseException as exc:
+        flight.error = exc  # waiters get the same failure; nothing was stored
+        raise
+    finally:
+        with _lock:
+            _inflight.pop(key, None)  # after the store, so a newcomer sees the entry
+        flight.done.set()

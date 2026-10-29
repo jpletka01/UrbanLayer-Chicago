@@ -197,3 +197,102 @@ def test_repeated_api_search_is_a_cache_hit_with_identical_body():
     assert second == first
     assert result_cache.stats()["misses"] == misses  # no re-evaluation
     parcel_source._current_version = None
+
+
+# --- coalescing + concurrency cap ----------------------------------------------
+
+
+def _run_threads(targets):
+    import threading
+
+    out = [None] * len(targets)
+
+    def wrap(i, fn):
+        try:
+            out[i] = fn()
+        except BaseException as exc:  # noqa: BLE001 - collected for assertions
+            out[i] = exc
+
+    threads = [threading.Thread(target=wrap, args=(i, fn)) for i, fn in enumerate(targets)]
+    for t in threads:
+        t.start()
+    return threads, out
+
+
+def test_identical_concurrent_queries_evaluate_once(monkeypatch):
+    import threading
+
+    parcel_mod.default_source.register(V1, _parcels())
+    release, calls = threading.Event(), {"n": 0}
+    real = result_cache.evaluate
+
+    def slow(cqs, version):
+        calls["n"] += 1
+        release.wait(5)
+        return real(cqs, version)
+
+    monkeypatch.setattr(result_cache, "evaluate", slow)
+    threads, out = _run_threads([lambda: cached_evaluate(_cqs(_res_filter()), V1) for _ in range(6)])
+    release.set()
+    for t in threads:
+        t.join(10)
+    assert calls["n"] == 1  # whether a caller coalesced or hit the stored entry, no re-evaluation
+    assert all(r is out[0] for r in out) and list(out[0].pins) == real(_cqs(_res_filter()), V1).pins
+
+
+def test_a_shared_failure_reaches_every_waiter_and_is_not_cached(monkeypatch):
+    import threading
+
+    parcel_mod.default_source.register(V1, _parcels())
+    release, calls = threading.Event(), {"n": 0}
+
+    def failing(cqs, version):
+        calls["n"] += 1
+        release.wait(5)
+        raise RuntimeError("source down")
+
+    monkeypatch.setattr(result_cache, "evaluate", failing)
+    threads, out = _run_threads([lambda: cached_evaluate(_cqs(), V1) for _ in range(4)])
+    # let every thread register as leader or waiter before the leader fails
+    deadline = 0
+    while result_cache.stats()["coalesced"] < 3 and deadline < 500:
+        threading.Event().wait(0.01)
+        deadline += 1
+    release.set()
+    for t in threads:
+        t.join(10)
+    assert all(isinstance(r, RuntimeError) for r in out)
+    assert calls["n"] == 1 and result_cache.stats()["entries"] == 0
+    monkeypatch.undo()
+    assert cached_evaluate(_cqs(), V1).total == 12  # the next request recomputes
+
+
+def test_concurrent_distinct_evaluations_are_capped(monkeypatch):
+    import threading
+    import time
+
+    parcel_mod.default_source.register(V1, _parcels())
+    monkeypatch.setattr(result_cache, "_eval_slots", threading.BoundedSemaphore(2))
+    state = {"now": 0, "max": 0, "calls": 0}
+    gate = threading.Lock()
+    real = result_cache.evaluate
+
+    def tracked(cqs, version):
+        with gate:
+            state["now"] += 1
+            state["calls"] += 1
+            state["max"] = max(state["max"], state["now"])
+        time.sleep(0.03)
+        try:
+            return real(cqs, version)
+        finally:
+            with gate:
+                state["now"] -= 1
+
+    monkeypatch.setattr(result_cache, "evaluate", tracked)
+    queries = [_cqs({"lot_size": FilterAssignment(predicate=RangePredicate(min=900 + i))}) for i in range(8)]
+    threads, out = _run_threads([(lambda c=c: cached_evaluate(c, V1)) for c in queries])
+    for t in threads:
+        t.join(15)
+    assert state["calls"] == 8 and state["max"] <= 2
+    assert [r.total for r in out] == [evaluate(c, V1).total for c in queries]
