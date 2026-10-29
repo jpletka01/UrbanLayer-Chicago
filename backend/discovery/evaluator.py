@@ -10,8 +10,6 @@ or mutable global. This module is a leaf: it MUST NOT import `compile_*`, `api`,
 
 from __future__ import annotations
 
-import functools
-
 from pydantic import BaseModel, Field
 
 from backend.discovery import parcel as parcel_mod
@@ -29,6 +27,30 @@ class OrderedResult(BaseModel):
 def _normalize_pin(pin: str) -> str:
     """14-digit form for a stable, separator-insensitive PIN tie-break."""
     return pin.replace("-", "").zfill(14)
+
+
+def _pin_key(p) -> str:
+    return _normalize_pin(p.pin)
+
+
+def _order(candidates: list, sort_field: str, descending: bool) -> list:
+    """Total order: sort key (missing last, regardless of dir), then ascending PIN.
+
+    Python's sort is stable, including with `reverse=True` (equal elements keep their input
+    order), so sorting by PIN first and then by the value yields the PIN-ascending tie-break
+    for both directions. This replaces a `cmp_to_key` comparator (millions of Python calls at
+    citywide scale) with C-level key sorts and produces the identical order.
+    """
+    if sort_field == "pin":
+        return sorted(candidates, key=_pin_key, reverse=descending)
+    present: list = []
+    missing: list = []
+    for p in candidates:
+        (missing if p.get(sort_field) is None else present).append(p)
+    present.sort(key=_pin_key)
+    present.sort(key=lambda p: p.get(sort_field), reverse=descending)
+    missing.sort(key=_pin_key)
+    return present + missing
 
 
 def evaluate(cqs: CQS, data_version: str) -> OrderedResult:
@@ -51,33 +73,6 @@ def evaluate(cqs: CQS, data_version: str) -> OrderedResult:
     ]
 
     # --- Stage 2: sort (single key + dir, missing-last, final PIN-asc tie-break) ---
-    sort_field = registry.sort_field(cqs.sort.key)
-    descending = cqs.sort.dir == "desc"
-
-    def sort_value(p) -> object | None:
-        # Sorting by the PIN key uses the normalized PIN as the value (never missing).
-        return _normalize_pin(p.pin) if sort_field == "pin" else p.get(sort_field)
-
-    def compare(a, b) -> int:
-        av, bv = sort_value(a), sort_value(b)
-        a_missing, b_missing = av is None, bv is None
-        if a_missing != b_missing:
-            return 1 if a_missing else -1  # missing sorts last, regardless of dir
-        if not a_missing:
-            if av < bv:
-                primary = -1
-            elif av > bv:
-                primary = 1
-            else:
-                primary = 0
-            if descending:
-                primary = -primary
-            if primary != 0:
-                return primary
-        # tie (or both missing) → ascending PIN, always
-        pa, pb = _normalize_pin(a.pin), _normalize_pin(b.pin)
-        return -1 if pa < pb else (1 if pa > pb else 0)
-
-    ordered = sorted(candidates, key=functools.cmp_to_key(compare))
+    ordered = _order(candidates, registry.sort_field(cqs.sort.key), cqs.sort.dir == "desc")
     pins = [p.pin for p in ordered]
     return OrderedResult(dataVersion=data_version, pins=pins, total=len(pins))
