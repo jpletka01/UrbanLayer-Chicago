@@ -24,6 +24,7 @@ from backend.discovery.index_build import (
     assemble_parcel,
 )
 from backend.discovery.parcel_index import read_index, read_meta
+from backend.retrieval.utils import format_pin
 
 AS_OF = datetime.date(2025, 1, 1)
 
@@ -530,7 +531,8 @@ def _fake_ca_by_point(monkeypatch):
 
 
 def _spine_row(pin, lat, lon):
-    return {"pin": pin, "pin_digits": pin, "class": "311", "lat": lat, "lon": lon}
+    """Shaped like `_fetch_spine`: `pin` is the dashed key the index stores, `pin_digits` the 14 digits."""
+    return {"pin": format_pin(pin), "pin_digits": pin, "class": "311", "lat": lat, "lon": lon}
 
 
 def test_split_by_community_area_drops_points_outside_every_polygon(monkeypatch):
@@ -541,7 +543,7 @@ def test_split_by_community_area_drops_points_outside_every_polygon(monkeypatch)
     kept, dropped = ib._split_by_community_area([inside, outside])
 
     assert kept == [(inside, 22)]  # keeps its own polygon's area
-    assert dropped == ["16311000010000"]
+    assert dropped == [format_pin("16311000010000")]
 
 
 async def test_assemble_ca_excludes_outside_points_and_keeps_polygon_area(monkeypatch):
@@ -570,10 +572,10 @@ async def test_assemble_ca_excludes_outside_points_and_keeps_polygon_area(monkey
         as_of=AS_OF, client=None,
     )
 
-    assert [r[0] for r in rows] == ["14311000010000"]
+    assert [r[0] for r in rows] == [format_pin("14311000010000")]
     assert rows[0][4].count("neighborhood:22") == 1
     assert "neighborhood:25" not in rows[0][4]
-    assert outside == ["16311000010000"]
+    assert outside == [format_pin("16311000010000")]
     # The dropped point never reached a join query.
     assert all("16311000010000" not in chunk for chunk in joined)
 
@@ -584,13 +586,13 @@ async def test_build_index_prunes_stale_outside_rows_on_refresh(tmp_path, monkey
 
     _fake_ca_by_point(monkeypatch)
     path = tmp_path / "idx.db"
-    stale = "16311000010000"
+    stale = format_pin("16311000010000")  # the index stores dashed PINs
     upsert_parcels(path, [(stale, _OUT_LAT, _OUT_LON, {"land_use_class": "multi_family"},
                            ["neighborhood:25"])])
 
     async def fake_spine(ca, *, client=None):
         return [_spine_row("14311000010000", _IN_LAT, _IN_LON),
-                _spine_row(stale, _OUT_LAT, _OUT_LON)]
+                _spine_row("16311000010000", _OUT_LAT, _OUT_LON)]
 
     async def fake_batch(dataset, pins, order_field, client, settings, *, where_extra=None):
         return {}
@@ -613,7 +615,7 @@ async def test_build_index_prunes_stale_outside_rows_on_refresh(tmp_path, monkey
 
     assert total == 1
     _, parcels = read_index(path)
-    assert [p.pin for p in parcels] == ["14311000010000"]
+    assert [p.pin for p in parcels] == [format_pin("14311000010000")]
 
 
 # --- chunked ingest + streaming finalize (memory-safe build) ----------------
