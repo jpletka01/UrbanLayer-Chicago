@@ -5,8 +5,9 @@ from backend.prompts import LANGUAGE_INSTRUCTION
 from backend.synthesizer import LANGUAGE_NAMES
 
 
-def test_spanish_names_the_mexican_dialect():
+def test_spanish_names_the_mexican_dialect_and_the_usted_register():
     assert "Mexican Spanish" in LANGUAGE_NAMES["es"]
+    assert "usted" in LANGUAGE_NAMES["es"]
 
 
 def test_the_name_is_in_the_synthesizer_instruction():

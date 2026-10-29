@@ -18,7 +18,7 @@ from backend.vision import prepare_upload_content_blocks
 log = logging.getLogger(__name__)
 
 LANGUAGE_NAMES: dict[str, str] = {
-    "es": "Mexican Spanish (español de México)",
+    "es": "Mexican Spanish (español de México), addressing the reader formally as usted",
     "pl": "Polish",
     "zh-CN": "Simplified Chinese",
     "zh-TW": "Traditional Chinese",
