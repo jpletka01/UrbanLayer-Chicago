@@ -26,10 +26,12 @@ vi.mock("./../components/PageHeader", () => ({ default: () => <div /> }));
 vi.mock("./../components/UpgradePrompt", () => ({ default: () => null }));
 vi.mock("./chips", () => ({
   chipLabel: (id: string) => (id === "tif" ? "TIF district" : id),
-  Chips: ({ items, onRemove, onRestore }: {
+  Chips: ({ items, onRemove, onRestore, onEdit, children }: {
     items: Array<{ id: string; state: string }>;
     onRemove: (id: string) => void;
     onRestore: (id: string) => void;
+    onEdit?: (id: string) => void;
+    children?: React.ReactNode;
   }) => (
     <div data-testid="chips">
       {items.map((item) => (
@@ -37,10 +39,29 @@ vi.mock("./chips", () => ({
           {item.state === "removed" ? (
             <button type="button" onClick={() => onRestore(item.id)}>{`restore-${item.id}`}</button>
           ) : (
-            <button type="button" onClick={() => onRemove(item.id)}>{`remove-${item.id}`}</button>
+            <>
+              <button type="button" onClick={() => onRemove(item.id)}>{`remove-${item.id}`}</button>
+              {onEdit && <button type="button" onClick={() => onEdit(item.id)}>{`edit-${item.id}`}</button>}
+            </>
           )}
         </span>
       ))}
+      {children}
+    </div>
+  ),
+}));
+// The menu/editor has its own tests; here it is a stub that shows which view is open and lets a test act through it.
+vi.mock("./AddFilterMenu", () => ({
+  AddFilterMenu: ({ view, onChange, onView, onClose }: {
+    view: { kind: string; id?: string };
+    onChange: (id: string, p: unknown) => void;
+    onView: (v: unknown) => void;
+    onClose: () => void;
+  }) => (
+    <div data-testid="popover" data-view={view.kind === "edit" ? `edit:${view.id}` : view.kind}>
+      <button type="button" onClick={() => onChange("tif", { kind: "flag", value: true })}>pop-add-tif</button>
+      <button type="button" onClick={() => onView({ kind: "edit", id: "tif" })}>pop-edit-tif</button>
+      <button type="button" onClick={onClose}>pop-close</button>
     </div>
   ),
 }));
@@ -545,5 +566,74 @@ describe("DiscoveryPage text box feedback", () => {
     expect(note.getAttribute("data-kind")).toBe("partial");
     expect(note.textContent).toContain("TIF district");
     expect(note.textContent).toContain("Not understood: l.");
+  });
+});
+
+
+// --- Phase 3a: "+ Add filter", edit in place, Discard changes -----------------------------------
+
+describe("DiscoveryPage Add filter and Discard changes", () => {
+  it("offers '+ Add filter' once a search has run, never on the Start panel", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    await screen.findByTestId("start-panel");
+    expect(screen.queryByTestId("discovery-add-filter")).toBeNull();
+    fireEvent.click(screen.getByText("start-all"));
+    await screen.findByTestId("discovery-add-filter");
+  });
+
+  it("toggles the menu from the button and closes it again", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    const add = await screen.findByTestId("discovery-add-filter");
+    expect(screen.queryByTestId("popover")).toBeNull();
+    fireEvent.click(add);
+    expect(screen.getByTestId("popover").getAttribute("data-view")).toBe("menu");
+    expect(add.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(add);
+    expect(screen.queryByTestId("popover")).toBeNull();
+    fireEvent.click(add);
+    fireEvent.click(screen.getByText("pop-close"));
+    expect(screen.queryByTestId("popover")).toBeNull();
+  });
+
+  it("adding a filter through the menu only edits the draft: a pending change, no request", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    mocks.runSearch.mockClear();
+    fireEvent.click(screen.getByTestId("discovery-add-filter"));
+    fireEvent.click(screen.getByText("pop-add-tif"));
+    expect(screen.getByTestId("chip-tif").getAttribute("data-state")).toBe("added");
+    expect(screen.getByTestId("discovery-update-results").textContent).toBe("Update results (1)");
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(screen.getByTestId("results-state").textContent).toBe("v1:1"); // the evaluated results are untouched
+  });
+
+  it("clicking a chip opens that filter's editor in place", async () => {
+    mocks.runSearch.mockResolvedValueOnce({ ...response("v1", "one", 1, { tif: { predicate: { kind: "flag", value: true }, source: "user" } }), pins: pins("v1", "one") });
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    fireEvent.click(await screen.findByText("edit-tif"));
+    expect(screen.getByTestId("popover").getAttribute("data-view")).toBe("edit:tif");
+  });
+
+  it("Discard changes appears only with pending changes and puts the draft back, requesting nothing", async () => {
+    mocks.runSearch.mockResolvedValueOnce({ ...response("v1", "one", 1, { tif: { predicate: { kind: "flag", value: true }, source: "user" } }), pins: pins("v1", "one") });
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    expect(screen.queryByTestId("discovery-discard-changes")).toBeNull();
+    mocks.runSearch.mockClear();
+
+    fireEvent.click(screen.getByText("remove-tif"));
+    expect(screen.getByTestId("chip-tif").getAttribute("data-state")).toBe("removed");
+    fireEvent.click(screen.getByTestId("discovery-discard-changes"));
+    expect(screen.getByTestId("chip-tif").getAttribute("data-state")).toBe("applied");
+    expect(screen.queryByTestId("discovery-update-results")).toBeNull();
+    expect(screen.queryByTestId("discovery-discard-changes")).toBeNull();
+    expect(mocks.runSearch).not.toHaveBeenCalled();
   });
 });

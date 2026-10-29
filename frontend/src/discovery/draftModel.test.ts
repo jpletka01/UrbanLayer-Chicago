@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   diffDraft,
+  discardToApplied,
   inputsSignature,
   reconcileWithResponse,
   removeFromDraft,
@@ -124,5 +125,38 @@ describe("reconcileWithResponse / inputsSignature", () => {
     });
     expect(a).toBe(b);
     expect(inputsSignature(draft({ text: "x" }))).not.toBe(a);
+  });
+});
+
+describe("discardToApplied", () => {
+  const applied: CQS = {
+    filters: {
+      tif: { predicate: { kind: "flag", value: true }, source: "user" },
+      lot_size: { predicate: { kind: "range", min: 3000 }, source: "text" },
+    },
+    sort: { key: "lot_size", dir: "desc" },
+    scope: { mode: "all" },
+    meta: { topicId: "vacant_mf" },
+  };
+
+  it("returns the draft to exactly the evaluated query: user filters, the sent text, its sort", () => {
+    const edited: DiscoveryDraft = {
+      panelState: { land_use: { kind: "enum", values: ["residential"] } }, // an added filter; tif was removed
+      text: "something else",
+      sort: { key: "pin", dir: "asc" },
+      topicId: null,
+    };
+    expect(discardToApplied(edited, applied, "lots over 3000")).toEqual({
+      panelState: { tif: { kind: "flag", value: true } }, // text-sourced lot_size is carried by the text, not copied
+      text: "lots over 3000",
+      sort: { key: "lot_size", dir: "desc" },
+      topicId: "vacant_mf",
+    });
+  });
+
+  it("leaves nothing pending once discarded", () => {
+    const edited: DiscoveryDraft = { panelState: {}, text: "", sort: { key: "pin", dir: "asc" }, topicId: null };
+    const back = discardToApplied(edited, applied, "lots over 3000");
+    expect(diffDraft(back, applied, "lots over 3000").pendingCount).toBe(0);
   });
 });

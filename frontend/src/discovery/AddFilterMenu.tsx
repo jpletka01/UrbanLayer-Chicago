@@ -48,9 +48,10 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
       if (before && document.contains(before)) before.focus();
     };
   }, []);
+  const editingId = view.kind === "edit" ? view.id : "";
   useEffect(() => {
     dialogRef.current?.querySelector<HTMLElement>("[data-autofocus]")?.focus();
-  }, [view.kind, view.kind === "edit" ? view.id : ""]);
+  }, [view.kind, editingId]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {

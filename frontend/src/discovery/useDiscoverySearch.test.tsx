@@ -528,3 +528,45 @@ describe("useDiscoverySearch: the text gate (ask the compiler before searching)"
     expect(hook.result.current.textNotice).toBeNull();
   });
 });
+
+
+describe("useDiscoverySearch: discard changes", () => {
+  it("puts the draft back to the evaluated query (filters, text, sort) and requests nothing", async () => {
+    const hook = setup();
+    await firstSearch(hook); // applied: tif + land_use
+    act(() => {
+      hook.result.current.removeFilter("tif");
+      hook.result.current.editPanel("lot_size", { kind: "range", min: 3000 });
+      hook.result.current.setSort({ key: "lot_size", dir: "desc" });
+    });
+    expect(hook.result.current.pendingCount).toBeGreaterThan(0);
+    act(() => hook.result.current.discardChanges());
+    expect(hook.result.current.pendingCount).toBe(0);
+    expect(Object.keys(hook.result.current.draft.panelState).sort()).toEqual(["land_use", "tif"]);
+    expect(hook.result.current.draft.sort).toEqual(REG.defaultSort);
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(hook.result.current.rows[0].pin).toBe("first"); // what is on screen never moved
+  });
+
+  it("does nothing before any search has been evaluated", () => {
+    const hook = setup();
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.discardChanges());
+    expect(hook.result.current.draft.panelState.tif).toEqual(TIF); // nothing to go back to
+  });
+
+  it("clears a 'nothing understood' notice along with the edit it came from", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    mocks.previewText.mockResolvedValueOnce({ understood: [], residual: ["x"], droppedInvalid: [] });
+    act(() => {
+      hook.result.current.clearAll();
+      hook.result.current.setText("xyz");
+    });
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.textNotice).not.toBeNull());
+    act(() => hook.result.current.discardChanges());
+    expect(hook.result.current.textNotice).toBeNull();
+    expect(hook.result.current.draft.text).toBe("");
+  });
+});

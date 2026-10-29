@@ -107,7 +107,7 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
 `claude-context/property-discovery/` — **read `10-implementation-status.md` first**, esp. the
 "result.rows workbench (PR1–PR10)" section.
 
-- **Invariant core:** `registry.py` (+`registry.json`, **32 filters** + `RangeMeta`/`requires`/
+- **Invariant core:** `registry.py` (+`registry.json`, **32 filters** each with a presentation-only `tier` (`essential`/`more`, 7 essentials; the Add filter menu reads it, nothing on the evaluation side may) + `RangeMeta`/`requires`/
   `label`/`help`/`enumLabels` + 6 `topics` + `Coverage`) → `cqs.py` → `predicates.py` →
   `evaluator.py` (`evaluate(cqs, data_version)` — the ONLY result producer, INV-1, pure leaf;
   unchanged by Wave 2 except it reads the sort-only `total_assessed_value_sortkey` field).

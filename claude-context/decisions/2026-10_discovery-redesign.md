@@ -111,3 +111,28 @@ The redesign of the Property Discovery page (`/discovery`), phase by phase. Form
 - Tests: frontend 910 passed in 74 files (896 before); lint 66 warnings, 0 errors; `npm run build` passes. Backend: 9 text-preview tests plus the extended copy-honesty test (11 together).
 - **Not measured:** preview latency in production; the Playwright specs; Spanish fit.
 - **Reproduce:** `python -m pytest backend/tests/test_discovery_text_preview.py backend/tests/test_discovery_copy_honesty.py -q`; `cd frontend && npm test && npm run lint && npm run build`; or `curl -X POST <backend>/api/discovery/text-preview -H 'Content-Type: application/json' -d '{"text":"teardown in logan square"}'`.
+
+---
+
+## Item 5: Phase 3a, an "Add filter" menu with tiers, edit in place, and Discard changes (2026-10-29)
+
+Phase 3 of the plan replaces the permanent 32-control rail with a "Your search" header and an "+ Add filter" menu. It is split in two so the risky half can be reviewed alone: **3a (this item) is additive and keeps the rail**; 3b removes the rail and moves the text box and sort. Nothing in 3a takes anything away.
+
+**Decision: each registry filter carries a presentation `tier` (`essential` or `more`), and liveness stays the index's `populatedFields`.** The menu lists live filters in two groups (Essentials: Neighborhood, Property use, Vacant, Lot size, Zoning group, Near transit, Sold within, the owner's Q3 answer; then More filters: the other 12 with data) and keeps the 13 filters with no data in a collapsed "Coming soon (13)" row (the owner's Q4 answer). A filter with no data is "coming soon" whatever its tier, so a data refresh moves it into the live groups with no code change (`menuGroups`, tested). Tier is registry data (version `2026-10-29.2`), pinned by a backend test, and a test fails if any evaluation-side module reads `.tier` (INV-1/INV-6). *Alternative rejected:* hard-code the list in the front end (two sources of truth).
+
+**Decision: one popover, two views, reusing the existing control unchanged.** "+ Add filter" opens the menu (search box focused); picking a filter shows its existing `Control` (exported from the filter panel, not rewritten, so Phase 3b can rework it once) with "Reset this filter" and "Done". A flag adds as "Yes" at once, since there is nothing to pick but a side; every other kind opens an editor and adds nothing until the user gives it a value. Clicking a chip's label opens the same editor for that filter (the x still removes; a struck-through chip still restores). Everything edits the **draft**, so Phase 0's "Update results" model is untouched. A popover on desktop and a bottom sheet below `md`; Escape or a click outside closes it (clicks on its own anchors are theirs, so it does not close-and-reopen), and focus returns to the opener.
+
+**Decision: "Discard changes" replaces the plan's "Undo".** It puts the draft back to exactly the query last evaluated (its user filters, the text that was sent, its sort) and requests nothing. The draft model already knows the applied query, so this is one pure function (`discardToApplied`) and it fixes the old gap where "Clear all" left the page describing a different query than the panel. A multi-step history stack would be more machinery than the use case needs. It shows only when there are pending changes and a search has been evaluated.
+
+**Decision: the upside score is tagged "heuristic" where a user meets it** (menu row, editor header, and its chip's tooltip), with the plain sentence the registry already carries about what it is: a 0 to 100 score from unused zoning capacity and land-versus-building value, a rough v1 heuristic that helps rank candidates, not an appraisal. It is not given more prominence (plan section 8).
+
+**Not in 3a (3b):** removing the rail and its recipe shelf, moving the text box and sort into the header, collapsing the title once a search is active, and giving the freed width to the map. The old accordion stays in the code until then.
+
+**Revisit if** the essentials list does not match what users reach for (the existing `discovery_search` event carries no per-filter data; adding a `discovery_filter_edit` event is the plan's way to find out and is not in this item), or the seven essentials include one that the Start panel's recipes already cover.
+
+**Numbers** (2026-10-29, local, this branch's backend with the 949,014-row production index copy, in-app browser)
+- Menu on desktop: Essentials = 7 rows, More filters = 12 (upside tagged "heuristic"), "Coming soon (13)" collapsed; the search box takes focus. Editing Lot size to a 5,000 minimum made one pending chip, "Update results (1)" and "Discard changes", with **0 requests**; Discard cleared them with 0 requests; adding TIF from the menu and pressing Update sent one search (plus the separate pins request, since this backend predates `includePins`) and 50 rows came back; Done and Escape both closed it.
+- Phone (390): a full-width bottom sheet with a backdrop, no horizontal overflow, 19 tappable rows.
+- Tests: frontend 944 passed in 76 files, run three times (no flake; one pre-existing flake in the earlier text-gate test was found and fixed on that branch); lint 66 warnings, 0 errors; `npm run build` passes; backend 2,440 passed (registry tier tests included).
+- **Not measured:** the Playwright specs and `npm run test:mobile` (the rail is unchanged in 3a); the light theme; Spanish fit at 360 px; which filters users actually pick.
+- **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; `python -m pytest backend/tests/test_discovery_registry.py -q`; for the browser pass run a local backend on an index copy, `VITE_API_BASE=http://localhost:<port> npm run dev`, search, then use "+ Add filter".
