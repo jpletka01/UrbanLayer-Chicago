@@ -19,8 +19,8 @@
     "regulatoryLayers": "Capas regulatorias"
   },
   "hero": {
-    "addressPlaceholder": "Ingresa una dirección de Chicago…",
-    "try": "Prueba:",
+    "addressPlaceholder": "Ingrese una dirección de Chicago…",
+    "try": "Pruebe:",
     "addressExamples": [
       "4520 N Clark St",
       "1601 N Milwaukee Ave",
@@ -30,10 +30,10 @@
     "askAnalystCta": "Pregunte al analista"
   },
   "story": {
-    "feasibilityTitle": "Evalúa cualquier sitio en segundos",
+    "feasibilityTitle": "Evalúe cualquier sitio en segundos",
     "feasibilitySubtitle": "Clasificación de zonificación, normativas superpuestas, elegibilidad de incentivos, proyecciones de impuestos y propiedades comparables consolidadas desde más de 25 fuentes. Auditoría de compra en segundos, no en semanas de trabajo.",
     "reportTitle": "De la consulta al informe",
-    "reportSubtitle": "Haz tu consulta en español y obtén un análisis detallado con fuentes citadas del código municipal, mapas interactivos y tendencias de datos — y luego obtén el Informe de Viabilidad de Desarrollo completo, un PDF profesional para entregar a clientes, inversores o prestamistas. $25 por parcela."
+    "reportSubtitle": "Haga su consulta en español y obtenga un análisis detallado con fuentes citadas del código municipal, mapas interactivos y tendencias de datos — y luego obtenga el Informe de Viabilidad de Desarrollo completo, un PDF profesional para entregar a clientes, inversores o prestamistas. $25 por parcela."
   },
   "depth": {
     "estAnnualTax": "Impuesto anual estimado",
@@ -124,7 +124,7 @@
     "sampleResponseTail": ", que permite uso residencial multifamiliar..."
   },
   "valueProps": {
-    "buildTitle": "Qué puedes construir",
+    "buildTitle": "Qué puede construir",
     "buildBody": "Zonificación, retiros y FAR al instante — citados a más de 14,000 secciones del código.",
     "worthTitle": "Cuánto vale",
     "worthBody": "Historial de avalúo, comparables, proyecciones de impuestos e incentivos — el panorama financiero completo.",
@@ -155,9 +155,9 @@
   "newsletter": {
     "title": "Inteligencia de desarrollo de Chicago, mensual",
     "description": "Un correo al mes: un hallazgo de datos y lo que se lanzó. Sin spam.",
-    "placeholder": "tu@ejemplo.com",
+    "placeholder": "correo@ejemplo.com",
     "button": "Suscribirse",
     "done": "Estás en la lista.",
-    "error": "No funcionó — revisa el correo e inténtalo de nuevo."
+    "error": "No funcionó — revise el correo e inténtelo de nuevo."
   }
 }
