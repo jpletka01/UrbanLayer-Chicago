@@ -460,11 +460,12 @@ describe("useDiscoverySearch: the text gate (ask the compiler before searching)"
     mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
     act(() => hook.result.current.setText("tif"));
     act(() => hook.result.current.apply());
-    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    // `loading` is false until the async text check hands over to the search, so wait for the
+    // result itself, not for "not loading".
+    await waitFor(() => expect(hook.result.current.appliedText).toBe("tif"));
     expect(mocks.previewText).toHaveBeenCalledWith("tif");
     expect(mocks.runSearch.mock.calls[0][0].text).toBe("tif");
     expect(hook.result.current.textNotice).toBeNull();
-    expect(hook.result.current.appliedText).toBe("tif");
   });
 
   it("fails open: if the compiler cannot be asked (null or a throw), it searches anyway", async () => {
