@@ -237,7 +237,7 @@ export default function DiscoveryPage() {
                   data-testid="discovery-new-search"
                   className="touch-target text-caption text-text-muted transition-colors hover:text-accent"
                 >
-                  <span aria-hidden>← </span>{t("discovery.newSearch")}
+                  <span aria-hidden className="mr-1">←</span>{t("discovery.newSearch")}
                 </button>
                 <div className="xl:hidden">
                   <MobileTabToggle value={mobileTab} onChange={setMobileTab} />
@@ -356,6 +356,8 @@ export default function DiscoveryPage() {
                     unavailable={unavailable}
                     refreshFailed={refreshFailed}
                     onRetry={search.apply}
+                    canDiscard={showUpdate}
+                    onDiscard={search.discardChanges}
                     loadingMore={loadingMore}
                     hasMore={nextOffset != null}
                     onLoadMore={search.loadMore}

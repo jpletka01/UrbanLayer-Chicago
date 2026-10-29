@@ -683,6 +683,7 @@
     "mapEmpty": "No parcels match this search.",
     "mapNoCoordinates_one": "The returned parcel does not have a valid map location.",
     "mapNoCoordinates_other": "None of the {{count}} returned parcels has a valid map location.",
+    "mapShownOfTotal": "{{shown}} of {{total}} shown",
     "mapPlotted_one": "{{plotted}} of {{returned}} returned parcel plotted.",
     "mapPlotted_other": "{{plotted}} of {{returned}} returned parcels plotted.",
     "mapUnlocated_one": "1 returned parcel lacks valid map coordinates.",

@@ -172,7 +172,7 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
                 onClick={() => onView({ kind: "menu" })}
                 className="touch-target text-caption text-text-secondary transition-colors hover:text-accent"
               >
-                <span aria-hidden>← </span>{t("discovery.addFilter.back")}
+                <span aria-hidden className="mr-1">←</span>{t("discovery.addFilter.back")}
               </button>
               {HEURISTIC_FILTERS.has(editing.id) && (
                 <Chip size="sm" title={t("discovery.addFilter.heuristicTip")}>{t("discovery.addFilter.heuristic")}</Chip>

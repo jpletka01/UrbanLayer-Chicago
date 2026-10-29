@@ -110,3 +110,70 @@ test("the Add filter sheet applies pending edits with Show results", async ({ pa
   await expect(page.getByTestId("discovery-header-toggle")).toHaveAttribute("aria-expanded", "false", { timeout: 60_000 });
   await expect(page.getByTestId("discovery-update-results")).toHaveCount(0);
 });
+
+// Phase 4b: Spanish and the light theme (both were unchecked through Phases 3a/3b).
+
+async function startIn(page: Page, init: Record<string, string>) {
+  await page.addInitScript((entries) => {
+    for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+  }, init);
+  await searchRecipe(page);
+}
+
+/** Nothing the header or an open sheet draws may extend past the viewport or clip its own text. */
+async function assertFits(page: Page, rootTestId: string, label: string) {
+  const issues = await page.evaluate((id) => {
+    const root = document.querySelector(`[data-testid="${id}"]`);
+    if (!root) return [`no element ${id}`];
+    const vw = window.innerWidth;
+    const out: string[] = [];
+    for (const el of [root, ...root.querySelectorAll("*")]) {
+      const b = el.getBoundingClientRect();
+      if (b.width === 0 || b.height === 0) continue;
+      if (b.right > vw + 1 || b.left < -1) {
+        out.push(`${el.tagName.toLowerCase()} "${(el.textContent || "").trim().slice(0, 30)}" spans ${Math.round(b.left)}..${Math.round(b.right)} of ${vw}`);
+      }
+      // (.touch-hit controls overflow their own box on purpose: that is the invisible hit area.)
+      if (
+        el instanceof HTMLButtonElement &&
+        !el.classList.contains("truncate") &&
+        !el.classList.contains("touch-hit") &&
+        el.scrollWidth > el.clientWidth + 1
+      ) {
+        out.push(`button "${(el.textContent || "").trim().slice(0, 30)}" clips its text (${el.scrollWidth} > ${el.clientWidth})`);
+      }
+    }
+    return out.slice(0, 8);
+  }, rootTestId);
+  expect(issues, `${label}: ${issues.join(" | ")}`).toEqual([]);
+}
+
+test("in Spanish nothing in the header or the sheet overflows or clips", async ({ page }) => {
+  await startIn(page, { "urbanlayer-language": "es" });
+  await expect(page.getByTestId("discovery-new-search")).toContainText("Nueva búsqueda");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await assertFits(page, "discovery-header", "collapsed header (es)");
+
+  await page.getByTestId("discovery-header-toggle").click();
+  await assertFits(page, "discovery-header", "expanded header (es)");
+
+  await page.getByTestId("discovery-add-filter").click();
+  const sheet = page.getByTestId("discovery-filter-popover");
+  await expect(sheet).toBeVisible();
+  await assertFits(page, "discovery-filter-popover", "menu sheet (es)");
+  await sheet.getByRole("button", { name: /^Distrito TIF|^TIF/ }).first().click();
+  await expect(page.getByTestId("discovery-sheet-footer-action")).toContainText("Mostrar resultados");
+  await assertFits(page, "discovery-filter-popover", "editor sheet with Mostrar resultados (es)");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("in the light theme the collapsed header, the expanded header and the sheet render (screenshots attached)", async ({ page }, testInfo) => {
+  await startIn(page, { "urbanlayer-theme": "light" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.screenshot({ path: testInfo.outputPath("light-collapsed.png") });
+  await page.getByTestId("discovery-header-toggle").click();
+  await page.screenshot({ path: testInfo.outputPath("light-expanded.png") });
+  await page.getByTestId("discovery-add-filter").click();
+  await expect(page.getByTestId("discovery-filter-popover")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("light-sheet.png") });
+});

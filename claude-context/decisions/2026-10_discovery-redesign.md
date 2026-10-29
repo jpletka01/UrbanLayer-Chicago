@@ -165,3 +165,39 @@ Phase 3 of the plan replaces the permanent 32-control rail with a "Your search" 
 - **Playwright:** `discovery-responsive` and `discovery-map-m2` 5 of 5 passed (Galaxy S24 project; they run once in Chromium by design); `npm run test:mobile` 50 passed, 20 skipped (the same once-only specs on the other four devices): all 45 route-by-device overflow cells clean, including the new Start panel route, on Chromium and WebKit.
 - **Not measured:** the light theme, Spanish at 360 px, a real Pro session, and how the header reads on a short phone screen.
 - **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; run a local backend on an index copy, `VITE_API_BASE=http://localhost:<port> npm run dev`, then `npx playwright test e2e/discovery-responsive.spec.ts e2e/discovery-map-m2.spec.ts --project="Galaxy S24"` and `npm run test:mobile`.
+
+---
+
+## Item 7: Phase 4, the phone gets the screen: a collapsed header, a Show results sheet, 44 px targets, and honest map and error states (2026-10-29)
+
+**Measured first (390x844 and 375x667, the 3b page, production index copy):** the search header was 381 px (45% of the screen) on an iPhone 15 and **415 px (62%) on an iPhone SE**, pinned above a list that scrolls inside what is left: 196 px on the SE, one result row. Every touch target was under 44 px (Search 36, Add filter 26, chips 26, New search 17, List/Map 29, sort 31 by 28, Ask the analyst 27) and the chip x was 10 by 10 px.
+
+**Decision: below `md` the header collapses after a search.** It becomes "New search | List/Map", one full-width summary button (the first filter and "+N more", read from the DRAFT's chips, which are a control surface and not a claim about results) and the Update row. Describe box, chips, "+ Add filter", the evaluated sentence with Sort, "Ask the analyst" and the index line open on tap. It **opens by itself** when something needs attention (an unapplied edit, a "nothing understood" notice, no matches, a failed search, the Add filter menu), and a **new result collapses it again**: the open state is keyed to the response object the user opened it for, so no effect is needed. Tablets and desktop are unchanged. Flex `order` keeps the desktop order while the phone order puts the always-visible parts first. *Alternatives rejected:* a sticky mini-bar over a scrolling header (changes how the list scrolls and how infinite scroll roots), and only trimming the expanded header (the gain is too small).
+
+**Decision: the Add filter sheet applies edits from a sticky footer on phones.** "Show results (n)" applies the pending edits and closes the sheet; with nothing pending it is "Done". Edits stay draft-only until then (Phase 0's model), so nothing is requested while the user taps through filters.
+
+**Decision: 44 px touch targets on a coarse pointer only; mice are unchanged.** Two shared CSS utilities in `index.css` behind `@media (pointer: coarse)`: `.touch-target` / `.touch-field` give real buttons and inputs a 44 px minimum, and `.touch-hit` leaves small pills and the chip x looking as they do while extending an invisible 44 px hit area (`.touch-hit-x` is taller than wide, because the x sits beside the label's own target). The x is in the shared `Chip` primitive, so removable chips elsewhere get it too. The Playwright spec asserts the real sizes and hit-tests the x and the Add filter pill at 17 px above and below their centres; a probe at 20 px lands on the neighbouring control's own target, which is correct, so the spec uses 17. *Alternative rejected:* growing the chips to 44 px (heavy-looking).
+
+**A real bug the device run found: Safari ignores padding and min-height on a native `<select>`.** The sort select measured 20 px on every iPhone profile while Chromium measured 31. It is now `appearance-none` with its own arrow, which every browser sizes the same.
+
+**Decision: what the map leaves out is named inside the counted key.** The "N of M plotted / outside the map cap" box in the bottom-left is gone; the same lines are the foot of the key, which already counts from the same model. On phones the key sits behind a "Map key" button, so that button carries a second line, "5,000 of 5,005 shown", whenever matches are missing, which keeps Item 31's "name every omission" true while the key is closed. Zoom to results and the stale note moved to the right edge on phones to make room.
+
+**Decision: zero and error states.** The zero-result reasons move from `text-micro` to the page scale (`text-caption`), the relax chips grow and get the hit area, and the zero state offers **Discard changes** when there are unapplied edits. A failed first search now has a Retry button. *Not built, and worth knowing:* a true "back to the previous results" (the plan's "Undo last change") is now cheap, because the result cache makes the previous query instant, but the approved design offered only Discard changes, so it is a follow-up. *Skipped on purpose:* the "slow search" message; Phase 1 made broad searches about half a second locally, and production is unmeasured (a read-only re-measure needs the owner's approval).
+
+**Spanish and the light theme, finally checked.** Spanish at all five device widths (360 to 430): nothing in the collapsed or expanded header or the sheet extends past the viewport or clips its text. A string-length budget test (`phoneStrings.budget.test.ts`, the sibling of the nav budget) now holds the phone control labels to a per-locale limit and fails on a multi-word label left in English. It also found one: Spanish `mapKey` was still "Map key" (now "Leyenda del mapa", and removed from `_untranslated.json`). Light theme: screenshots of the collapsed header, the expanded header and the sheet were looked at and read clearly. The Spanish strings are still a first draft for the pre-merge Mexican-Spanish pass.
+
+**Revisit if** users do not find the summary button (there is no event for it; `discovery_start_choice` does not cover it), the collapsed header hides chips people need often, or production shows searches slow enough to need the in-progress message.
+
+**Numbers** (2026-10-29, local, Playwright device profiles, production index copy, a 4-filter recipe search)
+
+| | Before (3b) | After |
+|---|---:|---:|
+| Header height, every phone profile | 381 to 415 px | **131 px** |
+| First result row | 521 to 555 px down | **288 px down** |
+| Result rows fully visible | 1 (iPhone SE) to about 3 | **3 to 5** (SE 4, S24 5, Pixel 3 5, iPhone 15 3 on a 659 px viewport, Pro Max 4) |
+| Touch targets under 44 px | most of them | none among those measured; sort select on iPhone 20 px to 44 px |
+
+- Tests: frontend 1,003 passed in 76 files, run three times; lint 66 warnings, 0 errors; `npm run build` passes.
+- **Playwright:** the new `discovery-phone` spec (collapsed layout and numbers, touch sizes and hit tests, the sheet's Show results, Spanish fit, light-theme screenshots) runs on all five devices, 25 of 25; `discovery-responsive` and `discovery-map-m2` 5 of 5; `npm run test:mobile` 75 passed, 20 skipped (the once-only specs on the other devices), every overflow cell clean.
+- **Not measured:** real touch hardware (Playwright emulates the pointer and the viewport); VoiceOver or TalkBack with the collapsed header; production; how often users open the collapsed header.
+- **Reproduce:** `cd frontend && npm test && npm run lint && npm run build`; with a local backend on an index copy and `VITE_API_BASE=http://localhost:<port> npm run dev`: `npx playwright test e2e/discovery-phone.spec.ts`, `npx playwright test e2e/discovery-responsive.spec.ts e2e/discovery-map-m2.spec.ts --project="Galaxy S24"`, and `npm run test:mobile`.

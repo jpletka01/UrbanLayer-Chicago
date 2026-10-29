@@ -67,7 +67,6 @@
     "discovery.mapCapped_other",
     "discovery.mapEmpty",
     "discovery.mapIdle",
-    "discovery.mapKey",
     "discovery.mapLoading",
     "discovery.mapNoCoordinates_one",
     "discovery.mapNoCoordinates_other",

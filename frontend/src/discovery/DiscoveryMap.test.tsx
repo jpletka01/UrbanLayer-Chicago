@@ -233,6 +233,45 @@ describe("DiscoveryMap request states and sizing", () => {
   });
 });
 
+describe("Phase 4b: what the map leaves out is named inside the counted key", () => {
+  it("puts the cap and coordinate-gap notes in the key, not in a separate box", () => {
+    render(<DiscoveryMap {...props({
+      points: [point("good", 41.9, -87.7), point("missing", null, null)],
+      total: 5,
+      truncated: true,
+    })} />);
+    const key = screen.getByTestId("discovery-map-legend");
+    const notes = within(key).getByTestId("discovery-map-notes");
+    expect(within(notes).getByText("1 of 2 returned parcels plotted.")).toBeTruthy();
+    expect(within(notes).getByText("1 returned parcel lacks valid map coordinates.")).toBeTruthy();
+    expect(within(notes).getByText("3 additional matches are outside the map cap.")).toBeTruthy();
+    // exactly one place says it
+    expect(screen.getAllByText("3 additional matches are outside the map cap.")).toHaveLength(1);
+  });
+
+  it("names the shortfall on the phone key button, so it shows while the key is closed", () => {
+    render(<DiscoveryMap {...props({
+      points: [point("a", 41.9, -87.7), point("b", 41.91, -87.71)],
+      total: 5,
+      truncated: true, // 3 more matches than the 2 returned
+    })} />);
+    const button = screen.getByRole("button", { name: /Map key/ });
+    expect(within(button).getByTestId("discovery-map-key-shortfall").textContent).toBe("2 of 5 shown");
+    expect(button.getAttribute("aria-expanded")).toBe("false"); // closed, and the count is still there
+  });
+
+  it("says nothing extra when every match is plotted", () => {
+    render(<DiscoveryMap {...props({ points: [point("a", 41.9, -87.7), point("b", 41.91, -87.71)], total: 2 })} />);
+    expect(screen.queryByTestId("discovery-map-key-shortfall")).toBeNull();
+    expect(screen.queryByTestId("discovery-map-notes")).toBeNull();
+  });
+
+  it("counts a parcel without coordinates as not shown", () => {
+    render(<DiscoveryMap {...props({ points: [point("a", 41.9, -87.7), point("x", null, null)], total: 2 })} />);
+    expect(screen.getByTestId("discovery-map-key-shortfall").textContent).toBe("1 of 2 shown");
+  });
+});
+
 describe("Phase 0: previous dots while a refresh runs", () => {
   async function latestLayers() {
     await waitFor(() => expect(mapMocks.overlay.setProps).toHaveBeenCalled());

@@ -45,6 +45,9 @@ interface ResultsProps {
   unavailable?: boolean; // the first search failed (nothing to keep on screen)
   refreshFailed?: boolean; // a refresh failed; the previous results are still shown
   onRetry?: () => void;
+  /** Unapplied edits exist, so "Discard changes" means something (offered in the zero state). */
+  canDiscard?: boolean;
+  onDiscard?: () => void;
   loadingMore: boolean; // appending a later page
   hasMore: boolean;
   onLoadMore: () => void;
@@ -67,6 +70,8 @@ export function DiscoveryResults({
   unavailable = false,
   refreshFailed = false,
   onRetry,
+  canDiscard = false,
+  onDiscard,
   loadingMore,
   hasMore,
   onLoadMore,
@@ -84,7 +89,21 @@ export function DiscoveryResults({
   if (!response) {
     if (loading) return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
     if (unavailable) {
-      return <p className="p-4 text-body text-text-muted" role="status">{t("discovery.searchUnavailable")}</p>;
+      return (
+        <div className="space-y-3 p-4" role="status">
+          <p className="text-body text-text-muted">{t("discovery.searchUnavailable")}</p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              data-testid="discovery-search-retry"
+              className="touch-target rounded-lg border border-dark-border px-3 py-1.5 text-caption font-medium text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+            >
+              {t("discovery.retry")}
+            </button>
+          )}
+        </div>
+      );
     }
     return <p className="p-4 text-body text-text-muted">{t("discovery.setFilters")}</p>;
   }
@@ -107,7 +126,7 @@ export function DiscoveryResults({
             <button
               type="button"
               onClick={onRetry}
-              className="rounded-lg border border-state-warning/40 px-2.5 py-1 text-caption font-medium transition-colors hover:border-state-warning"
+              className="touch-target rounded-lg border border-state-warning/40 px-2.5 py-1 text-caption font-medium transition-colors hover:border-state-warning"
             >
               {t("discovery.retry")}
             </button>
@@ -184,7 +203,9 @@ export function DiscoveryResults({
           </div>
         ))}
 
-        {result.total === 0 && <ZeroState response={response} registry={registry} onRelax={onRelax} />}
+        {result.total === 0 && (
+          <ZeroState response={response} registry={registry} onRelax={onRelax} canDiscard={canDiscard} onDiscard={onDiscard} />
+        )}
 
         {result.total > 0 && diagnostics.broad && (
           <p className="text-micro text-text-muted">{t("discovery.broadSearch")}</p>
@@ -242,30 +263,47 @@ function ZeroState({
   response,
   registry,
   onRelax,
+  canDiscard,
+  onDiscard,
 }: {
   response: SearchResponse;
   registry: Registry;
   onRelax: (filterId: string) => void;
+  canDiscard?: boolean;
+  onDiscard?: () => void;
 }) {
   const { t } = useTranslation("pages");
   const filterIds = Object.keys(response.cqs.filters);
+
+  const discard =
+    canDiscard && onDiscard ? (
+      <button
+        type="button"
+        onClick={onDiscard}
+        data-testid="discovery-zero-discard"
+        className="touch-target text-caption text-text-muted transition-colors hover:text-accent"
+      >
+        {t("discovery.addFilter.discard")}
+      </button>
+    ) : null;
 
   // (1) NULL-backed: filters set on fields the index hasn't populated.
   const nullBacked = filterIds.filter((id) => !isPopulated(registry, id));
   if (nullBacked.length > 0) {
     return (
-      <div className="space-y-1 text-micro text-text-muted">
+      <div className="space-y-2 text-caption text-text-secondary">
         <p>
           {t("discovery.zeroNullBacked", {
             count: nullBacked.length,
             labels: nullBacked.map((id) => filterLabel(t, registry, id)).join(", "),
           })}
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="touch-chip-rows flex flex-wrap gap-2">
           {nullBacked.map((id) => (
             <RelaxChip key={id} label={filterLabel(t, registry, id)} onClick={() => onRelax(id)} />
           ))}
         </div>
+        {discard}
       </div>
     );
   }
@@ -282,13 +320,16 @@ function ZeroState({
     if (selected.length > 0 && offCoverage.length === selected.length) {
       const names = offCoverage.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", ");
       return (
-        <p className="text-micro text-text-muted">
-          {t("discovery.zeroNonLive", {
-            count: offCoverage.length,
-            names,
-            live: coverage.liveAreas.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", "),
-          })}
-        </p>
+        <div className="space-y-2">
+          <p className="text-caption text-text-secondary">
+            {t("discovery.zeroNonLive", {
+              count: offCoverage.length,
+              names,
+              live: coverage.liveAreas.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", "),
+            })}
+          </p>
+          {discard}
+        </div>
       );
     }
   }
@@ -296,10 +337,10 @@ function ZeroState({
   // (3) Too tight: offer the most-restrictive removals (06 diagnostics).
   const removable = response.diagnostics.mostRestrictive.filter((m) => m.countWithoutIt > 0);
   return (
-    <div className="space-y-1">
-      <p className="text-micro text-text-muted">{t("discovery.zeroTooTight")}</p>
+    <div className="space-y-2">
+      <p className="text-caption text-text-secondary">{t("discovery.zeroTooTight")}</p>
       {removable.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="touch-chip-rows flex flex-wrap gap-2">
           {removable.map((m) => (
             <RelaxChip
               key={m.filterId}
@@ -309,13 +350,14 @@ function ZeroState({
           ))}
         </div>
       )}
+      {discard}
     </div>
   );
 }
 
 function RelaxChip({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Chip as="button" size="sm" interactive onClick={onClick}>
+    <Chip as="button" size="md" interactive onClick={onClick} className="touch-hit">
       {label}
     </Chip>
   );

@@ -275,6 +275,10 @@ export function DiscoveryMap({
               ? t("discovery.mapNoCoordinates", { count: model.returnedCount })
               : null;
 
+  // Anything the map does not show: unplottable (no coordinates) or beyond the 5,000-point cap.
+  const keyNotes = status === "ready" && (model.unlocatedCount > 0 || model.omittedByCapCount > 0);
+  const totalMatches = model.returnedCount + model.omittedByCapCount;
+
   const summary = t("discovery.mapSummary", {
     plotted: renderPoints.length.toLocaleString(),
     unlocated: model.unlocatedCount.toLocaleString(),
@@ -296,7 +300,7 @@ export function DiscoveryMap({
 
       {stale && renderPoints.length > 0 && (
         <p
-          className="pointer-events-none absolute left-24 right-3 top-3 z-20 w-fit rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-1.5 text-caption text-text-secondary shadow-card md:left-1/2 md:right-auto md:-translate-x-1/2"
+          className="pointer-events-none absolute right-3 top-3 z-20 w-fit rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-1.5 text-caption text-text-secondary shadow-card md:left-1/2 md:right-auto md:-translate-x-1/2"
           data-testid="discovery-map-stale"
         >
           {t("discovery.mapStale")}
@@ -307,7 +311,7 @@ export function DiscoveryMap({
         <button
           type="button"
           onClick={fitToResults}
-          className="touch-target absolute left-24 right-3 top-3 z-20 w-fit rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-1.5 text-caption text-text-secondary shadow-card transition-colors hover:border-accent/50 hover:text-accent md:left-1/2 md:right-auto md:-translate-x-1/2"
+          className="touch-target absolute right-3 top-3 z-20 w-fit rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-1.5 text-caption text-text-secondary shadow-card transition-colors hover:border-accent/50 hover:text-accent md:left-1/2 md:right-auto md:-translate-x-1/2"
           data-testid="discovery-map-zoom"
         >
           {t("discovery.mapZoomToResults")}
@@ -330,10 +334,15 @@ export function DiscoveryMap({
           aria-expanded={keyOpen}
           aria-controls="discovery-map-key"
           onClick={() => setKeyOpen((open) => !open)}
-          className="touch-target absolute left-3 top-3 z-20 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-caption text-text-secondary shadow-card md:hidden"
+          className="absolute left-3 top-3 z-20 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-left text-caption text-text-secondary shadow-card touch-field md:hidden"
           data-testid="discovery-map-key-button"
         >
           {t("discovery.mapKey")}
+          {keyNotes && (
+            <span className="block text-micro text-text-muted" data-testid="discovery-map-key-shortfall">
+              {t("discovery.mapShownOfTotal", { shown: renderPoints.length.toLocaleString(), total: totalMatches.toLocaleString() })}
+            </span>
+          )}
         </button>
       )}
 
@@ -356,21 +365,22 @@ export function DiscoveryMap({
               <span className="tabular-nums text-text-muted">{item.count.toLocaleString()}</span>
             </div>
           ))}
-        </div>
-      )}
-
-      {status === "ready" && (model.unlocatedCount > 0 || model.omittedByCapCount > 0) && (
-        <div className="absolute bottom-8 left-3 z-10 max-w-[calc(100%-5rem)] space-y-1 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-micro text-text-secondary">
-          <p>{t("discovery.mapPlotted", {
-            count: model.returnedCount,
-            plotted: renderPoints.length.toLocaleString(),
-            returned: model.returnedCount.toLocaleString(),
-          })}</p>
-          {model.unlocatedCount > 0 && (
-            <p>{t("discovery.mapUnlocated", { count: model.unlocatedCount })}</p>
-          )}
-          {model.omittedByCapCount > 0 && (
-            <p>{t("discovery.mapCapped", { count: model.omittedByCapCount })}</p>
+          {/* What the map leaves out is part of the key it counts from (the same model), not a
+              separate box: nothing plotted, unplottable or beyond the cap goes unnamed (Item 31). */}
+          {keyNotes && (
+            <div className="mt-2 space-y-1 border-t border-dark-border pt-2 text-micro text-text-secondary" data-testid="discovery-map-notes">
+              <p>{t("discovery.mapPlotted", {
+                count: model.returnedCount,
+                plotted: renderPoints.length.toLocaleString(),
+                returned: model.returnedCount.toLocaleString(),
+              })}</p>
+              {model.unlocatedCount > 0 && (
+                <p>{t("discovery.mapUnlocated", { count: model.unlocatedCount })}</p>
+              )}
+              {model.omittedByCapCount > 0 && (
+                <p>{t("discovery.mapCapped", { count: model.omittedByCapCount })}</p>
+              )}
+            </div>
           )}
         </div>
       )}
