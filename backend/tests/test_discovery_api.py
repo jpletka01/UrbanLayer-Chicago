@@ -572,3 +572,85 @@ def test_search_pins_carries_landuse_for_free_map_coloring(client):
     finally:
         parcel_source._current_version = None
         default_source.clear()
+
+
+# --- combined list + map response (includePins) ---------------------------------
+
+
+def test_search_omits_pins_unless_asked(client):
+    body = client.post("/api/discovery/search", json={}).json()
+    assert body["pins"] is None
+
+
+def test_include_pins_block_equals_the_pins_endpoint_exactly(client):
+    # Under a non-default sort, so a dropped-sort bug could not hide behind a PIN-ordered fixture.
+    payload = {"sort": {"key": "lot_size", "dir": "desc"}}
+    combined = client.post("/api/discovery/search", json={**payload, "includePins": True}).json()
+    legacy_pins = client.post("/api/discovery/search/pins", json=payload).json()
+    legacy_search = client.post("/api/discovery/search", json=payload).json()
+
+    assert combined["pins"] == legacy_pins  # same JSON, key for key
+    assert combined["result"] == legacy_search["result"]  # the list is unchanged by asking for pins
+    assert combined["cqs"] == legacy_search["cqs"] and combined["diagnostics"] == legacy_search["diagnostics"]
+    # Item 30's three checks hold inside one response: same version, same total, list = map prefix
+    assert combined["pins"]["dataVersion"] == combined["dataVersion"]
+    assert combined["pins"]["total"] == combined["result"]["total"]
+    rows = _pins(combined)
+    assert [p["pin"] for p in combined["pins"]["points"]][: len(rows)] == rows == ["p2", "p1", "p3"]
+
+
+def test_include_pins_costs_one_evaluation_where_two_calls_cost_two(client, monkeypatch):
+    import backend.discovery.api as api
+
+    calls = {"n": 0}
+    real = api._resolve
+
+    def counting(req):
+        calls["n"] += 1
+        return real(req)
+
+    monkeypatch.setattr(api, "_resolve", counting)
+    client.post("/api/discovery/search", json={"includePins": True})
+    assert calls["n"] == 1
+    client.post("/api/discovery/search", json={})
+    client.post("/api/discovery/search/pins", json={})
+    assert calls["n"] == 3  # the legacy pair resolves twice
+
+
+def test_include_pins_caps_and_flags_truncation(monkeypatch):
+    import backend.discovery.api as api
+
+    monkeypatch.setattr(api, "MAX_MAP_POINTS", 2)
+    parcel_source.set_snapshot("cap-v2", [
+        DictParcel(f"c{i}", {"land_use_class": "residential", "land_sqft": i}) for i in range(5)
+    ])
+    try:
+        body = TestClient(app).post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "includePins": True,
+        }).json()
+        assert body["pins"]["total"] == body["result"]["total"] == 5
+        assert [p["pin"] for p in body["pins"]["points"]] == ["c0", "c1"]
+        assert body["pins"]["truncated"] is True
+    finally:
+        parcel_source._current_version = None
+        default_source.clear()
+
+
+def test_include_pins_keeps_the_free_tier_cap_and_the_uncapped_map():
+    parcel_source.set_snapshot("free-v4", [
+        DictParcel(f"f{i:02d}", {"land_use_class": "residential", "land_sqft": i}) for i in range(25)
+    ])
+    _as_free()
+    try:
+        body = TestClient(app).post("/api/discovery/search", json={
+            "sort": {"key": "lot_size", "dir": "asc"}, "limit": 50, "offset": 10, "includePins": True,
+        }).json()
+        assert len(body["result"]["rows"]) == 10  # FREE_ROW_CAP, offset and limit still ignored
+        assert body["result"]["gated"] is True and body["result"]["nextOffset"] is None
+        assert body["result"]["total"] == 25  # the TRUE total
+        assert len(body["pins"]["points"]) == 25  # free sees every dot, exactly as /search/pins
+        assert body["pins"]["points"][0]["landUse"] == "residential"
+    finally:
+        _restore_tier()
+        parcel_source._current_version = None
+        default_source.clear()

@@ -126,6 +126,12 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
   - `POST /api/discovery/search` — `{rows,total,nextOffset,gated}`. Rows hydrated from the snapshot;
     `limit/offset` paging. **Free tier (Depends(get_current_user), `FREE_ROW_CAP=10`) is
     server-capped** to the top 10 + `gated=true` + true total + `nextOffset=null`.
+  - **Speed (Phase 1, 2026-10-29; decisions `2026-10_discovery-speed.md`):** `_resolve` goes through
+    `result_cache.cached_evaluate` (INV-2 key = dataVersion + snapshot generation + canonical CQS; LRU
+    32 entries / 4M PINs; identical in-flight queries coalesce, distinct misses capped at 2), `evaluate`
+    sorts with key sorts and returns D4 `excludedUnknown` from its single filter pass, and
+    `POST /search` takes optional `includePins` (adds `pins` = the `/search/pins` body from the SAME
+    evaluation; old routes unchanged). Tests include the oracle comparator and reference D4 scan.
   - `POST /api/discovery/search/pins` — FULL ordered coord set (pin+lat/lon+upside+landUse),
     capped `MAX_MAP_POINTS=5000` + `truncated`. NOT tier-capped (free sees all dots; FE colors
     by land-use + view-only).
