@@ -10,6 +10,8 @@ or mutable global. This module is a leaf: it MUST NOT import `compile_*`, `api`,
 
 from __future__ import annotations
 
+from typing import Protocol, Sequence
+
 from pydantic import BaseModel, Field
 
 from backend.discovery import parcel as parcel_mod
@@ -31,6 +33,15 @@ class OrderedResult(BaseModel):
     # Computed in the same pass as the filter (a pure function of the CQS and dataVersion);
     # only non-zero entries, in applied-filter order.
     excludedUnknown: dict[str, int] = Field(default_factory=dict)
+
+
+class EvalResult(Protocol):
+    """What callers read from an evaluation: `OrderedResult`, or a cached, immutable copy."""
+
+    dataVersion: str
+    pins: Sequence[str]
+    total: int
+    excludedUnknown: dict[str, int]
 
 
 def _normalize_pin(pin: str) -> str:

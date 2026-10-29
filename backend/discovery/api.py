@@ -34,7 +34,8 @@ from backend.discovery.cqs import (
     SpatialScope,
 )
 from backend.discovery.diagnostics import Diagnostics, build
-from backend.discovery.evaluator import OrderedResult, evaluate
+from backend.discovery.evaluator import EvalResult
+from backend.discovery.result_cache import cached_evaluate
 from backend.discovery.registry import Coverage, Registry
 from backend.discovery.registry import load as load_registry
 
@@ -167,13 +168,13 @@ def get_registry() -> Registry:
     })
 
 
-def _resolve(req: SearchRequest) -> tuple[CQS, OrderedResult, list[DroppedInvalid], str]:
+def _resolve(req: SearchRequest) -> tuple[CQS, EvalResult, list[DroppedInvalid], str]:
     """The single parse→merge→evaluate path.
 
     `/search`, and later `/search/pins` and `/search/export`, ALL go through this so the
     canonical CQS and the fully ordered result can never drift between endpoints by
     construction (sort/scope/topicId are applied in exactly one place). Each endpoint
-    differs only in how it projects the shared `OrderedResult`.
+    differs only in how it projects the shared ordered result.
     """
     user_frag = CqsFragment(
         filters={
@@ -186,7 +187,7 @@ def _resolve(req: SearchRequest) -> tuple[CQS, OrderedResult, list[DroppedInvali
         user_frag, text_frag, sort=req.sort, scope=req.scope, topic_id=req.topicId
     )
     data_version = parcel_source.current_version()
-    result = evaluate(cqs, data_version)
+    result = cached_evaluate(cqs, data_version)  # the single evaluator, memoised (INV-2)
     return cqs, result, dropped, data_version
 
 
@@ -250,7 +251,7 @@ def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) ->
     # Defined sync so FastAPI runs the (CPU-bound) evaluation in a worker thread
     # rather than blocking the event loop.
     cqs, result, dropped, data_version = _resolve(req)
-    diagnostics = build(cqs, data_version, evaluate, result=result, dropped=dropped)
+    diagnostics = build(cqs, data_version, cached_evaluate, result=result, dropped=dropped)
 
     if _is_pro(user):
         limit = min(req.limit or DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT)
@@ -359,7 +360,7 @@ def _export_filename(cqs: CQS, data_version: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", name)
 
 
-def _export_stream(cqs: CQS, result: OrderedResult, data_version: str) -> Iterator[str]:
+def _export_stream(cqs: CQS, result: EvalResult, data_version: str) -> Iterator[str]:
     """Yield the FULL match set as CSV, in evaluated order — never the list window."""
     registry = load_registry()
     sort_field = registry.sort_field(cqs.sort.key)

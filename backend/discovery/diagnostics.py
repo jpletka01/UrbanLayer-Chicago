@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from backend.discovery import parcel as parcel_mod
 from backend.discovery.cqs import CQS, DroppedInvalid
-from backend.discovery.evaluator import OrderedResult
+from backend.discovery.evaluator import EvalResult
 from backend.discovery.predicates import satisfies, within_scope
 from backend.discovery.registry import load as load_registry
 
@@ -109,7 +109,7 @@ def _excluded_unknown(cqs: CQS, data_version: str) -> dict[str, int]:
 
 
 def _most_restrictive(
-    cqs: CQS, data_version: str, evaluate: Callable[[CQS, str], OrderedResult]
+    cqs: CQS, data_version: str, evaluate: Callable[[CQS, str], EvalResult]
 ) -> list[MostRestrictive]:
     """D5 — zero-result diagnosis. For each applied filter, |evaluate(CQS \\ f)|.
 
@@ -127,14 +127,14 @@ def _most_restrictive(
 def build(
     cqs: CQS,
     data_version: str,
-    evaluate: Callable[[CQS, str], OrderedResult],
+    evaluate: Callable[[CQS, str], EvalResult],
     *,
-    result: OrderedResult | None = None,
+    result: EvalResult | None = None,
     dropped: list[DroppedInvalid] | None = None,
 ) -> Diagnostics:
     """Assemble the advisory diagnostics for an evaluated CQS.
 
-    `result` (the already-computed `OrderedResult`) may be passed to avoid a redundant
+    `result` (the already-computed result) may be passed to avoid a redundant
     evaluation; otherwise it is computed via the black-box `evaluate`. `dropped` is the
     compiler's invalid/validation drops (produced upstream by the merge, 04/06-D3).
     """

@@ -232,3 +232,13 @@ def _no_external_property_fallbacks(request):
               new=AsyncMock(return_value=None)),
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _clear_discovery_result_cache():
+    """The Discovery result cache is process-global; start (and leave) every test empty."""
+    from backend.discovery import result_cache
+
+    result_cache.clear()
+    yield
+    result_cache.clear()
