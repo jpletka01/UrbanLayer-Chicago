@@ -1,0 +1,356 @@
+{
+  "label": "final",
+  "base": "http://localhost:8003",
+  "measured_at": "2026-10-29T02:15:28+00:00",
+  "environment": {
+    "platform": "macOS-15.6.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "note": "LOCAL idle machine, not production"
+  },
+  "runs_per_cell": 7,
+  "rss_mb_before": 1798.2,
+  "ladder": [
+    {
+      "query": "recipe (4 filters)",
+      "filters": [
+        "lot_size",
+        "transit_proximity",
+        "vacancy",
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          499.0,
+          1.6,
+          1.4,
+          1.5,
+          1.3,
+          1.3,
+          1.2
+        ],
+        "first_ms": 499.0,
+        "median_ms": 1.4,
+        "p95_ms": 499.0,
+        "min_ms": 1.2,
+        "bytes": 22624,
+        "total": 5005
+      },
+      "pins": {
+        "runs": [
+          26.2,
+          11.5,
+          10.6,
+          10.5,
+          11.2,
+          10.3,
+          10.2
+        ],
+        "first_ms": 26.2,
+        "median_ms": 10.6,
+        "p95_ms": 26.2,
+        "min_ms": 10.2,
+        "bytes": 513968,
+        "total": 5005
+      },
+      "combined": {
+        "runs": [
+          10.8,
+          10.2,
+          10.4,
+          10.3,
+          11.0,
+          10.9,
+          10.5
+        ],
+        "first_ms": 10.8,
+        "median_ms": 10.5,
+        "p95_ms": 11.0,
+        "min_ms": 10.2,
+        "bytes": 536588
+      },
+      "parity": {
+        "combined": {
+          "pins_block_equals_pins_endpoint": true,
+          "rows_equal_search": true
+        },
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "3 filters (no lot size)",
+      "filters": [
+        "transit_proximity",
+        "vacancy",
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          348.1,
+          1.4,
+          1.2,
+          1.2,
+          1.3,
+          1.1,
+          1.1
+        ],
+        "first_ms": 348.1,
+        "median_ms": 1.2,
+        "p95_ms": 348.1,
+        "min_ms": 1.1,
+        "bytes": 22528,
+        "total": 7531
+      },
+      "pins": {
+        "runs": [
+          11.5,
+          11.8,
+          12.1,
+          11.4,
+          11.1,
+          940.4,
+          11.5
+        ],
+        "first_ms": 11.5,
+        "median_ms": 11.5,
+        "p95_ms": 940.4,
+        "min_ms": 11.1,
+        "bytes": 513968,
+        "total": 7531
+      },
+      "combined": {
+        "runs": [
+          11.7,
+          11.5,
+          10.7,
+          10.6,
+          10.4,
+          10.7,
+          9.9
+        ],
+        "first_ms": 11.7,
+        "median_ms": 10.7,
+        "p95_ms": 11.7,
+        "min_ms": 9.9,
+        "bytes": 536492
+      },
+      "parity": {
+        "combined": {
+          "pins_block_equals_pins_endpoint": true,
+          "rows_equal_search": true
+        },
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "1 filter (zoning: residential)",
+      "filters": [
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          614.5,
+          1.5,
+          1.3,
+          11.5,
+          1.3,
+          1.1,
+          1.1
+        ],
+        "first_ms": 614.5,
+        "median_ms": 1.3,
+        "p95_ms": 614.5,
+        "min_ms": 1.1,
+        "bytes": 22080,
+        "total": 599804
+      },
+      "pins": {
+        "runs": [
+          11.4,
+          11.0,
+          11.2,
+          10.6,
+          10.7,
+          10.5,
+          11.1
+        ],
+        "first_ms": 11.4,
+        "median_ms": 11.0,
+        "p95_ms": 11.4,
+        "min_ms": 10.5,
+        "bytes": 512568,
+        "total": 599804
+      },
+      "combined": {
+        "runs": [
+          11.1,
+          10.2,
+          10.0,
+          9.5,
+          10.2,
+          9.9,
+          10.0
+        ],
+        "first_ms": 11.1,
+        "median_ms": 10.0,
+        "p95_ms": 11.1,
+        "min_ms": 9.5,
+        "bytes": 534644
+      },
+      "parity": {
+        "combined": {
+          "pins_block_equals_pins_endpoint": true,
+          "rows_equal_search": true
+        },
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "no filters",
+      "filters": [],
+      "search": {
+        "runs": [
+          495.3,
+          1.4,
+          1.1,
+          1.1,
+          17.1,
+          1.2,
+          1.1
+        ],
+        "first_ms": 495.3,
+        "median_ms": 1.2,
+        "p95_ms": 495.3,
+        "min_ms": 1.1,
+        "bytes": 21969,
+        "total": 949014
+      },
+      "pins": {
+        "runs": [
+          11.5,
+          10.3,
+          10.7,
+          10.1,
+          9.8,
+          10.5,
+          10.8
+        ],
+        "first_ms": 11.5,
+        "median_ms": 10.5,
+        "p95_ms": 11.5,
+        "min_ms": 9.8,
+        "bytes": 511233,
+        "total": 949014
+      },
+      "combined": {
+        "runs": [
+          10.5,
+          10.0,
+          10.1,
+          10.0,
+          9.6,
+          9.5,
+          9.9
+        ],
+        "first_ms": 10.5,
+        "median_ms": 10.0,
+        "p95_ms": 10.5,
+        "min_ms": 9.5,
+        "bytes": 533198
+      },
+      "parity": {
+        "combined": {
+          "pins_block_equals_pins_endpoint": true,
+          "rows_equal_search": true
+        },
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "recipe again (repeat)",
+      "filters": [
+        "lot_size",
+        "transit_proximity",
+        "vacancy",
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          1.4,
+          1.3,
+          1.1,
+          1.0,
+          1.1,
+          1.0,
+          1.1
+        ],
+        "first_ms": 1.4,
+        "median_ms": 1.1,
+        "p95_ms": 1.4,
+        "min_ms": 1.0,
+        "bytes": 22624,
+        "total": 5005
+      },
+      "pins": {
+        "runs": [
+          10.9,
+          10.3,
+          10.3,
+          10.7,
+          10.2,
+          10.6,
+          11.6
+        ],
+        "first_ms": 10.9,
+        "median_ms": 10.6,
+        "p95_ms": 11.6,
+        "min_ms": 10.2,
+        "bytes": 513968,
+        "total": 5005
+      },
+      "combined": {
+        "runs": [
+          11.1,
+          10.4,
+          10.4,
+          10.0,
+          9.9,
+          9.8,
+          10.0
+        ],
+        "first_ms": 11.1,
+        "median_ms": 10.0,
+        "p95_ms": 11.1,
+        "min_ms": 9.8,
+        "bytes": 536588
+      },
+      "parity": {
+        "combined": {
+          "pins_block_equals_pins_endpoint": true,
+          "rows_equal_search": true
+        },
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    }
+  ],
+  "rss_mb_after": 1938.9
+}

@@ -13,7 +13,7 @@ the old one. Entries from any other (version, generation) are dropped as soon as
 entry is stored, and a lookup only ever sees its own.
 
 Storage is an immutable tuple of PIN strings, which are the same string objects the parcels
-already hold (8 bytes per match, ~7.6 MB for a 949k-match result). The cache is an LRU
+already hold (8 bytes of pointer per match; ~17-20 MB RSS per 949k-match result in practice). The cache is an LRU
 bounded by entry count and by the total number of PINs held; a result larger than the whole
 budget is returned but not stored. A failed evaluation raises and stores nothing.
 
@@ -35,9 +35,11 @@ from backend.discovery import parcel as parcel_mod
 from backend.discovery.cqs import CQS, canonical_key
 from backend.discovery.evaluator import evaluate
 
-# ~48 MB of pointers at most (6M PINs x 8 bytes) on a box whose index alone is ~3 GB.
+# Measured on the 949k-parcel production index copy (macOS RSS, 2026-10-29): about 17-20 MB
+# per 949k-match entry, so 4M PINs is roughly +130 MB worst case on a box whose index alone
+# is ~3 GB of its 8 GB. Typical entries (a few thousand matches) cost kilobytes.
 MAX_ENTRIES = 32
-MAX_TOTAL_PINS = 6_000_000
+MAX_TOTAL_PINS = 4_000_000
 MAX_CONCURRENT_EVALS = 2
 
 

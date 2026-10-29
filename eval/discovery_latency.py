@@ -51,6 +51,8 @@ LADDER: list[tuple[str, dict]] = [
 ]
 
 ENDPOINTS = {"search": "/api/discovery/search", "pins": "/api/discovery/search/pins"}
+# The combined list+map call (additive `includePins`); older backends ignore the flag.
+COMBINED = "/api/discovery/search"
 
 
 def _envelope(filters: dict, **extra) -> dict:
@@ -108,7 +110,16 @@ def parity(client: httpx.Client, base: str, filters: dict) -> dict:
     list_pins = [r["pin"] for r in sj["result"]["rows"]]
     map_pins = [pt["pin"] for pt in pj["points"]]
     n = min(len(list_pins), len(map_pins))
+    combined = None
+    _, c = _post(client, base, COMBINED, _envelope(filters, limit=200, includePins=True))
+    cj = c.json()
+    if cj.get("pins") is not None:
+        combined = {
+            "pins_block_equals_pins_endpoint": cj["pins"] == pj,
+            "rows_equal_search": cj["result"]["rows"] == sj["result"]["rows"],
+        }
     return {
+        "combined": combined,
         "rows_compared": n,
         "prefix_equal": list_pins[:n] == map_pins[:n],
         "total_equal": sj["result"]["total"] == pj["total"],
@@ -145,6 +156,13 @@ def run(base: str, runs: int, label: str) -> dict:
                     body = resp.json()
                     total = body["result"]["total"] if key == "search" else body["total"]
                 row[key] = {**_summ(times), "bytes": size, "total": total}
+            times, size = [], 0
+            for _ in range(runs):
+                ms, resp = _post(client, base, COMBINED, _envelope(filters, includePins=True))
+                times.append(ms)
+                size = len(resp.content)
+            if resp.json().get("pins") is not None:
+                row["combined"] = {**_summ(times), "bytes": size}
             row["parity"] = parity(client, base, filters)
             out["ladder"].append(row)
             print(f"{name:34s} search {row['search']['median_ms']:8.0f} ms  pins {row['pins']['median_ms']:8.0f} ms  total {row['search']['total']}", flush=True)
@@ -161,18 +179,49 @@ def markdown(res: dict) -> str:
         "",
         f"Backend RSS: {res['rss_mb_before']} MB before, {res['rss_mb_after']} MB after.",
         "",
-        "| Query | Matches | /search first | /search median | /search p95 | /pins first | /pins median | /pins p95 | List=map parity |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---|",
+        "| Query | Matches | /search first | /search median | /search p95 | /pins first | /pins median | /pins p95 | combined first | combined median | List=map parity |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for r in res["ladder"]:
-        s, p, par = r["search"], r["pins"], r["parity"]
+        s, p, c, par = r["search"], r["pins"], r.get("combined"), r["parity"]
         ok = par["prefix_equal"] and par["total_equal"] and par["data_version_equal"]
+        comb = f"{c['first_ms']:.0f} | {c['median_ms']:.0f}" if c else "n/a | n/a"
         lines.append(
             f"| {r['query']} | {s['total']:,} | {s['first_ms']:.0f} | {s['median_ms']:.0f} | {s['p95_ms']:.0f} "
-            f"| {p['first_ms']:.0f} | {p['median_ms']:.0f} | {p['p95_ms']:.0f} | {'ok' if ok else 'MISMATCH'} ({par['rows_compared']} rows) |"
+            f"| {p['first_ms']:.0f} | {p['median_ms']:.0f} | {p['p95_ms']:.0f} | {comb} "
+            f"| {'ok' if ok else 'MISMATCH'} ({par['rows_compared']} rows) |"
         )
     lines += ["", "Times in milliseconds. 'first' is the first run of the cell, 'median'/'p95' are over all runs of the cell.", ""]
     return "\n".join(lines)
+
+
+def run_cold(base: str, mode: str, label: str) -> dict:
+    """One edit per ladder cell, as the page issues it, against a COLD cache.
+
+    `legacy`: /search and /search/pins in parallel (what the page does today).
+    `combined`: one /search with includePins. Restart the backend before each invocation so
+    the first cell is cold; later cells that repeat an earlier query are hits by design.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    host = urlparse(base).hostname
+    if host not in ("localhost", "127.0.0.1", "::1"):
+        sys.exit(f"refusing non-loopback host {host!r}: this script measures a LOCAL backend only")
+    out: dict = {"label": label, "mode": mode, "measured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "cells": []}
+    with httpx.Client(timeout=300) as client:
+        client.get(base + "/health").raise_for_status()
+        for name, filters in LADDER:
+            t0 = time.perf_counter()
+            if mode == "legacy":
+                with ThreadPoolExecutor(2) as pool:
+                    futs = [pool.submit(_post, client, base, ENDPOINTS[k], _envelope(filters)) for k in ("search", "pins")]
+                    for f in futs:
+                        f.result()
+            else:
+                _post(client, base, COMBINED, _envelope(filters, includePins=True))
+            out["cells"].append({"query": name, "edit_ms": round((time.perf_counter() - t0) * 1000, 1)})
+            print(f"{mode:9s} {name:34s} {out['cells'][-1]['edit_ms']:8.0f} ms", flush=True)
+    return out
 
 
 def main() -> None:
@@ -180,7 +229,14 @@ def main() -> None:
     ap.add_argument("--base", default="http://localhost:8001", help="LOCAL backend base URL")
     ap.add_argument("--label", required=True, help="result name, e.g. baseline or after-cache")
     ap.add_argument("--runs", type=int, default=5)
+    ap.add_argument("--cold", choices=["legacy", "combined"], help="one cold-cache edit per cell (restart the backend first); writes <label>.json only")
     args = ap.parse_args()
+
+    if args.cold:
+        res = run_cold(args.base.rstrip("/"), args.cold, args.label)
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        (RESULTS_DIR / f"{args.label}.json").write_text(json.dumps(res, indent=2) + "\n")
+        return
 
     res = run(args.base.rstrip("/"), args.runs, args.label)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
