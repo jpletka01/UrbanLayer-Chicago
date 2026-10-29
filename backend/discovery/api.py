@@ -71,6 +71,8 @@ class SearchRequest(BaseModel):
     # evaluator still returns the complete ordered PIN list; the API slices the window.
     limit: int | None = None  # rows per page (clamped to MAX_PAGE_LIMIT)
     offset: int = 0  # window start into the ordered result
+    # Also return the map's coordinate set from this same evaluation (see SearchResponse.pins).
+    includePins: bool = False
 
 
 class ResultRow(BaseModel):
@@ -114,13 +116,6 @@ class SearchResult(BaseModel):
     gated: bool = False  # True for free tier — rows are the capped teaser, total is the real count
 
 
-class SearchResponse(BaseModel):
-    dataVersion: str
-    cqs: CQS  # canonical, post-merge — FE renders chips/summary from THIS (INV-4)
-    result: SearchResult
-    diagnostics: Diagnostics
-
-
 # Map = the FULL ordered match set (not the list window), capped so the browser stays sane.
 MAX_MAP_POINTS = 5000
 
@@ -138,6 +133,17 @@ class PinsResponse(BaseModel):
     total: int  # full match count
     points: list[PinPoint]  # full ordered coord set, capped at MAX_MAP_POINTS
     truncated: bool  # True when total > cap → some matches are off the map ("refine to see all")
+
+
+class SearchResponse(BaseModel):
+    dataVersion: str
+    cqs: CQS  # canonical, post-merge — FE renders chips/summary from THIS (INV-4)
+    result: SearchResult
+    diagnostics: Diagnostics
+    # Only when the request set `includePins`: exactly what POST /search/pins returns for the
+    # same request, computed from the SAME evaluation as `result` (one dataVersion, one
+    # total, one ordering), so list and map cannot disagree. Not tier-capped, like /pins.
+    pins: PinsResponse | None = None
 
 
 ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
@@ -246,6 +252,30 @@ def _hydrate_window(pins: list[str], data_version: str, sort_key: str) -> list[R
     return rows
 
 
+def _pins_payload(result: EvalResult, data_version: str) -> PinsResponse:
+    """The map's coordinate set: the ordered prefix of the result, capped at MAX_MAP_POINTS."""
+    by_pin = _pin_lookup(data_version)
+    points: list[PinPoint] = []
+    for pin in result.pins[:MAX_MAP_POINTS]:
+        parcel = by_pin.get(pin)
+        if parcel is not None:
+            points.append(
+                PinPoint(
+                    pin=parcel.pin,
+                    lat=parcel.lat,
+                    lon=parcel.lon,
+                    upside=parcel.get("upside_score"),
+                    landUse=parcel.get("land_use_class"),
+                )
+            )
+    return PinsResponse(
+        dataVersion=data_version,
+        total=result.total,
+        points=points,
+        truncated=result.total > MAX_MAP_POINTS,
+    )
+
+
 @router.post("/search", response_model=SearchResponse)
 def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) -> SearchResponse:
     # Defined sync so FastAPI runs the (CPU-bound) evaluation in a worker thread
@@ -270,6 +300,7 @@ def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) ->
         cqs=cqs,
         result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset, gated=gated),
         diagnostics=diagnostics,
+        pins=_pins_payload(result, data_version) if req.includePins else None,
     )
 
 
@@ -282,26 +313,7 @@ def search_pins(req: SearchRequest) -> PinsResponse:
     # ALL match dots (the FE colors free by land use + makes it view-only — a presentational
     # gate; upside rides along since it isn't secret).
     _cqs, result, _dropped, data_version = _resolve(req)
-    by_pin = _pin_lookup(data_version)
-    points: list[PinPoint] = []
-    for pin in result.pins[:MAX_MAP_POINTS]:
-        parcel = by_pin.get(pin)
-        if parcel is not None:
-            points.append(
-                PinPoint(
-                    pin=parcel.pin,
-                    lat=parcel.lat,
-                    lon=parcel.lon,
-                    upside=parcel.get("upside_score"),
-                    landUse=parcel.get("land_use_class"),
-                )
-            )
-    return PinsResponse(
-        dataVersion=data_version,
-        total=result.total,
-        points=points,
-        truncated=result.total > MAX_MAP_POINTS,
-    )
+    return _pins_payload(result, data_version)
 
 
 # CSV export columns: (ResultRow attr, header). A header given as ("filter", id) is sourced
