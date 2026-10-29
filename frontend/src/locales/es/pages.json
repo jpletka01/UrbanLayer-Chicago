@@ -612,6 +612,24 @@
       "understood": "De “{{text}}” entendí: {{filters}}.",
       "understoodNothing": "No pude convertir “{{text}}” en filtros; la búsqueda usó solo los demás filtros."
     },
+    "addFilter": {
+      "button": "Agregar filtro",
+      "menuAria": "Agregar un filtro",
+      "editAria": "Editar filtro",
+      "search": "Buscar filtros",
+      "essentials": "Esenciales",
+      "more": "Más filtros",
+      "soon": "Próximamente ({{count}})",
+      "soonNote": "Aún no hay datos para estos en el índice.",
+      "noMatch": "Ningún filtro coincide.",
+      "inSearch": "En su búsqueda",
+      "back": "Todos los filtros",
+      "reset": "Restablecer este filtro",
+      "done": "Listo",
+      "discard": "Descartar cambios",
+      "heuristic": "heurístico",
+      "heuristicTip": "Una puntuación de 0 a 100 que calculamos a partir de la capacidad de zonificación sin usar y del valor del terreno frente al de la construcción. Es una heurística preliminar (v1) que ayuda a ordenar candidatos; no es un avalúo."
+    },
     "start": {
       "heading": "¿Qué busca?",
       "recipes": "Comience con una receta",
@@ -706,6 +724,7 @@
     "maxAria": "máximo {{name}}",
     "minSliderAria": "control deslizante de mínimo {{name}}",
     "maxSliderAria": "control deslizante de máximo {{name}}",
+    "editFilterAria": "Editar {{label}}",
     "removeFilterAria": "Quitar filtro {{name}}",
     "sumParcelsWhere": "Parcelas donde {{parts}}",
     "sumAllParcels": "Todas las parcelas",

@@ -110,7 +110,7 @@ export function DiscoveryFilterPanel({ registry, state, onChange }: PanelProps) 
   );
 }
 
-function Control({
+export function Control({
   def,
   value,
   populated,

@@ -80,6 +80,8 @@ export interface RangeMeta {
   presets?: RangePreset[] | null;
 }
 
+export type FilterTier = "essential" | "more";
+
 export interface FilterDef {
   id: string;
   category: FilterCategory;
@@ -95,6 +97,8 @@ export interface FilterDef {
   label?: string | null;
   help?: string | null;
   enumLabels?: Record<string, string> | null;
+  // Which tier of the "+ Add filter" menu lists it (presentation only). Absent reads as "more".
+  tier?: "essential" | "more";
 }
 
 export interface TopicDef {

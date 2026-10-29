@@ -18,6 +18,7 @@ import {
   diffDraft,
   inputsSignature,
   reconcileWithResponse,
+  discardToApplied,
   removeFromDraft,
   restoreToDraft,
   type ChipItem,
@@ -372,6 +373,15 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     [updateDraft],
   );
 
+  /** Put the draft back to the evaluated query (a draft-only change: nothing is requested). */
+  const discardChanges = useCallback(() => {
+    const current = appliedRef.current;
+    if (!current) return;
+    applySeqRef.current += 1;
+    setTextNotice(null);
+    updateDraft((d) => discardToApplied(d, current.response.cqs, current.text));
+  }, [updateDraft]);
+
   /** A draft edit like any other: chips go struck-through and Update results applies it. */
   const clearAll = useCallback(
     () => updateDraft((d) => ({ ...d, panelState: {}, text: "", topicId: null })),
@@ -444,6 +454,7 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     removeFilter,
     restoreFilter,
     clearAll,
+    discardChanges,
     loadMore,
     exportApplied,
   };

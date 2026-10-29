@@ -4,12 +4,13 @@
 // the draft. Edits change the draft only: a search runs when the user presses Search, Enter or
 // "Update results". The page never evaluates or filters — that is the backend's job.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
 import PageHeader from "./../components/PageHeader";
 import UpgradePrompt from "./../components/UpgradePrompt";
+import { AddFilterMenu, type FilterPopoverView } from "./AddFilterMenu";
 import { Chips } from "./chips";
 import { CoverageBanner } from "./CoverageBanner";
 import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
@@ -17,6 +18,8 @@ import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { IndexAsOf } from "./IndexAsOf";
 import { RecipeShelf } from "./RecipeShelf";
+import { draftFilters } from "./draftModel";
+import { FILTER_POPOVER_ANCHOR } from "./filterMenu";
 import { StartPanel, type StartChoice } from "./StartPanel";
 import { TextFeedback } from "./TextFeedback";
 import { clearLastSearch, loadLastSearch, saveLastSearch, type SavedSearch } from "./lastSearch";
@@ -53,6 +56,10 @@ export default function DiscoveryPage() {
   // an already-loaded result row to scroll into view.
   const [mapHoveredPin, setMapHoveredPin] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  // The "+ Add filter" menu / in-place filter editor (null = closed).
+  const [popover, setPopover] = useState<FilterPopoverView>(null);
+  const closePopover = useCallback(() => setPopover(null), []);
+  const filterValues = useMemo(() => draftFilters(draft, response?.cqs ?? null), [draft, response]);
   // Below xl: one List|Map content pane (map stays mounted). Phones also get the
   // bottom-sheet filter drawer; tablet widths retain the inline filter rail.
   const [mobileTab, setMobileTab] = useState<"list" | "map">("list");
@@ -260,8 +267,8 @@ export default function DiscoveryPage() {
           } min-w-0 flex-1 flex-col overflow-hidden border-r border-dark-border xl:flex xl:w-[430px] xl:flex-none 2xl:w-[560px]`}
           data-testid="discovery-list-pane"
         >
-          {registry && (response || chips.length > 0) && (
-            <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
+          {registry && !showStart && (
+            <div className="relative flex-shrink-0 space-y-2 border-b border-dark-border p-4">
               {/* Evaluated sentence (INV-4): dims with the rest of the previous results. */}
               {response && (
                 <p
@@ -277,8 +284,45 @@ export default function DiscoveryPage() {
                 registry={registry}
                 onRemove={search.removeFilter}
                 onRestore={search.restoreFilter}
-              />
-              {showUpdate && <UpdateResultsButton count={pendingCount} onClick={search.apply} />}
+                onEdit={(id) => setPopover({ kind: "edit", id })}
+              >
+                <button
+                  type="button"
+                  {...{ [FILTER_POPOVER_ANCHOR]: "" }}
+                  aria-haspopup="dialog"
+                  aria-expanded={popover !== null}
+                  onClick={() => setPopover((p) => (p ? null : { kind: "menu" }))}
+                  data-testid="discovery-add-filter"
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-dark-border-strong px-2.5 py-1 text-micro text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                >
+                  <span aria-hidden>+</span> {t("discovery.addFilter.button")}
+                </button>
+              </Chips>
+              {showUpdate && (
+                <div className="flex items-center gap-3">
+                  <UpdateResultsButton count={pendingCount} onClick={search.apply} />
+                  {response && (
+                    <button
+                      type="button"
+                      onClick={search.discardChanges}
+                      data-testid="discovery-discard-changes"
+                      className="text-caption text-text-muted transition-colors hover:text-accent"
+                    >
+                      {t("discovery.addFilter.discard")}
+                    </button>
+                  )}
+                </div>
+              )}
+              {popover && (
+                <AddFilterMenu
+                  registry={registry}
+                  view={popover}
+                  values={filterValues}
+                  onChange={search.editPanel}
+                  onView={setPopover}
+                  onClose={closePopover}
+                />
+              )}
               {/* Quiet seam — subordinate to the ranked list (the page's primary
                   job); the chat door is secondary to it. Always available (incl.
                   premium / pre-wall), not gated behind the teaser. */}

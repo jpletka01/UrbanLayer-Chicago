@@ -3,7 +3,9 @@
 // chip edits the draft only; "Update results" is what searches.
 
 import i18n from "../lib/i18n";
+import type { ReactNode } from "react";
 import { Chip } from "../components/ui/Chip";
+import { FILTER_POPOVER_ANCHOR, HEURISTIC_FILTERS } from "./filterMenu";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import type { ChipItem } from "./draftModel";
 import type { FilterDef, Predicate, Registry } from "./types";
@@ -67,15 +69,19 @@ interface ChipsProps {
   registry: Registry;
   onRemove: (filterId: string) => void;
   onRestore: (filterId: string) => void;
+  /** Open the filter's editor. When given, the chip's label is a button for it. */
+  onEdit?: (filterId: string) => void;
+  /** Rendered after the chips, in the same wrapping row (the "+ Add filter" button). */
+  children?: ReactNode;
 }
 
 // The strip is a control surface: it renders from the draft so chips stay clickable while a
 // refresh runs. Evaluated facts (summary, count, rows) still come from response.cqs (INV-4);
 // a chip that differs from the evaluated query says so (dashed outline) and a removed one stays
 // visible, struck through, until the removal is applied.
-export function Chips({ items, registry, onRemove, onRestore }: ChipsProps) {
+export function Chips({ items, registry, onRemove, onRestore, onEdit, children }: ChipsProps) {
   const defs = new Map(registry.filters.map((f) => [f.id, f]));
-  if (items.length === 0) return null;
+  if (items.length === 0 && !children) return null;
 
   return (
     <div className="flex flex-wrap gap-2" data-testid="discovery-chips">
@@ -107,13 +113,33 @@ export function Chips({ items, registry, onRemove, onRestore }: ChipsProps) {
             onRemove={() => onRemove(id)}
             removeLabel={td("removeFilterAria", `Remove ${humanize(id)} filter`, { name })}
             className={pending ? "border-dashed border-accent/60" : ""}
-            title={pending ? td("chipPendingTitle", "Not applied yet. Press Update results.") : undefined}
+            title={
+              pending
+                ? td("chipPendingTitle", "Not applied yet. Press Update results.")
+                : HEURISTIC_FILTERS.has(id)
+                  ? td("addFilter.heuristicTip", "A rough score we calculate, not a measured value.")
+                  : undefined
+            }
           >
-            {label}
+            {onEdit ? (
+              <button
+                type="button"
+                {...{ [FILTER_POPOVER_ANCHOR]: "" }}
+                aria-haspopup="dialog"
+                aria-label={td("editFilterAria", `Edit ${label}`, { label })}
+                onClick={() => onEdit(id)}
+                className="text-left"
+              >
+                {label}
+              </button>
+            ) : (
+              label
+            )}
             {pending && <span className="sr-only"> ({td("chipPending", "not applied yet")})</span>}
           </Chip>
         );
       })}
+      {children}
     </div>
   );
 }

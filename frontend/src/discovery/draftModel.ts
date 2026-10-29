@@ -164,6 +164,18 @@ export function restoreToDraft(draft: DiscoveryDraft, applied: CQS | null, id: F
   return { ...draft, panelState: { ...draft.panelState, [id]: predicate }, topicId: null };
 }
 
+/** "Discard changes": the draft goes back to exactly the query the server last evaluated: its
+ *  user filters, the text that was sent (whose text-derived filters are then carried again),
+ *  and its sort. Nothing is requested; the draft just stops differing from what is on screen. */
+export function discardToApplied(draft: DiscoveryDraft, cqs: CQS, appliedText: string): DiscoveryDraft {
+  return {
+    ...reconcileWithResponse(draft, cqs),
+    text: appliedText,
+    sort: cqs.sort,
+    topicId: cqs.meta.topicId ?? null,
+  };
+}
+
 /** After a response lands with no edits made while it was in flight, make the panel equal to
  *  the user-sourced filters the server actually evaluated (dropped/merged ones disappear). */
 export function reconcileWithResponse(draft: DiscoveryDraft, cqs: CQS): DiscoveryDraft {
