@@ -6,10 +6,10 @@ deterministic function of `(CQS, dataVersion)`. Computing them MUST NOT alter `p
 re-evaluates); the evaluator never auto-relaxes.
 
 `build` receives `evaluate` as a black box (09) and calls it for `mostRestrictive`
-(D5) — it MUST NOT reimplement filtering. `excludedUnknown` (D4) is the one piece that
-inspects parcels directly (it must know *which* candidates miss a field, which the
-black box cannot reveal); it does so via the same shared `satisfies`/`within_scope`
-leaf semantics the evaluator uses, over the same dataVersion snapshot.
+(D5) — it MUST NOT reimplement filtering. `excludedUnknown` (D4) needs to know *which*
+candidates miss a field, which the black box cannot reveal, so the evaluator computes it in
+its own filter pass (`OrderedResult.excludedUnknown`) and `build` only passes it through.
+`_excluded_unknown` below is the independent scan that the tests hold that result to.
 """
 
 from __future__ import annotations
@@ -69,7 +69,13 @@ def _conflicts(cqs: CQS) -> list[Conflict]:
 
 
 def _excluded_unknown(cqs: CQS, data_version: str) -> dict[str, int]:
-    """D4 — per exclude-policy scalar filter, parcels dropped *solely* for a missing field.
+    """D4 reference implementation — one full scan per exclude-policy filter.
+
+    `build` no longer calls this: `evaluate` computes the same counts in its single filter
+    pass (`OrderedResult.excludedUnknown`). It stays as the independent oracle that
+    `test_fused_excluded_unknown_matches_reference_scan` checks the fused result against.
+
+    D4 — per exclude-policy scalar filter, parcels dropped *solely* for a missing field.
 
     A parcel counts iff it is within scope, passes every *other* applied predicate, and
     the filter's own field is missing (so `unknownPolicy="exclude"` is the sole reason
@@ -143,7 +149,7 @@ def build(
         appliedFilters=applied_count,
         conflicts=_conflicts(cqs),  # D2
         droppedInvalid=list(dropped or []),  # D3 (pass-through from merge)
-        excludedUnknown=_excluded_unknown(cqs, data_version),  # D4
+        excludedUnknown=dict(result.excludedUnknown),  # D4 (fused into the evaluator's filter pass)
     )
     if result.total == 0:  # D5 — only when zero results
         diag.mostRestrictive = _most_restrictive(cqs, data_version, evaluate)

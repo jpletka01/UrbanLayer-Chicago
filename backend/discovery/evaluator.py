@@ -18,10 +18,19 @@ from backend.discovery.predicates import satisfies, within_scope
 from backend.discovery.registry import load as load_registry
 
 
+# Missing-value concept applies to scalar attributes only (see diagnostics D4).
+_SCALAR_KINDS = {"enum", "range", "flag"}
+
+
 class OrderedResult(BaseModel):
     dataVersion: str
     pins: list[str] = Field(default_factory=list)  # ordered, total order, no duplicates
     total: int = 0
+    # D4 (diagnostics): per exclude-policy scalar filter, parcels in scope that pass every
+    # OTHER applied predicate and are dropped solely because that filter's field is missing.
+    # Computed in the same pass as the filter (a pure function of the CQS and dataVersion);
+    # only non-zero entries, in applied-filter order.
+    excludedUnknown: dict[str, int] = Field(default_factory=dict)
 
 
 def _normalize_pin(pin: str) -> str:
@@ -57,22 +66,44 @@ def evaluate(cqs: CQS, data_version: str) -> OrderedResult:
     registry = load_registry()
     parcels = parcel_mod.default_source.get(data_version)
 
-    # Resolve each applied filter's field + unknownPolicy once (not per parcel).
-    applied = [
-        (a.predicate, registry.filter_def(fid).field, registry.filter_def(fid).unknownPolicy)
-        for fid, a in cqs.filters.items()
-    ]
+    # Resolve each applied filter's field + unknownPolicy once (not per parcel). `track` marks
+    # the scalar exclude-policy filters whose missing-value drops D4 reports (region membership
+    # is a computed determination, never a NULL field).
+    applied = []
+    for fid, a in cqs.filters.items():
+        fdef = registry.filter_def(fid)
+        track = fdef.unknownPolicy == "exclude" and fdef.kind in _SCALAR_KINDS
+        applied.append((fid, a.predicate, fdef.field, fdef.unknownPolicy, track))
     scope = cqs.scope
 
     # --- Stage 1: filter (AND across filters; scope ANDs too, 05) ---
-    candidates = [
-        p
-        for p in parcels
-        if within_scope(p, scope)
-        and all(satisfies(pred, p, field, policy) for pred, field, policy in applied)
-    ]
+    # One pass. A parcel stops at its first failing predicate; if that filter is tracked and
+    # the parcel's field for it is missing, the parcel is a D4 exclusion for that filter iff
+    # every LATER predicate passes (the earlier ones already did). It can count for no other
+    # filter: any other filter's count requires passing this one.
+    candidates = []
+    unknown_counts: dict[str, int] = {}
+    for p in parcels:
+        if not within_scope(p, scope):
+            continue
+        failed = -1
+        for i, (_fid, pred, field, policy, _track) in enumerate(applied):
+            if not satisfies(pred, p, field, policy):
+                failed = i
+                break
+        if failed < 0:
+            candidates.append(p)
+            continue
+        fid, _pred, field, _policy, track = applied[failed]
+        if track and p.get(field) is None and all(
+            satisfies(pr, p, fl, po) for _f, pr, fl, po, _t in applied[failed + 1 :]
+        ):
+            unknown_counts[fid] = unknown_counts.get(fid, 0) + 1
 
     # --- Stage 2: sort (single key + dir, missing-last, final PIN-asc tie-break) ---
     ordered = _order(candidates, registry.sort_field(cqs.sort.key), cqs.sort.dir == "desc")
     pins = [p.pin for p in ordered]
-    return OrderedResult(dataVersion=data_version, pins=pins, total=len(pins))
+    excluded = {fid: unknown_counts[fid] for fid, *_ in applied if unknown_counts.get(fid)}
+    return OrderedResult(
+        dataVersion=data_version, pins=pins, total=len(pins), excludedUnknown=excluded
+    )
