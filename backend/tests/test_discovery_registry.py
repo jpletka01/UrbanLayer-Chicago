@@ -235,3 +235,25 @@ def test_dangling_requires_raises(raw):
     raw["filters"][0]["requires"] = ["does_not_exist"]
     with pytest.raises(ValidationError):
         reg.Registry.model_validate(raw)
+
+
+# --- presentation tier for the "+ Add filter" menu (never read by the evaluator) --------------
+
+EXPECTED_ESSENTIALS = {
+    "neighborhood", "land_use", "vacancy", "lot_size", "zoning_group", "transit_proximity", "sale_recency",
+}
+
+
+def test_every_filter_has_a_valid_tier_and_the_essentials_are_the_agreed_seven():
+    r = reg.load()
+    assert {f.tier for f in r.filters} <= {"essential", "more"}
+    assert {f.id for f in r.filters if f.tier == "essential"} == EXPECTED_ESSENTIALS
+
+
+def test_the_evaluator_side_never_reads_tier():
+    """Tier is presentation: nothing that produces a result may branch on it (INV-1/INV-6)."""
+    from pathlib import Path
+
+    root = Path(reg.__file__).parent
+    for name in ("evaluator.py", "predicates.py", "diagnostics.py", "compile_merge.py", "compile_text.py"):
+        assert ".tier" not in (root / name).read_text(), name
