@@ -19,18 +19,19 @@ const REGISTRY: Registry = {
   populatedFields: ["land_use", "lot_size", "tif", "upside_score"],
 };
 
-function setup(view: Exclude<FilterPopoverView, null>, values: Record<string, Predicate> = {}) {
+function setup(view: Exclude<FilterPopoverView, null>, values: Record<string, Predicate> = {}, pendingCount = 0) {
   const onChange = vi.fn();
   const onView = vi.fn();
   const onClose = vi.fn();
+  const onApply = vi.fn();
   const utils = render(
     <div>
       <button type="button" data-filter-popover-anchor="" data-testid="anchor">anchor</button>
       <span data-testid="outside">outside</span>
-      <AddFilterMenu registry={REGISTRY} view={view} values={values} onChange={onChange} onView={onView} onClose={onClose} />
+      <AddFilterMenu registry={REGISTRY} view={view} values={values} onChange={onChange} onView={onView} onClose={onClose} pendingCount={pendingCount} onApply={onApply} />
     </div>,
   );
-  return { onChange, onView, onClose, ...utils };
+  return { onChange, onView, onClose, onApply, ...utils };
 }
 
 const dialog = () => screen.getByTestId("discovery-filter-popover");
@@ -111,7 +112,8 @@ describe("AddFilterMenu: the editor view", () => {
 
   it("Done closes, and 'All filters' goes back to the menu", () => {
     const { onClose, onView } = setup({ kind: "edit", id: "tif" }, { tif: { kind: "flag", value: true } });
-    fireEvent.click(within(dialog()).getByRole("button", { name: "Done" }));
+    // two Done buttons in the DOM: the inline one (desktop) and the sheet footer (phones, via CSS)
+    fireEvent.click(within(dialog()).getAllByRole("button", { name: "Done" })[0]);
     expect(onClose).toHaveBeenCalledTimes(1);
     fireEvent.click(within(dialog()).getByRole("button", { name: /All filters/ }));
     expect(onView).toHaveBeenCalledWith({ kind: "menu" });
@@ -149,5 +151,31 @@ describe("AddFilterMenu: closing", () => {
     unmount();
     expect(document.activeElement).toBe(opener);
     opener.remove();
+  });
+});
+
+describe("AddFilterMenu: the phone sheet's footer action", () => {
+  const footer = () => screen.getByTestId("discovery-sheet-footer-action");
+
+  it("with nothing pending it is just Done: it closes and applies nothing", () => {
+    const { onClose, onApply } = setup({ kind: "menu" }, {}, 0);
+    expect(footer().textContent).toBe("Done");
+    fireEvent.click(footer());
+    expect(onApply).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("with edits pending it says how many, applies them, and closes", () => {
+    const { onClose, onApply } = setup({ kind: "menu" }, {}, 2);
+    expect(footer().textContent).toBe("Show results (2)");
+    fireEvent.click(footer());
+    expect(onApply).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("is there in the editor view too, and is a phones-only element (md:hidden)", () => {
+    setup({ kind: "edit", id: "tif" }, { tif: { kind: "flag", value: true } }, 1);
+    expect(footer().textContent).toBe("Show results (1)");
+    expect(footer().parentElement!.className).toContain("md:hidden");
   });
 });

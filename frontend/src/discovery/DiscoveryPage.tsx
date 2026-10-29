@@ -11,7 +11,7 @@ import { useAuthContext } from "../contexts/AuthContext";
 import PageHeader from "./../components/PageHeader";
 import UpgradePrompt from "./../components/UpgradePrompt";
 import { AddFilterMenu, type FilterPopoverView } from "./AddFilterMenu";
-import { Chips } from "./chips";
+import { Chips, chipLabel } from "./chips";
 import { CoverageBanner } from "./CoverageBanner";
 import { DescribeBox } from "./DescribeBox";
 import { DiscoveryMap } from "./DiscoveryMap";
@@ -26,7 +26,7 @@ import { track } from "../lib/tracking";
 import { loadRegistry } from "./registryClient";
 import { summarize, seamPrompt } from "./summary";
 import { useDiscoverySearch } from "./useDiscoverySearch";
-import type { Registry, SortSpec } from "./types";
+import type { Registry, SearchResponse, SortSpec } from "./types";
 
 export default function DiscoveryPage() {
   const { t } = useTranslation("pages");
@@ -58,6 +58,9 @@ export default function DiscoveryPage() {
   // The "+ Add filter" menu / in-place filter editor (null = closed).
   const [popover, setPopover] = useState<FilterPopoverView>(null);
   const closePopover = useCallback(() => setPopover(null), []);
+  // Phone header: collapsed unless the user opened it for THIS result (the response object is the
+  // key, so a new result collapses it again with no effect) or something needs attention.
+  const [expandedFor, setExpandedFor] = useState<SearchResponse | null>(null);
   const filterValues = useMemo(() => draftFilters(draft, response?.cqs ?? null), [draft, response]);
   // Below xl: one List|Map content pane (map stays mounted). Phones also get the
   // bottom-sheet filter drawer; tablet widths retain the inline filter rail.
@@ -155,6 +158,25 @@ export default function DiscoveryPage() {
 
   const showUpdate = pendingCount > 0 && !draftIsInFlight;
 
+  // What forces the phone header open: an unapplied edit, a "nothing understood" notice, no matches,
+  // a failed search, or the Add filter menu (it is anchored in the expandable part).
+  const attention =
+    pendingCount > 0 ||
+    search.textNotice !== null ||
+    response?.result.total === 0 ||
+    unavailable ||
+    refreshFailed ||
+    popover !== null;
+  const expanded = attention || (response !== null && expandedFor === response);
+  // The collapsed button reads the DRAFT's chips (a control surface, not a claim about results).
+  const activeChips = chips.filter((c) => c.state !== "removed");
+  const firstChip = activeChips[0];
+  const collapsedLabel =
+    registry && firstChip
+      ? chipLabel(firstChip.id, firstChip.predicate, registry.filters.find((f) => f.id === firstChip.id))
+      : t("discovery.header.noFilters");
+  const moreFilters = Math.max(0, activeChips.length - 1);
+
   const textFeedback = registry ? (
     <TextFeedback
       registry={registry}
@@ -196,18 +218,24 @@ export default function DiscoveryPage() {
           {!showStart && registry && (
             <div
               data-testid="discovery-header"
-              className="relative flex-shrink-0 space-y-2 border-b border-dark-border p-4"
+              className="relative flex flex-shrink-0 flex-col gap-2 border-b border-dark-border p-4"
             >
               <h1 className="sr-only">{t("discovery.title")}</h1>
-              <CoverageBanner registry={registry} />
-              <DescribeBox value={draft.text} onChange={search.setText} onSubmit={search.apply} />
-              {textFeedback}
-              <div className="flex items-center justify-between gap-2">
+              {/* Below md the header collapses to "New search | List/Map", one summary button and
+                  the Update row, so the list gets the screen (Phase 4a). Flex `order` keeps the
+                  desktop order while the phone order puts the always-visible parts first. The
+                  hidden parts stay in the DOM, so nothing is lost when it expands. */}
+              <div className={`order-4 flex flex-col gap-2 md:order-1 ${expanded ? "" : "max-md:hidden"}`}>
+                <CoverageBanner registry={registry} />
+                <DescribeBox value={draft.text} onChange={search.setText} onSubmit={search.apply} />
+                {textFeedback}
+              </div>
+              <div className="order-1 flex items-center justify-between gap-2 md:order-2">
                 <button
                   type="button"
                   onClick={onNewSearch}
                   data-testid="discovery-new-search"
-                  className="text-caption text-text-muted transition-colors hover:text-accent"
+                  className="touch-target text-caption text-text-muted transition-colors hover:text-accent"
                 >
                   <span aria-hidden>← </span>{t("discovery.newSearch")}
                 </button>
@@ -215,36 +243,57 @@ export default function DiscoveryPage() {
                   <MobileTabToggle value={mobileTab} onChange={setMobileTab} />
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setExpandedFor(expanded && !attention ? null : response)}
+                aria-expanded={expanded}
+                data-testid="discovery-header-toggle"
+                className="touch-target order-2 flex w-full items-center justify-between gap-2 rounded-lg border border-dark-border bg-dark-elevated/40 px-3 py-2 text-left text-caption text-text-secondary md:hidden"
+              >
+                <span className="min-w-0 truncate">{collapsedLabel}</span>
+                <span className="flex flex-shrink-0 items-center gap-2 text-text-muted">
+                  {moreFilters > 0 && <span>{t("discovery.header.more", { count: moreFilters })}</span>}
+                  <svg
+                    aria-hidden
+                    className={`h-3 w-3 transition-transform duration-150 ${expanded ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </button>
 
               {/* The strip: chips from the DRAFT (control surface), "+ Add filter", then Update. */}
-              <Chips
-                items={chips}
-                registry={registry}
-                onRemove={search.removeFilter}
-                onRestore={search.restoreFilter}
-                onEdit={(id) => setPopover({ kind: "edit", id })}
-              >
-                <button
-                  type="button"
-                  {...{ [FILTER_POPOVER_ANCHOR]: "" }}
-                  aria-haspopup="dialog"
-                  aria-expanded={popover !== null}
-                  onClick={() => setPopover((p) => (p ? null : { kind: "menu" }))}
-                  data-testid="discovery-add-filter"
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-dark-border-strong px-2.5 py-1 text-micro text-text-secondary transition-colors hover:border-accent hover:text-accent"
+              <div className={`order-5 md:order-3 ${expanded ? "" : "max-md:hidden"}`}>
+                <Chips
+                  items={chips}
+                  registry={registry}
+                  onRemove={search.removeFilter}
+                  onRestore={search.restoreFilter}
+                  onEdit={(id) => setPopover({ kind: "edit", id })}
                 >
-                  <span aria-hidden>+</span> {t("discovery.addFilter.button")}
-                </button>
-              </Chips>
+                  <button
+                    type="button"
+                    {...{ [FILTER_POPOVER_ANCHOR]: "" }}
+                    aria-haspopup="dialog"
+                    aria-expanded={popover !== null}
+                    onClick={() => setPopover((p) => (p ? null : { kind: "menu" }))}
+                    data-testid="discovery-add-filter"
+                    className="touch-hit inline-flex items-center gap-1 rounded-full border border-dashed border-dark-border-strong px-2.5 py-1 text-micro text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                  >
+                    <span aria-hidden>+</span> {t("discovery.addFilter.button")}
+                  </button>
+                </Chips>
+              </div>
               {showUpdate && (
-                <div className="flex items-center gap-3">
+                <div className="order-3 flex items-center gap-3 md:order-4">
                   <UpdateResultsButton count={pendingCount} onClick={search.apply} />
                   {response && (
                     <button
                       type="button"
                       onClick={search.discardChanges}
                       data-testid="discovery-discard-changes"
-                      className="text-caption text-text-muted transition-colors hover:text-accent"
+                      className="touch-target text-caption text-text-muted transition-colors hover:text-accent"
                     >
                       {t("discovery.addFilter.discard")}
                     </button>
@@ -259,13 +308,15 @@ export default function DiscoveryPage() {
                   onChange={search.editPanel}
                   onView={setPopover}
                   onClose={closePopover}
+                  pendingCount={showUpdate ? pendingCount : 0}
+                  onApply={search.apply}
                 />
               )}
 
               {/* Evaluated sentence (INV-4): dims with the rest of the previous results. Sort sits
                   here, next to the list it orders. */}
               {response && (
-                <div className="flex items-start justify-between gap-3">
+                <div className={`order-6 flex items-start justify-between gap-3 md:order-5 ${expanded ? "" : "max-md:hidden"}`}>
                   <p
                     className={`min-w-0 text-body text-text-secondary transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
                     aria-busy={refreshing}
@@ -281,12 +332,12 @@ export default function DiscoveryPage() {
                 <button
                   type="button"
                   onClick={onAskArea}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+                  className={`touch-target order-7 w-fit rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent md:order-6 ${expanded ? "" : "max-md:hidden"}`}
                 >
-                  {t("discovery.askAnalystArea")} <span aria-hidden>→</span>
+                  {t("discovery.askAnalystArea")} <span aria-hidden className="ml-1.5">→</span>
                 </button>
               )}
-              <IndexAsOf registry={registry} />
+              <IndexAsOf registry={registry} className={`order-8 md:order-7 ${expanded ? "" : "max-md:hidden"}`} />
             </div>
           )}
 
@@ -368,7 +419,7 @@ function UpdateResultsButton({
       type="button"
       onClick={onClick}
       data-testid="discovery-update-results"
-      className={`rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover ${className}`}
+      className={`touch-target rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover ${className}`}
     >
       {t("discovery.updateResults", { count })}
     </button>
@@ -392,7 +443,7 @@ function MobileTabToggle({
           type="button"
           aria-pressed={value === opt}
           onClick={() => onChange(opt)}
-          className={`px-3 py-1.5 text-caption transition-colors ${
+          className={`touch-target px-3 py-1.5 text-caption transition-colors ${
             value === opt ? "bg-accent/15 text-accent" : "text-text-secondary hover:text-text-primary"
           } ${opt === "list" ? "rounded-l-md" : "rounded-r-md"}`}
         >
@@ -415,10 +466,13 @@ function SortControl({
   const { t } = useTranslation("pages");
   return (
     <div className="flex items-center gap-1.5 text-caption">
+      {/* appearance-none + our own arrow: Safari ignores padding and min-height on a native
+          select, which left it 20 px tall on a phone. */}
+      <div className="relative">
       <select
         value={sort.key}
         onChange={(e) => onChange({ ...sort, key: e.target.value })}
-        className="rounded-lg border border-dark-border bg-dark-elevated px-2 py-1.5 text-text-primary focus:border-accent focus:outline-none"
+        className="touch-field appearance-none rounded-lg border border-dark-border bg-dark-elevated py-1.5 pl-2 pr-7 text-text-primary focus:border-accent focus:outline-none"
       >
         {registry.sortKeys.map((sk) => (
           <option key={sk.key} value={sk.key}>
@@ -426,10 +480,18 @@ function SortControl({
           </option>
         ))}
       </select>
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-text-muted"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
       <button
         type="button"
         onClick={() => onChange({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })}
-        className="rounded-lg border border-dark-border px-2 py-1.5 text-text-secondary transition-colors hover:border-dark-border-strong"
+        className="touch-target justify-center rounded-lg border border-dark-border px-2 py-1.5 text-text-secondary transition-colors hover:border-dark-border-strong"
         aria-label={t("discovery.toggleSortAria")}
       >
         {sort.dir === "asc" ? "↑" : "↓"}

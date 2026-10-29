@@ -707,3 +707,106 @@ describe("DiscoveryPage results header (the rail is gone)", () => {
     await screen.findByText(/^start-resume:/);
   });
 });
+
+// --- Phase 4a: the header collapses below md (the list gets the screen) --------------------------
+
+describe("DiscoveryPage phone header (collapsed by default after a search)", () => {
+  const toggle = () => screen.getByTestId("discovery-header-toggle");
+  // The evaluated sentence's wrapper is one of the parts that is hidden below md while collapsed.
+  const details = () => screen.getByTestId("discovery-summary").parentElement!;
+  const hiddenBelowMd = () => details().className.includes("max-md:hidden");
+
+  it("starts collapsed: the summary button names the first filter and counts the rest", async () => {
+    await pageWithResults(); // three filters
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(hiddenBelowMd()).toBe(true);
+    expect(toggle().textContent).toContain("+2 more");
+    expect(toggle().className).toContain("md:hidden"); // the button itself is a phone-only control
+  });
+
+  it("the summary button expands and collapses the details", async () => {
+    await pageWithResults();
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(hiddenBelowMd()).toBe(false);
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(hiddenBelowMd()).toBe(true);
+  });
+
+  it("always keeps New search and the List|Map toggle in view", async () => {
+    await pageWithResults();
+    expect(screen.getByTestId("discovery-new-search").closest("div")!.className).not.toContain("max-md:hidden");
+    expect(screen.getByRole("button", { name: "Map" })).toBeTruthy();
+  });
+
+  it("opens by itself when an edit is pending, and Update results is visible either way", async () => {
+    await pageWithResults();
+    fireEvent.click(screen.getByText("remove-tif"));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("discovery-update-results")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("discovery-discard-changes")); // nothing pending any more
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens by itself while the Add filter menu is open", async () => {
+    await pageWithResults();
+    fireEvent.click(toggle()); // expand to reach the Add filter button
+    fireEvent.click(screen.getByTestId("discovery-add-filter"));
+    fireEvent.click(toggle()); // the user tries to collapse it
+    expect(toggle().getAttribute("aria-expanded")).toBe("true"); // still open: the menu is anchored in it
+    fireEvent.click(screen.getByText("pop-close"));
+    // the user opened it themselves, so it stays open until they close it
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens by itself on no matches, on a nothing-understood notice, and on a failed search", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "none", 0));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:0"));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true"); // zero results: the controls are the way out
+    cleanup();
+
+    mocks.previewText.mockResolvedValue({ understood: [], residual: ["xyz"], droppedInvalid: [] });
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle());
+    fireEvent.change(describeInput(), { target: { value: "xyz" } });
+    fireEvent.keyDown(describeInput(), { key: "Enter" });
+    await screen.findByTestId("discovery-text-feedback");
+    fireEvent.click(toggle()); // try to collapse: the notice keeps it open
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    cleanup();
+
+    mocks.runSearch.mockResolvedValueOnce(null);
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("unavailable"));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("a new result collapses it again, even if the user had opened it", async () => {
+    await pageWithResults();
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(screen.getByText("remove-tif"));
+    mocks.runSearch.mockResolvedValueOnce(combined("v2", "next"));
+    fireEvent.click(screen.getByTestId("discovery-update-results"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v2:1"));
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("with no filters the button says so instead of naming one", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    expect(toggle().textContent).toContain("No filters");
+  });
+});

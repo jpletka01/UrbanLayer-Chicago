@@ -84,7 +84,7 @@ export function Chips({ items, registry, onRemove, onRestore, onEdit, children }
   if (items.length === 0 && !children) return null;
 
   return (
-    <div className="flex flex-wrap gap-2" data-testid="discovery-chips">
+    <div className="touch-chip-rows flex flex-wrap gap-2" data-testid="discovery-chips">
       {items.map(({ id, predicate, state }) => {
         const name = filterLabel(id, defs.get(id));
         const label = chipLabel(id, predicate, defs.get(id));
@@ -128,7 +128,7 @@ export function Chips({ items, registry, onRemove, onRestore, onEdit, children }
                 aria-haspopup="dialog"
                 aria-label={td("editFilterAria", `Edit ${label}`, { label })}
                 onClick={() => onEdit(id)}
-                className="text-left"
+                className="touch-hit text-left"
               >
                 {label}
               </button>

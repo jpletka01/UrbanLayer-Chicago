@@ -613,6 +613,10 @@
       "understoodNothing": "No pude convertir “{{text}}” en filtros; la búsqueda usó solo los demás filtros."
     },
     "newSearch": "Nueva búsqueda",
+    "header": {
+      "noFilters": "Sin filtros",
+      "more": "+{{count}} más"
+    },
     "addFilter": {
       "button": "Agregar filtro",
       "menuAria": "Agregar un filtro",
@@ -626,6 +630,7 @@
       "inSearch": "En su búsqueda",
       "back": "Todos los filtros",
       "reset": "Restablecer este filtro",
+      "showResults": "Mostrar resultados ({{count}})",
       "done": "Listo",
       "discard": "Descartar cambios",
       "heuristic": "heurístico",

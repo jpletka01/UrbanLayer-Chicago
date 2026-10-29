@@ -307,7 +307,7 @@ export function DiscoveryMap({
         <button
           type="button"
           onClick={fitToResults}
-          className="absolute left-24 right-3 top-3 z-20 w-fit rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-1.5 text-caption text-text-secondary shadow-card transition-colors hover:border-accent/50 hover:text-accent md:left-1/2 md:right-auto md:-translate-x-1/2"
+          className="touch-target absolute left-24 right-3 top-3 z-20 w-fit rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-1.5 text-caption text-text-secondary shadow-card transition-colors hover:border-accent/50 hover:text-accent md:left-1/2 md:right-auto md:-translate-x-1/2"
           data-testid="discovery-map-zoom"
         >
           {t("discovery.mapZoomToResults")}
@@ -330,7 +330,7 @@ export function DiscoveryMap({
           aria-expanded={keyOpen}
           aria-controls="discovery-map-key"
           onClick={() => setKeyOpen((open) => !open)}
-          className="absolute left-3 top-3 z-20 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-caption text-text-secondary shadow-card md:hidden"
+          className="touch-target absolute left-3 top-3 z-20 rounded-lg border border-dark-border bg-dark-surface/95 px-3 py-2 text-caption text-text-secondary shadow-card md:hidden"
           data-testid="discovery-map-key-button"
         >
           {t("discovery.mapKey")}

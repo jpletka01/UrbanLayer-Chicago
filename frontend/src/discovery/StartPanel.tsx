@@ -78,14 +78,14 @@ export function StartPanel({
             <button
               type="button"
               onClick={() => onChoose({ kind: "resume" })}
-              className="rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover"
+              className="touch-target rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover"
             >
               {t("discovery.start.resume")}
             </button>
             <button
               type="button"
               onClick={onForgetResume}
-              className="text-micro text-text-muted transition-colors hover:text-accent"
+              className="touch-target text-micro text-text-muted transition-colors hover:text-accent"
             >
               {t("discovery.start.forget")}
             </button>
@@ -139,7 +139,7 @@ export function StartPanel({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("discovery.start.browsePlaceholder", { count: areas.length })}
           aria-label={t("discovery.start.browseAria")}
-          className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+          className="touch-field w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
         />
         <ul className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-dark-border" data-testid="discovery-start-areas">
           {shown.map((a) => (
@@ -147,7 +147,7 @@ export function StartPanel({
               <button
                 type="button"
                 onClick={() => onChoose({ kind: "neighborhood", areaId: a.id })}
-                className="w-full px-3 py-2 text-left text-body text-text-secondary transition-colors hover:bg-dark-elevated hover:text-text-primary"
+                className="touch-target w-full px-3 py-2 text-left text-body text-text-secondary transition-colors hover:bg-dark-elevated hover:text-text-primary"
               >
                 {a.name}
               </button>
@@ -162,7 +162,7 @@ export function StartPanel({
           type="button"
           onClick={() => onChoose({ kind: "all" })}
           data-testid="discovery-start-all"
-          className="text-link underline-offset-2 hover:underline"
+          className="touch-target text-link underline-offset-2 hover:underline"
         >
           {t("discovery.start.all")}
         </button>{" "}

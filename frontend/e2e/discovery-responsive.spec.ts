@@ -77,8 +77,11 @@ test("Discovery keeps previous results on screen, dimmed, while an applied edit 
     expect(rowsBefore).toBeGreaterThan(0);
     await page.waitForTimeout(1500);
 
-    // Draft edits only: nothing is requested.
+    // Draft edits only: nothing is requested. On a phone the header is collapsed after a search,
+    // so open it to reach the chips.
     const requestsBefore = searchRequests;
+    const headerToggle = page.getByTestId("discovery-header-toggle");
+    if (await headerToggle.isVisible()) await headerToggle.click();
     const chips = page.getByTestId("discovery-chips");
     await chips.getByRole("button", { name: /^Remove / }).first().click();
     await chips.getByRole("button", { name: /^Remove / }).first().click();

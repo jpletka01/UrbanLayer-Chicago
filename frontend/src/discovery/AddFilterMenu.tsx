@@ -27,13 +27,17 @@ interface Props {
   onChange: (id: FilterId, predicate: Predicate | null) => void;
   onView: (view: FilterPopoverView) => void;
   onClose: () => void;
+  /** Unapplied edits in the draft (0 when none or a search is already running with them). */
+  pendingCount?: number;
+  /** Apply the draft as a search. Phones get it as "Show results" in the sheet's footer. */
+  onApply?: () => void;
 }
 
 function humanize(s: string): string {
   return s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 }
 
-export function AddFilterMenu({ registry, view, values, onChange, onView, onClose }: Props) {
+export function AddFilterMenu({ registry, view, values, onChange, onView, onClose, pendingCount = 0, onApply }: Props) {
   const { t } = useTranslation("pages");
   const dialogRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -77,7 +81,7 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
       <button
         type="button"
         onClick={() => choose(def)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-body text-text-secondary transition-colors hover:bg-dark-elevated hover:text-text-primary"
+        className="touch-target flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-body text-text-secondary transition-colors hover:bg-dark-elevated hover:text-text-primary"
       >
         <span className="flex items-center gap-2">
           {nameOf(def)}
@@ -128,7 +132,7 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("discovery.addFilter.search")}
               aria-label={t("discovery.addFilter.search")}
-              className="mb-3 w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+              className="touch-field mb-3 w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
             {group(t("discovery.addFilter.essentials"), groups.essentials)}
             {group(t("discovery.addFilter.more"), groups.more)}
@@ -138,7 +142,7 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
                   type="button"
                   aria-expanded={soonOpen}
                   onClick={() => setSoonOpen((o) => !o)}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-overline uppercase text-text-muted transition-colors hover:bg-dark-elevated"
+                  className="touch-target flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-overline uppercase text-text-muted transition-colors hover:bg-dark-elevated"
                 >
                   {t("discovery.addFilter.soon", { count: groups.soon.length })}
                   <span aria-hidden>{soonOpen ? "−" : "+"}</span>
@@ -166,7 +170,7 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
                 type="button"
                 data-autofocus
                 onClick={() => onView({ kind: "menu" })}
-                className="text-caption text-text-secondary transition-colors hover:text-accent"
+                className="touch-target text-caption text-text-secondary transition-colors hover:text-accent"
               >
                 <span aria-hidden>← </span>{t("discovery.addFilter.back")}
               </button>
@@ -183,20 +187,36 @@ export function AddFilterMenu({ registry, view, values, onChange, onView, onClos
                 type="button"
                 disabled={!values[editing.id]}
                 onClick={() => onChange(editing.id, null)}
-                className="text-caption text-text-muted transition-colors hover:text-accent disabled:opacity-40 disabled:hover:text-text-muted"
+                className="touch-target text-caption text-text-muted transition-colors hover:text-accent disabled:opacity-40 disabled:hover:text-text-muted"
               >
                 {t("discovery.addFilter.reset")}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover"
+                className="rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover max-md:hidden"
               >
                 {t("discovery.addFilter.done")}
               </button>
             </div>
           </>
         ) : null}
+
+        {/* Phones: a sticky footer, so the primary action is always under the thumb. With edits
+            pending it applies them ("Show results"); otherwise it just closes the sheet. */}
+        <div className="sticky -bottom-3 -mx-3 -mb-3 mt-3 border-t border-dark-border bg-dark-surface p-3 md:hidden">
+          <button
+            type="button"
+            data-testid="discovery-sheet-footer-action"
+            onClick={() => {
+              if (pendingCount > 0) onApply?.();
+              onClose();
+            }}
+            className="touch-target w-full justify-center rounded-lg bg-action px-3 py-2 text-title text-text-on-accent transition-colors hover:bg-action-hover"
+          >
+            {pendingCount > 0 ? t("discovery.addFilter.showResults", { count: pendingCount }) : t("discovery.addFilter.done")}
+          </button>
+        </div>
       </div>
     </>
   );

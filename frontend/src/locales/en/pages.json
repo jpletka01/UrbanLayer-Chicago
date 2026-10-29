@@ -613,6 +613,10 @@
       "understoodNothing": "I couldn't turn “{{text}}” into filters; the search used only the other filters."
     },
     "newSearch": "New search",
+    "header": {
+      "noFilters": "No filters",
+      "more": "+{{count}} more"
+    },
     "addFilter": {
       "button": "Add filter",
       "menuAria": "Add a filter",
@@ -626,6 +630,7 @@
       "inSearch": "In your search",
       "back": "All filters",
       "reset": "Reset this filter",
+      "showResults": "Show results ({{count}})",
       "done": "Done",
       "discard": "Discard changes",
       "heuristic": "heuristic",
