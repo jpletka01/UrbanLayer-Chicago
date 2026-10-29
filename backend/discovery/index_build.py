@@ -668,14 +668,16 @@ def _split_by_community_area(spine: list[dict]) -> tuple[list[tuple[dict, int]],
     A CA is fetched by bounding box, so the box also catches neighbor-CA parcels (kept, tagged to
     their real CA) and suburban parcels that sit in no community-area polygon at all (border
     suburbs such as Forest Park). Those suburban points are dropped, never tagged to the box's CA. Returns
-    (kept as (spine row, real CA), dropped PINs).
+    (kept as (spine row, real CA), dropped PINs) Dropped PINs are in the form the index stores
+    (dashed, `spine["pin"]`), because `delete_parcels` matches on the stored key; the undashed
+    `pin_digits` matched nothing, so the 2026-10-29 refresh pruned none of the 66,692 suburban rows.
     """
     kept: list[tuple[dict, int]] = []
     dropped: list[str] = []
     for s in spine:
         ca_real = community_area_by_point(s["lat"], s["lon"])
         if ca_real is None:
-            dropped.append(s["pin_digits"])
+            dropped.append(s["pin"])
         else:
             kept.append((s, ca_real))
     return kept, dropped
