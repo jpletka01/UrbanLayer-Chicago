@@ -39,8 +39,15 @@ interface ResultsProps {
   response: SearchResponse | null;
   rows: ResultRow[]; // accumulated window (page 0 + appended), deduped by pin
   registry: Registry;
-  loading: boolean; // initial search
-  unavailable?: boolean;
+  // A search is running. With no response yet this is the first search ("Searching…"); with
+  // one, the previous results stay on screen, dimmed and inert, until the new ones land.
+  loading: boolean;
+  unavailable?: boolean; // the first search failed (nothing to keep on screen)
+  refreshFailed?: boolean; // a refresh failed; the previous results are still shown
+  onRetry?: () => void;
+  /** Unapplied edits exist, so "Discard changes" means something (offered in the zero state). */
+  canDiscard?: boolean;
+  onDiscard?: () => void;
   loadingMore: boolean; // appending a later page
   hasMore: boolean;
   onLoadMore: () => void;
@@ -61,6 +68,10 @@ export function DiscoveryResults({
   registry,
   loading,
   unavailable = false,
+  refreshFailed = false,
+  onRetry,
+  canDiscard = false,
+  onDiscard,
   loadingMore,
   hasMore,
   onLoadMore,
@@ -75,15 +86,28 @@ export function DiscoveryResults({
   onAskArea,
 }: ResultsProps) {
   const { t } = useTranslation("pages");
-  if (loading) {
-    return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
-  }
-  if (unavailable) {
-    return <p className="p-4 text-body text-text-muted" role="status">{t("discovery.searchUnavailable")}</p>;
-  }
   if (!response) {
+    if (loading) return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
+    if (unavailable) {
+      return (
+        <div className="space-y-3 p-4" role="status">
+          <p className="text-body text-text-muted">{t("discovery.searchUnavailable")}</p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              data-testid="discovery-search-retry"
+              className="touch-target rounded-lg border border-dark-border px-3 py-1.5 text-caption font-medium text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+            >
+              {t("discovery.retry")}
+            </button>
+          )}
+        </div>
+      );
+    }
     return <p className="p-4 text-body text-text-muted">{t("discovery.setFilters")}</p>;
   }
+  const refreshing = loading;
 
   const { result, diagnostics } = response;
   const activeSortKey = response.cqs.sort.key;
@@ -91,17 +115,54 @@ export function DiscoveryResults({
 
   return (
     <div className="flex h-full flex-col">
+      {refreshFailed && !refreshing && (
+        <div
+          role="alert"
+          className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-dark-border bg-state-warning/10 px-4 py-2 text-caption text-state-warning"
+          data-testid="discovery-update-failed"
+        >
+          <span>{t("discovery.updateFailed")}</span>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="touch-target rounded-lg border border-state-warning/40 px-2.5 py-1 text-caption font-medium transition-colors hover:border-state-warning"
+            >
+              {t("discovery.retry")}
+            </button>
+          )}
+        </div>
+      )}
+      <p role="status" aria-live="polite" className="sr-only">
+        {refreshing ? t("discovery.updatingAria") : ""}
+      </p>
+      {/* While a refresh runs the previous evaluated results stay (never a blank page) but are
+          visibly stale and inert: dimmed, aria-busy, no clicks, focus or scroll. */}
+      <div
+        className={`flex min-h-0 flex-1 flex-col transition-opacity ${
+          refreshing ? "pointer-events-none select-none opacity-[0.55]" : ""
+        }`}
+        aria-busy={refreshing}
+        inert={refreshing}
+        data-testid="discovery-results-body"
+        data-stale={refreshing ? "true" : "false"}
+      >
       <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-body text-text-primary">
             <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
             {t("discovery.parcelCount", { count: result.total })}
+            {refreshing && (
+              <span className="ml-2 text-caption text-text-muted" aria-hidden>
+                {t("discovery.updating")}
+              </span>
+            )}
           </p>
           {result.total > 0 && (exportLocked ? onUpgrade : onExport) && (
             <button
               type="button"
               onClick={exportLocked ? onUpgrade : onExport}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+              className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark-surface px-2.5 py-1 text-caption text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
             >
               {exportLocked ? (
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -142,7 +203,9 @@ export function DiscoveryResults({
           </div>
         ))}
 
-        {result.total === 0 && <ZeroState response={response} registry={registry} onRelax={onRelax} />}
+        {result.total === 0 && (
+          <ZeroState response={response} registry={registry} onRelax={onRelax} canDiscard={canDiscard} onDiscard={onDiscard} />
+        )}
 
         {result.total > 0 && diagnostics.broad && (
           <p className="text-micro text-text-muted">{t("discovery.broadSearch")}</p>
@@ -185,6 +248,7 @@ export function DiscoveryResults({
           )
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -199,30 +263,47 @@ function ZeroState({
   response,
   registry,
   onRelax,
+  canDiscard,
+  onDiscard,
 }: {
   response: SearchResponse;
   registry: Registry;
   onRelax: (filterId: string) => void;
+  canDiscard?: boolean;
+  onDiscard?: () => void;
 }) {
   const { t } = useTranslation("pages");
   const filterIds = Object.keys(response.cqs.filters);
+
+  const discard =
+    canDiscard && onDiscard ? (
+      <button
+        type="button"
+        onClick={onDiscard}
+        data-testid="discovery-zero-discard"
+        className="touch-target text-caption text-text-muted transition-colors hover:text-accent"
+      >
+        {t("discovery.addFilter.discard")}
+      </button>
+    ) : null;
 
   // (1) NULL-backed: filters set on fields the index hasn't populated.
   const nullBacked = filterIds.filter((id) => !isPopulated(registry, id));
   if (nullBacked.length > 0) {
     return (
-      <div className="space-y-1 text-micro text-text-muted">
+      <div className="space-y-2 text-caption text-text-secondary">
         <p>
           {t("discovery.zeroNullBacked", {
             count: nullBacked.length,
             labels: nullBacked.map((id) => filterLabel(t, registry, id)).join(", "),
           })}
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="touch-chip-rows flex flex-wrap gap-2">
           {nullBacked.map((id) => (
             <RelaxChip key={id} label={filterLabel(t, registry, id)} onClick={() => onRelax(id)} />
           ))}
         </div>
+        {discard}
       </div>
     );
   }
@@ -239,13 +320,16 @@ function ZeroState({
     if (selected.length > 0 && offCoverage.length === selected.length) {
       const names = offCoverage.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", ");
       return (
-        <p className="text-micro text-text-muted">
-          {t("discovery.zeroNonLive", {
-            count: offCoverage.length,
-            names,
-            live: coverage.liveAreas.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", "),
-          })}
-        </p>
+        <div className="space-y-2">
+          <p className="text-caption text-text-secondary">
+            {t("discovery.zeroNonLive", {
+              count: offCoverage.length,
+              names,
+              live: coverage.liveAreas.map((id) => caName(`${NEIGHBORHOOD_PREFIX}${id}`)).join(", "),
+            })}
+          </p>
+          {discard}
+        </div>
       );
     }
   }
@@ -253,10 +337,10 @@ function ZeroState({
   // (3) Too tight: offer the most-restrictive removals (06 diagnostics).
   const removable = response.diagnostics.mostRestrictive.filter((m) => m.countWithoutIt > 0);
   return (
-    <div className="space-y-1">
-      <p className="text-micro text-text-muted">{t("discovery.zeroTooTight")}</p>
+    <div className="space-y-2">
+      <p className="text-caption text-text-secondary">{t("discovery.zeroTooTight")}</p>
       {removable.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="touch-chip-rows flex flex-wrap gap-2">
           {removable.map((m) => (
             <RelaxChip
               key={m.filterId}
@@ -266,13 +350,14 @@ function ZeroState({
           ))}
         </div>
       )}
+      {discard}
     </div>
   );
 }
 
 function RelaxChip({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Chip as="button" size="sm" interactive onClick={onClick}>
+    <Chip as="button" size="md" interactive onClick={onClick} className="touch-hit">
       {label}
     </Chip>
   );

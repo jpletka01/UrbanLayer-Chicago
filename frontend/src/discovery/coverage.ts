@@ -30,3 +30,10 @@ export function liveAreaNames(registry: Registry): string {
     .liveAreas.map((id) => caName(`neighborhood:${id}`))
     .join(", ");
 }
+
+/** ISO date (YYYY-MM-DD) → a localized date that cannot shift with the viewer's time zone. */
+export function formatAsOf(iso: string, language: string): string | null {
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(language, { timeZone: "UTC", year: "numeric", month: "short", day: "numeric" });
+}

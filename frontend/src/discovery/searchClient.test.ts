@@ -27,4 +27,10 @@ describe("buildRequest", () => {
     expect(req.text).toBe("tif");
     expect(req.topicId).toBe("vacant_mf");
   });
+
+  it("asks for the map's points in the same response only when includePins is set", () => {
+    expect(buildRequest({ panelState: {} }, REG).includePins).toBeUndefined();
+    expect(buildRequest({ panelState: {}, includePins: false }, REG).includePins).toBeUndefined();
+    expect(buildRequest({ panelState: {}, includePins: true }, REG).includePins).toBe(true);
+  });
 });

@@ -600,7 +600,56 @@
     "exportPro": "Export (Pro)",
     "title": "Property Discovery",
     "subtitle": "Start with a goal or describe what you're looking for — then refine.",
-    "searchPlaceholder": "Describe what you want — e.g. \"vacant multifamily near the L, built after 1990\"",
+    "searchPlaceholder": "Describe what you want — e.g. \"multifamily built before 1950 with a TIF\"",
+    "indexAsOf": "Index built {{date}} · {{areas}}",
+    "indexAreasAll": "all {{count}} community areas",
+    "indexAreasSome": "{{count}} community areas",
+    "text": {
+      "example": "multifamily built before 1950 with a TIF",
+      "noneUnderstood": "I couldn't turn “{{text}}” into filters, so no search was run.",
+      "notUnderstood": "Not understood: {{words}}.",
+      "tryExample": "Try, for example: “{{example}}”, or use the filters.",
+      "understood": "From “{{text}}” I understood: {{filters}}.",
+      "understoodNothing": "I couldn't turn “{{text}}” into filters; the search used only the other filters."
+    },
+    "newSearch": "New search",
+    "header": {
+      "noFilters": "No filters",
+      "more": "+{{count}} more"
+    },
+    "addFilter": {
+      "button": "Add filter",
+      "menuAria": "Add a filter",
+      "editAria": "Edit filter",
+      "search": "Search filters",
+      "essentials": "Essentials",
+      "more": "More filters",
+      "soon": "Coming soon ({{count}})",
+      "soonNote": "No data for these in the index yet.",
+      "noMatch": "No filter matches that.",
+      "inSearch": "In your search",
+      "back": "All filters",
+      "reset": "Reset this filter",
+      "showResults": "Show results ({{count}})",
+      "done": "Done",
+      "discard": "Discard changes",
+      "heuristic": "heuristic",
+      "heuristicTip": "A 0–100 score we calculate from unused zoning capacity and land-versus-building value. A rough v1 heuristic that helps rank candidates; it is not an appraisal."
+    },
+    "start": {
+      "heading": "What are you looking for?",
+      "recipes": "Start from a recipe",
+      "filtersLine": "Filters: {{list}}",
+      "browse": "Browse a neighborhood",
+      "browsePlaceholder": "Search {{count}} neighborhoods",
+      "browseAria": "Search neighborhoods",
+      "browseNone": "No neighborhood matches that.",
+      "all": "Start with all parcels",
+      "allNote": "No filters: the whole index, so you can narrow it yourself.",
+      "resumeHeading": "Pick up where you left off",
+      "resume": "Resume",
+      "forget": "Forget it"
+    },
     "searchAria": "Describe what you're looking for",
     "searching": "Searching…",
     "search": "Search",
@@ -634,6 +683,7 @@
     "mapEmpty": "No parcels match this search.",
     "mapNoCoordinates_one": "The returned parcel does not have a valid map location.",
     "mapNoCoordinates_other": "None of the {{count}} returned parcels has a valid map location.",
+    "mapShownOfTotal": "{{shown}} of {{total}} shown",
     "mapPlotted_one": "{{plotted}} of {{returned}} returned parcel plotted.",
     "mapPlotted_other": "{{plotted}} of {{returned}} returned parcels plotted.",
     "mapUnlocated_one": "1 returned parcel lacks valid map coordinates.",
@@ -681,6 +731,7 @@
     "maxAria": "maximum {{name}}",
     "minSliderAria": "minimum {{name}} slider",
     "maxSliderAria": "maximum {{name}} slider",
+    "editFilterAria": "Edit {{label}}",
     "removeFilterAria": "Remove {{name}} filter",
     "sumParcelsWhere": "Parcels where {{parts}}",
     "sumAllParcels": "All parcels",
@@ -782,8 +833,8 @@
     },
     "topic": {
       "vacant_mf_transit": {
-        "label": "Vacant land, MF-zoned, near transit",
-        "description": "Empty lots in RM/RT multifamily zoning within ½ mile of an L stop."
+        "label": "Vacant land in residential zoning near transit",
+        "description": "Empty lots in residential zoning districts (RS, RT and RM) within ½ mile of an L stop."
       },
       "teardown": {
         "label": "Teardown candidates",
@@ -833,7 +884,18 @@
     },
     "clearAll": "Clear all ({{count}})",
     "metricAssessed": "assessed",
-    "metricPerSqft": "$ / bldg sqft"
+    "metricPerSqft": "$ / bldg sqft",
+    "updateResults": "Update results ({{count}})",
+    "updating": "Updating…",
+    "updatingAria": "Updating results. Showing the previous results until the new ones load.",
+    "updateFailed": "Couldn't update.",
+    "retry": "Retry",
+    "chipPending": "not applied yet",
+    "chipPendingTitle": "Not applied yet. Press Update results.",
+    "restoreFilterAria": "Restore {{name}} filter",
+    "restoreFilterTitle": "Removed, not applied yet. Click to restore.",
+    "mapStale": "Previous results, updating",
+    "mapZoomToResults": "Zoom to results"
   },
   "settings": {
     "title": "Settings",

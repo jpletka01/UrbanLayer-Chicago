@@ -53,6 +53,8 @@ const PAGES: Array<{
     awaitApi: "/api/scorecard",
     settle: 3000,
   },
+  // The Start panel (nothing runs on arrival): audited on its own, then again after one search.
+  { id: "discovery-start", path: "/discovery", settle: 1500 },
   { id: "discovery", path: "/discovery", awaitApi: "/search", settle: 3000 },
   { id: "pricing", path: "/pricing" },
   { id: "about", path: "/about" },
@@ -223,6 +225,10 @@ for (const pageDef of PAGES) {
       : Promise.resolve(null);
 
     await page.goto(pageDef.path, { waitUntil: "domcontentloaded" });
+    // Discovery opens on the Start panel; "discovery" audits the page after one explicit search.
+    if (pageDef.id === "discovery") {
+      await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
+    }
     await page.waitForLoadState("load").catch(() => {});
     await apiWait;
     await page.evaluate(() => document.fonts.ready).catch(() => {});

@@ -8,7 +8,7 @@
     "permits_other": "{{count}} permisos",
     "sources_one": "{{count}} fuente",
     "sources_other": "{{count}} fuentes",
-    "expand": "Toca para ampliar"
+    "expand": "Toque para ampliar"
   },
   "data": "Datos",
   "sources": "Fuentes",
@@ -29,13 +29,13 @@
   "readFullText": "Leer texto completo",
   "collapse": "Contraer",
   "noCodeRefs": "No se encontraron referencias al código",
-  "noCodeRefsHint": "Pregunta sobre zonificación o el código municipal para ver fuentes",
+  "noCodeRefsHint": "Pregunte sobre zonificación o el código municipal para ver fuentes",
   "noDatasets": "No se consultaron conjuntos de datos en vivo para esta respuesta.",
   "crossRefUnavailable": "No se pudo recuperar esta sección con referencia cruzada.",
   "sectionsReferenced_one": "{{count}} sección del código referenciada",
   "sectionsReferenced_other": "{{count}} secciones del código referenciadas",
   "openPanel": "Abrir panel (⌘B)",
   "closePanel": "Cerrar panel (⌘B)",
-  "dragToResize": "Arrastra para redimensionar · Doble clic para contraer",
+  "dragToResize": "Arrastre para redimensionar · Doble clic para contraer",
   "contextAndData": "Contexto y datos"
 }

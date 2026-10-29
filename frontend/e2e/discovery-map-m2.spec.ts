@@ -37,6 +37,8 @@ async function openDiscovery(page: Page, expectDesktopKey = true) {
     { timeout: 90_000 },
   );
   await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+  // Nothing runs on arrival now: the Start panel offers the first recipe as one explicit search.
+  await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
   await searchWait;
   if (expectDesktopKey) await expect(page.getByTestId("discovery-map-legend")).toBeVisible();
 }
@@ -90,4 +92,45 @@ test("Pro fixture keeps upside interaction and survives a live system-theme swap
   await expect(page.getByTestId("discovery-map-pane").locator("canvas.mapboxgl-canvas")).toBeVisible();
   await expect(key).toContainText("Redevelopment upside");
   await page.screenshot({ path: testInfo.outputPath("discovery-pro-light-theme.png") });
+});
+
+test("Pro fixture dims and disarms the previous dots during a refresh, and respects a moved camera", async ({ page, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await useTier(page, baseURL, "admin");
+  let delayMs = 0;
+  await page.route("**/api/discovery/search**", async (route) => {
+    if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    await route.continue();
+  });
+  await openDiscovery(page);
+  const body = page.getByTestId("discovery-results-body");
+  await expect(body).toHaveAttribute("data-stale", "false");
+  const key = page.getByTestId("discovery-map-legend");
+  await expect(key).toContainText("Redevelopment upside");
+  await page.waitForTimeout(1500);
+
+  // The user takes the camera.
+  const mapBox = (await page.getByTestId("discovery-map-container").boundingBox())!;
+  await page.mouse.move(mapBox.x + mapBox.width / 2, mapBox.y + mapBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(mapBox.x + mapBox.width / 2 + 120, mapBox.y + mapBox.height / 2 + 60, { steps: 8 });
+  await page.mouse.up();
+
+  await page.getByTestId("discovery-chips").getByRole("button", { name: /^Remove / }).first().click();
+  delayMs = 3000;
+  await page.getByTestId("discovery-update-results").first().click();
+
+  // Previous dots stay (key still counted from the previous model) but are flagged stale.
+  await expect(page.getByTestId("discovery-map-stale")).toHaveText("Previous results, updating");
+  await expect(key).toContainText("Redevelopment upside");
+  await expect(page.getByTestId("discovery-map-pane").locator("canvas.mapboxgl-canvas")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("discovery-pro-stale-map.png") });
+
+  // New dots arrive; the moved camera is left alone and a button offers the fit.
+  await expect(body).toHaveAttribute("data-stale", "false", { timeout: 60_000 });
+  await expect(page.getByTestId("discovery-map-stale")).toHaveCount(0);
+  await expect(page.getByTestId("discovery-map-zoom")).toBeVisible();
+  await page.getByTestId("discovery-map-zoom").click();
+  await expect(page.getByTestId("discovery-map-zoom")).toHaveCount(0);
+  delayMs = 0;
 });
