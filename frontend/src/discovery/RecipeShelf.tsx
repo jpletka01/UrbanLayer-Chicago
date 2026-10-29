@@ -8,10 +8,9 @@
 
 import { useTranslation } from "react-i18next";
 import { Chip } from "../components/ui/Chip";
-import { coverageOf, liveAreaNames, missingFieldsFor } from "./coverage";
+import { coverageOf, liveAreaNames } from "./coverage";
+import { recipeStatus } from "./recipeStatus";
 import type { Registry, TopicDef } from "./types";
-
-type BadgeTone = "neutral" | "positive" | "warning";
 
 export function RecipeShelf({
   registry,
@@ -23,8 +22,6 @@ export function RecipeShelf({
   horizontal?: boolean; // mobile: a horizontal scroll-snap row instead of a stacked grid
 }) {
   const { t } = useTranslation("pages");
-  const labelsFor = (ids: string[]): string[] =>
-    ids.map((id) => t(`discovery.filter.${id}`, registry.filters.find((f) => f.id === id)?.label ?? id));
   if (!registry.topics.length) return null;
   const coverage = coverageOf(registry);
   const coverageNote = coverage.mode === "partial" ? t("discovery.liveIn", { areas: liveAreaNames(registry) }) : "";
@@ -42,27 +39,7 @@ export function RecipeShelf({
         }
       >
         {registry.topics.map((topic) => {
-          const missing = missingFieldsFor(registry, Object.keys(topic.presets));
-          const fieldsReady = missing.length === 0;
-          const count = registry.recipeCounts?.[topic.id] ?? 0;
-          const live = fieldsReady && count > 0;
-          const missingLabels = labelsFor(missing);
-
-          let badge: string;
-          let badgeTone: BadgeTone;
-          let title: string | undefined;
-          if (!fieldsReady) {
-            badge = t("discovery.needsData");
-            badgeTone = "warning";
-            title = t("discovery.needsDataTitle", { labels: missingLabels.join(", ") });
-          } else if (count === 0) {
-            badge = t("discovery.noMatchesYet");
-            badgeTone = "neutral";
-            title = t("discovery.noMatchesTitle");
-          } else {
-            badge = t("discovery.liveBadge", { count: count.toLocaleString() });
-            badgeTone = "positive";
-          }
+          const { live, badge, tone: badgeTone, title } = recipeStatus(registry, topic, t);
           return (
             <button
               key={topic.id}

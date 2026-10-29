@@ -4,7 +4,7 @@
 // the draft. Edits change the draft only: a search runs when the user presses Search, Enter or
 // "Update results". The page never evaluates or filters — that is the backend's job.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../contexts/AuthContext";
@@ -17,7 +17,9 @@ import { DiscoveryMap } from "./DiscoveryMap";
 import { DiscoveryResults } from "./DiscoveryResults";
 import { IndexAsOf } from "./IndexAsOf";
 import { RecipeShelf } from "./RecipeShelf";
-import { missingFieldsFor } from "./coverage";
+import { StartPanel, type StartChoice } from "./StartPanel";
+import { clearLastSearch, loadLastSearch, saveLastSearch, type SavedSearch } from "./lastSearch";
+import { track } from "../lib/tracking";
 import { loadRegistry } from "./registryClient";
 import { summarize, seamPrompt } from "./summary";
 import { useDiscoverySearch } from "./useDiscoverySearch";
@@ -30,7 +32,17 @@ export default function DiscoveryPage() {
   const isPro = user?.tier === "premium" || user?.tier === "admin";
 
   const [registry, setRegistry] = useState<Registry | null>(null);
-  const search = useDiscoverySearch(registry);
+  // What the viewer last searched in this browser (a convenience: re-run, never shown as a result).
+  const [resumable, setResumable] = useState<SavedSearch | null>(() => loadLastSearch());
+  const search = useDiscoverySearch(registry, {
+    onCommit: (inputs, resp) => {
+      if (!registry) return;
+      saveLastSearch({
+        inputs: { panelState: inputs.panelState, text: inputs.text ?? "", sort: inputs.sort ?? null, topicId: inputs.topicId ?? null },
+        sentence: summarize(resp.cqs, registry),
+      });
+    },
+  });
   const {
     draft, applied: response, rows, nextOffset, loading, loadingMore, refreshing, unavailable,
     refreshFailed, draftIsInFlight, chips, pendingCount, map,
@@ -69,23 +81,39 @@ export default function DiscoveryPage() {
     }
   }, [loading]);
 
-  // Auto-run the first LIVE recipe on load (approved 2026-07-01): the page never opens
-  // to a dead results column. Skipped the moment the user typed, filtered, or searched
-  // first; behaves exactly like a manual recipe click (topicId telemetry included).
-  const autoRanRef = useRef(false);
-  const { pickRecipe } = search;
-  useEffect(() => {
-    if (!registry || autoRanRef.current || loading) return;
-    if (response || draft.text || Object.keys(draft.panelState).length > 0) return;
-    const live = registry.topics.find(
-      (tp) =>
-        missingFieldsFor(registry, Object.keys(tp.presets)).length === 0 &&
-        (registry.recipeCounts?.[tp.id] ?? 0) > 0,
-    );
-    if (!live) return;
-    autoRanRef.current = true;
-    pickRecipe(live);
-  }, [registry, response, draft.text, draft.panelState, loading, pickRecipe]);
+  // Nothing runs on arrival (redesign Phase 2, replacing the 2026-07-01 auto-run of the first
+  // recipe): until the first search the Start panel is shown, and every way in from it is one
+  // explicit "search this". The panel goes away when a search starts and does not come back.
+  const showStart = !!registry && !response && !loading && !unavailable;
+  const onStartChoice = useCallback(
+    (choice: StartChoice) => {
+      switch (choice.kind) {
+        case "recipe":
+          track("discovery_start_choice", { kind: "recipe", id: choice.topic.id });
+          search.pickRecipe(choice.topic);
+          break;
+        case "neighborhood":
+          track("discovery_start_choice", { kind: "neighborhood", id: choice.areaId });
+          search.pickNeighborhood(choice.areaId);
+          break;
+        case "all":
+          track("discovery_start_choice", { kind: "all" });
+          search.startAll();
+          break;
+        case "resume":
+          if (resumable) {
+            track("discovery_start_choice", { kind: "resume", id: resumable.inputs.topicId ?? null });
+            search.resume(resumable.inputs);
+          }
+          break;
+      }
+    },
+    [search, resumable],
+  );
+  const onForgetResume = useCallback(() => {
+    clearLastSearch();
+    setResumable(null);
+  }, []);
 
   const onOpenParcel = useCallback(
     (pin: string) => navigate(`/scorecard?pin=${pin.replace(/\D/g, "")}`),
@@ -181,7 +209,7 @@ export default function DiscoveryPage() {
           </div>
 
           {/* Mobile-only: recipes as a horizontal scroll-snap row */}
-          {registry && (
+          {registry && !showStart && (
             <div className="flex-shrink-0 border-b border-dark-border p-3 md:hidden">
               <RecipeShelf registry={registry} onPick={search.pickRecipe} horizontal />
             </div>
@@ -191,7 +219,7 @@ export default function DiscoveryPage() {
           <div className="hidden flex-1 space-y-5 overflow-y-auto p-4 md:block">
             {registry ? (
               <>
-                <RecipeShelf registry={registry} onPick={search.pickRecipe} />
+                {!showStart && <RecipeShelf registry={registry} onPick={search.pickRecipe} />}
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="text-overline uppercase text-text-muted">
@@ -257,7 +285,15 @@ export default function DiscoveryPage() {
             </div>
           )}
           <div className="min-h-0 flex-1">
-            {registry && (
+            {registry && showStart && (
+              <StartPanel
+                registry={registry}
+                resumable={resumable}
+                onChoose={onStartChoice}
+                onForgetResume={onForgetResume}
+              />
+            )}
+            {registry && !showStart && (
               <DiscoveryResults
                 response={response}
                 rows={rows}

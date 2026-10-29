@@ -4,15 +4,8 @@
 // claim a date it does not have.
 
 import { useTranslation } from "react-i18next";
-import { coverageOf } from "./coverage";
+import { coverageOf, formatAsOf } from "./coverage";
 import type { Registry } from "./types";
-
-/** ISO date (YYYY-MM-DD) → a localized date that cannot shift with the viewer's time zone. */
-export function formatAsOf(iso: string, language: string): string | null {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(language, { timeZone: "UTC", year: "numeric", month: "short", day: "numeric" });
-}
 
 export function IndexAsOf({ registry, className = "" }: { registry: Registry; className?: string }) {
   const { t, i18n } = useTranslation("pages");

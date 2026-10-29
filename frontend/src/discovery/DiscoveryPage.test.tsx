@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   runSearch: vi.fn(),
   runPins: vi.fn(),
   loadRegistry: vi.fn(),
+  track: vi.fn(),
 }));
 
 vi.mock("./searchClient", () => ({
@@ -18,7 +19,7 @@ vi.mock("./searchClient", () => ({
 vi.mock("./registryClient", () => ({ loadRegistry: mocks.loadRegistry }));
 vi.mock("../contexts/AuthContext", () => ({ useAuthContext: () => ({ user: null }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
-vi.mock("../lib/tracking", () => ({ track: vi.fn() }));
+vi.mock("../lib/tracking", () => ({ track: mocks.track }));
 vi.mock("./../components/PageHeader", () => ({ default: () => <div /> }));
 vi.mock("./../components/UpgradePrompt", () => ({ default: () => null }));
 vi.mock("./chips", () => ({
@@ -51,7 +52,23 @@ vi.mock("./DiscoveryFilterPanel", () => ({
     </div>
   ),
 }));
-vi.mock("./RecipeShelf", () => ({ RecipeShelf: () => null }));
+vi.mock("./RecipeShelf", () => ({ RecipeShelf: () => <div data-testid="recipe-shelf" /> }));
+// The Start panel has its own tests; here it is a stub that lets a test make each choice.
+vi.mock("./StartPanel", () => ({
+  StartPanel: ({ resumable, onChoose, onForgetResume }: {
+    resumable: { sentence: string } | null;
+    onChoose: (c: unknown) => void;
+    onForgetResume: () => void;
+  }) => (
+    <div data-testid="start-panel">
+      <button type="button" onClick={() => onChoose({ kind: "recipe", topic: { id: "vacant_mf", presets: {} } })}>start-recipe</button>
+      <button type="button" onClick={() => onChoose({ kind: "neighborhood", areaId: 24 })}>start-area</button>
+      <button type="button" onClick={() => onChoose({ kind: "all" })}>start-all</button>
+      {resumable && <button type="button" onClick={() => onChoose({ kind: "resume" })}>{`start-resume:${resumable.sentence}`}</button>}
+      <button type="button" onClick={onForgetResume}>start-forget</button>
+    </div>
+  ),
+}));
 vi.mock("./DiscoveryResults", () => ({
   DiscoveryResults: ({ response, rows, loading, unavailable, refreshFailed, onRetry }: {
     response: SearchResponse | null;
@@ -148,6 +165,8 @@ beforeEach(() => {
   mocks.runSearch.mockReset();
   mocks.runPins.mockReset();
   mocks.loadRegistry.mockReset().mockResolvedValue(REG);
+  mocks.track.mockReset();
+  localStorage.clear();
 });
 
 afterEach(cleanup);
@@ -362,5 +381,100 @@ describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
     expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
     expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(2);
+  });
+});
+
+// --- Start panel (redesign Phase 2): nothing runs on arrival; each way in is one explicit search ---
+
+const savedSearch = {
+  v: 1,
+  inputs: { panelState: { tif: { kind: "flag", value: true } }, text: "", sort: null, topicId: "r1" },
+  sentence: "Parcels where TIF district.",
+  savedAt: Date.now(),
+};
+
+describe("DiscoveryPage Start panel", () => {
+  it("opens on the Start panel and requests nothing (the old auto-run of the first recipe is gone)", async () => {
+    render(<DiscoveryPage />);
+    await screen.findByTestId("start-panel");
+    await waitFor(() => expect((screen.getByRole("button", { name: "Search" }) as HTMLButtonElement).disabled).toBe(false));
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(mocks.runPins).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("results-state")).toBeNull(); // no results area, so no result to mistake for one
+    expect(screen.queryByTestId("recipe-shelf")).toBeNull(); // the recipes are in the Start panel, not twice
+  });
+
+  it("a recipe is one explicit search with its presets, and the panel goes away", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-recipe"));
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1);
+    const sent = mocks.runSearch.mock.calls[0][0];
+    // the presets come from the registry's recipe, as plain user filters
+    expect(sent.panelState).toEqual(REG.topics[0].presets);
+    expect(sent.topicId).toBe("vacant_mf");
+    expect(mocks.track).toHaveBeenCalledWith("discovery_start_choice", { kind: "recipe", id: "vacant_mf" });
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    expect(screen.queryByTestId("start-panel")).toBeNull();
+    expect(screen.getAllByTestId("recipe-shelf").length).toBeGreaterThan(0); // the rail shelf takes over after the first search
+  });
+
+  it("a neighborhood is a search for that one community area and nothing else", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-area"));
+    const sent = mocks.runSearch.mock.calls[0][0];
+    expect(sent.panelState).toEqual({ neighborhood: { kind: "region", regions: ["neighborhood:24"] } });
+    expect(sent.topicId).toBeNull();
+    expect(mocks.track).toHaveBeenCalledWith("discovery_start_choice", { kind: "neighborhood", id: 24 });
+  });
+
+  it("'all parcels' is a search with no filters, and says which choice was made", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    expect(mocks.runSearch.mock.calls[0][0].panelState).toEqual({});
+    expect(mocks.track).toHaveBeenCalledWith("discovery_start_choice", { kind: "all" });
+  });
+
+  it("keeps the Start panel until a search is actually running, and not after a failed first search", async () => {
+    mocks.runSearch.mockResolvedValueOnce(null);
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-all"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("unavailable"));
+    expect(screen.queryByTestId("start-panel")).toBeNull();
+  });
+
+  it("remembers what was evaluated, in this browser, as inputs plus the server's sentence", async () => {
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    fireEvent.click(await screen.findByText("start-recipe"));
+    await waitFor(() => expect(localStorage.getItem("ul_discovery_last")).not.toBeNull());
+    const stored = JSON.parse(localStorage.getItem("ul_discovery_last")!);
+    expect(stored.inputs.panelState).toEqual(REG.topics[0].presets);
+    expect(stored.inputs.topicId).toBe("vacant_mf");
+    expect(typeof stored.sentence).toBe("string");
+    expect(stored.sentence.length).toBeGreaterThan(0);
+  });
+
+  it("offers the last search, re-runs its inputs on Resume, and can forget it", async () => {
+    localStorage.setItem("ul_discovery_last", JSON.stringify(savedSearch));
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    render(<DiscoveryPage />);
+    const resume = await screen.findByText("start-resume:Parcels where TIF district.");
+    expect(mocks.runSearch).not.toHaveBeenCalled(); // offering is not running
+    fireEvent.click(resume);
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1);
+    expect(mocks.runSearch.mock.calls[0][0].panelState).toEqual(savedSearch.inputs.panelState);
+    expect(mocks.track).toHaveBeenCalledWith("discovery_start_choice", { kind: "resume", id: "r1" });
+  });
+
+  it("forgetting the last search removes it from storage and from the panel", async () => {
+    localStorage.setItem("ul_discovery_last", JSON.stringify(savedSearch));
+    render(<DiscoveryPage />);
+    await screen.findByText("start-resume:Parcels where TIF district.");
+    fireEvent.click(screen.getByText("start-forget"));
+    expect(localStorage.getItem("ul_discovery_last")).toBeNull();
+    expect(screen.queryByText(/start-resume/)).toBeNull();
   });
 });

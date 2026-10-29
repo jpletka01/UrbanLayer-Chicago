@@ -24,6 +24,7 @@ import {
   type DiscoveryDraft,
 } from "./draftModel";
 import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
+import { NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { expandTopic } from "./topicCompiler";
 import type {
   FilterId,
@@ -57,7 +58,16 @@ function toInputs(draft: DiscoveryDraft, topicId: string | null = draft.topicId)
   return { panelState: draft.panelState, text: draft.text, sort: draft.sort, topicId };
 }
 
-export function useDiscoverySearch(registry: Registry | null) {
+export interface DiscoverySearchOptions {
+  /** Called when a response is committed (the user is now looking at it), with the inputs that produced it. */
+  onCommit?: (inputs: SearchInputs, response: SearchResponse) => void;
+}
+
+export function useDiscoverySearch(registry: Registry | null, options: DiscoverySearchOptions = {}) {
+  const onCommitRef = useRef(options.onCommit);
+  useEffect(() => {
+    onCommitRef.current = options.onCommit;
+  });
   const [draft, setDraft] = useState<DiscoveryDraft>(EMPTY_DRAFT);
   const draftRef = useRef(draft);
   const updateDraft = useCallback((fn: (d: DiscoveryDraft) => DiscoveryDraft) => {
@@ -175,6 +185,7 @@ export function useDiscoverySearch(registry: Registry | null) {
         committedInputsRef.current = inputs;
         commitRef.current += 1;
         setApplied(next);
+        onCommitRef.current?.(inputs, resp);
         setRows(resp.result.rows);
         setNextOffset(resp.result.nextOffset);
         // No edits while it ran: the strip now shows exactly what the server evaluated.
@@ -242,6 +253,51 @@ export function useDiscoverySearch(registry: Registry | null) {
       void issue(toInputs(next));
     },
     [registry, issue],
+  );
+
+  // The other ways in from the Start panel. Each is an explicit "search this" like a recipe
+  // click, so each replaces the draft and runs at once.
+  const startWith = useCallback(
+    (next: DiscoveryDraft) => {
+      draftRef.current = next;
+      setDraft(next);
+      void issue(toInputs(next));
+    },
+    [issue],
+  );
+
+  /** One community area, nothing else: the user then adds filters to it. */
+  const pickNeighborhood = useCallback(
+    (areaId: number) => {
+      if (!registry) return;
+      startWith({
+        panelState: { neighborhood: { kind: "region", regions: [`${NEIGHBORHOOD_PREFIX}${areaId}`] } },
+        text: "",
+        sort: registry.defaultSort,
+        topicId: null,
+      });
+    },
+    [registry, startWith],
+  );
+
+  /** No filters: every parcel in the index. */
+  const startAll = useCallback(() => {
+    if (!registry) return;
+    startWith({ panelState: {}, text: "", sort: registry.defaultSort, topicId: null });
+  }, [registry, startWith]);
+
+  /** Re-run the inputs of an earlier search (evaluated fresh; nothing stored is shown as a result). */
+  const resume = useCallback(
+    (saved: Pick<SearchInputs, "panelState" | "text" | "sort" | "topicId">) => {
+      if (!registry) return;
+      startWith({
+        panelState: saved.panelState,
+        text: saved.text ?? "",
+        sort: saved.sort ?? registry.defaultSort,
+        topicId: saved.topicId ?? null,
+      });
+    },
+    [registry, startWith],
   );
 
   // --- draft edits: none of these request anything ---
@@ -342,6 +398,9 @@ export function useDiscoverySearch(registry: Registry | null) {
     map: { points: mapPoints, truncated: mapTruncated, total: mapTotal, status: mapStatus },
     apply,
     pickRecipe,
+    pickNeighborhood,
+    startAll,
+    resume,
     editPanel,
     setText,
     setSort,

@@ -2932,6 +2932,7 @@ _VALID_EVENT_NAMES = {
     "scorecard_view",
     "checkout_started",
     "discovery_search",
+    "discovery_start_choice",
     "signup_completed",
     "segment_selected",
     "scorecard_feedback",
