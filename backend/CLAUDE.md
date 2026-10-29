@@ -126,6 +126,7 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
   - `POST /api/discovery/search` — `{rows,total,nextOffset,gated}`. Rows hydrated from the snapshot;
     `limit/offset` paging. **Free tier (Depends(get_current_user), `FREE_ROW_CAP=10`) is
     server-capped** to the top 10 + `gated=true` + true total + `nextOffset=null`.
+  - `POST /api/discovery/text-preview` (`text_preview.py`, own router) — compile-only: `parse → merge` for a phrase → `{understood, residual, droppedInvalid}`; never evaluates, reads no index (the page asks it before searching text).
   - `POST /api/discovery/search/pins` — FULL ordered coord set (pin+lat/lon+upside+landUse),
     capped `MAX_MAP_POINTS=5000` + `truncated`. NOT tier-capped (free sees all dots; FE colors
     by land-use + view-only).

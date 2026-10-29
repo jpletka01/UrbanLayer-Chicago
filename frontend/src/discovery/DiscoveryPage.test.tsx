@@ -9,11 +9,13 @@ const mocks = vi.hoisted(() => ({
   runPins: vi.fn(),
   loadRegistry: vi.fn(),
   track: vi.fn(),
+  previewText: vi.fn(),
 }));
 
 vi.mock("./searchClient", () => ({
   runSearch: mocks.runSearch,
   runPins: mocks.runPins,
+  previewText: mocks.previewText,
   exportCsv: vi.fn(),
 }));
 vi.mock("./registryClient", () => ({ loadRegistry: mocks.loadRegistry }));
@@ -23,6 +25,7 @@ vi.mock("../lib/tracking", () => ({ track: mocks.track }));
 vi.mock("./../components/PageHeader", () => ({ default: () => <div /> }));
 vi.mock("./../components/UpgradePrompt", () => ({ default: () => null }));
 vi.mock("./chips", () => ({
+  chipLabel: (id: string) => (id === "tif" ? "TIF district" : id),
   Chips: ({ items, onRemove, onRestore }: {
     items: Array<{ id: string; state: string }>;
     onRemove: (id: string) => void;
@@ -166,6 +169,8 @@ beforeEach(() => {
   mocks.runPins.mockReset();
   mocks.loadRegistry.mockReset().mockResolvedValue(REG);
   mocks.track.mockReset();
+  // the text compiler understood something, unless a test says otherwise
+  mocks.previewText.mockReset().mockResolvedValue({ understood: [{ filterId: "tif", predicate: { kind: "flag", value: true } }], residual: [], droppedInvalid: [] });
   localStorage.clear();
 });
 
@@ -178,10 +183,14 @@ describe("DiscoveryPage issued-query pairing", () => {
     mocks.runSearch.mockImplementationOnce(() => firstSearch.promise).mockImplementationOnce(() => secondSearch.promise);
     const { button, input } = await readyPage();
 
+    // The text check runs before each search, so let the first search start (its request is in
+    // flight, unresolved) before the second is issued; the second must then supersede it.
     fireEvent.change(input, { target: { value: "first" } });
     fireEvent.click(button);
+    await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(1));
     fireEvent.change(input, { target: { value: "second" } });
     fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(2));
 
     secondSearch.resolve(combined("v2", "new"));
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v2:1"));
@@ -490,5 +499,51 @@ describe("DiscoveryPage Start panel", () => {
     fireEvent.click(screen.getByText("start-forget"));
     expect(localStorage.getItem("ul_discovery_last")).toBeNull();
     expect(screen.queryByText(/start-resume/)).toBeNull();
+  });
+});
+
+
+// --- Text box: ask the compiler first; say so instead of searching everything ---
+
+describe("DiscoveryPage text box feedback", () => {
+  it("does not search, and says why, when the compiler understood none of the phrase", async () => {
+    mocks.previewText.mockResolvedValue({ understood: [], residual: ["teardown", "logan", "square"], droppedInvalid: [] });
+    const { input } = await readyPage();
+    fireEvent.change(input, { target: { value: "teardown in logan square" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    const note = await screen.findByTestId("discovery-text-feedback");
+    expect(note.getAttribute("data-kind")).toBe("none");
+    expect(note.textContent).toContain("no search was run");
+    expect(note.textContent).toContain("Not understood: teardown, logan, square.");
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+  });
+
+  it("clears the notice when the text is edited", async () => {
+    mocks.previewText.mockResolvedValue({ understood: [], residual: ["xyz"], droppedInvalid: [] });
+    const { input } = await readyPage();
+    fireEvent.change(input, { target: { value: "xyz" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await screen.findByTestId("discovery-text-feedback");
+    fireEvent.change(input, { target: { value: "xyz tif" } });
+    expect(screen.queryByTestId("discovery-text-feedback")).toBeNull();
+  });
+
+  it("searches when the compiler understood the phrase, and names what the evaluated search took from it", async () => {
+    mocks.runSearch.mockResolvedValueOnce({
+      ...combined("v1", "one"),
+      cqs: {
+        filters: { tif: { predicate: { kind: "flag", value: true }, source: "text" } },
+        sort: REG.defaultSort, scope: { mode: "all" }, meta: { rawText: "tif near the L", textResidual: ["l"] },
+      },
+    });
+    const { input } = await readyPage();
+    fireEvent.change(input, { target: { value: "tif near the L" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(1));
+    expect(mocks.runSearch.mock.calls[0][0].text).toBe("tif near the L");
+    const note = await screen.findByTestId("discovery-text-feedback");
+    expect(note.getAttribute("data-kind")).toBe("partial");
+    expect(note.textContent).toContain("TIF district");
+    expect(note.textContent).toContain("Not understood: l.");
   });
 });

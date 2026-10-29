@@ -7,6 +7,7 @@ import type { PinsResponse, SearchResponse } from "./types";
 const mocks = vi.hoisted(() => ({
   runSearch: vi.fn(),
   runPins: vi.fn(),
+  previewText: vi.fn(),
   exportCsv: vi.fn(),
   track: vi.fn(),
 }));
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./searchClient", () => ({
   runSearch: mocks.runSearch,
   runPins: mocks.runPins,
+  previewText: mocks.previewText,
   exportCsv: mocks.exportCsv,
 }));
 vi.mock("../lib/tracking", () => ({ track: mocks.track }));
@@ -86,6 +88,7 @@ beforeEach(() => {
   mocks.runPins.mockReset();
   mocks.exportCsv.mockReset();
   mocks.track.mockReset();
+  mocks.previewText.mockReset().mockResolvedValue({ understood: [{ filterId: "tif", predicate: { kind: "flag", value: true } }], residual: [], droppedInvalid: [] });
 });
 
 afterEach(cleanup);
@@ -429,5 +432,98 @@ describe("useDiscoverySearch: the map's points ride the search response (include
     const call = mocks.runSearch.mock.calls[1][0];
     expect(call.offset).toBe(50);
     expect(call.includePins).toBeUndefined();
+  });
+});
+
+
+describe("useDiscoverySearch: the text gate (ask the compiler before searching)", () => {
+  const NOTHING = { understood: [], residual: ["teardown", "logan"], droppedInvalid: [] };
+
+  it("does not search a phrase the compiler understood none of, and keeps the previous results", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    mocks.previewText.mockResolvedValueOnce(NOTHING);
+    act(() => {
+      hook.result.current.clearAll();
+      hook.result.current.setText("teardown in logan square");
+    });
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.textNotice).not.toBeNull());
+    expect(hook.result.current.textNotice).toEqual({ text: "teardown in logan square", words: ["teardown", "logan"] });
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(hook.result.current.rows[0].pin).toBe("first"); // nothing was replaced
+    expect(hook.result.current.applied?.dataVersion).toBe("v1");
+  });
+
+  it("searches when the compiler understood something, sending the text as typed", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+    act(() => hook.result.current.setText("tif"));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(mocks.previewText).toHaveBeenCalledWith("tif");
+    expect(mocks.runSearch.mock.calls[0][0].text).toBe("tif");
+    expect(hook.result.current.textNotice).toBeNull();
+    expect(hook.result.current.appliedText).toBe("tif");
+  });
+
+  it("fails open: if the compiler cannot be asked (null or a throw), it searches anyway", async () => {
+    for (const failure of [() => Promise.resolve(null), () => Promise.reject(new Error("down"))]) {
+      cleanup();
+      mocks.runSearch.mockReset();
+      mocks.previewText.mockReset().mockImplementationOnce(failure);
+      mocks.runSearch.mockResolvedValueOnce(combined("v1", "one"));
+      const hook = setup();
+      act(() => hook.result.current.setText("anything"));
+      act(() => hook.result.current.apply());
+      await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(1));
+      expect(hook.result.current.textNotice).toBeNull();
+    }
+  });
+
+  it("does not ask when there are panel filters beside the text, or when the text is blank", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValue(combined("v1", "one"));
+    act(() => {
+      hook.result.current.editPanel("tif", TIF);
+      hook.result.current.setText("teardown in logan square");
+    });
+    act(() => hook.result.current.apply());
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1); // immediately: the filters carry the search
+    expect(mocks.previewText).not.toHaveBeenCalled();
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    mocks.runSearch.mockClear();
+    act(() => {
+      hook.result.current.clearAll();
+      hook.result.current.setText("   ");
+    });
+    act(() => hook.result.current.apply());
+    expect(mocks.previewText).not.toHaveBeenCalled();
+  });
+
+  it("ignores a text check that a later edit or a recipe click superseded", async () => {
+    const hook = setup();
+    const slow = deferred<typeof NOTHING | null>();
+    mocks.previewText.mockImplementationOnce(() => slow.promise);
+    act(() => hook.result.current.setText("tif"));
+    act(() => hook.result.current.apply());
+    // the user clicks a recipe while the check is in flight: the recipe wins
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "recipe"));
+    act(() => hook.result.current.pickRecipe(REG.topics[0]));
+    await waitFor(() => expect(mocks.runSearch).toHaveBeenCalledTimes(1));
+    await act(async () => slow.resolve(null)); // the stale check now answers
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1); // and does not start a second search
+    expect(hook.result.current.textNotice).toBeNull();
+  });
+
+  it("clears the notice when the text changes", async () => {
+    const hook = setup();
+    mocks.previewText.mockResolvedValueOnce(NOTHING);
+    act(() => hook.result.current.setText("teardown"));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.textNotice).not.toBeNull());
+    act(() => hook.result.current.setText("teardown tif"));
+    expect(hook.result.current.textNotice).toBeNull();
   });
 });

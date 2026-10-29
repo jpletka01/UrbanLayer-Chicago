@@ -600,10 +600,18 @@
     "exportPro": "Exportar (Pro)",
     "title": "Descubrimiento de propiedades",
     "subtitle": "Empieza con un objetivo o describe lo que buscas — luego refina.",
-    "searchPlaceholder": "Describa lo que busca — p. ej. \"multifamiliar construido antes de 1950 con TIF\"",
+    "searchPlaceholder": "Describa lo que busca, en inglés — p. ej. \"multifamily built before 1950 with a TIF\"",
     "indexAsOf": "Índice generado el {{date}} · {{areas}}",
     "indexAreasAll": "las {{count}} áreas comunitarias",
     "indexAreasSome": "{{count}} áreas comunitarias",
+    "text": {
+      "example": "multifamily built before 1950 with a TIF",
+      "noneUnderstood": "No pude convertir “{{text}}” en filtros, así que no se hizo ninguna búsqueda.",
+      "notUnderstood": "No se entendió: {{words}}.",
+      "tryExample": "Pruebe, por ejemplo (en inglés, el único idioma que entiende este cuadro): “{{example}}”, o use los filtros.",
+      "understood": "De “{{text}}” entendí: {{filters}}.",
+      "understoodNothing": "No pude convertir “{{text}}” en filtros; la búsqueda usó solo los demás filtros."
+    },
     "start": {
       "heading": "¿Qué busca?",
       "recipes": "Comience con una receta",

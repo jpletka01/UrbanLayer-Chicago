@@ -223,6 +223,14 @@ export interface PinsResponse {
   truncated: boolean; // total > cap → some matches omitted from the map
 }
 
+// POST /text-preview: what the text compiler makes of a phrase, with no search. Advisory (the
+// page's gate and wording); the evaluated response.cqs stays the only record of what a search used.
+export interface TextPreview {
+  understood: Array<{ filterId: FilterId; predicate: Predicate }>;
+  residual: string[]; // words the compiler did not recognize
+  droppedInvalid: Array<{ filterId: FilterId; reason: string }>;
+}
+
 export interface SearchResponse {
   dataVersion: string;
   cqs: CQS;

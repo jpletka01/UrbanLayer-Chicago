@@ -2,7 +2,7 @@
 // The envelope carries raw inputs (userFilters + topicId + text + sort + scope) — the
 // backend compiles, merges, evaluates, and echoes back the canonical CQS.
 
-import { discoveryExportCsv, discoverySearch, discoverySearchPins } from "../lib/api";
+import { discoveryExportCsv, discoverySearch, discoverySearchPins, discoveryTextPreview } from "../lib/api";
 import { compilePanel } from "./uiCompiler";
 import type {
   PanelState,
@@ -12,6 +12,7 @@ import type {
   SearchResponse,
   SortSpec,
   SpatialScope,
+  TextPreview,
 } from "./types";
 
 export interface SearchInputs {
@@ -59,6 +60,11 @@ export async function runPins(
   signal?: AbortSignal,
 ): Promise<PinsResponse | null> {
   return discoverySearchPins(buildRequest(inputs, registry), signal);
+}
+
+/** What the text compiler makes of a phrase, without searching (null if it could not be asked). */
+export async function previewText(text: string, signal?: AbortSignal): Promise<TextPreview | null> {
+  return discoveryTextPreview(text, signal);
 }
 
 /** Download the full match set as CSV (server-side, premium-gated). Same envelope, so the

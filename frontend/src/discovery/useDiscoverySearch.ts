@@ -23,9 +23,10 @@ import {
   type ChipItem,
   type DiscoveryDraft,
 } from "./draftModel";
-import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
+import { exportCsv, previewText, runPins, runSearch, type SearchInputs } from "./searchClient";
 import { NEIGHBORHOOD_PREFIX } from "./communityAreas";
 import { expandTopic } from "./topicCompiler";
+import { compilePanel } from "./uiCompiler";
 import type {
   FilterId,
   PinPoint,
@@ -91,6 +92,9 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
   // A refresh failed: the previous results are still shown.
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [issuedSig, setIssuedSig] = useState<string | null>(null);
+  // The text compiler understood none of a phrase and nothing else was set, so no search ran.
+  const [textNotice, setTextNotice] = useState<{ text: string; words: string[] } | null>(null);
+  const applySeqRef = useRef(0);
 
   const requestIdRef = useRef(0);
   const commitRef = useRef(0);
@@ -231,9 +235,31 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
     [registry, updateDraft],
   );
 
-  /** Search / Enter / Update results: send the draft as it is now. */
+  /** Search / Enter / Update results: send the draft as it is now.
+   *
+   * The text box is a rule-based compiler that silently drops what it does not recognize, so a
+   * phrase it understands none of (and with no panel filters beside it) would search EVERY
+   * parcel. Ask the compiler first (cheap, no index read); if it understood nothing, say so and
+   * do not search. If it cannot be asked, search anyway: the gate must never be what breaks
+   * search. A draft with panel filters, or no text, searches at once as before. */
   const apply = useCallback(() => {
-    void issue(toInputs(draftRef.current));
+    const draftNow = draftRef.current;
+    const text = draftNow.text.trim();
+    const seq = ++applySeqRef.current;
+    setTextNotice(null);
+    if (!text || Object.keys(compilePanel(draftNow.panelState)).length > 0) {
+      void issue(toInputs(draftNow));
+      return;
+    }
+    void (async () => {
+      const preview = await previewText(text).catch(() => null);
+      if (seq !== applySeqRef.current) return; // a newer apply or edit superseded this one
+      if (preview && preview.understood.length === 0) {
+        setTextNotice({ text, words: preview.residual });
+        return;
+      }
+      void issue(toInputs(draftNow));
+    })();
   }, [issue]);
 
   // Recipe click: replace the draft with the recipe's presets and run it (the click is the
@@ -248,6 +274,8 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
         sort: topic.defaultSort ?? registry.defaultSort,
         topicId: topic.id,
       };
+      applySeqRef.current += 1; // a recipe click supersedes a text check still in flight
+      setTextNotice(null);
       draftRef.current = next;
       setDraft(next);
       void issue(toInputs(next));
@@ -259,6 +287,8 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
   // click, so each replaces the draft and runs at once.
   const startWith = useCallback(
     (next: DiscoveryDraft) => {
+      applySeqRef.current += 1;
+      setTextNotice(null);
       draftRef.current = next;
       setDraft(next);
       void issue(toInputs(next));
@@ -315,7 +345,11 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
   );
 
   const setText = useCallback(
-    (text: string) => updateDraft((d) => ({ ...d, text, topicId: null })),
+    (text: string) => {
+      applySeqRef.current += 1; // an edit supersedes a text check still in flight
+      setTextNotice(null);
+      updateDraft((d) => ({ ...d, text, topicId: null }));
+    },
     [updateDraft],
   );
 
@@ -383,6 +417,9 @@ export function useDiscoverySearch(registry: Registry | null, options: Discovery
   return {
     draft,
     applied: applied?.response ?? null,
+    /** The text that was sent with the evaluated search (for wording what it understood). */
+    appliedText: applied?.text ?? "",
+    textNotice,
     rows,
     nextOffset,
     loading,

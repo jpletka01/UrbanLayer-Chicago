@@ -18,15 +18,26 @@ def _discovery_strings(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))["discovery"]
 
 
-def test_the_text_boxs_own_example_parses_completely():
-    """The placeholder example must turn into filters with nothing silently dropped."""
-    for path in (EN_PAGES,):  # es example is checked by the Spanish pass (the compiler is English)
-        placeholder = _discovery_strings(path)["searchPlaceholder"]
-        example = re.search(r'"([^"]+)"', placeholder)
-        assert example, placeholder
-        frag = parse(example.group(1))
-        assert frag.filters, f"example {example.group(1)!r} compiles to no filters"
-        assert frag.meta.textResidual == [], f"example drops words: {frag.meta.textResidual}"
+def _assert_parses_completely(example: str) -> None:
+    frag = parse(example)
+    assert frag.filters, f"example {example!r} compiles to no filters"
+    assert frag.meta.textResidual == [], f"example {example!r} drops words: {frag.meta.textResidual}"
+
+
+def test_the_text_boxs_own_examples_parse_completely():
+    """Every example the page offers for the text box must compile with nothing silently dropped.
+
+    The compiler is English-only (rule-based, no model), so the Spanish strings must also offer
+    an English phrase: a Spanish example would be an example that does nothing.
+    """
+    for path in (EN_PAGES, ES_PAGES):
+        strings = _discovery_strings(path)
+        placeholder = strings["searchPlaceholder"]
+        quoted = re.search(r'"([^"]+)"', placeholder)
+        assert quoted, placeholder
+        _assert_parses_completely(quoted.group(1))
+        _assert_parses_completely(strings["text"]["example"])
+    assert _discovery_strings(EN_PAGES)["text"]["example"] == _discovery_strings(ES_PAGES)["text"]["example"]
 
 
 def test_a_recipe_on_the_residential_group_does_not_claim_multifamily_zoning():

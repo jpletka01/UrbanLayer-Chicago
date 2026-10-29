@@ -7,6 +7,7 @@ import type {
   PinsResponse as DiscoveryPinsResponse,
   Registry as DiscoveryRegistry,
   SearchRequest as DiscoverySearchRequest,
+  TextPreview as DiscoveryTextPreview,
   SearchResponse as DiscoverySearchResponse,
 } from "../discovery/types";
 import type {
@@ -1186,6 +1187,24 @@ export async function discoverySearchPins(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),
+      signal,
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch { return null; }
+}
+
+// Compile-only: what the free-text compiler makes of a phrase (no search, no index read).
+// null on any failure, so the caller can fail open and just search.
+export async function discoveryTextPreview(
+  text: string,
+  signal?: AbortSignal,
+): Promise<DiscoveryTextPreview | null> {
+  try {
+    const resp = await authFetch(`${API_BASE}/api/discovery/text-preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
       signal,
     });
     if (!resp.ok) return null;

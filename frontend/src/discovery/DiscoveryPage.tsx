@@ -18,6 +18,7 @@ import { DiscoveryResults } from "./DiscoveryResults";
 import { IndexAsOf } from "./IndexAsOf";
 import { RecipeShelf } from "./RecipeShelf";
 import { StartPanel, type StartChoice } from "./StartPanel";
+import { TextFeedback } from "./TextFeedback";
 import { clearLastSearch, loadLastSearch, saveLastSearch, type SavedSearch } from "./lastSearch";
 import { track } from "../lib/tracking";
 import { loadRegistry } from "./registryClient";
@@ -174,6 +175,13 @@ export default function DiscoveryPage() {
               aria-label={t("discovery.searchAria")}
               className="w-full rounded-lg border border-dark-border bg-dark-elevated px-3 py-2 text-body text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
+            {registry && (
+              <TextFeedback
+                registry={registry}
+                notice={search.textNotice}
+                applied={response ? { cqs: response.cqs, text: search.appliedText } : null}
+              />
+            )}
             <div className="flex items-center gap-2">
               <button
                 type="button"

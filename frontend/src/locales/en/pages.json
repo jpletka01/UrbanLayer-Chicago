@@ -604,6 +604,14 @@
     "indexAsOf": "Index built {{date}} · {{areas}}",
     "indexAreasAll": "all {{count}} community areas",
     "indexAreasSome": "{{count}} community areas",
+    "text": {
+      "example": "multifamily built before 1950 with a TIF",
+      "noneUnderstood": "I couldn't turn “{{text}}” into filters, so no search was run.",
+      "notUnderstood": "Not understood: {{words}}.",
+      "tryExample": "Try, for example: “{{example}}”, or use the filters.",
+      "understood": "From “{{text}}” I understood: {{filters}}.",
+      "understoodNothing": "I couldn't turn “{{text}}” into filters; the search used only the other filters."
+    },
     "start": {
       "heading": "What are you looking for?",
       "recipes": "Start from a recipe",
