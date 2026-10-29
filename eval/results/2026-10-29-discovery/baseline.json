@@ -1,0 +1,236 @@
+{
+  "label": "baseline",
+  "base": "http://localhost:8003",
+  "measured_at": "2026-10-29T02:00:42+00:00",
+  "environment": {
+    "platform": "macOS-15.6.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "note": "LOCAL idle machine, not production"
+  },
+  "runs_per_cell": 5,
+  "rss_mb_before": 862.4,
+  "ladder": [
+    {
+      "query": "recipe (4 filters)",
+      "filters": [
+        "lot_size",
+        "transit_proximity",
+        "vacancy",
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          1141.7,
+          906.1,
+          867.4,
+          867.8,
+          875.6
+        ],
+        "first_ms": 1141.7,
+        "median_ms": 875.6,
+        "p95_ms": 1141.7,
+        "min_ms": 867.4,
+        "bytes": 22612,
+        "total": 5005
+      },
+      "pins": {
+        "runs": [
+          408.9,
+          404.9,
+          403.1,
+          407.9,
+          409.3
+        ],
+        "first_ms": 408.9,
+        "median_ms": 407.9,
+        "p95_ms": 409.3,
+        "min_ms": 403.1,
+        "bytes": 513968,
+        "total": 5005
+      },
+      "parity": {
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "3 filters (no lot size)",
+      "filters": [
+        "transit_proximity",
+        "vacancy",
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          675.0,
+          684.4,
+          674.6,
+          669.3,
+          678.7
+        ],
+        "first_ms": 675.0,
+        "median_ms": 675.0,
+        "p95_ms": 684.4,
+        "min_ms": 669.3,
+        "bytes": 22516,
+        "total": 7531
+      },
+      "pins": {
+        "runs": [
+          409.9,
+          406.8,
+          407.2,
+          410.3,
+          409.4
+        ],
+        "first_ms": 409.9,
+        "median_ms": 409.4,
+        "p95_ms": 410.3,
+        "min_ms": 406.8,
+        "bytes": 513968,
+        "total": 7531
+      },
+      "parity": {
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "1 filter (zoning: residential)",
+      "filters": [
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          2302.7,
+          3259.1,
+          3250.6,
+          3212.9,
+          3221.3
+        ],
+        "first_ms": 2302.7,
+        "median_ms": 3221.3,
+        "p95_ms": 3259.1,
+        "min_ms": 2302.7,
+        "bytes": 22068,
+        "total": 599804
+      },
+      "pins": {
+        "runs": [
+          3174.8,
+          3184.0,
+          3190.8,
+          3177.0,
+          2251.2
+        ],
+        "first_ms": 3174.8,
+        "median_ms": 3177.0,
+        "p95_ms": 3190.8,
+        "min_ms": 2251.2,
+        "bytes": 512568,
+        "total": 599804
+      },
+      "parity": {
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "no filters",
+      "filters": [],
+      "search": {
+        "runs": [
+          4962.7,
+          4001.2,
+          4025.7,
+          4016.8,
+          4013.0
+        ],
+        "first_ms": 4962.7,
+        "median_ms": 4016.8,
+        "p95_ms": 4962.7,
+        "min_ms": 4001.2,
+        "bytes": 21957,
+        "total": 949014
+      },
+      "pins": {
+        "runs": [
+          4980.2,
+          4112.7,
+          4058.9,
+          4102.4,
+          4987.3
+        ],
+        "first_ms": 4980.2,
+        "median_ms": 4112.7,
+        "p95_ms": 4987.3,
+        "min_ms": 4058.9,
+        "bytes": 511233,
+        "total": 949014
+      },
+      "parity": {
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    },
+    {
+      "query": "recipe again (repeat)",
+      "filters": [
+        "lot_size",
+        "transit_proximity",
+        "vacancy",
+        "zoning_group"
+      ],
+      "search": {
+        "runs": [
+          859.8,
+          856.5,
+          864.8,
+          863.5,
+          866.3
+        ],
+        "first_ms": 859.8,
+        "median_ms": 863.5,
+        "p95_ms": 866.3,
+        "min_ms": 856.5,
+        "bytes": 22612,
+        "total": 5005
+      },
+      "pins": {
+        "runs": [
+          401.7,
+          402.4,
+          408.7,
+          401.4,
+          1309.9
+        ],
+        "first_ms": 401.7,
+        "median_ms": 402.4,
+        "p95_ms": 1309.9,
+        "min_ms": 401.4,
+        "bytes": 513968,
+        "total": 5005
+      },
+      "parity": {
+        "rows_compared": 200,
+        "prefix_equal": true,
+        "total_equal": true,
+        "data_version_equal": true,
+        "gated": false
+      }
+    }
+  ],
+  "rss_mb_after": 1932.8
+}
