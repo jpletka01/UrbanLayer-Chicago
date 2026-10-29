@@ -10,6 +10,7 @@ implementation is wired in the API-plumbing step, not here.
 
 from __future__ import annotations
 
+import itertools
 from typing import Any, Iterable, Protocol, runtime_checkable
 
 
@@ -72,9 +73,20 @@ class ParcelSource:
 
     def __init__(self) -> None:
         self._snapshots: dict[str, tuple[Parcel, ...]] = {}
+        # A process-unique id per registration, so anything derived from a snapshot (the
+        # result cache) can tell a REPLACED snapshot from the one it was computed on.
+        self._generations: dict[str, int] = {}
+        self._next_generation = itertools.count(1)
 
     def register(self, version: str, parcels: Iterable[Parcel]) -> None:
         self._snapshots[version] = tuple(parcels)
+        self._generations[version] = next(self._next_generation)
+
+    def generation(self, version: str) -> int:
+        """The registration id of `version`'s snapshot (KeyError if none is registered)."""
+        if version not in self._snapshots:
+            raise KeyError(f"no parcel snapshot registered for dataVersion {version!r}")
+        return self._generations[version]
 
     def get(self, version: str) -> tuple[Parcel, ...]:
         if version not in self._snapshots:
@@ -86,6 +98,7 @@ class ParcelSource:
 
     def clear(self) -> None:
         self._snapshots.clear()
+        self._generations.clear()
 
 
 # The default snapshot source the evaluator reads from. The real (shapely/Socrata)

@@ -16,3 +16,4 @@ Why the code looks the way it does: the choices made while building, the options
 - `2026-10_build-queue.md`: the confidence standard (WS0), code refresh (WS1), data health (WS6), Property Profile map repairs (WS3 Phase 1), and the truthful Property Discovery map (WS3 Phase 2), from 2026-10-20.
 - `2026-10_discovery-index.md`: Property Discovery index builder fixes found by the WS8 coverage audit, from 2026-10-28.
 - `2026-10_discovery-redesign.md`: the Property Discovery redesign, phase by phase: Phase 0 (draft edits, explicit "Update results", previous results kept while refreshing), from 2026-10-28.
+- `2026-10_discovery-speed.md`: Property Discovery redesign Phase 1, backend search speed (key-based sort, fused missing-value counts, result cache, coalescing and a concurrency cap, the additive combined list-and-map response), from 2026-10-29.

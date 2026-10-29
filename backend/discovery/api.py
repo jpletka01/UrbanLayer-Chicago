@@ -34,7 +34,8 @@ from backend.discovery.cqs import (
     SpatialScope,
 )
 from backend.discovery.diagnostics import Diagnostics, build
-from backend.discovery.evaluator import OrderedResult, evaluate
+from backend.discovery.evaluator import EvalResult
+from backend.discovery.result_cache import cached_evaluate
 from backend.discovery.registry import Coverage, Registry
 from backend.discovery.registry import load as load_registry
 
@@ -70,6 +71,8 @@ class SearchRequest(BaseModel):
     # evaluator still returns the complete ordered PIN list; the API slices the window.
     limit: int | None = None  # rows per page (clamped to MAX_PAGE_LIMIT)
     offset: int = 0  # window start into the ordered result
+    # Also return the map's coordinate set from this same evaluation (see SearchResponse.pins).
+    includePins: bool = False
 
 
 class ResultRow(BaseModel):
@@ -113,13 +116,6 @@ class SearchResult(BaseModel):
     gated: bool = False  # True for free tier — rows are the capped teaser, total is the real count
 
 
-class SearchResponse(BaseModel):
-    dataVersion: str
-    cqs: CQS  # canonical, post-merge — FE renders chips/summary from THIS (INV-4)
-    result: SearchResult
-    diagnostics: Diagnostics
-
-
 # Map = the FULL ordered match set (not the list window), capped so the browser stays sane.
 MAX_MAP_POINTS = 5000
 
@@ -137,6 +133,17 @@ class PinsResponse(BaseModel):
     total: int  # full match count
     points: list[PinPoint]  # full ordered coord set, capped at MAX_MAP_POINTS
     truncated: bool  # True when total > cap → some matches are off the map ("refine to see all")
+
+
+class SearchResponse(BaseModel):
+    dataVersion: str
+    cqs: CQS  # canonical, post-merge — FE renders chips/summary from THIS (INV-4)
+    result: SearchResult
+    diagnostics: Diagnostics
+    # Only when the request set `includePins`: exactly what POST /search/pins returns for the
+    # same request, computed from the SAME evaluation as `result` (one dataVersion, one
+    # total, one ordering), so list and map cannot disagree. Not tier-capped, like /pins.
+    pins: PinsResponse | None = None
 
 
 ALL_COMMUNITY_AREAS = 77  # Chicago has 77 community areas → coverage "all"
@@ -167,13 +174,13 @@ def get_registry() -> Registry:
     })
 
 
-def _resolve(req: SearchRequest) -> tuple[CQS, OrderedResult, list[DroppedInvalid], str]:
+def _resolve(req: SearchRequest) -> tuple[CQS, EvalResult, list[DroppedInvalid], str]:
     """The single parse→merge→evaluate path.
 
     `/search`, and later `/search/pins` and `/search/export`, ALL go through this so the
     canonical CQS and the fully ordered result can never drift between endpoints by
     construction (sort/scope/topicId are applied in exactly one place). Each endpoint
-    differs only in how it projects the shared `OrderedResult`.
+    differs only in how it projects the shared ordered result.
     """
     user_frag = CqsFragment(
         filters={
@@ -186,7 +193,7 @@ def _resolve(req: SearchRequest) -> tuple[CQS, OrderedResult, list[DroppedInvali
         user_frag, text_frag, sort=req.sort, scope=req.scope, topic_id=req.topicId
     )
     data_version = parcel_source.current_version()
-    result = evaluate(cqs, data_version)
+    result = cached_evaluate(cqs, data_version)  # the single evaluator, memoised (INV-2)
     return cqs, result, dropped, data_version
 
 
@@ -245,42 +252,8 @@ def _hydrate_window(pins: list[str], data_version: str, sort_key: str) -> list[R
     return rows
 
 
-@router.post("/search", response_model=SearchResponse)
-def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) -> SearchResponse:
-    # Defined sync so FastAPI runs the (CPU-bound) evaluation in a worker thread
-    # rather than blocking the event loop.
-    cqs, result, dropped, data_version = _resolve(req)
-    diagnostics = build(cqs, data_version, evaluate, result=result, dropped=dropped)
-
-    if _is_pro(user):
-        limit = min(req.limit or DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT)
-        offset = max(req.offset, 0)
-        next_offset = offset + limit if offset + limit < result.total else None
-        gated = False
-    else:
-        # Free teaser (server-enforced): top FREE_ROW_CAP, no paging past it, real total.
-        limit, offset, next_offset, gated = FREE_ROW_CAP, 0, None, True
-
-    window = result.pins[offset : offset + limit]
-    rows = _hydrate_window(window, data_version, cqs.sort.key)
-
-    return SearchResponse(
-        dataVersion=data_version,
-        cqs=cqs,
-        result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset, gated=gated),
-        diagnostics=diagnostics,
-    )
-
-
-@router.post("/search/pins", response_model=PinsResponse)
-def search_pins(req: SearchRequest) -> PinsResponse:
-    # Same _resolve path as /search → identical ordered PIN sequence by construction (the
-    # map prefix matches the list prefix; sort/scope/topicId can't drift between them).
-    # Returns the FULL ordered coord set (capped), NOT the list's paginated window — the
-    # map is never sourced from the infinite-scroll rows. NOT tier-capped: free users see
-    # ALL match dots (the FE colors free by land use + makes it view-only — a presentational
-    # gate; upside rides along since it isn't secret).
-    _cqs, result, _dropped, data_version = _resolve(req)
+def _pins_payload(result: EvalResult, data_version: str) -> PinsResponse:
+    """The map's coordinate set: the ordered prefix of the result, capped at MAX_MAP_POINTS."""
     by_pin = _pin_lookup(data_version)
     points: list[PinPoint] = []
     for pin in result.pins[:MAX_MAP_POINTS]:
@@ -301,6 +274,46 @@ def search_pins(req: SearchRequest) -> PinsResponse:
         points=points,
         truncated=result.total > MAX_MAP_POINTS,
     )
+
+
+@router.post("/search", response_model=SearchResponse)
+def search(req: SearchRequest, user: dict | None = Depends(get_current_user)) -> SearchResponse:
+    # Defined sync so FastAPI runs the (CPU-bound) evaluation in a worker thread
+    # rather than blocking the event loop.
+    cqs, result, dropped, data_version = _resolve(req)
+    diagnostics = build(cqs, data_version, cached_evaluate, result=result, dropped=dropped)
+
+    if _is_pro(user):
+        limit = min(req.limit or DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT)
+        offset = max(req.offset, 0)
+        next_offset = offset + limit if offset + limit < result.total else None
+        gated = False
+    else:
+        # Free teaser (server-enforced): top FREE_ROW_CAP, no paging past it, real total.
+        limit, offset, next_offset, gated = FREE_ROW_CAP, 0, None, True
+
+    window = result.pins[offset : offset + limit]
+    rows = _hydrate_window(window, data_version, cqs.sort.key)
+
+    return SearchResponse(
+        dataVersion=data_version,
+        cqs=cqs,
+        result=SearchResult(rows=rows, total=result.total, nextOffset=next_offset, gated=gated),
+        diagnostics=diagnostics,
+        pins=_pins_payload(result, data_version) if req.includePins else None,
+    )
+
+
+@router.post("/search/pins", response_model=PinsResponse)
+def search_pins(req: SearchRequest) -> PinsResponse:
+    # Same _resolve path as /search → identical ordered PIN sequence by construction (the
+    # map prefix matches the list prefix; sort/scope/topicId can't drift between them).
+    # Returns the FULL ordered coord set (capped), NOT the list's paginated window — the
+    # map is never sourced from the infinite-scroll rows. NOT tier-capped: free users see
+    # ALL match dots (the FE colors free by land use + makes it view-only — a presentational
+    # gate; upside rides along since it isn't secret).
+    _cqs, result, _dropped, data_version = _resolve(req)
+    return _pins_payload(result, data_version)
 
 
 # CSV export columns: (ResultRow attr, header). A header given as ("filter", id) is sourced
@@ -359,7 +372,7 @@ def _export_filename(cqs: CQS, data_version: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", name)
 
 
-def _export_stream(cqs: CQS, result: OrderedResult, data_version: str) -> Iterator[str]:
+def _export_stream(cqs: CQS, result: EvalResult, data_version: str) -> Iterator[str]:
     """Yield the FULL match set as CSV, in evaluated order — never the list window."""
     registry = load_registry()
     sort_field = registry.sort_field(cqs.sort.key)
