@@ -171,6 +171,7 @@ export interface SearchRequest {
   registryVersion: string;
   limit?: number; // page-window size (default server-side); infinite scroll fetches more
   offset?: number; // window start into the ordered result
+  includePins?: boolean; // also return the map's points from this same evaluation (SearchResponse.pins)
 }
 
 // One hydrated result parcel. `pin` is the frozen identity; the rest is hydrated from the
@@ -227,6 +228,9 @@ export interface SearchResponse {
   cqs: CQS;
   result: SearchResult;
   diagnostics: Diagnostics;
+  // Only when the request set `includePins`, and only from a backend that supports it: the
+  // /search/pins body computed from the same evaluation as `result`. Absent/null otherwise.
+  pins?: PinsResponse | null;
 }
 
 // --- Frontend-only: filter-panel control state ---

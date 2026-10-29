@@ -54,6 +54,12 @@ function pins(dataVersion: string, pin: string, total = 1): PinsResponse {
   };
 }
 
+// What the backend returns for a search that asked for `includePins`: the map's points from
+// the same evaluation, inside the one response.
+function combined(dataVersion: string, pin: string, filters: SearchResponse["cqs"]["filters"] = {}, total = 1): SearchResponse {
+  return { ...response(dataVersion, pin, filters, total), pins: pins(dataVersion, pin, total) };
+}
+
 const TIF = { kind: "flag", value: true } as const;
 const LAND = { kind: "enum", values: ["multi_family"] } as const;
 const withFilters = (...ids: Array<[string, typeof TIF | typeof LAND]>) =>
@@ -64,8 +70,7 @@ function setup() {
 }
 
 async function firstSearch(hook: ReturnType<typeof setup>, filters = withFilters(["tif", TIF], ["land_use", LAND])) {
-  mocks.runSearch.mockResolvedValueOnce(response("v1", "first", filters));
-  mocks.runPins.mockResolvedValueOnce(pins("v1", "first"));
+  mocks.runSearch.mockResolvedValueOnce(combined("v1", "first", filters));
   act(() => {
     hook.result.current.editPanel("tif", TIF);
     hook.result.current.editPanel("land_use", LAND);
@@ -86,7 +91,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("useDiscoverySearch: draft and apply", () => {
-  it("requests nothing for draft edits, then exactly one search/pins pair per apply", async () => {
+  it("requests nothing for draft edits, then exactly one request (list + map) per apply", async () => {
     const hook = setup();
     await firstSearch(hook);
 
@@ -102,13 +107,14 @@ describe("useDiscoverySearch: draft and apply", () => {
     expect(mocks.runPins).not.toHaveBeenCalled();
     expect(hook.result.current.pendingCount).toBeGreaterThan(0);
 
-    mocks.runSearch.mockResolvedValueOnce(response("v1", "second", withFilters(["tif", TIF])));
-    mocks.runPins.mockResolvedValueOnce(pins("v1", "second"));
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "second", withFilters(["tif", TIF])));
     act(() => hook.result.current.apply());
     await waitFor(() => expect(hook.result.current.loading).toBe(false));
     expect(mocks.runSearch).toHaveBeenCalledTimes(1);
-    expect(mocks.runPins).toHaveBeenCalledTimes(1);
+    expect(mocks.runSearch.mock.calls[0][0].includePins).toBe(true);
+    expect(mocks.runPins).not.toHaveBeenCalled(); // the points came back in the same response
     expect(hook.result.current.rows[0].pin).toBe("second");
+    expect(hook.result.current.map.points[0].pin).toBe("second");
   });
 
   it("sends the draft as it is at apply time", async () => {
@@ -141,16 +147,13 @@ describe("useDiscoverySearch: draft and apply", () => {
     const hook = setup();
     await firstSearch(hook);
     const slowSearch = deferred<SearchResponse | null>();
-    const slowPins = deferred<PinsResponse | null>();
     mocks.runSearch.mockImplementationOnce(() => slowSearch.promise);
-    mocks.runPins.mockImplementationOnce(() => slowPins.promise);
     act(() => hook.result.current.removeFilter("tif"));
     act(() => hook.result.current.apply());
     const firstSignal = mocks.runSearch.mock.calls[0][2] as AbortSignal;
     expect(firstSignal.aborted).toBe(false);
 
-    mocks.runSearch.mockResolvedValueOnce(response("v2", "newer", withFilters()));
-    mocks.runPins.mockResolvedValueOnce(pins("v2", "newer"));
+    mocks.runSearch.mockResolvedValueOnce(combined("v2", "newer", withFilters()));
     act(() => hook.result.current.removeFilter("land_use"));
     act(() => hook.result.current.apply());
     expect(firstSignal.aborted).toBe(true);
@@ -158,8 +161,7 @@ describe("useDiscoverySearch: draft and apply", () => {
 
     // the aborted request resolves late: it must not overwrite the newer commit
     await act(async () => {
-      slowSearch.resolve(response("v1", "stale", withFilters(["land_use", LAND])));
-      slowPins.resolve(pins("v1", "stale"));
+      slowSearch.resolve(combined("v1", "stale", withFilters(["land_use", LAND])));
     });
     expect(hook.result.current.rows[0].pin).toBe("newer");
     expect(hook.result.current.map.points[0].pin).toBe("newer");
@@ -352,5 +354,80 @@ describe("useDiscoverySearch: load more, export, analytics", () => {
     expect(props).toMatchObject({ topic_id: null, has_text: false, total: 7, gated: null });
     expect(typeof props.ms).toBe("number");
     expect(props.ms).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("useDiscoverySearch: the map's points ride the search response (includePins)", () => {
+  async function applyOnce(hook: ReturnType<typeof setup>, resp: SearchResponse) {
+    mocks.runSearch.mockResolvedValueOnce(resp);
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+  }
+
+  it("still withholds the map when the embedded points belong to another data version", async () => {
+    const hook = setup();
+    await applyOnce(hook, { ...response("v1", "one"), pins: pins("v0", "one") });
+    expect(hook.result.current.rows[0].pin).toBe("one"); // the list stays canonical
+    expect(hook.result.current.map.status).toBe("unavailable");
+    expect(hook.result.current.map.points).toEqual([]);
+  });
+
+  it("withholds the map when the embedded total or cardinality disagrees with the list", async () => {
+    const wrongTotal = setup();
+    await applyOnce(wrongTotal, { ...response("v1", "one", {}, 5), pins: pins("v1", "one", 4) });
+    expect(wrongTotal.result.current.map.status).toBe("unavailable");
+    cleanup();
+
+    const wrongCount = setup();
+    await applyOnce(wrongCount, {
+      ...response("v1", "one", {}, 2),
+      pins: { ...pins("v1", "one", 2), points: pins("v1", "one", 1).points },
+    });
+    expect(wrongCount.result.current.map.status).toBe("unavailable");
+  });
+
+  it("shows the embedded points as the map when they agree with the list", async () => {
+    const hook = setup();
+    await applyOnce(hook, combined("v1", "one"));
+    expect(hook.result.current.map).toMatchObject({ status: "ready", total: 1, truncated: false });
+    expect(hook.result.current.map.points[0].pin).toBe("one");
+  });
+
+  it("falls back to the separate pins request when the backend sends no points (older backend)", async () => {
+    const hook = setup();
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "one"));
+    await applyOnce(hook, response("v1", "one")); // no `pins` field
+    expect(mocks.runPins).toHaveBeenCalledTimes(1);
+    expect(mocks.runPins.mock.calls[0][0].includePins).toBeUndefined();
+    expect(hook.result.current.map.status).toBe("ready");
+    expect(hook.result.current.map.points[0].pin).toBe("one");
+  });
+
+  it("a failed fallback pins request leaves the list and makes only the map unavailable", async () => {
+    const hook = setup();
+    mocks.runPins.mockRejectedValueOnce(new Error("pins down"));
+    await applyOnce(hook, response("v1", "one"));
+    expect(hook.result.current.rows[0].pin).toBe("one");
+    expect(hook.result.current.map.status).toBe("unavailable");
+    expect(hook.result.current.unavailable).toBe(false);
+  });
+
+  it("does not make a second request when the response already carries the points", async () => {
+    const hook = setup();
+    await applyOnce(hook, combined("v1", "one"));
+    expect(mocks.runPins).not.toHaveBeenCalled();
+  });
+
+  it("load more asks for the next window only, never for the points again", async () => {
+    const hook = setup();
+    const first = combined("v1", "one", {}, 120);
+    first.result.nextOffset = 50;
+    await applyOnce(hook, first);
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "two", {}, 120));
+    await act(async () => { await hook.result.current.loadMore(); });
+    const call = mocks.runSearch.mock.calls[1][0];
+    expect(call.offset).toBe(50);
+    expect(call.includePins).toBeUndefined();
   });
 });

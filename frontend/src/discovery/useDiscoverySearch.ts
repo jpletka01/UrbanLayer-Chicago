@@ -6,10 +6,11 @@
 //            summary sentence, the count and the rows describe THIS (INV-4), never the draft.
 //
 // A search is issued only by apply() (Search, Enter, "Update results") or a recipe pick, so a
-// burst of edits costs one request pair. While one runs the previous results stay in place
+// burst of edits costs one request. While one runs the previous results stay in place
 // (the page dims them); a superseded request is aborted, and a response that is not from the
 // latest issued request is ignored (Item 30). The list is canonical: pins are accepted only
-// when data version, total and cardinality agree with it, otherwise the map is unavailable.
+// when data version, total and cardinality agree with it, otherwise the map is unavailable
+// (the check stays even though one response now carries both).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { track } from "../lib/tracking";
@@ -138,13 +139,17 @@ export function useDiscoverySearch(registry: Registry | null) {
       }
 
       try {
-        const [searchResult, pinsResult] = await Promise.allSettled([
-          runSearch(inputs, registry, controller.signal),
-          runPins(inputs, registry, controller.signal),
-        ]);
+        // One request returns the list and the map's points from the same evaluation, so
+        // they cannot disagree. A backend that predates `includePins` ignores it and sends
+        // no points: then fall back to the separate pins request, so deploy order can never
+        // break the map.
+        const resp = await runSearch({ ...inputs, includePins: true }, registry, controller.signal);
         if (requestId !== requestIdRef.current) return;
-        const resp = searchResult.status === "fulfilled" ? searchResult.value : null;
-        const pins = pinsResult.status === "fulfilled" ? pinsResult.value : null;
+        let pins = resp?.pins ?? null;
+        if (resp && !pins) {
+          pins = await runPins(inputs, registry, controller.signal).catch(() => null);
+          if (requestId !== requestIdRef.current) return;
+        }
         const report = () =>
           track("discovery_search", {
             topic_id: inputs.topicId ?? null,

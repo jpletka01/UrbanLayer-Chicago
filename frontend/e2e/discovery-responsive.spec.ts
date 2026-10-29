@@ -84,7 +84,7 @@ test("Discovery keeps previous results on screen, dimmed, while an applied edit 
     expect(searchRequests).toBe(requestsBefore);
     await page.screenshot({ path: testInfo.outputPath(`discovery-pending-${width}.png`) });
 
-    // One press, one search pair; the old results stay, dimmed and inert.
+    // One press, one search; the old results stay, dimmed and inert.
     delayMs = 3000;
     await page.getByTestId("discovery-update-results").first().click();
     await expect(body).toHaveAttribute("data-stale", "true");
@@ -96,7 +96,9 @@ test("Discovery keeps previous results on screen, dimmed, while an applied edit 
     expect(overflow).toBeLessThanOrEqual(0);
     await page.screenshot({ path: testInfo.outputPath(`discovery-refreshing-${width}.png`) });
     await expect(body).toHaveAttribute("data-stale", "false", { timeout: 60_000 });
-    expect(searchRequests - requestsBefore).toBe(2);
+    // One request when the backend returns the map's points with the list (includePins); two
+    // against an older backend, where the page falls back to the separate pins request.
+    expect([1, 2]).toContain(searchRequests - requestsBefore);
     delayMs = 0;
     await page.unroute("**/api/discovery/search**");
   }

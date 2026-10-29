@@ -123,6 +123,11 @@ function pins(dataVersion: string, pin: string, total = 1): PinsResponse {
   };
 }
 
+// The one response a search returns when it asked for `includePins`.
+function combined(dataVersion: string, pin: string, total = 1): SearchResponse {
+  return { ...response(dataVersion, pin, total), pins: pins(dataVersion, pin, total) };
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => { resolve = done; });
@@ -150,11 +155,8 @@ afterEach(cleanup);
 describe("DiscoveryPage issued-query pairing", () => {
   it("lets only the latest issued request commit when searches resolve out of order", async () => {
     const firstSearch = deferred<SearchResponse | null>();
-    const firstPins = deferred<PinsResponse | null>();
     const secondSearch = deferred<SearchResponse | null>();
-    const secondPins = deferred<PinsResponse | null>();
     mocks.runSearch.mockImplementationOnce(() => firstSearch.promise).mockImplementationOnce(() => secondSearch.promise);
-    mocks.runPins.mockImplementationOnce(() => firstPins.promise).mockImplementationOnce(() => secondPins.promise);
     const { button, input } = await readyPage();
 
     fireEvent.change(input, { target: { value: "first" } });
@@ -162,13 +164,11 @@ describe("DiscoveryPage issued-query pairing", () => {
     fireEvent.change(input, { target: { value: "second" } });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    secondSearch.resolve(response("v2", "new"));
-    secondPins.resolve(pins("v2", "new"));
+    secondSearch.resolve(combined("v2", "new"));
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v2:1"));
     expect(screen.getByTestId("map-state").textContent).toContain("ready:1");
 
-    firstSearch.resolve(response("v1", "old"));
-    firstPins.resolve(pins("v1", "old"));
+    firstSearch.resolve(combined("v1", "old"));
     await Promise.resolve();
     expect(screen.getByTestId("results-state").textContent).toBe("v2:1");
     expect(screen.getByTestId("map-state").textContent).toContain("ready:1");
@@ -240,8 +240,7 @@ const THREE = {
 } as const;
 
 async function pageWithResults() {
-  mocks.runSearch.mockResolvedValueOnce(response("v1", "one", 1, { ...THREE }));
-  mocks.runPins.mockResolvedValueOnce(pins("v1", "one"));
+  mocks.runSearch.mockResolvedValueOnce({ ...response("v1", "one", 1, { ...THREE }), pins: pins("v1", "one") });
   const ready = await readyPage();
   fireEvent.click(ready.button);
   await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
@@ -251,7 +250,7 @@ async function pageWithResults() {
 }
 
 describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
-  it("never blanks the page while chips are removed, requests nothing, then sends one pair", async () => {
+  it("never blanks the page while chips are removed, requests nothing, then sends one request", async () => {
     const { button } = await pageWithResults();
     const summaryBefore = screen.getByTestId("discovery-summary").textContent;
 
@@ -269,11 +268,10 @@ describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
     expect(mocks.runPins).not.toHaveBeenCalled();
     expect(button.disabled).toBe(false);
 
-    mocks.runSearch.mockResolvedValueOnce(response("v1", "two"));
-    mocks.runPins.mockResolvedValueOnce(pins("v1", "two"));
+    mocks.runSearch.mockResolvedValueOnce(combined("v1", "two"));
     fireEvent.click(screen.getByTestId("discovery-update-results"));
     expect(mocks.runSearch).toHaveBeenCalledTimes(1);
-    expect(mocks.runPins).toHaveBeenCalledTimes(1);
+    expect(mocks.runPins).not.toHaveBeenCalled(); // list and map from one request
     await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
     expect(screen.queryByTestId("discovery-update-results")).toBeNull();
     expect(screen.queryByTestId("chip-land_use")).toBeNull();

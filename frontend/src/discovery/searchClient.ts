@@ -22,6 +22,7 @@ export interface SearchInputs {
   scope?: SpatialScope | null;
   offset?: number; // infinite-scroll window start (omitted = page 0)
   limit?: number; // window size (omitted = server default)
+  includePins?: boolean; // ask for the map's points in the same response (one evaluation)
 }
 
 /** Build the wire envelope. `userFilters` is the compiled panel (cleared controls dropped). */
@@ -36,6 +37,7 @@ export function buildRequest(inputs: SearchInputs, registry: Registry): SearchRe
   if (inputs.scope && inputs.scope.mode !== "all") req.scope = inputs.scope;
   if (inputs.offset != null) req.offset = inputs.offset;
   if (inputs.limit != null) req.limit = inputs.limit;
+  if (inputs.includePins) req.includePins = true;
   return req;
 }
 
@@ -48,7 +50,9 @@ export async function runSearch(
 }
 
 /** Fetch the full ordered coord set for the map. Same buildRequest envelope as runSearch
- * (so the backend's shared _resolve yields a sequence-identical ordering). */
+ * (so the backend's shared _resolve yields a sequence-identical ordering). The page asks
+ * runSearch for the points with `includePins` instead; this separate request is the fallback
+ * for a backend that does not return them. */
 export async function runPins(
   inputs: SearchInputs,
   registry: Registry,
