@@ -1,11 +1,12 @@
-// Filter chips (08) — rendered from response.cqs (INV-4: display == evaluated), each with a
-// remove button that fires a one-tap re-issue (drop that filter, re-search; 06). Labels and
-// connective grammar are i18n'd (templates per predicate shape) so Spanish word order works.
+// Filter chips (08, reworked in the Phase 0 redesign). Labels and connective grammar are
+// i18n'd (templates per predicate shape) so Spanish word order works. Removing or restoring a
+// chip edits the draft only; "Update results" is what searches.
 
 import i18n from "../lib/i18n";
 import { Chip } from "../components/ui/Chip";
 import { caName, NEIGHBORHOOD_PREFIX } from "./communityAreas";
-import type { CQS, FilterDef, Predicate, Registry } from "./types";
+import type { ChipItem } from "./draftModel";
+import type { FilterDef, Predicate, Registry } from "./types";
 
 function td(key: string, fallback: string, opts?: Record<string, unknown>): string {
   return i18n.t(`discovery.${key}`, { ns: "pages", defaultValue: fallback, ...opts });
@@ -61,29 +62,58 @@ export function chipLabel(id: string, p: Predicate, def?: FilterDef): string {
 }
 
 interface ChipsProps {
-  cqs: CQS;
+  /** One entry per filter in the DRAFT (plus evaluated filters the draft dropped). */
+  items: ChipItem[];
   registry: Registry;
   onRemove: (filterId: string) => void;
+  onRestore: (filterId: string) => void;
 }
 
-export function Chips({ cqs, registry, onRemove }: ChipsProps) {
+// The strip is a control surface: it renders from the draft so chips stay clickable while a
+// refresh runs. Evaluated facts (summary, count, rows) still come from response.cqs (INV-4);
+// a chip that differs from the evaluated query says so (dashed outline) and a removed one stays
+// visible, struck through, until the removal is applied.
+export function Chips({ items, registry, onRemove, onRestore }: ChipsProps) {
   const defs = new Map(registry.filters.map((f) => [f.id, f]));
-  const ids = Object.keys(cqs.filters).sort();
-  if (ids.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {ids.map((id) => (
-        <Chip
-          key={id}
-          size="md"
-          removable
-          onRemove={() => onRemove(id)}
-          removeLabel={td("removeFilterAria", `Remove ${humanize(id)} filter`, { name: filterLabel(id, defs.get(id)) })}
-        >
-          {chipLabel(id, cqs.filters[id].predicate, defs.get(id))}
-        </Chip>
-      ))}
+    <div className="flex flex-wrap gap-2" data-testid="discovery-chips">
+      {items.map(({ id, predicate, state }) => {
+        const name = filterLabel(id, defs.get(id));
+        const label = chipLabel(id, predicate, defs.get(id));
+        if (state === "removed") {
+          return (
+            <Chip
+              key={id}
+              as="button"
+              size="md"
+              interactive
+              onClick={() => onRestore(id)}
+              className="line-through decoration-text-muted"
+              title={td("restoreFilterTitle", "Removed, not applied yet. Click to restore.")}
+            >
+              <span className="sr-only">{td("restoreFilterAria", `Restore ${name} filter`, { name })}</span>
+              <span aria-hidden>{label}</span>
+            </Chip>
+          );
+        }
+        const pending = state !== "applied";
+        return (
+          <Chip
+            key={id}
+            size="md"
+            removable
+            onRemove={() => onRemove(id)}
+            removeLabel={td("removeFilterAria", `Remove ${humanize(id)} filter`, { name })}
+            className={pending ? "border-dashed border-accent/60" : ""}
+            title={pending ? td("chipPendingTitle", "Not applied yet. Press Update results.") : undefined}
+          >
+            {label}
+            {pending && <span className="sr-only"> ({td("chipPending", "not applied yet")})</span>}
+          </Chip>
+        );
+      })}
     </div>
   );
 }

@@ -39,8 +39,12 @@ interface ResultsProps {
   response: SearchResponse | null;
   rows: ResultRow[]; // accumulated window (page 0 + appended), deduped by pin
   registry: Registry;
-  loading: boolean; // initial search
-  unavailable?: boolean;
+  // A search is running. With no response yet this is the first search ("Searching…"); with
+  // one, the previous results stay on screen, dimmed and inert, until the new ones land.
+  loading: boolean;
+  unavailable?: boolean; // the first search failed (nothing to keep on screen)
+  refreshFailed?: boolean; // a refresh failed; the previous results are still shown
+  onRetry?: () => void;
   loadingMore: boolean; // appending a later page
   hasMore: boolean;
   onLoadMore: () => void;
@@ -61,6 +65,8 @@ export function DiscoveryResults({
   registry,
   loading,
   unavailable = false,
+  refreshFailed = false,
+  onRetry,
   loadingMore,
   hasMore,
   onLoadMore,
@@ -75,15 +81,14 @@ export function DiscoveryResults({
   onAskArea,
 }: ResultsProps) {
   const { t } = useTranslation("pages");
-  if (loading) {
-    return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
-  }
-  if (unavailable) {
-    return <p className="p-4 text-body text-text-muted" role="status">{t("discovery.searchUnavailable")}</p>;
-  }
   if (!response) {
+    if (loading) return <p className="p-4 text-body text-text-muted">{t("discovery.searching")}</p>;
+    if (unavailable) {
+      return <p className="p-4 text-body text-text-muted" role="status">{t("discovery.searchUnavailable")}</p>;
+    }
     return <p className="p-4 text-body text-text-muted">{t("discovery.setFilters")}</p>;
   }
+  const refreshing = loading;
 
   const { result, diagnostics } = response;
   const activeSortKey = response.cqs.sort.key;
@@ -91,11 +96,48 @@ export function DiscoveryResults({
 
   return (
     <div className="flex h-full flex-col">
+      {refreshFailed && !refreshing && (
+        <div
+          role="alert"
+          className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-dark-border bg-state-warning/10 px-4 py-2 text-caption text-state-warning"
+          data-testid="discovery-update-failed"
+        >
+          <span>{t("discovery.updateFailed")}</span>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-lg border border-state-warning/40 px-2.5 py-1 text-caption font-medium transition-colors hover:border-state-warning"
+            >
+              {t("discovery.retry")}
+            </button>
+          )}
+        </div>
+      )}
+      <p role="status" aria-live="polite" className="sr-only">
+        {refreshing ? t("discovery.updatingAria") : ""}
+      </p>
+      {/* While a refresh runs the previous evaluated results stay (never a blank page) but are
+          visibly stale and inert: dimmed, aria-busy, no clicks, focus or scroll. */}
+      <div
+        className={`flex min-h-0 flex-1 flex-col transition-opacity ${
+          refreshing ? "pointer-events-none select-none opacity-[0.55]" : ""
+        }`}
+        aria-busy={refreshing}
+        inert={refreshing}
+        data-testid="discovery-results-body"
+        data-stale={refreshing ? "true" : "false"}
+      >
       <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-body text-text-primary">
             <span className="font-semibold">{result.total.toLocaleString()}</span>{" "}
             {t("discovery.parcelCount", { count: result.total })}
+            {refreshing && (
+              <span className="ml-2 text-caption text-text-muted" aria-hidden>
+                {t("discovery.updating")}
+              </span>
+            )}
           </p>
           {result.total > 0 && (exportLocked ? onUpgrade : onExport) && (
             <button
@@ -184,6 +226,7 @@ export function DiscoveryResults({
             </p>
           )
         )}
+      </div>
       </div>
     </div>
   );

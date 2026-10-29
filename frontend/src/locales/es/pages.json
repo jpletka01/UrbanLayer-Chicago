@@ -833,7 +833,18 @@
     },
     "clearAll": "Borrar todo ({{count}})",
     "metricAssessed": "tasación",
-    "metricPerSqft": "$ / pie² edif."
+    "metricPerSqft": "$ / pie² edif.",
+    "updateResults": "Actualizar resultados ({{count}})",
+    "updating": "Actualizando…",
+    "updatingAria": "Actualizando resultados. Se muestran los resultados anteriores hasta que lleguen los nuevos.",
+    "updateFailed": "No se pudo actualizar.",
+    "retry": "Reintentar",
+    "chipPending": "aún sin aplicar",
+    "chipPendingTitle": "Aún sin aplicar. Pulsa Actualizar resultados.",
+    "restoreFilterAria": "Restaurar filtro {{name}}",
+    "restoreFilterTitle": "Quitado, aún sin aplicar. Haz clic para restaurar.",
+    "mapStale": "Resultados anteriores, actualizando",
+    "mapZoomToResults": "Ajustar a los resultados"
   },
   "settings": {
     "title": "Configuración",

@@ -54,3 +54,50 @@ test("Discovery keeps usable panes across phone, tablet, and desktop widths", as
     await page.screenshot({ path: testInfo.outputPath(`discovery-${width}.png`) });
   }
 });
+
+// Phase 0 (draft + explicit apply): the strip, the Update results button and the dimmed
+// previous results must fit every width, and a refresh must never blank the page.
+test("Discovery keeps previous results on screen, dimmed, while an applied edit refreshes", async ({ page }, testInfo) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    let delayMs = 0;
+    let searchRequests = 0;
+    await page.route("**/api/discovery/search**", async (route) => {
+      searchRequests += 1;
+      if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await route.continue();
+    });
+    await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+    const body = page.getByTestId("discovery-results-body");
+    await expect(body).toHaveAttribute("data-stale", "false", { timeout: 90_000 });
+    const rowsBefore = await page.getByTestId("discovery-result-row").count();
+    expect(rowsBefore).toBeGreaterThan(0);
+    await page.waitForTimeout(1500);
+
+    // Draft edits only: nothing is requested.
+    const requestsBefore = searchRequests;
+    const chips = page.getByTestId("discovery-chips");
+    await chips.getByRole("button", { name: /^Remove / }).first().click();
+    await chips.getByRole("button", { name: /^Remove / }).first().click();
+    await expect(page.getByTestId("discovery-update-results").first()).toContainText("(2)");
+    await expect(page.getByTestId("discovery-result-row")).toHaveCount(rowsBefore);
+    expect(searchRequests).toBe(requestsBefore);
+    await page.screenshot({ path: testInfo.outputPath(`discovery-pending-${width}.png`) });
+
+    // One press, one search pair; the old results stay, dimmed and inert.
+    delayMs = 3000;
+    await page.getByTestId("discovery-update-results").first().click();
+    await expect(body).toHaveAttribute("data-stale", "true");
+    await expect(body).toHaveAttribute("aria-busy", "true");
+    await expect(body).toHaveAttribute("inert", "");
+    expect(await page.getByTestId("discovery-result-row").count()).toBe(rowsBefore);
+    await expect(page.getByTestId("discovery-chips")).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await page.screenshot({ path: testInfo.outputPath(`discovery-refreshing-${width}.png`) });
+    await expect(body).toHaveAttribute("data-stale", "false", { timeout: 60_000 });
+    expect(searchRequests - requestsBefore).toBe(2);
+    delayMs = 0;
+    await page.unroute("**/api/discovery/search**");
+  }
+});

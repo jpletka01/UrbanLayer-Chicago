@@ -1,0 +1,356 @@
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { REG } from "./_fixtures";
+import { useDiscoverySearch } from "./useDiscoverySearch";
+import type { PinsResponse, SearchResponse } from "./types";
+
+const mocks = vi.hoisted(() => ({
+  runSearch: vi.fn(),
+  runPins: vi.fn(),
+  exportCsv: vi.fn(),
+  track: vi.fn(),
+}));
+
+vi.mock("./searchClient", () => ({
+  runSearch: mocks.runSearch,
+  runPins: mocks.runPins,
+  exportCsv: mocks.exportCsv,
+}));
+vi.mock("../lib/tracking", () => ({ track: mocks.track }));
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+function row(pin: string) {
+  return {
+    pin, lat: 41.9, lon: -87.7, address: `${pin} address`, community_area: 24,
+    land_use: "commercial", class: null, lot_sqft: null, bldg_sqft: null,
+    year_built: null, units: null, assessed_value: null, price_per_sf: null,
+    last_sale_price: null, last_sale_date: null, improvement_ratio: null,
+    value_percentile: null, upside_score: null, is_teardown_candidate: false, sortValue: pin,
+  };
+}
+
+// A response whose cqs carries the user filters that were sent, like the real backend.
+function response(dataVersion: string, pin: string, filters: SearchResponse["cqs"]["filters"] = {}, total = 1): SearchResponse {
+  return {
+    dataVersion,
+    cqs: { filters, sort: REG.defaultSort, scope: { mode: "all" }, meta: {} },
+    result: { rows: [row(pin)], total, nextOffset: null },
+    diagnostics: {
+      resultCount: total, broad: false, appliedFilters: Object.keys(filters).length,
+      conflicts: [], droppedInvalid: [], excludedUnknown: {}, mostRestrictive: [],
+    },
+  };
+}
+
+function pins(dataVersion: string, pin: string, total = 1): PinsResponse {
+  return {
+    dataVersion, total, truncated: false,
+    points: [{ pin, lat: 41.9, lon: -87.7, upside: null, landUse: "commercial" }],
+  };
+}
+
+const TIF = { kind: "flag", value: true } as const;
+const LAND = { kind: "enum", values: ["multi_family"] } as const;
+const withFilters = (...ids: Array<[string, typeof TIF | typeof LAND]>) =>
+  Object.fromEntries(ids.map(([id, predicate]) => [id, { predicate, source: "user" as const }]));
+
+function setup() {
+  return renderHook(() => useDiscoverySearch(REG));
+}
+
+async function firstSearch(hook: ReturnType<typeof setup>, filters = withFilters(["tif", TIF], ["land_use", LAND])) {
+  mocks.runSearch.mockResolvedValueOnce(response("v1", "first", filters));
+  mocks.runPins.mockResolvedValueOnce(pins("v1", "first"));
+  act(() => {
+    hook.result.current.editPanel("tif", TIF);
+    hook.result.current.editPanel("land_use", LAND);
+  });
+  act(() => hook.result.current.apply());
+  await waitFor(() => expect(hook.result.current.loading).toBe(false));
+  mocks.runSearch.mockClear();
+  mocks.runPins.mockClear();
+}
+
+beforeEach(() => {
+  mocks.runSearch.mockReset();
+  mocks.runPins.mockReset();
+  mocks.exportCsv.mockReset();
+  mocks.track.mockReset();
+});
+
+afterEach(cleanup);
+
+describe("useDiscoverySearch: draft and apply", () => {
+  it("requests nothing for draft edits, then exactly one search/pins pair per apply", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+
+    act(() => {
+      hook.result.current.removeFilter("tif");
+      hook.result.current.removeFilter("land_use");
+      hook.result.current.editPanel("lot_size", { kind: "range", min: 3000 });
+      hook.result.current.setText("");
+      hook.result.current.clearAll();
+      hook.result.current.restoreFilter("tif");
+    });
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(mocks.runPins).not.toHaveBeenCalled();
+    expect(hook.result.current.pendingCount).toBeGreaterThan(0);
+
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "second", withFilters(["tif", TIF])));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "second"));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1);
+    expect(mocks.runPins).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.rows[0].pin).toBe("second");
+  });
+
+  it("sends the draft as it is at apply time", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    act(() => hook.result.current.removeFilter("tif"));
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "x", withFilters(["land_use", LAND])));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "x"));
+    act(() => hook.result.current.apply());
+    const sent = mocks.runSearch.mock.calls[0][0];
+    expect(Object.keys(sent.panelState)).toEqual(["land_use"]);
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+  });
+
+  it("does nothing for an apply that matches the search already in flight", async () => {
+    const hook = setup();
+    const search = deferred<SearchResponse | null>();
+    mocks.runSearch.mockImplementation(() => search.promise);
+    mocks.runPins.mockResolvedValue(null);
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.apply());
+    act(() => hook.result.current.apply());
+    act(() => hook.result.current.apply());
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.draftIsInFlight).toBe(true);
+    await act(async () => search.resolve(null));
+  });
+
+  it("aborts the superseded request and ignores its late response", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    const slowSearch = deferred<SearchResponse | null>();
+    const slowPins = deferred<PinsResponse | null>();
+    mocks.runSearch.mockImplementationOnce(() => slowSearch.promise);
+    mocks.runPins.mockImplementationOnce(() => slowPins.promise);
+    act(() => hook.result.current.removeFilter("tif"));
+    act(() => hook.result.current.apply());
+    const firstSignal = mocks.runSearch.mock.calls[0][2] as AbortSignal;
+    expect(firstSignal.aborted).toBe(false);
+
+    mocks.runSearch.mockResolvedValueOnce(response("v2", "newer", withFilters()));
+    mocks.runPins.mockResolvedValueOnce(pins("v2", "newer"));
+    act(() => hook.result.current.removeFilter("land_use"));
+    act(() => hook.result.current.apply());
+    expect(firstSignal.aborted).toBe(true);
+    await waitFor(() => expect(hook.result.current.rows[0]?.pin).toBe("newer"));
+
+    // the aborted request resolves late: it must not overwrite the newer commit
+    await act(async () => {
+      slowSearch.resolve(response("v1", "stale", withFilters(["land_use", LAND])));
+      slowPins.resolve(pins("v1", "stale"));
+    });
+    expect(hook.result.current.rows[0].pin).toBe("newer");
+    expect(hook.result.current.map.points[0].pin).toBe("newer");
+    expect(hook.result.current.applied?.dataVersion).toBe("v2");
+  });
+
+  it("keeps the previous results, count and dots while a refresh runs", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    const nextSearch = deferred<SearchResponse | null>();
+    const nextPins = deferred<PinsResponse | null>();
+    mocks.runSearch.mockImplementationOnce(() => nextSearch.promise);
+    mocks.runPins.mockImplementationOnce(() => nextPins.promise);
+    act(() => hook.result.current.removeFilter("tif"));
+    act(() => hook.result.current.apply());
+
+    expect(hook.result.current.loading).toBe(true);
+    expect(hook.result.current.refreshing).toBe(true);
+    expect(hook.result.current.applied?.dataVersion).toBe("v1");
+    expect(hook.result.current.rows.map((r) => r.pin)).toEqual(["first"]);
+    expect(hook.result.current.map.status).toBe("ready");
+    expect(hook.result.current.map.points).toHaveLength(1);
+    // chips stay available and editable mid-refresh
+    expect(hook.result.current.chips.map((c) => c.id)).toEqual(["land_use", "tif"]);
+    act(() => hook.result.current.restoreFilter("tif"));
+    expect(hook.result.current.chips.find((c) => c.id === "tif")?.state).toBe("applied");
+
+    await act(async () => {
+      nextSearch.resolve(response("v1", "second", withFilters(["land_use", LAND])));
+      nextPins.resolve(pins("v1", "second"));
+    });
+    expect(hook.result.current.rows[0].pin).toBe("second");
+  });
+
+  it("keeps the previous results and flags a failed refresh; the retry sends the draft again", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    mocks.runSearch.mockResolvedValueOnce(null);
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "x"));
+    act(() => hook.result.current.removeFilter("tif"));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.refreshFailed).toBe(true));
+    expect(hook.result.current.unavailable).toBe(false);
+    expect(hook.result.current.rows.map((r) => r.pin)).toEqual(["first"]);
+    expect(hook.result.current.applied?.dataVersion).toBe("v1");
+    expect(hook.result.current.map.points).toHaveLength(1);
+    expect(hook.result.current.pendingCount).toBe(1);
+
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "retried", withFilters(["land_use", LAND])));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "retried"));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.rows[0].pin).toBe("retried"));
+    expect(hook.result.current.refreshFailed).toBe(false);
+  });
+
+  it("treats a failure with nothing on screen as unavailable", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValue(null);
+    mocks.runPins.mockResolvedValue(null);
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.unavailable).toBe(true));
+    expect(hook.result.current.refreshFailed).toBe(false);
+    expect(hook.result.current.map.status).toBe("unavailable");
+  });
+});
+
+describe("useDiscoverySearch: INV-4 and Item 30", () => {
+  it("never describes an unevaluated draft: applied (summary/count source) only changes on a response", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    const evaluated = hook.result.current.applied;
+    act(() => {
+      hook.result.current.clearAll();
+      hook.result.current.setText("something new");
+      hook.result.current.setSort({ key: "lot_size", dir: "desc" });
+    });
+    expect(hook.result.current.applied).toBe(evaluated);
+    expect(Object.keys(hook.result.current.applied!.cqs.filters).sort()).toEqual(["land_use", "tif"]);
+    expect(hook.result.current.applied!.result.total).toBe(1);
+    expect(hook.result.current.rows.map((r) => r.pin)).toEqual(["first"]);
+    // the draft differs, and says so through the pending count and struck-through chips
+    expect(hook.result.current.pendingCount).toBeGreaterThan(0);
+    expect(hook.result.current.chips.every((c) => c.state === "removed")).toBe(true);
+  });
+
+  it("Clear all is a draft edit: chips show the removal, the evaluated query is untouched until applied", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    act(() => hook.result.current.clearAll());
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(hook.result.current.draft.panelState).toEqual({});
+    expect(hook.result.current.pendingCount).toBe(2);
+
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "all", withFilters(), 99));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "all", 99));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.applied?.result.total).toBe(99));
+    expect(hook.result.current.pendingCount).toBe(0);
+    expect(hook.result.current.chips).toEqual([]);
+  });
+
+  it("keeps the new list but marks the map unavailable when the pins disagree with it", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    mocks.runSearch.mockResolvedValueOnce(response("v2", "second", withFilters()));
+    mocks.runPins.mockResolvedValueOnce(pins("OTHER", "wrong"));
+    act(() => hook.result.current.clearAll());
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.rows[0].pin).toBe("second"));
+    expect(hook.result.current.map.status).toBe("unavailable");
+    expect(hook.result.current.map.points).toEqual([]);
+  });
+
+  it("rejects pins whose total or cardinality disagree", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "one", {}, 3));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "one", 2));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(hook.result.current.map.status).toBe("unavailable");
+  });
+
+  it("reconciles the strip to the evaluated cqs when no edits were made in flight", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "one", withFilters(["tif", TIF])));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "one"));
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.editPanel("land_use", LAND)); // the server drops this one
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(Object.keys(hook.result.current.draft.panelState)).toEqual(["tif"]);
+    expect(hook.result.current.pendingCount).toBe(0);
+  });
+
+  it("does not overwrite edits made while the search was running", async () => {
+    const hook = setup();
+    const search = deferred<SearchResponse | null>();
+    mocks.runSearch.mockImplementationOnce(() => search.promise);
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "one"));
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.apply());
+    act(() => hook.result.current.editPanel("land_use", LAND));
+    await act(async () => search.resolve(response("v1", "one", withFilters(["tif", TIF]))));
+    expect(Object.keys(hook.result.current.draft.panelState).sort()).toEqual(["land_use", "tif"]);
+    expect(hook.result.current.pendingCount).toBe(1);
+  });
+});
+
+describe("useDiscoverySearch: load more, export, analytics", () => {
+  it("loads further pages from the committed search, not from a draft", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValueOnce({
+      ...response("v1", "p0", withFilters(["tif", TIF]), 2),
+      result: { rows: [row("p0")], total: 2, nextOffset: 1 },
+    });
+    mocks.runPins.mockResolvedValueOnce({ ...pins("v1", "p0", 2), points: [pins("v1", "p0").points[0], pins("v1", "p1").points[0]] });
+    act(() => hook.result.current.editPanel("tif", TIF));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(hook.result.current.nextOffset).toBe(1));
+
+    act(() => hook.result.current.clearAll()); // an unapplied edit
+    mocks.runSearch.mockResolvedValueOnce({
+      ...response("v1", "p1", withFilters(["tif", TIF]), 2),
+      result: { rows: [row("p1")], total: 2, nextOffset: null },
+    });
+    await act(async () => { await hook.result.current.loadMore(); });
+    const sent = mocks.runSearch.mock.calls.at(-1)![0];
+    expect(Object.keys(sent.panelState)).toEqual(["tif"]);
+    expect(sent.offset).toBe(1);
+    expect(hook.result.current.rows.map((r) => r.pin)).toEqual(["p0", "p1"]);
+  });
+
+  it("exports the search on screen", async () => {
+    const hook = setup();
+    await firstSearch(hook);
+    act(() => hook.result.current.clearAll());
+    act(() => hook.result.current.exportApplied());
+    const exported = mocks.exportCsv.mock.calls[0][0];
+    expect(Object.keys(exported.panelState).sort()).toEqual(["land_use", "tif"]);
+  });
+
+  it("adds ms (click to results painted) to the discovery_search event", async () => {
+    const hook = setup();
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "one", {}, 7));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "one", 7));
+    act(() => hook.result.current.apply());
+    await waitFor(() => expect(mocks.track).toHaveBeenCalled());
+    const [name, props] = mocks.track.mock.calls[0];
+    expect(name).toBe("discovery_search");
+    expect(props).toMatchObject({ topic_id: null, has_text: false, total: 7, gated: null });
+    expect(typeof props.ms).toBe("number");
+    expect(props.ms).toBeGreaterThanOrEqual(0);
+  });
+});

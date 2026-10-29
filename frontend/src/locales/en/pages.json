@@ -833,7 +833,18 @@
     },
     "clearAll": "Clear all ({{count}})",
     "metricAssessed": "assessed",
-    "metricPerSqft": "$ / bldg sqft"
+    "metricPerSqft": "$ / bldg sqft",
+    "updateResults": "Update results ({{count}})",
+    "updating": "Updating…",
+    "updatingAria": "Updating results. Showing the previous results until the new ones load.",
+    "updateFailed": "Couldn't update.",
+    "retry": "Retry",
+    "chipPending": "not applied yet",
+    "chipPendingTitle": "Not applied yet. Press Update results.",
+    "restoreFilterAria": "Restore {{name}} filter",
+    "restoreFilterTitle": "Removed, not applied yet. Click to restore.",
+    "mapStale": "Previous results, updating",
+    "mapZoomToResults": "Zoom to results"
   },
   "settings": {
     "title": "Settings",

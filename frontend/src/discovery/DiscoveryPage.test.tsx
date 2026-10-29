@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DiscoveryPage from "./DiscoveryPage";
 import { REG } from "./_fixtures";
@@ -21,25 +21,62 @@ vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
 vi.mock("../lib/tracking", () => ({ track: vi.fn() }));
 vi.mock("./../components/PageHeader", () => ({ default: () => <div /> }));
 vi.mock("./../components/UpgradePrompt", () => ({ default: () => null }));
-vi.mock("./chips", () => ({ Chips: () => null }));
+vi.mock("./chips", () => ({
+  Chips: ({ items, onRemove, onRestore }: {
+    items: Array<{ id: string; state: string }>;
+    onRemove: (id: string) => void;
+    onRestore: (id: string) => void;
+  }) => (
+    <div data-testid="chips">
+      {items.map((item) => (
+        <span key={item.id} data-testid={`chip-${item.id}`} data-state={item.state}>
+          {item.state === "removed" ? (
+            <button type="button" onClick={() => onRestore(item.id)}>{`restore-${item.id}`}</button>
+          ) : (
+            <button type="button" onClick={() => onRemove(item.id)}>{`remove-${item.id}`}</button>
+          )}
+        </span>
+      ))}
+    </div>
+  ),
+}));
 vi.mock("./CoverageBanner", () => ({ CoverageBanner: () => null }));
-vi.mock("./DiscoveryFilterPanel", () => ({ DiscoveryFilterPanel: () => null }));
+vi.mock("./DiscoveryFilterPanel", () => ({
+  DiscoveryFilterPanel: ({ state, onChange }: {
+    state: Record<string, unknown>;
+    onChange: (id: string, predicate: unknown) => void;
+  }) => (
+    <div data-testid="panel" data-keys={Object.keys(state).sort().join(",")}>
+      <button type="button" onClick={() => onChange("tif", { kind: "flag", value: true })}>panel-add-tif</button>
+    </div>
+  ),
+}));
 vi.mock("./RecipeShelf", () => ({ RecipeShelf: () => null }));
 vi.mock("./DiscoveryResults", () => ({
-  DiscoveryResults: ({ response, rows, loading, unavailable }: {
+  DiscoveryResults: ({ response, rows, loading, unavailable, refreshFailed, onRetry }: {
     response: SearchResponse | null;
     rows: unknown[];
     loading: boolean;
     unavailable?: boolean;
+    refreshFailed?: boolean;
+    onRetry?: () => void;
   }) => (
-    <div data-testid="results-state">
-      {loading ? "loading" : unavailable ? "unavailable" : `${response?.dataVersion ?? "none"}:${rows.length}`}
+    <div>
+      <div
+        data-testid="results-state"
+        data-loading={String(loading)}
+        data-stale={String(loading && response !== null)}
+        data-failed={String(!!refreshFailed)}
+      >
+        {unavailable ? "unavailable" : `${response?.dataVersion ?? "none"}:${rows.length}`}
+      </div>
+      {refreshFailed && <button type="button" onClick={onRetry}>mock-retry</button>}
     </div>
   ),
 }));
 vi.mock("./DiscoveryMap", () => ({
-  DiscoveryMap: ({ points, status, visible }: { points: unknown[]; status: string; visible: boolean }) => (
-    <div data-testid="map-state">{`${status}:${points.length}:${visible ? "visible" : "hidden"}`}</div>
+  DiscoveryMap: ({ points, status, visible, stale }: { points: unknown[]; status: string; visible: boolean; stale?: boolean }) => (
+    <div data-testid="map-state">{`${status}:${points.length}:${visible ? "visible" : "hidden"}:${stale ? "stale" : "fresh"}`}</div>
   ),
 }));
 
@@ -53,10 +90,15 @@ const diagnostics: Diagnostics = {
   mostRestrictive: [],
 };
 
-function response(dataVersion: string, pin: string, total = 1): SearchResponse {
+function response(
+  dataVersion: string,
+  pin: string,
+  total = 1,
+  filters: SearchResponse["cqs"]["filters"] = {},
+): SearchResponse {
   return {
     dataVersion,
-    cqs: { filters: {}, sort: REG.defaultSort, scope: { mode: "all" }, meta: {} },
+    cqs: { filters, sort: REG.defaultSort, scope: { mode: "all" }, meta: {} },
     result: {
       rows: total === 0 ? [] : [{
         pin, lat: 41.9, lon: -87.7, address: `${pin} address`, community_area: 24,
@@ -172,23 +214,6 @@ describe("DiscoveryPage issued-query pairing", () => {
     expect(screen.getByTestId("map-state").textContent).toContain("unavailable:0");
   });
 
-  it("clears old dots as soon as a new issued search starts", async () => {
-    mocks.runSearch.mockResolvedValueOnce(response("v1", "one"));
-    mocks.runPins.mockResolvedValueOnce(pins("v1", "one"));
-    const nextSearch = deferred<SearchResponse | null>();
-    const nextPins = deferred<PinsResponse | null>();
-    mocks.runSearch.mockImplementationOnce(() => nextSearch.promise);
-    mocks.runPins.mockImplementationOnce(() => nextPins.promise);
-    const { button, input } = await readyPage();
-    fireEvent.click(button);
-    await waitFor(() => expect(screen.getByTestId("map-state").textContent).toContain("ready:1"));
-
-    fireEvent.change(input, { target: { value: "next" } });
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(screen.getByTestId("map-state").textContent).toContain("loading:0");
-    expect(screen.getByTestId("results-state").textContent).toBe("loading");
-  });
-
   it("keeps a successful zero-result query distinct from map failure", async () => {
     mocks.runSearch.mockResolvedValue(response("empty", "none", 0));
     mocks.runPins.mockResolvedValue(pins("empty", "none", 0));
@@ -205,5 +230,139 @@ describe("DiscoveryPage issued-query pairing", () => {
     expect(screen.getByTestId("discovery-list-pane").className).not.toContain("md:flex");
     expect(screen.getByTestId("discovery-map-pane").className).toContain("xl:block");
     expect(screen.getByTestId("discovery-map-pane").className).not.toContain("md:block");
+  });
+});
+
+const THREE = {
+  land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" },
+  tif: { predicate: { kind: "flag", value: true }, source: "user" },
+  lot_size: { predicate: { kind: "range", min: 3000 }, source: "user" },
+} as const;
+
+async function pageWithResults() {
+  mocks.runSearch.mockResolvedValueOnce(response("v1", "one", 1, { ...THREE }));
+  mocks.runPins.mockResolvedValueOnce(pins("v1", "one"));
+  const ready = await readyPage();
+  fireEvent.click(ready.button);
+  await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+  mocks.runSearch.mockClear();
+  mocks.runPins.mockClear();
+  return ready;
+}
+
+describe("DiscoveryPage Phase 0: draft edits, then one Update results", () => {
+  it("never blanks the page while chips are removed, requests nothing, then sends one pair", async () => {
+    const { button } = await pageWithResults();
+    const summaryBefore = screen.getByTestId("discovery-summary").textContent;
+
+    fireEvent.click(screen.getByText("remove-land_use"));
+    fireEvent.click(screen.getByText("remove-tif"));
+    fireEvent.click(screen.getByText("remove-lot_size"));
+
+    // chips stay (struck through, restorable); results, count and summary are untouched
+    expect(screen.getByTestId("chip-land_use").getAttribute("data-state")).toBe("removed");
+    expect(screen.getByTestId("chip-tif").getAttribute("data-state")).toBe("removed");
+    expect(screen.getByTestId("results-state").textContent).toBe("v1:1");
+    expect(screen.getByTestId("map-state").textContent).toContain("ready:1");
+    expect(screen.getByTestId("discovery-summary").textContent).toBe(summaryBefore);
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+    expect(mocks.runPins).not.toHaveBeenCalled();
+    expect(button.disabled).toBe(false);
+
+    mocks.runSearch.mockResolvedValueOnce(response("v1", "two"));
+    mocks.runPins.mockResolvedValueOnce(pins("v1", "two"));
+    fireEvent.click(screen.getByTestId("discovery-update-results"));
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1);
+    expect(mocks.runPins).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+    expect(screen.queryByTestId("discovery-update-results")).toBeNull();
+    expect(screen.queryByTestId("chip-land_use")).toBeNull();
+  });
+
+  it("offers one-click restore of a removed chip", async () => {
+    await pageWithResults();
+    fireEvent.click(screen.getByText("remove-tif"));
+    expect(screen.getByTestId("discovery-update-results").textContent).toBe("Update results (1)");
+    fireEvent.click(screen.getByText("restore-tif"));
+    expect(screen.getByTestId("chip-tif").getAttribute("data-state")).toBe("applied");
+    expect(screen.queryByTestId("discovery-update-results")).toBeNull();
+  });
+
+  it("shows a pending count for panel edits and Clear all, and applies them with Enter or Search", async () => {
+    const { button, input } = await pageWithResults();
+    fireEvent.click(screen.getByText("panel-add-tif")); // already there: no change
+    expect(screen.queryByTestId("discovery-update-results")).toBeNull();
+    fireEvent.click(screen.getByText(/Clear all/));
+    expect(screen.getByTestId("discovery-update-results").textContent).toBe("Update results (3)");
+    expect(screen.getByTestId("panel").getAttribute("data-keys")).toBe("");
+    expect(mocks.runSearch).not.toHaveBeenCalled();
+
+    mocks.runSearch.mockResolvedValue(response("v2", "all"));
+    mocks.runPins.mockResolvedValue(pins("v2", "all"));
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v2:1"));
+    expect(mocks.runSearch).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText("panel-add-tif"));
+    fireEvent.click(button);
+    expect(mocks.runSearch).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the previous results, summary and dots dimmed while the refresh runs; Search stays enabled", async () => {
+    const { button } = await pageWithResults();
+    const nextSearch = deferred<SearchResponse | null>();
+    const nextPins = deferred<PinsResponse | null>();
+    mocks.runSearch.mockImplementationOnce(() => nextSearch.promise);
+    mocks.runPins.mockImplementationOnce(() => nextPins.promise);
+    const summaryBefore = screen.getByTestId("discovery-summary").textContent;
+    fireEvent.click(screen.getByText("remove-tif"));
+    fireEvent.click(screen.getByTestId("discovery-update-results"));
+
+    const results = screen.getByTestId("results-state");
+    expect(results.getAttribute("data-stale")).toBe("true");
+    expect(results.textContent).toBe("v1:1"); // previous rows, not "none:0"
+    expect(screen.getByTestId("map-state").textContent).toBe("ready:1:hidden:stale");
+    expect(screen.getByTestId("discovery-summary").textContent).toBe(summaryBefore);
+    expect(screen.getByTestId("discovery-summary").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("discovery-summary").className).toContain("opacity-[0.55]");
+    expect(button.disabled).toBe(false);
+    // chips stay clickable mid-refresh, and the in-flight draft needs no second button
+    expect(screen.getByTestId("chip-land_use")).toBeTruthy();
+    expect(screen.queryByTestId("discovery-update-results")).toBeNull();
+    fireEvent.click(screen.getByText("remove-lot_size"));
+    expect(screen.getByTestId("discovery-update-results").textContent).toBe("Update results (2)");
+
+    await act(async () => {
+      nextSearch.resolve(response("v2", "next", 1, { land_use: THREE.land_use }));
+      nextPins.resolve(pins("v2", "next"));
+    });
+    await waitFor(() => expect(screen.getByTestId("results-state").getAttribute("data-stale")).toBe("false"));
+    expect(screen.getByTestId("map-state").textContent).toBe("ready:1:hidden:fresh");
+    expect(screen.getByTestId("results-state").textContent).toBe("v2:1");
+  });
+
+  it("keeps the previous results when a refresh fails and retries on request", async () => {
+    await pageWithResults();
+    mocks.runSearch.mockResolvedValueOnce(null);
+    mocks.runPins.mockResolvedValueOnce(null);
+    fireEvent.click(screen.getByText("remove-tif"));
+    fireEvent.click(screen.getByTestId("discovery-update-results"));
+    await waitFor(() => expect(screen.getByTestId("results-state").getAttribute("data-failed")).toBe("true"));
+    expect(screen.getByTestId("results-state").textContent).toBe("v1:1");
+    expect(screen.getByTestId("map-state").textContent).toContain("ready:1");
+
+    mocks.runSearch.mockResolvedValueOnce(response("v2", "again"));
+    mocks.runPins.mockResolvedValueOnce(pins("v2", "again"));
+    fireEvent.click(screen.getByText("mock-retry"));
+    await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v2:1"));
+    expect(mocks.runSearch).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers Update results on the phone Map tab too, where the strip is hidden", async () => {
+    await pageWithResults();
+    fireEvent.click(screen.getByText("remove-tif"));
+    expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
+    expect(screen.getAllByTestId("discovery-update-results")).toHaveLength(2);
   });
 });

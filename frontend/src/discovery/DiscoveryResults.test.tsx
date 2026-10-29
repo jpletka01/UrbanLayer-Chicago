@@ -202,3 +202,51 @@ describe("PR9 free-tier teaser", () => {
     expect(onUpgrade).toHaveBeenCalled();
   });
 });
+
+describe("Phase 0: previous results stay while a refresh runs", () => {
+  const response = resp(
+    { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
+    { result: { rows: [rowFixture], total: 17, nextOffset: null } },
+  );
+
+  it("keeps the evaluated count and rows, dimmed, busy, inert and labelled Updating…", () => {
+    render(
+      <DiscoveryResults {...baseProps} loading registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />,
+    );
+    // never the blank "Searching…" page once there is something to keep
+    expect(screen.queryByText("Searching…")).toBeNull();
+    expect(screen.getByText("17")).toBeTruthy();
+    expect(screen.getByText("1840 W Erie St")).toBeTruthy();
+    expect(screen.getByText("Updating…")).toBeTruthy();
+    const body = screen.getByTestId("discovery-results-body");
+    expect(body.getAttribute("aria-busy")).toBe("true");
+    expect(body.getAttribute("data-stale")).toBe("true");
+    expect(body.hasAttribute("inert")).toBe(true);
+    expect(body.className).toContain("opacity-[0.55]");
+    expect(body.className).toContain("pointer-events-none");
+  });
+
+  it("is not dimmed or inert when nothing is loading", () => {
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />);
+    const body = screen.getByTestId("discovery-results-body");
+    expect(body.getAttribute("aria-busy")).toBe("false");
+    expect(body.hasAttribute("inert")).toBe(false);
+    expect(screen.queryByText("Updating…")).toBeNull();
+  });
+
+  it("shows Searching… only for the first search, with nothing to keep", () => {
+    render(<DiscoveryResults {...baseProps} loading registry={reg()} rows={[]} response={null} onRelax={noop} />);
+    expect(screen.getByText("Searching…")).toBeTruthy();
+  });
+
+  it("shows an inline retry bar above the previous results after a failed refresh", () => {
+    const onRetry = vi.fn();
+    render(
+      <DiscoveryResults {...baseProps} refreshFailed onRetry={onRetry} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />,
+    );
+    expect(screen.getByTestId("discovery-update-failed").textContent).toContain("Couldn't update.");
+    expect(screen.getByText("1840 W Erie St")).toBeTruthy(); // previous results kept
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetry).toHaveBeenCalled();
+  });
+});

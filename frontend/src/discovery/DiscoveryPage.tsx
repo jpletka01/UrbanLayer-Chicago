@@ -1,6 +1,8 @@
-// Property Discovery page (08/09). Owns the raw inputs (panel state, free text, sort), runs
-// the search, and renders summary + chips + results FROM response.cqs (INV-4). Premium-gated
-// like the Site Explorer. The page never evaluates or filters — that is the backend's job.
+// Property Discovery page (08/09). Renders the controls and the results; the draft / applied /
+// abort logic lives in useDiscoverySearch. The summary sentence, count and rows come from the
+// last EVALUATED response.cqs (INV-4); the chips strip is a control surface and renders from
+// the draft. Edits change the draft only: a search runs when the user presses Search, Enter or
+// "Update results". The page never evaluates or filters — that is the backend's job.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,20 +18,9 @@ import { DiscoveryResults } from "./DiscoveryResults";
 import { RecipeShelf } from "./RecipeShelf";
 import { missingFieldsFor } from "./coverage";
 import { loadRegistry } from "./registryClient";
-import { exportCsv, runPins, runSearch, type SearchInputs } from "./searchClient";
-import { track } from "../lib/tracking";
 import { summarize, seamPrompt } from "./summary";
-import { expandTopic, panelFromCqs } from "./topicCompiler";
-import type {
-  PanelState,
-  PinPoint,
-  Predicate,
-  Registry,
-  ResultRow,
-  SearchResponse,
-  SortSpec,
-  TopicDef,
-} from "./types";
+import { useDiscoverySearch } from "./useDiscoverySearch";
+import type { Registry, SortSpec } from "./types";
 
 export default function DiscoveryPage() {
   const { t } = useTranslation("pages");
@@ -38,49 +29,26 @@ export default function DiscoveryPage() {
   const isPro = user?.tier === "premium" || user?.tier === "admin";
 
   const [registry, setRegistry] = useState<Registry | null>(null);
-  const [panelState, setPanelState] = useState<PanelState>({});
-  const [text, setText] = useState("");
-  const [sort, setSort] = useState<SortSpec | null>(null);
-  // Active recipe id — telemetry only (sent as topicId; the backend never re-expands).
-  // Cleared the moment the user edits the panel/text, so it never misreports the query.
-  const [topicId, setTopicId] = useState<string | null>(null);
-  const [response, setResponse] = useState<SearchResponse | null>(null);
-  // The accumulated result-list window (page 0 + appended pages, deduped by pin). This is
-  // the list ONLY — the map (PR6) fetches the full coord set separately; the list is never
-  // the source of truth for the map.
-  const [rows, setRows] = useState<ResultRow[]>([]);
-  const [nextOffset, setNextOffset] = useState<number | null>(null);
-  // Map state — the FULL ordered coord set from /search/pins, fetched once per search
-  // (NOT from the rows window). loadMore never touches this.
-  const [mapPoints, setMapPoints] = useState<PinPoint[]>([]);
-  const [mapTruncated, setMapTruncated] = useState(false);
-  const [mapTotal, setMapTotal] = useState(0);
-  const [mapStatus, setMapStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
-  const [searchUnavailable, setSearchUnavailable] = useState(false);
+  const search = useDiscoverySearch(registry);
+  const {
+    draft, applied: response, rows, nextOffset, loading, loadingMore, refreshing, unavailable,
+    refreshFailed, draftIsInFlight, chips, pendingCount, map,
+  } = search;
   const [hoveredPin, setHoveredPin] = useState<string | null>(null);
   // Kept separate from row-origin hover/focus so only a Pro map hover may ask
   // an already-loaded result row to scroll into view.
   const [mapHoveredPin, setMapHoveredPin] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   // Below xl: one List|Map content pane (map stays mounted). Phones also get the
   // bottom-sheet filter drawer; tablet widths retain the inline filter rail.
   const [mobileTab, setMobileTab] = useState<"list" | "map">("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // The inputs of the *issued* search, so loadMore re-issues the same query (later page) —
-  // independent of any edits the user makes to the panel before scrolling.
-  const lastInputs = useRef<SearchInputs | null>(null);
-  const requestIdRef = useRef(0);
   const [wideLayout, setWideLayout] = useState(
     () => typeof window !== "undefined" && window.matchMedia?.("(min-width: 1280px)").matches === true,
   );
 
   useEffect(() => {
-    loadRegistry().then((reg) => {
-      setRegistry(reg);
-      if (reg) setSort(reg.defaultSort);
-    });
+    loadRegistry().then(setRegistry);
   }, []);
 
   useEffect(() => {
@@ -92,142 +60,22 @@ export default function DiscoveryPage() {
     return () => query.removeEventListener("change", update);
   }, []);
 
-  useEffect(() => () => {
-    requestIdRef.current += 1;
-  }, []);
-
-  const runWith = useCallback(
-    async (state: PanelState, txt: string, srt: SortSpec | null, tid: string | null = null) => {
-      if (!registry) return;
-      // PR9: free users RUN the search and hit the teaser (top 10 + wall), not a pre-search
-      // wall. The server enforces the cap; the FE renders the teaser from result.gated.
-      const inputs: SearchInputs = { panelState: state, text: txt, sort: srt, topicId: tid };
-      const requestId = ++requestIdRef.current;
-      lastInputs.current = inputs;
-      setLoading(true);
-      setLoadingMore(false);
-      setSearchUnavailable(false);
-      setResponse(null);
-      setRows([]);
-      setNextOffset(null);
+  // Hover linkage refers to rows/dots that are about to be replaced: drop it while a search runs.
+  useEffect(() => {
+    if (loading) {
       setHoveredPin(null);
       setMapHoveredPin(null);
-      setMapStatus("loading");
-      setMapPoints([]);
-      setMapTruncated(false);
-      setMapTotal(0);
-      // List + map fetched in parallel: list is the paginated window; map is the full
-      // ordered coord set. They share the same request envelope → sequence-consistent.
-      try {
-        const [searchResult, pinsResult] = await Promise.allSettled([
-          runSearch(inputs, registry),
-          runPins(inputs, registry),
-        ]);
-        if (requestId !== requestIdRef.current) return;
-        const resp = searchResult.status === "fulfilled" ? searchResult.value : null;
-        const pins = pinsResult.status === "fulfilled" ? pinsResult.value : null;
-        track("discovery_search", {
-          topic_id: tid,
-          has_text: !!txt,
-          total: resp?.result.total ?? null,
-          gated: resp?.result.gated ?? null,
-        });
-        if (!resp) {
-          setSearchUnavailable(true);
-          setMapStatus("unavailable");
-          return;
-        }
-
-        setResponse(resp);
-        setRows(resp.result.rows);
-        setNextOffset(resp.result.nextOffset);
-        const pinsCardinalityMatches = pins && (
-          pins.truncated
-            ? pins.points.length <= pins.total
-            : pins.points.length === pins.total
-        );
-        if (
-          !pins ||
-          pins.dataVersion !== resp.dataVersion ||
-          pins.total !== resp.result.total ||
-          !pinsCardinalityMatches
-        ) {
-          setMapStatus("unavailable");
-          return;
-        }
-        setMapPoints(pins.points);
-        setMapTruncated(pins.truncated);
-        setMapTotal(resp.result.total);
-        setMapStatus("ready");
-      } catch {
-        if (requestId !== requestIdRef.current) return;
-        setSearchUnavailable(true);
-        setMapStatus("unavailable");
-      } finally {
-        if (requestId === requestIdRef.current) setLoading(false);
-      }
-    },
-    [registry],
-  );
-
-  // Infinite scroll: fetch the next window, append + dedupe by pin, advance the cursor.
-  const loadMore = useCallback(async () => {
-    if (!registry || nextOffset == null || loadingMore || !lastInputs.current) return;
-    const requestId = requestIdRef.current;
-    const dataVersion = response?.dataVersion;
-    const inputs = lastInputs.current;
-    setLoadingMore(true);
-    const resp = await runSearch({ ...inputs, offset: nextOffset }, registry);
-    if (requestId === requestIdRef.current && resp && resp.dataVersion === dataVersion) {
-      setRows((prev) => {
-        const seen = new Set(prev.map((r) => r.pin));
-        return [...prev, ...resp.result.rows.filter((r) => !seen.has(r.pin))];
-      });
-      setNextOffset(resp.result.nextOffset);
     }
-    if (requestId === requestIdRef.current) setLoadingMore(false);
-  }, [registry, nextOffset, loadingMore, response?.dataVersion]);
-
-  // Any manual panel edit means the query is no longer "the recipe" → drop the telemetry id.
-  const onPanelChange = useCallback((id: string, predicate: Predicate | null) => {
-    setTopicId(null);
-    setPanelState((prev) => {
-      const next = { ...prev };
-      if (predicate === null) delete next[id];
-      else next[id] = predicate;
-      return next;
-    });
-  }, []);
-
-  const onTextChange = useCallback((value: string) => {
-    setTopicId(null);
-    setText(value);
-  }, []);
-
-  // Recipe click (PR8): expand the topic's presets into panel state as plain user filters
-  // (editable/removable), apply its sort, send topicId for telemetry, and search. The
-  // backend does NOT re-expand — userFilters carries the expanded set.
-  const onPickRecipe = useCallback(
-    (topic: TopicDef) => {
-      if (!registry) return;
-      const presets = expandTopic(topic.id, registry);
-      const srt = topic.defaultSort ?? registry.defaultSort;
-      setPanelState(presets);
-      setText("");
-      setSort(srt);
-      setTopicId(topic.id);
-      runWith(presets, "", srt, topic.id);
-    },
-    [registry, runWith],
-  );
+  }, [loading]);
 
   // Auto-run the first LIVE recipe on load (approved 2026-07-01): the page never opens
   // to a dead results column. Skipped the moment the user typed, filtered, or searched
   // first; behaves exactly like a manual recipe click (topicId telemetry included).
   const autoRanRef = useRef(false);
+  const { pickRecipe } = search;
   useEffect(() => {
     if (!registry || autoRanRef.current || loading) return;
-    if (response || text || Object.keys(panelState).length > 0) return;
+    if (response || draft.text || Object.keys(draft.panelState).length > 0) return;
     const live = registry.topics.find(
       (tp) =>
         missingFieldsFor(registry, Object.keys(tp.presets)).length === 0 &&
@@ -235,30 +83,8 @@ export default function DiscoveryPage() {
     );
     if (!live) return;
     autoRanRef.current = true;
-    onPickRecipe(live);
-  }, [registry, response, text, panelState, loading, onPickRecipe]);
-
-  // One-tap re-issue (06): fold the evaluated CQS back into the panel (so text-derived
-  // constraints persist + stay editable), drop the chosen filter, and re-search. Never
-  // re-expands a topic; clears the telemetry id since the query is now user-edited.
-  const onRelax = useCallback(
-    (filterId: string) => {
-      if (!response) return;
-      const next = panelFromCqs(response.cqs);
-      delete next[filterId];
-      setPanelState(next);
-      setText("");
-      setTopicId(null);
-      runWith(next, "", sort, null);
-    },
-    [response, sort, runWith],
-  );
-
-  // Full-match-set CSV of the issued query (server-side, premium-gated). loadMore's window
-  // is irrelevant — the export re-runs the same envelope server-side.
-  const onExport = useCallback(() => {
-    if (registry && lastInputs.current) exportCsv(lastInputs.current, registry);
-  }, [registry]);
+    pickRecipe(live);
+  }, [registry, response, draft.text, draft.panelState, loading, pickRecipe]);
 
   const onOpenParcel = useCallback(
     (pin: string) => navigate(`/scorecard?pin=${pin.replace(/\D/g, "")}`),
@@ -285,12 +111,9 @@ export default function DiscoveryPage() {
     navigate(`/?q=${encodeURIComponent(seamPrompt(response.cqs, registry))}`);
   }, [navigate, response, registry]);
 
-  const onClearAll = useCallback(() => {
-    setTopicId(null);
-    setPanelState({});
-  }, []);
+  const showUpdate = pendingCount > 0 && !draftIsInFlight;
 
-  const activeFilterCount = Object.keys(panelState).length;
+  const activeFilterCount = Object.keys(draft.panelState).length;
 
   return (
     <div className="flex h-screen flex-col bg-dark-bg text-text-primary">
@@ -311,10 +134,10 @@ export default function DiscoveryPage() {
             {registry && <CoverageBanner registry={registry} />}
             <input
               type="text"
-              value={text}
-              onChange={(e) => onTextChange(e.target.value)}
+              value={draft.text}
+              onChange={(e) => search.setText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") runWith(panelState, text, sort, topicId);
+                if (e.key === "Enter") search.apply();
               }}
               placeholder={t("discovery.searchPlaceholder")}
               aria-label={t("discovery.searchAria")}
@@ -323,16 +146,21 @@ export default function DiscoveryPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => runWith(panelState, text, sort, topicId)}
-                disabled={!registry || loading}
+                onClick={search.apply}
+                disabled={!registry}
                 className="rounded-lg bg-action px-4 py-2 text-title text-text-on-accent transition-colors hover:bg-action-hover disabled:opacity-50"
               >
-                {loading ? t("discovery.searching") : t("discovery.search")}
+                {t("discovery.search")}
               </button>
-              {registry && sort && (
-                <SortControl registry={registry} sort={sort} onChange={setSort} />
+              {registry && draft.sort && (
+                <SortControl registry={registry} sort={draft.sort} onChange={search.setSort} />
               )}
             </div>
+            {/* The strip with Update results lives in the List pane; on the phone Map tab
+                that pane is hidden, so the same button is offered here. */}
+            {showUpdate && mobileTab === "map" && (
+              <UpdateResultsButton count={pendingCount} onClick={search.apply} className="xl:hidden" />
+            )}
             {/* List|Map stays available until xl. Edit-filters is phone-only because
                 tablet widths retain the inline filter rail. */}
             <div className="flex items-center gap-2 xl:hidden">
@@ -343,8 +171,8 @@ export default function DiscoveryPage() {
                 className="ml-auto rounded-lg border border-dark-border px-3 py-1.5 text-caption text-text-secondary transition-colors hover:border-dark-border-strong md:hidden"
               >
                 {t("discovery.editFilters")}
-                {Object.keys(panelState).length > 0 && (
-                  <span className="ml-1 text-accent">({Object.keys(panelState).length})</span>
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 text-accent">({activeFilterCount})</span>
                 )}
               </button>
             </div>
@@ -353,7 +181,7 @@ export default function DiscoveryPage() {
           {/* Mobile-only: recipes as a horizontal scroll-snap row */}
           {registry && (
             <div className="flex-shrink-0 border-b border-dark-border p-3 md:hidden">
-              <RecipeShelf registry={registry} onPick={onPickRecipe} horizontal />
+              <RecipeShelf registry={registry} onPick={search.pickRecipe} horizontal />
             </div>
           )}
 
@@ -361,7 +189,7 @@ export default function DiscoveryPage() {
           <div className="hidden flex-1 space-y-5 overflow-y-auto p-4 md:block">
             {registry ? (
               <>
-                <RecipeShelf registry={registry} onPick={onPickRecipe} />
+                <RecipeShelf registry={registry} onPick={search.pickRecipe} />
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="text-overline uppercase text-text-muted">
@@ -370,14 +198,14 @@ export default function DiscoveryPage() {
                     {activeFilterCount > 0 && (
                       <button
                         type="button"
-                        onClick={onClearAll}
+                        onClick={search.clearAll}
                         className="text-micro text-text-muted transition-colors hover:text-accent"
                       >
                         {t("discovery.clearAll", { count: activeFilterCount })}
                       </button>
                     )}
                   </div>
-                  <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
+                  <DiscoveryFilterPanel registry={registry} state={draft.panelState} onChange={search.editPanel} />
                 </div>
               </>
             ) : (
@@ -393,14 +221,29 @@ export default function DiscoveryPage() {
           } min-w-0 flex-1 flex-col overflow-hidden border-r border-dark-border xl:flex xl:w-[430px] xl:flex-none 2xl:w-[560px]`}
           data-testid="discovery-list-pane"
         >
-          {response && registry && (
+          {registry && (response || chips.length > 0) && (
             <div className="flex-shrink-0 space-y-2 border-b border-dark-border p-4">
-              <p className="text-body text-text-secondary">{summarize(response.cqs, registry)}</p>
-              <Chips cqs={response.cqs} registry={registry} onRemove={onRelax} />
+              {/* Evaluated sentence (INV-4): dims with the rest of the previous results. */}
+              {response && (
+                <p
+                  className={`text-body text-text-secondary transition-opacity ${refreshing ? "opacity-[0.55]" : ""}`}
+                  aria-busy={refreshing}
+                  data-testid="discovery-summary"
+                >
+                  {summarize(response.cqs, registry)}
+                </p>
+              )}
+              <Chips
+                items={chips}
+                registry={registry}
+                onRemove={search.removeFilter}
+                onRestore={search.restoreFilter}
+              />
+              {showUpdate && <UpdateResultsButton count={pendingCount} onClick={search.apply} />}
               {/* Quiet seam — subordinate to the ranked list (the page's primary
                   job); the chat door is secondary to it. Always available (incl.
                   premium / pre-wall), not gated behind the teaser. */}
-              {response.result.total > 0 && (
+              {response && response.result.total > 0 && !refreshing && (
                 <button
                   type="button"
                   onClick={onAskArea}
@@ -418,16 +261,18 @@ export default function DiscoveryPage() {
                 rows={rows}
                 registry={registry}
                 loading={loading}
-                unavailable={searchUnavailable}
+                unavailable={unavailable}
+                refreshFailed={refreshFailed}
+                onRetry={search.apply}
                 loadingMore={loadingMore}
                 hasMore={nextOffset != null}
-                onLoadMore={loadMore}
-                onRelax={onRelax}
+                onLoadMore={search.loadMore}
+                onRelax={search.removeFilter}
                 onOpenParcel={onOpenParcel}
                 hoveredPin={hoveredPin}
                 scrollToPin={isPro ? mapHoveredPin : null}
                 onHoverPin={onRowHoverPin}
-                onExport={onExport}
+                onExport={search.exportApplied}
                 exportLocked={!isPro}
                 onUpgrade={onUpgrade}
                 onAskArea={onAskArea}
@@ -443,15 +288,16 @@ export default function DiscoveryPage() {
           data-testid="discovery-map-pane"
         >
           <DiscoveryMap
-            points={mapPoints}
-            truncated={mapTruncated}
-            total={mapTotal}
+            points={map.points}
+            truncated={map.truncated}
+            total={map.total}
             hoveredPin={hoveredPin}
             onHoverPin={onMapHoverPin}
             onOpenParcel={onOpenParcel}
             colorBy={isPro ? "upside" : "land_use"}
             interactive={isPro}
-            status={mapStatus}
+            status={map.status}
+            stale={refreshing}
             visible={mobileTab === "map" || wideLayout}
           />
         </div>
@@ -467,7 +313,7 @@ export default function DiscoveryPage() {
               {activeFilterCount > 0 && (
                 <button
                   type="button"
-                  onClick={onClearAll}
+                  onClick={search.clearAll}
                   className="ml-auto mr-3 text-micro text-text-muted transition-colors hover:text-accent"
                 >
                   {t("discovery.clearAll", { count: activeFilterCount })}
@@ -481,7 +327,7 @@ export default function DiscoveryPage() {
                 {t("common:done")}
               </button>
             </div>
-            <DiscoveryFilterPanel registry={registry} state={panelState} onChange={onPanelChange} />
+            <DiscoveryFilterPanel registry={registry} state={draft.panelState} onChange={search.editPanel} />
           </div>
         </div>
       )}
@@ -490,6 +336,28 @@ export default function DiscoveryPage() {
         <UpgradePrompt feature={t("discovery.title")} onClose={() => setShowUpgrade(false)} />
       )}
     </div>
+  );
+}
+
+function UpdateResultsButton({
+  count,
+  onClick,
+  className = "",
+}: {
+  count: number;
+  onClick: () => void;
+  className?: string;
+}) {
+  const { t } = useTranslation("pages");
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid="discovery-update-results"
+      className={`rounded-lg bg-action px-3 py-1.5 text-caption font-medium text-text-on-accent transition-colors hover:bg-action-hover ${className}`}
+    >
+      {t("discovery.updateResults", { count })}
+    </button>
   );
 }
 

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DiscoveryMap } from "./DiscoveryMap";
 import type { PinPoint } from "./types";
@@ -7,6 +7,7 @@ const mapMocks = vi.hoisted(() => ({
   resolvedTheme: "dark" as "dark" | "light",
   styleRevision: 0,
   styleLoad: null as (() => void) | null,
+  moveStart: null as ((e: { originalEvent?: unknown }) => void) | null,
   hookOptions: null as { style?: string; interleaved?: boolean } | null,
   map: {
     resize: vi.fn(),
@@ -18,6 +19,9 @@ const mapMocks = vi.hoisted(() => ({
     jumpTo: vi.fn(),
     setStyle: vi.fn(),
     once: vi.fn((_event: string, callback: () => void) => { mapMocks.styleLoad = callback; }),
+    on: vi.fn((event: string, callback: (e: { originalEvent?: unknown }) => void) => {
+      if (event === "movestart") mapMocks.moveStart = callback;
+    }),
     off: vi.fn(),
   },
   overlay: { setProps: vi.fn() },
@@ -87,6 +91,8 @@ beforeEach(() => {
   mapMocks.map.jumpTo.mockReset();
   mapMocks.map.setStyle.mockReset();
   mapMocks.map.once.mockClear();
+  mapMocks.map.on.mockClear();
+  mapMocks.moveStart = null;
   mapMocks.map.off.mockReset();
   mapMocks.overlay.setProps.mockReset();
   mapMocks.containerRef.current = null;
@@ -224,5 +230,111 @@ describe("DiscoveryMap request states and sizing", () => {
     const key = screen.getByTestId("discovery-map-legend");
     expect(within(key).getByText("Commercial")).toBeTruthy();
     expect(within(key).getByText("2")).toBeTruthy();
+  });
+});
+
+describe("Phase 0: previous dots while a refresh runs", () => {
+  async function latestLayers() {
+    await waitFor(() => expect(mapMocks.overlay.setProps).toHaveBeenCalled());
+    const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as {
+      layers: Array<{ props: Record<string, unknown> }>;
+      getTooltip?: unknown;
+    };
+    return latest;
+  }
+
+  it("keeps the dots and the counted key but makes them dimmed and NOT pickable, even for Pro", async () => {
+    const onHoverPin = vi.fn();
+    const onOpenParcel = vi.fn();
+    render(<DiscoveryMap {...props({ interactive: true, stale: true, hoveredPin: "one", onHoverPin, onOpenParcel })} />);
+    const latest = await latestLayers();
+    const base = latest.layers.find((layer) => layer.props.id === "discovery-pins")!;
+    expect(base).toBeTruthy(); // dots stay
+    expect(base.props.pickable).toBe(false);
+    expect(base.props.onHover).toBeUndefined();
+    expect(base.props.onClick).toBeUndefined();
+    expect(base.props.opacity as number).toBeLessThan(0.5);
+    expect(latest.getTooltip).toBeUndefined();
+    // no hover ring on a dot that is about to be replaced
+    expect(latest.layers.find((layer) => layer.props.id === "discovery-pin-highlight")).toBeUndefined();
+    expect(screen.getByTestId("discovery-map-stale").textContent).toBe("Previous results, updating");
+    fireEvent.click(screen.getByRole("button", { name: "Map key" }));
+    expect(within(screen.getByTestId("discovery-map-legend")).getByText("Commercial")).toBeTruthy(); // previous model's key
+  });
+
+  it("restores picking at full opacity when the refresh ends", async () => {
+    const { rerender } = render(<DiscoveryMap {...props({ interactive: true, stale: true })} />);
+    await latestLayers();
+    rerender(<DiscoveryMap {...props({ interactive: true, stale: false })} />);
+    await waitFor(() => {
+      const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as { layers: Array<{ props: Record<string, unknown> }> };
+      expect(latest.layers[0].props.pickable).toBe(true);
+    });
+    const latest = mapMocks.overlay.setProps.mock.calls.at(-1)?.[0] as { layers: Array<{ props: Record<string, unknown> }> };
+    expect(latest.layers[0].props.opacity).toBe(1);
+    expect(screen.queryByTestId("discovery-map-stale")).toBeNull();
+  });
+
+  it("withholds the map on an Item 30 mismatch (unavailable shows no dots and no stale chip)", () => {
+    render(<DiscoveryMap {...props({ points: [], total: 0, status: "unavailable", stale: false })} />);
+    expect(screen.getAllByText("The map is unavailable for this search. Try running the search again.").length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("discovery-map-stale")).toBeNull();
+    expect(screen.queryByTestId("discovery-map-legend")).toBeNull();
+  });
+});
+
+describe("Phase 0: camera policy", () => {
+  const first = [point("one", 41.9, -87.7)];
+  const second = [point("two", 41.95, -87.65)];
+  const fits = () => mapMocks.map.fitBounds.mock.calls.length;
+  // The first fit also re-runs once for the pane's measured size; wait for that to settle.
+  async function settledFits() {
+    await waitFor(() => expect(fits()).toBeGreaterThan(0));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return fits();
+  }
+
+  it("fits the first result and later results while the user has not moved the camera", async () => {
+    const { rerender } = render(<DiscoveryMap {...props({ points: first })} />);
+    const before = await settledFits();
+    rerender(<DiscoveryMap {...props({ points: second })} />);
+    await waitFor(() => expect(fits()).toBeGreaterThan(before));
+    expect(screen.queryByTestId("discovery-map-zoom")).toBeNull();
+  });
+
+  it("ignores camera moves that carry no user event (our own fitBounds, theme jumpTo)", async () => {
+    const { rerender } = render(<DiscoveryMap {...props({ points: first })} />);
+    const before = await settledFits();
+    act(() => mapMocks.moveStart?.({}));
+    rerender(<DiscoveryMap {...props({ points: second })} />);
+    await waitFor(() => expect(fits()).toBeGreaterThan(before));
+    expect(screen.queryByTestId("discovery-map-zoom")).toBeNull();
+  });
+
+  it("does not move a camera the user has moved; offers Zoom to results instead", async () => {
+    const { rerender } = render(<DiscoveryMap {...props({ points: first })} />);
+    const before = await settledFits();
+    act(() => mapMocks.moveStart?.({ originalEvent: {} }));
+    rerender(<DiscoveryMap {...props({ points: second })} />);
+    const button = await screen.findByTestId("discovery-map-zoom");
+    expect(fits()).toBe(before);
+    expect(button.textContent).toBe("Zoom to results");
+
+    fireEvent.click(button);
+    expect(fits()).toBe(before + 1);
+    expect(screen.queryByTestId("discovery-map-zoom")).toBeNull();
+    // and later results follow the camera again
+    rerender(<DiscoveryMap {...props({ points: [point("three", 41.8, -87.6)] })} />);
+    await waitFor(() => expect(fits()).toBeGreaterThan(before + 1));
+  });
+
+  it("does not offer the button while the results are stale", async () => {
+    const { rerender } = render(<DiscoveryMap {...props({ points: first })} />);
+    await settledFits();
+    act(() => mapMocks.moveStart?.({ originalEvent: {} }));
+    rerender(<DiscoveryMap {...props({ points: second, stale: true })} />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByTestId("discovery-map-zoom")).toBeNull();
+    expect(screen.getByTestId("discovery-map-stale")).toBeTruthy();
   });
 });

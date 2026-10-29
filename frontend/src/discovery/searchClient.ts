@@ -42,8 +42,9 @@ export function buildRequest(inputs: SearchInputs, registry: Registry): SearchRe
 export async function runSearch(
   inputs: SearchInputs,
   registry: Registry,
+  signal?: AbortSignal,
 ): Promise<SearchResponse | null> {
-  return discoverySearch(buildRequest(inputs, registry));
+  return discoverySearch(buildRequest(inputs, registry), signal);
 }
 
 /** Fetch the full ordered coord set for the map. Same buildRequest envelope as runSearch
@@ -51,8 +52,9 @@ export async function runSearch(
 export async function runPins(
   inputs: SearchInputs,
   registry: Registry,
+  signal?: AbortSignal,
 ): Promise<PinsResponse | null> {
-  return discoverySearchPins(buildRequest(inputs, registry));
+  return discoverySearchPins(buildRequest(inputs, registry), signal);
 }
 
 /** Download the full match set as CSV (server-side, premium-gated). Same envelope, so the
