@@ -80,6 +80,8 @@ export interface RangeMeta {
   presets?: RangePreset[] | null;
 }
 
+export type FilterTier = "essential" | "more";
+
 export interface FilterDef {
   id: string;
   category: FilterCategory;
@@ -95,6 +97,8 @@ export interface FilterDef {
   label?: string | null;
   help?: string | null;
   enumLabels?: Record<string, string> | null;
+  // Which tier of the "+ Add filter" menu lists it (presentation only). Absent reads as "more".
+  tier?: "essential" | "more";
 }
 
 export interface TopicDef {
@@ -171,6 +175,7 @@ export interface SearchRequest {
   registryVersion: string;
   limit?: number; // page-window size (default server-side); infinite scroll fetches more
   offset?: number; // window start into the ordered result
+  includePins?: boolean; // also return the map's points from this same evaluation (SearchResponse.pins)
 }
 
 // One hydrated result parcel. `pin` is the frozen identity; the rest is hydrated from the
@@ -222,11 +227,22 @@ export interface PinsResponse {
   truncated: boolean; // total > cap → some matches omitted from the map
 }
 
+// POST /text-preview: what the text compiler makes of a phrase, with no search. Advisory (the
+// page's gate and wording); the evaluated response.cqs stays the only record of what a search used.
+export interface TextPreview {
+  understood: Array<{ filterId: FilterId; predicate: Predicate }>;
+  residual: string[]; // words the compiler did not recognize
+  droppedInvalid: Array<{ filterId: FilterId; reason: string }>;
+}
+
 export interface SearchResponse {
   dataVersion: string;
   cqs: CQS;
   result: SearchResult;
   diagnostics: Diagnostics;
+  // Only when the request set `includePins`, and only from a backend that supports it: the
+  // /search/pins body computed from the same evaluation as `result`. Absent/null otherwise.
+  pins?: PinsResponse | null;
 }
 
 // --- Frontend-only: filter-panel control state ---

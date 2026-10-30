@@ -20,6 +20,8 @@ test("Discovery keeps usable panes across phone, tablet, and desktop widths", as
       { timeout: 90_000 },
     ).catch(() => null);
     await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+    // The Start panel (nothing runs on arrival): pick the first recipe, one explicit search.
+    await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
     await searchWait;
 
     const toggle = page.getByRole("group", { name: "View" });
@@ -52,5 +54,58 @@ test("Discovery keeps usable panes across phone, tablet, and desktop widths", as
       await expect(keyPanel).toBeVisible();
     }
     await page.screenshot({ path: testInfo.outputPath(`discovery-${width}.png`) });
+  }
+});
+
+// Phase 0 (draft + explicit apply): the strip, the Update results button and the dimmed
+// previous results must fit every width, and a refresh must never blank the page.
+test("Discovery keeps previous results on screen, dimmed, while an applied edit refreshes", async ({ page }, testInfo) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    let delayMs = 0;
+    let searchRequests = 0;
+    await page.route("**/api/discovery/search**", async (route) => {
+      searchRequests += 1;
+      if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await route.continue();
+    });
+    await page.goto("/discovery", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("discovery-start-recipe-vacant_mf_transit").click();
+    const body = page.getByTestId("discovery-results-body");
+    await expect(body).toHaveAttribute("data-stale", "false", { timeout: 90_000 });
+    const rowsBefore = await page.getByTestId("discovery-result-row").count();
+    expect(rowsBefore).toBeGreaterThan(0);
+    await page.waitForTimeout(1500);
+
+    // Draft edits only: nothing is requested. On a phone the header is collapsed after a search,
+    // so open it to reach the chips.
+    const requestsBefore = searchRequests;
+    const headerToggle = page.getByTestId("discovery-header-toggle");
+    if (await headerToggle.isVisible()) await headerToggle.click();
+    const chips = page.getByTestId("discovery-chips");
+    await chips.getByRole("button", { name: /^Remove / }).first().click();
+    await chips.getByRole("button", { name: /^Remove / }).first().click();
+    await expect(page.getByTestId("discovery-update-results").first()).toContainText("(2)");
+    await expect(page.getByTestId("discovery-result-row")).toHaveCount(rowsBefore);
+    expect(searchRequests).toBe(requestsBefore);
+    await page.screenshot({ path: testInfo.outputPath(`discovery-pending-${width}.png`) });
+
+    // One press, one search; the old results stay, dimmed and inert.
+    delayMs = 3000;
+    await page.getByTestId("discovery-update-results").first().click();
+    await expect(body).toHaveAttribute("data-stale", "true");
+    await expect(body).toHaveAttribute("aria-busy", "true");
+    await expect(body).toHaveAttribute("inert", "");
+    expect(await page.getByTestId("discovery-result-row").count()).toBe(rowsBefore);
+    await expect(page.getByTestId("discovery-chips")).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await page.screenshot({ path: testInfo.outputPath(`discovery-refreshing-${width}.png`) });
+    await expect(body).toHaveAttribute("data-stale", "false", { timeout: 60_000 });
+    // One request when the backend returns the map's points with the list (includePins); two
+    // against an older backend, where the page falls back to the separate pins request.
+    expect([1, 2]).toContain(searchRequests - requestsBefore);
+    delayMs = 0;
+    await page.unroute("**/api/discovery/search**");
   }
 });

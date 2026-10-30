@@ -169,8 +169,10 @@ app.add_middleware(CSRFMiddleware)
 
 # Property Discovery (filter/search) wire endpoints — see backend/discovery/.
 from backend.discovery.api import router as discovery_router  # noqa: E402
+from backend.discovery.text_preview import router as discovery_text_preview_router  # noqa: E402
 
 app.include_router(discovery_router)
+app.include_router(discovery_text_preview_router)
 
 
 @app.on_event("startup")
@@ -2932,6 +2934,7 @@ _VALID_EVENT_NAMES = {
     "scorecard_view",
     "checkout_started",
     "discovery_search",
+    "discovery_start_choice",
     "signup_completed",
     "segment_selected",
     "scorecard_feedback",

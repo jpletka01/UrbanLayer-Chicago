@@ -184,3 +184,49 @@ def test_building_diagnostics_does_not_change_results():
     build(cqs, VERSION, evaluate)
     after = evaluate(cqs, VERSION).pins
     assert before == after
+
+
+def test_fused_excluded_unknown_matches_reference_scan():
+    """The evaluator's single-pass D4 counts equal the independent per-filter scan."""
+    import random
+
+    from backend.discovery.diagnostics import _excluded_unknown
+
+    rng = random.Random(11)
+    parcels = []
+    for i in range(600):
+        attrs = {}
+        for field, choices in (
+            ("land_use_class", ["residential", "commercial", "vacant"]),
+            ("is_vacant", [True, False]),
+            ("land_sqft", [800, 2500, 4000, 9000]),
+            ("year_built", [1900, 1950, 2005]),
+        ):
+            if rng.random() > 0.35:  # ~35% missing each, independently
+                attrs[field] = rng.choice(choices)
+        parcels.append(DictParcel(
+            f"p{i:04d}", attrs, regions={"ward:1"} if rng.random() > 0.5 else (),
+            lat=41.8 + rng.random() * 0.2, lon=-87.8 + rng.random() * 0.2,
+        ))
+    _register(parcels)
+
+    filters = {
+        "land_use": FilterAssignment(predicate=EnumPredicate(values=["residential", "commercial"])),
+        "vacancy": FilterAssignment(predicate=FlagPredicate(value=False)),
+        "lot_size": FilterAssignment(predicate=RangePredicate(min=1000)),
+        "year_built": FilterAssignment(predicate=RangePredicate(max=2000)),
+        "ward": FilterAssignment(predicate=RegionPredicate(regions=["ward:1"])),
+    }
+    scopes = [SpatialScope(), SpatialScope(mode="viewport", bbox=(-87.75, 41.85, -87.65, 41.97))]
+    ids = list(filters)
+    nonzero = 0
+    for scope in scopes:
+        for r in range(1, len(ids) + 1):
+            for start in range(len(ids) - r + 1):
+                cqs = _cqs(filters={fid: filters[fid] for fid in ids[start : start + r]}, scope=scope)
+                fused = evaluate(cqs, VERSION).excludedUnknown
+                reference = _excluded_unknown(cqs, VERSION)
+                assert fused == reference
+                assert list(fused) == list(reference)  # same key order on the wire
+                nonzero += bool(fused)
+    assert nonzero > 5  # the comparison is not vacuous

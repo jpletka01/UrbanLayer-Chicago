@@ -107,7 +107,7 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
 `claude-context/property-discovery/` — **read `10-implementation-status.md` first**, esp. the
 "result.rows workbench (PR1–PR10)" section.
 
-- **Invariant core:** `registry.py` (+`registry.json`, **32 filters** + `RangeMeta`/`requires`/
+- **Invariant core:** `registry.py` (+`registry.json`, **32 filters** each with a presentation-only `tier` (`essential`/`more`, 7 essentials; the Add filter menu reads it, nothing on the evaluation side may) + `RangeMeta`/`requires`/
   `label`/`help`/`enumLabels` + 6 `topics` + `Coverage`) → `cqs.py` → `predicates.py` →
   `evaluator.py` (`evaluate(cqs, data_version)` — the ONLY result producer, INV-1, pure leaf;
   unchanged by Wave 2 except it reads the sort-only `total_assessed_value_sortkey` field).
@@ -126,6 +126,13 @@ premium-gated full experience + free top-10 teaser.** Spec + decisions:
   - `POST /api/discovery/search` — `{rows,total,nextOffset,gated}`. Rows hydrated from the snapshot;
     `limit/offset` paging. **Free tier (Depends(get_current_user), `FREE_ROW_CAP=10`) is
     server-capped** to the top 10 + `gated=true` + true total + `nextOffset=null`.
+  - `POST /api/discovery/text-preview` (`text_preview.py`, own router) — compile-only: `parse → merge` for a phrase → `{understood, residual, droppedInvalid}`; never evaluates, reads no index (the page asks it before searching text).
+  - **Speed (Phase 1, 2026-10-29; decisions `2026-10_discovery-speed.md`):** `_resolve` goes through
+    `result_cache.cached_evaluate` (INV-2 key = dataVersion + snapshot generation + canonical CQS; LRU
+    32 entries / 4M PINs; identical in-flight queries coalesce, distinct misses capped at 2), `evaluate`
+    sorts with key sorts and returns D4 `excludedUnknown` from its single filter pass, and
+    `POST /search` takes optional `includePins` (adds `pins` = the `/search/pins` body from the SAME
+    evaluation; old routes unchanged). Tests include the oracle comparator and reference D4 scan.
   - `POST /api/discovery/search/pins` — FULL ordered coord set (pin+lat/lon+upside+landUse),
     capped `MAX_MAP_POINTS=5000` + `truncated`. NOT tier-capped (free sees all dots; FE colors
     by land-use + view-only).

@@ -186,3 +186,17 @@ body::before {
     rgb(var(--text-muted) / 0.35) 3px 4px
   );
 }
+
+/* Touch targets (Discovery redesign Phase 4). On a coarse pointer (a finger) controls get a 44 px
+   minimum; on a mouse nothing changes. .touch-target / .touch-field give a real 44 px control
+   (buttons / inputs and selects). .touch-hit leaves a small pill or an icon looking as it does
+   and extends its hit area invisibly (.touch-hit-x does so for a 10 px close icon, which sits
+   next to a label's own target, so it grows more vertically than sideways). */
+@media (pointer: coarse) {
+  .touch-target { min-height: 44px; display: inline-flex; align-items: center; }
+  .touch-field { min-height: 44px; }
+  .touch-hit { position: relative; }
+  .touch-hit::after { content: ""; position: absolute; inset: -9px -4px; }
+  .touch-hit-x::after { inset: -17px -10px; }
+  .touch-chip-rows { row-gap: 12px; }
+}

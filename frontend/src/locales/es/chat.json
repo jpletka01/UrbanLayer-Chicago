@@ -15,7 +15,7 @@
   "inArea": "{{label}} en {{area}}",
   "emptyState": {
     "heading": "Consulta al analista",
-    "subline": "Lee el código municipal de Chicago y cita las secciones. Pregunta sobre el código — o sobre cualquier parcela que hayas abierto.",
+    "subline": "Lee el código municipal de Chicago y cita las secciones. Pregunte sobre el código — o sobre cualquier parcela que haya abierto.",
     "examples": [
       "¿Cuáles son los requisitos de retiro para la zonificación B3-2?",
       "¿Qué usos están permitidos en un distrito C1-2?",
@@ -23,11 +23,11 @@
     ]
   },
   "propertyStarters": {
-    "heading": "Pregunta sobre esta propiedad",
+    "heading": "Pregunte sobre esta propiedad",
     "sublineWithAddress": "Basado en la Ficha de {{address}} — zonificación, incentivos, comparables y el código que los respalda.",
     "subline": "Basado en la Ficha de esta parcela — zonificación, incentivos, comparables y el código que los respalda.",
     "build": "¿Qué puedo construir en este lote?",
-    "zoning": "Explica la zonificación y los distritos superpuestos aquí",
+    "zoning": "Explique la zonificación y los distritos superpuestos aquí",
     "comparables": "¿Cómo se ven las ventas comparables recientes?",
     "chrs": "¿Qué implica la clasificación del inventario histórico (CHRS) para demoler o renovar aquí?",
     "traffic": "¿Qué implica el nivel de tráfico de la calle para los usos de este lote?",
@@ -52,13 +52,13 @@
   "citation": {
     "sourceN": "Fuente {{n}}",
     "view": "Ver {{ref}}",
-    "openSource": "Haz clic para abrir la fuente completa"
+    "openSource": "Haga clic para abrir la fuente completa"
   },
   "crossref": {
     "view": "Ver § {{id}}",
     "loading": "Cargando vista previa…",
     "unavailable": "Texto completo no disponible para esta referencia.",
-    "openSection": "Haz clic para abrir la sección completa",
+    "openSection": "Haga clic para abrir la sección completa",
     "notCodified": "Not in the published code text yet; an amendment added it."
   },
   "dataPill": {

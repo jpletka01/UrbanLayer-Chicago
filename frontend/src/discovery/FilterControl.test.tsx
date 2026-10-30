@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { DiscoveryFilterPanel } from "./DiscoveryFilterPanel";
-import type { FilterDef, Registry } from "./types";
+import { cleanup, render, screen } from "@testing-library/react";
+import { Control } from "./FilterControl";
+import type { FilterDef } from "./types";
 
 afterEach(cleanup);
 
@@ -22,24 +22,16 @@ const FILTERS: FilterDef[] = [
   },
 ];
 
-function reg(populated: string[]): Registry {
-  return {
-    version: "v1", filters: FILTERS, topics: [],
-    sortKeys: [{ key: "pin", field: "pin" }], defaultSort: { key: "pin", dir: "asc" }, broadMinFilters: 2,
-    coverage: { mode: "partial", liveAreas: [24] }, populatedFields: populated,
-  };
-}
-
-describe("DiscoveryFilterPanel a11y", () => {
+describe("FilterControl a11y", () => {
+  // Renders every filter's control, as the editor does one at a time. `populated` is the ids with data.
   function open(populated: string[]) {
-    const registry = reg(populated);
-    render(<DiscoveryFilterPanel registry={registry} state={{}} onChange={vi.fn()} />);
-    // categories collapse by default — expand the two we assert on.
-    fireExpand("Property & use");
-    fireExpand("Location");
-  }
-  function fireExpand(label: string) {
-    fireEvent.click(screen.getByRole("button", { name: new RegExp(label, "i") }));
+    render(
+      <div>
+        {FILTERS.map((def) => (
+          <Control key={def.id} def={def} value={undefined} populated={populated.includes(def.id)} onChange={vi.fn()} />
+        ))}
+      </div>,
+    );
   }
 
   it("flag pills expose aria-pressed", () => {

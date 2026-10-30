@@ -66,6 +66,10 @@ class FilterDef(BaseModel):
     range: RangeMeta | None = None  # control metadata, range kind only
     requires: list[str] = Field(default_factory=list)  # filter ids that must co-occur (FE-declared)
     label: str | None = None  # hand-authored display label — kills humanize() on the FE
+    # Which tier of the page's "+ Add filter" menu lists it first: a small front row of
+    # essentials, then everything else. Presentation only, never read by the evaluator. Whether a
+    # filter has data is NOT a tier: that comes from the index's populatedFields.
+    tier: Literal["essential", "more"] = "more"
     help: str | None = None  # one-line tooltip copy
     enumLabels: dict[str, str] | None = None  # enum value -> display label (enum only)
 

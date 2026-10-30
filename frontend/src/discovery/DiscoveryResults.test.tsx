@@ -202,3 +202,107 @@ describe("PR9 free-tier teaser", () => {
     expect(onUpgrade).toHaveBeenCalled();
   });
 });
+
+describe("Phase 0: previous results stay while a refresh runs", () => {
+  const response = resp(
+    { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
+    { result: { rows: [rowFixture], total: 17, nextOffset: null } },
+  );
+
+  it("keeps the evaluated count and rows, dimmed, busy, inert and labelled Updating…", () => {
+    render(
+      <DiscoveryResults {...baseProps} loading registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />,
+    );
+    // never the blank "Searching…" page once there is something to keep
+    expect(screen.queryByText("Searching…")).toBeNull();
+    expect(screen.getByText("17")).toBeTruthy();
+    expect(screen.getByText("1840 W Erie St")).toBeTruthy();
+    expect(screen.getByText("Updating…")).toBeTruthy();
+    const body = screen.getByTestId("discovery-results-body");
+    expect(body.getAttribute("aria-busy")).toBe("true");
+    expect(body.getAttribute("data-stale")).toBe("true");
+    expect(body.hasAttribute("inert")).toBe(true);
+    expect(body.className).toContain("opacity-[0.55]");
+    expect(body.className).toContain("pointer-events-none");
+  });
+
+  it("is not dimmed or inert when nothing is loading", () => {
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />);
+    const body = screen.getByTestId("discovery-results-body");
+    expect(body.getAttribute("aria-busy")).toBe("false");
+    expect(body.hasAttribute("inert")).toBe(false);
+    expect(screen.queryByText("Updating…")).toBeNull();
+  });
+
+  it("shows Searching… only for the first search, with nothing to keep", () => {
+    render(<DiscoveryResults {...baseProps} loading registry={reg()} rows={[]} response={null} onRelax={noop} />);
+    expect(screen.getByText("Searching…")).toBeTruthy();
+  });
+
+  it("shows an inline retry bar above the previous results after a failed refresh", () => {
+    const onRetry = vi.fn();
+    render(
+      <DiscoveryResults {...baseProps} refreshFailed onRetry={onRetry} registry={reg()} rows={[rowFixture]} response={response} onRelax={noop} />,
+    );
+    expect(screen.getByTestId("discovery-update-failed").textContent).toContain("Couldn't update.");
+    expect(screen.getByText("1840 W Erie St")).toBeTruthy(); // previous results kept
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetry).toHaveBeenCalled();
+  });
+});
+
+describe("Phase 4b: zero and error states", () => {
+  const tight = () =>
+    resp(
+      { land_use: { predicate: { kind: "enum", values: ["multi_family"] }, source: "user" } },
+      { diagnostics: { ...EMPTY_DIAG, mostRestrictive: [{ filterId: "land_use", countWithoutIt: 42 }] } },
+    );
+  const regAll = () => reg({ populatedFields: ["land_use", "neighborhood"], coverage: { mode: "all", liveAreas: [] } });
+
+  it("offers Discard changes in the zero state only when there are unapplied edits", () => {
+    const onDiscard = vi.fn();
+    const { rerender } = render(
+      <DiscoveryResults {...baseProps} registry={regAll()} rows={[]} response={tight()} onRelax={noop} canDiscard={false} onDiscard={onDiscard} />,
+    );
+    expect(screen.queryByTestId("discovery-zero-discard")).toBeNull();
+    rerender(<DiscoveryResults {...baseProps} registry={regAll()} rows={[]} response={tight()} onRelax={noop} canDiscard onDiscard={onDiscard} />);
+    fireEvent.click(screen.getByTestId("discovery-zero-discard"));
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers it in the no-data and not-indexed zero states too", () => {
+    const onDiscard = vi.fn();
+    const nullBacked = resp({ value_percentile: { predicate: { kind: "range", max: 25 }, source: "user" } });
+    const { unmount } = render(
+      <DiscoveryResults {...baseProps} registry={reg({ populatedFields: ["land_use"] })} rows={[]} response={nullBacked} onRelax={noop} canDiscard onDiscard={onDiscard} />,
+    );
+    expect(screen.getByTestId("discovery-zero-discard")).toBeTruthy();
+    unmount();
+    const offCoverage = resp({ neighborhood: { predicate: { kind: "region", regions: ["neighborhood:22"] }, source: "user" } });
+    render(
+      <DiscoveryResults {...baseProps} registry={reg({ populatedFields: ["neighborhood"], coverage: { mode: "partial", liveAreas: [24] } })} rows={[]} response={offCoverage} onRelax={noop} canDiscard onDiscard={onDiscard} />,
+    );
+    expect(screen.getByTestId("discovery-zero-discard")).toBeTruthy();
+  });
+
+  it("states the zero reason at page scale (text-caption), not micro", () => {
+    render(<DiscoveryResults {...baseProps} registry={regAll()} rows={[]} response={tight()} onRelax={noop} />);
+    const reason = screen.getByText(/Try removing/i);
+    expect(reason.className).toContain("text-caption");
+    expect(reason.className).not.toContain("text-micro");
+  });
+
+  it("a failed first search says so and offers Retry", () => {
+    const onRetry = vi.fn();
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[]} response={null} unavailable onRetry={onRetry} onRelax={noop} />);
+    expect(screen.getByRole("status").textContent).toContain("temporarily unavailable");
+    fireEvent.click(screen.getByTestId("discovery-search-retry"));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("without a retry handler the failed first search is just the message", () => {
+    render(<DiscoveryResults {...baseProps} registry={reg()} rows={[]} response={null} unavailable onRelax={noop} />);
+    expect(screen.queryByTestId("discovery-search-retry")).toBeNull();
+  });
+});
+
