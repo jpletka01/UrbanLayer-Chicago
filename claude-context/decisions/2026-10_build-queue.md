@@ -2063,6 +2063,6 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 **Revisit if:** rrsync rejects `--ignore-existing` (then drop it: the server mirror is already write-once), the PDF store outgrows the Mac, or account deletion must reach the off-box copies.
 
 **Numbers**
-- **Tests:** `test_backup_script.py` now expects an empty `reports/` mirror before the first purchase (it pinned "no dir"); backend unit suite 2,483 passed.
+- **Tests:** `test_backup_script.py` now expects an empty `reports/` mirror before the first purchase (it pinned "no dir"); backend unit suite 2,482 passed.
 - **Tested locally (2026-10-30)** with a fake `ssh` that roots the remote command in a scratch "backups" dir, as rrsync does: good pull → "1 listed, 1 present and matching", exit 0; server copy damaged → local copy kept, exit 0; local PDF lost → alarm, exit 1; local PDF hash differs → alarm, exit 1; server has no `reports/` → alarm, exit 1; empty `reports/` and no rows → exit 0. The runbook's restore snippet on a scratch copy: "1 of 1 originals readable and hash-verified".
 - **Not measured:** a run against production through the real rrsync key (Jack's Mac; on his list); a real PDF (no purchases exist yet).
