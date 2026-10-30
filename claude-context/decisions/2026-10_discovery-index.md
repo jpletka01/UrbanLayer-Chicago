@@ -48,3 +48,18 @@ Fixes to the offline Property Discovery index builder (`backend/discovery/index_
 - **Rehearsal on a scratch copy of the real 2026-10-29 production index (local, not production):** dry run 63 s and found 66,692 (matches the census). `--apply` took 134 s, 326 MB peak, and left 882,328 rows (the audit's 882,322 in-city rows plus the refresh's 6 new ones); an independent `eval.capacity_coverage` run on the result found 0 outside. Recipe counts moved because strays were in them: teardown 1,089 to 1,037, fresh_comps 383 to 362, undervalued_mf 47 to 46 (vacant_mf_transit 4,997, underused_commercial_tif 312, adu_2flats 0 unchanged). Community-area footprint and populated fields identical. The file keeps its size (SQLite does not shrink without `VACUUM`).
 - **Tests:** `test_split_by_community_area_drops_points_outside_every_polygon`, `test_assemble_ca_excludes_outside_points_and_keeps_polygon_area`, `test_build_index_prunes_stale_outside_rows_on_refresh` (all three fail on the Item 1 code); `test_discovery_index_prune.py` (6: dry run writes nothing, apply removes only outside rows and keeps a backup, second run is a no-op, refuses over the share guard, refuses without polygons, rows with no coordinates are kept). `-k discovery` 205 passed; `ruff check` clean on the touched files.
 - **Not measured:** the prune on the production box itself (disk headroom for the backup, timing on the busy 4 vCPU host); what the live Discovery page shows afterwards.
+
+## Item 3: the production prune, and the docs that still said "pending" (2026-10-30)
+
+**Decision:** record that the one-off prune ran on the production index on 2026-10-30, and rewrite the five living docs (`backend/CLAUDE.md`, `frontend/CLAUDE.md`, `core/known-issues.md`, `property-discovery/README.md` + `10-implementation-status.md`, the manifest) that still said production kept ~67k suburban rows "until the next off-box rebuild" and cited PR #128 as pending. Docs only; no code.
+
+**Alternatives:** leave the 2026-10-28 wording and add a dated note under it. Rejected: those lines are read as current status by every session that loads the context, and two of them told the reader an approval was still outstanding.
+
+**Why (evidence).** The 2026-10-30 session ran `python -m backend.discovery.index_prune --apply` on the box (Jack typed the sudo) after the Item 2 fix deployed; the production index went from 949,020 to 882,328 rows, the same count the local rehearsal produced. The backup `<index>.pre-prune` was left on the data volume for Jack to delete. The same session installed `deploy/discovery-index-rebuild.{service,timer}` (monthly, `OnCalendar=*-*-01 04:17:00`, `TimeoutStartSec=43200`), whose first run is 2026-11-01 04:17 UTC.
+
+**Revisit if:** the 2026-11-01 rebuild's journal shows a non-zero "pruned" line (rows came back), or a capacity census of the prod file finds rows outside every polygon.
+
+**Numbers**
+- **Before → after (production, 2026-10-30, from that session's notes, not re-measured here):** 949,020 → 882,328 rows.
+- **Reproduce:** on a copy of the prod index, `PYTHONPATH=. python -m eval.capacity_coverage --index <copy>` (expect 882,328 rows, 0 outside polygons).
+- **Not measured:** the census on a copy of the pruned production file (needs a fresh copy off the box; on Jack's list); the first timer-driven rebuild.

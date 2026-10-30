@@ -36,7 +36,7 @@ reusable lesson, not the full narrative.
 
 ## Property Discovery — filter/search workbench (SHIPPED, full citywide, nav-linked)
 - `property-discovery/` — engineering spec (`00`–`09`, normative) + implementation record. **Start with
-  `10-implementation-status.md`.** Live on prod across all 77 community areas (~882k in-city parcels; the 2026-10-01 build also held ~67k suburban strays, fixed in PR #128 pending a rebuild; WS8 Phase 0 audit: decision Item 36). Impl:
+  `10-implementation-status.md`.** Live on prod across all 77 community areas (882,328 in-city parcels; the ~67k suburban strays of the 2026-10-01 build were pruned on prod 2026-10-30 (949,020 → 882,328 rows) with `backend/discovery/index_prune.py`; the builder fix (PR #128) keeps them out of every later rebuild; WS8 Phase 0 audit: decision Item 36). Impl:
   `backend/discovery/` + `frontend/src/discovery/`. Strategy/why: `strategy/property-discovery-filters.md`.
   (Spec drift to know: `03` says 29 filters — live is 32; wire is `{rows,total,nextOffset,gated}` + `/search/pins` + `/search/export`.)
 
