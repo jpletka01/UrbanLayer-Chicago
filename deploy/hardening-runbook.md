@@ -256,9 +256,10 @@ the server pushing, so the server holds no credential for anything else.
    if the server stops making new ones. It runs `PRAGMA quick_check` on the newest copy and
    shows a macOS notification if the pull fails, the check fails, or the newest copy is over
    36 h old. Since 2026-10-30 it also pulls the stored report PDFs (`backup_db.sh` mirrors them
-   into `/opt/urbanlayer/backups/reports/` each night) into `~/Backups/urbanlayer/reports/`,
-   write-once (`--ignore-existing`, no `--delete`, never pruned), and checks that every
-   original the newest database lists in `report_renders` is there with its stored sha256.
+   into `/opt/urbanlayer/backups/reports/` each night) into `~/Backups/urbanlayer/reports/`:
+   each original the newest database lists in `report_renders` that is not yet on the Mac is
+   fetched as a single file, never overwritten or pruned, and every listed file must match its
+   stored sha256.
 
 3. The launchd job runs it at login and every 4 hours; a run missed during sleep fires on
    wake. Its log is at `~/Library/Logs/urbanlayer-backup-pull.log`.
@@ -271,7 +272,9 @@ the server pushing, so the server holds no credential for anything else.
    ```
 
 Two macOS quirks are handled in the script. macOS's `openrsync` sends `--dirs` for
-`-r --include/--exclude`, which rrsync rejects, so it pulls with a remote glob instead.
+`-r` (with or without `--include/--exclude`), and rrsync rejects `--dirs` and `--relative`
+(both checked against the server 2026-10-30; `-t` and `--ignore-existing` are accepted), so
+it pulls the databases with a remote glob and the PDFs one listed file at a time.
 And `sqlite3 -readonly` can't open the copies, so the check uses a `file:...?immutable=1` URI.
 
 The copies on the Mac are **not encrypted**, and FileVault was off on 2026-10-20. Turning

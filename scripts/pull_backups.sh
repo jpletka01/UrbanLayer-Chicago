@@ -44,21 +44,6 @@ if ! rsync -t \
     exit 1
 fi
 
-# Report originals (WS6 M8): the PDF a buyer was sold exists nowhere else. The
-# server's mirror is write-once, so the copy here is too: --ignore-existing
-# never overwrites a PDF already pulled and, without --delete, none is removed
-# (account deletion removes a user's PDFs on the server; the next pull keeps the
-# copies here, which is a retention question for Jack, not for this script).
-# Pruning below never touches $DEST/reports.
-REPORTS_OK=1
-mkdir -p "$DEST/reports"
-if ! rsync -rt --ignore-existing \
-        -e "ssh -o BatchMode=yes -o ConnectTimeout=20" \
-        "$HOST:./reports/" "$DEST/reports/"; then
-    alarm "Pulling the report PDFs failed (see ~/Library/Logs/urbanlayer-backup-pull.log)"
-    REPORTS_OK=0
-fi
-
 # Prune by name (timestamped), never by mtime: if the server stops producing
 # backups, the old copies here must survive.
 copies() { find "$DEST" -maxdepth 1 -name 'urbanlayer_*.db' | sort -r; }
@@ -87,13 +72,34 @@ if [ "$AGE_HOURS" -gt "$MAX_AGE_HOURS" ]; then
     alarm "Newest server backup is ${AGE_HOURS}h old: the nightly cron may have stopped"
 fi
 
-# Restore check for the PDFs: every stored original the newest database lists
-# must be here, with the sha256 it was stored with. The database is captured
-# before the mirror runs, so each row's file was mirrored the same night.
-MISSING=0; BAD=0; CHECKED=0
+# Report originals (WS6 M8): the PDF a buyer was sold exists nowhere else. The
+# newest database lists every stored original (report_renders, kind 'original',
+# path <purchase_id>/<ms>.pdf); each one not yet here is fetched as a single file.
+# No recursion: macOS's openrsync turns -r into --dirs and rrsync refuses both
+# that and --relative (checked against the server 2026-10-30). The database is
+# captured before the server's mirror runs, so every listed file was mirrored the
+# same night. A file already here is never fetched again (--ignore-existing), so a
+# damaged server copy cannot replace a good local one, and nothing here is ever
+# deleted or pruned (account deletion on the server leaves these copies: a
+# retention question for Jack, not for this script). Then every listed file must
+# match the sha256 it was stored with.
+mkdir -p "$DEST/reports"
+MISSING=0; BAD=0; CHECKED=0; FETCHED=0
 while IFS='|' read -r REL SHA; do
     [ -n "$REL" ] || continue
     CHECKED=$((CHECKED + 1))
+    case "$REL" in
+        [0-9]*/[0-9]*.pdf) ;;
+        *) BAD=$((BAD + 1)); echo "unexpected report path in the database: $REL" >&2; continue ;;
+    esac
+    case "$REL" in *..*|*/*/*) BAD=$((BAD + 1)); echo "unexpected report path in the database: $REL" >&2; continue ;; esac
+    if [ ! -f "$DEST/reports/$REL" ]; then
+        mkdir -p "$DEST/reports/$(dirname "$REL")"
+        if rsync -t --ignore-existing -e "ssh -o BatchMode=yes -o ConnectTimeout=20" \
+                "$HOST:./reports/$REL" "$DEST/reports/$(dirname "$REL")/"; then
+            FETCHED=$((FETCHED + 1))
+        fi
+    fi
     if [ ! -f "$DEST/reports/$REL" ]; then
         MISSING=$((MISSING + 1)); echo "missing report PDF: $REL" >&2
     elif [ "$(shasum -a 256 "$DEST/reports/$REL" | cut -d' ' -f1)" != "$SHA" ]; then
@@ -101,9 +107,8 @@ while IFS='|' read -r REL SHA; do
     fi
 done < <(sqlite3 "file:$NEWEST?immutable=1" \
     "SELECT pdf_path, pdf_sha256 FROM report_renders WHERE kind = 'original' AND pdf_path IS NOT NULL;" 2>/dev/null || true)
-echo "Report originals: $CHECKED listed, $((CHECKED - MISSING - BAD)) present and matching"
+echo "Report originals: $CHECKED listed, $FETCHED fetched now, $((CHECKED - MISSING - BAD)) present and matching"
 if [ "$MISSING" -gt 0 ] || [ "$BAD" -gt 0 ]; then
-    alarm "Report PDFs: $MISSING missing, $BAD with a different hash, of $CHECKED in the newest backup"
+    alarm "Report PDFs: $MISSING missing, $BAD with a different hash or path, of $CHECKED in the newest backup"
     exit 1
 fi
-[ "$REPORTS_OK" -eq 1 ] || exit 1

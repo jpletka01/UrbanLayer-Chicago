@@ -2066,3 +2066,16 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 - **Tests:** `test_backup_script.py` now expects an empty `reports/` mirror before the first purchase (it pinned "no dir"); backend unit suite 2,482 passed.
 - **Tested locally (2026-10-30)** with a fake `ssh` that roots the remote command in a scratch "backups" dir, as rrsync does: good pull → "1 listed, 1 present and matching", exit 0; server copy damaged → local copy kept, exit 0; local PDF lost → alarm, exit 1; local PDF hash differs → alarm, exit 1; server has no `reports/` → alarm, exit 1; empty `reports/` and no rows → exit 0. The runbook's restore snippet on a scratch copy: "1 of 1 originals readable and hash-verified".
 - **Not measured:** a run against production through the real rrsync key (Jack's Mac; on his list); a real PDF (no purchases exist yet).
+
+### Item 37 follow-up: the recursive pull was refused in production (2026-10-30)
+
+**What happened:** after #152 deployed, Jack's first pull logged `rrsync error: invalid rsync-command syntax or options` for the PDF step (the database pull and checks still ran, and the script alarmed as designed). Probing the real read-only key showed why: macOS's openrsync sends `--dirs` for any `-r`, and the server's rrsync refuses `--dirs` and `--relative`; it accepts `-t` and `--ignore-existing`. The earlier local tests used a fake server that accepted every option, so they could not catch it.
+
+**Decision:** no recursion. The newest pulled database already lists each original (`report_renders.pdf_path`, `<purchase_id>/<ms>.pdf`), so the script fetches each listed file that is not yet on the Mac as a single file (`rsync -t --ignore-existing "$HOST:./reports/<path>"`), then hash-checks every listed file. Paths that do not match `<digits>/<digits>.pdf` are refused (the path reaches a remote command). *Alternatives:* a remote glob `./reports/*/*.pdf` without `--relative` (flattens the layout, so names could collide and the database paths would not match); changing the server key's forced command to allow `-r` (widens the read-only key for one feature); a flat file layout in the server mirror (a second naming scheme to maintain). A PDF stored after the 03:00 backup is fetched the next night, when the database lists it.
+
+**Numbers**
+- **Probe of the real key (2026-10-30):** `-t` and `-t --ignore-existing` reached the server's file lookup (the `reports/` dir does not exist until the first nightly backup after #152); `-rt` and `-tR` were refused by rrsync.
+- **Fake server that refuses `-r`, `--dirs` and `--relative` like rrsync:** first pull fetches 2 of 2; second fetches 0; damaged server copy leaves the local copy; lost local + damaged server → hash alarm, exit 1; server file gone → missing alarm, exit 1; `../` paths refused, exit 1; no rows → exit 0.
+- **Real run against production (read-only key, 2026-10-30 17:54 local):** exit 0, "0 listed, 0 fetched now, 0 present and matching".
+- **Not measured:** a real PDF (no purchases yet).
+
