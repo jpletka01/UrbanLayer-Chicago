@@ -311,6 +311,11 @@ async function pageWithResults() {
   const ready = await readyPage();
   fireEvent.click(ready.button);
   await waitFor(() => expect(screen.getByTestId("results-state").textContent).toBe("v1:1"));
+  // the chips are drawn from the same response in a later render: wait for all three, or a test
+  // that clicks "remove-tif" straight away can run before they exist
+  await waitFor(() => {
+    for (const id of Object.keys(THREE)) expect(screen.getByTestId(`chip-${id}`)).toBeTruthy();
+  });
   mocks.runSearch.mockClear();
   mocks.runPins.mockClear();
   return ready;
