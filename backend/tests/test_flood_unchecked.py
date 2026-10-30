@@ -242,11 +242,11 @@ def test_a_healthy_report_is_unchanged_by_the_flood_branches():
     assert "No flood zone data available" in page            # a genuine empty answer keeps its wording
 
 
-def test_the_report_strings_have_spanish_entries_marked_untranslated():
+def test_the_report_strings_have_spanish_entries():
     from backend import report_i18n
 
     for key in ("pill.unchecked", "tl.env_flood_unchecked", "reg.flood_unchecked", "site.todo_flood_unchecked"):
-        assert key in report_i18n._EN and key in report_i18n._ES and key in report_i18n._UNTRANSLATED_ES
+        assert key in report_i18n._EN and report_i18n._ES[key] != report_i18n._EN[key]
 
 
 # --- data health --------------------------------------------------------------------------------------------------------------

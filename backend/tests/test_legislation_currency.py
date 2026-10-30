@@ -410,10 +410,11 @@ def test_report_block_withholds_the_count_without_a_recent_check():
     assert "amendments to the Zoning Ordinance (Title 17) that are not in this text" not in html
 
 
-def test_report_block_renders_in_spanish_with_the_english_text_until_translated():
+def test_report_block_renders_in_spanish():
     _write_snapshot(datetime.now(timezone.utc) - timedelta(hours=1))
     html = _html("es")
-    assert "How current the law in this report is" in html and "14 de octubre de 2026" in html
+    assert "Qué tan vigente es la ley de este informe" in html and "14 de octubre de 2026" in html
+    assert "How current the law" not in html
 
 
 # --- the section endpoints and the admin endpoint ------------------------------------------------

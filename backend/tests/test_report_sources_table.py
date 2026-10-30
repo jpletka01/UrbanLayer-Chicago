@@ -172,10 +172,10 @@ def test_withheld_comps_figures_are_not_printed_but_the_reason_is():
     assert h["conf_caption"]("property.comps.median_price_per_bldg_sqft")["text"].startswith("Not shown")
 
 
-def test_spanish_report_renders_the_same_structure_with_english_text_until_translated():
+def test_spanish_report_renders_the_same_structure_in_spanish():
     es = html(mock_report(buildable_footprint_sqft=3000.0), "es")
     assert 'data-testid="sources-table"' in es and 'class="conf-ai"' in es
-    assert "Read by AI from §17-3-0400" in es                            # English until WS7 (listed in _UNTRANSLATED_ES)
+    assert "Leído por IA a partir de §17-3-0400" in es and "Read by AI" not in es
 
 
 def test_a_failure_building_the_map_never_blocks_the_report(monkeypatch):
@@ -184,10 +184,12 @@ def test_a_failure_building_the_map_never_blocks_the_report(monkeypatch):
     assert "Development Feasibility Report" in page and 'data-conf="zoning.setbacks"' not in page
 
 
-def test_conf_keys_exist_in_both_catalogs_and_the_untranslated_list():
+def test_conf_keys_exist_in_both_catalogs_and_are_translated():
     en = {k for k in report_i18n.MESSAGES["en"] if k.startswith("conf.")}
     assert en and en == {k for k in report_i18n.MESSAGES["es"] if k.startswith("conf.")}
-    assert en <= report_i18n._UNTRANSLATED_ES
+    # "UrbanLayer" and the bare "{n} {unit}" pattern read the same in both languages
+    same = {k for k in en if report_i18n.MESSAGES["es"][k] == report_i18n.MESSAGES["en"][k]}
+    assert same <= {"conf.tier.internal", "conf.sample_n"}, same
 
 
 def test_the_recorded_production_profile_provenance_gives_a_clean_sources_table():
