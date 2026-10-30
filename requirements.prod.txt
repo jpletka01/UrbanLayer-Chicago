@@ -21,5 +21,7 @@ matplotlib>=3.8.0
 # Direct import in the report renderer (main.py); previously installed only as
 # torch's transitive dependency.
 jinja2>=3.1.0
-weasyprint>=60.0
+# <70: weasyprint 70 draws the Contents page's dotted leaders in the wrong place (2026-10-30, see
+# claude-context/decisions/2026-10_weasyprint-pin.md). Lift the cap after re-comparing the rendered PDF.
+weasyprint>=60.0,<70
 stripe>=8.0.0
