@@ -30,7 +30,7 @@ reusable lesson, not the full narrative.
 
 ### Design system — **canonical: "Bento Pro"**
 - `guides/bento-pro-redesign.md` — the token system + landing (source of truth for color/type/radius/primitives).
-- `guides/bento-pro-phase3-app-surfaces.md` — Scorecard/Discovery redesign (the active design working doc).
+- `guides/bento-pro-phase3-app-surfaces.md` — Scorecard/Discovery Bento Pro surfaces (the 2026-10 Discovery redesign shipped; see `archive/2026-10-30_discovery-redesign.md`).
 - `guides/dot-matrix.md` — the LED dot-matrix halftone renderer (hero skyline backdrop + reusable image→dot art + the in-browser Playwright probe workflow).
 - `guides/design-system.md`, `guides/light-dark-theming.md` — **HISTORICAL** (the "Cyanotype on Vellum" palette + Space Grotesk are retired by Bento Pro). The **theming mechanics still apply**: CSS-var-backed tokens, `ThemeProvider`/`useTheme`, `system` default, mode-lock islands with `data-theme`. Read only for that mechanism or the AA-contrast reasoning.
 
@@ -54,7 +54,7 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
 - `strategy/2026-07-02_data-expansion-candidates.md` — **live backlog** of available-but-unintegrated data, ranked (Tier 0–2; items 1–2 + appeals/ward shipped in the lot-info arc; CPS/Divvy tail remains).
 
 ## Archive & Audits (pointers — full stories on the About page)
-- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Current: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phase 0 coverage audit; Items 1–36) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
+- `decisions/*` — **engineering decision log**: one file per build arc, one section per merged PR — decision, alternatives, evidence, revisit-if (`decisions/README.md` = format). Full list in `decisions/README.md`; the largest: `2026-10_build-queue.md` (WS0/WS1/WS6/WS3 Phases 1–2, WS2 no-model phase, WS4 PR1–3, WS8 Phase 0 coverage audit; Items 1–36) and `2026-10_discovery-index.md` (Discovery index builder fixes, from PR #128). Append when an item merges.
 - `archive/*` — one-paragraph markers for each shipped feature/incident (deployment, expansion, revenue, i18n,
   a-la-carte reports, coherence steps 1–3, selected-parcel, scorecard-ux, report-oom-reranker,
   `2026-06-report-saga` [V3→V6 + R5–R7], pin-resolution-seam, scorecard-chat-grounding, verdict-grounding-ux,
@@ -75,7 +75,10 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   Title 17 text impacts beside current law; WS2 PR4 extraction intentionally not built],
   **`2026-10-28_ws4-official-rent`** [PR1–3: Census rent by community area/tract/bedroom (tract else PUMA) and the
   Assessor's modeled apartment income as a separate series, both committed artifacts; PR4 trends and PR5 HUD
-  SAFMR still active and unapproved]).
+  SAFMR still active and unapproved],
+  **`2026-10-30_discovery-redesign`** [Discovery Phases 0–4: explicit "Update results", Start panel, text gate, Add filter
+  menu, results column + map, phone layout; Phase 1 backend speed; Mexican-Spanish usted pass; prod index pruned
+  949,020 → 882,328 rows]).
   `archive/TEMPLATE.md` is the archivation template.
 - `audits/*` — resolved point-in-time investigations, each pointing at the archive entry or living guide that
   superseded it (full-site-sweep, resolver-investigation, gis-parcel-resolution-fix, design-ux-skills-audit,
