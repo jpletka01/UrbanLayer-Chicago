@@ -32,9 +32,9 @@ describe("dataDatePhrase — the Profile words the same dates the chat footer an
     expect(dataDatePhrase({ key: "new_source", kind: "through", as_of: "2026-10-14" }, t)).toBe("new_source through Oct 14, 2026");
   });
 
-  it("in Spanish the words are English for now but the date is the reader's", async () => {
+  it("in Spanish the words are Spanish and the date is the reader's", async () => {
     await i18n.changeLanguage("es");
     const es = i18n.getFixedT("es", "common");
-    expect(dataDatePhrase({ key: "crime", kind: "through", as_of: "2026-10-14" }, es)).toMatch(/^Crime through .*14.*2026/);
+    expect(dataDatePhrase({ key: "crime", kind: "through", as_of: "2026-10-14" }, es)).toMatch(/^Delitos hasta .*14.*2026/);
   });
 });

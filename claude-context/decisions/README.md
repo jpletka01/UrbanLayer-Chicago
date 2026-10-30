@@ -20,3 +20,4 @@ Why the code looks the way it does: the choices made while building, the options
 - `2026-10_dependencies.md`: dependency updates taken as tested batches rather than one PR at a time (the in-range frontend update), from 2026-10-30.
 - `2026-10_weasyprint-pin.md`: why the report's PDF library is capped below weasyprint 70 (it misdraws the Contents page), from 2026-10-30.
 - `2026-10_data-health-baselines.md`: measured baselines in the data-health registry that moved after the change was understood (the pedestrian-street overlay, 2 to 58 features), from 2026-10-30.
+- `2026-10_spanish-backlog.md`: the 289 English-only Spanish keys translated (Mexican Spanish, usted), how sentence fragments were built, and what a native reader should check first, from 2026-10-30.
