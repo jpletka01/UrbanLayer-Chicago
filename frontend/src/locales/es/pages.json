@@ -139,8 +139,8 @@
         "map_lag": "El mapa de zonificación de la Ciudad puede tardar hasta 90 días en reflejar una enmienda aprobada.",
         "code_vintage": "El texto del Código Municipal usado aquí está vigente hasta {{date}}; una enmienda posterior del Concejo puede no estar reflejada.",
         "official_letter": "Esta página es una herramienta de evaluación preliminar, no una determinación de zonificación. La Carta de Verificación de Zonificación de la Ciudad confirma la zonificación de una parcela (${{fee}}, hasta {{days}} días, según publica la Oficina del Administrador de Zonificación, verificado {{checked}}); una carta de opinión cubre un proyecto específico.",
-        "passed_not_on_map": "A rezoning ordinance listing this address passed City Council on {{date}} ({{record}}). The City's zoning map, which this page's district comes from, has not been updated for it yet, so the standards on this page are for the district the map still shows. Confirm the current district with the Department of Planning and Development.",
-        "passed_district": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
+        "passed_not_on_map": "Una ordenanza de rezonificación que incluye esta dirección fue aprobada por el Concejo Municipal el {{date}} ({{record}}). El mapa de zonificación de la Ciudad, de donde proviene el distrito de esta página, aún no se ha actualizado, por lo que las normas de esta página corresponden al distrito que el mapa todavía muestra. Confirme el distrito vigente con el Departamento de Planificación y Desarrollo.",
+        "passed_district": "La ordenanza lo cambia de {{from}} a {{to}} (leído por IA a partir de la ordenanza escaneada; verifique el PDF)."
       }
     },
     "resolution": {
@@ -191,10 +191,10 @@
       "codeCurrentThrough": "Código Municipal vigente hasta",
       "maxUnitsByLotArea": "Unidades máx. por área de lote",
       "unitYieldCaveat": "El área de lote por unidad es un solo límite. El FAR, la altura, el estacionamiento y otras normas pueden permitir menos unidades; las exenciones pueden permitir más.",
-      "laterAmendments_one": "{{count}} later amendment",
-      "laterAmendments_other": "{{count}} later amendments",
-      "passedNotOnMap": "A rezoning listing this address passed Council on {{date}} ({{record}}). The City's map, which this page's district comes from, hasn't been updated for it yet, so the standards below are for the district the map still shows.",
-      "passedDistrict": "The ordinance changes it from {{from}} to {{to}} (read by AI from the scanned ordinance; check the PDF)."
+      "laterAmendments_one": "{{count}} enmienda posterior",
+      "laterAmendments_other": "{{count}} enmiendas posteriores",
+      "passedNotOnMap": "El Concejo aprobó el {{date}} ({{record}}) una rezonificación que incluye esta dirección. El mapa de la Ciudad, de donde proviene el distrito de esta página, aún no se ha actualizado, por lo que las normas de abajo corresponden al distrito que el mapa todavía muestra.",
+      "passedDistrict": "La ordenanza lo cambia de {{from}} a {{to}} (leído por IA a partir de la ordenanza escaneada; verifique el PDF)."
     },
     "verdict": {
       "inTif": "en el TIF {{name}}",
@@ -250,11 +250,11 @@
         "partial": "Algunas fuentes de datos no estaban disponibles: {{sources}}.",
         "scofflaw": "En la Lista de Infractores del Código de Construcción — hay acciones de cumplimiento sin resolver contra este edificio; presupueste su corrección.",
         "strProhibited": "Los alquileres de corto plazo están prohibidos en esta cuadra (exclusión voluntaria del distrito electoral) — relevante si proyecta ingresos de STR.",
-        "overlayUnchecked": "Landmark, historic-district or planned-development status couldn't be checked today (the City's zoning map didn't answer), so this verdict can't rule out that review.",
-        "passedNotOnMap": "A rezoning listing this address passed {{date}} and the City's map hasn't caught up — the district behind this read may be out of date.",
-        "zoningUnchecked": "The City's zoning map didn't answer today, so this read can't say what district the parcel is in or what that district allows.",
-        "floodUnchecked": "The FEMA flood zone couldn't be checked today (FEMA's flood map didn't answer), so this verdict can't rule out a floodplain constraint.",
-        "landmarkDesignationPassed": "A Chicago Landmark designation listing this address passed {{date}} and the City's map doesn't show it for this parcel — a Commission on Chicago Landmarks review may apply that this read can't rule out."
+        "overlayUnchecked": "Hoy no se pudo verificar si hay monumento, distrito histórico o desarrollo planificado (el mapa de zonificación de la Ciudad no respondió), por lo que este veredicto no puede descartar esa revisión.",
+        "passedNotOnMap": "El {{date}} se aprobó una rezonificación que incluye esta dirección y el mapa de la Ciudad aún no la refleja; el distrito en que se basa esta lectura podría estar desactualizado.",
+        "zoningUnchecked": "Hoy el mapa de zonificación de la Ciudad no respondió, por lo que esta lectura no puede indicar en qué distrito está la parcela ni qué permite ese distrito.",
+        "floodUnchecked": "Hoy no se pudo verificar la zona de inundación de FEMA (el mapa de inundación de FEMA no respondió), por lo que este veredicto no puede descartar una restricción por zona inundable.",
+        "landmarkDesignationPassed": "El {{date}} se aprobó una designación de Monumento de Chicago que incluye esta dirección y el mapa de la Ciudad no la muestra para esta parcela; puede aplicar una revisión de la Comisión de Monumentos de Chicago que esta lectura no puede descartar."
       },
       "next": {
         "strong": {
@@ -445,8 +445,8 @@
       "recordClean": "Sin infracciones registradas en esta dirección.",
       "record311_other": "La dirección registró {{count}} solicitudes 311 en el último año.",
       "record311_one": "La dirección registró {{count}} solicitud 311 en el último año.",
-      "marketWithheld_one": "Only {{count}} comparable sale nearby, too few to state a median.",
-      "marketWithheld_other": "Only {{count}} comparable sales nearby, too few to state a median."
+      "marketWithheld_one": "Solo {{count}} venta comparable cercana, muy pocas para indicar una mediana.",
+      "marketWithheld_other": "Solo {{count}} ventas comparables cercanas, muy pocas para indicar una mediana."
     },
     "map": {
       "satellite": "Satélite",
@@ -456,35 +456,35 @@
       "keyParcel": "Esta parcela",
       "keyTransit": "Estación de transporte",
       "keyEz": "Zona Empresarial",
-      "layers": "Layers",
-      "controlAria": "{{source}} visibility",
+      "layers": "Capas",
+      "controlAria": "Visibilidad de {{source}}",
       "control": {
-        "on": "On",
-        "dim": "Dim",
-        "off": "Off"
+        "on": "Encendido",
+        "dim": "Atenuado",
+        "off": "Apagado"
       },
       "count": {
-        "district_one": "{{count}} district",
-        "district_other": "{{count}} districts",
-        "feature_one": "{{count}} feature",
-        "feature_other": "{{count}} features"
+        "district_one": "{{count}} distrito",
+        "district_other": "{{count}} distritos",
+        "feature_one": "{{count}} elemento",
+        "feature_other": "{{count}} elementos"
       },
-      "withheldCount_one": "{{count}} feature not shown",
-      "withheldCount_other": "{{count}} features not shown",
-      "sourceUnavailable": "Unavailable",
-      "sourceEmpty": "No features at this parcel.",
-      "layerUnavailable": "Map data unavailable for: {{layers}}.",
+      "withheldCount_one": "{{count}} elemento no se muestra",
+      "withheldCount_other": "{{count}} elementos no se muestran",
+      "sourceUnavailable": "No disponible",
+      "sourceEmpty": "No hay elementos en esta parcela.",
+      "layerUnavailable": "Datos del mapa no disponibles para: {{layers}}.",
       "sourceControl": {
-        "zoning": "Zoning",
-        "overlays": "Special-purpose boundaries",
-        "tif": "TIF districts",
-        "ez": "Enterprise Zones"
+        "zoning": "Zonificación",
+        "overlays": "Límites de propósito especial",
+        "tif": "Distritos TIF",
+        "ez": "Zonas Empresariales"
       },
       "source": {
-        "zoning": "zoning",
-        "overlays": "special-purpose boundaries",
-        "tif": "TIF districts",
-        "ez": "Enterprise Zones"
+        "zoning": "zonificación",
+        "overlays": "límites de propósito especial",
+        "tif": "distritos TIF",
+        "ez": "Zonas Empresariales"
       }
     },
     "crimeCurrent": "Período actual",
@@ -506,10 +506,10 @@
       "walkScore": "Walk Score (0–100) califica qué tan caminables son las diligencias diarias en esta ubicación. 90+ significa que rara vez se necesita auto.",
       "divvy": "Divvy es el sistema de bicicletas compartidas de Chicago. {{count}} estación(es) en servicio a menos de {{radius}} mi de esta parcela; los anclajes fuera de servicio no se cuentan.",
       "transitScore": "Transit Score (0–100) califica el acceso al transporte público en esta ubicación.",
-      "rentArea": "Median monthly gross rent (rent plus utilities) of the community area's renter households, summed from Census rent brackets for each tract in the area. A survey estimate, not a count; there is no area figure by bedroom count.",
-      "rentTract": "Median monthly gross rent (rent plus utilities) of renter households in this census tract, as the Census Bureau publishes it. A survey estimate with a margin of error.",
-      "rentAssessor": "The Assessor's model of what apartments in this community area earn: potential gross income per unit per month, before vacancy, taken from its valuation of buildings with 7 or more units in the latest city-wide reassessment. A model, not a rent anyone asked or paid, and not comparable with the Census figures. There is no figure by bedroom count.",
-      "rentBedroom": "Median monthly gross rent for units this size, as the Census Bureau publishes it for this census tract. Where the tract's figure is missing or too uncertain, the PUMA's is shown: a larger statistical area of several neighborhoods."
+      "rentArea": "Renta bruta mensual mediana (renta más servicios) de los hogares inquilinos del área comunitaria, sumada a partir de los rangos de renta del Censo de cada tramo del área. Es una estimación de encuesta, no un conteo; no hay cifra del área por número de recámaras.",
+      "rentTract": "Renta bruta mensual mediana (renta más servicios) de los hogares inquilinos de este tramo censal, tal como la publica la Oficina del Censo. Es una estimación de encuesta con un margen de error.",
+      "rentAssessor": "El modelo del Tasador de lo que ganan los departamentos de esta área comunitaria: ingreso bruto potencial por unidad al mes, antes de la vacancia, tomado de su valuación de edificios de 7 o más unidades en la reevaluación más reciente de toda la ciudad. Es un modelo, no una renta que alguien haya pedido o pagado, y no es comparable con las cifras del Censo. No hay cifra por número de recámaras.",
+      "rentBedroom": "Renta bruta mensual mediana de unidades de este tamaño, tal como la Oficina del Censo la publica para este tramo censal. Cuando falta la cifra del tramo o es demasiado incierta, se muestra la del PUMA: un área estadística más grande que abarca varios vecindarios."
     },
     "walkDesc": {
       "walker_s_paradise": "Paraíso del peatón",
@@ -523,67 +523,67 @@
       "minimal_transit": "Transporte mínimo"
     },
     "amendments": {
-      "listSummary_one": "Later amendment ({{count}})",
-      "listSummary_other": "Later amendments ({{count}})",
+      "listSummary_one": "Enmienda posterior ({{count}})",
+      "listSummary_other": "Enmiendas posteriores ({{count}})",
       "status": {
-        "applied": "Reflected on this page",
-        "none": "Reviewed; not reflected on this page",
-        "pending": "Not yet reviewed"
+        "applied": "Reflejada en esta página",
+        "none": "Revisada; no se refleja en esta página",
+        "pending": "Aún sin revisar"
       },
       "banner": {
-        "title_one": "This section was amended after this text was published.",
-        "title_other": "This section was amended after this text was published.",
-        "caveat_one": "The text below does not include that change.",
-        "caveat_other": "The text below does not include those changes."
+        "title_one": "Esta sección se modificó después de que se publicara este texto.",
+        "title_other": "Esta sección se modificó después de que se publicara este texto.",
+        "caveat_one": "El texto de abajo no incluye ese cambio.",
+        "caveat_other": "El texto de abajo no incluye esos cambios."
       },
       "notCodified": {
-        "title": "§ {{section}} isn't in the published Municipal Code text yet",
-        "body_one": "An amendment passed after this text was published added or changed it. See the ordinance:",
-        "body_other": "Amendments passed after this text was published added or changed it. See the ordinances:"
+        "title": "§ {{section}} aún no está en el texto publicado del Código Municipal",
+        "body_one": "Una enmienda aprobada después de que se publicara este texto lo agregó o modificó. Consulte la ordenanza:",
+        "body_other": "Enmiendas aprobadas después de que se publicara este texto lo agregaron o modificaron. Consulte las ordenanzas:"
       }
     },
-    "highRiskFlagsOurs": "Flag list is ours, chosen from 311 request types.",
+    "highRiskFlagsOurs": "La lista de alertas es nuestra, elegida a partir de los tipos de solicitud 311.",
     "unchecked": {
-      "title": "Couldn't check today",
-      "body": "{{what}} didn't answer when this page loaded, so what's shown here may be incomplete. That isn't a \"no\": reload to try again.",
-      "mapLink": "City zoning map ↗"
+      "title": "No se pudo verificar hoy",
+      "body": "{{what}} no respondió cuando se cargó esta página, por lo que lo que se muestra aquí puede estar incompleto. Esto no es un «no»: vuelva a cargar para intentarlo de nuevo.",
+      "mapLink": "Mapa de zonificación de la Ciudad ↗"
     },
     "landmarkDesignation": {
-      "title": "A Chicago Landmark designation passed that the City's map doesn't show for this parcel yet",
-      "building": "{{what}} passed Council on {{date}} and lists this address.",
-      "district": "{{what}} passed Council on {{date}} and names the blocks of {{segment}}, which include this address. The ordinance sets the district's boundary, so this page can't say whether this parcel is inside it.",
-      "mapChecked": "The City's landmark map didn't show this parcel as a landmark when checked, so the overlays on this page may be missing a review requirement.",
-      "mapUnchecked": "The City's landmark map couldn't be checked today, so the overlays on this page may be missing a review requirement.",
-      "review": "A designated Chicago Landmark needs the Commission on Chicago Landmarks' written approval before a permit to alter, demolish or build can issue (§2-120-740)."
+      "title": "Se aprobó una designación de Monumento de Chicago que el mapa de la Ciudad aún no muestra para esta parcela",
+      "building": "El Concejo aprobó {{what}} el {{date}} y esta designación incluye esta dirección.",
+      "district": "El Concejo aprobó {{what}} el {{date}} y esta designación nombra las cuadras de {{segment}}, que incluyen esta dirección. La ordenanza establece el límite del distrito, por lo que esta página no puede indicar si esta parcela está dentro de él.",
+      "mapChecked": "El mapa de monumentos de la Ciudad no mostraba esta parcela como monumento al momento de la verificación, por lo que es posible que a las capas superpuestas de esta página les falte un requisito de revisión.",
+      "mapUnchecked": "Hoy no se pudo verificar el mapa de monumentos de la Ciudad, por lo que es posible que a las capas superpuestas de esta página les falte un requisito de revisión.",
+      "review": "Un Monumento de Chicago designado necesita la aprobación por escrito de la Comisión de Monumentos de Chicago antes de que se pueda emitir un permiso para alterar, demoler o construir (§2-120-740)."
     },
     "rent": {
-      "title": "Rent",
-      "scope": "Census ACS {{period}} 5-year estimates, not listing prices",
-      "scopeNoPeriod": "Census ACS 5-year estimates, not listing prices",
-      "perMonth": "/mo",
-      "communityArea": "Area median",
-      "tract": "Tract median",
-      "1_bedroom": "1 bedroom",
-      "2_bedrooms": "2 bedrooms",
-      "3_bedrooms": "3 bedrooms",
-      "tractSub": "This census tract",
-      "pumaSub": "A wider area (a PUMA), not this tract",
-      "notPublished": "The Census publishes no usable median for this tract or its PUMA",
-      "pumaUnchecked": "Couldn't check the PUMA's figure today",
-      "areaUnchecked": "Couldn't check today",
+      "title": "Renta",
+      "scope": "Estimaciones de 5 años de la ACS del Censo, {{period}}; no son precios de oferta",
+      "scopeNoPeriod": "Estimaciones de 5 años de la ACS del Censo; no son precios de oferta",
+      "perMonth": "/mes",
+      "communityArea": "Mediana del área",
+      "tract": "Mediana del tramo",
+      "1_bedroom": "1 recámara",
+      "2_bedrooms": "2 recámaras",
+      "3_bedrooms": "3 recámaras",
+      "tractSub": "Este tramo censal",
+      "pumaSub": "Un área más amplia (un PUMA), no este tramo",
+      "notPublished": "El Censo no publica una mediana utilizable para este tramo ni para su PUMA",
+      "pumaUnchecked": "Hoy no se pudo verificar la cifra del PUMA",
+      "areaUnchecked": "No se pudo verificar hoy",
       "fallback": {
-        "suppressed": "The Census publishes no median for this tract, so this is the PUMA's.",
-        "low_confidence": "This tract's median is too uncertain to show, so this is the PUMA's."
+        "suppressed": "El Censo no publica una mediana para este tramo, así que se muestra la del PUMA.",
+        "low_confidence": "La mediana de este tramo es demasiado incierta para mostrarse, así que se muestra la del PUMA."
       },
       "assessor": {
-        "title": "Assessor model",
-        "scope": "The County Assessor's {{year}} {{cycle}} model of apartment income, a separate series from the Census rents above. Not an asking or achieved rent.",
-        "label": "Modeled income per unit",
-        "perUnit": "/mo per unit",
-        "sub": "Median of {{buildings}} apartment buildings, before vacancy",
-        "none": "The Assessor's model includes no apartment buildings in this area",
-        "noFigure": "The model has no usable income figure for this area",
-        "unchecked": "Couldn't check today"
+        "title": "Modelo del Tasador",
+        "scope": "El modelo de ingresos de departamentos del Tasador del Condado, {{year}} {{cycle}}; una serie distinta de las rentas del Censo de arriba. No es una renta solicitada ni una renta lograda.",
+        "label": "Ingreso modelado por unidad",
+        "perUnit": "/mes por unidad",
+        "sub": "Mediana de {{buildings}} edificios de departamentos, antes de la vacancia",
+        "none": "El modelo del Tasador no incluye edificios de departamentos en esta área",
+        "noFigure": "El modelo no tiene una cifra de ingresos utilizable para esta área",
+        "unchecked": "No se pudo verificar hoy"
       }
     }
   },
@@ -939,11 +939,11 @@
     "accessCodeError": "Algo salió mal — inténtalo de nuevo.",
     "compBlurb": "Acceso anticipado — funciones Pro de cortesía hasta {{date}}.",
     "downloadOriginal": "Original · {{date}}",
-    "downloadUpdated": "Updated copy",
-    "originalNote": "The original is the first report generated for this purchase, kept exactly as sold. The updated copy is a new report with today's data.",
-    "originalMissing": "The stored original couldn't be found. An updated copy is available.",
-    "sinceReport": "Facts changed since your report: {{what}}",
-    "sinceReportPartial": "Couldn't re-check everything today."
+    "downloadUpdated": "Copia actualizada",
+    "originalNote": "El original es el primer informe generado para esta compra, conservado tal como se vendió. La copia actualizada es un informe nuevo con los datos de hoy.",
+    "originalMissing": "No se encontró el original almacenado. Hay una copia actualizada disponible.",
+    "sinceReport": "Datos que cambiaron desde su informe: {{what}}",
+    "sinceReportPartial": "Hoy no se pudo volver a verificar todo."
   },
   "notFound": {
     "title": "Página no encontrada",

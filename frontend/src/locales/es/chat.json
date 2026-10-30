@@ -59,7 +59,7 @@
     "loading": "Cargando vista previa…",
     "unavailable": "Texto completo no disponible para esta referencia.",
     "openSection": "Haga clic para abrir la sección completa",
-    "notCodified": "Not in the published code text yet; an amendment added it."
+    "notCodified": "Aún no está en el texto publicado del código; una enmienda lo agregó."
   },
   "dataPill": {
     "crime": "Datos de delitos",
@@ -73,57 +73,57 @@
   },
   "grounded": {},
   "sinceThen": {
-    "answeredOn": "Answered {{date}}",
-    "rebuilt": "details rebuilt from the saved answer",
-    "noChange": "rechecked today: no material change",
-    "partial": "rechecked today: no change in what we could read (couldn't re-check {{what}})",
-    "unavailable": "couldn't re-check today",
-    "heading": "Since this answer ({{date}}):",
-    "openProfile": "Open today's Property Profile",
-    "askAgain": "Ask again with today's data",
+    "answeredOn": "Respondida el {{date}}",
+    "rebuilt": "detalles reconstruidos a partir de la respuesta guardada",
+    "noChange": "verificado de nuevo hoy: sin cambios importantes",
+    "partial": "verificado de nuevo hoy: sin cambios en lo que pudimos leer (no se pudo verificar de nuevo {{what}})",
+    "unavailable": "no se pudo verificar de nuevo hoy",
+    "heading": "Desde esta respuesta ({{date}}):",
+    "openProfile": "Abrir la Ficha de hoy",
+    "askAgain": "Preguntar de nuevo con los datos de hoy",
     "recordLink": "{{record}} ↗",
     "district": {
-      "plain": "the City's map now shows {{new}}, not {{old}}.",
-      "withRecord": "the City's map now shows {{new}}, not {{old}} (Ordinance {{record}}, passed {{date}})."
+      "plain": "el mapa de la Ciudad ahora muestra {{new}}, no {{old}}.",
+      "withRecord": "el mapa de la Ciudad ahora muestra {{new}}, no {{old}} (Ordenanza {{record}}, aprobada el {{date}})."
     },
     "overlay": {
-      "added": "the City's map now shows {{layer}} here.",
-      "addedNamed": "the City's map now shows {{layer}} here ({{name}}).",
-      "removed": "the City's map no longer shows {{layer}} here."
+      "added": "el mapa de la Ciudad ahora muestra {{layer}} aquí.",
+      "addedNamed": "el mapa de la Ciudad ahora muestra {{layer}} aquí ({{name}}).",
+      "removed": "el mapa de la Ciudad ya no muestra {{layer}} aquí."
     },
-    "standards": "{{field}} for {{zone}} changed from {{old}} to {{new}}.",
+    "standards": "{{field}} de {{zone}} cambió de {{old}} a {{new}}.",
     "fields": {
-      "far": "Floor area ratio",
-      "max_height": "Maximum height",
-      "min_lot_area_per_unit": "Minimum lot area per unit"
+      "far": "Coeficiente de superficie construida (FAR)",
+      "max_height": "Altura máxima",
+      "min_lot_area_per_unit": "Superficie mínima de lote por unidad"
     },
     "amendment": {
-      "after": "Council passed {{record}} on {{date}}; it amends {{sections}}, which this answer cited.",
-      "before": "{{record}}, passed {{date}}, amends {{sections}}, which this answer cited; the code text it used did not include that change."
+      "after": "El Concejo aprobó {{record}} el {{date}}; modifica {{sections}}, que esta respuesta citó.",
+      "before": "{{record}}, aprobada el {{date}}, modifica {{sections}}, que esta respuesta citó; el texto del código que usó no incluía ese cambio."
     },
-    "mapAmendment": "a rezoning ordinance listing this address has passed ({{record}}, {{date}}) and is not on the City's zoning map yet.",
-    "designation": "a Chicago Landmark designation listing this address has passed ({{record}}, {{date}}) and is not on the City's landmark map yet.",
-    "textRefresh": "the code text was updated through {{date}}, and {{sections}} changed.",
+    "mapAmendment": "se aprobó una ordenanza de rezonificación que incluye esta dirección ({{record}}, {{date}}) y aún no aparece en el mapa de zonificación de la Ciudad.",
+    "designation": "se aprobó una designación de Monumento de Chicago que incluye esta dirección ({{record}}, {{date}}) y aún no aparece en el mapa de monumentos de la Ciudad.",
+    "textRefresh": "el texto del código se actualizó hasta el {{date}} y cambió {{sections}}.",
     "what": {
-      "everything": "anything",
-      "district": "the district",
-      "overlays": "some map layers"
+      "everything": "ningún dato",
+      "district": "el distrito",
+      "overlays": "algunas capas del mapa"
     },
     "layers": {
-      "planned_development": "a Planned Development",
-      "lakefront_protection": "the Lakefront Protection District",
-      "pedestrian_street": "a Pedestrian Street",
-      "landmark_building": "a Chicago Landmark",
-      "historic_district": "a Landmark or Historic District",
-      "national_register": "a National Register District",
-      "special_district": "a Special District",
-      "pmd_subarea": "a Planned Manufacturing District",
-      "tod_cta": "a Transit-Oriented Development (CTA) area",
-      "tod_metra": "a Transit-Oriented Development (Metra) area",
-      "adu_area": "an ADU-eligible area",
-      "aro_zone": "an Affordable Requirements Ordinance zone",
-      "fema_floodplain": "a FEMA floodplain"
+      "planned_development": "un Desarrollo Planificado",
+      "lakefront_protection": "el Distrito de Protección del Lago",
+      "pedestrian_street": "una calle peatonal",
+      "landmark_building": "un Monumento de Chicago",
+      "historic_district": "un Distrito de Monumento o Histórico",
+      "national_register": "un Distrito del Registro Nacional",
+      "special_district": "un Distrito Especial",
+      "pmd_subarea": "un Distrito de Manufactura Planificada",
+      "tod_cta": "un área de Desarrollo Orientado al Transporte (CTA)",
+      "tod_metra": "un área de Desarrollo Orientado al Transporte (Metra)",
+      "adu_area": "un área elegible para ADU",
+      "aro_zone": "una zona de la Ordenanza de Requisitos de Vivienda Asequible",
+      "fema_floodplain": "una zona inundable de FEMA"
     },
-    "exportAnswered": "Answered {{date}}"
+    "exportAnswered": "Respondida el {{date}}"
   }
 }
