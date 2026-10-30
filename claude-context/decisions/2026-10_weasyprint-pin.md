@@ -17,6 +17,6 @@ Format: see `README.md` in this folder.
 **Numbers**
 - **Before:** `weasyprint>=60.0`; local environment 69.0; 70.0 renders the Contents page wrongly.
 - **After:** capped at `<70`. Merging rebuilds the Docker pip layer (this file changed), which re-resolves every other floor to its newest version: see the PR for what was and was not tested.
-- **Production today (measured 2026-10-30, `pip freeze` in the running backend container):** weasyprint 70.0, pydyf 0.13.0, fastapi 0.162.0, anthropic 2.3.0, python-multipart 0.0.32. So the defect is live on the $25 report until this lands. The pip layer already resolves to the newest versions on a rebuild, so merging this changes only weasyprint (70.0 to the newest below 70).
+- **Production today (measured 2026-10-30, `pip freeze` in the running backend container):** weasyprint 70.0, pydyf 0.13.0, fastapi 0.162.0, anthropic 2.3.0, python-multipart 0.0.32. So the defect is live on the $25 report until this lands. Merging rebuilds the pip layer, which moves weasyprint to the newest below 70 and may also move any other package that has released since the layer was last built; CI's `test` job ran against the resolved set.
 - **Not measured:** any other page's rendering under newer fonts; a rendering of a real customer report.
 - **Reproduce:** render `backend.main.render_report_html(_mock_report(), "en")` with each version and compare `pdftoppm` pages (see the PR description for the script outline).
