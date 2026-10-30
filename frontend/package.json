@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:mobile": "playwright test",
     "test:mobile:report": "node e2e/mobile-audit-report.mjs",
+    "sweep:live": "node e2e/live-sweep.mjs",
     "test:hero-crop": "node e2e/hero-crop-audit.mjs"
   },
   "dependencies": {

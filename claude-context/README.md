@@ -64,6 +64,8 @@ _Private: `strategy/` is gitignored and exists only in the maintainer's local ch
   **`2026-09-08_backlog-sweep`** [publicly-exposed unauthenticated prod Qdrant CLOSED; Title 14 — the whole
   building code — finally indexed and pushed to prod; vitest wired into CI; deploy gated on non-docs
   changes; Discovery range slider, Divvy, assessor permits, FAR-normalized comps],
+  **`2026-09-28_pre-share-review`** [multi-lens review → PRs #24–#30: security fixes, visible bugs, lint in
+  CI, EVALS.md, README, purchases-coming-soon; production server hardened via `deploy/hardening-runbook.md`],
   **`2026-10-26_ws3-map-fixes`** [coverage-safe Property Profile zoning; backend label/availability contract;
   exact intensity and semantic boundary colors; road-aware ordering; accessible On/Dim/Off, exact/withheld
   counts, confidence styling, and responsive Layers UI],

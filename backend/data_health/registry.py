@@ -153,7 +153,7 @@ _OVERLAYS = "backend/retrieval/regulatory/overlays.py"
 # Layer 7 is deliberately absent (F8, 2026-10-02): a unit test asserts it stays out of OVERLAY_LAYERS.
 _OVERLAY_ROWS: tuple[tuple[int, str, str, int], ...] = (
     (3, "lakefront_protection", "Lakefront", 2),
-    (4, "pedestrian_street", "Pedestrian Street", 2),
+    (4, "pedestrian_street", "Pedestrian Street", 58),  # 2 until 2026-10-30: the City now publishes 58 polygons
     (5, "landmark_building", "Landmark Boundaries", 412),
     (6, "historic_district", "Historic Districts", 70),
     (8, "national_register", "National Register", 389),
