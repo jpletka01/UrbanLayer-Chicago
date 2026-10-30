@@ -6,6 +6,8 @@ Requires=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/urbanlayer
+# Log the start so the duration is measurable (the end line is in ExecStopPost; both go to the journal).
+ExecStartPre=/bin/sh -c 'echo "discovery rebuild: start $$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ)"'
 # --refresh rebuilds exactly the community areas already in the index, so expanding coverage
 # (a one-off --community-areas run) automatically carries into the monthly refresh.
 # Runs in a SEPARATE ephemeral container (`run --rm`, own cgroup) rather than `exec` inside the
@@ -13,8 +15,22 @@ WorkingDirectory=/opt/urbanlayer
 # memory-bounded by construction (per-CA ingest + streaming finalize), so this is safe at any
 # coverage. `--no-deps` skips qdrant (the builder never touches the vector store); the new
 # container inherits the backend service's backend_data volume mount and writes the shared index.
-ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend python -m backend.discovery.index_build --refresh
-# Reload so ensure_loaded() picks up the freshly written index (it persists on the backend/data volume).
-ExecStartPost=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
-# A wide rebuild can run long; allow up to 6h before systemd considers it failed.
-TimeoutStartSec=21600
+# `--name` gives the container a fixed name: a second run while one is still alive fails on the
+# name conflict instead of two builders writing the same index (the 2026-10-01 container outlived
+# systemd's kill). ExecStopPost removes it when the unit stops, so a stopped unit stops the build.
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps --name discovery-index-rebuild backend python -m backend.discovery.index_build --refresh
+# Runs however the unit ended (success, failure, timeout, manual stop).
+# 1. Log the end, so start-to-end is in the journal.
+ExecStopPost=/bin/sh -c 'echo "discovery rebuild: end $$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ) result=$$SERVICE_RESULT exit=$$EXIT_STATUS"'
+# 2. Make sure no build container survives the unit ("-": no container left is fine).
+ExecStopPost=-/usr/bin/docker rm -f discovery-index-rebuild
+# 3. Reload so ensure_loaded() picks up the freshly written index (it persists on the backend/data
+# volume). Only after a build that finished: the builder commits its meta and cross-parcel fields
+# in the final step, so a killed or failed run leaves a half-refreshed index that should not be
+# loaded; the journal line from step 1 says which it was.
+ExecStopPost=/bin/sh -c 'if [ "$$SERVICE_RESULT" = success ]; then exec /usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend; fi'
+# A full 77-area --refresh measured about 6.4 h (2026-10-01 run: 04:17 to 10:44 UTC). Allow twice that
+# before systemd considers it hung, then stop the container with it.
+TimeoutStartSec=43200
+# Bounds ExecStopPost, which restarts the backend.
+TimeoutStopSec=10min
