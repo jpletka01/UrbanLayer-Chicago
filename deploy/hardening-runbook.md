@@ -255,7 +255,10 @@ the server pushing, so the server holds no credential for anything else.
    700) and keeps the newest 60. It prunes by name, never by age, so the Mac's copies survive
    if the server stops making new ones. It runs `PRAGMA quick_check` on the newest copy and
    shows a macOS notification if the pull fails, the check fails, or the newest copy is over
-   36 h old.
+   36 h old. Since 2026-10-30 it also pulls the stored report PDFs (`backup_db.sh` mirrors them
+   into `/opt/urbanlayer/backups/reports/` each night) into `~/Backups/urbanlayer/reports/`,
+   write-once (`--ignore-existing`, no `--delete`, never pruned), and checks that every
+   original the newest database lists in `report_renders` is there with its stored sha256.
 
 3. The launchd job runs it at login and every 4 hours; a run missed during sleep fires on
    wake. Its log is at `~/Library/Logs/urbanlayer-backup-pull.log`.
@@ -283,6 +286,24 @@ mkdir -p /tmp/restore && cp "$(ls -1 ~/Backups/urbanlayer/urbanlayer_*.db | sort
 sqlite3 /tmp/restore/chicago.db 'PRAGMA integrity_check; SELECT MAX(version) FROM schema_version;'
 DB_PATH=/tmp/restore/chicago.db uvicorn backend.main:app --port 8011 &   # then: curl localhost:8011/health
 ```
+
+**Test a report-PDF restore** (not yet done): after a pull, serve a stored original from the
+restored copy. The pull already proves every listed file is present with its hash; this proves
+the app can read it back.
+
+```bash
+rm -rf /tmp/restore/reports && cp -R ~/Backups/urbanlayer/reports /tmp/restore/reports
+sqlite3 /tmp/restore/chicago.db "SELECT COUNT(*) FROM report_renders WHERE kind='original' AND pdf_path IS NOT NULL;"
+REPORT_STORE_DIR=/tmp/restore/reports .venv/bin/python -c "
+import sqlite3; from backend import db
+c = sqlite3.connect('/tmp/restore/chicago.db'); c.row_factory = sqlite3.Row
+rows = [dict(r) for r in c.execute(\"SELECT * FROM report_renders WHERE kind='original' AND pdf_path IS NOT NULL\")]
+ok = [r['purchase_id'] for r in rows if (db.read_original_pdf(r) or b'')[:4] == b'%PDF']
+print(f'{len(ok)} of {len(rows)} originals readable and hash-verified')"
+```
+
+With no purchases yet (Stripe is unset), the count is 0 and the pull prints "0 listed": the
+path is wired but untested on a real PDF. The first real purchase is the first real test.
 
 To restore prod: stop the backend, copy the chosen file over
 `/var/lib/docker/volumes/urbanlayer_backend_data/_data/chicago.db`, delete any

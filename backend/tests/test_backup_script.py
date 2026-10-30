@@ -53,9 +53,11 @@ def test_the_mirror_is_append_only_a_damaged_original_never_replaces_its_good_co
     assert (backups / "reports" / "7" / "1.pdf").exists()
 
 
-def test_no_reports_directory_is_not_an_error_and_makes_no_mirror(tmp_path):
+def test_no_reports_directory_is_not_an_error_and_leaves_an_empty_mirror(tmp_path):
+    """Before the first purchase there is nothing to mirror, but the mirror dir exists, so the off-box pull of
+    ./reports/ (scripts/pull_backups.sh) reads an empty folder instead of failing every run."""
     data, backups = tmp_path / "data", tmp_path / "backups"
     data.mkdir()
     make_db(data / "chicago.db")
     out = run(data / "chicago.db", backups)
-    assert "mirrored" not in out and not (backups / "reports").exists()
+    assert "mirrored" not in out and (backups / "reports").is_dir() and not any((backups / "reports").iterdir())

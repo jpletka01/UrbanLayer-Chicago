@@ -2047,3 +2047,22 @@ PR3 adds a second series beside PR2's Census rents: the Cook County Assessor's *
 **Not verified:** the group's behavior in this repository (it shows only on the next two merges close together; check that the second deploy job reads "waiting" or "pending" and then succeeds, and that a replaced run is shown as cancelled and not as a failure); whether `environment: production` protection rules change the queueing.
 
 **Revisit if** a deploy run is replaced and the commit it carried does not reach the server (the server HEAD then lags `origin/main`); or deploys also start from somewhere other than this workflow (then add the server-side `flock` too).
+
+## Item 37 (WS8 Sequence 0): the off-box pull carries the stored report PDFs (2026-10-30)
+
+**Decision:** `scripts/pull_backups.sh` (Jack's Mac, launchd) now also pulls `/opt/urbanlayer/backups/reports/` into `~/Backups/urbanlayer/reports/` and, after the database checks, verifies that every `report_renders` original listed in the newest pulled database is present locally with its stored `pdf_sha256`. `scripts/backup_db.sh` creates the server's `reports/` mirror dir every night, even before the first purchase.
+
+**Evidence for the gap:** the pull fetched only `"$HOST:./urbanlayer_*.db"`, while `backup_db.sh` has mirrored the PDFs into `backups/reports/` since WS6 M8. A sold PDF therefore existed on the box twice (volume + backups dir) and never off it.
+
+**Alternatives and calls:**
+- **Write-once locally** (`--ignore-existing`, no `--delete`, excluded from the name-based pruning): matches the server mirror, so a damaged server copy can never replace a good local one. Consequence: a PDF deleted on the server with an account stays on the Mac. That is a retention decision for Jack (on his list), not something a backup script should decide silently.
+- **Check by the database, not by counting files:** the database is captured before the mirror runs on the same night, so every row it lists must have its file; a file without a row (a purchase after 03:00) is fine. A count would miss a corrupt PDF; the hash catches it.
+- **A failed PDF pull alarms but the database checks still run**, and the script exits 1 at the end, so one problem never hides the other.
+- **The mirror dir is created unconditionally** on the server: with Stripe unset there are no purchases, and pulling a missing `./reports/` would alarm every 4 hours.
+
+**Revisit if:** rrsync rejects `--ignore-existing` (then drop it: the server mirror is already write-once), the PDF store outgrows the Mac, or account deletion must reach the off-box copies.
+
+**Numbers**
+- **Tests:** `test_backup_script.py` now expects an empty `reports/` mirror before the first purchase (it pinned "no dir"); backend unit suite 2,482 passed.
+- **Tested locally (2026-10-30)** with a fake `ssh` that roots the remote command in a scratch "backups" dir, as rrsync does: good pull → "1 listed, 1 present and matching", exit 0; server copy damaged → local copy kept, exit 0; local PDF lost → alarm, exit 1; local PDF hash differs → alarm, exit 1; server has no `reports/` → alarm, exit 1; empty `reports/` and no rows → exit 0. The runbook's restore snippet on a scratch copy: "1 of 1 originals readable and hash-verified".
+- **Not measured:** a run against production through the real rrsync key (Jack's Mac; on his list); a real PDF (no purchases exist yet).
