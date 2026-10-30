@@ -1,6 +1,6 @@
 # 10 — Implementation Status & Decisions Record
 
-**Status: LIVE ON PRODUCTION — FULL CITYWIDE (2026-06-15, all 77 CAs / ~949k parcels); no longer dormant.**
+**Status: LIVE ON PRODUCTION — FULL CITYWIDE (2026-06-15, all 77 CAs; 882,328 in-city parcels since the 2026-10-30 prune — the first build's ~949k included ~67k suburban strays); no longer dormant.**
 - **Wave 1 (2026-06-13, `f192d57`)** — the invariant core, compilers, evaluator, diagnostics,
   offline index builder, list-first frontend.
 - **Wave 2 (2026-06-14, merge `8c279c6`)** — the **result.rows workbench (PR1–PR10)**: the
@@ -21,15 +21,17 @@ liveAreas**, `populatedFields` + `recipeCounts` serving; Discovery is **nav-link
 `run --rm`, auto-follows all 77). The index persists on the `backend/data` volume across deploys.
 **Remaining:** deferred index fields only (OZ/ward/overlay/adu/aro/flood/units — each a `data_version` bump).
 
-**Suburban parcels dropped from the index build (2026-10-28, branch `codex/discovery-index-drop-suburbs`,
-NOT yet on prod).** The builder fetches each community area by bounding box, and a point inside the box
+**Suburban parcels dropped from the index build (2026-10-28, PR #128,
+live; production index pruned 2026-10-30).** The builder fetches each community area by bounding box, and a point inside the box
 but inside no community-area polygon (border suburbs such as Forest Park) used to be tagged to the box's Chicago area
 (`community_area_by_point(...) or ca`). A read-only audit of the 2026-10-01 prod index found 66,692 of
 949,014 rows (7.03%) outside every polygon. `_assemble_ca` now drops those points before the joins, and
 `build_index` prunes their PINs from an existing index, so a `--refresh` heals it. `assemble_parcel` is
 unchanged and pure. No `data_version` contract change (the string is still `idx-<date>-<ts>-<n>p`; it
-changes on every build). **Prod keeps the old rows until the next off-box rebuild, which needs Jack's
-separate production approval.** Decision: `claude-context/decisions/2026-10_discovery-index.md`.
+changes on every build). The first fix's prune never matched the dashed PIN key (Item 2 fixed it); the existing
+prod file was then pruned in place on 2026-10-30 with `python -m backend.discovery.index_prune --apply`
+(949,020 → 882,328 rows; backup left at `<index>.pre-prune`). Scheduled rebuilds now run from the
+`discovery-index-rebuild` timer (monthly, 12 h start timeout). Decision: `claude-context/decisions/2026-10_discovery-index.md`.
 
 **Geometry land fill (2026-07-07, `feat/property-profile`):** the builder now fills `land_sqft`
 from the local ptaxsim `pin_geometry_raw` polygons (`_load_geometry_land`, same source/math as the
