@@ -102,6 +102,23 @@ sudo systemctl enable --now discovery-index-rebuild.timer
 systemctl list-timers discovery-index-rebuild.timer        # confirm next run
 ```
 
+### Timing, overlap and reload
+
+A full 77-area `--refresh` takes about 6.4 h (the 2026-10-01 run started 04:17 UTC and the index
+meta shows it finished at 10:44 UTC). The unit allows 12 h (`TimeoutStartSec=43200`). The container
+has a fixed name (`discovery-index-rebuild`), so a second run fails on the name conflict instead of
+overlapping the first, and the unit removes the container when it stops. After the build the unit
+restarts the backend, but only when the build finished (`result=success`): a killed or failed run
+leaves a half-refreshed index, which should not be loaded, so then the backend keeps serving what it
+has and the journal says why. To measure the duration and see how the last run ended:
+
+```bash
+journalctl -u discovery-index-rebuild.service | grep 'discovery rebuild:'   # start and end lines, with result=
+systemctl show discovery-index-rebuild.service -p Result -p ExecMainStatus
+```
+
+If a run did not succeed, rerun it (below); it replays the same areas.
+
 ### Run a rebuild on demand
 
 ```bash
