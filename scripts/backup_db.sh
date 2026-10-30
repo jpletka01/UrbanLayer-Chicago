@@ -48,9 +48,10 @@ echo "Retained $(ls -1 "$BACKUP_DIR"/urbanlayer_*.db 2>/dev/null | wc -l) backup
 # coreutils make `cp -n` exit non-zero for a file it skipped, which `set -e` would turn into a failed backup.
 # rsync is on the server: the off-box pull is an rrsync forced command.)
 REPORTS_DIR="$(dirname "$DB_PATH")/reports"
+# The mirror dir exists even before the first purchase, so the off-box pull of ./reports/ has something to read.
+mkdir -p "$BACKUP_DIR/reports"
 if [ -d "$REPORTS_DIR" ] && [ -n "$(ls -A "$REPORTS_DIR" 2>/dev/null)" ]; then
     command -v rsync >/dev/null || { echo "rsync is not installed (apt install rsync)" >&2; exit 1; }
-    mkdir -p "$BACKUP_DIR/reports"
     rsync -rt --ignore-existing "$REPORTS_DIR/" "$BACKUP_DIR/reports/"
     echo "Report originals mirrored: $(find "$BACKUP_DIR/reports" -type f -name '*.pdf' | wc -l | tr -d ' ') PDFs in $BACKUP_DIR/reports"
 fi
