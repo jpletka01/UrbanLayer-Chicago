@@ -155,9 +155,10 @@ def test_the_cover_names_what_was_not_checked():
     assert "Not checked in this report: property tax estimate, comparable sales" in cover
 
 
-def test_the_cover_is_localized_without_a_translator_for_the_dates_yet():
+def test_the_cover_dates_are_in_spanish_with_the_readers_date_format():
     page = render_report_html(_mock_report(), "es", report_date="22 de octubre de 2026")
-    assert "Zoning map record edited 15 de diciembre de 2021" in page  # English words, the reader's date format
+    assert "Registro del mapa de zonificación: editado 15 de diciembre de 2021" in page
+    assert '<html lang="es-MX">' in page
 
 
 # --- no vintage is typed into the wording ---------------------------------------------------------------------------
@@ -193,3 +194,17 @@ def test_the_frontend_wording_matches_the_backend_catalog():
 
     used = {k for k, _ in vintages._AREA_FEEDS} | {"zoning_map", "code_text", "assessor", "tax_year", "sales", "acs_tract", "acs_community_area"}
     assert used == set(fe["noun"])
+
+
+def test_the_spanish_frontend_wording_matches_the_spanish_backend_catalog():
+    fe = json.loads((REPO / "frontend" / "src" / "locales" / "es" / "common.json").read_text())["dataDates"]
+    be = report_i18n.MESSAGES["es"]
+    for key, text in fe["noun"].items():
+        assert be[f"dates.noun.{key}"] == text, key
+    for kind in ("record", "through", "period", "checked"):
+        assert be[f"dates.{kind}"] == fe[kind].replace("{{", "{").replace("}}", "}"), kind
+    assert be["dates.since__one"] == fe["since_one"].replace("{{count}}", "{n}")
+    assert be["dates.since__other"] == fe["since_other"].replace("{{count}}", "{n}")
+    assert be["dates.since_aging__one"] == fe["sinceAging_one"].replace("{{count}}", "{n}").replace("{{d}}", "{d}")
+    assert be["dates.since_aging__other"] == fe["sinceAging_other"].replace("{{count}}", "{n}").replace("{{d}}", "{d}")
+    assert be["dates.since_unknown"] == fe["sinceUnknown"]

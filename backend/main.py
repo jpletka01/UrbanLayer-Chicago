@@ -2310,6 +2310,7 @@ def render_report_html(
     env.globals["failed_in"] = lambda *keys: list(dict.fromkeys(lab for d in _detail if d["key"] in keys for lab in d["labels"]))
     return env.get_template("zoning_report.html").render(
         report=report_data,
+        html_lang="es-MX" if report_i18n.normalize_lang(language) == "es" else "en",
         report_date=report_date or report_i18n.format_report_date(date.today(), language),
         # an updated copy of a report the buyer already has: the day the first one was generated (WS6 M8)
         copy_of=report_i18n.format_report_date(date.fromisoformat(copy_of[:10]), language) if copy_of else None,

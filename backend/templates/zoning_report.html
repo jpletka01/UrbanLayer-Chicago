@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ html_lang }}">
 <head>
 <meta charset="UTF-8">
-<title>Development Feasibility Report — {{ report.address or "Property Report" }}</title>
+<title>{{ t("doc.title") }} — {{ report.address or t("doc.untitled") }}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
