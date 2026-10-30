@@ -4,7 +4,7 @@
 rebuilt as the de-carded **Property Profile** dashboard on `feat/property-profile`; the
 governing design record is now `guides/scorecard-dashboard-model.md` (v2 spec + status
 blocks). The question-section/card layout described below shipped 2026-07-02 and was
-retired a week later ("still a spreadsheet" — Jack). Discovery sections remain current.
+retired a week later ("still a spreadsheet" — Jack). **Discovery sections are history too:** the 2026-10 redesign (archive `2026-10-30_discovery-redesign.md`) removed the filter rail, the auto-run and the recipe shelf; `frontend/CLAUDE.md` (`src/discovery/` rows) describes the page as it is.
 
 **Status (historical):** PLANNING on branch `feat/bento-pro`. Started 2026-07-01.
 **This is the project workspace** for the app-surface overhaul: spec, decisions log, and
